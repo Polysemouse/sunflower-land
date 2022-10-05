@@ -138,9 +138,10 @@ export type Inventory = Partial<Record<InventoryItemName, Decimal>>;
 export type Fields = Record<number, FieldItem>;
 
 export type Chicken = {
-  fedAt: number;
+  fedAt?: number;
   multiplier: number;
   reward?: CropReward;
+  coordinates?: { x: number; y: number };
 };
 
 export type StockExpiry = Partial<Record<InventoryItemName, string>>;

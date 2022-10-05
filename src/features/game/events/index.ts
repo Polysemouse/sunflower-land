@@ -60,6 +60,8 @@ import {
   claimAchievement,
   ClaimAchievementAction,
 } from "./landExpansion/claimAchievement";
+import { buyChicken, BuyChickenAction } from "./landExpansion/buyChicken";
+import { placeChicken, PlaceChickenAction } from "./landExpansion/placeChicken";
 
 export type PlayingEvent =
   | CraftAction
@@ -97,7 +99,9 @@ export type PlayingEvent =
 export type PlacementEvent =
   | ConstructBuildingAction
   | PlaceBuildingAction
-  | PlaceCollectibleAction;
+  | PlaceCollectibleAction
+  | BuyChickenAction
+  | PlaceChickenAction;
 
 export type GameEvent = PlayingEvent | PlacementEvent;
 export type GameEventName<T> = Extract<T, { type: string }>["type"];
@@ -151,6 +155,8 @@ export const PLACEMENT_EVENTS: Handlers<PlacementEvent> = {
   "building.constructed": constructBuilding,
   "building.placed": placeBuilding,
   "collectible.placed": placeCollectible,
+  "chicken.bought": buyChicken,
+  "chicken.placed": placeChicken,
 };
 
 export const EVENTS = { ...PLAYING_EVENTS, ...PLACEMENT_EVENTS };

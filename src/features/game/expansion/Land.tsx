@@ -1,10 +1,14 @@
 import React, { useContext, useLayoutEffect } from "react";
 import { Section, useScrollIntoView } from "lib/utils/hooks/useScrollIntoView";
-import { MapPlacement } from "./components/MapPlacement";
+import { Coordinates, MapPlacement } from "./components/MapPlacement";
 import { useActor } from "@xstate/react";
 import { Context } from "../GameProvider";
 import { getTerrainImageByKey } from "../lib/getTerrainImageByKey";
-import { COLLECTIBLES_DIMENSIONS, getKeys } from "../types/craftables";
+import {
+  ANIMAL_DIMENSIONS,
+  COLLECTIBLES_DIMENSIONS,
+  getKeys,
+} from "../types/craftables";
 import { Plot } from "features/farming/crops/components/landExpansion/Plot";
 import { Tree } from "./components/resources/Tree";
 import { Pebble } from "./components/resources/Pebble";
@@ -21,6 +25,7 @@ import { Building } from "features/island/buildings/components/building/Building
 import { ITEM_DETAILS } from "../types/images";
 import { Character } from "features/island/bumpkin/components/Character";
 import { Gold } from "./components/resources/Gold";
+import { Chicken } from "features/farming/animals/components/Chicken";
 
 type ExpansionProps = Pick<
   LandExpansion,
@@ -181,7 +186,7 @@ export const Land: React.FC = () => {
   const [gameState] = useActor(gameService);
   const { state } = gameState.context;
 
-  const { expansions, buildings, collectibles } = state;
+  const { expansions, buildings, collectibles, chickens } = state;
 
   const [scrollIntoView] = useScrollIntoView();
 
@@ -283,6 +288,20 @@ export const Land: React.FC = () => {
               </MapPlacement>
             );
           });
+        })}
+
+        {getKeys(chickens).flatMap((index) => {
+          const chicken = chickens[index];
+          const { x, y } = chicken.coordinates as Coordinates;
+          const { width, height } = ANIMAL_DIMENSIONS.Chicken;
+
+          return (
+            <MapPlacement key={index} x={x} y={y} height={height} width={width}>
+              <div className="flex relative justify-center w-full h-full">
+                <Chicken index={index} position={{ right: 7, top: -20 }} />
+              </div>
+            </MapPlacement>
+          );
         })}
       </div>
     </div>
