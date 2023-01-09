@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Button } from "components/ui/Button";
 import { Equipped } from "features/game/types/bumpkin";
-import { CloseButtonPanel } from "features/game/components/CloseablePanel";
+import { CloseablePanel } from "features/game/components/CloseablePanel";
 
 import land from "assets/land/islands/island.webp";
 
@@ -50,7 +50,7 @@ export const Tutorial: React.FC<Props> = ({ onClose, bumpkinParts }) => {
   };
 
   return (
-    <CloseButtonPanel
+    <CloseablePanel
       onClose={onClose}
       title="Sunflower Isles Travel"
       bumpkinParts={bumpkinParts}
@@ -60,6 +60,6 @@ export const Tutorial: React.FC<Props> = ({ onClose, bumpkinParts }) => {
       </div>
       {pageNumber === 1 && PageOne()}
       {pageNumber === 2 && PageTwo()}
-    </CloseButtonPanel>
+    </CloseablePanel>
   );
 };

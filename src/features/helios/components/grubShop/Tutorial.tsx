@@ -1,7 +1,7 @@
 import React from "react";
 import { Button } from "components/ui/Button";
 import { Equipped } from "features/game/types/bumpkin";
-import { CloseButtonPanel } from "features/game/components/CloseablePanel";
+import { CloseablePanel } from "features/game/components/CloseablePanel";
 
 import sunflowerCake from "src/assets/sfts/cakes/sunflower_cake.png";
 
@@ -12,7 +12,7 @@ interface Props {
 
 export const Tutorial: React.FC<Props> = ({ onClose, bumpkinParts }) => {
   return (
-    <CloseButtonPanel
+    <CloseablePanel
       onClose={onClose}
       title="Welcome to the Grub Shop"
       bumpkinParts={bumpkinParts}
@@ -31,6 +31,6 @@ export const Tutorial: React.FC<Props> = ({ onClose, bumpkinParts }) => {
         </p>
       </div>
       <Button onClick={onClose}>Got it</Button>
-    </CloseButtonPanel>
+    </CloseablePanel>
   );
 };

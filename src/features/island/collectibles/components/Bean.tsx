@@ -12,7 +12,7 @@ import { Context } from "features/game/GameProvider";
 import { Modal } from "react-bootstrap";
 import { secondsToString } from "lib/utils/time";
 import useUiRefresher from "lib/utils/hooks/useUiRefresher";
-import { CloseButtonPanel } from "features/game/components/CloseablePanel";
+import { CloseablePanel } from "features/game/components/CloseablePanel";
 import { ITEM_DETAILS } from "features/game/types/images";
 import { setImageWidth } from "lib/images";
 import { InventoryItemName } from "features/game/types/game";
@@ -93,7 +93,7 @@ export const Bean: React.FC<CollectibleProps> = ({
         alt="Bean"
       />
       <Modal show={showModal} centered onHide={() => setShowModal(false)}>
-        <CloseButtonPanel onClose={() => setShowModal(false)} title={name}>
+        <CloseablePanel onClose={() => setShowModal(false)} title={name}>
           <div className="flex flex-col justify-center items-center">
             <span className="text-center mb-2">
               {`Your mystery prize will be ready in ${secondsToString(
@@ -112,7 +112,7 @@ export const Bean: React.FC<CollectibleProps> = ({
               }}
             />
           </div>
-        </CloseButtonPanel>
+        </CloseablePanel>
       </Modal>
     </>
   );

@@ -7,7 +7,7 @@ import arrow_previous from "assets/icons/arrow_previous.png";
 import sound_on from "assets/icons/sound_on.png";
 import sound_off from "assets/icons/sound_off.png";
 import { Modal } from "react-bootstrap";
-import { CloseButtonPanel } from "./CloseablePanel";
+import { CloseablePanel } from "./CloseablePanel";
 import { Song } from "assets/songs/playlist";
 import { PIXEL_SCALE } from "../lib/constants";
 
@@ -77,7 +77,7 @@ export const AudioMenu: React.FC<Props> = ({
 
   return (
     <Modal show={show} centered onHide={onClose}>
-      <CloseButtonPanel title="Audio Settings" onClose={onClose}>
+      <CloseablePanel title="Audio Settings" onClose={onClose}>
         <div className="p-1 relative">
           <p className="mb-2">Music</p>
           {/* Music display */}
@@ -137,7 +137,7 @@ export const AudioMenu: React.FC<Props> = ({
             }}
           />
         </div>
-      </CloseButtonPanel>
+      </CloseablePanel>
     </Modal>
   );
 };

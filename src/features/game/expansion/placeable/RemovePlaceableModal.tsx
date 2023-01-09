@@ -4,7 +4,7 @@ import { PlaceableName } from "features/game/types/buildings";
 import { ITEM_DETAILS } from "features/game/types/images";
 import { Context } from "features/game/GameProvider";
 import { useActor } from "@xstate/react";
-import { CloseButtonPanel } from "features/game/components/CloseablePanel";
+import { CloseablePanel } from "features/game/components/CloseablePanel";
 import { PIXEL_SCALE } from "features/game/lib/constants";
 
 type PlaceableType = "building" | "collectible";
@@ -98,7 +98,7 @@ export const RemovePlaceableModal: React.FC<Props> = ({
   };
 
   return (
-    <CloseButtonPanel showCloseButton={false} title={`Remove this ${type}?`}>
+    <CloseablePanel showCloseButton={false} title={`Remove this ${type}?`}>
       <div className="flex flex-col items-center">
         <img
           src={ITEM_DETAILS["Rusty Shovel"].image}
@@ -128,6 +128,6 @@ export const RemovePlaceableModal: React.FC<Props> = ({
           )}
         </div>
       </div>
-    </CloseButtonPanel>
+    </CloseablePanel>
   );
 };

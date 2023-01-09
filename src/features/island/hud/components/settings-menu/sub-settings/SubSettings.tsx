@@ -9,7 +9,7 @@ import { Panel } from "components/ui/Panel";
 import questionMark from "assets/icons/expression_confused.png";
 import { Context } from "features/game/GameProvider";
 import { TransferAccount } from "./TransferAccount";
-import { CloseButtonPanel } from "features/game/components/CloseablePanel";
+import { CloseablePanel } from "features/game/components/CloseablePanel";
 
 interface Props {
   isOpen: boolean;
@@ -49,7 +49,7 @@ export const SubSettings: React.FC<Props> = ({ isOpen, onClose }) => {
     }
 
     return (
-      <CloseButtonPanel title="Settings" onClose={onClose}>
+      <CloseablePanel title="Settings" onClose={onClose}>
         <Button className="col p-1" onClick={onLogout}>
           Logout
         </Button>
@@ -67,7 +67,7 @@ export const SubSettings: React.FC<Props> = ({ isOpen, onClose }) => {
             This is useful if you deposited items to your farm.
           </span>
         </div>
-      </CloseButtonPanel>
+      </CloseablePanel>
     );
   };
 

@@ -4,7 +4,7 @@ import { ITEM_DETAILS } from "features/game/types/images";
 import { Context } from "features/game/GameProvider";
 import { useActor } from "@xstate/react";
 import { PIXEL_SCALE } from "features/game/lib/constants";
-import { CloseButtonPanel } from "features/game/components/CloseablePanel";
+import { CloseablePanel } from "features/game/components/CloseablePanel";
 
 interface Props {
   id?: string;
@@ -55,7 +55,7 @@ export const RemoveChickenModal: React.FC<Props> = ({ id, onClose }) => {
   };
 
   return (
-    <CloseButtonPanel showCloseButton={false} title="Remove this chicken?">
+    <CloseablePanel showCloseButton={false} title="Remove this chicken?">
       <div className="flex flex-col items-center">
         <img
           src={ITEM_DETAILS["Rusty Shovel"].image}
@@ -85,6 +85,6 @@ export const RemoveChickenModal: React.FC<Props> = ({ id, onClose }) => {
           )}
         </div>
       </div>
-    </CloseButtonPanel>
+    </CloseablePanel>
   );
 };

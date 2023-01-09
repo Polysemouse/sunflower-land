@@ -33,7 +33,7 @@ interface Props {
  * @bumpkinParts The list of bumpkin parts for the modal.
  * @children The panel children content.
  */
-export const CloseButtonPanel: React.FC<Props> = ({
+export const CloseablePanel: React.FC<Props> = ({
   tabs,
   currentTab = 0,
   setCurrentTab,
@@ -67,7 +67,7 @@ export const CloseButtonPanel: React.FC<Props> = ({
               onClick={() => handleTabClick(index)}
             >
               <SquareIcon icon={tab.icon} width={7} />
-              <span className="text-xs sm:text-sm overflow-hidden text-ellipsis ml-2">
+              <span className="text-xs sm:text-sm overflow-hidden text-ellipsis ml-2 py-1">
                 {tab.name}
               </span>
             </Tab>

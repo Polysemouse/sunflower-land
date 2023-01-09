@@ -11,7 +11,7 @@ import { ToastContext } from "features/game/toast/ToastQueueProvider";
 import { getKeys } from "features/game/types/craftables";
 import { ITEM_DETAILS } from "features/game/types/images";
 import { PIXEL_SCALE } from "features/game/lib/constants";
-import { CloseButtonPanel } from "features/game/components/CloseablePanel";
+import { CloseablePanel } from "features/game/components/CloseablePanel";
 
 export const Airdrop: React.FC = () => {
   const { gameService } = useContext(Context);
@@ -54,7 +54,7 @@ export const Airdrop: React.FC = () => {
   return (
     <>
       <Modal centered show={showModal} onHide={() => setShowModal(false)}>
-        <CloseButtonPanel
+        <CloseablePanel
           title={airdrop.message ?? "Congratulations, you found a reward!"}
           onClose={() => setShowModal(false)}
         >
@@ -83,7 +83,7 @@ export const Airdrop: React.FC = () => {
           <Button onClick={claim} className="mt-2">
             Claim
           </Button>
-        </CloseButtonPanel>
+        </CloseablePanel>
       </Modal>
 
       <div

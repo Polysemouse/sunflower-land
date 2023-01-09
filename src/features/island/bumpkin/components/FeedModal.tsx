@@ -8,7 +8,7 @@ import { useActor } from "@xstate/react";
 import { Feed } from "./Feed";
 import { Modal } from "react-bootstrap";
 import foodIcon from "src/assets/food/chicken_drumstick.png";
-import { CloseButtonPanel } from "features/game/components/CloseablePanel";
+import { CloseablePanel } from "features/game/components/CloseablePanel";
 
 interface Props {
   isOpen: boolean;
@@ -29,13 +29,13 @@ export const FeedModal: React.FC<Props> = ({ isOpen, onFeed, onClose }) => {
 
   return (
     <Modal show={isOpen} onHide={onClose} centered>
-      <CloseButtonPanel
+      <CloseablePanel
         onClose={onClose}
         tabs={[{ icon: foodIcon, name: "Feed Bumpkin" }]}
         bumpkinParts={state.bumpkin?.equipped}
       >
         <Feed food={availableFood} onFeed={onFeed} />
-      </CloseButtonPanel>
+      </CloseablePanel>
     </Modal>
   );
 };

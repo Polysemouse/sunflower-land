@@ -6,7 +6,7 @@ import { PIXEL_SCALE } from "features/game/lib/constants";
 import { Action } from "components/ui/Action";
 import { MapPlacement } from "features/game/expansion/components/MapPlacement";
 import { Modal } from "react-bootstrap";
-import { CloseButtonPanel } from "features/game/components/CloseablePanel";
+import { CloseablePanel } from "features/game/components/CloseablePanel";
 import { Button } from "components/ui/Button";
 
 export const Resale: React.FC = () => {
@@ -19,7 +19,7 @@ export const Resale: React.FC = () => {
   return (
     <>
       <Modal show={isOpen} onHide={() => setIsOpen(false)} centered>
-        <CloseButtonPanel
+        <CloseablePanel
           onClose={() => setIsOpen(false)}
           title="Looking for rare items?"
         >
@@ -42,7 +42,7 @@ export const Resale: React.FC = () => {
               View items on OpenSea
             </Button>
           </div>
-        </CloseButtonPanel>
+        </CloseablePanel>
       </Modal>
       <MapPlacement x={1} y={-7} height={5} width={4}>
         <div

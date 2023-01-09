@@ -6,7 +6,7 @@ import { Modal } from "react-bootstrap";
 
 import goblin from "assets/npcs/goblin_jump_rusty_shovel.gif";
 import token from "assets/icons/token_2.png";
-import { CloseButtonPanel } from "features/game/components/CloseablePanel";
+import { CloseablePanel } from "features/game/components/CloseablePanel";
 import { Context } from "features/game/GameProvider";
 import { CRAFTABLE_TOOLS } from "features/game/events/landExpansion/craftTool";
 import { ToastContext } from "features/game/toast/ToastQueueProvider";
@@ -98,7 +98,7 @@ export const RustyShovelSeller: React.FC = () => {
         </div>
       </div>
       <Modal show={showModal} onHide={() => setShowModal(false)} centered>
-        <CloseButtonPanel
+        <CloseablePanel
           onClose={() => setShowModal(false)}
           bumpkinParts={{
             body: "Goblin Potion",
@@ -138,7 +138,7 @@ export const RustyShovelSeller: React.FC = () => {
             </div>
           </div>
           {Action()}
-        </CloseButtonPanel>
+        </CloseablePanel>
       </Modal>
     </MapPlacement>
   );

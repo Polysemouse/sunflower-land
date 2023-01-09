@@ -7,7 +7,7 @@ import chest from "assets/icons/chest.png";
 import Decimal from "decimal.js-light";
 import { Basket } from "./Basket";
 import { Chest } from "./Chest";
-import { CloseButtonPanel } from "features/game/components/CloseablePanel";
+import { CloseablePanel } from "features/game/components/CloseablePanel";
 
 interface Props {
   state: GameState;
@@ -33,7 +33,7 @@ export const InventoryItems: React.FC<Props> = ({
   const [currentTab, setCurrentTab] = useState<number>(0);
 
   return (
-    <CloseButtonPanel
+    <CloseablePanel
       tabs={[
         { icon: basket, name: "Basket" },
         { icon: chest, name: "Chest" },
@@ -53,6 +53,6 @@ export const InventoryItems: React.FC<Props> = ({
           isSaving={isSaving}
         />
       )}
-    </CloseButtonPanel>
+    </CloseablePanel>
   );
 };

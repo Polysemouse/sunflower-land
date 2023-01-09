@@ -9,7 +9,7 @@ import { PIXEL_SCALE } from "features/game/lib/constants";
 import { Modal } from "react-bootstrap";
 import { TreasureShopBuy as TreasureShopItems } from "./TreasureShopBuy";
 import { MapPlacement } from "features/game/expansion/components/MapPlacement";
-import { CloseButtonPanel } from "features/game/components/CloseablePanel";
+import { CloseablePanel } from "features/game/components/CloseablePanel";
 import { TreasureShopSell } from "./TreasureShopSell";
 
 export const TreasureShop: React.FC = () => {
@@ -42,7 +42,7 @@ export const TreasureShop: React.FC = () => {
       </div>
 
       <Modal centered show={showModal} onHide={() => setShowModal(false)}>
-        <CloseButtonPanel
+        <CloseablePanel
           onClose={() => setShowModal(false)}
           bumpkinParts={{
             body: "Goblin Potion",
@@ -70,7 +70,7 @@ export const TreasureShop: React.FC = () => {
             <TreasureShopItems onClose={() => setShowModal(false)} />
           )}
           {tab === 1 && <TreasureShopSell />}
-        </CloseButtonPanel>
+        </CloseablePanel>
       </Modal>
     </MapPlacement>
   );

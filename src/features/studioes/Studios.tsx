@@ -22,7 +22,7 @@ import shadow from "assets/npcs/shadow.png";
 import { MapPlacement } from "features/game/expansion/components/MapPlacement";
 import { Modal } from "react-bootstrap";
 import { Button } from "components/ui/Button";
-import { CloseButtonPanel } from "features/game/components/CloseablePanel";
+import { CloseablePanel } from "features/game/components/CloseablePanel";
 
 export const Studios: React.FC = () => {
   const [scrollIntoView] = useScrollIntoView();
@@ -201,7 +201,7 @@ export const Studios: React.FC = () => {
       />
 
       <Modal centered show={showModal} onHide={() => setShowModal(false)}>
-        <CloseButtonPanel onClose={() => setShowModal(false)}>
+        <CloseablePanel onClose={() => setShowModal(false)}>
           <div className="p-2">
             <p className="mb-2">
               The team are preparing for a live Twitch stream.
@@ -217,11 +217,11 @@ export const Studios: React.FC = () => {
               Go to Twitch
             </Button>
           </div>
-        </CloseButtonPanel>
+        </CloseablePanel>
       </Modal>
 
       <Modal centered show={showDiggle} onHide={() => setShowDiggle(false)}>
-        <CloseButtonPanel onClose={() => setShowDiggle(false)}>
+        <CloseablePanel onClose={() => setShowDiggle(false)}>
           <div className="p-2">
             <p className="mb-2">{`Hi I'm Daniel!`}</p>
             <p className="mb-2">I am the designer of the base asset pack.</p>
@@ -236,7 +236,7 @@ export const Studios: React.FC = () => {
               Twitter
             </Button>
           </div>
-        </CloseButtonPanel>
+        </CloseablePanel>
       </Modal>
 
       <MapPlacement x={-7.5} y={7.5} height={1} width={1}>

@@ -1,6 +1,6 @@
 import React, { ChangeEvent, useContext, useEffect, useState } from "react";
 import classNames from "classnames";
-import { CloseButtonPanel } from "features/game/components/CloseablePanel";
+import { CloseablePanel } from "features/game/components/CloseablePanel";
 import { Modal } from "react-bootstrap";
 import token from "assets/icons/token_2.png";
 
@@ -187,9 +187,9 @@ export const AddSFL: React.FC<Props> = ({ isOpen, onClose }) => {
   };
   return (
     <Modal show={isOpen} centered onHide={onClose}>
-      <CloseButtonPanel title="Add SFL" onClose={onClose}>
+      <CloseablePanel title="Add SFL" onClose={onClose}>
         {Content()}
-      </CloseButtonPanel>
+      </CloseablePanel>
     </Modal>
   );
 };

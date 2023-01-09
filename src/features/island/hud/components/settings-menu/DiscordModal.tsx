@@ -13,7 +13,7 @@ import {
 import { ITEM_DETAILS } from "features/game/types/images";
 import { Context } from "features/game/GameProvider";
 import { Modal } from "react-bootstrap";
-import { CloseButtonPanel } from "features/game/components/CloseablePanel";
+import { CloseablePanel } from "features/game/components/CloseablePanel";
 
 const GROUPS: {
   channel: string;
@@ -151,9 +151,9 @@ export const Discord: React.FC<Props> = ({ isOpen, onClose }) => {
 
   return (
     <Modal show={isOpen} onHide={onClose} centered>
-      <CloseButtonPanel title="Discord" onClose={onClose}>
+      <CloseablePanel title="Discord" onClose={onClose}>
         {getContent()}
-      </CloseButtonPanel>
+      </CloseablePanel>
     </Modal>
   );
 };

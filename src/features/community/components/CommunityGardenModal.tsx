@@ -7,7 +7,7 @@ import npc from "assets/npcs/community_garden_npc.gif";
 import boats from "assets/npcs/paperboats.gif";
 
 import { PIXEL_SCALE } from "features/game/lib/constants";
-import { CloseButtonPanel } from "features/game/components/CloseablePanel";
+import { CloseablePanel } from "features/game/components/CloseablePanel";
 
 interface Props {
   isOpen: boolean;
@@ -20,7 +20,7 @@ export const CommunityGardenModal: React.FC<Props> = ({ isOpen, onClose }) => {
 
   return (
     <Modal centered show={isOpen} onHide={onClose}>
-      <CloseButtonPanel onClose={onClose} title="Visit the Community Garden?">
+      <CloseablePanel onClose={onClose} title="Visit the Community Garden?">
         <div className="flex justify-center items-center gap-6 mb-3">
           <img
             src={boats}
@@ -53,7 +53,7 @@ export const CommunityGardenModal: React.FC<Props> = ({ isOpen, onClose }) => {
         <Button onClick={() => navigate(`/community-garden/${id}`)}>
           Continue
         </Button>
-      </CloseButtonPanel>
+      </CloseablePanel>
     </Modal>
   );
 };
