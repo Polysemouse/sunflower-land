@@ -87,20 +87,18 @@ export const Discord: React.FC<Props> = ({ isOpen, onClose }) => {
 
   const getContent = (): JSX.Element => {
     if (state === "error") {
-      return <span className="text-shadow">Error!</span>;
+      return <span>Error!</span>;
     }
 
     if (state === "joining") {
-      return <span className="text-shadow loading">Joining</span>;
+      return <span className="loading">Joining</span>;
     }
 
     if (state === "joined") {
       return (
         <>
-          <span className="text-shadow mt-2 block text-center">
-            Congratulations!
-          </span>
-          <span className="text-shadow my-2 block text-center">
+          <span className="mt-2 block text-center">Congratulations!</span>
+          <span className="my-2 block text-center">
             You now have access. Go check out the channel in Discord
           </span>
         </>
@@ -110,7 +108,7 @@ export const Discord: React.FC<Props> = ({ isOpen, onClose }) => {
     if (state === "noDiscord") {
       return (
         <>
-          <span className="text-shadow my-2 block text-sm">
+          <span className="my-2 block text-sm">
             You must be connected to Discord to join a restricted channel.
           </span>
           <Button onClick={oauth}>Connect</Button>
@@ -119,7 +117,7 @@ export const Discord: React.FC<Props> = ({ isOpen, onClose }) => {
     }
 
     return (
-      <span className="text-shadow my-2 block text-sm">
+      <span className="my-2 block text-sm">
         Get access to restricted groups on Discord
         {GROUPS.map((group) => (
           <div key={group.channel} className="flex justify-between w-full mt-4">

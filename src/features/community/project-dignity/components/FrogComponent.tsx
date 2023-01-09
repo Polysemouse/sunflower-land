@@ -45,7 +45,7 @@ export const FrogComponent: React.FC<Props> = ({ frog, disableSound }) => {
           }
         )}
       >
-        <div className="flex flex-col text-xxs text-white text-shadow ml-2 mr-2">
+        <div className="flex flex-col text-xxs text-white ml-2 mr-2">
           <span className="flex-1">{frog.name}</span>
           <span className="flex-1" style={{ color: frog.rarity?.color }}>
             {frog.rarity?.name}

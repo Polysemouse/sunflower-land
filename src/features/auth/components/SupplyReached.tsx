@@ -34,8 +34,8 @@ export const SupplyReached: React.FC = () => {
   }, []);
 
   return (
-    <div className="flex flex-col text-center text-shadow items-center p-1">
-      <p className="text-center mb-3">Coming Soon - December 15th</p>
+    <div className="flex flex-col text-center items-center p-1">
+      <p className="text-center mb-3">Coming Soon</p>
       <p className="text-center text-sm">Beta testers only</p>
     </div>
   );

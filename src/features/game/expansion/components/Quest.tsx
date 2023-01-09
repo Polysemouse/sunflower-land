@@ -80,7 +80,7 @@ export const Quest: React.FC<Props> = ({
     if (state.matches("minting")) {
       return (
         <div className="flex flex-col items-center p-2">
-          <span className="text-shadow text-center loading">Minting</span>
+          <span className="text-center loading">Minting</span>
           <img src={mintingAnimation} className="w-1/2 mt-2 mb-3" />
           <span className="text-sm">
             Please be patient while we mint the SFT for you.

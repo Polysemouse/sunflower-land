@@ -159,7 +159,7 @@ export const TabContent: React.FC<Props> = ({ tab }) => {
         <div className="border-t border-white w-full mt-2 pt-2 text-center">
           <div className="flex justify-center items-end my-1">
             <img src={token} className="h-4 mr-1" />
-            <span className="text-xs sm:text-sm text-shadow text-center">
+            <span className="text-xs sm:text-sm text-center">
               {`${selected.currentRelease?.price}`}
             </span>
           </div>

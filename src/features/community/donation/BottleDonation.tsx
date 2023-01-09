@@ -94,7 +94,7 @@ export const BottleDonation: React.FC = () => {
                 }}
               />
               <img src={team} alt="team members" className="w-full m-3 px-3" />
-              <div className="flex flex-col text-shadow items-center">
+              <div className="flex flex-col items-center">
                 <h2 className="text-sm sm:text-base mb-2 text-center pb-2">
                   Want more Aquatics?
                 </h2>
@@ -136,9 +136,7 @@ export const BottleDonation: React.FC = () => {
                   onClick={decrementDonation}
                 />
               </div>
-              <span className="text-xxs text-shadow mt-2 mb-3">
-                Amount in MATIC
-              </span>
+              <span className="text-xxs mt-2 mb-3">Amount in MATIC</span>
               <div className="flex w-full">
                 <Button className="w-full ml-1" onClick={donate}>
                   <span className="text-xs whitespace-nowrap">Donate</span>

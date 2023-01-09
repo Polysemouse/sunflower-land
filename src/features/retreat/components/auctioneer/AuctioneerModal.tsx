@@ -43,7 +43,7 @@ export const AuctioneerModal: React.FC<Props> = ({ isOpen, onClose }) => {
       {isMinting && (
         <Panel className="relative">
           <div className="flex flex-col items-center p-2">
-            <span className="text-shadow text-center loading">Minting</span>
+            <span className="text-center loading">Minting</span>
             <img src={mintingAnimation} className="w-1/2 mt-2 mb-3" />
             <span className="text-sm">
               Please be patient while we mint the SFT for you.
@@ -80,13 +80,13 @@ export const AuctioneerModal: React.FC<Props> = ({ isOpen, onClose }) => {
             }}
           >
             <Tab isActive={tab === "auction"} onClick={() => setTab("auction")}>
-              <span className="text-sm text-shadow ml-1">Auctioneer</span>
+              <span className="text-sm ml-1">Auctioneer</span>
             </Tab>
             <Tab
               isActive={tab === "upcoming"}
               onClick={() => setTab("upcoming")}
             >
-              <span className="text-sm text-shadow ml-1">Upcoming</span>
+              <span className="text-sm ml-1">Upcoming</span>
             </Tab>
             <img
               src={close}

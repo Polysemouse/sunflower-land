@@ -86,14 +86,14 @@ export const Game = () => {
         centered
         backdrop={retreatLoaded}
       >
-        <Panel className="text-shadow">
+        <Panel>
           {goblinState.matches("error") && (
             <ErrorMessage
               errorCode={goblinState.context.errorCode as ErrorCode}
             />
           )}
           {goblinState.matches("withdrawing") && <Withdrawing />}
-          {goblinState.matches("loading") && <Loading />}
+          {!goblinState.matches("loading") && <Loading />}
           {goblinState.matches("withdrawn") && <Withdrawn />}
           {goblinState.matches("minting") && <Minting />}
           {goblinState.matches("minted") && <Minted />}

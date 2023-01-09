@@ -45,12 +45,12 @@ export const NyonStatue: React.FC = () => {
                 alt="Nyon Statue"
               />
               <div className="ml-2 mt-3">
-                <span className="text-shadow text-xs block">In memory of</span>
-                <span className="text-shadow block">Nyon Lann</span>
+                <span className="text-xs block">In memory of</span>
+                <span className="block">Nyon Lann</span>
               </div>
             </div>
             <div className="flex-1 ml-2 mr-2">
-              <span className="text-shadow block mb-2 text-xs">
+              <span className="block mb-2 text-xs">
                 The legendary knight responsible for clearing the goblins from
                 the mines. Shortly after his victory he died by poisoning from a
                 Goblin conspirator. The Sunflower Citizens erected this statue

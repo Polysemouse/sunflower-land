@@ -26,9 +26,7 @@ export const VisitFarm: React.FC = () => {
   return (
     <>
       <form onSubmit={visit}>
-        <span className="text-shadow text-small mb-2 px-1">
-          Enter Farm ID:{" "}
-        </span>
+        <span className="text-small mb-2 px-1">Enter Farm ID: </span>
         <input
           type="number"
           name="farmId"

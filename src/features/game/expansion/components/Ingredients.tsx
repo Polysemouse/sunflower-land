@@ -34,7 +34,7 @@ export const Ingredients: React.FC<Props> = ({ gameState, resources, sfl }) => {
             {isMissingIngredient ? (
               <Label type="danger">{`${inventoryAmount}/${requiredAmount}`}</Label>
             ) : (
-              <span className={classNames("text-sm text-shadow text-center ")}>
+              <span className={classNames("text-sm text-center ")}>
                 {`${requiredAmount}`}
               </span>
             )}
@@ -48,9 +48,7 @@ export const Ingredients: React.FC<Props> = ({ gameState, resources, sfl }) => {
           {gameState.balance.lessThan(sfl) ? (
             <Label type="danger">{`${sfl.toNumber()} SFL`}</Label>
           ) : (
-            <span
-              className={classNames("text-sm text-shadow text-center ", {})}
-            >
+            <span className={classNames("text-sm text-center ", {})}>
               {`${sfl.toNumber()} SFL`}
             </span>
           )}

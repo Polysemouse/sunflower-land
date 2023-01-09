@@ -9,7 +9,7 @@ interface Props {
 
 export const RejectedSignTransaction: React.FC<Props> = ({ onTryAgain }) => {
   return (
-    <div className="flex flex-col text-center text-shadow items-center p-1">
+    <div className="flex flex-col text-center items-center p-1">
       <div className="flex mb-3 items-center">
         <img src={alert} alt="Warning" className="w-3 mr-3" />
       </div>

@@ -19,7 +19,7 @@ export const Inbox: React.FC<Props> = ({ inbox, isLoading }) => {
           <span className="loading">Loading</span>
         </InnerPanel>
       ) : inbox.length ? (
-        <div className="text-sm mt-2 text-shadow text-break divide-y-2 divide-dashed divide-brown-600 max-h-[27rem] overflow-y-auto scrollable">
+        <div className="text-sm mt-2 text-break divide-y-2 divide-dashed divide-brown-600 max-h-[27rem] overflow-y-auto scrollable">
           {PAST_ANNOUNCEMENTS.map((announcement, index) => (
             <Announcement key={index} announcement={announcement} />
           ))}

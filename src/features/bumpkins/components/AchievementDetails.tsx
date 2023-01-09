@@ -204,7 +204,7 @@ export const AchievementDetails: React.FC<Props> = ({
                     )}
                     {isAlreadyClaimed && (
                       <div className="flex items-center mt-2 mb-1">
-                        <span className="w-auto -mt-2 mb-1 bg-blue-600 text-shadow border text-xxs p-1 rounded-md">
+                        <span className="w-auto -mt-2 mb-1 bg-blue-600 border text-xxs p-1 rounded-md">
                           Already Claimed!
                         </span>
                       </div>

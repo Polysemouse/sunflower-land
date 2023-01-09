@@ -130,7 +130,7 @@ export const Crops: React.FC = () => {
             <div className="flex justify-center space-x-1 items-center sm:justify-center">
               <img src={token} className="h-4 sm:h-5" />
               {isPriceBoosted && <img src={lightning} className="h-5 sm:h-6" />}
-              <span className="text-xs text-shadow text-center">
+              <span className="text-xs text-center">
                 {`${displaySellPrice(selected)}`}
               </span>
             </div>

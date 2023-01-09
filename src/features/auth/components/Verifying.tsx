@@ -55,8 +55,8 @@ export const Verifying: React.FC = () => {
         title="Yeeeet!"
         id="iframe"
       ></iframe>
-      <span className="text-shadow loading">Signing you in</span>
-      <span className="text-shadow block my-2 mx-2 sm:text-sm">
+      <span className="loading">Signing you in</span>
+      <span className="block my-2 mx-2 sm:text-sm">
         Accept the signature request in your browser wallet to login.
       </span>
     </>

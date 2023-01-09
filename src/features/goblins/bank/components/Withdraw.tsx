@@ -126,7 +126,7 @@ export const Withdraw: React.FC<Props> = ({ onClose }) => {
 
   return (
     <div className="p-2 flex flex-col justify-center">
-      <span className="text-shadow text-sm pb-2">
+      <span className="text-sm pb-2">
         You can only withdraw items that you have synced to the blockchain.
       </span>
 

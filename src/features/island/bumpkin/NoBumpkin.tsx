@@ -21,7 +21,7 @@ export const NoBumpkin: React.FC = () => {
           All accounts come with a free Bumpkin. If you misplaced your Bumpkin,
           you can mint one below:
         </p>
-        <p className="text-xs sm:text-sm text-shadow text-white p-1">
+        <p className="text-xs sm:text-sm text-white p-1">
           <a
             className="underline"
             href={

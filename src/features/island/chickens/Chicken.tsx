@@ -70,7 +70,7 @@ const TimeToEgg = ({ showTimeToEgg, service }: TimeToEggProps) => {
         }
       )}
     >
-      <div className="flex flex-col text-xxs text-white text-shadow ml-2 mr-2">
+      <div className="flex flex-col text-xxs text-white ml-2 mr-2">
         <div className="flex flex-1 items-center justify-center">
           <img src={egg} className="w-4 mr-1" />
           <span>Egg</span>

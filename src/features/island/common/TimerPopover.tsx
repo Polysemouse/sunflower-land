@@ -37,7 +37,7 @@ export const TimerPopover: React.FC<Props> = ({
         left: `${PIXEL_SCALE * position.left}px`,
       }}
     >
-      <div className="flex flex-col text-xxs text-white text-shadow mx-2">
+      <div className="flex flex-col text-xxs text-white mx-2">
         <div className="flex flex-1 items-center justify-center">
           <img src={image} className="w-4 mr-1" />
           <span>{name}</span>

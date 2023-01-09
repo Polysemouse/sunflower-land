@@ -38,13 +38,13 @@ export const Offer: React.FC<Props> = ({ onCraft, inventory, offer }) => {
   return (
     <div className="flex">
       <div className="flex flex-col justify-center items-center p-2 relative w-full">
-        <span className="text-shadow text-center">{`${offer.amount} x ${offer.name}`}</span>
+        <span className="text-center">{`${offer.amount} x ${offer.name}`}</span>
         <img
           src={details.image}
           className="h-16 img-highlight mt-1"
           alt={offer.name}
         />
-        <span className="text-shadow text-center mt-2 sm:text-sm">
+        <span className="text-center mt-2 sm:text-sm">
           {details.description}
         </span>
 
@@ -59,12 +59,9 @@ export const Offer: React.FC<Props> = ({ onCraft, inventory, offer }) => {
               <div className="flex justify-center items-end" key={index}>
                 <img src={item.image} className="h-5 me-2" />
                 <span
-                  className={classNames(
-                    "text-xs text-shadow text-center mt-2 ",
-                    {
-                      "text-red-500": lessIngredient,
-                    }
-                  )}
+                  className={classNames("text-xs text-center mt-2 ", {
+                    "text-red-500": lessIngredient,
+                  })}
                 >
                   {ingredient.amount.toNumber()}
                 </span>

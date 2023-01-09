@@ -20,12 +20,12 @@ export const CommunityGarden: React.FC = () => {
   return (
     <>
       <Modal show={state.matches("loading")} centered>
-        <Panel className="text-shadow">
+        <Panel>
           <span className="loading">Loading</span>
         </Panel>
       </Modal>
       <Modal show={state.matches("error")} centered>
-        <Panel className="text-shadow">
+        <Panel>
           <span className="loading">Loading</span>
         </Panel>
       </Modal>

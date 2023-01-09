@@ -197,7 +197,7 @@ export const GrubShopModal: React.FC<Props> = ({ onClose }) => {
                   <div className="flex justify-between px-1 mb-2 max-h-14 sm:max-h-full sm:flex-col sm:items-center">
                     <div className="flex justify-center space-x-1 items-center sm:justify-center">
                       <img src={token} className="h-4 sm:h-5" />
-                      <span className="text-xs text-shadow text-center">
+                      <span className="text-xs text-center">
                         {`${getOrderSellPrice(
                           state.bumpkin as Bumpkin,
                           selected

@@ -167,7 +167,7 @@ export const DetailView: React.FC<Props> = ({
         )}
         <div className="flex justify-center items-end">
           <img src={stopwatch} className="h-5 mr-1" />
-          <span className={classNames("text-xs text-shadow text-center mt-2 ")}>
+          <span className={classNames("text-xs text-center mt-2 ")}>
             {secondsToString(BUILDINGS()[building].constructionSeconds, {
               length: "medium",
               removeTrailingZeros: true,

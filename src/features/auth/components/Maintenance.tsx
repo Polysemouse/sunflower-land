@@ -4,7 +4,7 @@ import hammering from "assets/npcs/goblin_hammering.gif";
 
 export const Maintenance: React.FC = () => {
   return (
-    <div className="flex flex-col text-center text-shadow items-center p-1">
+    <div className="flex flex-col text-center items-center p-1">
       <p className="text-center mb-3">Maintenance</p>
 
       <img src={hammering} alt="Maintenance" className="w-2/3" />

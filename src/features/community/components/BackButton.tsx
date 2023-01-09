@@ -11,18 +11,21 @@ export const BackButton: React.FC = () => {
   const navigate = useNavigate();
 
   return (
-    <OuterPanel className="w-40 fixed top-2 left-2 z-50 shadow-lg">
-      <Button
-        className="text-white text-sm text-shadow"
-        onClick={() => navigate(-1)}
-      >
+    <OuterPanel
+      className="fixed z-50"
+      style={{
+        top: `${PIXEL_SCALE * 3}px`,
+        left: `${PIXEL_SCALE * 3}px`,
+      }}
+    >
+      <Button className="text-white text-sm" onClick={() => navigate(-1)}>
         <div className="flex flex-row items-center justify-center">
           <img
-            className="mr-1"
+            className="mr-1 -mb-1"
             src={arrowLeft}
             alt="back-arrow"
             style={{
-              width: `${PIXEL_SCALE * 8}px`,
+              width: `${PIXEL_SCALE * 11}px`,
             }}
           />
           <span className="ml-1 md:flex">Back</span>

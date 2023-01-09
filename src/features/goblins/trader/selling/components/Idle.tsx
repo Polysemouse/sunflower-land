@@ -37,7 +37,7 @@ export const Idle: React.FC<IdleProps> = ({
           {`Free trades : ${freeListings}`}
         </p>
       </div>
-      <p className="text-xxs sm:text-xs w-auto px-2 py-1 bg-blue-600 text-shadow border rounded-md whitespace-nowrap">
+      <p className="text-xxs sm:text-xs w-auto px-2 py-1 bg-blue-600 border rounded-md whitespace-nowrap">
         {`Remaining trades : ${remainingListings}`}
       </p>
     </div>
