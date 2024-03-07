@@ -12,6 +12,7 @@ import {
   AuctionLeaderboardTable,
   toOrdinalSuffix,
 } from "./AuctionLeaderboardTable";
+import { useAppTranslation } from "lib/i18n/useAppTranslations";
 
 interface Props {
   auctionService: MachineInterpreter;
@@ -25,6 +26,7 @@ export const TieBreaker: React.FC<Props> = ({
   results,
 }) => {
   const { gameService } = useContext(Context);
+  const { t } = useAppTranslation();
 
   const refund = () => {
     gameService.send("bid.refunded");
@@ -41,17 +43,16 @@ export const TieBreaker: React.FC<Props> = ({
         status="tiebreaker"
       />
       <div className="my-2">
-        <Label type="warning">Tiebreaker</Label>
+        <Label type="warning">{"Tiebreaker"}</Label>
       </div>
       <p className="text-xs mb-2 text-center px-2">
         {`So close! You bid the exact same resources as the ${toOrdinalSuffix(
           results.supply
         )} bid.`}{" "}
-        A tie breaker is chosen by whichever Bumpkin has more experience.
-        Unfortunately you lost.
+        {t("tieBreaker.closeBid")}
       </p>
       <p className="text-xs  mb-1 text-center px-2">
-        Time to eat some more cakes! Better luck next time.
+        {t("tieBreaker.betterLuck")}
       </p>
       <a
         className="underline hover:text-blue-500 text-xxs text-center"
@@ -59,10 +60,10 @@ export const TieBreaker: React.FC<Props> = ({
         target="_blank"
         rel="noreferrer"
       >
-        Read more
+        {t("read.more")}
       </a>
       <Button className="mt-2" onClick={refund}>
-        Refund resources
+        {t("loser.refund")}
       </Button>
     </div>
   );

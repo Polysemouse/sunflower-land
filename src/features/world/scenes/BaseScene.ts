@@ -21,11 +21,17 @@ import {
 } from "../mmoMachine";
 import { Player, PlazaRoomState } from "../types/Room";
 import { playerModalManager } from "../ui/PlayerModals";
-import { hasFeatureAccess } from "lib/flags";
 import { GameState } from "features/game/types/game";
+import { translate } from "lib/i18n/translate";
 import { Room } from "colyseus.js";
 
 import defaultTilesetConfig from "assets/map/tileset.json";
+
+import {
+  AudioLocalStorageKeys,
+  getCachedAudioSetting,
+} from "../../game/lib/audio";
+import { MachineInterpreter } from "features/game/lib/gameMachine";
 
 type SceneTransitionData = {
   previousSceneId: SceneId;
@@ -50,6 +56,8 @@ type BaseSceneOptions = {
     tilesetUrl?: string;
     json: any;
     padding?: [number, number];
+    imageKey?: string;
+    defaultTilesetConfig?: any;
   };
   mmo?: {
     enabled: boolean;
@@ -128,7 +136,7 @@ export abstract class BaseScene extends Phaser.Scene {
 
   constructor(options: BaseSceneOptions) {
     if (!options.name) {
-      throw new Error("Missing name in config");
+      throw new Error(translate("base.missing"));
     }
 
     const defaultedOptions: Required<BaseSceneOptions> = {
@@ -149,21 +157,15 @@ export abstract class BaseScene extends Phaser.Scene {
     if (this.options.map?.json) {
       const json = {
         ...this.options.map.json,
-        tilesets: defaultTilesetConfig.tilesets,
+        tilesets:
+          this.options.map.defaultTilesetConfig ??
+          defaultTilesetConfig.tilesets,
       };
       this.load.tilemapTiledJSON(this.options.name, json);
     }
 
     if (this.options.map?.tilesetUrl)
       this.load.image("community-tileset", this.options.map.tilesetUrl);
-
-    // Shut down the sound when the scene changes
-    const event = this.events.once("shutdown", () => {
-      this.sound.getAllPlaying().forEach((sound) => {
-        sound.destroy();
-      });
-      this.soundEffects = [];
-    });
   }
 
   init(data: SceneTransitionData) {
@@ -236,7 +238,7 @@ export abstract class BaseScene extends Phaser.Scene {
       : // Standard tileset
         (this.map.addTilesetImage(
           "Sunnyside V3",
-          "tileset",
+          this.options.map.imageKey ?? "tileset",
           16,
           16,
           1,
@@ -390,18 +392,46 @@ export abstract class BaseScene extends Phaser.Scene {
       }
     });
 
+    const removeReactionListener = server.state.reactions.onAdd((reaction) => {
+      // Old message
+      if (reaction.sentAt < Date.now() - 5000) {
+        return;
+      }
+
+      if (reaction.sceneId !== this.options.name) {
+        return;
+      }
+
+      if (!this.scene?.isActive()) {
+        return;
+      }
+
+      if (this.playerEntities[reaction.sessionId]) {
+        this.playerEntities[reaction.sessionId].react(reaction.reaction);
+      } else if (reaction.sessionId === server.sessionId) {
+        this.currentPlayer?.react(reaction.reaction);
+      }
+    });
+
     // send the scene player is in
     // this.room.send()
 
     this.events.on("shutdown", () => {
       removeMessageListener();
+      removeReactionListener();
     });
   }
 
   public initialiseSounds() {
-    this.walkAudioController = new WalkAudioController(
-      this.sound.add(this.options.audio.fx.walk_key)
+    const audioMuted = getCachedAudioSetting<boolean>(
+      AudioLocalStorageKeys.audioMuted,
+      false
     );
+    if (!audioMuted) {
+      this.walkAudioController = new WalkAudioController(
+        this.sound.add(this.options.audio.fx.walk_key)
+      );
+    }
   }
 
   public initialiseControls() {
@@ -460,6 +490,10 @@ export abstract class BaseScene extends Phaser.Scene {
     return this.registry.get("id") as number;
   }
 
+  public get gameService() {
+    return this.registry.get("gameService") as MachineInterpreter;
+  }
+
   public get username() {
     return this.gameState.username;
   }
@@ -490,7 +524,7 @@ export abstract class BaseScene extends Phaser.Scene {
       );
 
       if (distance > 50) {
-        entity.speak("You are too far away");
+        entity.speak(translate("base.far.away"));
         return;
       }
 
@@ -561,10 +595,7 @@ export abstract class BaseScene extends Phaser.Scene {
 
           // Change scenes
           const warpTo = (obj2 as any).data?.list?.warp;
-          if (
-            warpTo &&
-            (warpTo !== "beach" || hasFeatureAccess(this.gameState, "BEACH"))
-          ) {
+          if (warpTo) {
             this.changeScene(warpTo);
           }
 
@@ -616,19 +647,18 @@ export abstract class BaseScene extends Phaser.Scene {
   destroyPlayer(sessionId: string) {
     const entity = this.playerEntities[sessionId];
     if (entity) {
-      entity.setVisible(false);
+      entity.disappear();
       delete this.playerEntities[sessionId];
     }
   }
 
-  update(time: number, delta: number): void {
-    // this.elapsedTime += delta;
-    // while (this.elapsedTime >= this.fixedTimeStep) {
-    //   this.elapsedTime -= this.fixedTimeStep;
-    //   this.fixedTick(time, this.fixedTimeStep);
-    // }
+  update(): void {
+    this.currentTick++;
 
-    this.fixedTick(time, this.fixedTimeStep);
+    this.switchScene();
+    this.updatePlayer();
+    this.updateOtherPlayers();
+    this.updateUsernames();
   }
 
   keysToAngle(
@@ -893,7 +923,8 @@ export abstract class BaseScene extends Phaser.Scene {
     if (this.switchToScene) {
       const warpTo = this.switchToScene;
       this.switchToScene = undefined;
-      this.mmoService?.state.context.server?.send(0, { sceneId: warpTo });
+      // this.mmoService?.state.context.server?.send(0, { sceneId: warpTo });
+      this.mmoService?.send("SWITCH_SCENE", { sceneId: warpTo });
       this.scene.start(warpTo, { previousSceneId: this.sceneId });
     }
   }
@@ -945,15 +976,6 @@ export abstract class BaseScene extends Phaser.Scene {
       this.colliders?.add(container);
       this.triggerColliders?.add(container);
     });
-  }
-
-  fixedTick(time: number, delta: number) {
-    this.currentTick++;
-
-    this.switchScene();
-    this.updatePlayer();
-    this.updateOtherPlayers();
-    this.updateUsernames();
   }
 
   teleportModerator(x: number, y: number) {

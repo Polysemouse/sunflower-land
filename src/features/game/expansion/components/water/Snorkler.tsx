@@ -6,9 +6,10 @@ import goblinSnorkling from "assets/npcs/goblin_snorkling.gif";
 import bumpkin from "assets/npcs/snorkel_bumpkin.png";
 
 import { MapPlacement } from "../MapPlacement";
-import { Modal } from "react-bootstrap";
+import { Modal } from "components/ui/Modal";
 import { Panel } from "components/ui/Panel";
 import { SUNNYSIDE } from "assets/sunnyside";
+import { useAppTranslation } from "lib/i18n/useAppTranslations";
 
 interface Props {
   x: number;
@@ -17,6 +18,7 @@ interface Props {
 
 export const Snorkler: React.FC<Props> = ({ x, y }) => {
   const [showModal, setShowModal] = useState(false);
+  const { t } = useAppTranslation();
 
   return (
     <div
@@ -24,7 +26,7 @@ export const Snorkler: React.FC<Props> = ({ x, y }) => {
         width: `${24 * PIXEL_SCALE}px`,
       }}
     >
-      <Modal show={showModal} centered onHide={() => setShowModal(false)}>
+      <Modal show={showModal} onHide={() => setShowModal(false)}>
         <img className="absolute w-48 left-4 -top-32 -z-10" src={bumpkin} />
 
         <Panel>
@@ -39,9 +41,9 @@ export const Snorkler: React.FC<Props> = ({ x, y }) => {
                 width: `${PIXEL_SCALE * 11}px`,
               }}
             />
-            <p>It is a vast ocean!</p>
+            <p>{t("snorkler.vastOcean")}</p>
             <p className="mt-2">
-              There must be gold somewhere beneath the surface.
+              <p>{t("snorkler.goldBeneath")}</p>
             </p>
           </div>
         </Panel>

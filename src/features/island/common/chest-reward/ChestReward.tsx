@@ -1,6 +1,6 @@
 import { Panel } from "components/ui/Panel";
 import React, { useContext, useEffect, useRef, useState } from "react";
-import { Modal } from "react-bootstrap";
+import { Modal } from "components/ui/Modal";
 
 import { InventoryItemName, Reward } from "features/game/types/game";
 
@@ -11,6 +11,9 @@ import { ChestCaptcha } from "features/island/common/chest-reward/ChestCaptcha";
 import { Loading } from "features/auth/components";
 import { ClaimReward } from "features/game/expansion/components/ClaimReward";
 import Decimal from "decimal.js-light";
+import { useAppTranslation } from "lib/i18n/useAppTranslations";
+import { translate } from "lib/i18n/translate";
+import classNames from "classnames";
 
 interface Props {
   collectedItem?: InventoryItemName;
@@ -27,6 +30,7 @@ export const ChestReward: React.FC<Props> = ({
   onCollected,
   onOpen,
 }) => {
+  const { t } = useAppTranslation();
   const { gameService } = useContext(Context);
   const [opened, setOpened] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -64,7 +68,7 @@ export const ChestReward: React.FC<Props> = ({
   const { items, sfl } = reward;
 
   return (
-    <Modal centered show={true}>
+    <Modal show={true}>
       <Panel>
         {loading && <Loading />}
         {opened ? (
@@ -78,14 +82,17 @@ export const ChestReward: React.FC<Props> = ({
                 }, {} as Record<InventoryItemName, number>) ?? {},
               wearables: {},
               sfl: sfl ? new Decimal(sfl).toNumber() : 0,
-              message: "Woohoo! Here is your reward",
+              message: translate("reward.woohoo"),
             }}
             onClose={() => close(true)}
           />
         ) : (
           <div
-            hidden={loading} // render and hide captchas so images have time to load
-            className="flex flex-col items-center justify-between"
+            // render and hide captchas so images have time to load
+            className={classNames(
+              "flex flex-col items-center justify-between",
+              { hidden: loading }
+            )}
           >
             {challenge.current === "goblins" && (
               <StopTheGoblins

@@ -6,13 +6,19 @@ import { PIXEL_SCALE } from "features/game/lib/constants";
 import { CollectibleProps } from "../Collectible";
 import { SUNNYSIDE } from "assets/sunnyside";
 import { LiveProgressBar } from "components/ui/ProgressBar";
-import { Modal } from "react-bootstrap";
+import { Modal } from "components/ui/Modal";
 import { Button } from "components/ui/Button";
 import { Context } from "features/game/GameProvider";
 import { CloseButtonPanel } from "features/game/components/CloseablePanel";
 import { ITEM_DETAILS } from "features/game/types/images";
+import { useAppTranslation } from "lib/i18n/useAppTranslations";
 
-export const TimeWarpTotem: React.FC<CollectibleProps> = ({ createdAt }) => {
+export const TimeWarpTotem: React.FC<CollectibleProps> = ({
+  createdAt,
+  id,
+  location,
+}) => {
+  const { t } = useAppTranslation();
   const { gameService } = useContext(Context);
 
   const [_, setRender] = useState(0);
@@ -32,19 +38,19 @@ export const TimeWarpTotem: React.FC<CollectibleProps> = ({ createdAt }) => {
               className="w-10 mx-auto my-2"
             />
             <p className="text-xs mb-2 text-center">
-              Your Time Warp Totem has expired. Head to the Pumpkin Plaza to
-              discover and craft more magical items to boost your farming
-              abilities!
+              {t("description.time.warp.totem.expired")}
             </p>
           </div>
           <Button
             onClick={() => {
               gameService.send("collectible.burned", {
                 name: "Time Warp Totem",
+                location,
+                id,
               });
             }}
           >
-            Remove
+            {t("remove")}
           </Button>
         </>
       );
@@ -58,8 +64,7 @@ export const TimeWarpTotem: React.FC<CollectibleProps> = ({ createdAt }) => {
             className="w-10 mx-auto my-2"
           />
           <p className="text-xs mb-2 text-center">
-            The Time Warp Totem temporarily boosts your cooking, crops, trees &
-            mineral time. Make the most of it!
+            {t("description.time.warp.totem.temporarily")}
           </p>
         </div>
         <Button
@@ -67,7 +72,7 @@ export const TimeWarpTotem: React.FC<CollectibleProps> = ({ createdAt }) => {
             setShowModal(false);
           }}
         >
-          Got it
+          {t("gotIt")}
         </Button>
       </>
     );
@@ -75,7 +80,7 @@ export const TimeWarpTotem: React.FC<CollectibleProps> = ({ createdAt }) => {
 
   return (
     <>
-      <Modal centered show={showModal}>
+      <Modal show={showModal}>
         <CloseButtonPanel>
           <ModalContent />
         </CloseButtonPanel>

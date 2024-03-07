@@ -2,7 +2,7 @@ import React, { useContext, useState } from "react";
 
 import * as Auth from "features/auth/lib/Provider";
 
-import { Modal } from "react-bootstrap";
+import { Modal } from "components/ui/Modal";
 import { Button } from "components/ui/Button";
 import { Panel } from "components/ui/Panel";
 
@@ -11,7 +11,10 @@ import { TransferAccount } from "./TransferAccount";
 import { CloseButtonPanel } from "features/game/components/CloseablePanel";
 import { SUNNYSIDE } from "assets/sunnyside";
 import { useActor } from "@xstate/react";
-import { removeSocialSession } from "features/auth/actions/social";
+import { WalletContext } from "features/wallet/WalletProvider";
+import { useAppTranslation } from "lib/i18n/useAppTranslations";
+import { DequipBumpkin } from "./DequipBumpkin";
+import { GameWallet } from "features/wallet/Wallet";
 
 interface Props {
   isOpen: boolean;
@@ -19,24 +22,24 @@ interface Props {
 }
 
 export const SubSettings: React.FC<Props> = ({ isOpen, onClose }) => {
+  const { t } = useAppTranslation();
+
   const { authService } = useContext(Auth.Context);
   const { gameService, showAnimations, toggleAnimations } = useContext(Context);
   const [gameState] = useActor(gameService);
 
-  const { farmAddress } = gameState.context;
+  const { walletService } = useContext(WalletContext);
+
+  const { farmAddress, linkedWallet } = gameState.context;
   const isFullUser = farmAddress !== undefined;
 
-  const [view, setView] = useState<"settings" | "transfer">("settings");
+  const [view, setView] = useState<"settings" | "transfer" | "dequip">(
+    "settings"
+  );
 
   const closeAndResetView = () => {
     onClose();
     setView("settings");
-  };
-
-  const onLogout = () => {
-    onClose();
-    removeSocialSession();
-    authService.send("LOGOUT"); // hack used to avoid redundancy
   };
 
   const onToggleAnimations = () => {
@@ -57,25 +60,46 @@ export const SubSettings: React.FC<Props> = ({ isOpen, onClose }) => {
       );
     }
 
+    if (view === "dequip") {
+      return (
+        <Panel className="p-0">
+          <GameWallet action="dequip">
+            <DequipBumpkin onClose={closeAndResetView} />
+          </GameWallet>
+        </Panel>
+      );
+    }
+
+    const showDequipper = !!linkedWallet;
+
     return (
-      <CloseButtonPanel title="Settings" onClose={onClose}>
+      <CloseButtonPanel title={t("advanced")} onClose={onClose}>
         <Button className="col p-1" onClick={onToggleAnimations}>
-          {showAnimations ? "Disable Animations" : "Enable Animations"}
+          {showAnimations
+            ? t("subSettings.disableAnimations")
+            : t("subSettings.enableAnimations")}
         </Button>
-        <Button className="col p-1 mt-2" onClick={onLogout}>
-          Logout
-        </Button>
+
+        {showDequipper && (
+          <Button
+            className="col p-1 mt-2 capitalize"
+            onClick={() => setView("dequip")}
+          >
+            {t("dequipper.dequip")}
+          </Button>
+        )}
+
         {isFullUser && (
           <>
             <Button
               className="col p-1 mt-2"
               onClick={() => setView("transfer")}
             >
-              Transfer Ownership
+              {t("subSettings.transferOwnership")}
             </Button>
 
             <Button className="col p-1 mt-2" onClick={refreshSession}>
-              Refresh
+              {t("refresh")}
             </Button>
 
             <div className="flex items-start">
@@ -84,8 +108,7 @@ export const SubSettings: React.FC<Props> = ({ isOpen, onClose }) => {
                 className="w-12 pt-2 pr-2"
               />
               <span className="text-xs mt-2">
-                Refresh your session to grab the latest changes from the
-                Blockchain. This is useful if you deposited items to your farm.
+                {t("subSettings.refreshDescription")}
               </span>
             </div>
           </>
@@ -95,7 +118,7 @@ export const SubSettings: React.FC<Props> = ({ isOpen, onClose }) => {
   };
 
   return (
-    <Modal show={isOpen} onHide={closeAndResetView} centered>
+    <Modal show={isOpen} onHide={closeAndResetView}>
       {Content()}
     </Modal>
   );

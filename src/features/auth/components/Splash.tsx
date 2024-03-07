@@ -10,10 +10,9 @@ import cossies from "assets/decorations/cossies.png";
 import goblinSwimming from "assets/npcs/goblin_farting.gif";
 import shadow from "assets/npcs/shadow.png";
 
-import { CONFIG } from "lib/config";
 import { PIXEL_SCALE } from "features/game/lib/constants";
-import { InnerPanel, Panel } from "components/ui/Panel";
-import { Modal } from "react-bootstrap";
+import { Panel } from "components/ui/Panel";
+import { Modal } from "components/ui/Modal";
 import { SUNNYSIDE } from "assets/sunnyside";
 import i18n from "lib/i18n";
 import { Button } from "components/ui/Button";
@@ -21,15 +20,14 @@ import { ITEM_DETAILS } from "features/game/types/images";
 import { hasFeatureAccess } from "lib/flags";
 import { GameState } from "features/game/types/game";
 
-const releaseVersion = CONFIG.RELEASE_VERSION as string;
-
 const Languages = () => {
   // Determine the initial language from localStorage or default to 'en'
   const initialLanguage = localStorage.getItem("language") || "en";
   const [language, setLanguage] = useState(initialLanguage);
 
   const toggleLanguage = () => {
-    const newLanguage = language === "en" ? "pt" : "en";
+    const newLanguage =
+      language === "en" ? "pt" : language === "pt" ? "fr" : "en";
     localStorage.setItem("language", newLanguage);
     i18n.changeLanguage(newLanguage);
     setLanguage(newLanguage);
@@ -38,15 +36,27 @@ const Languages = () => {
   const flagImage =
     language === "en"
       ? ITEM_DETAILS["American Flag"].image
-      : ITEM_DETAILS["Brazilian Flag"].image;
-  const languageLabel = language === "en" ? "English" : "Português Brasileiro";
+      : language === "pt"
+      ? ITEM_DETAILS["Brazilian Flag"].image
+      : language === "fr"
+      ? ITEM_DETAILS["French Flag"].image
+      : null;
+
+  const languageLabel =
+    language === "en"
+      ? "English"
+      : language === "pt"
+      ? "Português Brasileiro"
+      : language === "fr"
+      ? "Français"
+      : null;
 
   return (
-    <Button className="mb-2 py-1 text-xs relative" onClick={toggleLanguage}>
+    <Button className="py-1 text-xs relative" onClick={toggleLanguage}>
       <div className="px-8 pr-1">
         <img
           src={flagImage}
-          alt={languageLabel}
+          alt={languageLabel || ""}
           className="h-5 mobile:h-4 ml-2.5 mr-4 absolute left-0 rounded-sm"
         />
         {languageLabel}
@@ -158,32 +168,15 @@ export const Splash: React.FC = ({ children }) => {
         className="absolute"
       />
       {children && (
-        <Modal show={!!children} centered>
+        <Modal show={!!children}>
           <Panel>{children}</Panel>
         </Modal>
       )}
       <div
-        className="absolute bottom-0 right-auto m-1 pointer-events-auto"
-        style={{ zIndex: 1100, margin: `${PIXEL_SCALE * 1}px` }}
+        className="absolute bottom-2 mx-auto pointer-events-auto safe-mb"
+        style={{ zIndex: 1100 }}
       >
         {hasFeatureAccess({} as GameState, "LOCALISATION") && <Languages />}
-      </div>
-      <div
-        className="absolute bottom-0 right-0 m-1 pointer-events-auto"
-        style={{ zIndex: 1100, margin: `${PIXEL_SCALE * 1}px` }}
-      >
-        <InnerPanel>
-          <div className="flex items-center justify-center">
-            <a
-              className="underline text-xxs text-white hover:text-blue-500 p-1"
-              href="https://github.com/sunflower-land/sunflower-land/releases"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              {releaseVersion?.split("-")[0]}
-            </a>
-          </div>
-        </InnerPanel>
       </div>
     </div>
   );

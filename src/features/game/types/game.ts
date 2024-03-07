@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { Decimal } from "decimal.js-light";
 
 import { CropName, CropSeedName } from "./crops";
@@ -20,13 +21,14 @@ import {
   GoblinBlacksmithItemName,
   GoblinPirateItemName,
   HeliosBlacksmithItem,
+  MegaStoreCollectibleName,
   PotionHouseItemName,
   PurchasableItems,
   SoldOutCollectibleName,
 } from "./collectibles";
 import { TreasureToolName } from "./tools";
 import { Chore } from "./chores";
-import { ConversationName } from "./conversations";
+import { ConversationName } from "./announcements";
 import { NPCName } from "lib/npcs";
 import { SeasonalTicket } from "./seasons";
 import { Bud } from "./buds";
@@ -41,6 +43,9 @@ import {
 } from "./fishing";
 import { Coordinates } from "../expansion/components/MapPlacement";
 import { PortalName } from "./portals";
+import { FlowerCrossBreedName, FlowerName, FlowerSeedName } from "./flowers";
+import { translate } from "lib/i18n/translate";
+import { SpecialEvents } from "./specialEvents";
 
 export type Reward = {
   sfl?: Decimal;
@@ -54,7 +59,7 @@ export type FertiliserName = "Rapid Growth";
 
 export const FERTILISERS: Record<FertiliserName, { description: string }> = {
   "Rapid Growth": {
-    description: "Apply to a crop to grow twice as fast",
+    description: translate("description.rapid.growth"),
   },
 };
 
@@ -93,25 +98,25 @@ export type EasterEgg =
 
 export const EASTER_EGG: Record<EasterEgg, { description: string }> = {
   "Red Egg": {
-    description: "A red easter egg",
+    description: translate("description.red.egg"),
   },
   "Orange Egg": {
-    description: "An orange easter egg",
+    description: translate("description.orange.egg"),
   },
   "Green Egg": {
-    description: "A green easter egg",
+    description: translate("description.green.egg"),
   },
   "Blue Egg": {
-    description: "A blue easter egg",
+    description: translate("description.blue.egg"),
   },
   "Pink Egg": {
-    description: "A pink easter egg",
+    description: translate("description.pink.egg"),
   },
   "Purple Egg": {
-    description: "A purple easter egg",
+    description: translate("description.purple.egg"),
   },
   "Yellow Egg": {
-    description: "A yellow easter egg",
+    description: translate("description.yellow.egg"),
   },
 };
 
@@ -135,7 +140,8 @@ export type MutantChicken =
   | "Fat Chicken"
   | "Ayam Cemani"
   | "El Pollo Veloz"
-  | "Banana Chicken";
+  | "Banana Chicken"
+  | "Crim Peckster";
 
 export type Coupons =
   | "Gold Pass"
@@ -153,69 +159,92 @@ export type Coupons =
   | "Bud Seedling"
   | "Community Coin"
   | "Arcade Token"
+  | "Farmhand Coupon"
+  | "Farmhand"
+  | "Treasure Key"
+  | "Rare Key"
+  | "Luxury Key"
+  | "Prize Ticket"
   | SeasonalTicket;
 
 export const COUPONS: Record<Coupons, { description: string }> = {
   "Gold Pass": {
-    description:
-      "An exclusive pass that enables the holder to craft rare NFTs, trade, withdraw and access bonus content.",
+    description: translate("description.gold.pass"),
   },
   "Trading Ticket": {
-    description: "Free Trades! Woohoo!",
+    description: translate("description.trading.ticket"),
   },
   "War Bond": {
-    description: "A mark of a true warrior",
+    description: translate("description.war.bond"),
   },
   "Jack-o-lantern": {
-    description: "A Halloween special event item",
+    description: translate("description.jack.o.lantern"),
   },
   "Golden Crop": {
-    description: "A shiny golden crop",
+    description: translate("description.golden.crop"),
   },
   "Beta Pass": {
-    description: "Gain early access to features for testing.",
+    description: translate("description.beta.pass"),
   },
   "Red Envelope": {
-    description: "Someone was lucky!",
+    description: translate("description.red.envelope"),
   },
   "Love Letter": {
-    description: "Convey feelings of love",
+    description: translate("description.love.letter"),
   },
   "Block Buck": {
-    description: "A valuable token in Sunflower Land!",
+    description: translate("description.block.buck"),
   },
   "Solar Flare Ticket": {
-    description: "A ticket used during the Solar Flare Season",
+    description: translate("description.solar.flare.ticket"),
   },
   "Dawn Breaker Ticket": {
-    description: "A ticket used during the Dawn Breaker Season",
+    description: translate("description.dawn.breaker.ticket"),
   },
   "Crow Feather": {
-    description: "A ticket used during the Witches' Eve Season",
+    description: translate("description.crow.feather"),
   },
   "Sunflower Supporter": {
-    description: "A community and social media supporter of the project",
+    description: translate("description.sunflower.supporter"),
   },
   "Potion Ticket": {
-    description:
-      "A reward from the Potion House. Use this to buy items from Garth.",
+    description: translate("description.potion.ticket"),
   },
   "Bud Ticket": {
-    description:
-      "A guaranteed spot to mint a Bud at the Sunflower Land Buds NFT drop.",
+    description: translate("description.bud.ticket"),
   },
   "Bud Seedling": {
-    description: "A seedling to be exchanged for a free Bud NFT",
+    description: translate("description.bud.seedling"),
   },
   "Mermaid Scale": {
-    description: "A ticket used during the Catch the Kraken Season",
+    description: translate("description.mermaid.scale"),
   },
   "Community Coin": {
-    description: "A valued coin that can be exchanged for rewards",
+    description: translate("description.community.coin"),
   },
   "Arcade Token": {
-    description:
-      "A token earned from mini-games and adventures. Can be exchanged for rewards.",
+    description: translate("description.arcade.coin"),
+  },
+  "Farmhand Coupon": {
+    description: translate("description.farmhand.coupon"),
+  },
+  Farmhand: {
+    description: translate("description.farmhand"),
+  },
+  "Tulip Bulb": {
+    description: translate("description.tulip.bulb"),
+  },
+  "Treasure Key": {
+    description: translate("description.treasure.key"),
+  },
+  "Luxury Key": {
+    description: translate("description.luxury.key"),
+  },
+  "Rare Key": {
+    description: translate("description.rare.key"),
+  },
+  "Prize Ticket": {
+    description: translate("description.prizeTicket"),
   },
 };
 
@@ -251,6 +280,7 @@ export type InventoryItemName =
   | MutantCropName
   | FruitName
   | FruitSeedName
+  | FlowerSeedName
   | CraftableName
   | CommodityName
   | ResourceName
@@ -284,7 +314,9 @@ export type InventoryItemName =
   | FishingBait
   | CompostName
   | FishName
-  | MarineMarvelName;
+  | MarineMarvelName
+  | FlowerName
+  | MegaStoreCollectibleName;
 
 export type Inventory = Partial<Record<InventoryItemName, Decimal>>;
 
@@ -334,19 +366,6 @@ export type WarCollectionOffer = {
   }[];
 };
 
-export type GrubShopOrder = {
-  id: string;
-  name: CookableName;
-  sfl: Decimal;
-};
-
-// TODO - we need to store the opening and closing times for the shop
-export type GrubShop = {
-  opensAt: number;
-  closesAt: number;
-  orders: GrubShopOrder[];
-};
-
 export type Position = {
   x: number;
   y: number;
@@ -363,7 +382,7 @@ export type PlantedCrop = {
   id?: string;
   name: CropName;
   plantedAt: number;
-  amount?: number;
+  amount: number;
   reward?: Reward;
 };
 
@@ -384,6 +403,10 @@ export type Stone = {
   // Epoch time in milliseconds
   minedAt: number;
 };
+
+export type FiniteResource = {
+  minesLeft: number;
+} & Rock;
 
 export type Rock = {
   stone: Stone;
@@ -528,6 +551,16 @@ export type CatchTheKraken = {
   hunger: InventoryItemName;
 };
 
+export type SpringBlossom = {
+  weeklyFlower: FlowerName;
+  collectedFlowerPages: number[];
+  tradedFlowerShop?: boolean;
+};
+
+export type FarmHand = {
+  equipped: BumpkinParts;
+};
+
 export type Mushroom = {
   name: MushroomName;
   amount: number;
@@ -644,6 +677,12 @@ export type NPCS = Partial<Record<NPCName, NPCData>>;
 export type NPCData = {
   deliveryCount: number;
   questCompletedAt?: number;
+  friendship?: {
+    updatedAt: number;
+    points: number;
+    giftClaimedAtPoints?: number;
+    giftedAt?: number;
+  };
 };
 
 export type ChoreV2 = {
@@ -722,14 +761,17 @@ export type TradeListing = {
   buyerId?: number;
 };
 
+type FishingSpot = {
+  castedAt?: number;
+  bait?: FishingBait;
+  chum?: InventoryItemName;
+  caught?: Partial<Record<InventoryItemName, number>>;
+};
+
 export type Fishing = {
   weather: FishingConditions;
-  wharf: {
-    castedAt?: number;
-    bait?: FishingBait;
-    chum?: InventoryItemName;
-    caught?: Partial<Record<InventoryItemName, number>>;
-  };
+  wharf: FishingSpot;
+  beach: FishingSpot;
   dailyAttempts?: {
     [date: string]: number;
   };
@@ -745,7 +787,90 @@ export type Christmas = {
   >;
 };
 
+export type Currency =
+  | "SFL"
+  | "Block Buck"
+  | "Crimstone"
+  | "Sunstone"
+  | "Seasonal Ticket";
+
+type ItemBase = {
+  shortDescription: string;
+  currency: Currency;
+  price: Decimal;
+  limit: number | null;
+  type: "wearable" | "collectible";
+};
+
+export type WearablesItem = {
+  name: BumpkinItem;
+} & ItemBase;
+
+export type CollectiblesItem = {
+  name: InventoryItemName;
+} & ItemBase;
+
+export type MegaStoreItemName = BumpkinItem | InventoryItemName;
+
+export type MegaStoreItem = WearablesItem | CollectiblesItem;
+
+export type MegaStore = {
+  available: {
+    from: number;
+    to: number;
+  };
+  wearables: WearablesItem[];
+  collectibles: CollectiblesItem[];
+};
+
+export type IslandType = "basic" | "spring" | "desert";
+
+export type Home = {
+  collectibles: Collectibles;
+};
+
+export type PlantedFlower = {
+  name: FlowerName;
+  plantedAt: number;
+  amount: number;
+  crossbreed?: FlowerCrossBreedName;
+  dirty?: boolean;
+};
+
+export type FlowerBed = {
+  flower?: PlantedFlower;
+  createdAt: number;
+} & Position;
+
+export type FlowerBeds = Record<string, FlowerBed>;
+
+export type AttachedFlower = {
+  id: string;
+  attachedAt: number;
+  attachedUntil: number;
+  rate?: number;
+};
+
+export type Beehive = {
+  swarm: boolean;
+  honey: {
+    updatedAt: number;
+    produced: number;
+  };
+  flowers: AttachedFlower[];
+} & Position;
+
+export type Beehives = Record<string, Beehive>;
+
 export interface GameState {
+  home: Home;
+
+  island: {
+    type: IslandType;
+    upgradedAt?: number;
+    previousExpansions?: number;
+  };
+
   username?: string;
   balance: Decimal;
   previousBalance: Decimal;
@@ -762,6 +887,10 @@ export interface GameState {
   islands?: Record<string, CommunityIsland>;
   portals?: Partial<Record<PortalName, Portal>>;
 
+  farmHands: {
+    bumpkins: Record<string, FarmHand>;
+  };
+
   chickens: Record<string, Chicken>;
   inventory: Inventory;
   previousInventory: Inventory;
@@ -776,26 +905,30 @@ export interface GameState {
   stones: Record<string, Rock>;
   gold: Record<string, Rock>;
   iron: Record<string, Rock>;
+  crimstones: Record<string, FiniteResource>;
+  sunstones: Record<string, FiniteResource>;
+
   crops: Record<string, CropPlot>;
   fruitPatches: Record<string, FruitPatch>;
+  beehives: Beehives;
+  flowers: {
+    discovered: Partial<Record<FlowerName, FlowerCrossBreedName[]>>;
+    flowerBeds: FlowerBeds;
+  };
   fishing: Fishing;
   farmActivity: Partial<Record<FarmActivityName, number>>;
   milestones: Partial<Record<MilestoneName, number>>;
 
   expansionConstruction?: ExpansionConstruction;
-  expansionRequirements?: ExpansionRequirements;
   expandedAt?: number;
 
+  // TODO - make mandatory
   bumpkin?: Bumpkin;
+
   buildings: Buildings;
   collectibles: Collectibles;
   delivery: Delivery;
   npcs?: NPCS;
-  grubShop?: GrubShop;
-  grubOrdersFulfilled?: {
-    id: string;
-    fulfilledAt: number;
-  }[];
   treasureIsland?: {
     holes: Record<number, TreasureHole>;
     rareTreasure?: {
@@ -837,6 +970,9 @@ export interface GameState {
   buds?: Record<number, Bud>;
 
   christmas?: Christmas;
+  springBlossom: Record<number, SpringBlossom>;
+  megastore: MegaStore;
+  specialEvents: SpecialEvents;
 }
 
 export interface Context {

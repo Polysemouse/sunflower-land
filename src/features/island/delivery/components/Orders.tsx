@@ -15,15 +15,10 @@ import chest from "assets/icons/chest.png";
 
 import { DynamicNFT } from "features/bumpkins/components/DynamicNFT";
 import { Context } from "features/game/GameProvider";
-import {
-  BETA_DELIVERY_END_DATE,
-  DELIVERY_END_DATE,
-  getDeliverySlots,
-  getOrderSellPrice,
-} from "features/game/events/landExpansion/deliver";
+import { getOrderSellPrice } from "features/game/events/landExpansion/deliver";
 import { PIXEL_SCALE } from "features/game/lib/constants";
 import { getKeys } from "features/game/types/craftables";
-import { Bumpkin, Order } from "features/game/types/game";
+import { Order } from "features/game/types/game";
 import { ITEM_DETAILS } from "features/game/types/images";
 import { NPC } from "features/island/bumpkin/components/NPC";
 
@@ -33,7 +28,6 @@ import { acknowledgeOrders, generateDeliveryMessage } from "../lib/delivery";
 import { RequirementLabel } from "components/ui/RequirementsLabel";
 import { Button } from "components/ui/Button";
 import { OuterPanel } from "components/ui/Panel";
-import { hasFeatureAccess } from "lib/flags";
 import { MachineState } from "features/game/lib/gameMachine";
 import { getSeasonalTicket } from "features/game/types/seasons";
 import { secondsTillReset } from "features/helios/components/hayseedHank/HayseedHankV2";
@@ -42,6 +36,7 @@ import { Revealing } from "features/game/components/Revealing";
 import { Revealed } from "features/game/components/Revealed";
 import { Label } from "components/ui/Label";
 import { getSeasonChangeover } from "lib/utils/getSeasonWeek";
+import { useAppTranslation } from "lib/i18n/useAppTranslations";
 
 // Bumpkins
 export const BEACH_BUMPKINS: NPCName[] = [
@@ -61,7 +56,6 @@ interface Props {
 const _delivery = (state: MachineState) => state.context.state.delivery;
 const _inventory = (state: MachineState) => state.context.state.inventory;
 const _balance = (state: MachineState) => state.context.state.balance;
-const _bumpkin = (state: MachineState) => state.context.state.bumpkin;
 
 export const DeliveryOrders: React.FC<Props> = ({ selectedId, onSelect }) => {
   const { gameService } = useContext(Context);
@@ -69,39 +63,19 @@ export const DeliveryOrders: React.FC<Props> = ({ selectedId, onSelect }) => {
   const delivery = useSelector(gameService, _delivery);
   const inventory = useSelector(gameService, _inventory);
   const balance = useSelector(gameService, _balance);
-  const bumpkin = useSelector(gameService, _bumpkin);
 
   const [showSkipDialog, setShowSkipDialog] = useState(false);
   const [isRevealing, setIsRevealing] = useState(false);
 
   const gameState = gameService.state.context.state;
 
-  let orders = delivery.orders
+  const orders = delivery.orders
     .filter((order) => Date.now() >= order.readyAt)
     .sort((a, b) => (a.createdAt < b.createdAt ? -1 : 1));
 
-  if (!hasFeatureAccess(gameState, "BEACH")) {
-    orders = orders.filter(
-      (o) =>
-        // Filter out beach NPCs
-        !(
-          [
-            "corale",
-            "tango",
-            "finley",
-            "finn",
-            "miranda",
-            "shelly",
-          ] as NPCName[]
-        ).includes(o.from)
-    );
-  }
-
-  const skippedAt = delivery.skippedAt ?? 0;
-
   useEffect(() => {
     acknowledgeOrders(delivery);
-  }, [delivery.orders]);
+  }, [delivery, delivery.orders]);
 
   let previewOrder = delivery.orders.find((order) => order.id === selectedId);
 
@@ -139,12 +113,7 @@ export const DeliveryOrders: React.FC<Props> = ({ selectedId, onSelect }) => {
 
   const nextOrder = delivery.orders.find((order) => order.readyAt > Date.now());
   const skippedOrder = delivery.orders.find((order) => order.id === "skipping");
-
-  const canFulfill = hasRequirements(previewOrder as Order);
-
-  const slots = getDeliverySlots(inventory);
-  let emptySlots = slots - orders.length - (nextOrder ? 1 : 0);
-  emptySlots = Math.max(0, emptySlots);
+  const { t } = useAppTranslation();
 
   const progress = Math.min(
     delivery.milestone.goal,
@@ -173,6 +142,10 @@ export const DeliveryOrders: React.FC<Props> = ({ selectedId, onSelect }) => {
   const { tasksAreClosing, tasksStartAt, tasksCloseAt, tasksAreFrozen } =
     getSeasonChangeover({ id: gameService.state.context.farmId });
 
+  const showMilestones =
+    delivery.fulfilledCount > 0 &&
+    (delivery.milestone.claimedAt ?? 0) < new Date("2024-02-15").getTime();
+
   return (
     <div className="flex md:flex-row flex-col-reverse md:mr-1">
       <div
@@ -180,54 +153,54 @@ export const DeliveryOrders: React.FC<Props> = ({ selectedId, onSelect }) => {
           hidden: selectedId,
         })}
       >
-        <div
-          className="flex relative mx-auto m-2"
-          style={{ width: "fit-content" }}
-        >
-          <ResizableBar
-            percentage={(progress / delivery.milestone.goal) * 100}
-            type="progress"
-            outerDimensions={{
-              width: 80,
-              height: 10,
-            }}
-          />
-          <span
-            className="absolute text-xs"
-            style={{
-              left: "93px",
-              top: "3px",
-              fontSize: "16px",
-            }}
+        {showMilestones && (
+          <div
+            className="flex relative mx-auto m-2"
+            style={{ width: "fit-content" }}
           >
-            {`${progress}/${delivery.milestone.goal}`}
-          </span>
-          <img
-            src={chest}
-            className={classNames("absolute h-8 shadow-lg", {
-              "ready cursor-pointer img-highlight-heavy":
-                progress >= delivery.milestone.goal && !isRevealing,
-            })}
-            onClick={() => {
-              if (progress < delivery.milestone.goal) {
-                return;
-              }
+            <ResizableBar
+              percentage={(progress / delivery.milestone.goal) * 100}
+              type="progress"
+              outerDimensions={{
+                width: 80,
+                height: 10,
+              }}
+            />
+            <span
+              className="absolute text-xs"
+              style={{
+                left: "93px",
+                top: "3px",
+                fontSize: "16px",
+              }}
+            >
+              {`${progress}/${delivery.milestone.goal}`}
+            </span>
+            <img
+              src={chest}
+              className={classNames("absolute h-8 shadow-lg", {
+                "ready cursor-pointer img-highlight-heavy":
+                  progress >= delivery.milestone.goal && !isRevealing,
+              })}
+              onClick={() => {
+                if (progress < delivery.milestone.goal) {
+                  return;
+                }
 
-              reachMilestone();
-            }}
-            style={{
-              right: 0,
-              top: "-4px",
-            }}
-          />
-        </div>
+                reachMilestone();
+              }}
+              style={{
+                right: 0,
+                top: "-4px",
+              }}
+            />
+          </div>
+        )}
         {
           // Give 24 hours heads up before tasks close
           tasksAreClosing && (
             <div className="flex flex-col items-center">
-              <p className="text-xs text-center">
-                A new season approaches, deliveries will temporarily close.
-              </p>
+              <p className="text-xs text-center">{t("orderhelp.New.Season")}</p>
               <Label type="info" icon={SUNNYSIDE.icons.timer} className="mt-1">
                 {secondsToString((tasksCloseAt - Date.now()) / 1000, {
                   length: "full",
@@ -239,7 +212,7 @@ export const DeliveryOrders: React.FC<Props> = ({ selectedId, onSelect }) => {
         {tasksAreFrozen && (
           <div className="flex flex-col items-center">
             <p className="text-xs text-center">
-              New Seasonal Deliveries opening soon.
+              {t("orderhelp.New.Season.arrival")}
             </p>
             <Label
               type="info"
@@ -258,7 +231,7 @@ export const DeliveryOrders: React.FC<Props> = ({ selectedId, onSelect }) => {
             <div className="w-1/2 sm:w-1/3 p-1" key={order.id}>
               <OuterPanel
                 onClick={() => select(order.id)}
-                className="w-full cursor-pointer hover:bg-brown-200 py-2 relative"
+                className="w-full cursor-pointer hover:bg-brown-200 !py-2 relative"
                 style={{ height: "80px" }}
               >
                 {hasRequirements(order) && !order.completedAt && (
@@ -294,10 +267,7 @@ export const DeliveryOrders: React.FC<Props> = ({ selectedId, onSelect }) => {
                         <div className="flex items-center mt-1">
                           <img src={sfl} className="h-5 mr-1" />
                           <span className="text-xs">
-                            {getOrderSellPrice(
-                              bumpkin as Bumpkin,
-                              order
-                            ).toFixed(2)}
+                            {getOrderSellPrice(gameState, order).toFixed(2)}
                           </span>
                         </div>
                       )}
@@ -377,10 +347,12 @@ export const DeliveryOrders: React.FC<Props> = ({ selectedId, onSelect }) => {
           {nextOrder && !skippedOrder && (
             <div className="w-1/2 sm:w-1/3 p-1">
               <OuterPanel
-                className="w-full py-2 relative"
+                className="w-full !py-2 relative"
                 style={{ height: "80px" }}
               >
-                <p className="text-center mb-0.5 mt-1 text-sm">Next order:</p>
+                <p className="text-center mb-0.5 mt-1 text-sm">
+                  {t("next.order")}{" "}
+                </p>
                 <div className="flex justify-center items-center">
                   <img src={SUNNYSIDE.icons.timer} className="h-4 mr-2" />
                   <p className="text-xs">
@@ -395,29 +367,26 @@ export const DeliveryOrders: React.FC<Props> = ({ selectedId, onSelect }) => {
           {skippedOrder && (
             <div className="w-1/2 sm:w-1/3 p-1">
               <OuterPanel
-                className="w-full py-2 relative"
+                className="w-full !py-2 relative"
                 style={{ height: "80px" }}
               >
                 <p className="text-center mb-0.5 mt-1 text-sm loading">
-                  Skipping
+                  {t("skipping")}
                 </p>
               </OuterPanel>
             </div>
           )}
-          {((!!inventory["Beta Pass"] &&
-            Date.now() >
-              BETA_DELIVERY_END_DATE.getTime() - 24 * 60 * 60 * 1000) ||
-            Date.now() > DELIVERY_END_DATE.getTime() - 24 * 60 * 60 * 1000) && (
-            <div className="flex items-center mb-1 mt-2">
-              <div className="w-6">
-                <img src={SUNNYSIDE.icons.timer} className="h-4 mx-auto" />
-              </div>
-              <span className="text-xs">{`New deliveries available in ${secondsToString(
-                secondsTillReset(),
-                { length: "medium" }
-              )}.`}</span>
+          <div className="flex items-center mb-1 mt-2">
+            <div className="w-6">
+              <img src={SUNNYSIDE.icons.timer} className="h-4 mx-auto" />
             </div>
-          )}
+            <span className="text-xs">
+              {t("new.delivery.in")}{" "}
+              {`${secondsToString(secondsTillReset(), {
+                length: "medium",
+              })}.`}
+            </span>
+          </div>
         </div>
       </div>
       {previewOrder && (
@@ -426,26 +395,21 @@ export const DeliveryOrders: React.FC<Props> = ({ selectedId, onSelect }) => {
             "ml-1 md:flex md:flex-col items-center flex-1 relative",
             {
               hidden: !selectedId,
-              "mt-[24px] md:mt-0": hasFeatureAccess(
-                gameState,
-                "NEW_DELIVERIES"
-              ),
+              "mt-[24px] md:mt-0": true,
             }
           )}
         >
-          {hasFeatureAccess(gameState, "NEW_DELIVERIES") && (
-            <img
-              src={SUNNYSIDE.icons.arrow_left}
-              className={classNames(
-                "absolute -top-9 left-0 h-6 w-6 cursor-pointer md:hidden z-10",
-                {
-                  hidden: !selectedId,
-                  block: !!selectedId,
-                }
-              )}
-              onClick={() => onSelect(undefined)}
-            />
-          )}
+          <img
+            src={SUNNYSIDE.icons.arrow_left}
+            className={classNames(
+              "absolute -top-9 left-0 h-6 w-6 cursor-pointer md:hidden z-10",
+              {
+                hidden: !selectedId,
+                block: !!selectedId,
+              }
+            )}
+            onClick={() => onSelect(undefined)}
+          />
           <div
             className="mb-1 mx-auto w-full col-start-1 row-start-1 overflow-hidden z-0 rounded-lg relative"
             style={{
@@ -476,13 +440,11 @@ export const DeliveryOrders: React.FC<Props> = ({ selectedId, onSelect }) => {
           {showSkipDialog && (
             <>
               <div className="flex-1 space-y-2 p-1">
-                <p className="text-xs">
-                  {"You're only able to skip an order after 24 hours!"}
-                </p>
-                {canSkip && <p className="text-xs">Choose wisely!</p>}
+                <p className="text-xs">{t("orderhelp.Skip.hour")}</p>
+                {canSkip && <p className="text-xs">{t("choose.wisely")}</p>}
                 {!canSkip && (
                   <>
-                    <p className="text-xs">Skip in:</p>
+                    <p className="text-xs">{t("orderhelp.SkipIn")}</p>
                     <div className="flex-1">
                       <RequirementLabel
                         type="time"
@@ -495,15 +457,17 @@ export const DeliveryOrders: React.FC<Props> = ({ selectedId, onSelect }) => {
               {canSkip && (
                 <>
                   <Button onClick={() => setShowSkipDialog(false)}>
-                    Not Right Now
+                    {t("orderhelp.NoRight")}
                   </Button>
                   <Button onClick={skip} className="mt-1">
-                    Skip Order
+                    {t("skip.order")}
                   </Button>
                 </>
               )}
               {!canSkip && (
-                <Button onClick={() => setShowSkipDialog(false)}>Back</Button>
+                <Button onClick={() => setShowSkipDialog(false)}>
+                  {t("back")}
+                </Button>
               )}
             </>
           )}
@@ -519,11 +483,11 @@ export const DeliveryOrders: React.FC<Props> = ({ selectedId, onSelect }) => {
 
                 {BEACH_BUMPKINS.includes(previewOrder.from) ? (
                   <Label type="default" icon={worldIcon} className="ml-1">
-                    Beach
+                    {t("island.beach")}
                   </Label>
                 ) : (
                   <Label type="default" icon={worldIcon} className="ml-1">
-                    Pumpkin Plaza
+                    {t("island.pumpkin.plaza")}
                   </Label>
                 )}
               </div>
@@ -559,14 +523,15 @@ export const DeliveryOrders: React.FC<Props> = ({ selectedId, onSelect }) => {
               {previewOrder.completedAt ? (
                 <div className="flex">
                   <img src={SUNNYSIDE.icons.confirm} className="mr-2 h-4" />
-                  <p className="text-xxs">Completed</p>
+                  <p className="text-xxs">{t("completed")}</p>
                 </div>
               ) : (
                 <p
                   className="underline text-xxs pb-1 pt-0.5 cursor-pointer hover:text-blue-500"
                   onClick={() => setShowSkipDialog(true)}
                 >
-                  Skip order?
+                  {t("skip.order")}
+                  {"?"}
                 </p>
               )}
             </div>
@@ -577,7 +542,7 @@ export const DeliveryOrders: React.FC<Props> = ({ selectedId, onSelect }) => {
               className="mb-1"
               icon={SUNNYSIDE.icons.stopwatch}
             >
-              Deliveries closed
+              {t("deliveries.closed")}
             </Label>
           )}
         </OuterPanel>

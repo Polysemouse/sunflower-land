@@ -7,38 +7,43 @@ import { Inventory } from "features/game/types/game";
 import { ITEM_DETAILS } from "features/game/types/images";
 import { CROP_SEEDS, SEEDS, SeedName } from "features/game/types/seeds";
 import React, { useState } from "react";
+import { useAppTranslation } from "lib/i18n/useAppTranslations";
 
 interface Props {
   onPlant: (seed: SeedName) => void;
   inventory: Inventory;
 }
 export const SeedSelection: React.FC<Props> = ({ onPlant, inventory }) => {
+  const { t } = useAppTranslation();
+
   const [seed, setSeed] = useState<SeedName>();
 
   const availableSeeds = getKeys(CROP_SEEDS()).filter((name) =>
     inventory[name]?.gte(1)
   );
 
+  const yields = seed && SEEDS()[seed].yield;
+
   return (
     <>
       <div className="p-2">
         {!seed && (
           <Label className="mb-1" icon={SUNNYSIDE.icons.seeds} type="danger">
-            Seed not selected
+            {t("availableSeeds.select")}
           </Label>
         )}
 
         {seed && (
           <Label
             className="mb-1"
-            icon={ITEM_DETAILS[SEEDS()[seed].yield].image}
+            icon={yields && ITEM_DETAILS[yields].image}
             type="default"
           >
             {seed}
           </Label>
         )}
 
-        <p className="text-xs">What seed would you like to select and plant?</p>
+        <p className="text-xs">{t("availableSeeds.select.plant")}</p>
         <div className="flex flex-wrap my-1">
           {availableSeeds.map((name) => (
             <Box
@@ -57,7 +62,7 @@ export const SeedSelection: React.FC<Props> = ({ onPlant, inventory }) => {
           onPlant(seed as SeedName);
         }}
       >
-        Plant
+        {t("plant")}
       </Button>
     </>
   );

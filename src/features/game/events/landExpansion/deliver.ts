@@ -2,22 +2,19 @@ import Decimal from "decimal.js-light";
 import { trackActivity } from "features/game/types/bumpkinActivity";
 import { COOKABLE_CAKES } from "features/game/types/consumables";
 import { getKeys } from "features/game/types/craftables";
-import {
-  Bumpkin,
-  GameState,
-  Inventory,
-  NPCData,
-  Order,
-} from "features/game/types/game";
+import { GameState, Inventory, NPCData, Order } from "features/game/types/game";
+import { BUMPKIN_GIFTS } from "features/game/types/gifts";
 import { getSeasonalTicket } from "features/game/types/seasons";
-import { hasFeatureAccess } from "lib/flags";
 import { NPCName } from "lib/npcs";
 import { getSeasonChangeover } from "lib/utils/getSeasonWeek";
 import cloneDeep from "lodash.clonedeep";
+import { isWearableActive } from "features/game/lib/wearables";
+import { translate } from "lib/i18n/translate";
 
 export type DeliverOrderAction = {
   type: "order.delivered";
   id: string;
+  friendship?: boolean; // TEMP
 };
 
 type Options = {
@@ -27,40 +24,11 @@ type Options = {
   farmId?: number;
 };
 
-export const BETA_DELIVERY_END_DATE = new Date("2023-08-15");
-export const DELIVERY_END_DATE = new Date("2023-08-16");
-export function canGenerateDeliveries({
-  game,
-  now,
-}: {
-  game: GameState;
-  now: number;
-}) {
-  // Monday 14th August (Beta Testers)
-  if (
-    !!game.inventory["Beta Pass"] &&
-    now >= BETA_DELIVERY_END_DATE.getTime()
-  ) {
-    return false;
-  }
-
-  // Wednesday 16th August
-  if (now >= DELIVERY_END_DATE.getTime()) {
-    return false;
-  }
-
-  return true;
-}
-
 export function getTotalSlots(game: GameState) {
   // If feature access then return the total number of slots from both delivery and quest
   // else just delivery
 
-  if (hasFeatureAccess(game, "NEW_DELIVERIES")) {
-    return getDeliverySlots(game.inventory) + getQuestSlots(game.inventory);
-  }
-
-  return getDeliverySlots(game.inventory);
+  return getDeliverySlots(game.inventory) + getQuestSlots(game.inventory);
 }
 
 export function getDeliverySlots(inventory: Inventory) {
@@ -109,6 +77,8 @@ export type QuestNPCName =
 
 const QUEST_NPC_NAMES = ["pumpkin' pete", "raven", "bert", "timmy", "tywin"];
 
+const DELIVERY_FRIENDSHIP_POINTS = 3;
+
 export function isOfQuestNPCType(value: string): value is QuestNPCName {
   return (QUEST_NPC_NAMES as string[]).includes(value);
 }
@@ -148,19 +118,17 @@ const clone = (state: GameState): GameState => {
   return cloneDeep(state);
 };
 
-export function getOrderSellPrice(bumpkin: Bumpkin, order: Order) {
-  const { skills } = bumpkin;
-
+export function getOrderSellPrice(game: GameState, order: Order) {
   let mul = 1;
 
-  if (skills["Michelin Stars"]) {
+  if (game.bumpkin?.skills["Michelin Stars"]) {
     mul += 0.05;
   }
 
   const items = getKeys(order.items);
   if (
     items.some((name) => name in COOKABLE_CAKES) &&
-    bumpkin.equipped.coat == "Chef Apron"
+    isWearableActive({ name: "Chef Apron", game })
   ) {
     mul += 0.2;
   }
@@ -178,7 +146,7 @@ export function deliverOrder({
   const bumpkin = game.bumpkin;
 
   if (!bumpkin) {
-    throw new Error("You do not have a Bumpkin");
+    throw new Error(translate("no.have.bumpkin"));
   }
 
   const order = game.delivery.orders.find((order) => order.id === action.id);
@@ -189,6 +157,10 @@ export function deliverOrder({
 
   if (order.readyAt > Date.now()) {
     throw new Error("Order has not started");
+  }
+
+  if (order.completedAt) {
+    throw new Error("Order is already completed");
   }
 
   const { tasksAreFrozen } = getSeasonChangeover({
@@ -222,7 +194,7 @@ export function deliverOrder({
   });
 
   if (order.reward.sfl) {
-    const sfl = getOrderSellPrice(bumpkin, order);
+    const sfl = getOrderSellPrice(game, order);
     game.balance = game.balance.add(sfl);
 
     bumpkin.activity = trackActivity("SFL Earned", bumpkin.activity, sfl);
@@ -245,6 +217,15 @@ export function deliverOrder({
 
   npc.deliveryCount = completedDeliveries + 1;
 
+  if (action.friendship && BUMPKIN_GIFTS[order.from]) {
+    npc.friendship = {
+      updatedAt: createdAt,
+      points: (npc.friendship?.points ?? 0) + DELIVERY_FRIENDSHIP_POINTS,
+      giftClaimedAtPoints: npc.friendship?.giftClaimedAtPoints ?? 0,
+      giftedAt: npc.friendship?.giftedAt,
+    };
+  }
+
   game.npcs = {
     ...npcs,
     [order.from]: npc,
@@ -252,18 +233,8 @@ export function deliverOrder({
 
   // bumpkin.activity = trackActivity(`${order.from} Delivered`, 1);
 
-  const generateMore = canGenerateDeliveries({ game, now: Date.now() });
-
-  if (generateMore) {
-    game.delivery.orders = game.delivery.orders.filter(
-      (order) => order.id !== action.id
-    );
-
-    game.delivery.orders = populateOrders(game, Date.now());
-  } else {
-    // Mark as complete
-    order.completedAt = Date.now();
-  }
+  // Mark as complete
+  order.completedAt = Date.now();
 
   return game;
 }

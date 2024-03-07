@@ -6,31 +6,16 @@ import arrow_next from "assets/icons/arrow_next.png";
 import arrow_previous from "assets/icons/arrow_previous.png";
 import sound_on from "assets/icons/sound_on.png";
 import sound_off from "assets/icons/sound_off.png";
-import { Modal } from "react-bootstrap";
+import { Modal } from "components/ui/Modal";
 import { CloseButtonPanel } from "./CloseablePanel";
 import { Song } from "assets/songs/playlist";
 import { PIXEL_SCALE } from "../lib/constants";
-
-enum AudioLocalStorageKeys {
-  audioMuted = "settings.audioMuted",
-  musicPaused = "settings.musicPaused",
-}
-
-function cacheAudioSetting(
-  key: AudioLocalStorageKeys,
-  value: boolean | number
-) {
-  localStorage.setItem(key, JSON.stringify(value));
-}
-
-function getCachedAudioSetting<T>(
-  key: AudioLocalStorageKeys,
-  defaultValue: T
-): T {
-  const cached = localStorage.getItem(key);
-
-  return cached ? JSON.parse(cached) : defaultValue;
-}
+import {
+  AudioLocalStorageKeys,
+  cacheAudioSetting,
+  getCachedAudioSetting,
+} from "../lib/audio";
+import { useAppTranslation } from "lib/i18n/useAppTranslations";
 
 interface Props {
   musicPlayer: React.MutableRefObject<HTMLAudioElement>;
@@ -49,6 +34,7 @@ export const AudioMenu: React.FC<Props> = ({
   show,
   onClose,
 }) => {
+  const { t } = useAppTranslation();
   const [audioMuted, setAudioMuted] = useState<boolean>(
     getCachedAudioSetting<boolean>(AudioLocalStorageKeys.audioMuted, false)
   );
@@ -64,20 +50,23 @@ export const AudioMenu: React.FC<Props> = ({
   }, [audioMuted]);
 
   useEffect(() => {
-    if (musicPlayer.current) {
-      if (musicPaused) {
-        musicPlayer.current.pause();
-      } else {
-        musicPlayer.current.play();
-        musicPlayer.current.muted = false;
-      }
+    if (!musicPlayer.current) return;
+
+    if (musicPaused) {
+      musicPlayer.current.pause();
+    } else {
+      musicPlayer.current.play();
+      musicPlayer.current.muted = false;
     }
+
     cacheAudioSetting(AudioLocalStorageKeys.musicPaused, musicPaused);
   }, [musicPaused]);
 
   useEffect(() => {
     // https://developer.mozilla.org/en-US/docs/Web/API/Document/visibilitychange_event
     document.addEventListener("visibilitychange", () => {
+      if (!musicPlayer.current) return;
+
       if (document.visibilityState === "visible") {
         if (!musicPaused) {
           musicPlayer.current.play();
@@ -92,10 +81,10 @@ export const AudioMenu: React.FC<Props> = ({
   }, []);
 
   return (
-    <Modal show={show} centered onHide={onClose}>
+    <Modal show={show} onHide={onClose}>
       <CloseButtonPanel title="Audio Settings" onClose={onClose}>
         <div className="p-1 relative">
-          <p className="mb-2">Music</p>
+          <p className="mb-2">{t("music")}</p>
           {/* Music display */}
           <div className="mb-1.5 overflow-hidden bg-brown-200 ">
             <p
@@ -106,7 +95,7 @@ export const AudioMenu: React.FC<Props> = ({
                 animationPlayState: musicPaused ? "paused" : "running",
               }}
             >
-              {song.name} - {song.artist}
+              {song.name} {"-"} {song.artist}
             </p>
           </div>
 
@@ -142,7 +131,9 @@ export const AudioMenu: React.FC<Props> = ({
           </div>
 
           {/* Sound effects controls */}
-          <p className="mb-2">Sound Effects: {audioMuted ? "Off" : "On"}</p>
+          <p className="mb-2">
+            {t("sound.effects")} {audioMuted ? t("off") : t("on")}
+          </p>
           <img
             src={audioMuted ? sound_off : sound_on}
             className="cursor-pointer hover:img-highlight"

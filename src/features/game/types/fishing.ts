@@ -1,7 +1,9 @@
 import Decimal from "decimal.js-light";
 import { Worm } from "./composters";
-import { Bumpkin, GameState, InventoryItemName } from "./game";
+import { GameState, InventoryItemName } from "./game";
 import { Tool } from "./tools";
+import { isWearableActive } from "../lib/wearables";
+import { translate } from "lib/i18n/translate";
 
 export type PurchaseableBait = "Fishing Lure";
 export type FishingBait = Worm | PurchaseableBait;
@@ -16,6 +18,7 @@ export type FishName =
   | "Sea Bass"
   | "Sea Horse"
   | "Horse Mackerel"
+  | "Halibut"
   | "Squid"
   // Advanced
   | "Red Snapper"
@@ -24,6 +27,7 @@ export type FishName =
   | "Napoleanfish"
   | "Surgeonfish"
   | "Zebra Turkeyfish"
+  | "Angelfish"
   | "Ray"
   | "Hammerhead shark"
   | "Barred Knifejaw" // Coming Soon
@@ -35,6 +39,7 @@ export type FishName =
   | "Football fish"
   | "Sunfish"
   | "Coelacanth"
+  | "Parrotfish"
   | "Whale Shark"
   | "Saw Shark"
   | "White Shark";
@@ -45,7 +50,8 @@ export type MarineMarvelName =
   | "Radiant Ray"
   | "Phantom Barracuda"
   | "Gilded Swordfish"
-  | "Kraken Tentacle";
+  | "Kraken Tentacle"
+  | "Crimson Carp";
 
 export const PURCHASEABLE_BAIT: Record<PurchaseableBait, Tool> = {
   "Fishing Lure": {
@@ -53,12 +59,48 @@ export const PURCHASEABLE_BAIT: Record<PurchaseableBait, Tool> = {
       "Block Buck": new Decimal(1),
     },
     sfl: new Decimal(0),
-    description: "Great for catching rare fish!",
+    description: translate("purchaseableBait.fishingLure.description"),
     name: "Fishing Lure",
   },
 };
 
-export const CHUM_AMOUNTS: Partial<Record<InventoryItemName, number>> = {
+export type Chum = Extract<
+  InventoryItemName,
+  | "Gold"
+  | "Iron"
+  | "Stone"
+  | "Egg"
+  | "Sunflower"
+  | "Potato"
+  | "Pumpkin"
+  | "Carrot"
+  | "Cabbage"
+  | "Beetroot"
+  | "Cauliflower"
+  | "Parsnip"
+  | "Eggplant"
+  | "Radish"
+  | "Corn"
+  | "Wheat"
+  | "Kale"
+  | "Blueberry"
+  | "Orange"
+  | "Apple"
+  | "Banana"
+  | "Seaweed"
+  | "Crab"
+  | "Anchovy"
+  | "Red Snapper"
+  | "Tuna"
+  | "Squid"
+  | "Wood"
+  | "Red Pansy"
+  | "Rich Chicken"
+  | "Fat Chicken"
+  | "Speed Chicken"
+>;
+
+export const CHUM_AMOUNTS: Record<Chum, number> = {
   Gold: 1,
   Iron: 5,
   Stone: 5,
@@ -86,40 +128,54 @@ export const CHUM_AMOUNTS: Partial<Record<InventoryItemName, number>> = {
   "Red Snapper": 1,
   Tuna: 1,
   Squid: 1,
+  Wood: 5,
+  "Red Pansy": 1,
+  "Fat Chicken": 3,
+  "Rich Chicken": 3,
+  "Speed Chicken": 3,
 };
 
-export const CHUM_DETAILS: Partial<Record<InventoryItemName, string>> = {
-  Gold: "The shimmering gold can be seen 100 miles away",
-  Iron: "A shimmering sparkle, can be seen at all angles during Dusk",
-  Egg: "Hmmm, not sure what fish would like eggs...",
-  Sunflower: "A sunny, vibrant lure for curious fish.",
-  Potato: "Potatoes make for an unusual fishy feast.",
-  Pumpkin: "Fish might be intrigued by the orange glow of pumpkins.",
-  Carrot: "Best used with Earthworms to catch Anchovies!",
-  Cabbage: "A leafy temptation for underwater herbivores.",
-  Beetroot: "Beets, the undersea delight for the bold fish.",
-  Cauliflower: "Fish may find the florets oddly enticing.",
-  Parsnip: "An earthy, rooty lure for curious fish.",
-  Eggplant: "Eggplants: the aquatic adventure for the daring fish.",
-  Corn: "Corn on the cob – an odd but intriguing treat.",
-  Radish: "Radishes, the buried treasure for aquatics.",
-  Wheat: "Wheat, a grainy delight for underwater foragers.",
-  Kale: "A leafy green surprise for the inquisitive fish.",
-  Blueberry: "Often confused by blue fish as potential mates.",
-  Orange: "Oranges, the citrusy curiosity for sea creatures.",
-  Apple: "Apples – a crunchy enigma beneath the waves.",
-  Banana: "Lighter than water!",
-  Seaweed: "A taste of the ocean in a leafy underwater snack.",
-  Crab: "A tantalizing morsel for a curious undersea fish.",
-  Anchovy: "Anchovies, mysteriously alluring to the outlaws of the sea.",
-  "Red Snapper": "A mystery hidden within the depths of the ocean.",
-  Tuna: "What is big enough to eat a tuna?",
-  Squid: "Awaken a ray with its favorite treat!",
+export const CHUM_DETAILS: Record<Chum, string> = {
+  Gold: translate("chumDetails.gold"),
+  Iron: translate("chumDetails.iron"),
+  Stone: translate("chumDetails.stone"),
+  Egg: translate("chumDetails.egg"),
+  Sunflower: translate("chumDetails.sunflower"),
+  Potato: translate("chumDetails.potato"),
+  Pumpkin: translate("chumDetails.pumpkin"),
+  Carrot: translate("chumDetails.carrot"),
+  Cabbage: translate("chumDetails.cabbage"),
+  Beetroot: translate("chumDetails.beetroot"),
+  Cauliflower: translate("chumDetails.cauliflower"),
+  Parsnip: translate("chumDetails.parsnip"),
+  Eggplant: translate("chumDetails.eggplant"),
+  Corn: translate("chumDetails.corn"),
+  Radish: translate("chumDetails.radish"),
+  Wheat: translate("chumDetails.wheat"),
+  Kale: translate("chumDetails.kale"),
+  Blueberry: translate("chumDetails.blueberry"),
+  Orange: translate("chumDetails.orange"),
+  Apple: translate("chumDetails.apple"),
+  Banana: translate("chumDetails.banana"),
+  Seaweed: translate("chumDetails.seaweed"),
+  Crab: translate("chumDetails.crab"),
+  Anchovy: translate("chumDetails.anchovy"),
+  "Red Snapper": translate("chumDetails.redSnapper"),
+  Tuna: translate("chumDetails.tuna"),
+  Squid: translate("chumDetails.squid"),
+  Wood: translate("chumDetails.wood"),
+  "Red Pansy": translate("chumDetails.redPansy"),
+  "Fat Chicken": translate("chumDetails.fatChicken"),
+  "Rich Chicken": translate("chumDetails.richChicken"),
+  "Speed Chicken": translate("chumDetails.speedChicken"),
 };
+
+export type FishingLocation = "beach" | "wharf";
 
 type Fish = {
   baits: FishingBait[];
   type: FishType;
+  locations: FishingLocation[];
 };
 
 // TODO
@@ -127,134 +183,188 @@ export const FISH: Record<FishName | MarineMarvelName, Fish> = {
   Anchovy: {
     baits: ["Earthworm"],
     type: "basic",
+    locations: ["wharf"],
   },
   Butterflyfish: {
     baits: ["Earthworm"],
     type: "basic",
+    locations: ["wharf"],
   },
+
   Blowfish: {
     baits: ["Earthworm"],
     type: "basic",
+    locations: ["wharf"],
   },
   Clownfish: {
     baits: ["Earthworm"],
     type: "basic",
+    locations: ["wharf"],
   },
   "Sea Bass": {
     baits: ["Earthworm"],
     type: "basic",
+    locations: ["wharf"],
   },
   "Sea Horse": {
     baits: ["Earthworm"],
     type: "basic",
+    locations: ["wharf"],
   },
   "Horse Mackerel": {
     baits: ["Earthworm"],
     type: "basic",
+    locations: ["wharf"],
+  },
+  Halibut: {
+    baits: ["Earthworm"],
+    type: "basic",
+    locations: ["beach"],
   },
   Squid: {
     baits: ["Earthworm"],
     type: "basic",
+    locations: ["wharf"],
   },
   "Red Snapper": {
     baits: ["Grub", "Red Wiggler", "Fishing Lure"],
     type: "advanced",
+    locations: ["wharf"],
   },
   "Moray Eel": {
     baits: ["Earthworm", "Grub", "Fishing Lure"],
     type: "advanced",
+    locations: ["wharf"],
   },
   "Olive Flounder": {
     baits: ["Earthworm", "Grub", "Fishing Lure"],
     type: "advanced",
+    locations: ["wharf"],
   },
   Napoleanfish: {
     baits: ["Grub", "Fishing Lure"],
     type: "advanced",
+    locations: ["wharf"],
   },
   Surgeonfish: {
     baits: ["Grub", "Fishing Lure"],
     type: "advanced",
+    locations: ["wharf"],
+  },
+  Angelfish: {
+    baits: ["Grub", "Fishing Lure"],
+    type: "advanced",
+    locations: ["beach"],
   },
   "Zebra Turkeyfish": {
     baits: ["Grub", "Fishing Lure"],
     type: "advanced",
+    locations: ["wharf"],
   },
   Ray: {
     baits: ["Grub", "Fishing Lure"],
     type: "advanced",
+    locations: ["wharf"],
   },
   "Hammerhead shark": {
     baits: ["Grub", "Fishing Lure"],
     type: "advanced",
+    locations: ["wharf"],
   },
   "Barred Knifejaw": {
     baits: ["Grub", "Fishing Lure"],
     type: "advanced",
+    locations: ["wharf"],
   },
   Tuna: {
     baits: ["Grub", "Red Wiggler", "Fishing Lure"],
     type: "expert",
+    locations: ["wharf"],
   },
   "Mahi Mahi": {
     baits: ["Grub", "Red Wiggler", "Fishing Lure"],
     type: "expert",
+    locations: ["wharf"],
   },
   "Blue Marlin": {
     baits: ["Grub", "Red Wiggler", "Fishing Lure"],
     type: "expert",
+    locations: ["wharf"],
   },
   Oarfish: {
     baits: ["Red Wiggler", "Fishing Lure"],
     type: "expert",
+    locations: ["wharf"],
   },
   "Football fish": {
     baits: ["Red Wiggler", "Fishing Lure"],
     type: "expert",
+    locations: ["wharf"],
   },
   Sunfish: {
     baits: ["Red Wiggler", "Fishing Lure"],
     type: "expert",
+    locations: ["wharf"],
   },
   Coelacanth: {
     baits: ["Red Wiggler", "Fishing Lure"],
     type: "expert",
+    locations: ["wharf"],
+  },
+  Parrotfish: {
+    baits: ["Red Wiggler", "Fishing Lure"],
+    type: "expert",
+    locations: ["beach"],
   },
   "Whale Shark": {
     baits: ["Red Wiggler", "Fishing Lure"],
     type: "expert",
+    locations: ["wharf"],
   },
   "Saw Shark": {
     baits: ["Red Wiggler", "Fishing Lure"],
     type: "expert",
+    locations: ["wharf"],
   },
   "White Shark": {
     baits: ["Red Wiggler", "Fishing Lure"],
     type: "expert",
+    locations: ["wharf"],
   },
   "Twilight Anglerfish": {
     baits: ["Red Wiggler", "Grub", "Fishing Lure"],
     type: "marine marvel",
+    locations: ["wharf"],
   },
   "Starlight Tuna": {
     baits: ["Red Wiggler", "Fishing Lure"],
     type: "marine marvel",
+    locations: ["wharf"],
   },
   "Radiant Ray": {
     baits: ["Red Wiggler", "Fishing Lure"],
     type: "marine marvel",
+    locations: ["wharf"],
   },
   "Phantom Barracuda": {
     baits: ["Grub", "Fishing Lure"],
     type: "marine marvel",
+    locations: ["wharf"],
   },
   "Gilded Swordfish": {
     baits: ["Earthworm", "Red Wiggler", "Fishing Lure"],
     type: "marine marvel",
+    locations: ["wharf"],
   },
   "Kraken Tentacle": {
     baits: ["Earthworm", "Grub", "Red Wiggler", "Fishing Lure"],
     type: "expert",
+    locations: ["wharf"],
+  },
+  "Crimson Carp": {
+    baits: ["Grub", "Fishing Lure"],
+    type: "marine marvel",
+    locations: ["wharf"],
   },
 };
 
@@ -302,10 +412,8 @@ export function getDailyFishingCount(state: GameState): number {
 }
 
 const DAILY_FISHING_ATTEMPT_LIMIT = 20;
-export function getDailyFishingLimit(bumpkin: Bumpkin): number {
-  const { pants } = bumpkin.equipped;
-
-  if (pants === "Angler Waders") {
+export function getDailyFishingLimit(game: GameState): number {
+  if (isWearableActive({ name: "Angler Waders", game })) {
     return DAILY_FISHING_ATTEMPT_LIMIT + 10;
   }
 

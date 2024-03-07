@@ -1,40 +1,26 @@
 import React from "react";
 
-import { Modal } from "react-bootstrap";
-import { HowToModalHeader } from "features/island/hud/components/settings-menu/howToPlay/HowToModalHeader";
+import { useAppTranslation } from "lib/i18n/useAppTranslations";
 
-interface Props {
-  onClose: () => void;
-  onBack: () => void;
-}
+export const LetsGo: React.FC = () => {
+  const { t } = useAppTranslation();
 
-export const LetsGo: React.FC<Props> = ({ onClose, onBack }) => {
   return (
-    <>
-      <HowToModalHeader
-        title="Time to play!"
-        onClose={onClose}
-        onBack={onBack}
-      />
-      <Modal.Body>
-        <p className="text-xs p-2 sm:text-sm text-center">
-          Thanks for playing beta! We are still working on the game and
-          appreciate your support during the early stages!
-        </p>
+    <div className="flex flex-col space-y-1 p-2">
+      <p className="text-xs sm:text-sm">{t("letsGo.description")}</p>
 
-        <p className="text-xs p-2 sm:text-sm text-center">
-          You can read more about the game in the{" "}
-          <a
-            className="text-xs sm:text-sm underline"
-            href="https://docs.sunflower-land.com"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            official docs
-          </a>
-          .
-        </p>
-      </Modal.Body>
-    </>
+      <p className="text-xs sm:text-sm">
+        {t("letsGo.readMore")}
+        <a
+          className="text-xs sm:text-sm underline"
+          href="https://docs.sunflower-land.com"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          {t("letsGo.officialDocs")}
+        </a>
+        {"."}
+      </p>
+    </div>
   );
 };

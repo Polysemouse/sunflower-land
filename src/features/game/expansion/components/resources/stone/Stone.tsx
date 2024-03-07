@@ -4,7 +4,7 @@ import { STONE_RECOVERY_TIME } from "features/game/lib/constants";
 import { Context } from "features/game/GameProvider";
 
 import { getTimeLeft } from "lib/utils/time";
-import { miningFallAudio } from "lib/utils/sfx";
+import { loadAudio, miningFallAudio } from "lib/utils/sfx";
 import { InventoryItemName, Rock } from "features/game/types/game";
 import useUiRefresher from "lib/utils/hooks/useUiRefresher";
 import { useSelector } from "@xstate/react";
@@ -15,7 +15,6 @@ import { DepletingStone } from "./components/DepletingStone";
 import { RecoveredStone } from "./components/RecoveredStone";
 import { canMine } from "features/game/expansion/lib/utils";
 import { getBumpkinLevel } from "features/game/lib/level";
-import { getBumpkinLevelRequiredForNode } from "features/game/expansion/lib/expansionNodes";
 
 const HITS = 3;
 const tool = "Pickaxe";
@@ -32,9 +31,6 @@ const compareResource = (prev: Rock, next: Rock) => {
   return JSON.stringify(prev) === JSON.stringify(next);
 };
 
-const _bumpkinLevel = (state: MachineState) =>
-  getBumpkinLevel(state.context.state.bumpkin?.experience ?? 0);
-
 interface Props {
   id: string;
   index: number;
@@ -50,6 +46,10 @@ export const Stone: React.FC<Props> = ({ id, index }) => {
   const [collectedAmount, setCollectedAmount] = useState<number>();
 
   const divRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    loadAudio([miningFallAudio]);
+  }, []);
 
   // Reset the touch count when clicking outside of the component
   useEffect(() => {
@@ -83,17 +83,9 @@ export const Stone: React.FC<Props> = ({ id, index }) => {
   const timeLeft = getTimeLeft(resource.stone.minedAt, STONE_RECOVERY_TIME);
   const mined = !canMine(resource, STONE_RECOVERY_TIME);
 
-  const bumpkinLevelRequired = getBumpkinLevelRequiredForNode(
-    index,
-    "Stone Rock"
-  );
-  const bumpkinLevel = useSelector(gameService, _bumpkinLevel);
-  const bumpkinTooLow = bumpkinLevel < bumpkinLevelRequired;
-
   useUiRefresher({ active: mined });
 
   const strike = () => {
-    if (bumpkinTooLow) return;
     if (!hasTool) return;
 
     setTouchCount((count) => count + 1);
@@ -129,7 +121,6 @@ export const Stone: React.FC<Props> = ({ id, index }) => {
       {!mined && (
         <div ref={divRef} className="absolute w-full h-full" onClick={strike}>
           <RecoveredStone
-            bumpkinLevelRequired={bumpkinLevelRequired}
             hasTool={hasTool}
             touchCount={touchCount}
             showHelper={false} // FUTURE ENHANCEMENT

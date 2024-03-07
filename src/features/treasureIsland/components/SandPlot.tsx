@@ -17,12 +17,12 @@ import {
   InventoryItemName,
   Reward,
   TreasureHole,
-  Collectibles,
+  GameState,
 } from "features/game/types/game";
 import { setImageWidth } from "lib/images";
 import classNames from "classnames";
 
-import { Modal } from "react-bootstrap";
+import { Modal } from "components/ui/Modal";
 import { Revealed } from "features/game/components/Revealed";
 import {
   MachineState,
@@ -36,8 +36,11 @@ import { getKeys } from "features/game/types/craftables";
 import { Panel } from "components/ui/Panel";
 import { isCollectibleBuilt } from "features/game/lib/collectibleBuilt";
 import { ZoomContext } from "components/ZoomProvider";
+import { useAppTranslation } from "lib/i18n/useAppTranslations";
 
 const Reward: React.FC<{ reward?: TreasureHole }> = ({ reward }) => {
+  const { t } = useAppTranslation();
+
   if (!reward || !reward.discovered) return null;
 
   return (
@@ -125,9 +128,9 @@ const isNoShovel = (state: MachineState) => state.matches("noShovel");
 const isFinishing = (state: MachineState) => state.matches("finishing");
 const isDrilling = (state: MachineState) => state.matches("drilling");
 
-const getMaxHolesPerDay = (collectibles: Collectibles) => {
+const getMaxHolesPerDay = (game: GameState) => {
   const MAX_HOLES_PER_DAY = 30;
-  if (isCollectibleBuilt("Heart of Davy Jones", collectibles)) {
+  if (isCollectibleBuilt({ name: "Heart of Davy Jones", game })) {
     return MAX_HOLES_PER_DAY + 20;
   }
   return MAX_HOLES_PER_DAY;
@@ -138,6 +141,8 @@ export const SandPlot: React.FC<{
   shownMissingShovelModal: boolean;
   onMissingShovelAcknowledge: () => void;
 }> = ({ id, shownMissingShovelModal, onMissingShovelAcknowledge }) => {
+  const { t } = useAppTranslation();
+
   const { scale } = useContext(ZoomContext);
 
   const goblinDiggingRef = useRef<SpriteSheetInstance>();
@@ -220,7 +225,7 @@ export const SandPlot: React.FC<{
       (holeId) => !canDig(holes[holeId]?.dugAt)
     ).length;
 
-    if (holesDug >= getMaxHolesPerDay(collectibles)) {
+    if (holesDug >= getMaxHolesPerDay(gameState.context.state)) {
       setShowMaxHolesModal(true);
       return;
     }
@@ -307,7 +312,7 @@ export const SandPlot: React.FC<{
             }}
           />
         </div>
-        <Modal centered show={treasureFound}>
+        <Modal show={treasureFound}>
           <CloseButtonPanel>
             <Revealed onAcknowledged={handleAcknowledgeTreasureFound} />
           </CloseButtonPanel>
@@ -318,9 +323,9 @@ export const SandPlot: React.FC<{
 
   if (showMissingShovelModal) {
     return (
-      <Modal centered show onHide={handleAcknowledgeNoSandShovel}>
+      <Modal show onHide={handleAcknowledgeNoSandShovel}>
         <CloseButtonPanel
-          title="No Sand Shovel!"
+          title={t("treasureModal.noShovelTitle")}
           onClose={handleAcknowledgeNoSandShovel}
         >
           <div className="p-2 pt-0 mb-2 flex flex-col items-center space-y-2">
@@ -329,16 +334,12 @@ export const SandPlot: React.FC<{
               alt="Sand Shovel"
               onLoad={(e) => setImageWidth(e.currentTarget)}
             />
-            <p>
-              You need to have a Sand Shovel equipped to be able to dig for
-              treasure!
-            </p>
-            <p>
-              If you need to purchase one, you can head to the Treasure Shop at
-              the southern end of the island.
-            </p>
+            <p>{t("treasureModal.needShovel")}</p>
+            <p>{t("treasureModal.purchaseShovel")}</p>
           </div>
-          <Button onClick={handleAcknowledgeNoSandShovel}>Got it</Button>
+          <Button onClick={handleAcknowledgeNoSandShovel}>
+            {t("treasureModal.gotIt")}
+          </Button>
         </CloseButtonPanel>
       </Modal>
     );
@@ -346,9 +347,9 @@ export const SandPlot: React.FC<{
 
   if (showMaxHolesModal) {
     return (
-      <Modal centered show onHide={() => setShowMaxHolesModal(false)}>
+      <Modal show onHide={() => setShowMaxHolesModal(false)}>
         <CloseButtonPanel
-          title="Max holes reached!"
+          title={t("treasureModal.maxHolesTitle")}
           onClose={() => setShowMaxHolesModal(false)}
         >
           <div className="p-2 pt-0 mb-2 flex flex-col items-center space-y-2">
@@ -358,13 +359,15 @@ export const SandPlot: React.FC<{
               onLoad={(e) => setImageWidth(e.currentTarget)}
             />
             <p className="text-sm text-center">
-              Save some treasure for the rest of us!
+              {t("treasureModal.saveTreasure")}
             </p>
             <p className="text-sm text-center">
-              Come back tomorrow to search for more treasure.
+              {t("treasureModal.comeBackTomorrow")}
             </p>
           </div>
-          <Button onClick={() => setShowMaxHolesModal(false)}>Got it</Button>
+          <Button onClick={() => setShowMaxHolesModal(false)}>
+            {t("treasureModal.gotIt")}
+          </Button>
         </CloseButtonPanel>
       </Modal>
     );
@@ -372,10 +375,10 @@ export const SandPlot: React.FC<{
 
   if (drilling) {
     return (
-      <Modal centered show>
+      <Modal show>
         <Panel>
           <div className="flex flex-col items-center mt-2">
-            <p className="text-center loading">Drilling</p>
+            <p className="text-center loading">{t("treasureModal.drilling")}</p>
             <img
               className="mx-auto my-2"
               style={{

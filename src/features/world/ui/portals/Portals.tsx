@@ -4,9 +4,9 @@ import * as AuthProvider from "features/auth/lib/Provider";
 import { portal } from "../community/actions/portal";
 import { useActor } from "@xstate/react";
 import { Context } from "features/game/GameProvider";
-import { wallet } from "lib/blockchain/wallet";
 import { SUPPORTED_PORTALS } from "features/game/types/portals";
-import { Modal } from "react-bootstrap";
+import { useAppTranslation } from "lib/i18n/useAppTranslations";
+import { Modal } from "components/ui/Modal";
 
 export const Portals: React.FC = () => {
   const { gameService } = useContext(Context);
@@ -16,6 +16,7 @@ export const Portals: React.FC = () => {
   const [authState] = useActor(authService);
   const [loading, setLoading] = useState(false);
   const [url, setUrl] = useState<string>();
+  const { t } = useAppTranslation();
 
   // Function to handle messages from the iframe
   const handleMessage = (event: any) => {
@@ -46,7 +47,6 @@ export const Portals: React.FC = () => {
       portalId,
       token: authState.context.user.rawToken as string,
       farmId: gameState.context.farmId,
-      address: wallet.myAccount as string,
     });
 
     // Change route
@@ -56,7 +56,7 @@ export const Portals: React.FC = () => {
 
   if (url) {
     return (
-      <Modal fullscreen show centered>
+      <Modal fullscreen show>
         <iframe
           src={url}
           className="w-full h-full rounded-lg shadow-md absolute"
@@ -66,7 +66,7 @@ export const Portals: React.FC = () => {
   }
 
   if (loading) {
-    return <span className="loading">Loading</span>;
+    return <span className="loading">{t("loading")}</span>;
   }
 
   return (

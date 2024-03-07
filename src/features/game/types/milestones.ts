@@ -7,14 +7,24 @@ import { BumpkinItem } from "./bumpkin";
 import { getKeys } from "./craftables";
 import { FishType, FishName, FISH, MarineMarvelName } from "./fishing";
 import { InventoryItemName, GameState } from "./game";
+import { FLOWERS } from "./flowers";
+import { translate } from "lib/i18n/translate";
 
-export type MilestoneName =
+type FishMilestoneName =
   | "Novice Angler"
   | "Advanced Angler"
   | "Expert Angler"
   | "Fish Encyclopedia"
   | "Master Angler"
-  | "Marine Marvel Master";
+  | "Marine Marvel Master"
+  | "Deep Sea Diver";
+
+type FlowerMilestoneName =
+  | "Sunpetal Savant"
+  | "Bloom Big Shot"
+  | "Lily Luminary";
+
+export type MilestoneName = FishMilestoneName | FlowerMilestoneName;
 
 type MilestoneReward = InventoryItemName | BumpkinItem;
 
@@ -33,9 +43,9 @@ export type Milestone = {
 const FISH_BY_TYPE: Record<FishType, (FishName | MarineMarvelName)[]> =
   getFishByType();
 
-export const FISH_MILESTONES: Record<MilestoneName, Milestone> = {
+export const FISH_MILESTONES: Record<FishMilestoneName, Milestone> = {
   "Novice Angler": {
-    task: "Catch each basic fish",
+    task: translate("quest.basic.fish"),
     percentageComplete: (farmActivity: GameState["farmActivity"]) => {
       const caughtFish = FISH_BY_TYPE.basic.filter(
         (name) => (farmActivity[`${name} Caught`] ?? 0) >= 1
@@ -51,7 +61,7 @@ export const FISH_MILESTONES: Record<MilestoneName, Milestone> = {
     },
   },
   "Advanced Angler": {
-    task: "Catch each advanced fish",
+    task: translate("quest.advanced.fish"),
     percentageComplete: (farmActivity: GameState["farmActivity"]) => {
       const caughtFish = FISH_BY_TYPE.advanced.filter(
         (name) => (farmActivity[`${name} Caught`] ?? 0) >= 1
@@ -67,7 +77,7 @@ export const FISH_MILESTONES: Record<MilestoneName, Milestone> = {
     },
   },
   "Expert Angler": {
-    task: "Catch 300 fish",
+    task: translate("quest.300.fish"),
     percentageComplete: (farmActivity: GameState["farmActivity"]) => {
       const totalFishRequired = 300;
 
@@ -83,7 +93,7 @@ export const FISH_MILESTONES: Record<MilestoneName, Milestone> = {
     },
   },
   "Fish Encyclopedia": {
-    task: "Discover each basic, advanced, and expert fish",
+    task: translate("quest.all.fish"),
     percentageComplete: (farmActivity: GameState["farmActivity"]) => {
       const encyclopediaFish = getEncyclopediaFish();
       const totalFishRequired = encyclopediaFish.length;
@@ -101,7 +111,7 @@ export const FISH_MILESTONES: Record<MilestoneName, Milestone> = {
     },
   },
   "Master Angler": {
-    task: "Catch 1500 fish",
+    task: translate("quest.1500.fish"),
     percentageComplete: (farmActivity: GameState["farmActivity"]) => {
       const totalFishRequired = 1500;
 
@@ -117,7 +127,7 @@ export const FISH_MILESTONES: Record<MilestoneName, Milestone> = {
     },
   },
   "Marine Marvel Master": {
-    task: "Catch each Marine Marvel",
+    task: translate("quest.marine.marvel"),
     percentageComplete: (farmActivity: GameState["farmActivity"]) => {
       const totalFishRequired = FISH_BY_TYPE["marine marvel"].length;
 
@@ -133,11 +143,82 @@ export const FISH_MILESTONES: Record<MilestoneName, Milestone> = {
       "Luminous Anglerfish Topper": 1,
     },
   },
+  "Deep Sea Diver": {
+    task: translate("quest.5.fish"),
+    percentageComplete: (farmActivity: GameState["farmActivity"]) => {
+      const encyclopediaFish = getEncyclopediaFish();
+
+      const fishComplete = encyclopediaFish.filter(
+        (name) => (farmActivity[`${name} Caught`] ?? 0) >= 5,
+        0
+      );
+
+      return (fishComplete.length / encyclopediaFish.length) * 100;
+    },
+    reward: {
+      "Deep Sea Helm": 1,
+    },
+  },
+};
+
+export const FLOWER_MILESTONES: Record<FlowerMilestoneName, Milestone> = {
+  "Sunpetal Savant": {
+    task: translate("quest.sunpetal.savant"),
+    reward: {},
+    percentageComplete: (farmActivity: GameState["farmActivity"]) => {
+      const sunpetalFlowers = getKeys(FLOWERS).filter(
+        (name) => FLOWERS[name].seed === "Sunpetal Seed"
+      );
+
+      const uniqueFlowersDiscovered = sunpetalFlowers.reduce(
+        (total, name) =>
+          total + Math.min(farmActivity[`${name} Harvested`] ?? 0, 1),
+        0
+      );
+
+      return Math.min((uniqueFlowersDiscovered / 12) * 100, 100);
+    },
+  },
+  "Bloom Big Shot": {
+    task: translate("quest.bloom.bigshot"),
+    reward: {},
+    percentageComplete: (farmActivity: GameState["farmActivity"]) => {
+      const sunpetalFlowers = getKeys(FLOWERS).filter(
+        (name) => FLOWERS[name].seed === "Bloom Seed"
+      );
+
+      const uniqueFlowersDiscovered = sunpetalFlowers.reduce(
+        (total, name) =>
+          total + Math.min(farmActivity[`${name} Harvested`] ?? 0, 1),
+        0
+      );
+
+      return Math.min((uniqueFlowersDiscovered / 12) * 100, 100);
+    },
+  },
+  "Lily Luminary": {
+    task: translate("quest.lily.luminary"),
+    reward: {},
+    percentageComplete: (farmActivity: GameState["farmActivity"]) => {
+      const sunpetalFlowers = getKeys(FLOWERS).filter(
+        (name) => FLOWERS[name].seed === "Lily Seed"
+      );
+
+      const uniqueFlowersDiscovered = sunpetalFlowers.reduce(
+        (total, name) =>
+          total + Math.min(farmActivity[`${name} Harvested`] ?? 0, 1),
+        0
+      );
+
+      return Math.min((uniqueFlowersDiscovered / 12) * 100, 100);
+    },
+  },
 };
 
 // All Milestones
 export const MILESTONES: Record<MilestoneName, Milestone> = {
   ...FISH_MILESTONES,
+  ...FLOWER_MILESTONES,
 };
 
 export type ExperienceLevel = "Novice" | "Experienced" | "Expert";
@@ -165,16 +246,14 @@ export const getExperienceLevelForMilestones = (
 };
 
 export const MILESTONE_MESSAGES: Record<MilestoneName, string> = {
-  "Novice Angler":
-    "Congratulations, you've just reached the Novice Angler milestone! You're well on your way to becoming a fishing pro by catching each basic fish.",
-  "Advanced Angler":
-    "Impressive, you've just reached the Advanced Angler milestone! You've mastered the art of catching each advanced fish. Keep it up!",
-  "Expert Angler":
-    "Wow, you've just reached the Expert Angler milestone! You're a true fishing expert now! Catching 300 fish is no small feat.",
-  "Fish Encyclopedia":
-    "Congratulations, you've just reached the Fish Encyclopedia milestone! You've become a true fish connoisseur! Discovering each basic, advanced, and expert fish is a remarkable achievement.",
-  "Master Angler":
-    "Wow, you've just reached the Master Angler milestone! Catching 1500 fish is a testament to your fishing skills.",
-  "Marine Marvel Master":
-    "Congratulations, you've just reached the Marine Marvel Master milestone! You're the undisputed champion of the seas! Catching each Marvel proves your fishing prowess like no other.",
+  "Novice Angler": translate("milestone.noviceAngler"),
+  "Advanced Angler": translate("milestone.advancedAngler"),
+  "Expert Angler": translate("milestone.expertAngler"),
+  "Fish Encyclopedia": translate("milestone.fishEncyclopedia"),
+  "Master Angler": translate("milestone.masterAngler"),
+  "Marine Marvel Master": translate("milestone.marineMarvelMaster"),
+  "Deep Sea Diver": translate("milestone.deepSeaDiver"),
+  "Sunpetal Savant": translate("milestone.sunpetalSavant"),
+  "Bloom Big Shot": translate("milestone.bloomBigShot"),
+  "Lily Luminary": translate("milestone.lilyLuminary"),
 };

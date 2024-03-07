@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 
 import { Button } from "components/ui/Button";
 import { Bid } from "features/game/types/game";
@@ -8,6 +8,8 @@ import { AuctionResults } from "features/game/lib/auctionMachine";
 import { Label } from "components/ui/Label";
 import { useCountdown } from "lib/utils/hooks/useCountdown";
 import { TimerDisplay } from "./AuctionDetails";
+import { GameWallet } from "features/wallet/Wallet";
+import { useAppTranslation } from "lib/i18n/useAppTranslations";
 
 interface Props {
   onMint: (id: string) => void;
@@ -16,9 +18,25 @@ interface Props {
   results: AuctionResults;
 }
 export const Winner: React.FC<Props> = ({ onMint, bid, farmId, results }) => {
+  const [showConfirmation, setShowConfirmation] = useState(false);
+
   const deadline = results.endAt + 24 * 60 * 60 * 1000;
   const countdown = useCountdown(deadline);
-
+  const { t } = useAppTranslation();
+  if (showConfirmation) {
+    return (
+      <GameWallet action="purchase">
+        <>
+          <div className="my-2">
+            <Label type="success">{t("congrats")}</Label>
+          </div>
+          <Button className="mt-2" onClick={() => onMint(bid.auctionId)}>
+            {t("mint")}
+          </Button>
+        </>
+      </GameWallet>
+    );
+  }
   return (
     <div className="flex flex-col justify-center items-center pt-2">
       <AuctionLeaderboardTable
@@ -29,10 +47,10 @@ export const Winner: React.FC<Props> = ({ onMint, bid, farmId, results }) => {
       />
 
       <div className="my-2">
-        <Label type="success">Congratulations!</Label>
+        <Label type="success">{t("congrats")}</Label>
       </div>
 
-      <p className="text-xs mb-2">You have 24 hours to mint your prize.</p>
+      <p className="text-xs mb-2">{t("winner.mintTime")}</p>
       <TimerDisplay time={countdown} />
       <a
         href="https://docs.sunflower-land.com/player-guides/auctions#how-to-mint-an-items"
@@ -40,11 +58,11 @@ export const Winner: React.FC<Props> = ({ onMint, bid, farmId, results }) => {
         target="_blank"
         rel="noreferrer"
       >
-        Read more
+        {t("read.more")}
       </a>
 
-      <Button className="mt-2" onClick={() => onMint(bid.auctionId)}>
-        Mint
+      <Button className="mt-2" onClick={() => setShowConfirmation(true)}>
+        {t("mint")}
       </Button>
     </div>
   );

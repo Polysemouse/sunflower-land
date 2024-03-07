@@ -39,6 +39,9 @@ import {
   FRUIT_COMPOST,
 } from "features/game/types/composters";
 import { FISH, PURCHASEABLE_BAIT } from "features/game/types/fishing";
+import { Label } from "components/ui/Label";
+import { FLOWERS, FLOWER_SEEDS } from "features/game/types/flowers";
+import { useAppTranslation } from "lib/i18n/useAppTranslations";
 
 interface Prop {
   gameState: GameState;
@@ -48,6 +51,8 @@ interface Prop {
 
 export const Basket: React.FC<Prop> = ({ gameState, selected, onSelect }) => {
   const divRef = useRef<HTMLDivElement>(null);
+
+  const { t } = useAppTranslation();
 
   const { inventory, bumpkin, collectibles, buildings, buds } = gameState;
   const basketMap = getBasketItems(inventory);
@@ -63,7 +68,9 @@ export const Basket: React.FC<Prop> = ({ gameState, selected, onSelect }) => {
             width: `${PIXEL_SCALE * 12}px`,
           }}
         />
-        <span className="text-xs text-center mt-2">Your basket is empty!</span>
+        <span className="text-xs text-center mt-2">
+          {t("detail.basket.empty")}
+        </span>
       </div>
     );
   }
@@ -74,20 +81,29 @@ export const Basket: React.FC<Prop> = ({ gameState, selected, onSelect }) => {
     selected: InventoryItemName
   ): selected is FruitSeedName => selected in FRUIT_SEEDS();
   const isSeed = (selected: InventoryItemName): selected is SeedName =>
-    isFruitSeed(selected) || selected in CROP_SEEDS();
+    isFruitSeed(selected) ||
+    selected in CROP_SEEDS() ||
+    selected in FLOWER_SEEDS();
   const isFood = (selected: InventoryItemName) => selected in CONSUMABLES;
 
   const getHarvestTime = (seedName: SeedName) => {
+    if (seedName in FLOWER_SEEDS()) {
+      return SEEDS()[seedName].plantSeconds;
+    }
+
     if (isFruitSeed(seedName)) {
-      return getFruitTime(seedName, collectibles);
+      return getFruitTime(
+        seedName,
+        gameState,
+        (gameState.bumpkin as Bumpkin)?.equipped ?? {}
+      );
     }
 
     const crop = SEEDS()[seedName].yield as CropName;
     return getCropTime({
       crop,
       inventory,
-      collectibles,
-      bumpkin: bumpkin as Bumpkin,
+      game: gameState,
       buds: buds ?? {},
     });
   };
@@ -106,8 +122,10 @@ export const Basket: React.FC<Prop> = ({ gameState, selected, onSelect }) => {
 
   const seeds = getItems(CROP_SEEDS());
   const fruitSeeds = getItems(FRUIT_SEEDS());
+  const flowerSeeds = getItems(FLOWER_SEEDS());
   const crops = getItems(CROPS());
   const fruits = getItems(FRUIT());
+  const flowers = getItems(FLOWERS);
   const workbenchTools = getItems(WORKBENCH_TOOLS());
   const treasureTools = getItems(TREASURE_TOOLS);
   const exotic = getItems(BEANS());
@@ -125,17 +143,25 @@ export const Basket: React.FC<Prop> = ({ gameState, selected, onSelect }) => {
   const purchaseableBait = getItems(PURCHASEABLE_BAIT);
   const fish = getItems(FISH);
 
-  const allSeeds = [...seeds, ...fruitSeeds];
+  const allSeeds = [...seeds, ...fruitSeeds, ...flowerSeeds];
   const allTools = [...workbenchTools, ...treasureTools];
 
-  const itemsSection = (title: string, items: InventoryItemName[]) => {
+  const itemsSection = (
+    title: string,
+    items: InventoryItemName[],
+    icon: string
+  ) => {
     if (!items.length) {
       return <></>;
     }
 
     return (
       <div className="flex flex-col pl-2 mb-2 w-full" key={title}>
-        {<p className="mb-2">{title}</p>}
+        {
+          <Label type="default" icon={icon} className="mb-2">
+            {title}
+          </Label>
+        }
         <div className="flex mb-2 flex-wrap -ml-1.5">
           {items.map((item) => (
             <Box
@@ -161,7 +187,7 @@ export const Basket: React.FC<Prop> = ({ gameState, selected, onSelect }) => {
       panel={
         selectedItem && (
           <InventoryItemDetails
-            collectibles={collectibles}
+            game={gameState}
             details={{
               item: selectedItem,
             }}
@@ -177,7 +203,7 @@ export const Basket: React.FC<Prop> = ({ gameState, selected, onSelect }) => {
                     getFoodExpBoost(
                       CONSUMABLES[selectedItem as ConsumableName],
                       gameState.bumpkin as Bumpkin,
-                      gameState.collectibles,
+                      gameState,
                       gameState.buds ?? {}
                     )
                   )
@@ -192,23 +218,48 @@ export const Basket: React.FC<Prop> = ({ gameState, selected, onSelect }) => {
       }
       content={
         <>
-          {itemsSection("Seeds", allSeeds)}
-          {itemsSection("Fertilisers", [
-            ...cropCompost,
-            ...fruitCompost,
-            ...fertilisers,
-          ])}
-          {itemsSection("Crops", crops)}
-          {itemsSection("Fruits", fruits)}
-          {itemsSection("Exotic", [...exotic, ...exotics])}
-          {itemsSection("Tools", allTools)}
-          {itemsSection("Resources", resources)}
-          {itemsSection("Bait", [...worm, ...purchaseableBait])}
-          {itemsSection("Fish", fish)}
-          {itemsSection("Foods", [...foods, ...pirateCake])}
-          {itemsSection("Bounty", bounty)}
-          {itemsSection("Coupons", coupons)}
-          {itemsSection("Easter Eggs", easterEggs)}
+          {itemsSection(t("seeds"), allSeeds, SUNNYSIDE.icons.seeds)}
+          {itemsSection(
+            t("fertilisers"),
+            [...cropCompost, ...fruitCompost, ...fertilisers],
+            ITEM_DETAILS["Rapid Root"].image
+          )}
+          {itemsSection(t("crops"), crops, ITEM_DETAILS.Sunflower.image)}
+          {itemsSection(t("fruits"), fruits, ITEM_DETAILS["Orange"].image)}
+          {itemsSection(t("flowers"), flowers, SUNNYSIDE.icons.seedling)}
+          {itemsSection(
+            t("exotics"),
+            [...exotic, ...exotics],
+            ITEM_DETAILS["White Carrot"].image
+          )}
+          {itemsSection(t("tools"), allTools, ITEM_DETAILS["Axe"].image)}
+          {itemsSection(t("resources"), resources, ITEM_DETAILS["Wood"].image)}
+          {itemsSection(
+            t("bait"),
+            [...worm, ...purchaseableBait],
+            ITEM_DETAILS["Earthworm"].image
+          )}
+          {itemsSection(t("fish"), fish, ITEM_DETAILS["Anchovy"].image)}
+          {itemsSection(
+            t("foods"),
+            [...foods, ...pirateCake],
+            ITEM_DETAILS["Carrot Cake"].image
+          )}
+          {itemsSection(
+            t("bounty"),
+            bounty,
+            ITEM_DETAILS["Pirate Bounty"].image
+          )}
+          {itemsSection(
+            t("coupons"),
+            coupons,
+            ITEM_DETAILS["Trading Ticket"].image
+          )}
+          {itemsSection(
+            t("easter.eggs"),
+            easterEggs,
+            ITEM_DETAILS["Red Egg"].image
+          )}
         </>
       }
     />

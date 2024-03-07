@@ -1,8 +1,8 @@
-import React, { useState } from "react";
+import React, { useContext, useState } from "react";
 import { InnerPanel, OuterPanel } from "components/ui/Panel";
 import { PIXEL_SCALE } from "features/game/lib/constants";
 
-import { Modal } from "react-bootstrap";
+import { Modal } from "components/ui/Modal";
 import { Tab } from "components/ui/Tab";
 import { SUNNYSIDE } from "assets/sunnyside";
 import { SquareIcon } from "components/ui/SquareIcon";
@@ -16,6 +16,11 @@ import {
 } from "features/game/types/codex";
 import { MilestoneReached } from "./components/MilestoneReached";
 import { MilestoneName } from "features/game/types/milestones";
+import { Flowers } from "./pages/Flowers";
+import { ITEM_DETAILS } from "features/game/types/images";
+import { Context } from "features/game/GameProvider";
+import { useActor } from "@xstate/react";
+import { useAppTranslation } from "lib/i18n/useAppTranslations";
 
 interface Props {
   show: boolean;
@@ -28,15 +33,20 @@ export const categories: CodexCategory[] = [
     icon: SUNNYSIDE.icons.fish,
   },
   {
-    name: "Farming",
-    icon: SUNNYSIDE.icons.basket,
-    disabled: true,
+    name: "Flowers",
+    icon: ITEM_DETAILS["Red Pansy"].image,
   },
   {
     name: "Bumpkins",
     icon: SUNNYSIDE.icons.player,
     disabled: true,
   },
+  {
+    name: "Farming",
+    icon: SUNNYSIDE.icons.basket,
+    disabled: true,
+  },
+
   {
     name: "Treasures",
     icon: SUNNYSIDE.decorations.treasure_chest,
@@ -54,6 +64,14 @@ export function getCodexCategoryIndex(category: CodexCategoryName) {
 }
 
 export const Codex: React.FC<Props> = ({ show, onHide }) => {
+  const { t } = useAppTranslation();
+  const { gameService } = useContext(Context);
+  const [
+    {
+      context: { state, farmId },
+    },
+  ] = useActor(gameService);
+
   const [currentTab, setCurrentTab] = useState<CodexTabIndex>(0);
   const [showMilestoneReached, setShowMilestoneReached] = useState(false);
   const [milestoneName, setMilestoneName] = useState<MilestoneName>();
@@ -74,7 +92,7 @@ export const Codex: React.FC<Props> = ({ show, onHide }) => {
 
   return (
     <div className="flex justify-center">
-      <Modal centered show={show} onHide={onHide}>
+      <Modal show={show} onHide={onHide}>
         <div
           className="h-[600px] transition-opacity"
           style={
@@ -88,7 +106,7 @@ export const Codex: React.FC<Props> = ({ show, onHide }) => {
             <div className="flex items-center pl-1 mb-2">
               <div className="flex items-center grow">
                 <img src={SUNNYSIDE.icons.search} className="h-6 mr-3 ml-1" />
-                <p>Sunflower Land Codex</p>
+                <p>{t("sunflowerLandCodex")}</p>
               </div>
               <img
                 src={SUNNYSIDE.icons.close}
@@ -128,6 +146,9 @@ export const Codex: React.FC<Props> = ({ show, onHide }) => {
                 {currentTab === 0 && (
                   <Fish onMilestoneReached={handleMilestoneReached} />
                 )}
+                {currentTab === 1 && (
+                  <Flowers onMilestoneReached={handleMilestoneReached} />
+                )}
               </InnerPanel>
             </div>
           </OuterPanel>
@@ -150,7 +171,7 @@ export const Codex: React.FC<Props> = ({ show, onHide }) => {
 
       {/* <Modal
         show={showMilestoneReached}
-        centered
+        
         className="flex justify-center"
       ></Modal> */}
     </div>

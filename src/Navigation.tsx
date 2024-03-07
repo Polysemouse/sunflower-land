@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useState } from "react";
+import React, { Suspense, lazy, useContext, useEffect, useState } from "react";
 import { useSelector } from "@xstate/react";
 import {
   Routes,
@@ -14,30 +14,41 @@ import * as AuthProvider from "features/auth/lib/Provider";
 import { Splash } from "features/auth/components/Splash";
 import { Auth } from "features/auth/Auth";
 import { Forbidden } from "features/auth/components/Forbidden";
-import { useImagePreloader } from "features/auth/useImagePreloader";
 import { LandExpansion } from "features/game/expansion/LandExpansion";
 import { CONFIG } from "lib/config";
-import { Retreat } from "features/retreat/Retreat";
 import { Builder } from "features/builder/Builder";
-import { wallet } from "lib/blockchain/wallet";
 import { AuthMachineState } from "features/auth/lib/authMachine";
 import { ZoomProvider } from "components/ZoomProvider";
-import { World } from "features/world/World";
-import { CommunityTools } from "features/world/ui/CommunityTools";
+import { LoadingFallback } from "./LoadingFallback";
+import { Panel } from "components/ui/Panel";
+import { useOrientation } from "lib/utils/hooks/useOrientation";
+import { useIsPWA } from "lib/utils/hooks/useIsPWA";
+import { Modal } from "components/ui/Modal";
+
+// Lazy load routes
+const World = lazy(() =>
+  import("features/world/World").then((m) => ({ default: m.World }))
+);
+const CommunityTools = lazy(() =>
+  import("features/world/ui/CommunityTools").then((m) => ({
+    default: m.CommunityTools,
+  }))
+);
+const Retreat = lazy(() =>
+  import("features/retreat/Retreat").then((m) => ({ default: m.Retreat }))
+);
 
 /**
  * FarmID must always be passed to the /retreat/:id route.
  * The problem is that when deep-linking to goblin trader, the FarmID will not be present.
  * This reacter-router helper component will compute correct route and navigate to retreat.
  */
-const TraderDeeplinkHandler: React.FC<{ farmId?: number }> = ({ farmId }) => {
+const TraderDeeplinkHandler: React.FC = () => {
   const [params] = useSearchParams();
 
   return <Navigate to={`/retreat/0?${createSearchParams(params)}`} replace />;
 };
 
-const selectProvider = (state: AuthMachineState) =>
-  state.context.user.web3?.provider;
 const selectState = (state: AuthMachineState) => ({
   isAuthorised: state.matches("connected"),
   isVisiting: state.matches("visiting"),
@@ -49,46 +60,49 @@ const selectState = (state: AuthMachineState) => ({
  */
 export const Navigation: React.FC = () => {
   const { authService } = useContext(AuthProvider.Context);
-  const provider = useSelector(authService, selectProvider);
   const state = useSelector(authService, selectState);
-
   const [showGame, setShowGame] = useState(false);
-  useImagePreloader();
+  const [showOrientationModal, setShowOrientationModal] = useState(false);
+  const [showConnectionModal, setShowConnectionModal] = useState(false);
+  const orientation = useOrientation();
+  const isPWA = useIsPWA();
 
-  /**
-   * Listen to web3 account/chain changes
-   * TODO: move into a hook
-   */
+  // useEffect(() => {
+  //   if (!isMobile) return;
+
+  //   if (orientation === "landscape") {
+  //     setShowOrientationModal(true);
+  //   } else {
+  //     setShowOrientationModal(false);
+  //   }
+  // }, [orientation, isMobile]);
+
   useEffect(() => {
-    if (provider) {
-      if (provider.on) {
-        provider.on("chainChanged", (chain: any) => {
-          if (parseInt(chain) === CONFIG.POLYGON_CHAIN_ID) {
-            return;
-          }
-
-          // Phantom handles this internally
-          if (provider.isPhantom) return;
-
-          authService.send("CHAIN_CHANGED");
-        });
-        provider.on("accountsChanged", function (accounts: string[]) {
-          // Metamask Mobile accidentally triggers this on route changes
-          const didChange = accounts[0] !== wallet.myAccount;
-          if (didChange) {
-            authService.send("ACCOUNT_CHANGED");
-          }
-        });
-      } else if (provider.givenProvider) {
-        provider.givenProvider.on("chainChanged", () => {
-          authService.send("CHAIN_CHANGED");
-        });
-        provider.givenProvider.on("accountsChanged", function () {
-          authService.send("ACCOUNT_CHANGED");
-        });
-      }
+    // Check if online on initial load
+    if (!navigator.onLine) {
+      setShowConnectionModal(true);
     }
-  }, [provider]);
+    // Set up listeners to watch for connection changes
+    window.addEventListener("offline", handleOffline);
+    window.addEventListener("online", handleOnline);
+
+    return () => {
+      window.removeEventListener("offline", handleOffline);
+      window.removeEventListener("online", handleOnline);
+    };
+  }, []);
+
+  const handleOffline = () => {
+    setShowConnectionModal(true);
+  };
+
+  const handleOnline = async () => {
+    const response = await fetch(".");
+    // Verify we get a valid response from the server
+    if (response.status >= 200 && response.status < 500) {
+      setShowConnectionModal(false);
+    }
+  };
 
   useEffect(() => {
     const _showGame = state.isAuthorised || state.isVisiting;
@@ -101,48 +115,56 @@ export const Navigation: React.FC = () => {
 
   return (
     <>
-      <Auth />
+      <Auth showOfflineModal={showConnectionModal} />
       {showGame ? (
         <ZoomProvider>
+          <Modal show={showConnectionModal}>
+            <Panel>
+              <div className="text-sm p-1 mb-1">{`Hey there Bumpkin, it looks like you aren't online. Please check your network connection.`}</div>
+            </Panel>
+          </Modal>
           <HashRouter>
-            <Routes>
-              <Route path="*" element={<LandExpansion />} />
-              {/* Forbid entry to Goblin Village when in Visiting State show Forbidden screen */}
-              {!state.isVisiting && (
+            <Suspense fallback={<LoadingFallback />}>
+              <Routes>
+                {/* Forbid entry to Goblin Village when in Visiting State show Forbidden screen */}
+                {!state.isVisiting && (
+                  <Route
+                    path="/goblins"
+                    element={
+                      <Splash>
+                        <Forbidden />
+                      </Splash>
+                    }
+                  />
+                )}
+                <Route path="/world/:name" element={<World key="world" />} />
                 <Route
-                  path="/goblins"
-                  element={
-                    <Splash>
-                      <Forbidden />
-                    </Splash>
-                  }
+                  path="/community/:name"
+                  element={<World key="community" isCommunity />}
                 />
-              )}
-              <Route path="/world/:name" element={<World key="world" />} />
-              <Route
-                path="/community/:name"
-                element={<World key="community" isCommunity />}
-              />
-              {CONFIG.NETWORK === "mumbai" && (
-                <Route
-                  path="/community-tools"
-                  element={<CommunityTools key="community-tools" />}
-                />
-              )}
+                {CONFIG.NETWORK === "mumbai" && (
+                  <Route
+                    path="/community-tools"
+                    element={<CommunityTools key="community-tools" />}
+                  />
+                )}
 
-              <Route path="/visit/*" element={<LandExpansion key="visit" />} />
-              <Route
-                path="/land/:id?/*"
-                element={<LandExpansion key="land" />}
-              />
-              <Route path="/retreat">
-                <Route index element={<TraderDeeplinkHandler />} />
-                <Route path=":id" element={<Retreat key="retreat" />} />
-              </Route>
-              {CONFIG.NETWORK === "mumbai" && (
-                <Route path="/builder" element={<Builder key="builder" />} />
-              )}
-            </Routes>
+                <Route
+                  path="/visit/*"
+                  element={<LandExpansion key="visit" />}
+                />
+
+                <Route path="/retreat">
+                  <Route index element={<TraderDeeplinkHandler />} />
+                  <Route path=":id" element={<Retreat key="retreat" />} />
+                </Route>
+                {CONFIG.NETWORK === "mumbai" && (
+                  <Route path="/builder" element={<Builder key="builder" />} />
+                )}
+
+                <Route path="*" element={<LandExpansion key="land" />} />
+              </Routes>
+            </Suspense>
           </HashRouter>
         </ZoomProvider>
       ) : (

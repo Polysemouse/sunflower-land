@@ -6,6 +6,8 @@ import { SUNNYSIDE } from "assets/sunnyside";
 import { craftingRequirementsMet } from "features/game/lib/craftingRequirement";
 import { ExpansionRequirements } from "components/ui/layouts/ExpansionRequirements";
 import { expansionRequirements } from "features/game/events/landExpansion/revealLand";
+import { translate } from "lib/i18n/translate";
+import { useAppTranslation } from "lib/i18n/useAppTranslations";
 
 interface Props {
   gameState: GameState;
@@ -18,12 +20,15 @@ export const UpcomingExpansionModal: React.FC<Props> = ({
   onClose,
   onExpand,
 }) => {
+  const { t } = useAppTranslation();
+  const requirements = expansionRequirements({ game: gameState });
+
   // cannot expand if there is no next expansion
-  if (gameState.expansionRequirements === undefined) {
+  if (requirements === undefined) {
     return (
       <div>
         <div className="flex items-start">
-          <span className="m-2">More expansions will be available soon...</span>
+          <span className="m-2">{t("landscape.expansion.two")}</span>
         </div>
         <div className="flex justify-center w-1/2 mb-2">
           <img
@@ -34,31 +39,24 @@ export const UpcomingExpansionModal: React.FC<Props> = ({
             }}
           />
         </div>
-        <Button onClick={onClose}>Back</Button>
+        <Button onClick={onClose}>{t("back")}</Button>
       </div>
     );
   }
 
-  const canExpand = craftingRequirementsMet(
-    gameState,
-    gameState.expansionRequirements
-  );
+  const canExpand = craftingRequirementsMet(gameState, requirements);
 
   return (
     <ExpansionRequirements
       inventory={gameState.inventory}
       bumpkin={gameState.bumpkin as Bumpkin}
       details={{
-        description:
-          "Each piece of land comes with unique resources to help build your farming empire!",
+        description: translate("landscape.expansion.one"),
       }}
-      requirements={expansionRequirements({
-        level: (gameState.inventory["Basic Land"]?.toNumber() ?? 0) + 1,
-        game: gameState,
-      })}
+      requirements={requirements}
       actionView={
         <Button onClick={onExpand} disabled={!canExpand}>
-          Expand
+          {t("expand")}
         </Button>
       }
     />

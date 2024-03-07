@@ -7,28 +7,30 @@ import { CONFIG } from "lib/config";
 import { SUNNYSIDE } from "assets/sunnyside";
 import { Button } from "components/ui/Button";
 import { Label } from "components/ui/Label";
+import { GameWallet } from "features/wallet/Wallet";
+import { useAppTranslation } from "lib/i18n/useAppTranslations";
 
 const CONTRIBUTORS = [
-  "Netherzapdos",
   "Poro",
-  "whaitte",
-  "default",
-  "shinon",
   "Telk",
-  "Vergelsxtn",
-  "LittleEins",
-  "Neonlight",
-  "Andando",
-  "forgchard",
-  "KOTOB",
-  "JC",
-  "kohi",
+  "whaitte",
+  "Andand0",
   "PurpleDrvnk",
+  "Kotob",
+  "Neonlight",
   "SFWhat",
+  "LittleEins",
+  "Oniel",
   "Ventin",
+  "shinon",
+  "JC",
+  "Netherzapdos",
+  "Vergel",
 ];
 
 export const Donations: React.FC = () => {
+  const { t } = useAppTranslation();
+
   const [state, send] = useMachine(donationMachine);
   const [donation, setDonation] = useState(1);
   const CHRISTMAS_EVENT_DONATION_ADDRESS = CONFIG.CHRISTMAS_EVENT_DONATION;
@@ -56,14 +58,14 @@ export const Donations: React.FC = () => {
     });
   };
 
+  // Waiting confirmation for address
+  const isComingSoon = false;
+
   return (
     <>
       {state.matches("idle") && (
         <div className="flex flex-col mb-1 p-2 text-sm">
-          <p className="mb-2 text-center">
-            This was a community art initiative and donations are greatly
-            appreciated!
-          </p>
+          <p className="mb-2 text-center">{t("donation.one")}</p>
 
           <div className="flex flex-wrap mt-1 mb-2 justify-center">
             {CONTRIBUTORS.map((name) => (
@@ -106,32 +108,48 @@ export const Donations: React.FC = () => {
                 />
               </div>
             </div>
-            <span className="text-xs text-shadow my-2">Amount in MATIC</span>
+            <span className="text-xs text-shadow my-2">
+              {t("amount.matic")}
+            </span>
           </div>
+
+          {isComingSoon && (
+            <Label type="default" className="mb-2">
+              {t("coming.soon")}
+            </Label>
+          )}
 
           <Button
             className="w-full ml-1"
             onClick={donate}
-            disabled={donation < 0.1}
+            disabled={isComingSoon || donation < 0.1}
           >
-            <span className="text-xs whitespace-nowrap">Donate</span>
+            <span className="text-xs whitespace-nowrap">{t("donate")}</span>
           </Button>
         </div>
       )}
       {state.matches("donating") && (
         <div className="flex flex-col items-center">
-          <p className="loading mb-4">Donating</p>
+          <p className="loading mb-4">{t("donating")}</p>
         </div>
       )}
       {state.matches("donated") && (
         <div className="flex flex-col items-center">
-          <p className="mb-4">Thank you!</p>
+          <p className="mb-4">{t("thank.you")}</p>
         </div>
       )}
       {state.matches("error") && (
         <div className="flex flex-col items-center">
-          <p className="my-4">Oh no! Something went wrong!</p>
+          <p className="my-4">{t("statements.ohNo")}</p>
         </div>
+      )}
+      {state.matches("confirming") && (
+        <GameWallet action="donate">
+          <p className="m-2">{`${donation} (MATIC)`}</p>
+          <Button className="w-full ml-1" onClick={donate}>
+            <span className="text-xs whitespace-nowrap">{t("confirm")}</span>
+          </Button>
+        </GameWallet>
       )}
     </>
   );

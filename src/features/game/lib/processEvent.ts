@@ -3,7 +3,7 @@ import { EVENTS, GameEvent } from "../events";
 import { FOODS, getKeys } from "../types/craftables";
 import { GameState, Inventory, InventoryItemName } from "../types/game";
 import { SKILL_TREE } from "../types/skills";
-import { Announcements } from "../types/conversations";
+import { Announcements } from "../types/announcements";
 import { EXOTIC_CROPS } from "../types/beans";
 import { BASIC_DECORATIONS, BasicDecorationName } from "../types/decorations";
 import { FISH, FishName, MarineMarvelName } from "../types/fishing";
@@ -39,6 +39,7 @@ export const maxItems: Inventory = {
   "Rich Chicken": new Decimal("5"),
   "Fat Chicken": new Decimal("5"),
   "Banana Chicken": new Decimal("5"),
+  "Crim Peckster": new Decimal("5"),
 
   // Seed limits + buffer
   "Sunflower Seed": new Decimal(1250),
@@ -58,7 +59,46 @@ export const maxItems: Inventory = {
   "Orange Seed": new Decimal(100),
   "Blueberry Seed": new Decimal(100),
   "Banana Plant": new Decimal(100),
+  "Sunpetal Seed": new Decimal(100),
+  "Bloom Seed": new Decimal(100),
+  "Lily Seed": new Decimal(100),
 
+  "Red Pansy": new Decimal("80"),
+  "Yellow Pansy": new Decimal("80"),
+  "Purple Pansy": new Decimal("80"),
+  "White Pansy": new Decimal("80"),
+  "Blue Pansy": new Decimal("80"),
+  "Red Cosmos": new Decimal("80"),
+  "Yellow Cosmos": new Decimal("80"),
+  "Purple Cosmos": new Decimal("80"),
+  "White Cosmos": new Decimal("80"),
+  "Blue Cosmos": new Decimal("80"),
+  "Red Balloon Flower": new Decimal("80"),
+  "Yellow Balloon Flower": new Decimal("80"),
+  "Purple Balloon Flower": new Decimal("80"),
+  "White Balloon Flower": new Decimal("80"),
+  "Blue Balloon Flower": new Decimal("80"),
+  "Red Carnation": new Decimal("80"),
+  "Yellow Carnation": new Decimal("80"),
+  "Purple Carnation": new Decimal("80"),
+  "White Carnation": new Decimal("80"),
+  "Blue Carnation": new Decimal("80"),
+  "Red Daffodil": new Decimal("80"),
+  "Yellow Daffodil": new Decimal("80"),
+  "Purple Daffodil": new Decimal("80"),
+  "White Daffodil": new Decimal("80"),
+  "Blue Daffodil": new Decimal("80"),
+  "Red Lotus": new Decimal("80"),
+  "Yellow Lotus": new Decimal("80"),
+  "Purple Lotus": new Decimal("80"),
+  "White Lotus": new Decimal("80"),
+  "Blue Lotus": new Decimal("80"),
+  "Prism Petal": new Decimal("80"),
+  "Celestial Frostbloom": new Decimal("80"),
+  "Primula Enigma": new Decimal("80"),
+
+  Sunstone: new Decimal("20"),
+  Crimstone: new Decimal("40"),
   Gold: new Decimal("200"),
   Iron: new Decimal("400"),
   Stone: new Decimal("800"),
@@ -78,6 +118,7 @@ export const maxItems: Inventory = {
   Pickaxe: new Decimal("300"),
   "Stone Pickaxe": new Decimal("150"),
   "Iron Pickaxe": new Decimal("50"),
+  "Gold Pickaxe": new Decimal("50"),
   "Rusty Shovel": new Decimal("100"),
   "Sand Shovel": new Decimal(50),
   "Sand Drill": new Decimal(30),
@@ -143,6 +184,7 @@ export const maxItems: Inventory = {
 
   // Seasonal decorations - Dawnbreaker
   Clementine: new Decimal(1),
+  Blossombeard: new Decimal(1),
   Cobalt: new Decimal(1),
   "Eggplant Grill": new Decimal(1),
   "Giant Dawn Mushroom": new Decimal(5),

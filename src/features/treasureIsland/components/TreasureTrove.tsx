@@ -2,7 +2,7 @@ import React, { useState } from "react";
 
 import { MapPlacement } from "features/game/expansion/components/MapPlacement";
 
-import { Modal } from "react-bootstrap";
+import { Modal } from "components/ui/Modal";
 import { CloseButtonPanel } from "features/game/components/CloseablePanel";
 import { ITEM_DETAILS } from "features/game/types/images";
 import { getEntries } from "features/game/types/craftables";
@@ -21,6 +21,7 @@ import { NPC } from "features/island/bumpkin/components/NPC";
 import { Equipped } from "features/game/types/bumpkin";
 import useUiRefresher from "lib/utils/hooks/useUiRefresher";
 import { CountdownLabel } from "components/ui/CountdownLabel";
+import { translate } from "lib/i18n/translate";
 
 enum RarityOrder {
   "rare",
@@ -43,9 +44,9 @@ const getTreasurePurpose = (treasureName: TreasureName) => {
   if (isBoostTreasure(treasureName))
     return <span className="text-[12px]">{BOOST_TREASURE[treasureName]}</span>;
   if (isBeachBountyTreasure(treasureName))
-    return <span className="text-[12px]">Beach Bounty</span>;
+    return <span className="text-[12px]">{translate("beach.bounty")}</span>;
   if (isDecorationTreasure(treasureName))
-    return <span className="text-[12px]">Decoration</span>;
+    return <span className="text-[12px]">{translate("decoration")}</span>;
 };
 
 const TreasureTroveItem: React.FC<{
@@ -66,9 +67,9 @@ const TreasureTroveItem: React.FC<{
           {getTreasurePurpose(treasureName)}
         </div>
         <div className="flex items-center">
-          {rarity === "rare" && <Label type="warning">Rare</Label>}
-          {rarity === "good" && <Label type="success">Uncommon</Label>}
-          {rarity === "average" && <Label type="default">Common</Label>}
+          {rarity === "rare" && <Label type="warning">{"Rare"}</Label>}
+          {rarity === "good" && <Label type="success">{"Uncommon"}</Label>}
+          {rarity === "average" && <Label type="default">{"Common"}</Label>}
         </div>
       </div>
     </div>
@@ -126,8 +127,8 @@ const TreasureTroveModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
           <div className="pb-2">
             <div className="flex flex-wrap gap-y-1 items-start justify-between pb-2">
               <div>
-                <p className="pb-0.5">Seasonal Treasure</p>
-                <p className="text-xs">Limited time only!</p>
+                <p className="pb-0.5">{translate("seasonal.treasure")}</p>
+                <p className="text-xs">{translate("season.limitedOffer")}</p>
               </div>
               <CountdownLabel timeLeft={secondsLeftInSeason} endText="left" />
             </div>
@@ -145,7 +146,10 @@ const TreasureTroveModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         )}
 
         <div className="pt-2 space-y-3">
-          <p className="text-xs">Available all year round:</p>
+          <p className="text-xs">
+            {translate("available.all.year")}
+            {":"}
+          </p>
 
           {TREASURE_TROVE_ITEMS.map(([name, treasure]) => (
             <TreasureTroveItem
@@ -166,7 +170,7 @@ export const TreasureTrove: React.FC = () => {
   return (
     <MapPlacement x={-5} y={1} height={1} width={1}>
       <NPC onClick={() => setShowModal(true)} parts={bumpkin} />
-      <Modal centered show={showModal} onHide={() => setShowModal(false)}>
+      <Modal show={showModal} onHide={() => setShowModal(false)}>
         <TreasureTroveModal onClose={() => setShowModal(false)} />
       </Modal>
     </MapPlacement>

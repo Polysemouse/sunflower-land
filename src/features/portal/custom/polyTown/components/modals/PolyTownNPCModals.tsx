@@ -1,6 +1,5 @@
 import { SpeakingModal } from "features/game/components/SpeakingModal";
 import React, { useContext, useEffect, useState } from "react";
-import { Modal } from "react-bootstrap";
 
 import { ModalContext } from "features/game/components/modal/ModalProvider";
 import { SceneId } from "features/world/mmoMachine";
@@ -10,6 +9,8 @@ import { PolyTownNpcName } from "../../lib/consts/nameTypes";
 import { POLY_TOWN_NPC_WEARABLES } from "../../lib/consts/npcWearables";
 import { CloseButtonPanel } from "features/game/components/CloseablePanel";
 import { Button } from "components/ui/Button";
+import { translate } from "lib/i18n/translate";
+import { Modal } from "components/ui/Modal";
 
 interface ManagerProps {
   npc: PolyTownNpcName;
@@ -67,16 +68,17 @@ export const PolyTownNpcModals: React.FC<Props> = ({ scene }) => {
 
   if (npc === "burt") {
     return (
-      <Modal centered show={!!npc} onHide={closeModal}>
+      <Modal show={!!npc} onHide={closeModal}>
         <CloseButtonPanel onClose={closeModal} bumpkinParts={npcWearables}>
-          yes or no 2<Button onClick={closeModal}>no</Button>
+          {translate("yes") + translate("no")}
+          <Button onClick={closeModal}>{translate("no")}</Button>
           <Button
             onClick={() => {
               changeScene?.("poly_town_plaza");
               closeModal();
             }}
           >
-            yes
+            {translate("yes")}
           </Button>
         </CloseButtonPanel>
       </Modal>
@@ -85,17 +87,17 @@ export const PolyTownNpcModals: React.FC<Props> = ({ scene }) => {
 
   if (npc === "wynken") {
     return (
-      <Modal centered show={!!npc} onHide={closeModal}>
+      <Modal show={!!npc} onHide={closeModal}>
         <CloseButtonPanel onClose={closeModal} bumpkinParts={npcWearables}>
-          yes or no
-          <Button onClick={closeModal}>no</Button>
+          {translate("yes") + translate("no")}
+          <Button onClick={closeModal}>{translate("no")}</Button>
           <Button
             onClick={() => {
               changeScene?.("poly_town_crop_hunt");
               closeModal();
             }}
           >
-            yes
+            {translate("yes")}
           </Button>
         </CloseButtonPanel>
       </Modal>
@@ -105,7 +107,7 @@ export const PolyTownNpcModals: React.FC<Props> = ({ scene }) => {
   const npcDialog = npc ? POLY_TOWN_NPC_DIALOGS[npc] : [{ text: "" }];
 
   return (
-    <Modal centered show={!!npc} onHide={closeModal}>
+    <Modal show={!!npc} onHide={closeModal}>
       <SpeakingModal
         onClose={closeModal}
         message={npcDialog}

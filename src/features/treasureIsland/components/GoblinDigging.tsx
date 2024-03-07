@@ -3,7 +3,7 @@ import React, { useContext, useState } from "react";
 import shadow from "assets/npcs/shadow.png";
 
 import { PIXEL_SCALE } from "features/game/lib/constants";
-import { Modal } from "react-bootstrap";
+import { Modal } from "components/ui/Modal";
 import { MapPlacement } from "features/game/expansion/components/MapPlacement";
 import { SUNNYSIDE } from "assets/sunnyside";
 import { Context } from "features/game/GameProvider";
@@ -11,8 +11,10 @@ import classNames from "classnames";
 import { useActor } from "@xstate/react";
 import { CloseButtonPanel } from "features/game/components/CloseablePanel";
 import { CountdownLabel } from "components/ui/CountdownLabel";
+import { useAppTranslation } from "lib/i18n/useAppTranslations";
 
 export const GoblinDigging: React.FC = () => {
+  const { t } = useAppTranslation();
   const { gameService } = useContext(Context);
   const [gameState] = useActor(gameService);
   const [showModal, setShowModal] = useState(false);
@@ -61,7 +63,7 @@ export const GoblinDigging: React.FC = () => {
         />
       </div>
 
-      <Modal centered show={showModal} onHide={() => setShowModal(false)}>
+      <Modal show={showModal} onHide={() => setShowModal(false)}>
         <CloseButtonPanel
           onClose={() => setShowModal(false)}
           bumpkinParts={{
@@ -74,15 +76,16 @@ export const GoblinDigging: React.FC = () => {
           }}
         >
           <div className="p-2">
-            <p className="mb-4 text-lg">Wanna try your luck today?</p>
-            <p className="mb-3">
-              My uncle found a diamond ring digging at this beach. All I keep
-              finding is boring SFL coins.
-            </p>
-            <p className="mb-3">Just grab a shovel and start digging.</p>
+            <p className="mb-4 text-lg">{t("beachLuck.tryLuck")}</p>
+            <p className="mb-3">{t("beachLuck.uncleFound")}</p>
+            <p className="mb-3">{t("beachLuck.grabShovel")}</p>
             <div className="flex flex-wrap gap-y-1 justify-center mt-4 items-center">
-              <p className="text-xxs mr-2">Treasures Refreshes in:</p>
+              <p className="text-xxs mr-2">
+                {t("beachLuck.refreshesIn")}
+                {":"}
+              </p>
               <CountdownLabel timeLeft={secondsLeft} />
+              {"s"}
             </div>
           </div>
         </CloseButtonPanel>

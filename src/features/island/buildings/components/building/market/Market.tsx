@@ -1,4 +1,4 @@
-import React, { useContext } from "react";
+import React, { useContext, useEffect } from "react";
 
 import market from "assets/buildings/market.png";
 import shadow from "assets/npcs/shadow.png";
@@ -6,7 +6,7 @@ import shadow from "assets/npcs/shadow.png";
 import { PIXEL_SCALE } from "features/game/lib/constants";
 import { BuildingImageWrapper } from "../BuildingImageWrapper";
 import { BuildingProps } from "../Building";
-import { Modal } from "react-bootstrap";
+import { Modal } from "components/ui/Modal";
 import { ShopItems } from "./ShopItems";
 import { SUNNYSIDE } from "assets/sunnyside";
 import { Context } from "features/game/GameProvider";
@@ -14,7 +14,7 @@ import { useActor } from "@xstate/react";
 import { getKeys } from "features/game/types/craftables";
 import { CROPS } from "features/game/types/crops";
 import { Bumpkin } from "features/game/types/game";
-import { shopAudio } from "lib/utils/sfx";
+import { loadAudio, shopAudio } from "lib/utils/sfx";
 import { isCropShortage } from "features/game/expansion/lib/boosts";
 
 const hasSoldCropsBefore = (bumpkin?: Bumpkin) => {
@@ -39,9 +39,12 @@ const hasBoughtCropsBefore = (bumpkin?: Bumpkin) => {
 
 export const Market: React.FC<BuildingProps> = ({ isBuilt, onRemove }) => {
   const [isOpen, setIsOpen] = React.useState(false);
-
   const { gameService } = useContext(Context);
   const [gameState] = useActor(gameService);
+
+  useEffect(() => {
+    loadAudio([shopAudio]);
+  }, []);
 
   const handleClick = () => {
     if (onRemove) {
@@ -119,7 +122,7 @@ export const Market: React.FC<BuildingProps> = ({ isBuilt, onRemove }) => {
           </>
         )}
       </BuildingImageWrapper>
-      <Modal centered show={isOpen} onHide={() => setIsOpen(false)}>
+      <Modal show={isOpen} onHide={() => setIsOpen(false)}>
         <ShopItems
           onClose={() => setIsOpen(false)}
           hasSoldBefore={hasSoldBefore}

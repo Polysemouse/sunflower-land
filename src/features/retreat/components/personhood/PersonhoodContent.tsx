@@ -13,11 +13,14 @@ import { useActor } from "@xstate/react";
 import { Loading } from "features/auth/components";
 import { Context } from "features/game/GoblinProvider";
 import { Button } from "components/ui/Button";
+import { useAppTranslation } from "lib/i18n/useAppTranslations";
 
 export const PersonhoodContent: React.FC = () => {
   const { authService } = useContext(AuthProvider.Context);
   const [authState] = useActor(authService);
   const { goblinService } = useContext(Context);
+
+  const { t } = useAppTranslation();
 
   const [loading, setLoading] = useState(true);
   const [personHoodDetails, setPersonhoodDetails] = useState<
@@ -77,9 +80,9 @@ export const PersonhoodContent: React.FC = () => {
   if (personHoodDetails === undefined) {
     return (
       <>
-        <p className="text-sm p-1 m-1">Failed Loading Personhood Details</p>
+        <p className="text-sm p-1 m-1">{t("personHood.Details")}</p>
         <Button className="mr-1" onClick={onBack}>
-          Back
+          {t("back")}
         </Button>
       </>
     );
@@ -88,9 +91,9 @@ export const PersonhoodContent: React.FC = () => {
   if (personHoodDetails.status === "REJECTED") {
     return (
       <>
-        <p className="text-sm p-1 m-1">Your identity could not be verified</p>
+        <p className="text-sm p-1 m-1">{t("personHood.Identify")}</p>
         <Button className="mr-1" onClick={onBack}>
-          Back
+          {t("back")}
         </Button>
       </>
     );
@@ -99,11 +102,9 @@ export const PersonhoodContent: React.FC = () => {
   if (personHoodDetails.status === "APPROVED") {
     return (
       <>
-        <p className="text-sm p-1 m-1">
-          Congratulations, your identity has been verified!
-        </p>
+        <p className="text-sm p-1 m-1">{t("personHood.Congrat")}</p>
         <Button className="mr-1" onClick={onFinish}>
-          Continue
+          {t("continue")}
         </Button>
       </>
     );

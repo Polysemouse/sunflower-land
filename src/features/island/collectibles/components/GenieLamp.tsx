@@ -8,13 +8,14 @@ import { Panel } from "components/ui/Panel";
 import { Revealing } from "features/game/components/Revealing";
 import { Revealed } from "features/game/components/Revealed";
 import { useActor } from "@xstate/react";
-import { Modal } from "react-bootstrap";
+import { Modal } from "components/ui/Modal";
 import classNames from "classnames";
 
 import genieImg from "assets/npcs/genie.png";
 import { setImageWidth } from "lib/images";
 import { Button } from "components/ui/Button";
 import { CloseButtonPanel } from "features/game/components/CloseablePanel";
+import { useAppTranslation } from "lib/i18n/useAppTranslations";
 
 interface Props {
   id: string;
@@ -32,6 +33,8 @@ export const GenieLamp: React.FC<Props> = ({ id }) => {
 
   const [isConfirming, setIsConfirming] = useState(false);
   const [isRevealing, setIsRevealing] = useState(false);
+
+  const { t } = useAppTranslation();
 
   const rub = () => {
     setIsConfirming(false);
@@ -62,7 +65,7 @@ export const GenieLamp: React.FC<Props> = ({ id }) => {
         )}
         alt="Genie Lamp"
       />
-      <Modal show={isConfirming} centered onHide={() => setIsConfirming(false)}>
+      <Modal show={isConfirming} onHide={() => setIsConfirming(false)}>
         <img
           src={genieImg}
           className="absolute z-0"
@@ -75,7 +78,7 @@ export const GenieLamp: React.FC<Props> = ({ id }) => {
         <CloseButtonPanel
           className="z-10"
           onClose={() => setIsConfirming(false)}
-          title="Ready to make a wish?"
+          title={t("genieLamp.ready.wish")}
         >
           <div className="flex flex-col items-center p-2">
             <img
@@ -90,35 +93,38 @@ export const GenieLamp: React.FC<Props> = ({ id }) => {
                 height: "24px",
               }}
             >
-              {wishesRemaining} wish{wishesRemaining > 1 && "es"} remaining!
+              {wishesRemaining} {t("wish")}
+              {wishesRemaining > 1 && "es"} {t("remaining")}
+              {"!"}
             </span>
             {!hasBeenRubbed && (
               <span className="text-center text-xs mb-1">
-                {"You cannot withdraw the lamp once it has been rubbed. "}
+                {t("genieLamp.cannotWithdraw")}
+                {"."}
                 <a
                   className="underline"
                   href="https://docs.sunflower-land.com/player-guides/islands/treasure-island#genie-lamp"
                   target="_blank"
                   rel="noreferrer"
                 >
-                  Read more
+                  {t("read.more")}
                 </a>
               </span>
             )}
           </div>
-          <Button onClick={rub}>Make a wish</Button>
+          <Button onClick={rub}>{t("make.wish")}</Button>
         </CloseButtonPanel>
       </Modal>
 
       {gameState.matches("revealing") && isRevealing && (
-        <Modal show centered backdrop="static">
+        <Modal show backdrop="static">
           <Panel className="z-10">
             <Revealing icon={genieLamp} />
           </Panel>
         </Modal>
       )}
       {gameState.matches("genieRevealed") && isRevealing && (
-        <Modal show centered backdrop="static">
+        <Modal show backdrop="static">
           <img
             src={genieImg}
             className="absolute z-0"

@@ -12,9 +12,10 @@ import { BuildingName } from "features/game/types/buildings";
 import { MachineState } from "features/game/lib/gameMachine";
 import { getBumpkinLevel } from "features/game/lib/level";
 import { Context } from "features/game/GameProvider";
-import { Modal } from "react-bootstrap";
+import { Modal } from "components/ui/Modal";
 import lockIcon from "assets/skills/lock.png";
 import { InnerPanel } from "components/ui/Panel";
+import { useAppTranslation } from "lib/i18n/useAppTranslations";
 
 /**
  * BuildingImageWrapper props
@@ -52,6 +53,7 @@ export const BuildingImageWrapper: React.FC<Props> = ({
     index ?? 0
   );
   const bumpkinTooLow = bumpkinLevel < bumpkinLevelRequired;
+  const { t } = useAppTranslation();
 
   const getHandleDisabledOnClick = (name: string, nonInteractible: boolean) =>
     function handleDisabledOnClick() {
@@ -84,9 +86,7 @@ export const BuildingImageWrapper: React.FC<Props> = ({
 
   return (
     <>
-      <Modal centered show={!!warning}>
-        {warning}
-      </Modal>
+      <Modal show={!!warning}>{warning}</Modal>
       {/* building */}
       <div
         className={classNames(
@@ -118,7 +118,10 @@ export const BuildingImageWrapper: React.FC<Props> = ({
         >
           <InnerPanel className="absolute whitespace-nowrap w-fit z-50">
             <div className="text-xxs mx-1 p-1">
-              <span>Bumpkin level {bumpkinLevelRequired} required.</span>
+              <span>
+                {t("bumpkin.level")} {bumpkinLevelRequired} {t("required")}
+                {"."}
+              </span>
             </div>
           </InnerPanel>
         </div>

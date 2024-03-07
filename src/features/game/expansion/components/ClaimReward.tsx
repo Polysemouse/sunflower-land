@@ -1,5 +1,5 @@
 import { Button } from "components/ui/Button";
-import React, { useEffect } from "react";
+import React, { useContext, useEffect } from "react";
 import confetti from "canvas-confetti";
 
 import token from "src/assets/icons/token_2.png";
@@ -15,6 +15,10 @@ import { Box } from "components/ui/Box";
 import { CONSUMABLES, ConsumableName } from "features/game/types/consumables";
 import { setPrecision } from "lib/utils/formatNumber";
 import Decimal from "decimal.js-light";
+import { Context } from "features/game/GameProvider";
+import { useAppTranslation } from "lib/i18n/useAppTranslations";
+import { COLLECTIBLE_BUFF_LABELS } from "features/game/types/collectibleItemBuffs";
+import { InlineDialogue } from "features/world/ui/TypingMessage";
 
 interface ClaimRewardProps {
   reward: IAirdrop;
@@ -27,10 +31,13 @@ export const ClaimReward: React.FC<ClaimRewardProps> = ({
   onClaim,
   onClose,
 }) => {
+  const { t } = useAppTranslation();
   const itemNames = getKeys(airdrop.items);
 
+  const { showAnimations } = useContext(Context);
+
   useEffect(() => {
-    confetti();
+    if (showAnimations) confetti();
   }, []);
 
   return (
@@ -41,10 +48,12 @@ export const ClaimReward: React.FC<ClaimRewardProps> = ({
           type="warning"
           icon={SUNNYSIDE.decorations.treasure_chest}
         >
-          Reward Discovered
+          {t("reward.discovered")}
         </Label>
         {airdrop.message && (
-          <p className="text-xs mb-2 ml-1">{airdrop.message}</p>
+          <div className="mb-2 ml-1">
+            <InlineDialogue message={airdrop.message} />
+          </div>
         )}
         <div className="flex flex-col">
           {!!airdrop.sfl && (
@@ -52,40 +61,53 @@ export const ClaimReward: React.FC<ClaimRewardProps> = ({
               <Box image={token} />
               <div>
                 <Label type="warning">
-                  {setPrecision(new Decimal(airdrop.sfl)).toString()} SFL
+                  {setPrecision(new Decimal(airdrop.sfl)).toString()} {"SFL"}
                 </Label>
-                <p className="text-xs">Spend it wisely.</p>
+                <p className="text-xs">{t("reward.spendWisely")}</p>
               </div>
             </div>
           )}
 
           {itemNames.length > 0 &&
-            itemNames.map((name) => (
-              <div className="flex items-center" key={name}>
-                <Box image={ITEM_DETAILS[name].image} />
-                <div>
-                  <div className="flex items-center">
-                    <Label type="default" className="mr-2">
-                      {`${setPrecision(
-                        new Decimal(airdrop.items[name] ?? 1)
-                      ).toString()} x ${name}`}
-                    </Label>
-                    {name in CONSUMABLES && (
+            itemNames.map((name) => {
+              const buff = COLLECTIBLE_BUFF_LABELS[name];
+              return (
+                <div className="flex items-start" key={name}>
+                  <Box image={ITEM_DETAILS[name].image} className="-mt-2" />
+                  <div>
+                    <div className="flex items-center">
+                      <Label type="default" className="mr-2">
+                        {`${setPrecision(
+                          new Decimal(airdrop.items[name] ?? 1)
+                        ).toString()} x ${name}`}
+                      </Label>
+                      {name in CONSUMABLES && (
+                        <Label
+                          type="success"
+                          icon={powerup}
+                          className="mr-2"
+                        >{`+${setPrecision(
+                          new Decimal(
+                            CONSUMABLES[name as ConsumableName].experience
+                          )
+                        ).toString()} EXP`}</Label>
+                      )}
+                    </div>
+                    <p className="text-xs">{ITEM_DETAILS[name].description}</p>
+                    {buff && (
                       <Label
-                        type="success"
-                        icon={powerup}
-                        className="mr-2"
-                      >{`+${setPrecision(
-                        new Decimal(
-                          CONSUMABLES[name as ConsumableName].experience
-                        )
-                      ).toString()} EXP`}</Label>
+                        type={buff.labelType}
+                        icon={buff.boostTypeIcon}
+                        secondaryIcon={buff.boostedItemIcon}
+                        className="my-1"
+                      >
+                        {buff.shortDescription}
+                      </Label>
                     )}
                   </div>
-                  <p className="text-xs">{ITEM_DETAILS[name].description}</p>
                 </div>
-              </div>
-            ))}
+              );
+            })}
 
           {getKeys(airdrop.wearables ?? {}).length > 0 &&
             getKeys(airdrop.wearables).map((name) => (
@@ -95,7 +117,7 @@ export const ClaimReward: React.FC<ClaimRewardProps> = ({
                   <Label type="default">{`${setPrecision(
                     new Decimal(airdrop.wearables[name] ?? 1)
                   ).toString()} x ${name}`}</Label>
-                  <p className="text-xs">A wearable for your Bumpkin</p>
+                  <p className="text-xs">{t("reward.wearable")}</p>
                 </div>
               </div>
             ))}
@@ -103,10 +125,10 @@ export const ClaimReward: React.FC<ClaimRewardProps> = ({
       </div>
 
       <div className="flex items-center mt-1">
-        {onClose && <Button onClick={onClose}>Close</Button>}
+        {onClose && <Button onClick={onClose}>{t("close")}</Button>}
         {onClaim && (
           <Button onClick={onClaim} className="ml-1">
-            Claim
+            {t("claim")}
           </Button>
         )}
       </div>

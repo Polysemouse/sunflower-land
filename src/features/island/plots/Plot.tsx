@@ -1,10 +1,9 @@
 import React, { useContext, useRef, useState } from "react";
 import { v4 as uuidv4 } from "uuid";
 
-import { useIsMobile } from "lib/utils/hooks/useIsMobile";
 import { Reward, PlantedCrop, PlacedItem } from "features/game/types/game";
 import { CROPS } from "features/game/types/crops";
-import { PIXEL_SCALE } from "features/game/lib/constants";
+import { PIXEL_SCALE, TEST_FARM } from "features/game/lib/constants";
 import { harvestAudio, plantAudio } from "lib/utils/sfx";
 import {
   getCompletedWellCount,
@@ -23,7 +22,7 @@ import { BuildingName } from "features/game/types/buildings";
 import { ZoomContext } from "components/ZoomProvider";
 import { CROP_COMPOST } from "features/game/types/composters";
 import { gameAnalytics } from "lib/gameAnalytics";
-import { Modal } from "react-bootstrap";
+import { Modal } from "components/ui/Modal";
 import { CloseButtonPanel } from "features/game/components/CloseablePanel";
 import { Label } from "components/ui/Label";
 import { ITEM_DETAILS } from "features/game/types/images";
@@ -31,10 +30,10 @@ import { SUNNYSIDE } from "assets/sunnyside";
 import { SeedName } from "features/game/types/seeds";
 import { SeedSelection } from "./components/SeedSelection";
 import { getBumpkinLevel } from "features/game/lib/level";
-import { getBumpkinLevelRequiredForNode } from "features/game/expansion/lib/expansionNodes";
 import { ModalContext } from "features/game/components/modal/ModalProvider";
 import lockIcon from "assets/skills/lock.png";
 import { getKeys } from "features/game/types/craftables";
+import { useAppTranslation } from "lib/i18n/useAppTranslations";
 
 const selectCrops = (state: MachineState) => state.context.state.crops;
 const selectBuildings = (state: MachineState) => state.context.state.buildings;
@@ -74,6 +73,8 @@ interface Props {
   index: number;
 }
 export const Plot: React.FC<Props> = ({ id, index }) => {
+  const { t } = useAppTranslation();
+
   const { scale } = useContext(ZoomContext);
   const {
     gameService,
@@ -90,8 +91,6 @@ export const Plot: React.FC<Props> = ({ id, index }) => {
   const [showMissingShovel, setShowMissingShovel] = useState(false);
   const clickedAt = useRef<number>(0);
 
-  const [isMobile] = useIsMobile();
-
   const crops = useSelector(gameService, selectCrops, (prev, next) => {
     return JSON.stringify(prev[id]) === JSON.stringify(next[id]);
   });
@@ -99,7 +98,6 @@ export const Plot: React.FC<Props> = ({ id, index }) => {
   const harvestCount = useSelector(gameService, selectHarvests);
   const plantCount = useSelector(gameService, selectPlants);
   const soldCount = useSelector(gameService, selectCropsSold);
-  const level = useSelector(gameService, selectLevel);
   const { openModal } = useContext(ModalContext);
 
   const crop = crops?.[id]?.crop;
@@ -115,13 +113,6 @@ export const Plot: React.FC<Props> = ({ id, index }) => {
   const bumpkin = state.bumpkin;
   const buds = state.buds;
   const plot = crops[id];
-
-  const bumpkinLevelRequired = getBumpkinLevelRequiredForNode(
-    index,
-    "Crop Plot"
-  );
-  const bumpkinLevel = useSelector(gameService, _bumpkinLevel);
-  const bumpkinTooLow = bumpkinLevel < bumpkinLevelRequired;
 
   const isFertile = isPlotFertile({
     plotIndex: id,
@@ -172,8 +163,6 @@ export const Plot: React.FC<Props> = ({ id, index }) => {
   };
 
   const onClick = (seed: SeedName = selectedItem as SeedName) => {
-    if (bumpkinTooLow) return;
-
     const now = Date.now();
 
     if (!inventory.Shovel) {
@@ -296,28 +285,23 @@ export const Plot: React.FC<Props> = ({ id, index }) => {
 
   return (
     <>
-      <Modal
-        centered
-        show={showMissingSeeds}
-        onHide={() => setShowMissingSeeds(false)}
-      >
+      <Modal show={showMissingSeeds} onHide={() => setShowMissingSeeds(false)}>
         <CloseButtonPanel onClose={() => setShowMissingSeeds(false)}>
           <div className="flex flex-col items-center">
             <Label className="mt-2" icon={SUNNYSIDE.icons.seeds} type="danger">
-              Missing Seeds
+              {t("onCollectReward.Missing.Seed")}
             </Label>
             <img
               src={ITEM_DETAILS.Market.image}
               className="w-10 mx-auto my-2"
             />
             <p className="text-center text-sm mb-2">
-              Go to the Market to purchase seeds.
+              {t("onCollectReward.Market")}
             </p>
           </div>
         </CloseButtonPanel>
       </Modal>
       <Modal
-        centered
         show={showSeedNotSelected}
         onHide={() => setShowSeedNotSelected(false)}
       >
@@ -336,17 +320,19 @@ export const Plot: React.FC<Props> = ({ id, index }) => {
       <Modal
         show={showMissingShovel}
         onHide={() => setShowMissingShovel(false)}
-        centered
       >
         <CloseButtonPanel onClose={() => setShowMissingShovel(false)}>
           <div className="flex flex-col items-center">
             <Label className="mt-2" icon={lockIcon} type="danger">
-              Missing Shovel
+              {t("onCollectReward.Missing.Shovel")}
             </Label>
             <img
               src={ITEM_DETAILS.Shovel.image}
               className="w-10 mx-auto my-2"
             />
+            <p className="text-sm mb-2 text-center">
+              {t("onCollectReward.Missing.Shovel.description")}
+            </p>
           </div>
         </CloseButtonPanel>
       </Modal>
@@ -380,11 +366,10 @@ export const Plot: React.FC<Props> = ({ id, index }) => {
         )}
 
         <FertilePlot
-          bumpkinLevelRequired={bumpkinLevelRequired}
           cropName={crop?.name}
           inventory={inventory}
-          collectibles={collectibles}
-          bumpkin={bumpkin}
+          // TODO
+          game={gameService.state?.context?.state ?? TEST_FARM}
           buds={buds}
           plot={plot}
           plantedAt={crop?.plantedAt}

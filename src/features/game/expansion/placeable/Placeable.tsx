@@ -15,6 +15,7 @@ import {
 import {
   ANIMAL_DIMENSIONS,
   COLLECTIBLES_DIMENSIONS,
+  CollectibleName,
 } from "features/game/types/craftables";
 import { READONLY_COLLECTIBLES } from "features/island/collectibles/CollectibleCollection";
 import { Chicken } from "features/island/chickens/Chicken";
@@ -27,6 +28,9 @@ import { getGameGrid } from "./lib/makeGrid";
 import { READONLY_BUILDINGS } from "features/island/buildings/components/building/BuildingComponents";
 import { ZoomContext } from "components/ZoomProvider";
 import { isBudName } from "features/game/types/buds";
+import { CollectibleLocation } from "features/game/types/collectibles";
+import { RESOURCE_DIMENSIONS } from "features/game/types/resources";
+import { useAppTranslation } from "lib/i18n/useAppTranslations";
 
 export const PLACEABLES: Record<PlaceableName | "Bud", React.FC<any>> = {
   Chicken: () => <Chicken x={0} y={0} id="123" />, // Temp id for placing, when placed action will assign a random UUID and the temp one will be overridden.
@@ -63,13 +67,9 @@ export const getInitialCoordinates = (origin?: Coordinates) => {
     .getElementById(Section.GenesisBlock)
     ?.getBoundingClientRect();
   let landMidX =
-    pageScrollContainer.scrollLeft +
-    (land?.left ?? 0) +
-    ((land?.width ?? 0) / 2 ?? 0);
+    pageScrollContainer.scrollLeft + (land?.left ?? 0) + (land?.width ?? 0) / 2;
   let landMidY =
-    pageScrollContainer.scrollTop +
-    (land?.top ?? 0) +
-    ((land?.height ?? 0) / 2 ?? 0);
+    pageScrollContainer.scrollTop + (land?.top ?? 0) + (land?.height ?? 0) / 2;
 
   if (origin) {
     const xOffset = viewportMidPointX - landMidX;
@@ -89,7 +89,10 @@ export const getInitialCoordinates = (origin?: Coordinates) => {
   return [INITIAL_POSITION_X, INITIAL_POSITION_Y];
 };
 
-export const Placeable: React.FC = () => {
+interface Props {
+  location: CollectibleLocation;
+}
+export const Placeable: React.FC<Props> = ({ location }) => {
   const { scale } = useContext(ZoomContext);
 
   const nodeRef = useRef(null);
@@ -105,8 +108,9 @@ export const Placeable: React.FC = () => {
 
   const grid = getGameGrid(gameState.context.state);
 
-  let dimensions = { width: 0, height: 0 };
+  const { t } = useAppTranslation();
 
+  let dimensions = { width: 0, height: 0 };
   if (isBudName(placeable)) {
     dimensions = { width: 1, height: 1 };
   } else if (placeable) {
@@ -114,15 +118,21 @@ export const Placeable: React.FC = () => {
       ...BUILDINGS_DIMENSIONS,
       ...COLLECTIBLES_DIMENSIONS,
       ...ANIMAL_DIMENSIONS,
+      ...RESOURCE_DIMENSIONS,
     }[placeable];
   }
 
   const detect = ({ x, y }: Coordinates) => {
-    const collisionDetected = detectCollision(gameService.state.context.state, {
-      x,
-      y,
-      width: dimensions.width,
-      height: dimensions.height,
+    const collisionDetected = detectCollision({
+      state: gameService.state.context.state,
+      position: {
+        x,
+        y,
+        width: dimensions.width,
+        height: dimensions.height,
+      },
+      location,
+      name: placeable as CollectibleName,
     });
 
     send({ type: "UPDATE", coordinates: { x, y }, collisionDetected });
@@ -215,7 +225,9 @@ export const Placeable: React.FC = () => {
                 }}
               >
                 <img src={SUNNYSIDE.icons.drag} className="h-6 mr-2" />
-                <span className="text-white text-sm">Drag me</span>
+                <span className="text-white text-sm">
+                  {t("landscape.dragMe")}
+                </span>
               </div>
             )}
             <div
@@ -236,6 +248,7 @@ export const Placeable: React.FC = () => {
                 grid={grid}
                 coordinates={coordinates}
                 id={isBudName(placeable) ? placeable.split("-")[1] : undefined}
+                game={gameState.context.state}
               />
             </div>
           </div>

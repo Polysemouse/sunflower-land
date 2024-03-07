@@ -1,15 +1,16 @@
 import React, { useContext } from "react";
 import { useActor } from "@xstate/react";
-import { Modal } from "react-bootstrap";
+import { Modal } from "components/ui/Modal";
 import { Panel } from "components/ui/Panel";
 import { Context } from "features/game/GameProvider";
 
 import { NPC_WEARABLES } from "lib/npcs";
 import { getKeys } from "features/game/types/craftables";
 import { SUNNYSIDE } from "assets/sunnyside";
-import { Conversation } from "features/farming/mail/components/Conversation";
-import { ConversationName } from "features/game/types/conversations";
+import { Message } from "features/farming/mail/components/Message";
+import { ConversationName } from "features/game/types/announcements";
 import { CloseButtonPanel } from "features/game/components/CloseablePanel";
+import { useAppTranslation } from "lib/i18n/useAppTranslations";
 
 export const NewMail: React.FC = () => {
   const { gameService } = useContext(Context);
@@ -17,7 +18,7 @@ export const NewMail: React.FC = () => {
 
   const mailbox = gameState.context.state.mailbox;
   const announcements = gameState.context.announcements;
-
+  const { t } = useAppTranslation();
   const newestMailId = getKeys(announcements ?? {})
     // Ensure they haven't read it already
     .sort(
@@ -32,7 +33,6 @@ export const NewMail: React.FC = () => {
 
   return (
     <Modal
-      centered
       show={gameState.matches("mailbox")}
       onHide={() => send("ACKNOWLEDGE")}
     >
@@ -47,7 +47,8 @@ export const NewMail: React.FC = () => {
             />
           </div>
 
-          <Conversation
+          <Message
+            message={announcements[newestMailId as ConversationName]}
             conversationId={newestMailId as ConversationName}
             read={!!mailbox.read.find((item) => item.id === newestMailId)}
             onAcknowledge={() => send("ACKNOWLEDGE")}
@@ -55,7 +56,7 @@ export const NewMail: React.FC = () => {
         </Panel>
       ) : (
         <CloseButtonPanel onClose={() => send("ACKNOWLEDGE")}>
-          <div>No Mail</div>
+          <div>{t("no.mail")}</div>
         </CloseButtonPanel>
       )}
     </Modal>

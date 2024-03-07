@@ -4,7 +4,7 @@ import { useActor } from "@xstate/react";
 import { Context } from "features/game/GameProvider";
 import { PIXEL_SCALE } from "features/game/lib/constants";
 
-import { Modal } from "react-bootstrap";
+import { Modal } from "components/ui/Modal";
 import { CloseButtonPanel } from "features/game/components/CloseablePanel";
 import { SUNNYSIDE } from "assets/sunnyside";
 import useUiRefresher from "lib/utils/hooks/useUiRefresher";
@@ -12,9 +12,12 @@ import { Revealed } from "features/game/components/Revealed";
 import { MapPlacement } from "./MapPlacement";
 import { Revealing } from "features/game/components/Revealing";
 import { CountdownLabel } from "components/ui/CountdownLabel";
+import { isWearableActive } from "features/game/lib/wearables";
+import { useAppTranslation } from "lib/i18n/useAppTranslations";
 
 export const PirateChest: React.FC = () => {
-  const { gameService } = useContext(Context);
+  const { t } = useAppTranslation();
+  const { gameService, showAnimations } = useContext(Context);
   const [gameState] = useActor(gameService);
 
   const [showCollectedModal, setShowCollectedModal] = useState(false);
@@ -55,8 +58,10 @@ export const PirateChest: React.FC = () => {
     setIsCollecting(true);
   };
 
-  const isPirate =
-    gameState.context.state.bumpkin?.equipped.body === "Pirate Potion";
+  const isPirate = isWearableActive({
+    name: "Pirate Potion",
+    game: gameState.context.state,
+  });
   const canOpen = isReady && isPirate;
 
   const onClick = () => {
@@ -74,7 +79,7 @@ export const PirateChest: React.FC = () => {
         {canOpen && (
           <img
             src={SUNNYSIDE.icons.expression_alerted}
-            className="absolute animate-float"
+            className={"absolute" + (showAnimations ? " animate-float" : "")}
             style={{
               top: `${PIXEL_SCALE * -13}px`,
               left: `${PIXEL_SCALE * 6}px`,
@@ -98,7 +103,6 @@ export const PirateChest: React.FC = () => {
       <Modal
         show={showCollectedModal}
         onHide={() => setShowCollectedModal(false)}
-        centered
       >
         <CloseButtonPanel onClose={() => setShowCollectedModal(false)}>
           <div className="flex flex-col items-center p-2 w-full">
@@ -109,12 +113,9 @@ export const PirateChest: React.FC = () => {
                 width: `${PIXEL_SCALE * 16}px`,
               }}
             />
-            <span className="text-center">
-              Ahoy matey! Set sail and come back later for a chest full of
-              swashbuckling rewards!
-            </span>
+            <span className="text-center">{t("piratechest.greeting")}</span>
             <div className="flex flex-wrap gap-y-1 justify-center mt-4 items-center">
-              <p className="text-xxs mr-2">Chest Refreshes in:</p>
+              <p className="text-xxs mr-2">{t("piratechest.refreshesIn")}</p>
               <CountdownLabel timeLeft={nextRefreshInSeconds} />
             </div>
           </div>
@@ -124,7 +125,6 @@ export const PirateChest: React.FC = () => {
       <Modal
         show={showNotPirateModal}
         onHide={() => setShowNotPirateModal(false)}
-        centered
       >
         <CloseButtonPanel onClose={() => setShowNotPirateModal(false)}>
           <div className="flex flex-col items-center p-2 w-full">
@@ -135,24 +135,20 @@ export const PirateChest: React.FC = () => {
                 width: `${PIXEL_SCALE * 16}px`,
               }}
             />
-            <span className="mb-2 text-sm">
-              Ahoy there! This chest be filled with treasures fit for a pirate
-              king, but beware, only those with a pirate skin can open it and
-              claim the booty within!
-            </span>
+            <span className="mb-2 text-sm">{t("piratechest.warning")}</span>
           </div>
         </CloseButtonPanel>
       </Modal>
 
       {gameState.matches("revealing") && isCollecting && (
-        <Modal show centered>
+        <Modal show>
           <CloseButtonPanel>
             <Revealing icon={SUNNYSIDE.decorations.treasure_chest} />
           </CloseButtonPanel>
         </Modal>
       )}
       {gameState.matches("revealed") && isCollecting && (
-        <Modal show centered>
+        <Modal show>
           <CloseButtonPanel>
             <Revealed onAcknowledged={() => setIsCollecting(false)} />
           </CloseButtonPanel>

@@ -2,12 +2,12 @@ import Decimal from "decimal.js-light";
 import { isCollectibleBuilt } from "features/game/lib/collectibleBuilt";
 import { FruitName } from "features/game/types/fruits";
 import {
-  Collectibles,
   GameState,
   Inventory,
   InventoryItemName,
 } from "features/game/types/game";
 import cloneDeep from "lodash.clonedeep";
+import { translate } from "lib/i18n/translate";
 
 export enum FRUIT_TREE_REMOVED_ERRORS {
   MISSING_AXE = "No axe",
@@ -29,11 +29,11 @@ type Options = {
 export function getRequiredAxeAmount(
   fruitName: FruitName,
   inventory: Inventory,
-  collectibles: Collectibles
+  game: GameState
 ) {
   // Apply boost for Trees
   if (fruitName === "Apple" || fruitName === "Orange") {
-    if (isCollectibleBuilt("Foreman Beaver", collectibles)) {
+    if (isCollectibleBuilt({ name: "Foreman Beaver", game })) {
       return new Decimal(0);
     }
 
@@ -54,7 +54,7 @@ export function removeFruitTree({
   const { fruitPatches, bumpkin, inventory, collectibles } = stateCopy;
 
   if (!bumpkin) {
-    throw new Error("You do not have a Bumpkin");
+    throw new Error(translate("no.have.bumpkin"));
   }
 
   const patch = fruitPatches[action.index];
@@ -70,7 +70,7 @@ export function removeFruitTree({
   const requiredAxes = getRequiredAxeAmount(
     patch.fruit.name,
     inventory,
-    collectibles
+    stateCopy
   );
 
   if (action.selectedItem !== "Axe" && requiredAxes.gt(0)) {

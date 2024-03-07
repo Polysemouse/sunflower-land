@@ -1,7 +1,7 @@
 import { useActor } from "@xstate/react";
 import React, { useContext, useState } from "react";
 
-import island from "assets/land/witches_eve_teaser.webp";
+import island from "assets/land/spring_blossom_teaser.gif";
 
 import { GRID_WIDTH_PX, PIXEL_SCALE } from "features/game/lib/constants";
 import { NPC } from "features/island/bumpkin/components/NPC";
@@ -10,7 +10,6 @@ import { Context } from "features/game/GameProvider";
 import { MapPlacement } from "./MapPlacement";
 import { PromotingModal } from "./SpecialOffer";
 import { NPC_WEARABLES } from "lib/npcs";
-import { wallet } from "lib/blockchain/wallet";
 
 interface Props {
   offset: number;
@@ -25,9 +24,11 @@ export const SeasonTeaser: React.FC<Props> = ({ offset }) => {
     <>
       <PromotingModal
         hasPurchased={
+          !!gameState.context.state.inventory["Spring Blossom Banner"]
+        }
+        hasDiscount={
           !!gameState.context.state.inventory["Catch the Kraken Banner"]
         }
-        hasDiscount={!!gameState.context.state.inventory["Witches' Eve Banner"]}
         isOpen={showModal}
         onClose={() => setShowModal(false)}
       />
@@ -35,20 +36,20 @@ export const SeasonTeaser: React.FC<Props> = ({ offset }) => {
         <img
           src={island}
           style={{
-            width: `${PIXEL_SCALE * 94}px`,
+            width: `${PIXEL_SCALE * 82}px`,
           }}
         />
 
         <div
           className="absolute"
           style={{
-            left: `${GRID_WIDTH_PX * 2}px`,
-            bottom: `${GRID_WIDTH_PX * 2.2}px`,
+            left: `${GRID_WIDTH_PX * 2.3}px`,
+            bottom: `${GRID_WIDTH_PX * 4}px`,
           }}
         >
           <NPC
             parts={NPC_WEARABLES.grubnuk}
-            onClick={wallet.isSocial ? undefined : () => setShowModal(true)}
+            onClick={() => setShowModal(true)}
           />
         </div>
       </MapPlacement>

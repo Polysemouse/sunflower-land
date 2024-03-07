@@ -77,15 +77,17 @@ export const MuteModal: React.FC<Props> = ({
     <>
       {muteStatus === "idle" && (
         <div className="flex flex-col w-full p-1">
-          <span className="text-lg text-center">Mute a Player</span>
-          <span className="text-xxs text-left mt-2 mb-1">Player Farm ID</span>
+          <span className="text-lg text-center">{"Mute a Player"}</span>
+          <span className="text-xxs text-left mt-2 mb-1">
+            {"Player Farm ID"}
+          </span>
           <input
             className="w-full text-shadow rounded-sm shadow-inner shadow-black bg-brown-200"
             value={farmId}
             onChange={(e) => setFarmId(Number(e.target.value))}
           />
           <span className="text-xxs text-left mt-2 mb-1">
-            Mute Duration (Please note that the player will see this)
+            {"Mute Duration"}
           </span>
           <select
             className="w-full text-shadow rounded-sm shadow-inner shadow-black bg-brown-200"
@@ -101,7 +103,7 @@ export const MuteModal: React.FC<Props> = ({
             ))}
           </select>
           <span className="text-xxs text-left mt-2 mb-1">
-            Mute Reason (Please note that the player will see this)
+            {"Mute Reason (Please note that the player will see this)"}
           </span>
           <textarea
             className="w-full h-20 text-shadow rounded-sm shadow-inner shadow-black bg-brown-200"
@@ -110,12 +112,12 @@ export const MuteModal: React.FC<Props> = ({
             onChange={(e) => setReason(e.target.value)}
           />
           <div className="flex gap-2 w-full mt-2">
-            <Button onClick={handleClose}>Cancel</Button>
+            <Button onClick={handleClose}>{"Cancel"}</Button>
             <Button
               onClick={handleMuteAction}
               disabled={reason.length === 0 || !farmId}
             >
-              Confirm
+              {"Confirm"}
             </Button>
           </div>
         </div>
@@ -124,29 +126,29 @@ export const MuteModal: React.FC<Props> = ({
       {muteStatus === "success" && (
         <div className="flex flex-col items-center w-full px-1">
           <span className="text-sm text-center">
-            Mute Player of Farm {farmId}
+            {"Mute Player of Farm " + farmId}
           </span>
-          <span className="text-xs text-center">Player has been muted</span>
+          <span className="text-xs text-center">{"Player has been muted"}</span>
           <div className="flex gap-2 w-full mt-2">
-            <Button onClick={handleClose}>Close</Button>
+            <Button onClick={handleClose}>{"Close"}</Button>
           </div>
         </div>
       )}
       {muteStatus === "error" && (
         <div className="flex flex-col items-center w-full px-1">
           <span className="text-sm text-center">
-            Mute Player of Farm {farmId}
+            {"Mute Player of Farm " + farmId}
           </span>
-          <span className="text-xs text-center">Failed to mute player</span>
+          <span className="text-xs text-center">{"Failed to mute player"}</span>
           <div className="flex gap-2 w-full mt-2">
-            <Button onClick={handleClose}>Close</Button>
+            <Button onClick={handleClose}>{"Close"}</Button>
           </div>
         </div>
       )}
       {muteStatus === "loading" && (
         <div className="flex flex-col items-center w-full px-1">
-          <span className="text-lg text-center">Muting Player...</span>
-          <span className="text-xs text-center mt-2">Please wait</span>
+          <span className="text-lg text-center">{"Muting player..."}</span>
+          <span className="text-xs text-center mt-2">{"Please wait"}</span>
         </div>
       )}
     </>

@@ -601,62 +601,114 @@ describe("getFruitTime", () => {
   it("applies a 50% speed boost with Squirrel Monkey placed for orange seeds", () => {
     const seed = "Orange Seed";
     const orangePlantSeconds = FRUIT_SEEDS()[seed].plantSeconds;
-    const time = getFruitTime(seed, {
-      "Squirrel Monkey": [
-        {
-          coordinates: { x: 0, y: 0 },
-          createdAt: 0,
-          id: "123",
-          readyAt: 0,
+    const time = getFruitTime(
+      seed,
+      {
+        ...TEST_FARM,
+        collectibles: {
+          "Squirrel Monkey": [
+            {
+              coordinates: { x: 0, y: 0 },
+              createdAt: 0,
+              id: "123",
+              readyAt: 0,
+            },
+          ],
         },
-      ],
-    });
+      },
+      INITIAL_BUMPKIN.equipped
+    );
     expect(time).toEqual(orangePlantSeconds * 0.5);
   });
   it("does not apply a 50% speed boost with Squirrel Monkey placed for other seeds", () => {
     const seed = "Apple Seed";
     const applePlantSeconds = FRUIT_SEEDS()[seed].plantSeconds;
-    const time = getFruitTime(seed, {
-      "Squirrel Monkey": [
-        {
-          coordinates: { x: 0, y: 0 },
-          createdAt: 0,
-          id: "123",
-          readyAt: 0,
+    const time = getFruitTime(
+      seed,
+      {
+        ...TEST_FARM,
+        collectibles: {
+          "Squirrel Monkey": [
+            {
+              coordinates: { x: 0, y: 0 },
+              createdAt: 0,
+              id: "123",
+              readyAt: 0,
+            },
+          ],
         },
-      ],
-    });
+      },
+      INITIAL_BUMPKIN.equipped
+    );
     expect(time).toEqual(applePlantSeconds);
   });
 
   it("applies a 10% speed boost with Nana placed for Banana plant", () => {
     const seed = "Banana Plant";
     const orangePlantSeconds = FRUIT_SEEDS()[seed].plantSeconds;
-    const time = getFruitTime(seed, {
-      Nana: [
-        {
-          coordinates: { x: 0, y: 0 },
-          createdAt: 0,
-          id: "123",
-          readyAt: 0,
+    const time = getFruitTime(
+      seed,
+      {
+        ...TEST_FARM,
+        collectibles: {
+          Nana: [
+            {
+              coordinates: { x: 0, y: 0 },
+              createdAt: 0,
+              id: "123",
+              readyAt: 0,
+            },
+          ],
         },
-      ],
-    });
+      },
+      INITIAL_BUMPKIN.equipped
+    );
     expect(time).toEqual(orangePlantSeconds * 0.9);
   });
   it("does not apply a 10% speed boost with Nana placed for other seeds", () => {
     const seed = "Apple Seed";
     const applePlantSeconds = FRUIT_SEEDS()[seed].plantSeconds;
-    const time = getFruitTime(seed, {
-      Nana: [
-        {
-          coordinates: { x: 0, y: 0 },
-          createdAt: 0,
-          id: "123",
-          readyAt: 0,
+    const time = getFruitTime(
+      seed,
+      {
+        ...TEST_FARM,
+        collectibles: {
+          Nana: [
+            {
+              coordinates: { x: 0, y: 0 },
+              createdAt: 0,
+              id: "123",
+              readyAt: 0,
+            },
+          ],
         },
-      ],
-    });
+      },
+      INITIAL_BUMPKIN.equipped
+    );
     expect(time).toEqual(applePlantSeconds);
+  });
+
+  it("applies a 20% speed boost with Banana Onesie", () => {
+    const seed = "Banana Plant";
+    const orangePlantSeconds = FRUIT_SEEDS()[seed].plantSeconds;
+    const time = getFruitTime(
+      seed,
+      {
+        ...TEST_FARM,
+        bumpkin: {
+          ...INITIAL_BUMPKIN,
+          equipped: {
+            ...INITIAL_BUMPKIN.equipped,
+
+            onesie: "Banana Onesie",
+          },
+        },
+      },
+      {
+        ...INITIAL_BUMPKIN.equipped,
+        onesie: "Banana Onesie",
+      }
+    );
+    expect(time).toEqual(orangePlantSeconds * 0.8);
   });
 });

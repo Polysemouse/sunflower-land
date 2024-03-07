@@ -5,7 +5,7 @@ import { useActor } from "@xstate/react";
 import { SUNNYSIDE } from "assets/sunnyside";
 import { PIXEL_SCALE } from "features/game/lib/constants";
 import classNames from "classnames";
-import { Modal } from "react-bootstrap";
+import { Modal } from "components/ui/Modal";
 import { CloseButtonPanel } from "features/game/components/CloseablePanel";
 import { SceneId } from "features/world/mmoMachine";
 import { BumpkinParts } from "lib/utils/tokenUriBuilder";
@@ -63,9 +63,9 @@ export const ModerationTools: React.FC<Props> = ({
     <>
       <div
         className={classNames(
-          "fixed bottom-36 left-2 cursor-pointer hover:img-highlight"
+          "fixed bottom-2 left-20 cursor-pointer hover:img-highlight"
         )}
-        style={{ width: `${PIXEL_SCALE * 22}px`, zIndex: 51 }}
+        style={{ width: `${PIXEL_SCALE * 22}px`, zIndex: 49 }}
         onClick={toggleModerationTool}
       >
         <img
@@ -79,12 +79,7 @@ export const ModerationTools: React.FC<Props> = ({
         />
       </div>
 
-      <Modal
-        show={showModerationTool}
-        centered
-        onHide={toggleModerationTool}
-        size="lg"
-      >
+      <Modal show={showModerationTool} onHide={toggleModerationTool} size="lg">
         <CloseButtonPanel
           onClose={toggleModerationTool}
           currentTab={tab}

@@ -1,6 +1,6 @@
 import { CloseButtonPanel } from "features/game/components/CloseablePanel";
 import React, { useEffect, useState } from "react";
-import { Modal } from "react-bootstrap";
+import { Modal } from "components/ui/Modal";
 import levelIcon from "assets/icons/level_up.png";
 
 import { BumpkinParts } from "lib/utils/tokenUriBuilder";
@@ -10,6 +10,7 @@ import { BumpkinLevel } from "features/bumpkins/components/BumpkinModal";
 import { SUNNYSIDE } from "assets/sunnyside";
 import { PlayerTrade } from "./PlayerTrade";
 import { GameState } from "features/game/types/game";
+import { useAppTranslation } from "lib/i18n/useAppTranslations";
 
 type Player = {
   id: number;
@@ -40,6 +41,7 @@ interface Props {
 export const PlayerModals: React.FC<Props> = ({ game }) => {
   const [tab, setTab] = useState(0);
   const [player, setPlayer] = useState<Player>();
+  const { t } = useAppTranslation();
 
   useEffect(() => {
     playerModalManager.listen((npc) => {
@@ -57,7 +59,6 @@ export const PlayerModals: React.FC<Props> = ({ game }) => {
       <Modal
         // dialogClassName="npc-dialog"
         show={!!player}
-        centered
         onHide={closeModal}
       >
         <CloseButtonPanel
@@ -88,7 +89,7 @@ export const PlayerModals: React.FC<Props> = ({ game }) => {
                 />
                 <div>
                   <p className="text-base">
-                    Level {getBumpkinLevel(player?.experience ?? 0)}
+                    {t("lvl")} {getBumpkinLevel(player?.experience ?? 0)}
                   </p>
                   {/* Progress bar */}
                   <BumpkinLevel experience={player?.experience} />
@@ -96,7 +97,8 @@ export const PlayerModals: React.FC<Props> = ({ game }) => {
 
                 {player?.id && (
                   <div className="flex-auto self-start text-right text-xs mr-3 f-10">
-                    #{player?.id}
+                    {"#"}
+                    {player?.id}
                   </div>
                 )}
               </div>

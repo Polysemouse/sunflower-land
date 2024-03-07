@@ -1,7 +1,7 @@
+/* eslint-disable react/jsx-no-literals */
 import React, { useContext } from "react";
 
 import { useActor } from "@xstate/react";
-import { Modal } from "react-bootstrap";
 import { Panel } from "components/ui/Panel";
 import { Button } from "components/ui/Button";
 
@@ -19,6 +19,7 @@ import {
   goHome,
 } from "features/portal/custom/polyTown/lib/portalUtil";
 import { PolyTownRules } from "./components/PolyTownRules";
+import { Modal } from "components/ui/Modal";
 
 export const PolyTownApp: React.FC = () => {
   return (
@@ -37,7 +38,7 @@ export const PolyTown: React.FC = () => {
   return (
     <div>
       {portalState.matches("error") && (
-        <Modal centered show>
+        <Modal show>
           <Panel>
             <div className="p-2">
               <Label type="danger">Error</Label>
@@ -49,7 +50,7 @@ export const PolyTown: React.FC = () => {
       )}
 
       {portalState.matches("loading") && (
-        <Modal centered show>
+        <Modal show>
           <Panel>
             <span className="loading">Loading</span>
           </Panel>
@@ -57,7 +58,7 @@ export const PolyTown: React.FC = () => {
       )}
 
       {portalState.matches("unauthorised") && (
-        <Modal centered show>
+        <Modal show>
           <Panel>
             <div className="p-2">
               <Label type="danger">Error</Label>
@@ -69,7 +70,7 @@ export const PolyTown: React.FC = () => {
       )}
 
       {portalState.matches("idle") && (
-        <Modal centered show>
+        <Modal show>
           <Panel>
             <Button onClick={() => portalService.send("START")}>Start</Button>
           </Panel>
@@ -77,7 +78,7 @@ export const PolyTown: React.FC = () => {
       )}
 
       {portalState.matches("rules") && (
-        <Modal centered show>
+        <Modal show>
           <Panel bumpkinParts={NPC_WEARABLES.wizard}>
             <PolyTownRules
               onAcknowledged={() => portalService.send("CONTINUE")}
@@ -87,7 +88,7 @@ export const PolyTown: React.FC = () => {
       )}
 
       {portalState.matches("claiming") && (
-        <Modal centered show>
+        <Modal show>
           <Panel>
             <p className="loading">Loading</p>
           </Panel>
@@ -95,7 +96,7 @@ export const PolyTown: React.FC = () => {
       )}
 
       {portalState.matches("completed") && (
-        <Modal centered show>
+        <Modal show>
           <Panel bumpkinParts={NPC_WEARABLES.wizard}>
             <div className="p-2">
               <p className="mb-2">

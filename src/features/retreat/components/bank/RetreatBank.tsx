@@ -1,19 +1,23 @@
-import React, { useContext } from "react";
-import { Modal } from "react-bootstrap";
+import React, { useContext, useEffect, useState } from "react";
+import { Modal } from "components/ui/Modal";
 
 import bank from "assets/buildings/goblin_bank.gif";
 import icon from "assets/icons/token_2.png";
 
 import { Action } from "components/ui/Action";
 import { PIXEL_SCALE } from "features/game/lib/constants";
-import { bankAudio } from "lib/utils/sfx";
+import { bankAudio, loadAudio } from "lib/utils/sfx";
 import { BankModal } from "features/goblins/bank/components/BankModal";
 import { MapPlacement } from "features/game/expansion/components/MapPlacement";
 import { Context } from "features/game/GoblinProvider";
 
 export const RetreatBank: React.FC = () => {
   const { goblinService } = useContext(Context);
-  const [isOpen, setIsOpen] = React.useState(false);
+  const [isOpen, setIsOpen] = useState(false);
+
+  useEffect(() => {
+    loadAudio([bankAudio]);
+  }, []);
 
   const openBank = () => {
     setIsOpen(true);
@@ -48,7 +52,7 @@ export const RetreatBank: React.FC = () => {
           <Action className="pointer-events-none" text="Bank" icon={icon} />
         </div>
       </div>
-      <Modal show={isOpen} onHide={() => setIsOpen(false)} centered>
+      <Modal show={isOpen} onHide={() => setIsOpen(false)}>
         <BankModal
           farmAddress={goblinService.state?.context.farmAddress as string}
           onClose={() => setIsOpen(false)}

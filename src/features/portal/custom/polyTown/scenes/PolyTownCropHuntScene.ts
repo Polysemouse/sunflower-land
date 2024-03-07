@@ -365,7 +365,7 @@ export class PolyTownCropHuntScene extends BaseScene {
     this.createAllChickens();
   }
 
-  update(time: number, delta: number) {
+  update() {
     if (!this.currentPlayer || !this.currentPlayer.body) {
       return;
     }
@@ -398,13 +398,7 @@ export class PolyTownCropHuntScene extends BaseScene {
       this.countdownTime - (this.timer?.getElapsed() ?? 0)
     );
     this.scoreBoard
-      ?.setPosition(
-        this.currentPlayer.x +
-          ((this.currentPlayer.body?.velocity.x ?? 0) * delta) / 1000,
-        this.currentPlayer.y -
-          boardOffsetY +
-          ((this.currentPlayer.body?.velocity.y ?? 0) * delta) / 1000
-      )
+      ?.setPosition(this.currentPlayer.x, this.currentPlayer.y - boardOffsetY)
       .setText(
         `SCORE: ${this.playerScore}\nINVENTORY: ${
           this.inventoryScore
@@ -429,7 +423,7 @@ export class PolyTownCropHuntScene extends BaseScene {
       chicken.setDepth(chicken.y);
     });
 
-    super.update(time, delta);
+    super.update();
   }
 
   private createScoreBoard() {

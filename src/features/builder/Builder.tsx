@@ -15,11 +15,13 @@ import {
 import { Button } from "components/ui/Button";
 import { InnerPanel } from "components/ui/Panel";
 import { INITIAL_LAYOUTS, Layout } from "./lib/layouts";
+import { useAppTranslation } from "lib/i18n/useAppTranslations";
 
 /**
  * A test component for collision detection and resource sizing/dimensions
  */
 export const Builder: React.FC = () => {
+  const { t } = useAppTranslation();
   const container = useRef(null);
 
   const [selected, setSelected] = useState<keyof Layout>();
@@ -30,8 +32,12 @@ export const Builder: React.FC = () => {
     gold: [],
     iron: [],
     stones: [],
+    crimstones: [],
+    sunstones: [],
     trees: [],
     boulder: [],
+    flowers: [],
+    beehives: [],
   });
 
   const [layouts, setLayouts] = useState<Layout[]>(
@@ -99,7 +105,7 @@ export const Builder: React.FC = () => {
           </div>
         </div>
         <InnerPanel className="fixed top-0 right-0 w-48 p-2 z-30 flex flex-col items-center">
-          <span className="text-white">Layouts</span>
+          <span className="text-white">{t("layouts")}</span>
           {layouts.map((_, index) => (
             <Button key={index} onClick={() => loadLayout(index)}>
               {`Layout ${index + 1}`}
@@ -125,23 +131,27 @@ export const Builder: React.FC = () => {
                 gold: [],
                 iron: [],
                 stones: [],
+                crimstones: [],
+                sunstones: [],
                 trees: [],
                 boulder: [],
+                beehives: [],
+                flowers: [],
               })
             }
           >
-            clear
+            {t("clear")}
           </Button>
         </div>
         <div className="absolute bottom-12 right-2 flex z-30">
-          <Button onClick={handlePrint}>Print</Button>
+          <Button onClick={handlePrint}>{t("print")}</Button>
         </div>
         <div className="absolute bottom-2 right-2 flex z-30">
-          <Button onClick={save}>Save</Button>
+          <Button onClick={save}>{t("save")}</Button>
         </div>
         <div className="pointer-events-none">
           <ScrollContainer
-            className="relative w-full h-full bg-[#0099db] overflow-scroll overscroll-none"
+            className="relative w-full h-full bg-[#0099db] !overflow-scroll overscroll-none"
             innerRef={container}
           >
             <div

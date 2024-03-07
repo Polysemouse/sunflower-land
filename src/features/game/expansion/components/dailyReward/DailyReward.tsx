@@ -4,7 +4,7 @@ import { useActor, useInterpret, useSelector } from "@xstate/react";
 import { Context } from "features/game/GameProvider";
 import { GRID_WIDTH_PX, PIXEL_SCALE } from "features/game/lib/constants";
 
-import { Modal } from "react-bootstrap";
+import { Modal } from "components/ui/Modal";
 import { CloseButtonPanel } from "features/game/components/CloseablePanel";
 import { SUNNYSIDE } from "assets/sunnyside";
 import { Revealing } from "features/game/components/Revealing";
@@ -15,17 +15,18 @@ import { Panel } from "components/ui/Panel";
 import { getBumpkinLevel } from "features/game/lib/level";
 import { Loading } from "features/auth/components";
 import { CountdownLabel } from "components/ui/CountdownLabel";
-import { Equipped } from "features/game/types/bumpkin";
 import { Label } from "components/ui/Label";
 import { MachineState } from "features/game/lib/gameMachine";
 import { useAppTranslation } from "lib/i18n/useAppTranslations";
+import { GameWallet } from "features/wallet/Wallet";
 
 const _bumpkin = (state: MachineState) => state.context.state.bumpkin;
 const _dailyRewards = (state: MachineState) => state.context.state.dailyRewards;
 const _isRevealed = (state: MachineState) => state.matches("revealed");
 
 export const DailyReward: React.FC = () => {
-  const { gameService } = useContext(Context);
+  const { gameService, showAnimations } = useContext(Context);
+  const [showIntro, setShowIntro] = useState(true);
   const dailyRewards = useSelector(gameService, _dailyRewards);
   const bumpkin = useSelector(gameService, _bumpkin);
   const isRevealed = useSelector(gameService, _isRevealed);
@@ -54,7 +55,6 @@ export const DailyReward: React.FC = () => {
   }
   const openModal = () => {
     setShowModal(true);
-    chestService.send("LOAD");
   };
 
   const onUpgrade = () => {
@@ -71,17 +71,6 @@ export const DailyReward: React.FC = () => {
       },
     });
     chestService.send("OPEN");
-  };
-
-  const pirateBumpkin: Equipped = {
-    body: "Goblin Potion",
-    hair: "White Long Hair",
-    hat: "Pirate Hat",
-    shirt: "Fancy Top",
-    pants: "Pirate Pants",
-    tool: "Pirate Scimitar",
-    background: "Seashore Background",
-    shoes: "Black Farmer Boots",
   };
 
   const streaks = dailyRewards?.streaks ?? 0;
@@ -132,7 +121,7 @@ export const DailyReward: React.FC = () => {
     if (chestState.matches("locked")) {
       return (
         <CloseButtonPanel
-          title={t("reward.title")}
+          title={t("reward.daily.reward")}
           onClose={() => setShowModal(false)}
         >
           <div className="flex flex-col items-center px-2">
@@ -142,8 +131,7 @@ export const DailyReward: React.FC = () => {
                   {streaks} {t("reward.streak")}
                 </Label>
                 <p className="text-xxs mt-2">
-                  {t("reward.nextBonus")}
-                  {getNextBonus}
+                  {t("reward.nextBonus")} {getNextBonus}
                   {t("reward.streak")}
                 </p>
               </>
@@ -166,7 +154,7 @@ export const DailyReward: React.FC = () => {
     if (chestState.matches("unlocked")) {
       return (
         <CloseButtonPanel
-          title={t("reward.title")}
+          title={t("reward.daily.reward")}
           onClose={() => setShowModal(false)}
         >
           <div className="flex flex-col items-center p-2">
@@ -186,7 +174,7 @@ export const DailyReward: React.FC = () => {
     if (chestState.matches("error")) {
       return (
         <CloseButtonPanel
-          title="Something went wrong!"
+          title={t("error.wentWrong")}
           onClose={() => setShowModal(false)}
         >
           <div className="flex flex-col items-center p-2">
@@ -236,7 +224,7 @@ export const DailyReward: React.FC = () => {
     if (chestState.matches("unlocking")) {
       return (
         <Panel>
-          <Loading text="Unlocking" />
+          <Loading text={t("unlocking")} />
         </Panel>
       );
     }
@@ -276,7 +264,7 @@ export const DailyReward: React.FC = () => {
         {!chestState.matches("opened") && (
           <img
             src={SUNNYSIDE.icons.expression_alerted}
-            className="absolute animate-float"
+            className={"absolute" + (showAnimations ? " animate-float" : "")}
             style={{
               width: `${PIXEL_SCALE * 4}px`,
               top: `${PIXEL_SCALE * -14}px`,
@@ -285,8 +273,35 @@ export const DailyReward: React.FC = () => {
           />
         )}
       </div>
-      <Modal show={showModal} onHide={() => setShowModal(false)} centered>
-        <ModalContent />
+      <Modal show={showModal} onHide={() => setShowModal(false)}>
+        {showIntro && (
+          <CloseButtonPanel onClose={() => setShowModal(false)}>
+            <div className="p-2">
+              <img
+                src={SUNNYSIDE.decorations.treasure_chest}
+                className="mb-2 mt-2 mx-auto"
+                style={{
+                  width: `${PIXEL_SCALE * 16}px`,
+                }}
+              />
+              <p className="text-sm text-center">
+                {t("reward.connectWeb3Wallet")}
+              </p>
+            </div>
+            <Button onClick={() => setShowIntro(false)}>{t("continue")}</Button>
+          </CloseButtonPanel>
+        )}
+        {!showIntro && (
+          <GameWallet
+            action="dailyReward"
+            onReady={() => {
+              chestService.send("LOAD");
+            }}
+            wrapper={({ children }) => <Panel>{children}</Panel>}
+          >
+            <ModalContent />
+          </GameWallet>
+        )}
       </Modal>
     </>
   );

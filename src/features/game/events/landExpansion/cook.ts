@@ -1,9 +1,10 @@
 import cloneDeep from "lodash.clonedeep";
 import Decimal from "decimal.js-light";
 import { CookableName, COOKABLES } from "features/game/types/consumables";
-import { Bumpkin, Collectibles, GameState } from "features/game/types/game";
+import { Bumpkin, GameState } from "features/game/types/game";
 import { getKeys } from "features/game/types/craftables";
 import { getCookingTime } from "features/game/expansion/lib/boosts";
+import { translate } from "lib/i18n/translate";
 
 export type RecipeCookedAction = {
   type: "recipe.cooked";
@@ -21,20 +22,16 @@ type GetReadyAtArgs = {
   item: CookableName;
   bumpkin: Bumpkin;
   createdAt: number;
-  collectibles: Collectibles;
+  game: GameState;
 };
 
 export const getReadyAt = ({
   item,
   bumpkin,
   createdAt,
-  collectibles,
+  game,
 }: GetReadyAtArgs) => {
-  const seconds = getCookingTime(
-    COOKABLES[item].cookingSeconds,
-    bumpkin,
-    collectibles
-  );
+  const seconds = getCookingTime(COOKABLES[item].cookingSeconds, bumpkin, game);
 
   return createdAt + seconds * 1000;
 };
@@ -51,7 +48,7 @@ export function cook({
   const buildingsOfRequiredType = buildings[requiredBuilding];
 
   if (!Object.keys(buildings).length || !buildingsOfRequiredType) {
-    throw new Error(`Required building does not exist`);
+    throw new Error(translate("error.requiredBuildingNotExist"));
   }
 
   const building = buildingsOfRequiredType.find(
@@ -59,15 +56,15 @@ export function cook({
   );
 
   if (bumpkin === undefined) {
-    throw new Error("You do not have a Bumpkin");
+    throw new Error(translate("no.have.bumpkin"));
   }
 
   if (!building) {
-    throw new Error(`Required building does not exist`);
+    throw new Error(translate("error.requiredBuildingNotExist"));
   }
 
   if (building.crafting !== undefined) {
-    throw new Error("Cooking already in progress");
+    throw new Error(translate("error.cookingInProgress"));
   }
 
   // const stockAmount = stateCopy.stock[action.item] || new Decimal(0);
@@ -96,7 +93,7 @@ export function cook({
       item: action.item,
       bumpkin,
       createdAt,
-      collectibles: stateCopy.collectibles,
+      game: stateCopy,
     }),
   };
 

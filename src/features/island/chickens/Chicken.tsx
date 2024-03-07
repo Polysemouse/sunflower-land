@@ -33,7 +33,7 @@ import { MutantChickenModal } from "features/farming/animals/components/MutantCh
 import { getWheatRequiredToFeed } from "features/game/events/landExpansion/feedChicken";
 import { SUNNYSIDE } from "assets/sunnyside";
 import { CROP_LIFECYCLE } from "../plots/lib/plant";
-import { Collectibles, Chicken as ChickenType } from "features/game/types/game";
+import { Chicken as ChickenType, GameState } from "features/game/types/game";
 import { isCollectibleBuilt } from "features/game/lib/collectibleBuilt";
 import { MachineState as GameMachineState } from "features/game/lib/gameMachine";
 import { MoveableComponent } from "../collectibles/MovableComponent";
@@ -42,6 +42,7 @@ import { isLocked } from "features/game/events/landExpansion/moveChicken";
 import lockIcon from "assets/skills/lock.png";
 import { SquareIcon } from "components/ui/SquareIcon";
 import { gameAnalytics } from "lib/gameAnalytics";
+import { useAppTranslation } from "lib/i18n/useAppTranslations";
 
 const getPercentageComplete = (fedAt?: number) => {
   if (!fedAt) return 0;
@@ -65,11 +66,12 @@ interface TimeToEggProps {
 const TimeToEgg = ({ showTimeToEgg, service }: TimeToEggProps) => {
   const timeToEgg = useSelector(service, selectTimeToEgg);
   const timeElapsed = useSelector(service, selectTimeElapsed);
+  const { t } = useAppTranslation();
 
   return (
     <InnerPanel
       className={classNames(
-        "ml-10 transition-opacity absolute whitespace-nowrap sm:opacity-0 bottom-5 w-fit left-1 z-50 pointer-events-none",
+        "ml-10 transition-opacity absolute whitespace-nowrap bottom-5 w-fit left-1 z-50 pointer-events-none",
         {
           "opacity-100": showTimeToEgg,
           "opacity-0": !showTimeToEgg,
@@ -79,7 +81,7 @@ const TimeToEgg = ({ showTimeToEgg, service }: TimeToEggProps) => {
       <div className="flex flex-col text-xxs ml-2 mr-2">
         <div className="flex flex-1 items-center justify-center">
           <img src={SUNNYSIDE.resource.egg} className="w-4 mr-1" />
-          <span>Egg</span>
+          <span>{t("egg")}</span>
         </div>
         <span className="flex-1">
           {secondsToString(timeToEgg - timeElapsed, {
@@ -91,8 +93,8 @@ const TimeToEgg = ({ showTimeToEgg, service }: TimeToEggProps) => {
   );
 };
 
-const HasWheat = (inventoryWheatCount: Decimal, collectibles: Collectibles) => {
-  const wheatRequired = getWheatRequiredToFeed(collectibles);
+const HasWheat = (inventoryWheatCount: Decimal, game: GameState) => {
+  const wheatRequired = getWheatRequiredToFeed(game);
 
   // has enough wheat to feed chickens
 
@@ -110,17 +112,16 @@ const isEggReady = (state: ChickenMachineState) => state.matches("eggReady");
 const isEggLaid = (state: ChickenMachineState) => state.matches("eggLaid");
 const selectInventoryWheatCount = (state: GameMachineState) =>
   state.context.state.inventory.Wheat ?? new Decimal(0);
-const selectCollectibles = (state: GameMachineState) =>
-  state.context.state.collectibles;
+const selectGame = (state: GameMachineState) => state.context.state;
 
 const compareChicken = (prev: ChickenType, next: ChickenType) => {
   return JSON.stringify(prev) === JSON.stringify(next);
 };
-const compareCollectibles = (prev: Collectibles, next: Collectibles) =>
-  isCollectibleBuilt("Gold Egg", prev) ===
-    isCollectibleBuilt("Gold Egg", next) &&
-  isCollectibleBuilt("Fat Chicken", prev) ===
-    isCollectibleBuilt("Fat Chicken", next);
+const compareGame = (prev: GameState, next: GameState) =>
+  isCollectibleBuilt({ name: "Gold Egg", game: prev }) ===
+    isCollectibleBuilt({ name: "Gold Egg", game: next }) &&
+  isCollectibleBuilt({ name: "Fat Chicken", game: prev }) ===
+    isCollectibleBuilt({ name: "Fat Chicken", game: next });
 
 interface Props {
   id: string;
@@ -137,16 +138,12 @@ const PlaceableChicken: React.FC<Props> = ({ id }) => {
     (state) => state.context.state.chickens[id],
     compareChicken
   );
-  const collectibles = useSelector(
-    gameService,
-    selectCollectibles,
-    compareCollectibles
-  );
+  const game = useSelector(gameService, selectGame, compareGame);
   const inventoryWheatCount = useSelector(
     gameService,
     selectInventoryWheatCount,
     (prev: Decimal, next: Decimal) =>
-      HasWheat(prev, collectibles) === HasWheat(next, collectibles)
+      HasWheat(prev, game) === HasWheat(next, game)
   );
 
   const percentageComplete = getPercentageComplete(chicken?.fedAt);
@@ -204,8 +201,8 @@ const PlaceableChicken: React.FC<Props> = ({ id }) => {
   };
 
   const feed = async () => {
-    if (!isCollectibleBuilt("Gold Egg", collectibles)) {
-      const hasWheat = HasWheat(inventoryWheatCount, collectibles);
+    if (!isCollectibleBuilt({ name: "Gold Egg", game })) {
+      const hasWheat = HasWheat(inventoryWheatCount, game);
 
       if (!hasWheat) {
         setShowPopover(true);
@@ -495,6 +492,7 @@ const _chickens = (state: GameMachineState) => state.context.state.chickens;
 
 const LockedChicken: React.FC<Props> = (props) => {
   const [showPopover, setShowPopover] = useState(false);
+  const { t } = useAppTranslation();
 
   return (
     <div
@@ -512,7 +510,7 @@ const LockedChicken: React.FC<Props> = (props) => {
           <InnerPanel className="absolute whitespace-nowrap w-fit z-50">
             <div className="flex items-center space-x-2 mx-1 p-1">
               <SquareIcon icon={lockIcon} width={5} />
-              <span className="text-xxs mb-0.5">AoE Locked</span>
+              <span className="text-xxs mb-0.5">{t("aoe.locked")}</span>
             </div>
           </InnerPanel>
         </div>

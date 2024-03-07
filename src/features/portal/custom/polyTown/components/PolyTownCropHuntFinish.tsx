@@ -2,6 +2,7 @@ import { ClaimReward } from "features/game/expansion/components/ClaimReward";
 import React, { useContext } from "react";
 import { PortalContext } from "../lib/PortalProvider";
 import { useActor } from "@xstate/react";
+import { translate } from "lib/i18n/translate";
 
 interface Props {
   onClose: () => void;
@@ -16,7 +17,7 @@ export const PolyTownCropHuntFinish: React.FC<Props> = ({ onClose }) => {
   };
 
   if (portalState.matches("claiming")) {
-    return <span className="loading">Loading</span>;
+    return <span className="loading">{translate("loading")}</span>;
   }
 
   return (

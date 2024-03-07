@@ -2,18 +2,13 @@ import { useActor } from "@xstate/react";
 import { Context } from "features/game/GameProvider";
 import { CloseButtonPanel } from "features/game/components/CloseablePanel";
 import React, { useContext, useEffect, useState } from "react";
-import { Modal } from "react-bootstrap";
-import { ResizableBar } from "components/ui/ProgressBar";
-import chest from "assets/icons/chest.png";
+import { Modal } from "components/ui/Modal";
 import deliveryBoard from "assets/ui/delivery_board.png";
 import { SUNNYSIDE } from "assets/sunnyside";
 import { PIXEL_SCALE } from "features/game/lib/constants";
 
 import classNames from "classnames";
 import { DeliveryOrders } from "./components/Orders";
-import { Revealing } from "features/game/components/Revealing";
-import { Revealed } from "features/game/components/Revealed";
-import { Panel } from "components/ui/Panel";
 import { DeliveryHelp } from "./components/DeliveryHelp";
 import { hasNewOrders } from "./lib/delivery";
 
@@ -87,44 +82,9 @@ export const DeliveryModal: React.FC<Props> = ({ isOpen, onClose }) => {
     console.log("Top render");
   }, []);
 
-  const reachMilestone = () => {
-    gameService.send("REVEAL", {
-      event: {
-        type: "delivery.milestoneReached",
-        createdAt: new Date(),
-      },
-    });
-    setIsRevealing(true);
-  };
-
-  if (gameState.matches("revealing") && isRevealing) {
-    return (
-      <Modal show centered>
-        <Panel className="z-10">
-          <Revealing icon={chest} />
-        </Panel>
-      </Modal>
-    );
-  }
-
-  if (gameState.matches("revealed") && isRevealing) {
-    return (
-      <Modal show centered>
-        <Panel className="z-10">
-          <Revealed onAcknowledged={() => setIsRevealing(false)} />
-        </Panel>
-      </Modal>
-    );
-  }
-
   return (
     <>
-      <Modal
-        centered
-        show={isOpen}
-        onHide={onClose}
-        dialogClassName="md:max-w-3xl"
-      >
+      <Modal show={isOpen} onHide={onClose} dialogClassName="md:max-w-3xl">
         <CloseButtonPanel
           onClose={onClose}
           title={
@@ -163,47 +123,6 @@ export const DeliveryModal: React.FC<Props> = ({ isOpen, onClose }) => {
                 )}
                 onClick={() => setSelectedOrderId(undefined)}
               />
-              <div
-                className="flex relative mx-auto mt-1"
-                style={{ width: "fit-content" }}
-              >
-                <ResizableBar
-                  percentage={(progress / delivery.milestone.goal) * 100}
-                  type="progress"
-                  outerDimensions={{
-                    width: 80,
-                    height: 10,
-                  }}
-                />
-                <span
-                  className="absolute text-xs"
-                  style={{
-                    left: "93px",
-                    top: "3px",
-                    fontSize: "16px",
-                  }}
-                >
-                  {`${progress}/${delivery.milestone.goal}`}
-                </span>
-                <img
-                  src={chest}
-                  className={classNames("absolute h-8 shadow-lg", {
-                    "ready cursor-pointer img-highlight-heavy":
-                      progress >= delivery.milestone.goal && !isRevealing,
-                  })}
-                  onClick={() => {
-                    if (progress < delivery.milestone.goal) {
-                      return;
-                    }
-
-                    reachMilestone();
-                  }}
-                  style={{
-                    right: 0,
-                    top: "-4px",
-                  }}
-                />
-              </div>
             </>
           }
         >

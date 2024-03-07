@@ -22,6 +22,11 @@ import { isLocked as isGoldLocked } from "features/game/events/landExpansion/mov
 import { InnerPanel } from "components/ui/Panel";
 import { SquareIcon } from "components/ui/SquareIcon";
 import lockIcon from "assets/skills/lock.png";
+import { Crimstone } from "features/game/expansion/components/resources/crimstone/Crimstone";
+import { Beehive } from "features/game/expansion/components/resources/beehive/Beehive";
+import { FlowerBed } from "../flowers/FlowerBed";
+import { Sunstone } from "features/game/expansion/components/resources/sunstone/Sunstone";
+import { useAppTranslation } from "lib/i18n/useAppTranslations";
 
 export interface ResourceProps {
   name: ResourceName;
@@ -96,6 +101,17 @@ export const READONLY_RESOURCE_COMPONENTS: Record<
       }}
     />
   ),
+  "Crimstone Rock": () => (
+    <img
+      src={ITEM_DETAILS["Crimstone Rock"].image}
+      className="relative"
+      style={{
+        width: `${PIXEL_SCALE * 14}px`,
+        top: `${PIXEL_SCALE * 3}px`,
+        left: `${PIXEL_SCALE * 1}px`,
+      }}
+    />
+  ),
   Tree: () => (
     <img
       src={SUNNYSIDE.resource.tree}
@@ -128,6 +144,35 @@ export const READONLY_RESOURCE_COMPONENTS: Record<
       }}
     />
   ),
+  Beehive: () => (
+    <img
+      src={ITEM_DETAILS["Beehive"].image}
+      className="absolute bottom-0 h-auto w-full"
+      style={{
+        width: `${PIXEL_SCALE * 16}px`,
+      }}
+    />
+  ),
+  "Flower Bed": () => (
+    <img
+      src={ITEM_DETAILS["Flower Bed"].image}
+      className="absolute bottom-0 h-auto w-full"
+      style={{
+        width: `${PIXEL_SCALE * 48}px`,
+      }}
+    />
+  ),
+  "Sunstone Rock": () => (
+    <img
+      src={ITEM_DETAILS["Sunstone Rock"].image}
+      className="absolute h-auto w-full"
+      style={{
+        width: `${PIXEL_SCALE * 24}px`,
+        bottom: `${PIXEL_SCALE * 1}px`,
+        left: `${PIXEL_SCALE * 4}px`,
+      }}
+    />
+  ),
 };
 
 export const RESOURCE_COMPONENTS: Record<
@@ -138,14 +183,17 @@ export const RESOURCE_COMPONENTS: Record<
   "Gold Rock": Gold,
   "Iron Rock": Iron,
   "Stone Rock": Stone,
+  "Crimstone Rock": Crimstone,
   Tree: Tree,
   "Fruit Patch": FruitPatch,
   Boulder: Boulder,
+  Beehive: Beehive,
+  "Flower Bed": FlowerBed,
+  "Sunstone Rock": Sunstone,
 };
 
 const isLandscaping = (state: MachineState) => state.matches("landscaping");
 const _collectibles = (state: MachineState) => state.context.state.collectibles;
-const _buildings = (state: MachineState) => state.context.state.buildings;
 const _crops = (state: MachineState) => state.context.state.crops;
 const _stones = (state: MachineState) => state.context.state.stones;
 const _iron = (state: MachineState) => state.context.state.iron;
@@ -155,6 +203,7 @@ const LockedResource: React.FC<ResourceProps> = (props) => {
   const [showPopover, setShowPopover] = useState(false);
 
   const Component = RESOURCE_COMPONENTS[props.name];
+  const { t } = useAppTranslation();
 
   return (
     <div
@@ -172,12 +221,12 @@ const LockedResource: React.FC<ResourceProps> = (props) => {
           <InnerPanel className="absolute whitespace-nowrap w-fit z-50">
             <div className="flex items-center space-x-2 mx-1 p-1">
               <SquareIcon icon={lockIcon} width={5} />
-              <span className="text-xxs mb-0.5">AoE Locked</span>
+              <span className="text-xxs mb-0.5">{t("aoe.locked")}</span>
             </div>
           </InnerPanel>
         </div>
       )}
-      <div className="relative">
+      <div className="relative w-full h-full pointer-events-none">
         <Component {...props} />
       </div>
     </div>

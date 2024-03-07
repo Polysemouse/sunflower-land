@@ -3,12 +3,14 @@ import React, { useState } from "react";
 import sunflorian from "assets/npcs/lost_sunflorian.gif";
 import shadow from "assets/npcs/shadow.png";
 import { PIXEL_SCALE } from "features/game/lib/constants";
-import { Modal } from "react-bootstrap";
+import { Modal } from "components/ui/Modal";
 import { Panel } from "components/ui/Panel";
 import { MapPlacement } from "features/game/expansion/components/MapPlacement";
 import { SUNNYSIDE } from "assets/sunnyside";
+import { useAppTranslation } from "lib/i18n/useAppTranslations";
 
 export const LostSunflorian: React.FC = () => {
+  const { t } = useAppTranslation();
   const [showModal, setShowModal] = useState(false);
   return (
     <MapPlacement x={-4} y={9} height={1} width={1}>
@@ -35,7 +37,7 @@ export const LostSunflorian: React.FC = () => {
           }}
         />
       </div>
-      <Modal show={showModal} onHide={() => setShowModal(false)} centered>
+      <Modal show={showModal} onHide={() => setShowModal(false)}>
         <Panel
           bumpkinParts={{
             body: "Light Brown Farmer Potion",
@@ -58,11 +60,9 @@ export const LostSunflorian: React.FC = () => {
             }}
           />
           <div className="p-2">
-            <p className="mb-4">My father sent me here to rule over Helios.</p>
-            <p className="mb-4">
-              {`Unfortunately, these Bumpkins don't like me watching them.`}
-            </p>
-            <p>{`I can't wait to return to Sunfloria.`}</p>
+            <p className="mb-4">{t("lostSunflorian.line1")}</p>
+            <p className="mb-4">{t("lostSunflorian.line2")}</p>
+            <p>{t("lostSunflorian.line3")}</p>
           </div>
         </Panel>
       </Modal>

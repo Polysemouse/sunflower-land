@@ -1,17 +1,16 @@
 import React, { useContext, useState } from "react";
 import { useActor } from "@xstate/react";
-import { Modal } from "react-bootstrap";
+import { Modal } from "components/ui/Modal";
 
 import { Context } from "features/game/GoblinProvider";
 import { Panel } from "components/ui/Panel";
-
-import * as AuthProvider from "features/auth/lib/Provider";
 
 import { MachineInterpreter } from "./lib/tradingPostMachine";
 import { Selling } from "../selling/Selling";
 import { Buying } from "../buying/Buying";
 import { Tabs } from "./components/Tabs";
 import { Button } from "components/ui/Button";
+import { useAppTranslation } from "lib/i18n/useAppTranslations";
 
 interface TraderModalProps {
   isOpen: boolean;
@@ -24,10 +23,9 @@ export const TraderModal: React.FC<TraderModalProps> = ({
   initialTab = "selling",
   onClose,
 }) => {
+  const { t } = useAppTranslation();
   const { goblinService } = useContext(Context);
   const [goblinState] = useActor(goblinService);
-  const { authService } = useContext(AuthProvider.Context);
-  const [authState] = useActor(authService);
 
   const child = goblinState.children.tradingPost as MachineInterpreter;
 
@@ -57,12 +55,9 @@ export const TraderModal: React.FC<TraderModalProps> = ({
     if (!goblinState.context.verified) {
       return (
         <>
-          <p className="text-sm p-1 m-1">
-            Proof of humanity is needed for this feature. Please take a quick
-            selfie.
-          </p>
+          <p className="text-sm p-1 m-1">{t("trader.PoH")}</p>
           <Button className="mr-1" onClick={proovePersonhood}>
-            Start Verification
+            {t("trader.start.verification")}
           </Button>
         </>
       );
@@ -74,20 +69,20 @@ export const TraderModal: React.FC<TraderModalProps> = ({
         {isTrading && !isSelling && <Buying />}
 
         {machine.matches("loading") && (
-          <span className="loading m-2">Loading</span>
+          <span className="loading m-2">{t("loading")}</span>
         )}
         {machine.matches("updatingSession") && (
-          <span className="loading m-2">Refreshing</span>
+          <span className="loading m-2">{t("refreshing")}</span>
         )}
 
         {machine.matches("listing") && (
-          <span className="loading m-2">Listing</span>
+          <span className="loading m-2">{t("listing")}</span>
         )}
         {machine.matches("cancelling") && (
-          <span className="loading m-2">Cancelling</span>
+          <span className="loading m-2">{t("cancelling")}</span>
         )}
         {machine.matches("purchasing") && (
-          <span className="loading m-2">Purchasing</span>
+          <span className="loading m-2">{t("purchasing")}</span>
         )}
       </>
     );
@@ -95,7 +90,6 @@ export const TraderModal: React.FC<TraderModalProps> = ({
 
   return (
     <Modal
-      centered
       show={isOpen}
       // Prevent modal from closing during asynchronous state (listing, purchasing, cancelling, etc)
       onHide={!isDisabled ? handleClose : undefined}

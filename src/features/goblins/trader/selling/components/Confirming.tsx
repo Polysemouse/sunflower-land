@@ -7,6 +7,7 @@ import { Button } from "components/ui/Button";
 import { ITEM_DETAILS } from "features/game/types/images";
 
 import { Draft } from "../lib/sellingMachine";
+import { useAppTranslation } from "lib/i18n/useAppTranslations";
 
 interface ConfirmProps {
   tax: number;
@@ -21,6 +22,7 @@ export const Confirming: React.FC<ConfirmProps> = ({
   onBack,
   onConfirm,
 }) => {
+  const { t } = useAppTranslation();
   const resource = ITEM_DETAILS[draft.resourceName];
 
   // Round to 2 decimal places
@@ -42,7 +44,7 @@ export const Confirming: React.FC<ConfirmProps> = ({
       <div className="p-2 w-full">
         <div className="flex items-center">
           <span className="text-xs sm:text-sm whitespace-nowrap w-1/2">
-            Buyer Pays
+            {t("trader.buyer.pays")}
           </span>
           <div className="flex items-center w-1/2">
             <img src={token} className="w-6" />
@@ -51,7 +53,7 @@ export const Confirming: React.FC<ConfirmProps> = ({
         </div>
         <div className="flex items-center">
           <span className="text-xs sm:text-sm whitespace-nowrap w-1/2">
-            Price per unit
+            {t("trader.price.per.unit")}
           </span>
           <div className="flex items-center w-1/2">
             <img src={token} className="w-6" />
@@ -60,7 +62,7 @@ export const Confirming: React.FC<ConfirmProps> = ({
         </div>
         <div className="flex items-center">
           <span className="text-xs sm:text-sm whitespace-nowrap w-1/2">
-            Goblin Fee
+            {t("trader.goblin.fee")}
           </span>
           <div className="flex items-center w-1/2">
             <img src={goblin} className="w-6" />
@@ -69,7 +71,7 @@ export const Confirming: React.FC<ConfirmProps> = ({
         </div>
         <div className="flex items-center">
           <span className="text-xs sm:text-sm whitespace-nowrap w-1/2">
-            You Receive
+            {t("trader.you.receive")}
           </span>
           <div className="flex items-center w-1/2">
             <img src={token} className="w-6" />
@@ -78,8 +80,8 @@ export const Confirming: React.FC<ConfirmProps> = ({
         </div>
       </div>
       <div className="flex space-x-2 w-full">
-        <Button onClick={onBack}>Back</Button>
-        <Button onClick={onConfirm}>Confirm</Button>
+        <Button onClick={onBack}>{t("back")}</Button>
+        <Button onClick={onConfirm}>{t("confirm")}</Button>
       </div>
     </div>
   );

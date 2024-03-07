@@ -4,17 +4,19 @@ import { ChestCaptcha } from "features/island/common/chest-reward/ChestCaptcha";
 import { Ocean } from "features/world/ui/Ocean";
 import { NPC_WEARABLES } from "lib/npcs";
 import React, { useState } from "react";
-import { Modal } from "react-bootstrap";
+import { Modal } from "components/ui/Modal";
+import { useAppTranslation } from "lib/i18n/useAppTranslations";
 
 export const GoblinSwarm: React.FC = () => {
   const [state, setState] = useState<"idle" | "complete" | "fail">("idle");
+  const { t } = useAppTranslation();
 
   if (state === "complete") {
     return (
       <Ocean>
-        <Modal show centered>
+        <Modal show>
           <SpeakingModal
-            message={[{ text: "Congratulations!" }]}
+            message={[{ text: t("congrats") }]}
             bumpkinParts={NPC_WEARABLES.grubnuk}
             onClose={() => setState("idle")}
           />
@@ -26,7 +28,7 @@ export const GoblinSwarm: React.FC = () => {
   if (state === "fail") {
     return (
       <Ocean>
-        <Modal show centered>
+        <Modal show>
           <SpeakingModal
             message={[{ text: "On no, you failed the challenge!" }]}
             bumpkinParts={NPC_WEARABLES.grubnuk}
@@ -39,7 +41,7 @@ export const GoblinSwarm: React.FC = () => {
 
   return (
     <Ocean>
-      <Modal show centered>
+      <Modal show>
         <Panel>
           <ChestCaptcha
             onOpen={() => setState("complete")}

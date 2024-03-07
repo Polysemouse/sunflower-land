@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useContext, useState } from "react";
 
 import levelIcon from "assets/icons/level_up.png";
 import token from "assets/icons/token_2.png";
@@ -19,12 +19,14 @@ import { PIXEL_SCALE } from "features/game/lib/constants";
 import { SkillBadges } from "./SkillBadges";
 import { getAvailableBumpkinSkillPoints } from "features/game/events/landExpansion/pickSkill";
 import { SUNNYSIDE } from "assets/sunnyside";
-import { Bumpkin, Inventory } from "features/game/types/game";
+import { Bumpkin, GameState, Inventory } from "features/game/types/game";
 import { ResizableBar } from "components/ui/ProgressBar";
 import { CloseButtonPanel } from "features/game/components/CloseablePanel";
 import { BumpkinEquip } from "./BumpkinEquip";
 import { AchievementBadges } from "./AchievementBadges";
 import { Trade } from "./Trade";
+import { Context } from "features/game/GameProvider";
+import { useAppTranslation } from "lib/i18n/useAppTranslations";
 
 type ViewState = "home" | "achievements" | "skills";
 
@@ -73,6 +75,7 @@ interface Props {
   inventory: Inventory;
   readonly: boolean;
   isFullUser: boolean;
+  gameState: GameState;
 }
 
 export const BumpkinModal: React.FC<Props> = ({
@@ -82,11 +85,14 @@ export const BumpkinModal: React.FC<Props> = ({
   inventory,
   readonly,
   isFullUser,
+  gameState,
 }) => {
+  const { gameService } = useContext(Context);
+
   const [view, setView] = useState<ViewState>(initialView);
 
   const [tab, setTab] = useState(0);
-
+  const { t } = useAppTranslation();
   const getVisitBumpkinUrl = () => {
     if (readonly) {
       const baseUrl =
@@ -139,17 +145,17 @@ export const BumpkinModal: React.FC<Props> = ({
       tabs={[
         {
           icon: SUNNYSIDE.icons.player,
-          name: "Info",
+          name: t("info"),
         },
         ...(!readonly
           ? [
               {
                 icon: SUNNYSIDE.icons.wardrobe,
-                name: "Equip",
+                name: t("equip"),
               },
               {
                 icon: token,
-                name: "Trades",
+                name: t("trades"),
               },
             ]
           : []),
@@ -190,7 +196,7 @@ export const BumpkinModal: React.FC<Props> = ({
                 />
                 <div>
                   <p className="text-base">
-                    Level {level}
+                    {t("lvl")} {level}
                     {maxLevel ? " (Max)" : ""}
                   </p>
                   {/* Progress bar */}
@@ -203,10 +209,10 @@ export const BumpkinModal: React.FC<Props> = ({
               className="mb-2 cursor-pointer"
               onClick={() => setView("skills")}
             >
-              <InnerPanel className="relative mt-1 px-2 py-1">
+              <InnerPanel className="relative mt-1 !px-2 !py-1">
                 <div className="flex items-center mb-1 justify-between">
                   <div className="flex items-center">
-                    <span className="text-xs">Skills</span>
+                    <span className="text-xs">{t("skills")}</span>
                     {hasAvailableSP && !readonly && (
                       <img
                         src={SUNNYSIDE.icons.expression_alerted}
@@ -214,7 +220,7 @@ export const BumpkinModal: React.FC<Props> = ({
                       />
                     )}
                   </div>
-                  <span className="text-xxs underline">View all</span>
+                  <span className="text-xxs underline">{t("viewAll")}</span>
                 </div>
                 <SkillBadges
                   inventory={inventory}
@@ -227,12 +233,12 @@ export const BumpkinModal: React.FC<Props> = ({
               className="mb-2 cursor-pointer"
               onClick={() => setView("achievements")}
             >
-              <InnerPanel className="relative mt-1 px-2 py-1">
+              <InnerPanel className="relative mt-1 !px-2 !py-1">
                 <div className="flex items-center mb-1 justify-between">
                   <div className="flex items-center">
-                    <span className="text-xs">Achievements</span>
+                    <span className="text-xs">{t("achievements")}</span>
                   </div>
-                  <span className="text-xxs underline">View all</span>
+                  <span className="text-xxs underline">{t("viewAll")}</span>
                 </div>
                 <AchievementBadges achievements={bumpkin?.achievements} />
               </InnerPanel>
@@ -240,7 +246,18 @@ export const BumpkinModal: React.FC<Props> = ({
           </div>
         </div>
       )}
-      {tab === 1 && <BumpkinEquip />}
+      {tab === 1 && (
+        <BumpkinEquip
+          equipment={bumpkin.equipped}
+          game={gameState}
+          onEquip={(equipment) => {
+            gameService.send("bumpkin.equipped", {
+              equipment,
+            });
+            gameService.send("SAVE");
+          }}
+        />
+      )}
       {tab === 2 && <Trade />}
     </CloseButtonPanel>
   );

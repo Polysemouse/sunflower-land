@@ -12,7 +12,6 @@ import { balancesToInventory } from "lib/utils/visitUtils";
 import { fromWei, toBN, toWei } from "web3-utils";
 
 import token from "assets/icons/token_2.png";
-import lockIcon from "assets/skills/lock.png";
 import classNames from "classnames";
 import { setPrecision } from "lib/utils/formatNumber";
 import { transferInventoryItem } from "./WithdrawItems";
@@ -22,7 +21,6 @@ import { Box } from "components/ui/Box";
 import { KNOWN_IDS } from "features/game/types";
 import { Button } from "components/ui/Button";
 import { Loading } from "features/auth/components";
-import { useIsMobile } from "lib/utils/hooks/useIsMobile";
 import { DepositArgs } from "lib/blockchain/Deposit";
 import { sflBalanceOf } from "lib/blockchain/Token";
 import { CopyAddress } from "components/ui/CopyAddress";
@@ -32,7 +30,11 @@ import { getImageUrl } from "features/goblins/tailor/TabContent";
 import { loadWardrobe } from "lib/blockchain/BumpkinItems";
 import { getBudsBalance } from "lib/blockchain/Buds";
 import { CONFIG } from "lib/config";
+import { GameWallet } from "features/wallet/Wallet";
 import { Label } from "components/ui/Label";
+import { SUNNYSIDE } from "assets/sunnyside";
+import { useAppTranslation } from "lib/i18n/useAppTranslations";
+import { isMobile } from "mobile-device-detect";
 
 const imageDomain = CONFIG.NETWORK === "mainnet" ? "buds" : "testnet-buds";
 
@@ -66,6 +68,44 @@ export const Deposit: React.FC<Props> = ({
   farmAddress,
   canDeposit = true,
 }) => {
+  const [showIntro, setShowIntro] = useState(true);
+  const { t } = useAppTranslation();
+  if (showIntro) {
+    return (
+      <>
+        <div className="p-2">
+          <Label icon={SUNNYSIDE.resource.pirate_bounty} type="default">
+            {t("deposit")}
+          </Label>
+          <p className="my-2 text-sm">{t("question.depositSFLItems")}</p>
+        </div>
+        <Button onClick={() => setShowIntro(false)}>{t("continue")}</Button>
+      </>
+    );
+  }
+
+  return (
+    <GameWallet action="deposit">
+      <DepositOptions
+        onClose={onClose}
+        onDeposit={onDeposit}
+        onLoaded={onLoaded}
+        farmAddress={farmAddress}
+        canDeposit={canDeposit}
+      />
+    </GameWallet>
+  );
+};
+
+const DepositOptions: React.FC<Props> = ({
+  onClose,
+  onDeposit,
+  onLoaded,
+  farmAddress,
+}) => {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars, unused-imports/no-unused-vars
+  const [hasWeb3, setHasWeb3] = useState(false);
+
   const [status, setStatus] = useState<Status>("loading");
   // These are the balances of the user's personal wallet
   const [sflBalance, setSflBalance] = useState<Decimal>(new Decimal(0));
@@ -76,7 +116,8 @@ export const Deposit: React.FC<Props> = ({
   const [inventoryToDeposit, setInventoryToDeposit] = useState<Inventory>({});
   const [wearablesToDeposit, setWearablesToDeposit] = useState<Wardrobe>({});
   const [budsToDeposit, setBudsToDeposit] = useState<number[]>([]);
-  const [isMobile] = useIsMobile();
+
+  const { t } = useAppTranslation();
 
   useEffect(() => {
     if (status !== "loading") return;
@@ -134,11 +175,14 @@ export const Deposit: React.FC<Props> = ({
     };
 
     loadBalances();
-  }, [status]);
+  }, [onLoaded, status]);
 
   if (status === "error") {
     <div className="p-2">
-      <p>There was an error loading your balances.</p>
+      <p>
+        {t("deposit.errorLoadingBalances")}
+        {","}
+      </p>
     </div>;
   }
 
@@ -263,24 +307,26 @@ export const Deposit: React.FC<Props> = ({
     sflBalance.eq(0);
   const validDepositAmount = sflDepositAmount > 0 && !amountGreaterThanBalance;
 
-  if (!canDeposit) {
-    return (
-      <div className="p-2 space-y-2">
-        <p>To deposit items you must first level up</p>
-        <Label icon={lockIcon} type="danger">
-          Level 3
-        </Label>
-      </div>
-    );
-  }
+  // if (!canDeposit) {
+  //   return (
+  //     <div className="p-2 space-y-2">
+  //       <p>{t("deposit.toDepositLevelUp")}</p>
+  //       <Label icon={lockIcon} type="danger">
+  //        {t("deposit.level")}
+  //       </Label>
+  //     </div>
+  //   );
+  // }
   return (
     <>
       {status === "loading" && <Loading />}
       {status === "loaded" && emptyWallet && (
         <div className="p-2 space-y-2">
-          <p>No SFL or Collectibles Found!</p>
+          <p>{t("deposit.noSflOrCollectibles")}</p>
           <div className="flex text-[12px] sm:text-xs mb-3 space-x-1">
-            <span className="whitespace-nowrap">Farm address:</span>
+            <span className="whitespace-nowrap">
+              {t("deposit.farmAddress")}
+            </span>
             <CopyAddress address={farmAddress} />
           </div>
         </div>
@@ -288,12 +334,12 @@ export const Deposit: React.FC<Props> = ({
       {status === "loaded" && !emptyWallet && (
         <>
           <div className="p-2 mb-1">
-            <p className="mb-2">Your Personal Wallet</p>
+            <p className="mb-2">{t("deposit.yourPersonalWallet")}</p>
             <div className="divide-y-2 divide-dashed divide-brown-600">
               <div className="space-y-3 mb-3">
                 {sflBalance.gt(0) && (
                   <>
-                    <p className="text-sm">SFL</p>
+                    <p className="text-sm">{"SFL"}</p>
                     <div className="flex items-start justify-between mb-4">
                       <div className="relative w-full mr-4">
                         <input
@@ -322,7 +368,7 @@ export const Deposit: React.FC<Props> = ({
 
                 {hasItemsInInventory && (
                   <>
-                    <p className="text-sm">Collectibles</p>
+                    <p className="text-sm">{t("collectibles")}</p>
                     <div className="flex flex-wrap h-fit -ml-1.5">
                       {depositableItems.map((item) => {
                         return (
@@ -340,7 +386,7 @@ export const Deposit: React.FC<Props> = ({
                 )}
                 {hasBuds && (
                   <>
-                    <p className="text-sm">Buds</p>
+                    <p className="text-sm">{t("buds")}</p>
                     <div
                       className="flex flex-wrap h-fit -ml-1.5 overflow-y-auto scrollable pr-1"
                       style={{ maxHeight: "200px" }}
@@ -360,7 +406,7 @@ export const Deposit: React.FC<Props> = ({
                 )}
                 {hasItemsInWardrobe && (
                   <>
-                    <p className="text-sm">Wearables</p>
+                    <p className="text-sm">{t("wearables")}</p>
                     <div
                       className="flex flex-wrap h-fit -ml-1.5 overflow-y-auto scrollable pr-1"
                       style={{ maxHeight: "200px" }}
@@ -379,12 +425,12 @@ export const Deposit: React.FC<Props> = ({
                   </>
                 )}
                 <div className="pt-3">
-                  <p className="mb-1">Your farm will receive:</p>
+                  <p className="mb-1">{t("deposit.farmWillReceive")}</p>
                   <div className="text-[11px] sm:text-xs mb-3">
                     <CopyAddress address={farmAddress} />
                   </div>
                   <div className="space-y-3">
-                    {validDepositAmount && <p>{sflDepositAmount} SFL</p>}
+                    {validDepositAmount && <p>{`${sflDepositAmount} SFL`}</p>}
                     {hasItemsToDeposit && (
                       <div className="flex flex-wrap h-fit -ml-1.5">
                         {selectedItems.map((item) => {
@@ -441,12 +487,12 @@ export const Deposit: React.FC<Props> = ({
                 href={`https://docs.sunflower-land.com/economy/depositing-and-custody#cant-see-the-items-you-deposited`}
                 rel="noreferrer"
               >
-                {`Deposit didn't arrive?`}
+                {t("deposit.depositDidNotArrive")}
               </a>
             </div>
             {sflDepositAmount > 0 && (
               <div className="mb-1 mt-2 text-xxs">
-                When players withdraw any SFL, a{" "}
+                {t("deposit.goblinTaxInfo")}{" "}
                 <a
                   target="_blank"
                   className="underline text-xxs hover:text-blue-500"
@@ -455,7 +501,7 @@ export const Deposit: React.FC<Props> = ({
                 >
                   {`Goblin Tax`}
                 </a>{" "}
-                is applied.
+                {t("deposit.applied")}
               </div>
             )}
           </div>
@@ -470,7 +516,7 @@ export const Deposit: React.FC<Props> = ({
               amountGreaterThanBalance
             }
           >
-            Send to farm
+            {t("deposit.sendToFarm")}
           </Button>
         </>
       )}

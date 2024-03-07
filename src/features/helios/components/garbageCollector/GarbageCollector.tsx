@@ -5,15 +5,17 @@ import { PIXEL_SCALE } from "features/game/lib/constants";
 import building from "assets/buildings/garbage.png";
 import stall from "assets/buildings/garbage_stall.png";
 
-import { Modal } from "react-bootstrap";
+import { Modal } from "components/ui/Modal";
 import { MapPlacement } from "features/game/expansion/components/MapPlacement";
 import { NPC } from "features/island/bumpkin/components/NPC";
 import { CloseButtonPanel } from "features/game/components/CloseablePanel";
 import { GarbageCollectorModal } from "./components/GarbageCollectorModal";
 import { ITEM_DETAILS } from "features/game/types/images";
+import { useAppTranslation } from "lib/i18n/useAppTranslations";
 
 export const GarbageCollector: React.FC = () => {
   const [isOpen, setIsOpen] = React.useState(false);
+  const { t } = useAppTranslation();
 
   const handleClick = () => {
     setIsOpen(true);
@@ -63,7 +65,7 @@ export const GarbageCollector: React.FC = () => {
           </div>
         </div>
       </MapPlacement>
-      <Modal centered show={isOpen} onHide={() => setIsOpen(false)}>
+      <Modal show={isOpen} onHide={() => setIsOpen(false)}>
         <CloseButtonPanel
           onClose={() => setIsOpen(false)}
           bumpkinParts={{
@@ -76,7 +78,7 @@ export const GarbageCollector: React.FC = () => {
           tabs={[
             {
               icon: ITEM_DETAILS["Solar Flare Ticket"].image,
-              name: "Sell",
+              name: t("sell"),
             },
           ]}
         >

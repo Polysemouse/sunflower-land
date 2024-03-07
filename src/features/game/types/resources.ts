@@ -1,16 +1,19 @@
 import { Dimensions } from "./craftables";
+import { translate } from "lib/i18n/translate";
 
 export type CommodityName =
   | "Wood"
   | "Stone"
   | "Iron"
   | "Gold"
+  | "Crimstone"
   | "Diamond"
   | "Egg"
   | "Honey"
   | "Chicken"
   | "Wild Mushroom"
-  | "Magic Mushroom";
+  | "Magic Mushroom"
+  | "Sunstone";
 
 export type MushroomName = Extract<
   CommodityName,
@@ -23,34 +26,40 @@ export type Commodity = {
 
 export const COMMODITIES: Record<CommodityName, Commodity> = {
   Wood: {
-    description: "Used to craft items",
+    description: translate("use.craft"),
   },
   Stone: {
-    description: "Used to craft items",
+    description: translate("use.craft"),
   },
   Iron: {
-    description: "Used to craft items",
+    description: translate("use.craft"),
   },
   Gold: {
-    description: "Used to craft items",
+    description: translate("use.craft"),
+  },
+  Crimstone: {
+    description: translate("use.craft"),
   },
   Diamond: {
-    description: "Used to craft items",
+    description: translate("use.craft"),
   },
   Egg: {
-    description: "Used to craft items",
+    description: translate("use.craft"),
   },
   Chicken: {
-    description: "Used to lay eggs",
+    description: translate("chicken.description"),
   },
   Honey: {
-    description: "Used to sweeten your cooking",
+    description: translate("honey.description"),
   },
   "Wild Mushroom": {
-    description: "Used to cook basic recipes",
+    description: translate("wildMushroom.description"),
   },
   "Magic Mushroom": {
-    description: "Used to cook advanced recipes",
+    description: translate("magicMushroom.description"),
+  },
+  Sunstone: {
+    description: translate("use.craft"),
   },
 };
 
@@ -59,9 +68,13 @@ export type ResourceName =
   | "Stone Rock"
   | "Iron Rock"
   | "Gold Rock"
+  | "Crimstone Rock"
   | "Crop Plot"
   | "Fruit Patch"
-  | "Boulder";
+  | "Boulder"
+  | "Beehive"
+  | "Sunstone Rock"
+  | "Flower Bed";
 
 export const RESOURCES: Record<ResourceName, string> = {
   "Crop Plot": "Plant crops",
@@ -69,8 +82,12 @@ export const RESOURCES: Record<ResourceName, string> = {
   "Gold Rock": "Mine gold",
   "Iron Rock": "Mine iron",
   "Stone Rock": "Mine stone",
+  "Crimstone Rock": "Mine crimstone",
   Boulder: "Mine rare minerals",
   Tree: "Chop Wood",
+  Beehive: "Collect honey",
+  "Flower Bed": "Plant flowers",
+  "Sunstone Rock": "Mine sunstone",
 };
 
 export const RESOURCE_DIMENSIONS: Record<ResourceName, Dimensions> = {
@@ -90,6 +107,10 @@ export const RESOURCE_DIMENSIONS: Record<ResourceName, Dimensions> = {
     width: 1,
     height: 1,
   },
+  "Crimstone Rock": {
+    width: 2,
+    height: 2,
+  },
   Tree: {
     width: 2,
     height: 2,
@@ -99,6 +120,18 @@ export const RESOURCE_DIMENSIONS: Record<ResourceName, Dimensions> = {
     height: 2,
   },
   Boulder: {
+    width: 2,
+    height: 2,
+  },
+  Beehive: {
+    width: 1,
+    height: 1,
+  },
+  "Flower Bed": {
+    width: 3,
+    height: 1,
+  },
+  "Sunstone Rock": {
     width: 2,
     height: 2,
   },

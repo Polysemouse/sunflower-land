@@ -4,7 +4,7 @@ import { GOLD_RECOVERY_TIME } from "features/game/lib/constants";
 import { Context } from "features/game/GameProvider";
 
 import { getTimeLeft } from "lib/utils/time";
-import { miningFallAudio } from "lib/utils/sfx";
+import { loadAudio, miningFallAudio } from "lib/utils/sfx";
 import { InventoryItemName, Rock } from "features/game/types/game";
 import useUiRefresher from "lib/utils/hooks/useUiRefresher";
 import { useSelector } from "@xstate/react";
@@ -15,7 +15,6 @@ import { DepletingGold } from "./components/DepletingGold";
 import { RecoveredGold } from "./components/RecoveredGold";
 import { canMine } from "features/game/expansion/lib/utils";
 import { getBumpkinLevel } from "features/game/lib/level";
-import { getBumpkinLevelRequiredForNode } from "features/game/expansion/lib/expansionNodes";
 
 const HITS = 3;
 const tool = "Iron Pickaxe";
@@ -49,6 +48,10 @@ export const Gold: React.FC<Props> = ({ id, index }) => {
 
   const divRef = useRef<HTMLDivElement>(null);
 
+  useEffect(() => {
+    loadAudio([miningFallAudio]);
+  }, []);
+
   // Reset the touch count when clicking outside of the component
   useEffect(() => {
     const handleClickOutside = (event: any) => {
@@ -79,17 +82,9 @@ export const Gold: React.FC<Props> = ({ id, index }) => {
   const timeLeft = getTimeLeft(resource.stone.minedAt, GOLD_RECOVERY_TIME);
   const mined = !canMine(resource, GOLD_RECOVERY_TIME);
 
-  const bumpkinLevelRequired = getBumpkinLevelRequiredForNode(
-    index,
-    "Gold Rock"
-  );
-  const bumpkinLevel = useSelector(gameService, _bumpkinLevel);
-  const bumpkinTooLow = bumpkinLevel < bumpkinLevelRequired;
-
   useUiRefresher({ active: mined });
 
   const strike = () => {
-    if (bumpkinTooLow) return;
     if (!hasTool) return;
 
     setTouchCount((count) => count + 1);
@@ -124,11 +119,7 @@ export const Gold: React.FC<Props> = ({ id, index }) => {
       {/* Resource ready to collect */}
       {!mined && (
         <div ref={divRef} className="absolute w-full h-full" onClick={strike}>
-          <RecoveredGold
-            bumpkinLevelRequired={bumpkinLevelRequired}
-            hasTool={hasTool}
-            touchCount={touchCount}
-          />
+          <RecoveredGold hasTool={hasTool} touchCount={touchCount} />
         </div>
       )}
 

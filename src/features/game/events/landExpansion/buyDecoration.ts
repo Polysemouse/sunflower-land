@@ -10,8 +10,6 @@ import {
   LANDSCAPING_DECORATIONS,
   LandscapingDecorationName,
   POTION_HOUSE_DECORATIONS,
-  SEASONAL_DECORATIONS,
-  SeasonalDecorationName,
   ShopDecorationName,
 } from "features/game/types/decorations";
 import { GameState } from "features/game/types/game";
@@ -19,7 +17,7 @@ import cloneDeep from "lodash.clonedeep";
 
 export type buyDecorationAction = {
   type: "decoration.bought";
-  name: ShopDecorationName | SeasonalDecorationName | LandscapingDecorationName;
+  name: ShopDecorationName | LandscapingDecorationName;
   id?: string;
   coordinates?: {
     x: number;
@@ -37,7 +35,6 @@ const DECORATIONS = (state: GameState, date: Date) => {
   return {
     ...BASIC_DECORATIONS(),
     ...LANDSCAPING_DECORATIONS(),
-    ...SEASONAL_DECORATIONS(state, date),
     ...POTION_HOUSE_DECORATIONS(),
   };
 };
@@ -111,11 +108,16 @@ export function buyDecoration({
 
   if (action.coordinates && action.id) {
     const dimensions = COLLECTIBLES_DIMENSIONS[name];
-    const collides = detectCollision(stateCopy, {
-      x: action.coordinates.x,
-      y: action.coordinates.y,
-      height: dimensions.height,
-      width: dimensions.width,
+    const collides = detectCollision({
+      state: stateCopy,
+      position: {
+        x: action.coordinates.x,
+        y: action.coordinates.y,
+        height: dimensions.height,
+        width: dimensions.width,
+      },
+      location: "farm",
+      name,
     });
 
     if (collides) {

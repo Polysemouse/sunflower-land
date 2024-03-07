@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 
-import { Modal } from "react-bootstrap";
+import { Modal } from "components/ui/Modal";
 import { getKeys } from "features/game/types/craftables";
 
 import chefHat from "src/assets/icons/chef_hat.png";
@@ -13,7 +13,7 @@ import {
 } from "features/game/types/consumables";
 import { MachineInterpreter } from "features/island/buildings/lib/craftingMachine";
 import { CloseButtonPanel } from "features/game/components/CloseablePanel";
-import { ConversationName } from "features/game/types/conversations";
+import { ConversationName } from "features/game/types/announcements";
 import { Panel } from "components/ui/Panel";
 import { NPC_WEARABLES } from "lib/npcs";
 import { SpeakingText } from "features/game/components/SpeakingModal";
@@ -63,7 +63,7 @@ export const FirePitModal: React.FC<Props> = ({
   );
 
   return (
-    <Modal show={isOpen} onHide={onClose} centered>
+    <Modal show={isOpen} onHide={onClose}>
       {showIntro && (
         <Panel bumpkinParts={NPC_WEARABLES.bruce}>
           <SpeakingText

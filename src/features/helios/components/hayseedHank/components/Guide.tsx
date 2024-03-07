@@ -41,7 +41,7 @@ export const Guide: React.FC<Props> = ({ selected, onSelect }) => {
                 href={GUIDE_PATHS[selected].docs}
                 className="text-xs underline pr-2"
               >
-                Docs
+                {t("docs")}
               </a>
             )}
           </div>
@@ -53,7 +53,7 @@ export const Guide: React.FC<Props> = ({ selected, onSelect }) => {
           ))}
 
           {GUIDE_PATHS[selected].achievements.map((name) => (
-            <OuterPanel className="mt-2 p-1" key={name}>
+            <OuterPanel className="mt-2 !p-1" key={name}>
               <GuideTask state={state} task={name} />
             </OuterPanel>
           ))}
@@ -93,7 +93,7 @@ export const Guide: React.FC<Props> = ({ selected, onSelect }) => {
 
           return (
             <OuterPanel
-              className="flex mb-2 p-1 w-full cursor-pointer  hover:bg-brown-200"
+              className="flex mb-2 !p-1 w-full cursor-pointer  hover:bg-brown-200"
               key={path}
               onClick={() => onSelect(path)}
             >
@@ -130,7 +130,7 @@ export const Guide: React.FC<Props> = ({ selected, onSelect }) => {
                     })}
                   </div>
                   <div className="flex items-center">
-                    <p className="text-xs  mr-1  ">{t("readMore")}</p>
+                    <p className="text-xs  mr-1  ">{t("read.more")}</p>
                     <img src={SUNNYSIDE.icons.chevron_right} className="h-4" />
                   </div>
                 </div>

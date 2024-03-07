@@ -1,17 +1,21 @@
-import React from "react";
+import React, { useEffect } from "react";
 import blacksmith from "assets/buildings/goblin_blacksmith.gif";
 
 import { Action } from "components/ui/Action";
 import { PIXEL_SCALE } from "features/game/lib/constants";
-import { blacksmithAudio } from "lib/utils/sfx";
+import { blacksmithAudio, loadAudio } from "lib/utils/sfx";
 import { MapPlacement } from "features/game/expansion/components/MapPlacement";
-import { Modal } from "react-bootstrap";
+import { Modal } from "components/ui/Modal";
 import { CloseButtonPanel } from "features/game/components/CloseablePanel";
 import { GoblinBlacksmithItems } from "./components/GoblinBlacksmithItems";
 import { SUNNYSIDE } from "assets/sunnyside";
 
 export const RetreatBlacksmith: React.FC = () => {
   const [isOpen, setIsOpen] = React.useState(false);
+
+  useEffect(() => {
+    loadAudio([blacksmithAudio]);
+  }, []);
 
   const openBlacksmith = () => {
     setIsOpen(true);
@@ -52,7 +56,7 @@ export const RetreatBlacksmith: React.FC = () => {
           </div>
         </div>
       </MapPlacement>
-      <Modal centered show={isOpen} onHide={() => setIsOpen(false)}>
+      <Modal show={isOpen} onHide={() => setIsOpen(false)}>
         <CloseButtonPanel
           bumpkinParts={{
             body: "Goblin Potion",

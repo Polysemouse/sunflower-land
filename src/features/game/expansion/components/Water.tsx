@@ -1,35 +1,39 @@
-import React from "react";
+import React, { useContext } from "react";
 
 import { GRID_WIDTH_PX, PIXEL_SCALE } from "features/game/lib/constants";
 
-import dragonfly from "assets/decorations/dragonfly.gif";
-
 import goblinSwimming from "assets/npcs/goblin_swimming.gif";
 import cossies from "assets/decorations/cossies.png";
-import bearIsland from "assets/land/bear_island.webp";
-import abandonedLand from "assets/land/abandoned_land.webp";
+import mushroomIsland from "assets/land/mushroom_island.png";
 
 import { MapPlacement } from "./MapPlacement";
 import { Snorkler } from "./water/Snorkler";
 import { SharkBumpkin } from "./water/SharkBumpkin";
-import { Arcade } from "features/community/arcade/Arcade";
 
 import { SUNNYSIDE } from "assets/sunnyside";
-import { DailyReward } from "./dailyReward/DailyReward";
 import { SeasonTeaser } from "./SeasonTeaser";
 import { LAND_WIDTH } from "../Land";
 import { TravelTeaser } from "./TravelTeaser";
 import { DiscordBoat } from "./DiscordBoat";
+import { IslandUpgrader } from "./IslandUpgrader";
+import { GameState } from "features/game/types/game";
+import { Context } from "features/game/GameProvider";
+import { OnePlanetPopper } from "./OnePlanetPopper";
+import { GasHeroes } from "./GasHeroes";
 
 interface Props {
   townCenterBuilt: boolean;
   expansionCount: number;
+  gameState: GameState;
 }
 
 export const WaterComponent: React.FC<Props> = ({
   townCenterBuilt,
   expansionCount,
+  gameState,
 }) => {
+  const { showAnimations } = useContext(Context);
+
   // As the land gets bigger, push the water decorations out
   const offset = Math.ceil((Math.sqrt(expansionCount) * LAND_WIDTH) / 2);
 
@@ -41,19 +45,6 @@ export const WaterComponent: React.FC<Props> = ({
       }}
     >
       {/* Decorations */}
-
-      {/* Dragonfly */}
-      <MapPlacement x={-4 - offset} y={3} width={1}>
-        <img
-          style={{
-            width: `${PIXEL_SCALE * 13}px`,
-            left: `${PIXEL_SCALE * 1}px`,
-            bottom: `${PIXEL_SCALE * 4}px`,
-          }}
-          src={dragonfly}
-          className="animate-float"
-        />
-      </MapPlacement>
 
       <DiscordBoat />
 
@@ -96,25 +87,16 @@ export const WaterComponent: React.FC<Props> = ({
         />
       </MapPlacement>
 
-      {/* Islands */}
-
-      {/* Top right island */}
-      <MapPlacement x={7 + offset} y={15 + offset} width={6}>
+      <MapPlacement x={-20} y={6} width={4}>
         <img
-          src={bearIsland}
-          style={{
-            width: `${PIXEL_SCALE * 86}px`,
-          }}
-        />
-        <div
+          src={mushroomIsland}
           className="absolute"
           style={{
-            top: `${GRID_WIDTH_PX * 2 - PIXEL_SCALE * 1}px`,
-            left: `${GRID_WIDTH_PX * 3}px`,
+            width: `${PIXEL_SCALE * 54}px`,
+            left: `${PIXEL_SCALE * -3}px`,
+            top: 0,
           }}
-        >
-          <Arcade />
-        </div>
+        />
       </MapPlacement>
 
       {/* Bottom island */}
@@ -122,15 +104,16 @@ export const WaterComponent: React.FC<Props> = ({
 
       <TravelTeaser />
 
-      {/* Bottom right island */}
-      <MapPlacement x={7 + offset} y={-2 - offset} width={6}>
-        {!townCenterBuilt && <DailyReward />}
-        <img
-          src={abandonedLand}
-          style={{
-            width: `${PIXEL_SCALE * 46}px`,
-          }}
+      <IslandUpgrader gameState={gameState} offset={offset} />
+
+      <MapPlacement x={-5 - offset} y={2} width={4}>
+        <OnePlanetPopper
+          event={gameState.specialEvents.current["One Planet Popper"]}
         />
+      </MapPlacement>
+
+      <MapPlacement x={-5 - offset} y={8} width={5}>
+        <GasHeroes event={gameState.specialEvents.current["Gas Hero"]} />
       </MapPlacement>
     </div>
   );

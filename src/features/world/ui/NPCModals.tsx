@@ -1,29 +1,30 @@
 import { CloseButtonPanel } from "features/game/components/CloseablePanel";
 import { SpeakingModal } from "features/game/components/SpeakingModal";
-import { NPCName, NPC_WEARABLES, isNPCAcknowledged } from "lib/npcs";
-import React, { useContext, useEffect, useState } from "react";
-import { Modal } from "react-bootstrap";
-import { DecorationShopItems } from "features/helios/components/decorations/component/DecorationShopItems";
+import { NPCName, NPC_WEARABLES } from "lib/npcs";
+import React, { useEffect, useState } from "react";
+import { Modal } from "components/ui/Modal";
 import { DeliveryPanel } from "./deliveries/DeliveryPanel";
-import { Stylist } from "./stylist/Stylist";
 import { SceneId } from "../mmoMachine";
 
-import { Pete } from "./npcs/Pete";
 import { Birdie } from "./npcs/Birdie";
 import { HayseedHankV2 } from "features/helios/components/hayseedHank/HayseedHankV2";
-import { Grubnuk } from "./npcs/Grubnuk";
-import { Blacksmith } from "./npcs/Blacksmith";
 import { PotionHouseShopItems } from "features/helios/components/potions/component/PotionHouseShopItems";
 import { Bert } from "./npcs/Bert";
-import { Context } from "features/game/GameProvider";
-import { useActor } from "@xstate/react";
-import { ModalContext } from "features/game/components/modal/ModalProvider";
 import { Donations } from "./donations/Donations";
-import { Shelly } from "./npcs/Shelly";
 import { Finn } from "./npcs/Finn";
 import { GoldTooth } from "./npcs/GoldTooth";
 import { Luna } from "./npcs/Luna";
 import { Mayor } from "./npcs/Mayor";
+import { FlowerShop } from "./flowerShop/FlowerShop";
+import { DecorationShopItems } from "features/helios/components/decorations/component/DecorationShopItems";
+import { Stylist } from "./stylist/Stylist";
+import { AuctionHouseModal } from "./AuctionHouseModal";
+import { translate } from "lib/i18n/translate";
+import { useAppTranslation } from "lib/i18n/useAppTranslations";
+import { SpecialEventModal } from "./SpecialEventModal";
+import { Glinteye } from "./npcs/Glinteye";
+import { hasFeatureAccess } from "lib/flags";
+import { GameState } from "features/game/types/game";
 
 class NpcModalManager {
   private listener?: (npc: NPCName, isOpen: boolean) => void;
@@ -44,31 +45,20 @@ export const npcModalManager = new NpcModalManager();
 interface Props {
   onNavigate: (sceneId: SceneId) => void;
   scene: SceneId;
+  id: number;
 }
 
 function getInitialNPC(scene: SceneId): NPCName | undefined {
-  if (scene === "beach" && !isNPCAcknowledged("shelly")) {
-    return "shelly";
-  }
-
-  if (scene === "plaza" && !isNPCAcknowledged("santa")) {
-    return "santa";
-  }
-
   return undefined;
 }
 
-export const NPCModals: React.FC<Props> = ({ onNavigate, scene }) => {
-  const { gameService } = useContext(Context);
-  const [gameState] = useActor(gameService);
+export const NPCModals: React.FC<Props> = ({ scene, id }) => {
+  const { t } = useAppTranslation();
+
   const [npc, setNpc] = useState<NPCName | undefined>(getInitialNPC(scene));
 
-  const { openModal } = useContext(ModalContext);
-
-  const inventory = gameState.context.state.inventory;
-
   useEffect(() => {
-    npcModalManager.listen((npc, open) => {
+    npcModalManager.listen((npc) => {
       setNpc(npc);
     });
   }, []);
@@ -82,7 +72,6 @@ export const NPCModals: React.FC<Props> = ({ onNavigate, scene }) => {
       <Modal
         // dialogClassName="npc-dialog"
         show={!!npc}
-        centered
         onHide={closeModal}
       >
         {npc === "elf" && (
@@ -95,29 +84,21 @@ export const NPCModals: React.FC<Props> = ({ onNavigate, scene }) => {
           </CloseButtonPanel>
         )}
 
-        {npc === "shelly" && <Shelly onClose={closeModal} />}
-
+        {npc === "shelly" && <DeliveryPanel npc={npc} onClose={closeModal} />}
+        {npc === "poppy" && <FlowerShop onClose={closeModal} />}
         {npc === "frankie" && <DecorationShopItems onClose={closeModal} />}
         {npc === "stella" && <Stylist onClose={closeModal} />}
-        {npc === "grubnuk" && <Grubnuk onClose={closeModal} />}
+        {npc === "grubnuk" && <DeliveryPanel npc={npc} onClose={closeModal} />}
 
         {npc === "garth" && <PotionHouseShopItems onClose={closeModal} />}
-        {npc === "hammerin harry" && (
-          <SpeakingModal
-            onClose={closeModal}
-            bumpkinParts={NPC_WEARABLES["hammerin harry"]}
-            message={[
-              { text: "Gather round Bumpkins, an auction is about to begin." },
-            ]}
-          />
-        )}
+
         {npc === "marcus" && (
           <SpeakingModal
             onClose={closeModal}
             bumpkinParts={NPC_WEARABLES["marcus"]}
             message={[
               {
-                text: "Hey! You are not allowed to go in my house. Don't you dare touch my things!",
+                text: translate("npc.Modal.Marcus"),
               },
             ]}
           />
@@ -128,8 +109,8 @@ export const NPCModals: React.FC<Props> = ({ onNavigate, scene }) => {
             bumpkinParts={NPC_WEARABLES.craig}
           >
             <div className="p-2">
-              <p className="mb-2">Why are you looking at me strange?</p>
-              <p className="mb-2">Is there something in my teeth...</p>
+              <p className="mb-2">{t("npc.Modal.Craig")}</p>
+              <p className="mb-2">{t("npc.Modal.Craig.one")}</p>
             </div>
           </CloseButtonPanel>
         )}
@@ -139,13 +120,13 @@ export const NPCModals: React.FC<Props> = ({ onNavigate, scene }) => {
             onClose={closeModal}
             message={[
               {
-                text: "Howdy, y'all! Name's Billy.",
+                text: translate("npc.Modal.Billy"),
               },
               {
-                text: "I found these baby seedlings but for the life of me I cannot figure out what to do with them.",
+                text: translate("npc.Modal.Billy.one"),
               },
               {
-                text: "I bet they have something to do with the worm buds that have been appearing around the plaza.",
+                text: translate("npc.Modal.Billy.two"),
                 actions: [
                   {
                     text: "Read more",
@@ -169,18 +150,19 @@ export const NPCModals: React.FC<Props> = ({ onNavigate, scene }) => {
             bumpkinParts={NPC_WEARABLES.gabi}
           >
             <div className="p-2">
-              <p className="mb-2">Oi Bumpkin!</p>
-              <p className="mb-2">
-                You look creative, have you ever thought about contributing art
-                to the game?
-              </p>
+              <p className="mb-2">{t("npc.Modal.Gabi")}</p>
+              <p className="mb-2">{t("npc.Modal.Gabi.one")}</p>
             </div>
           </CloseButtonPanel>
         )}
         {npc === "birdie" && <Birdie onClose={closeModal} />}
         {/* Delivery NPC's */}
-        {npc === "pumpkin' pete" && <Pete onClose={closeModal} />}
-        {npc === "blacksmith" && <Blacksmith onClose={closeModal} />}
+        {npc === "pumpkin' pete" && (
+          <DeliveryPanel npc={npc} onClose={closeModal} />
+        )}
+        {npc === "blacksmith" && (
+          <DeliveryPanel npc={npc} onClose={closeModal} />
+        )}
         {npc === "raven" && <DeliveryPanel npc={npc} onClose={closeModal} />}
         {npc === "tywin" && <DeliveryPanel npc={npc} onClose={closeModal} />}
         {npc === "grimbly" && <DeliveryPanel npc={npc} onClose={closeModal} />}
@@ -202,7 +184,27 @@ export const NPCModals: React.FC<Props> = ({ onNavigate, scene }) => {
         {npc === "finley" && <DeliveryPanel npc={npc} onClose={closeModal} />}
         {npc === "luna" && <Luna onClose={closeModal} />}
         {npc === "mayor" && <Mayor onClose={closeModal} />}
+        {npc === "glinteye" &&
+          hasFeatureAccess({} as GameState, "TRADING_REVAMP") && (
+            <Glinteye onClose={closeModal} />
+          )}
       </Modal>
+      {npc === "Chun Long" && (
+        <SpecialEventModal
+          onClose={closeModal}
+          show={npc === "Chun Long"}
+          npc={npc}
+          eventName="Lunar New Year"
+        />
+      )}
+
+      {npc === "hammerin harry" && (
+        <AuctionHouseModal
+          closeModal={closeModal}
+          id={id}
+          isOpen={npc === "hammerin harry"}
+        />
+      )}
     </>
   );
 };

@@ -1,7 +1,7 @@
 import React, { useContext, useEffect, useState } from "react";
 import { MachineInterpreter } from "../mmoMachine";
 import { Trade } from "../types/Room";
-import { Modal } from "react-bootstrap";
+import { Modal } from "components/ui/Modal";
 import { CloseButtonPanel } from "features/game/components/CloseablePanel";
 import { Context } from "features/game/GameProvider";
 import { useActor } from "@xstate/react";
@@ -13,6 +13,7 @@ import { SUNNYSIDE } from "assets/sunnyside";
 import token from "assets/icons/token_2.png";
 import { Button } from "components/ui/Button";
 import { OuterPanel } from "components/ui/Panel";
+import { useAppTranslation } from "lib/i18n/useAppTranslations";
 
 interface Props {
   farmId: number;
@@ -21,10 +22,11 @@ interface Props {
 
 export const TradeCompleted: React.FC<Props> = ({ mmoService, farmId }) => {
   const [trade, setTrade] = useState<Trade>();
+  const { t } = useAppTranslation();
 
   useEffect(() => {
     mmoService?.state?.context?.server?.state?.trades?.onAdd((trade) => {
-      if (trade.buyerId && trade.sellerId === farmId) {
+      if (trade.buyerId && Number(trade.sellerId) === farmId) {
         setTrade(trade);
       }
     });
@@ -38,10 +40,10 @@ export const TradeCompleted: React.FC<Props> = ({ mmoService, farmId }) => {
     : undefined;
 
   return (
-    <Modal centered show={!!sold} onHide={() => setTrade(undefined)}>
+    <Modal show={!!sold} onHide={() => setTrade(undefined)}>
       <CloseButtonPanel
         onClose={() => setTrade(undefined)}
-        title={"Congratulations, your listing was purchased"}
+        title={t("playerTrade.title.congrat")}
       >
         {sold && (
           <OuterPanel>
@@ -74,7 +76,7 @@ export const TradeCompleted: React.FC<Props> = ({ mmoService, farmId }) => {
                     setTrade(undefined);
                   }}
                 >
-                  Claim
+                  {t("claim")}
                 </Button>
 
                 <div className="flex items-center mt-3 mr-0.5">

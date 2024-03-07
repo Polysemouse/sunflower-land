@@ -1,11 +1,11 @@
-import React, { useState } from "react";
-import Modal from "react-bootstrap/Modal";
+import React, { useEffect, useState } from "react";
+import { Modal } from "components/ui/Modal";
 
 import observatory from "assets/sfts/mom/observatory.gif";
-import observatoryAnimation from "assets/sfts/mom/mom_observatory_animation.gif";
+import observatoryAnimation from "assets/sfts/mom/mom_observatory_animation.webp";
 
 import { Section } from "lib/utils/hooks/useScrollIntoView";
-import { observatoryAnimationAudio } from "lib/utils/sfx";
+import { loadAudio, observatoryAnimationAudio } from "lib/utils/sfx";
 import { PIXEL_SCALE } from "features/game/lib/constants";
 import { CloseButtonPanel } from "features/game/components/CloseablePanel";
 import { Loading } from "features/auth/components";
@@ -16,6 +16,10 @@ export const Observatory: React.FC = () => {
   const [playRand, setPlayRand] = useState<number | undefined>(undefined);
   const [modalTimer, setModalTimer] = useState<number>();
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    loadAudio([observatoryAnimationAudio]);
+  }, []);
 
   const handleOpenTelescope = () => {
     setLoading(true);
@@ -46,7 +50,7 @@ export const Observatory: React.FC = () => {
           alt="Observatory"
         />
       </div>
-      <Modal centered show={!!playRand} onHide={handleCloseTelescope}>
+      <Modal show={!!playRand} onHide={handleCloseTelescope}>
         <CloseButtonPanel onClose={handleCloseTelescope}>
           {loading && <Loading />}
           <div

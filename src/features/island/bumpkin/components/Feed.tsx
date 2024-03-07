@@ -17,6 +17,7 @@ import { PIXEL_SCALE } from "features/game/lib/constants";
 import { MachineState } from "features/game/lib/gameMachine";
 import { getBumpkinLevel } from "features/game/lib/level";
 import { gameAnalytics } from "lib/gameAnalytics";
+import { useAppTranslation } from "lib/i18n/useAppTranslations";
 
 interface Props {
   food: Consumable[];
@@ -24,7 +25,7 @@ interface Props {
 
 const _inventory = (state: MachineState) => state.context.state.inventory;
 const _bumpkin = (state: MachineState) => state.context.state.bumpkin;
-const _collectibles = (state: MachineState) => state.context.state.collectibles;
+const _game = (state: MachineState) => state.context.state;
 const _buds = (state: MachineState) => state.context.state.buds;
 
 export const Feed: React.FC<Props> = ({ food }) => {
@@ -33,9 +34,9 @@ export const Feed: React.FC<Props> = ({ food }) => {
 
   const inventory = useSelector(gameService, _inventory);
   const bumpkin = useSelector(gameService, _bumpkin);
-  const collectibles = useSelector(gameService, _collectibles);
+  const game = useSelector(gameService, _game);
   const buds = useSelector(gameService, _buds);
-
+  const { t } = useAppTranslation();
   useEffect(() => {
     if (food.length) {
       setSelected(food[0]);
@@ -47,12 +48,12 @@ export const Feed: React.FC<Props> = ({ food }) => {
   if (!selected) {
     return (
       <div className="flex flex-col items-center p-2">
-        <span className="text-base text-center mb-4">Hungry?</span>
+        <span className="text-base text-center mb-4">{t("hungry?")}</span>
         <span className="w-full text-sm mb-3">
-          You have no food in your inventory.
+          {t("statements.feed.bumpkin.one")}
         </span>
         <span className="w-full text-sm mb-2">
-          You will need to cook food in order to feed your Bumpkin.
+          {t("statements.feed.bumpkin.two")}
         </span>
         <img
           src={firePit}
@@ -107,12 +108,7 @@ export const Feed: React.FC<Props> = ({ food }) => {
           }}
           properties={{
             xp: new Decimal(
-              getFoodExpBoost(
-                selected,
-                bumpkin as Bumpkin,
-                collectibles,
-                buds ?? {}
-              )
+              getFoodExpBoost(selected, bumpkin as Bumpkin, game, buds ?? {})
             ),
           }}
           actionView={

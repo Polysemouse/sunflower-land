@@ -18,6 +18,8 @@ import {
   COLLECTIBLE_COMPONENTS,
   READONLY_COLLECTIBLES,
 } from "./CollectibleCollection";
+import { CollectibleLocation } from "features/game/types/collectibles";
+import { GameState } from "features/game/types/game";
 
 export type CollectibleProps = {
   name: CollectibleName;
@@ -27,10 +29,13 @@ export type CollectibleProps = {
   x: number;
   y: number;
   grid: GameGrid;
+  location: CollectibleLocation;
+  game: GameState;
 };
 
 type Props = CollectibleProps & {
   showTimers: boolean;
+  location: CollectibleLocation;
 };
 
 const InProgressCollectible: React.FC<Props> = ({
@@ -42,6 +47,8 @@ const InProgressCollectible: React.FC<Props> = ({
   x,
   y,
   grid,
+  location,
+  game,
 }) => {
   const CollectiblePlaced = COLLECTIBLE_COMPONENTS[name];
   const [showTooltip, setShowTooltip] = useState(false);
@@ -66,6 +73,8 @@ const InProgressCollectible: React.FC<Props> = ({
             x={x}
             y={y}
             grid={grid}
+            location={location}
+            game={game}
           />
         </div>
         {showTimers && (
@@ -107,6 +116,8 @@ const CollectibleComponent: React.FC<Props> = ({
   y,
   showTimers,
   grid,
+  location,
+  game,
 }) => {
   const CollectiblePlaced = COLLECTIBLE_COMPONENTS[name];
 
@@ -127,6 +138,8 @@ const CollectibleComponent: React.FC<Props> = ({
           y={y}
           showTimers={showTimers}
           grid={grid}
+          location={location}
+          game={game}
         />
       ) : (
         <CollectiblePlaced
@@ -138,6 +151,8 @@ const CollectibleComponent: React.FC<Props> = ({
           x={x}
           y={y}
           grid={grid}
+          location={location}
+          game={game}
         />
       )}
     </div>

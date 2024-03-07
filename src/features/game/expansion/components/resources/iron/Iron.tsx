@@ -4,7 +4,7 @@ import { IRON_RECOVERY_TIME } from "features/game/lib/constants";
 import { Context } from "features/game/GameProvider";
 
 import { getTimeLeft } from "lib/utils/time";
-import { miningFallAudio } from "lib/utils/sfx";
+import { loadAudio, miningFallAudio } from "lib/utils/sfx";
 import { InventoryItemName, Rock } from "features/game/types/game";
 import useUiRefresher from "lib/utils/hooks/useUiRefresher";
 import { useSelector } from "@xstate/react";
@@ -12,10 +12,9 @@ import { MachineState } from "features/game/lib/gameMachine";
 import Decimal from "decimal.js-light";
 import { DepletedIron } from "./components/DepletedIron";
 import { DepletingIron } from "./components/DepletingIron";
-import { RecoveredIron } from "./components/RecoveredIron";
 import { canMine } from "features/game/expansion/lib/utils";
 import { getBumpkinLevel } from "features/game/lib/level";
-import { getBumpkinLevelRequiredForNode } from "features/game/expansion/lib/expansionNodes";
+import { RecoveredIron } from "./components/RecoveredIron";
 
 const HITS = 3;
 const tool = "Stone Pickaxe";
@@ -49,6 +48,10 @@ export const Iron: React.FC<Props> = ({ id, index }) => {
 
   const divRef = useRef<HTMLDivElement>(null);
 
+  useEffect(() => {
+    loadAudio([miningFallAudio]);
+  }, []);
+
   // Reset the touch count when clicking outside of the component
   useEffect(() => {
     const handleClickOutside = (event: any) => {
@@ -79,17 +82,9 @@ export const Iron: React.FC<Props> = ({ id, index }) => {
   const timeLeft = getTimeLeft(resource.stone.minedAt, IRON_RECOVERY_TIME);
   const mined = !canMine(resource, IRON_RECOVERY_TIME);
 
-  const bumpkinLevelRequired = getBumpkinLevelRequiredForNode(
-    index,
-    "Iron Rock"
-  );
-  const bumpkinLevel = useSelector(gameService, _bumpkinLevel);
-  const bumpkinTooLow = bumpkinLevel < bumpkinLevelRequired;
-
   useUiRefresher({ active: mined });
 
   const strike = () => {
-    if (bumpkinTooLow) return;
     if (!hasTool) return;
 
     setTouchCount((count) => count + 1);
@@ -124,11 +119,7 @@ export const Iron: React.FC<Props> = ({ id, index }) => {
       {/* Resource ready to collect */}
       {!mined && (
         <div ref={divRef} className="absolute w-full h-full" onClick={strike}>
-          <RecoveredIron
-            bumpkinLevelRequired={bumpkinLevelRequired}
-            hasTool={hasTool}
-            touchCount={touchCount}
-          />
+          <RecoveredIron hasTool={hasTool} touchCount={touchCount} />
         </div>
       )}
 

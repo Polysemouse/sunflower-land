@@ -4,23 +4,41 @@ import { SceneId } from "../mmoMachine";
 import { BaseScene, NPCBumpkin } from "./BaseScene";
 import { Label } from "../containers/Label";
 import { interactableModalManager } from "../ui/InteractableModals";
-import { AudioController } from "../lib/AudioController";
+import {
+  AudioLocalStorageKeys,
+  getCachedAudioSetting,
+} from "../../game/lib/audio";
+import { PlaceableContainer } from "../containers/PlaceableContainer";
+import { budImageDomain } from "features/island/collectibles/components/Bud";
+import { Page } from "../containers/Page";
+import { BumpkinContainer } from "../containers/BumpkinContainer";
+import { SOUNDS } from "assets/sound-effects/soundEffects";
+import { getSeasonWeek } from "lib/utils/getSeasonWeek";
+import { npcModalManager } from "../ui/NPCModals";
+import { Coordinates } from "features/game/expansion/components/MapPlacement";
+import { hasFeatureAccess } from "lib/flags";
+import { GameState } from "features/game/types/game";
 
 export const PLAZA_BUMPKINS: NPCBumpkin[] = [
   {
+    x: 600,
+    y: 197,
+    npc: "hammerin harry",
+  },
+  {
     x: 371,
-    y: 344,
+    y: 420,
     npc: "pumpkin' pete",
   },
   {
     x: 815,
     y: 213,
-    npc: "frankie",
+    npc: "poppy",
     direction: "left",
   },
   {
-    x: 316,
-    y: 245,
+    x: 321,
+    y: 259,
     npc: "stella",
   },
   {
@@ -50,11 +68,11 @@ export const PLAZA_BUMPKINS: NPCBumpkin[] = [
     npc: "grimtooth",
     direction: "left",
   },
-  // {
-  //   x: 120,
-  //   y: 170,
-  //   npc: "gabi",
-  // },
+  {
+    x: 120,
+    y: 170,
+    npc: "gabi",
+  },
   {
     x: 480,
     y: 140,
@@ -90,8 +108,8 @@ export const PLAZA_BUMPKINS: NPCBumpkin[] = [
     npc: "tywin",
   },
   {
-    x: 505,
-    y: 352,
+    x: 506,
+    y: 250,
     npc: "birdie",
     direction: "left",
   },
@@ -101,8 +119,8 @@ export const PLAZA_BUMPKINS: NPCBumpkin[] = [
     npc: "billy",
   },
   {
-    x: 224,
-    y: 293,
+    x: 214,
+    y: 295,
     npc: "hank",
   },
   {
@@ -112,8 +130,100 @@ export const PLAZA_BUMPKINS: NPCBumpkin[] = [
     direction: "left",
   },
 ];
+
+const PAGE_POSITIONS: Record<number, Coordinates[]> = {
+  1: [
+    {
+      x: 400,
+      y: 420,
+    },
+    {
+      x: 800,
+      y: 300,
+    },
+    {
+      x: 55,
+      y: 200,
+    },
+  ],
+  2: [
+    {
+      x: 775,
+      y: 350,
+    },
+    {
+      x: 750,
+      y: 140,
+    },
+    {
+      x: 150,
+      y: 445,
+    },
+  ],
+  3: [
+    {
+      x: 750,
+      y: 140,
+    },
+    {
+      x: 300,
+      y: 320,
+    },
+    {
+      x: 55,
+      y: 200,
+    },
+  ],
+  4: [
+    {
+      x: 400,
+      y: 420,
+    },
+    {
+      x: 800,
+      y: 300,
+    },
+    {
+      x: 55,
+      y: 200,
+    },
+  ],
+  5: [
+    {
+      x: 775,
+      y: 350,
+    },
+    {
+      x: 750,
+      y: 140,
+    },
+    {
+      x: 150,
+      y: 445,
+    },
+  ],
+  6: [
+    {
+      x: 750,
+      y: 140,
+    },
+    {
+      x: 300,
+      y: 320,
+    },
+    {
+      x: 55,
+      y: 200,
+    },
+  ],
+};
+
 export class PlazaScene extends BaseScene {
   sceneId: SceneId = "plaza";
+
+  placeables: {
+    [sessionId: string]: PlaceableContainer;
+  } = {};
 
   constructor() {
     super({
@@ -124,6 +234,13 @@ export class PlazaScene extends BaseScene {
   }
 
   preload() {
+    this.load.audio("chime", SOUNDS.notifications.chime);
+
+    this.load.image("page", "world/page.png");
+
+    this.load.image("shop_icon", "world/shop_disc.png");
+    this.load.image("timer_icon", "world/timer_icon.png");
+
     this.load.spritesheet("plaza_bud", "world/plaza_bud.png", {
       frameWidth: 15,
       frameHeight: 18,
@@ -144,11 +261,6 @@ export class PlazaScene extends BaseScene {
       frameHeight: 17,
     });
 
-    this.load.spritesheet("orange_bud", "world/orange_bud.png", {
-      frameWidth: 15,
-      frameHeight: 16,
-    });
-
     this.load.spritesheet("snow_horn_bud", "world/snow_horn_bud.png", {
       frameWidth: 15,
       frameHeight: 14,
@@ -166,27 +278,34 @@ export class PlazaScene extends BaseScene {
 
     this.load.image("chest", "world/rare_chest.png");
 
+    this.load.image("basic_chest", "world/basic_chest.png");
+    this.load.image("luxury_chest", "world/luxury_chest.png");
+    this.load.image("locked_disc", "world/locked_disc.png");
+    this.load.image("key_disc", "world/key_disc.png");
+    this.load.image("luxury_key_disc", "world/luxury_key_disc.png");
+
+    // Stella Megastore items
+    this.load.image("flower_cart", "world/flower_cart.png");
+    this.load.image("queen_bee", "world/queen_bee.png");
+
+    this.load.spritesheet("banner", "world/spring_banner.png", {
+      frameWidth: 22,
+      frameHeight: 36,
+    });
+
     super.preload();
 
-    // Ambience SFX
-    if (!this.sound.get("nature_1")) {
-      const nature1 = this.sound.add("nature_1");
-      nature1.play({ loop: true, volume: 0.01 });
-    }
+    const audioMuted = getCachedAudioSetting<boolean>(
+      AudioLocalStorageKeys.audioMuted,
+      false
+    );
 
-    // Boat SFX
-    if (!this.sound.get("boat")) {
-      const boatSound = this.sound.add("boat");
-      boatSound.play({ loop: true, volume: 0, rate: 0.6 });
-
-      this.soundEffects.push(
-        new AudioController({
-          sound: boatSound,
-          distanceThreshold: 130,
-          coordinates: { x: 352, y: 462 },
-          maxVolume: 0.2,
-        })
-      );
+    if (!audioMuted) {
+      // Ambience SFX
+      if (!this.sound.get("nature_1")) {
+        const nature1 = this.sound.add("nature_1");
+        nature1.play({ loop: true, volume: 0.01 });
+      }
     }
 
     // Shut down the sound when the scene changes
@@ -204,12 +323,92 @@ export class PlazaScene extends BaseScene {
 
     super.create();
 
+    if (hasFeatureAccess({} as GameState, "TRADING_REVAMP")) {
+      PLAZA_BUMPKINS.push({
+        x: 420,
+        y: 420,
+        npc: "glinteye",
+      });
+    }
+
     this.initialiseNPCs(PLAZA_BUMPKINS);
 
-    const auctionLabel = new Label(this, "AUCTIONS", "brown");
-    auctionLabel.setPosition(601, 260);
-    auctionLabel.setDepth(10000000);
-    this.add.existing(auctionLabel);
+    let week: number | undefined = undefined;
+    try {
+      week = getSeasonWeek();
+    } catch {
+      // eslint-disable-next-line no-console
+      console.error("Error getting week");
+    }
+
+    if (week) {
+      (PAGE_POSITIONS[week] ?? []).forEach(({ x, y }, index) => {
+        const pageNumber = index + 1;
+
+        const collectedFlowerPages =
+          this.gameState?.springBlossom?.[week!]?.collectedFlowerPages;
+
+        if (
+          collectedFlowerPages &&
+          !collectedFlowerPages.includes(pageNumber)
+        ) {
+          const page = new Page({ x, y, scene: this });
+          page.setDepth(1000000);
+          this.physics.world.enable(page);
+
+          this.physics.add.collider(
+            this.currentPlayer as BumpkinContainer,
+            page,
+            (obj1, obj2) => {
+              page.sprite?.destroy();
+              page.destroy();
+
+              const chime = this.sound.add("chime");
+              chime.play({ loop: false, volume: 0.1 });
+
+              interactableModalManager.open("page_discovered");
+              this.gameService.send("flowerPage.discovered", {
+                id: pageNumber,
+              });
+              this.gameService.send("SAVE");
+            }
+          );
+        }
+      });
+    }
+
+    if (this.gameState.inventory["Treasure Key"]) {
+      this.add.sprite(210, 130, "key_disc").setDepth(1000000000);
+    } else {
+      this.add.sprite(210, 130, "locked_disc").setDepth(1000000000);
+    }
+
+    const basicChest = this.add.sprite(210, 150, "basic_chest");
+    basicChest.setInteractive({ cursor: "pointer" }).on("pointerdown", () => {
+      interactableModalManager.open("basic_chest");
+    });
+
+    const luxuryChest = this.add.sprite(825, 70, "luxury_chest");
+    luxuryChest.setInteractive({ cursor: "pointer" }).on("pointerdown", () => {
+      interactableModalManager.open("luxury_chest");
+    });
+
+    if (this.gameState.inventory["Luxury Key"]) {
+      this.add.sprite(825, 50, "luxury_key_disc").setDepth(1000000000);
+    } else {
+      this.add.sprite(825, 50, "locked_disc").setDepth(1000000000);
+    }
+
+    const shopIcon = this.add.sprite(321.5, 230, "shop_icon");
+    shopIcon.setInteractive({ cursor: "pointer" }).on("pointerdown", () => {
+      npcModalManager.open("stella");
+    });
+
+    const auctionIcon = this.add.sprite(608, 220, "timer_icon");
+    auctionIcon.setInteractive({ cursor: "pointer" }).on("pointerdown", () => {
+      npcModalManager.open("hammerin harry");
+    });
+    auctionIcon.setDepth(1000000);
 
     const clubHouseLabel = new Label(this, "CLUBHOUSE", "brown");
     clubHouseLabel.setPosition(152, 262);
@@ -250,24 +449,51 @@ export class PlazaScene extends BaseScene {
         interactableModalManager.open("bud");
       });
 
-    // Plaza Bud
-    const bud2 = this.add.sprite(601, 200, "plaza_bud_2");
+    // Banner
+    const banner = this.add.sprite(400, 220, "banner");
     this.anims.create({
-      key: "plaza_bud_animation_2",
-      frames: this.anims.generateFrameNumbers("plaza_bud_2", {
+      key: "banner_animation",
+      frames: this.anims.generateFrameNumbers("banner", {
         start: 0,
-        end: 8,
+        end: 1,
       }),
       repeat: -1,
-      frameRate: 10,
+      frameRate: 7,
     });
-    bud2
-      .play("plaza_bud_animation_2", true)
+    banner
+      .play("banner_animation", true)
       .setInteractive({ cursor: "pointer" })
       .on("pointerdown", () => {
-        interactableModalManager.open("bud");
+        interactableModalManager.open("banner");
       });
-    bud2.setDepth(100000000000);
+    banner.setDepth(100000000000);
+
+    const banner2 = this.add.sprite(464, 220, "banner");
+    banner2
+      .play("banner_animation", true)
+      .setInteractive({ cursor: "pointer" })
+      .on("pointerdown", () => {
+        interactableModalManager.open("banner");
+      });
+    banner2.setDepth(100000000000);
+
+    const banner3 = this.add.sprite(480, 382, "banner");
+    banner3
+      .play("banner_animation", true)
+      .setInteractive({ cursor: "pointer" })
+      .on("pointerdown", () => {
+        interactableModalManager.open("banner");
+      });
+    banner3.setDepth(100000000000);
+
+    const banner4 = this.add.sprite(385, 382, "banner");
+    banner4
+      .play("banner_animation", true)
+      .setInteractive({ cursor: "pointer" })
+      .on("pointerdown", () => {
+        interactableModalManager.open("banner");
+      });
+    banner4.setDepth(100000000000);
 
     const bud3 = this.add.sprite(176, 290, "plaza_bud_3");
     this.anims.create({
@@ -317,19 +543,6 @@ export class PlazaScene extends BaseScene {
     });
     snowHornBud.setVisible(false).play("snow_horn_bud_anim", true);
 
-    const orangeBud = this.add.sprite(176, 235, "orange_bud");
-    orangeBud.setScale(-1, 1);
-    this.anims.create({
-      key: "orange_bud_anim",
-      frames: this.anims.generateFrameNumbers("orange_bud", {
-        start: 0,
-        end: 8,
-      }),
-      repeat: -1,
-      frameRate: 10,
-    });
-    orangeBud.setVisible(false).play("orange_bud_anim", true);
-
     const chest = this.add
       .sprite(152, 230, "chest")
       .setVisible(false)
@@ -337,6 +550,10 @@ export class PlazaScene extends BaseScene {
       .on("pointerdown", () => {
         interactableModalManager.open("clubhouse_reward");
       });
+
+    // Stella Collectible of the Month
+    this.add.image(248, 244, "flower_cart");
+    this.add.image(288, 248, "queen_bee");
 
     const door = this.colliders
       ?.getChildren()
@@ -365,7 +582,6 @@ export class PlazaScene extends BaseScene {
       clubHouseLabel.setVisible(isOpen);
 
       snowHornBud.setVisible(!isOpen);
-      orangeBud.setVisible(!isOpen);
       chest.setVisible(!isOpen);
 
       if (wasOpen === isOpen) {
@@ -392,5 +608,43 @@ export class PlazaScene extends BaseScene {
         this.layers["Club House Door"].setVisible(true);
       }
     });
+  }
+
+  syncPlaceables() {
+    const server = this.mmoServer;
+    if (!server) return;
+
+    // Destroy any dereferenced placeables
+    Object.keys(this.placeables).forEach((sessionId) => {
+      const hasLeft =
+        !server.state.buds.get(sessionId) ||
+        server.state.buds.get(sessionId)?.sceneId !== this.scene.key;
+
+      const isInactive = !this.placeables[sessionId]?.active;
+
+      if (hasLeft || isInactive) {
+        this.placeables[sessionId]?.disappear();
+        delete this.placeables[sessionId];
+      }
+    });
+
+    // Create new placeables
+    server.state.buds?.forEach((bud, sessionId) => {
+      if (bud.sceneId !== this.scene.key) return;
+
+      if (!this.placeables[sessionId]) {
+        this.placeables[sessionId] = new PlaceableContainer({
+          sprite: `https://${budImageDomain}.sunflower-land.com/sheets/idle/${bud.id}.webp`,
+          x: bud.x,
+          y: bud.y,
+          scene: this,
+        });
+      }
+    });
+  }
+
+  public update() {
+    super.update();
+    this.syncPlaceables();
   }
 }

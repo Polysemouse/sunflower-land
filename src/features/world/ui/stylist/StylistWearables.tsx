@@ -23,7 +23,7 @@ import { CraftingRequirements } from "components/ui/layouts/CraftingRequirements
 import { GameState } from "features/game/types/game";
 import { gameAnalytics } from "lib/gameAnalytics";
 import { getSeasonalTicket } from "features/game/types/seasons";
-import { Modal } from "react-bootstrap";
+import { Modal } from "components/ui/Modal";
 import { CloseButtonPanel } from "features/game/components/CloseablePanel";
 import { useAppTranslation } from "lib/i18n/useAppTranslations";
 
@@ -119,14 +119,6 @@ export const StylistWearables: React.FC<Props> = ({ wearables }) => {
 
   const { t } = useAppTranslation();
   const Action = () => {
-    if (state.wardrobe[selected])
-      return (
-        <div className="flex justify-center items-center">
-          <span className="text-xs">Already bought!</span>
-          <img src={SUNNYSIDE.icons.confirm} className="h-4 ml-1" />
-        </div>
-      );
-
     if (wearable.requiresItem && !state.inventory[wearable.requiresItem]) {
       return (
         <div className="flex items-center justify-center">
@@ -134,7 +126,10 @@ export const StylistWearables: React.FC<Props> = ({ wearables }) => {
             src={ITEM_DETAILS[wearable.requiresItem].image}
             className="h-6 mr-1 img-highlight"
           />
-          <span className="text-center text-xs">{`Requires ${wearable.requiresItem}`}</span>
+          <span className="text-center text-xs">
+            {t("requires")}
+            {wearable.requiresItem}
+          </span>
         </div>
       );
     }
@@ -147,17 +142,13 @@ export const StylistWearables: React.FC<Props> = ({ wearables }) => {
           }
           onClick={openConfirmationModal}
         >
-          Buy
+          {t("buy")}
         </Button>
-        <Modal
-          centered
-          show={isConfirmBuyModalOpen}
-          onHide={closeConfirmationModal}
-        >
+        <Modal show={isConfirmBuyModalOpen} onHide={closeConfirmationModal}>
           <CloseButtonPanel className="sm:w-4/5 m-auto">
             <div className="flex flex-col p-2">
               <span className="text-sm text-center">
-                Are you sure you want to buy {`${selected}`}?
+                {t("statements.sure.buy")} {`${selected}`}
               </span>
             </div>
             <div className="flex justify-content-around mt-2 space-x-1">
@@ -169,7 +160,7 @@ export const StylistWearables: React.FC<Props> = ({ wearables }) => {
                 }
                 onClick={handleBuy}
               >
-                Buy
+                {t("buy")}
               </Button>
               <Button onClick={closeConfirmationModal}>{t("cancel")}</Button>
             </div>
@@ -234,7 +225,7 @@ export const StylistWearables: React.FC<Props> = ({ wearables }) => {
             rel="noopener noreferrer"
             className="underline text-white text-xs"
           >
-            View sold out wearables
+            {t("statements.soldOutWearables")}
           </a>
         </>
       }

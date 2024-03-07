@@ -18,6 +18,7 @@ import { COMMUNITY_ISLANDS } from "./community/CommunityIslands";
 import { useNavigate } from "react-router-dom";
 import { Context } from "features/game/GameProvider";
 import { useActor } from "@xstate/react";
+import { useAppTranslation } from "lib/i18n/useAppTranslations";
 
 interface Props {
   mmoService: MachineInterpreter;
@@ -34,7 +35,7 @@ const ICONS = [
 
 export const PickServer: React.FC<Props> = ({ mmoService }) => {
   const [tab, setTab] = useState(0);
-
+  const { t } = useAppTranslation();
   const navigate = useNavigate();
   const { gameService } = useContext(Context);
   const [gameState] = useActor(gameService);
@@ -74,7 +75,7 @@ export const PickServer: React.FC<Props> = ({ mmoService }) => {
       currentTab={tab}
       setCurrentTab={setTab}
       onClose={() => {
-        navigate(`/land/${farmId}`);
+        navigate(`/`);
       }}
       tabs={[
         {
@@ -83,19 +84,19 @@ export const PickServer: React.FC<Props> = ({ mmoService }) => {
         },
         {
           icon: SUNNYSIDE.icons.heart,
-          name: "Explore",
+          name: t("explore"),
         },
       ]}
     >
       {tab === 0 && (
         <div className="p-2">
-          <p className="text-xs mb-2">Choose a server to join</p>
+          <p className="text-xs mb-2">{t("share.chooseServer")}</p>
           <>
             {servers.map((server, index) => {
               return (
                 <OuterPanel
                   className={classNames(
-                    "flex relative items-center justify-between p-2 mb-1 cursor-pointer hover:bg-brown-200",
+                    "flex relative items-center justify-between !p-2 mb-1 cursor-pointer hover:bg-brown-200",
                     {
                       "cursor-not-allowed": isServerFull(servers, server.id),
                     }
@@ -115,7 +116,7 @@ export const PickServer: React.FC<Props> = ({ mmoService }) => {
                             type="danger"
                             className="flex gap-2 items-center"
                           >
-                            FULL
+                            {t("share.FULL")}
                           </Label>
                         )}
                         <p className="text-xs break-words">{server.purpose}</p>
@@ -142,13 +143,13 @@ export const PickServer: React.FC<Props> = ({ mmoService }) => {
       )}
       {tab === 1 && (
         <div className="p-2">
-          <p className="text-xs mb-2">Explore custom project islands.</p>
+          <p className="text-xs mb-2">{t("share.exploreCustomIslands")}</p>
           <>
             {COMMUNITY_ISLANDS.map((island) => {
               return (
                 <OuterPanel
                   className={classNames(
-                    "flex relative items-center justify-between p-2 mb-1 cursor-pointer hover:bg-brown-200"
+                    "flex relative items-center justify-between !p-2 mb-1 cursor-pointer hover:bg-brown-200"
                   )}
                   key={island.id}
                   onClick={() => {
@@ -168,7 +169,7 @@ export const PickServer: React.FC<Props> = ({ mmoService }) => {
                       </p>
                       {!!island.special && (
                         <Label type="info" className="-mt-2">
-                          Special Event
+                          {t("special.event")}
                         </Label>
                       )}
                     </div>
@@ -190,7 +191,7 @@ export const PickServer: React.FC<Props> = ({ mmoService }) => {
             rel="noopener noreferrer"
             className="underline text-white text-xs"
           >
-            Do you want to build your own island?
+            {t("share.buildYourOwnIsland")}
           </a>
         </div>
       )}

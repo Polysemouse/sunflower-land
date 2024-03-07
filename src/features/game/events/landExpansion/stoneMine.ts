@@ -3,8 +3,9 @@ import { STONE_RECOVERY_TIME } from "features/game/lib/constants";
 import { trackActivity } from "features/game/types/bumpkinActivity";
 import { BumpkinSkillName } from "features/game/types/bumpkinSkills";
 import cloneDeep from "lodash.clonedeep";
-import { Collectibles, GameState, Rock } from "../../types/game";
+import { GameState, Rock } from "../../types/game";
 import { isCollectibleActive } from "features/game/lib/collectibleBuilt";
+import { translate } from "lib/i18n/translate";
 
 export type LandExpansionStoneMineAction = {
   type: "stoneRock.mined";
@@ -20,7 +21,7 @@ type Options = {
 type GetMinedAtArgs = {
   skills: Partial<Record<BumpkinSkillName, number>>;
   createdAt: number;
-  collectibles: Collectibles;
+  game: GameState;
 };
 
 export function canMine(rock: Rock, now: number = Date.now()) {
@@ -34,7 +35,7 @@ export function canMine(rock: Rock, now: number = Date.now()) {
 export function getMinedAt({
   skills,
   createdAt,
-  collectibles,
+  game,
 }: GetMinedAtArgs): number {
   let time = createdAt;
 
@@ -42,7 +43,7 @@ export function getMinedAt({
     time -= STONE_RECOVERY_TIME * 0.2 * 1000;
   }
 
-  if (isCollectibleActive("Time Warp Totem", collectibles)) {
+  if (isCollectibleActive({ name: "Time Warp Totem", game })) {
     time -= STONE_RECOVERY_TIME * 0.5 * 1000;
   }
 
@@ -63,7 +64,7 @@ export function mineStone({
   }
 
   if (bumpkin === undefined) {
-    throw new Error("You do not have a Bumpkin");
+    throw new Error(translate("no.have.bumpkin"));
   }
 
   if (!canMine(rock, createdAt)) {
@@ -83,7 +84,7 @@ export function mineStone({
     minedAt: getMinedAt({
       skills: bumpkin.skills,
       createdAt: Date.now(),
-      collectibles,
+      game: stateCopy,
     }),
     amount: 2,
   };

@@ -1,5 +1,5 @@
 import React, { useContext, useEffect, useRef, useState } from "react";
-import { Modal } from "react-bootstrap";
+import { Modal } from "components/ui/Modal";
 import { useActor } from "@xstate/react";
 
 import progressBarSprite from "assets/ui/profile/progress_bar_sprite.png";
@@ -76,6 +76,8 @@ export const BumpkinAvatar: React.FC<AvatarProps> = ({
   showSkillPointAlert,
   onClick,
 }) => {
+  const { showAnimations } = useContext(Context);
+
   const progressBarEl = useRef<SpriteSheetInstance>();
 
   const experience = bumpkin?.experience ?? 0;
@@ -108,7 +110,7 @@ export const BumpkinAvatar: React.FC<AvatarProps> = ({
     <>
       {/* Bumpkin profile */}
       <div
-        className={classNames(`grid fixed -left-4 z-50 top-0`, {
+        className={classNames(`grid absolute -left-4 z-50 top-0`, {
           "cursor-pointer hover:img-highlight": !!onClick,
         })}
         style={{ height: "80px" }}
@@ -191,7 +193,10 @@ export const BumpkinAvatar: React.FC<AvatarProps> = ({
         {showSkillPointAlert && (
           <img
             src={SUNNYSIDE.icons.expression_alerted}
-            className="col-start-1 row-start-1 animate-float z-30"
+            className={
+              "col-start-1 row-start-1 z-30" +
+              (showAnimations ? " animate-float" : "")
+            }
             style={{
               width: `${DIMENSIONS.skillsMark.width}px`,
               marginLeft: `${DIMENSIONS.skillsMark.marginLeft}px`,
@@ -258,7 +263,7 @@ export const BumpkinProfile: React.FC<{
   return (
     <>
       {/* Bumpkin modal */}
-      <Modal show={showModal} centered onHide={handleHideModal}>
+      <Modal show={showModal} onHide={handleHideModal}>
         <BumpkinModal
           initialView={viewSkillsPage ? "skills" : "home"}
           onClose={handleHideModal}
@@ -266,6 +271,7 @@ export const BumpkinProfile: React.FC<{
           bumpkin={gameState.context.state.bumpkin as Bumpkin}
           inventory={gameState.context.state.inventory}
           isFullUser={isFullUser}
+          gameState={gameState.context.state}
         />
       </Modal>
 

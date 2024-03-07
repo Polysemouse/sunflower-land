@@ -1,3 +1,4 @@
+/* eslint-disable react/jsx-no-literals */
 import React from "react";
 
 import tutorial from "features/portal/custom/polyTown/assets/poly_town-tutorial.png";

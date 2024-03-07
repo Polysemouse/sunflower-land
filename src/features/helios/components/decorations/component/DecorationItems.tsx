@@ -14,7 +14,7 @@ import { SUNNYSIDE } from "assets/sunnyside";
 import { PIXEL_SCALE } from "features/game/lib/constants";
 import { gameAnalytics } from "lib/gameAnalytics";
 import { getSeasonalTicket } from "features/game/types/seasons";
-import { Modal } from "react-bootstrap";
+import { Modal } from "components/ui/Modal";
 import { CloseButtonPanel } from "features/game/components/CloseablePanel";
 import { useAppTranslation } from "lib/i18n/useAppTranslations";
 
@@ -144,17 +144,17 @@ export const DecorationItems: React.FC<Props> = ({ items }) => {
                 }
                 onClick={openConfirmModal}
               >
-                Buy
+                {t("buy")}
               </Button>
               <Modal
-                centered
                 show={isConfirmBuyModalOpen}
                 onHide={closeConfirmationModal}
               >
                 <CloseButtonPanel className="sm:w-4/5 m-auto">
                   <div className="flex flex-col p-2">
                     <span className="text-sm text-center">
-                      Are you sure you want to buy {`${selected.name}`}?
+                      {t("statements.sure.buy")} {`${selected.name}`}
+                      {"?"}
                     </span>
                   </div>
                   <div className="flex justify-content-around mt-2 space-x-1">
@@ -167,7 +167,7 @@ export const DecorationItems: React.FC<Props> = ({ items }) => {
                       }
                       onClick={handleBuy}
                     >
-                      Buy
+                      {t("buy")}
                     </Button>
                     <Button onClick={closeConfirmationModal}>
                       {t("cancel")}

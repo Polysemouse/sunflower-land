@@ -1,10 +1,9 @@
-import { GRID_WIDTH_PX } from "features/game/lib/constants";
+import { GRID_WIDTH_PX, PIXEL_SCALE } from "features/game/lib/constants";
 import { Section, useScrollIntoView } from "lib/utils/hooks/useScrollIntoView";
-import React, { useContext, useLayoutEffect, useState } from "react";
+import React, { useContext, useLayoutEffect } from "react";
 
 import background from "assets/land/helios.webp";
-import frozenBackground from "assets/land/frozen_helios.png";
-import { GrubShop } from "./components/grubShop/GrubShop";
+import ocean from "assets/decorations/ocean.webp";
 import { Decorations } from "./components/decorations/Decorations";
 import { ExoticShop } from "./components/exoticShop/ExoticShop";
 import { HeliosSunflower } from "./components/HeliosSunflower";
@@ -12,7 +11,6 @@ import { HeliosBlacksmith } from "./components/blacksmith/HeliosBlacksmith";
 import { Context } from "features/game/GameProvider";
 import { useActor } from "@xstate/react";
 import { LostSunflorian } from "./components/npcs/LostSunflorian";
-import { IslandTravel } from "features/game/expansion/components/travel/IslandTravel";
 
 // random seal spawn spots
 import { randomInt } from "lib/utils/random";
@@ -36,16 +34,11 @@ const getRandomSpawn = () => {
 export const Helios: React.FC = () => {
   const { gameService } = useContext(Context);
   const [gameState] = useActor(gameService);
-  const { state } = gameState.context;
-  const { bumpkin } = state;
-  const [sealSpawn] = useState(getRandomSpawn());
-
-  const autosaving = gameState.matches("autosaving");
 
   const [scrollIntoView] = useScrollIntoView();
 
   useLayoutEffect(() => {
-    // Start with island centered
+    // Start with island
     scrollIntoView(Section.HeliosBackGround, "auto");
   }, []);
 
@@ -57,42 +50,29 @@ export const Helios: React.FC = () => {
         style={{
           width: `${40 * GRID_WIDTH_PX}px`,
           height: `${40 * GRID_WIDTH_PX}px`,
+
+          backgroundImage: `url(${ocean})`,
+          backgroundSize: `${64 * PIXEL_SCALE}px`,
+          imageRendering: "pixelated",
         }}
       >
-        {Date.now() > new Date("2023-12-10").getTime() &&
-        Date.now() < new Date("2023-12-27").getTime() ? (
-          <img
-            src={frozenBackground}
-            className="absolute inset-0 w-full h-full"
-            id={Section.HeliosBackGround}
-          />
-        ) : (
-          <img
-            src={background}
-            className="absolute inset-0 w-full h-full"
-            id={Section.HeliosBackGround}
-          />
-        )}
+        <img
+          src={background}
+          className="absolute inset-0 w-full h-full"
+          id={Section.HeliosBackGround}
+        />
 
         <Decorations />
-        <GrubShop />
         <HeliosBlacksmith />
         <GarbageCollector />
         <ExoticShop />
         <HeliosSunflower />
         <LostSunflorian />
         <HeliosAuction />
-        <IslandTravel
-          bumpkin={bumpkin}
-          gameState={gameState.context.state}
-          x={3.5}
-          y={-17}
-          onTravelDialogOpened={() => gameService.send("SAVE")}
-          travelAllowed={!autosaving}
-        />
+
         {gameState.context.state.hayseedHank && <HayseedHank />}
       </div>
-      <Hud isFarming={false} />
+      <Hud isFarming={false} location="farm" />
     </>
   );
 };

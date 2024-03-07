@@ -32,6 +32,8 @@ export function makeGame(farm: any): GameState {
       }),
       {} as Record<InventoryItemName, Decimal>
     ),
+    island: farm.island,
+    home: farm.home,
     createdAt: farm.createdAt,
     chickens: farm.chickens || {},
     stockExpiry: farm.stockExpiry || {},
@@ -39,6 +41,7 @@ export function makeGame(farm: any): GameState {
     previousBalance: new Decimal(farm.previousBalance),
     username: farm.username,
     trades: farm.trades,
+    farmHands: farm.farmHands,
     tradeOffer: farm.tradeOffer
       ? {
           ...farm.tradeOffer,
@@ -50,19 +53,8 @@ export function makeGame(farm: any): GameState {
       : undefined,
 
     bertObsession: farm.bertObsession,
-    grubOrdersFulfilled: farm.grubOrdersFulfilled,
-    grubShop: farm.grubShop
-      ? {
-          ...farm.grubShop,
-          orders: farm.grubShop.orders.map((order: any) => ({
-            ...order,
-            sfl: new Decimal(order.sfl),
-          })),
-        }
-      : undefined,
 
     expansionConstruction: farm.expansionConstruction,
-    expansionRequirements: farm.expansionRequirements,
     expandedAt: farm.expandedAt,
 
     islands: farm.islands,
@@ -70,7 +62,7 @@ export function makeGame(farm: any): GameState {
 
     bumpkin: farm.bumpkin,
     buildings: farm.buildings,
-    fishing: farm.fishing ?? { wharf: {} },
+    fishing: farm.fishing ?? { wharf: {}, beach: {} },
     farmActivity: farm.farmActivity ?? {},
     milestones: farm.milestones ?? {},
     airdrops: farm.airdrops,
@@ -88,20 +80,40 @@ export function makeGame(farm: any): GameState {
     stones: farm.stones ?? {},
     iron: farm.iron ?? {},
     gold: farm.gold ?? {},
+    crimstones: farm.crimstones ?? {},
+    sunstones: farm.sunstones ?? {},
     crops: farm.crops ?? {},
     fruitPatches: farm.fruitPatches ?? {},
+    flowers: farm.flowers ?? {},
+    beehives: farm.beehives ?? {},
     conversations: farm.conversations ?? [],
     mailbox: farm.mailbox ?? {
       read: [],
       unread: [],
     },
     mushrooms: farm.mushrooms,
-    catchTheKraken: farm.catchTheKraken,
+    catchTheKraken: farm.catchTheKraken ?? {
+      weeklyCatches: {},
+      hunger: undefined,
+    },
     delivery: farm.delivery,
     potionHouse: farm.potionHouse,
     npcs: farm.npcs,
     buds: farm.buds,
     christmas: farm.christmas,
+    springBlossom: farm.springBlossom ?? {},
+    specialEvents: farm.specialEvents,
+    megastore: {
+      ...farm.megastore,
+      wearables: farm.megastore.wearables.map((wearable: any) => ({
+        ...wearable,
+        price: new Decimal(wearable.price),
+      })),
+      collectibles: farm.megastore.collectibles.map((collectible: any) => ({
+        ...collectible,
+        price: new Decimal(collectible.price),
+      })),
+    },
   };
 }
 

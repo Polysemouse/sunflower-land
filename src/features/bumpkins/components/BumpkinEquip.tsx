@@ -1,13 +1,10 @@
-import { useActor } from "@xstate/react";
-import { Context } from "features/game/GameProvider";
 import {
   BUMPKIN_ITEM_PART,
   BumpkinItem,
   BumpkinPart,
-  Equipped,
   ITEM_IDS,
 } from "features/game/types/bumpkin";
-import React, { useContext, useState } from "react";
+import React, { useState } from "react";
 import { DynamicNFT } from "./DynamicNFT";
 import { NPC } from "features/island/bumpkin/components/NPC";
 import { OuterPanel } from "components/ui/Panel";
@@ -19,6 +16,10 @@ import { getKeys } from "features/game/types/craftables";
 import { Label } from "components/ui/Label";
 import classNames from "classnames";
 import { BUMPKIN_ITEM_BUFF_LABELS } from "features/game/types/bumpkinItemBuffs";
+import { BumpkinParts } from "lib/utils/tokenUriBuilder";
+import { GameState } from "features/game/types/game";
+import { availableWardrobe } from "features/game/events/landExpansion/equip";
+import { useAppTranslation } from "lib/i18n/useAppTranslations";
 
 const REQUIRED: BumpkinPart[] = [
   "background",
@@ -30,15 +31,26 @@ const REQUIRED: BumpkinPart[] = [
   "shoes",
   "tool",
 ];
-export const BumpkinEquip: React.FC = () => {
-  const { gameService } = useContext(Context);
-  const [gameState] = useActor(gameService);
 
-  const [equipped, setEquipped] = useState(
-    gameState.context.state.bumpkin?.equipped as Equipped
+interface Props {
+  onEquip: (equipment: BumpkinParts) => void;
+  equipment: BumpkinParts;
+  game: GameState;
+}
+
+export const BumpkinEquip: React.FC<Props> = ({ equipment, onEquip, game }) => {
+  const [equipped, setEquipped] = useState(equipment);
+
+  /**
+   * Show available wardrobe and currently equipped items
+   */
+  const wardrobe = Object.values(equipment ?? {}).reduce(
+    (acc, name) => ({
+      ...acc,
+      [name]: 1,
+    }),
+    availableWardrobe(game)
   );
-
-  const wardrobe = gameState.context.state.wardrobe;
 
   const equipPart = (name: BumpkinItem) => {
     const part = BUMPKIN_ITEM_PART[name];
@@ -75,16 +87,11 @@ export const BumpkinEquip: React.FC = () => {
     setEquipped(outfit);
   };
 
-  const finish = (equipment: Equipped) => {
-    gameService.send("bumpkin.equipped", {
-      equipment,
-    });
-    gameService.send("SAVE");
+  const finish = (equipment: BumpkinParts) => {
+    onEquip(equipment);
   };
 
-  const isDirty =
-    JSON.stringify(equipped) !==
-    JSON.stringify(gameState.context.state.bumpkin?.equipped);
+  const isDirty = JSON.stringify(equipped) !== JSON.stringify(equipment);
 
   const equippedItems = Object.values(equipped);
 
@@ -103,29 +110,30 @@ export const BumpkinEquip: React.FC = () => {
     isMissingBackground ||
     isMissingPants;
 
+  const { t } = useAppTranslation();
   const warning = () => {
     if (isMissingHair) {
-      return "Hair is required";
+      return t("equip.missingHair");
     }
 
     if (isMissingBody) {
-      return "Body is required";
+      return t("equip.missingBody");
     }
 
     if (isMissingShoes) {
-      return "Shoes are required";
+      return t("equip.missingShoes");
     }
 
     if (isMissingShirt) {
-      return "Shirt is required";
+      return t("equip.missingShirt");
     }
 
     if (isMissingPants) {
-      return "Pants are required";
+      return t("equip.missingPants");
     }
 
     if (isMissingBackground) {
-      return "Background is required";
+      return t("equip.missingBackground");
     }
     return "";
   };
@@ -147,7 +155,7 @@ export const BumpkinEquip: React.FC = () => {
             </div>
           </div>
           <Button disabled={!isDirty || warn} onClick={() => finish(equipped)}>
-            <div className="flex">Save</div>
+            <div className="flex">{t("save")}</div>
           </Button>
           {warn && <Label type="warning">{warning()}</Label>}
         </div>
@@ -158,7 +166,7 @@ export const BumpkinEquip: React.FC = () => {
             return (
               <OuterPanel
                 key={name}
-                className={classNames("w-full flex mb-1 p-1 relative", {
+                className={classNames("w-full flex mb-1 !p-1 relative", {
                   "cursor-pointer hover:bg-brown-200":
                     !equippedItems.includes(name) ||
                     !REQUIRED.includes(BUMPKIN_ITEM_PART[name]),

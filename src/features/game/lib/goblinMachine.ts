@@ -30,6 +30,7 @@ import {
   withdrawSFL,
   withdrawWearables,
 } from "../actions/withdraw";
+import { OnChainEvent, unseenEvents } from "../actions/onChainEvents";
 
 const API_URL = CONFIG.API_URL;
 
@@ -45,6 +46,8 @@ export interface Context {
   deviceTrackerId?: string;
   mintedAtTimes: Partial<Record<InventoryItemName, number>>;
   verified?: boolean;
+  nftId: number;
+  notifications?: OnChainEvent[];
 }
 
 type MintEvent = {
@@ -151,7 +154,8 @@ export type GoblinMachineState = {
     | "refreshing"
     | "levelRequirementNotReached"
     | "error"
-    | "provingPersonhood";
+    | "provingPersonhood"
+    | "tradeNotification";
   context: Context;
 };
 
@@ -191,6 +195,7 @@ export function startGoblinVillage({
         mintedAtTimes: {},
         farmAddress,
         farmId,
+        nftId: 0,
       },
       states: {
         loading: {
@@ -199,25 +204,27 @@ export function startGoblinVillage({
             src: async (context) => {
               if (!wallet.myAccount) throw new Error("No account");
 
+              const response = await loadSession({
+                token: user.rawToken as string,
+                transactionId: context.transactionId as string,
+              });
+
               const onChainStateFn = getOnChainState({
                 farmAddress,
                 account: wallet.myAccount,
-                id: farmId,
+                id: response.nftId as number,
               });
 
               // Get session id
-              const sessionIdFn = getSessionId(wallet.web3Provider, farmId);
+              const sessionIdFn = getSessionId(
+                wallet.web3Provider,
+                response.nftId as number
+              );
 
               const [onChainState, sessionId] = await Promise.all([
                 onChainStateFn,
                 sessionIdFn,
               ]);
-
-              const response = await loadSession({
-                token: user.rawToken as string,
-                transactionId: context.transactionId as string,
-                wallet: user.web3?.wallet as string,
-              });
 
               const game = response?.game as GameState;
 
@@ -230,6 +237,11 @@ export function startGoblinVillage({
               game.balance = availableState.balance;
               game.inventory = availableState.inventory;
 
+              const notifications: OnChainEvent[] = await unseenEvents({
+                farmAddress,
+                farmId,
+              });
+
               return {
                 state: game,
                 mintedAtTimes: onChainState.mintedAtTimes,
@@ -237,35 +249,63 @@ export function startGoblinVillage({
                 deviceTrackerId: response?.deviceTrackerId,
                 verified: response?.verified,
                 farmAddress,
+                nftId: response.nftId,
+                notifications,
               };
             },
             onDone: [
               {
-                target: "levelRequirementNotReached",
-                cond: (_, event) => {
-                  const { bumpkin } = event.data.state;
-
-                  if (!bumpkin) return true;
-
-                  const bumpkinLevel = getBumpkinLevel(bumpkin.experience);
-
-                  return bumpkinLevel < RETREAT_LEVEL_REQUIREMENT;
-                },
-              },
-              {
-                target: "playing",
+                target: "notifying",
                 actions: assign({
                   state: (_, event) => event.data.state,
                   sessionId: (_, event) => event.data.sessionId,
                   deviceTrackerId: (_, event) => event.data.deviceTrackerId,
                   mintedAtTimes: (_, event) => event.data.mintedAtTimes,
                   verified: (_, event) => event.data.verified,
+                  nftId: (_, event) => event.data.nftId,
+                  notifications: (_, event) => event.data.notifications,
                 }),
               },
             ],
-            onError: {},
+            onError: [
+              {
+                target: "loading",
+                cond: () => !wallet.isAlchemy,
+                actions: () => {
+                  wallet.overrideProvider();
+                },
+              },
+              {
+                target: "error",
+              },
+            ],
           },
         },
+        notifying: {
+          always: [
+            {
+              target: "levelRequirementNotReached",
+              cond: (context) => {
+                const { bumpkin } = context.state;
+
+                if (!bumpkin) return true;
+
+                const bumpkinLevel = getBumpkinLevel(bumpkin.experience);
+
+                return bumpkinLevel < RETREAT_LEVEL_REQUIREMENT;
+              },
+            },
+            {
+              target: "tradeNotification",
+              cond: (context: Context) =>
+                !!context.notifications && context.notifications?.length > 0,
+            },
+            {
+              target: "playing",
+            },
+          ],
+        },
+
         levelRequirementNotReached: {
           // Go back... you have no business being here :)
           entry: () => history.go(-1),
@@ -315,7 +355,6 @@ export function startGoblinVillage({
               farmAddress: () => farmAddress,
               sessionId: (context: Context) => context.sessionId,
               token: () => user.rawToken,
-              wallet: () => user.web3?.wallet as string,
               balance: (context: Context) => context.state.balance,
             },
             onDone: {
@@ -349,7 +388,6 @@ export function startGoblinVillage({
               farmAddress: () => farmAddress,
               token: () => user.rawToken,
               deviceTrackerId: (context: Context) => context.deviceTrackerId,
-              wallet: () => user.web3?.wallet,
             },
             onDone: {
               target: "playing",
@@ -418,6 +456,15 @@ export function startGoblinVillage({
             REFRESH: "loading",
           },
         },
+
+        tradeNotification: {
+          on: {
+            REFRESH: {
+              target: "refreshing",
+            },
+          },
+        },
+
         withdrawing: {
           entry: "setTransactionId",
           invoke: {
@@ -541,7 +588,7 @@ export function startGoblinVillage({
               await depositToFarm({
                 web3: wallet.web3Provider,
                 account: wallet.myAccount,
-                farmId: context.farmId,
+                farmId: context.nftId,
                 sfl: (event as DepositEvent).sfl,
                 itemIds: (event as DepositEvent).itemIds,
                 itemAmounts: (event as DepositEvent).itemAmounts,

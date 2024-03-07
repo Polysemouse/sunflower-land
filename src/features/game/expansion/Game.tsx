@@ -1,5 +1,5 @@
 import React, { useContext, useEffect } from "react";
-import { Modal } from "react-bootstrap";
+import { Modal } from "components/ui/Modal";
 import { useSelector } from "@xstate/react";
 
 import { useInterval } from "lib/utils/hooks/useInterval";
@@ -17,7 +17,10 @@ import { Panel } from "components/ui/Panel";
 import { Success } from "../components/Success";
 import { Syncing } from "../components/Syncing";
 
-import { Notifications } from "../components/Notifications";
+import logo from "assets/brand/logo_v2.png";
+import sparkle from "assets/fx/sparkle2.gif";
+import ocean from "assets/decorations/ocean.webp";
+
 import { Hoarding } from "../components/Hoarding";
 import { NoBumpkin } from "features/island/bumpkin/NoBumpkin";
 import { Swarming } from "../components/Swarming";
@@ -31,9 +34,7 @@ import { VisitLandExpansionForm } from "./components/VisitLandExpansionForm";
 import land from "assets/land/islands/island.webp";
 import { IslandNotFound } from "./components/IslandNotFound";
 import { Rules } from "../components/Rules";
-import { WalletOnboarding } from "features/tutorials/wallet/WalletOnboarding";
 import { Introduction } from "./components/Introduction";
-import { NoTownCenter } from "../components/NoTownCenter";
 import { SpecialOffer } from "./components/SpecialOffer";
 import { Purchasing } from "../components/Purchasing";
 import { Transacting } from "../components/Transacting";
@@ -46,6 +47,15 @@ import { Sniped } from "../components/Sniped";
 import { NewMail } from "./components/NewMail";
 import { Blacklisted } from "../components/Blacklisted";
 import { AirdropPopup } from "./components/Airdrop";
+import { PIXEL_SCALE } from "../lib/constants";
+import classNames from "classnames";
+import { Label } from "components/ui/Label";
+import { CONFIG } from "lib/config";
+import { Home } from "features/home/Home";
+import { Wallet } from "features/wallet/Wallet";
+import { WeakBumpkin } from "features/island/bumpkin/WeakBumpkin";
+import { useAppTranslation } from "lib/i18n/useAppTranslations";
+import { Listed } from "../components/Listed";
 
 export const AUTO_SAVE_INTERVAL = 1000 * 30; // autosave every 30 seconds
 const SHOW_MODAL: Record<StateValues, boolean> = {
@@ -58,11 +68,10 @@ const SHOW_MODAL: Record<StateValues, boolean> = {
   purchasing: true,
   buyingBlockBucks: true,
   refreshing: true,
-  deposited: true,
   hoarding: true,
   landscaping: false,
   noBumpkinFound: true,
-  noTownCenter: true,
+  weakBumpkin: true,
   swarming: true,
   coolingDown: true,
   gameRules: true,
@@ -76,7 +85,6 @@ const SHOW_MODAL: Record<StateValues, boolean> = {
   beanRevealed: false,
   buyingSFL: true,
   depositing: true,
-  upgradingGuestGame: false,
   introduction: false,
   specialOffer: false,
   transacting: true,
@@ -86,6 +94,8 @@ const SHOW_MODAL: Record<StateValues, boolean> = {
   refundAuction: false,
   promo: true,
   trading: true,
+  listing: true,
+  listed: true,
   sniped: true,
   traded: true,
   buds: false,
@@ -101,10 +111,11 @@ const isLoading = (state: MachineState) =>
 const isPortalling = (state: MachineState) => state.matches("portalling");
 const isTrading = (state: MachineState) => state.matches("trading");
 const isTraded = (state: MachineState) => state.matches("traded");
+const isListing = (state: MachineState) => state.matches("listing");
+const isListed = (state: MachineState) => state.matches("listed");
 const isSniped = (state: MachineState) => state.matches("sniped");
 const isRefreshing = (state: MachineState) => state.matches("refreshing");
 const isBuyingSFL = (state: MachineState) => state.matches("buyingSFL");
-const isDeposited = (state: MachineState) => state.matches("deposited");
 const isError = (state: MachineState) => state.matches("error");
 const isSynced = (state: MachineState) => state.matches("synced");
 const isSyncing = (state: MachineState) => state.matches("syncing");
@@ -112,13 +123,10 @@ const isHoarding = (state: MachineState) => state.matches("hoarding");
 const isVisiting = (state: MachineState) => state.matches("visiting");
 const isSwarming = (state: MachineState) => state.matches("swarming");
 const isPurchasing = (state: MachineState) =>
-  state.matches({ purchasing: "fetching" }) ||
-  state.matches({ purchasing: "transacting" }) ||
-  state.matches({ buyingBlockBucks: "fetching" }) ||
-  state.matches({ buyingBlockBucks: "transacting" });
-const isNoTownCenter = (state: MachineState) => state.matches("noTownCenter");
+  state.matches("purchasing") || state.matches("buyingBlockBucks");
 const isNoBumpkinFound = (state: MachineState) =>
   state.matches("noBumpkinFound");
+const isWeakBumpkin = (state: MachineState) => state.matches("weakBumpkin");
 const isCoolingDown = (state: MachineState) => state.matches("coolingDown");
 const isGameRules = (state: MachineState) => state.matches("gameRules");
 const isDepositing = (state: MachineState) => state.matches("depositing");
@@ -132,8 +140,7 @@ const isLandToVisitNotFound = (state: MachineState) =>
 const currentState = (state: MachineState) => state.value;
 const getErrorCode = (state: MachineState) => state.context.errorCode;
 const getActions = (state: MachineState) => state.context.actions;
-const isUpgradingGuestGame = (state: MachineState) =>
-  state.matches("upgradingGuestGame");
+
 const isTransacting = (state: MachineState) => state.matches("transacting");
 const isClaimAuction = (state: MachineState) => state.matches("claimAuction");
 const isRefundingAuction = (state: MachineState) =>
@@ -141,13 +148,14 @@ const isRefundingAuction = (state: MachineState) =>
 const isPromoing = (state: MachineState) => state.matches("promo");
 const isBlacklisted = (state: MachineState) => state.matches("blacklisted");
 const hasAirdrop = (state: MachineState) => state.matches("airdrop");
+const hasSpecialOffer = (state: MachineState) => state.matches("specialOffer");
 
 const GameContent = () => {
   const { gameService } = useContext(Context);
 
   const visiting = useSelector(gameService, isVisiting);
   const landToVisitNotFound = useSelector(gameService, isLandToVisitNotFound);
-
+  const { t } = useAppTranslation();
   if (landToVisitNotFound) {
     return (
       <>
@@ -155,7 +163,7 @@ const GameContent = () => {
           <VisitingHud />
         </div>
         <div className="relative">
-          <Modal centered show backdrop={false}>
+          <Modal show backdrop={false}>
             <Panel
               bumpkinParts={{
                 body: "Beige Farmer Potion",
@@ -168,7 +176,9 @@ const GameContent = () => {
               }}
             >
               <div className="flex flex-col items-center">
-                <h2 className="text-center">Island Not Found!</h2>
+                <h2 className="text-center">
+                  {t("visitislandNotFound.title")}
+                </h2>
                 <img src={land} className="h-9 my-3" />
               </div>
               <VisitLandExpansionForm />
@@ -198,6 +208,7 @@ const GameContent = () => {
           <Route path="/" element={<Land />} />
           {/* Legacy route */}
           <Route path="/farm" element={<Land />} />
+          <Route path="/home" element={<Home />} />
           <Route path="/helios" element={<Helios key="helios" />} />
           <Route path="*" element={<IslandNotFound />} />
         </Routes>
@@ -221,10 +232,11 @@ export const GameWrapper: React.FC = ({ children }) => {
   const portalling = useSelector(gameService, isPortalling);
   const trading = useSelector(gameService, isTrading);
   const traded = useSelector(gameService, isTraded);
+  const listing = useSelector(gameService, isListing);
+  const listed = useSelector(gameService, isListed);
   const sniped = useSelector(gameService, isSniped);
   const refreshing = useSelector(gameService, isRefreshing);
   const buyingSFL = useSelector(gameService, isBuyingSFL);
-  const deposited = useSelector(gameService, isDeposited);
   const error = useSelector(gameService, isError);
   const synced = useSelector(gameService, isSynced);
   const syncing = useSelector(gameService, isSyncing);
@@ -232,7 +244,7 @@ export const GameWrapper: React.FC = ({ children }) => {
   const hoarding = useSelector(gameService, isHoarding);
   const swarming = useSelector(gameService, isSwarming);
   const noBumpkinFound = useSelector(gameService, isNoBumpkinFound);
-  const noTownCenter = useSelector(gameService, isNoTownCenter);
+  const weakBumpkin = useSelector(gameService, isWeakBumpkin);
   const coolingDown = useSelector(gameService, isCoolingDown);
   const gameRules = useSelector(gameService, isGameRules);
   const depositing = useSelector(gameService, isDepositing);
@@ -241,7 +253,6 @@ export const GameWrapper: React.FC = ({ children }) => {
   const state = useSelector(gameService, currentState);
   const errorCode = useSelector(gameService, getErrorCode);
   const actions = useSelector(gameService, getActions);
-  const upgradingGuestGame = useSelector(gameService, isUpgradingGuestGame);
   const transacting = useSelector(gameService, isTransacting);
   const minting = useSelector(gameService, isMinting);
   const claimingAuction = useSelector(gameService, isClaimAuction);
@@ -249,7 +260,9 @@ export const GameWrapper: React.FC = ({ children }) => {
   const promo = useSelector(gameService, isPromoing);
   const blacklisted = useSelector(gameService, isBlacklisted);
   const airdrop = useSelector(gameService, hasAirdrop);
+  const specialOffer = useSelector(gameService, hasSpecialOffer);
 
+  const { t } = useAppTranslation();
   useInterval(() => {
     gameService.send("SAVE");
   }, AUTO_SAVE_INTERVAL);
@@ -288,20 +301,56 @@ export const GameWrapper: React.FC = ({ children }) => {
 
   if (loadingSession || loadingLandToVisit || portalling) {
     return (
-      <div className="h-screen w-full fixed top-0" style={{ zIndex: 1050 }}>
-        <Modal show centered backdrop={false}>
-          <Panel>
-            <Loading />
-          </Panel>
-        </Modal>
-      </div>
+      <>
+        <div
+          className="h-screen w-full fixed top-0"
+          style={{
+            zIndex: 49,
+
+            backgroundImage: `url(${ocean})`,
+            backgroundSize: `${64 * PIXEL_SCALE}px`,
+            imageRendering: "pixelated",
+          }}
+        >
+          <Modal show backdrop={false}>
+            <div
+              className={classNames(
+                "relative flex items-center justify-center mb-4 w-full -mt-12 max-w-xl transition-opacity duration-500 opacity-100"
+              )}
+            >
+              <div className="w-[90%] relative">
+                <img
+                  src={sparkle}
+                  className="absolute animate-pulse"
+                  style={{
+                    width: `${PIXEL_SCALE * 8}px`,
+                    top: `${PIXEL_SCALE * 0}px`,
+                    right: `${PIXEL_SCALE * 0}px`,
+                  }}
+                />
+                <>
+                  <img id="logo" src={logo} className="w-full" />
+                  <div className="flex justify-center">
+                    <Label type="default">
+                      {CONFIG.RELEASE_VERSION?.split("-")[0]}
+                    </Label>
+                  </div>
+                </>
+              </div>
+            </div>
+            <Panel>
+              <Loading />
+            </Panel>
+          </Modal>
+        </div>
+      </>
     );
   }
 
   if (blacklisted) {
     return (
-      <div className="h-screen w-full fixed top-0" style={{ zIndex: 1050 }}>
-        <Modal show centered backdrop={false}>
+      <div className="h-screen w-full fixed top-0" style={{ zIndex: 49 }}>
+        <Modal show backdrop={false}>
           <Panel>
             <Blacklisted />
           </Panel>
@@ -316,35 +365,40 @@ export const GameWrapper: React.FC = ({ children }) => {
     <ToastProvider>
       <ToastPanel />
 
-      <Modal show={SHOW_MODAL[stateValue as StateValues]} centered>
+      <Modal show={SHOW_MODAL[stateValue as StateValues]}>
         <Panel>
           {loading && <Loading />}
           {refreshing && <Refreshing />}
           {buyingSFL && <AddingSFL />}
-          {deposited && <Notifications />}
           {error && <ErrorMessage errorCode={errorCode as ErrorCode} />}
           {synced && <Success />}
           {syncing && <Syncing />}
           {purchasing && <Purchasing />}
           {hoarding && <Hoarding />}
           {swarming && <Swarming />}
-          {noBumpkinFound && <NoBumpkin />}
+          {noBumpkinFound && (
+            <Wallet action="deposit">
+              <NoBumpkin />
+            </Wallet>
+          )}
+          {weakBumpkin && <WeakBumpkin />}
 
-          {noTownCenter && <NoTownCenter />}
           {coolingDown && <Cooldown />}
           {gameRules && <Rules />}
           {transacting && <Transacting />}
           {depositing && <Loading text="Depositing" />}
           {trading && <Loading text="Trading" />}
           {traded && <Traded />}
+          {listing && <Loading text="Listing" />}
+          {listed && <Listed />}
           {sniped && <Sniped />}
           {minting && <Minting />}
           {promo && <Promo />}
           {airdrop && <AirdropPopup />}
+          {specialOffer && <SpecialOffer />}
         </Panel>
       </Modal>
 
-      {upgradingGuestGame && <WalletOnboarding />}
       {claimingAuction && <ClaimAuction />}
       {refundAuction && <RefundAuction />}
 

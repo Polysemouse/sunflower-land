@@ -5,7 +5,7 @@ import { Equipped } from "features/game/types/bumpkin";
 import { SUNNYSIDE } from "assets/sunnyside";
 import { CROP_LIFECYCLE } from "features/island/plots/lib/plant";
 import { CloseButtonPanel } from "features/game/components/CloseablePanel";
-import { ConversationName } from "features/game/types/conversations";
+import { ConversationName } from "features/game/types/announcements";
 import { NPC_WEARABLES } from "lib/npcs";
 import { SpeakingText } from "features/game/components/SpeakingModal";
 import { Panel } from "components/ui/Panel";
@@ -59,7 +59,7 @@ export const ShopItems: React.FC<Props> = ({
         <SpeakingText
           message={[
             {
-              text: t("betty.intro"),
+              text: t("betty.welcome"),
               actions: [
                 {
                   text: t("betty.buySeeds"),
@@ -95,13 +95,13 @@ export const ShopItems: React.FC<Props> = ({
         <SpeakingText
           message={[
             {
-              text: t("shopItems.one"),
+              text: t("betty.post.sale.one"),
             },
             {
-              text: t("shopItems.two"),
+              text: t("betty.post.sale.two"),
             },
             {
-              text: t("shopItems.three"),
+              text: t("betty.post.sale.three"),
             },
           ]}
           onClose={() => {

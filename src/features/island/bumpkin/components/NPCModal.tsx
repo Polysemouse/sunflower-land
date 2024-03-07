@@ -6,13 +6,14 @@ import { CONSUMABLES } from "features/game/types/consumables";
 import { Context } from "features/game/GameProvider";
 import { useActor } from "@xstate/react";
 import { Feed } from "./Feed";
-import { Modal } from "react-bootstrap";
+import { Modal } from "components/ui/Modal";
 import foodIcon from "src/assets/food/chicken_drumstick.png";
 import { CloseButtonPanel } from "features/game/components/CloseablePanel";
 import { getBumpkinLevel } from "features/game/lib/level";
 import { LevelUp } from "./LevelUp";
 import { Equipped } from "features/game/types/bumpkin";
 import { ModalContext } from "features/game/components/modal/ModalProvider";
+import { useAppTranslation } from "lib/i18n/useAppTranslations";
 
 interface Props {
   isOpen: boolean;
@@ -26,7 +27,7 @@ export const NPCModal: React.FC<Props> = ({ isOpen, onClose }) => {
     },
   ] = useActor(gameService);
   const { openModal } = useContext(ModalContext);
-
+  const { t } = useAppTranslation();
   const availableFood = getEntries(CONSUMABLES)
     .filter(([name, _]) => !!state.inventory[name]?.gt(0))
     .map(([_, consumable]) => consumable);
@@ -55,7 +56,6 @@ export const NPCModal: React.FC<Props> = ({ isOpen, onClose }) => {
 
         setTimeout(() => setShowLevelUp(false), 500);
       }}
-      centered
     >
       {showLevelUp ? (
         <CloseButtonPanel
@@ -88,7 +88,7 @@ export const NPCModal: React.FC<Props> = ({ isOpen, onClose }) => {
       ) : (
         <CloseButtonPanel
           onClose={onClose}
-          tabs={[{ icon: foodIcon, name: "Feed Bumpkin" }]}
+          tabs={[{ icon: foodIcon, name: t("feed.bumpkin") }]}
           bumpkinParts={state.bumpkin?.equipped}
         >
           <Feed food={availableFood} />

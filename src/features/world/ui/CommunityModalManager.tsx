@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from "react";
-import { Modal } from "react-bootstrap";
+import { Modal } from "components/ui/Modal";
 import { BumpkinParts } from "lib/utils/tokenUriBuilder";
 import { Message, SpeakingModal } from "features/game/components/SpeakingModal";
 import { Panel } from "components/ui/Panel";
+import { useAppTranslation } from "lib/i18n/useAppTranslations";
 
 type CommunityModal = {
   npc: {
@@ -42,6 +43,8 @@ class CommunityModalManager {
 export const communityModalManager = new CommunityModalManager();
 
 export const CommunityModals: React.FC = () => {
+  const { t } = useAppTranslation();
+
   const [modal, setModal] = useState<CommunityModal>();
 
   useEffect(() => {
@@ -63,7 +66,7 @@ export const CommunityModals: React.FC = () => {
 
   return (
     <>
-      <Modal show={!!modal} centered onHide={closeModal}>
+      <Modal show={!!modal} onHide={closeModal}>
         {modal?.type === "speaking" && (
           <SpeakingModal
             onClose={closeModal}
@@ -73,7 +76,7 @@ export const CommunityModals: React.FC = () => {
         )}
         {modal?.type === "loading" && (
           <Panel>
-            <span className="loading">Loading</span>
+            <span className="loading">{t("loading")}</span>
           </Panel>
         )}
       </Modal>

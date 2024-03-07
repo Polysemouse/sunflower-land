@@ -1,13 +1,14 @@
 import React, { FC, useState } from "react";
 
 import { createContext } from "react";
-import { Modal } from "react-bootstrap";
+import { Modal } from "components/ui/Modal";
 import { BlockBucksModal } from "./components/BlockBucksModal";
 import { StoreOnChainModal } from "./components/StoreOnChainModal";
 import { GoldPassModal } from "features/game/expansion/components/GoldPass";
 import { SpeakingModal } from "../SpeakingModal";
 import { NPC_WEARABLES } from "lib/npcs";
 import { useNavigate } from "react-router-dom";
+import { translate } from "lib/i18n/translate";
 
 type GlobalModal =
   | "BUY_BLOCK_BUCKS"
@@ -49,25 +50,25 @@ export const ModalProvider: FC = ({ children }) => {
         setCloseable={setCloseable}
       />
 
-      <Modal centered show={opened === "STORE_ON_CHAIN"} onHide={handleClose}>
+      <Modal show={opened === "STORE_ON_CHAIN"} onHide={handleClose}>
         <StoreOnChainModal onClose={handleClose} />
       </Modal>
 
-      <Modal centered show={opened === "GOLD_PASS"} onHide={handleClose}>
+      <Modal show={opened === "GOLD_PASS"} onHide={handleClose}>
         <GoldPassModal onClose={handleClose} />
       </Modal>
 
-      <Modal centered show={opened === "FIRST_EXPANSION"}>
+      <Modal show={opened === "FIRST_EXPANSION"}>
         <SpeakingModal
           message={[
             {
-              text: "Congratulations, Bumpkin! Your farm is growing faster than a beanstalk in a rainstorm!",
+              text: translate("pete.first-expansion.one"),
             },
             {
-              text: "With each expansion, you'll find cool stuff like special resources, new trees, and more to collect!",
+              text: translate("pete.first-expansion.two"),
             },
             {
-              text: "Keep an eye out for surprise gifts from the generous goblins as you explore—they're not just expert builders, but crafty secret givers!",
+              text: translate("pete.first-expansion.three"),
             },
           ]}
           onClose={handleClose}
@@ -75,68 +76,68 @@ export const ModalProvider: FC = ({ children }) => {
         />
       </Modal>
 
-      <Modal centered show={opened === "NEXT_EXPANSION"}>
+      <Modal show={opened === "NEXT_EXPANSION"}>
         <SpeakingModal
           message={[
             {
-              text: "Congratulations, Bumpkin! Keep up the good work.",
+              text: translate("pete.first-expansion.four"),
             },
           ]}
           onClose={handleClose}
           bumpkinParts={NPC_WEARABLES["pumpkin' pete"]}
         />
       </Modal>
-      <Modal centered show={opened === "BETTY"}>
+      <Modal show={opened === "BETTY"}>
         <SpeakingModal
           message={[
             {
-              text: "Hey there, Bumpkin! It's Betty from the farmer's market. I travel between islands to buy crops and sell fresh seeds.",
+              text: translate("betty.market-intro.one"),
             },
             {
-              text: "Good news: you just stumbled upon a shiny new shovel! Bad news: we've hit a bit of a crop shortage.",
+              text: translate("betty.market-intro.two"),
             },
             {
-              text: "For a limited time I am offering newcomers double the money for any crops you bring to me.",
+              text: translate("betty.market-intro.three"),
             },
             {
-              text: "Harvest those Sunflowers and let's start your farming empire.",
+              text: translate("betty.market-intro.four"),
             },
           ]}
           onClose={handleClose}
           bumpkinParts={NPC_WEARABLES.betty}
         />
       </Modal>
-      <Modal centered show={opened === "BLACKSMITH"}>
+      <Modal show={opened === "BLACKSMITH"}>
         <SpeakingModal
           message={[
             {
-              text: "Hmm, those crops are growing slow.",
+              text: translate("pete.craftScarecrow.one"),
             },
             {
-              text: "Sunflower Land is full of magical items you can craft to enhance your farming abilities.",
+              text: translate("pete.craftScarecrow.two"),
             },
             {
-              text: "Head over to the work bench and craft a scarecrow to speed up those Sunflowers.",
+              text: translate("pete.craftScarecrow.three"),
             },
           ]}
           onClose={handleClose}
           bumpkinParts={NPC_WEARABLES["pumpkin' pete"]}
         />
       </Modal>
-      <Modal centered show={opened === "THIRD_LEVEL"}>
+      <Modal show={opened === "THIRD_LEVEL"}>
         <SpeakingModal
           message={[
             {
-              text: "Congratulations, your green thumb is truly shining!",
+              text: translate("pete.levelthree.one"),
             },
             {
-              text: "It's high time we head to the Plaza, where your farming prowess can shine even brighter.",
+              text: translate("pete.levelthree.two"),
             },
             {
-              text: "At the plaza you can deliver your resources for rewards, craft magical items & trade with other players.",
+              text: translate("pete.levelthree.three"),
             },
             {
-              text: "You can travel by clicking on the world icon in the bottom left.",
+              text: translate("pete.levelthree.four"),
             },
           ]}
           onClose={handleClose}

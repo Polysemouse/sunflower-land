@@ -6,7 +6,7 @@ import {
 import { GameState } from "features/game/types/game";
 
 export const getFruitHarvests = (state: Readonly<GameState>) => {
-  if (isCollectibleBuilt("Immortal Pear", state.collectibles)) {
+  if (isCollectibleBuilt({ name: "Immortal Pear", game: state })) {
     return [4, 6];
   }
 
@@ -19,10 +19,7 @@ export const getSupportedChickens = (state: Readonly<GameState>) => {
       (building) => building.readyAt < Date.now()
     ).length ?? 0;
 
-  const chickenCoop =
-    state.collectibles["Chicken Coop"]?.filter(
-      (coop) => coop.readyAt < Date.now()
-    ).length ?? 0;
+  const chickenCoop = isCollectibleBuilt({ name: "Chicken Coop", game: state });
 
   let capacity = henHouses * HEN_HOUSE_CAPACITY;
 

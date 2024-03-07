@@ -55,11 +55,26 @@ export type NPCName =
   | "mayor"
   | "wobble"
   | "santa"
-  | "elf";
+  | "elf"
+  | "misty"
+  | "poppy"
+  | "stevie"
+  | "Chun Long"
+  | "evie"
+  | "glinteye";
+
 // Ol Salty
 
 export const NPC_WEARABLES: Record<NPCName, Equipped> = {
-  // TODO
+  evie: {
+    background: "Farm Background",
+    body: "Beige Farmer Potion",
+    hair: "Pink Ponytail",
+    shoes: "Black Farmer Boots",
+    tool: "Farmer Pitchfork",
+    pants: "Farmer Overalls",
+    shirt: "Blue Farmer Shirt",
+  },
   wizard: {
     background: "Farm Background",
     body: "Beige Farmer Potion",
@@ -309,12 +324,11 @@ export const NPC_WEARABLES: Record<NPCName, Equipped> = {
     body: "Beige Farmer Potion",
     background: "Farm Background",
     hair: "Brown Long Hair",
-    shirt: "Trial Tee",
-    coat: "Fish Pro Vest",
-    pants: "Angler Waders",
-    hat: "Normal Fish Hat",
-    tool: "Sunflower Rod",
+    dress: "Rose Dress",
+    hat: "Flower Crown",
+    tool: "Beehive Staff",
     shoes: "Black Farmer Boots",
+    wings: "Bee Wings",
   },
   // Old loving grandma of the game
   buttons: {
@@ -370,13 +384,13 @@ export const NPC_WEARABLES: Record<NPCName, Equipped> = {
   // Clothes shop stylist
   stella: {
     body: "Beige Farmer Potion",
-    hair: "Pink Ponytail",
+    hair: "White Long Hair",
     hat: "Boater Hat",
-    pants: "Crimson Skirt",
-    shirt: "Clown Shirt",
+    pants: "Farmer Overalls",
+    shirt: "Daisy Tee",
     background: "Farm Background",
     shoes: "Brown Boots",
-    tool: "Hammer",
+    tool: "Farmer Pitchfork",
   },
   // Sunflorian Prince
   tywin: {
@@ -601,6 +615,56 @@ export const NPC_WEARABLES: Record<NPCName, Equipped> = {
     background: "Christmas Background",
     shoes: "Black Farmer Boots",
     tool: "Candy Cane",
+  },
+  misty: {
+    body: "Beige Farmer Potion",
+    hair: "Parlour Hair",
+    background: "Seashore Background",
+    shoes: "Black Farmer Boots",
+    tool: "Sunflower Rod",
+    pants: "Fishing Pants",
+    shirt: "Trial Tee",
+    coat: "Reel Fishing Vest",
+  },
+  // Flower expert
+  poppy: {
+    body: "Beige Farmer Potion",
+    dress: "Antique Dress",
+    background: "Mountain View Background",
+    hair: "Brown Long Hair",
+    tool: "Farmer Pitchfork",
+    shoes: "Brown Boots",
+  },
+  // Beekeeper
+  stevie: {
+    body: "Light Brown Farmer Potion",
+    hair: "Parlour Hair",
+    shirt: "Red Farmer Shirt",
+    pants: "Farmer Overalls",
+    tool: "Bee Smoker",
+    background: "Farm Background",
+    shoes: "Black Farmer Boots",
+    suit: "Beekeeper Suit",
+    hat: "Beekeeper Hat",
+  },
+  "Chun Long": {
+    body: "Light Brown Farmer Potion",
+    hair: "Explorer Hair",
+    hat: "Lucky Red Hat",
+    shirt: "Red Farmer Shirt",
+    suit: "Lucky Red Suit",
+    background: "China Town Background",
+    shoes: "Black Farmer Boots",
+    tool: "Farmer Pitchfork",
+  },
+  glinteye: {
+    body: "Goblin Potion",
+    hair: "Basic Hair",
+    shirt: "Bidder's Brocade",
+    pants: "Blue Suspenders",
+    tool: "Auction Megaphone",
+    background: "Farm Background",
+    shoes: "Black Farmer Boots",
   },
 };
 

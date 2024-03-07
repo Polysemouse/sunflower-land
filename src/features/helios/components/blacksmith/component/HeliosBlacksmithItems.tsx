@@ -19,7 +19,7 @@ import { SUNNYSIDE } from "assets/sunnyside";
 import { PIXEL_SCALE } from "features/game/lib/constants";
 import { gameAnalytics } from "lib/gameAnalytics";
 import { getSeasonalTicket } from "features/game/types/seasons";
-import { Modal } from "react-bootstrap";
+import { Modal } from "components/ui/Modal";
 import { CloseButtonPanel } from "features/game/components/CloseablePanel";
 import { useAppTranslation } from "lib/i18n/useAppTranslations";
 
@@ -121,24 +121,24 @@ export const HeliosBlacksmithItems: React.FC = () => {
           }}
           actionView={
             isAlreadyCrafted ? (
-              <p className="text-xxs text-center mb-1">Already crafted!</p>
+              <p className="text-xxs text-center mb-1">{t("alr.crafted")}</p>
             ) : (
               <>
                 <Button
                   disabled={lessIngredients() || isNotReady(selectedItem)}
                   onClick={openConfirmationModal}
                 >
-                  Craft
+                  {t("craft")}
                 </Button>
                 <Modal
-                  centered
                   show={isConfirmBuyModalOpen}
                   onHide={closeConfirmationModal}
                 >
                   <CloseButtonPanel className="sm:w-4/5 m-auto">
                     <div className="flex flex-col p-2">
                       <span className="text-sm text-center">
-                        Are you sure you want to craft {`${selectedName}`}?
+                        {t("confirmation.craft")} {`${selectedName}`}
+                        {"?"}
                       </span>
                     </div>
                     <div className="flex justify-content-around mt-2 space-x-1">
@@ -146,7 +146,7 @@ export const HeliosBlacksmithItems: React.FC = () => {
                         disabled={lessIngredients() || isNotReady(selectedItem)}
                         onClick={handleBuy}
                       >
-                        Craft
+                        {t("craft")}
                       </Button>
                       <Button onClick={closeConfirmationModal}>
                         {t("cancel")}

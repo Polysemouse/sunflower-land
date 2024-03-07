@@ -1,6 +1,6 @@
 import { useActor } from "@xstate/react";
 import React, { useContext, useState } from "react";
-import { Modal } from "react-bootstrap";
+import { Modal } from "components/ui/Modal";
 
 import { Context } from "features/game/GameProvider";
 import { PIXEL_SCALE } from "features/game/lib/constants";
@@ -31,6 +31,7 @@ export const AirdropModal: React.FC<{
       gameService.send("LANDSCAPE", {
         placeable: "Time Warp Totem",
         action: "collectible.placed",
+        location: "farm",
       });
     }
 
@@ -44,11 +45,12 @@ interface Props {
   airdrop: IAirdrop;
 }
 export const Airdrop: React.FC<Props> = ({ airdrop }) => {
+  const { showAnimations } = useContext(Context);
   const [showModal, setShowModal] = useState(false);
 
   return (
     <>
-      <Modal centered show={showModal} onHide={() => setShowModal(false)}>
+      <Modal show={showModal} onHide={() => setShowModal(false)}>
         <CloseButtonPanel onClose={() => setShowModal(false)}>
           <AirdropModal
             airdrop={airdrop}
@@ -74,7 +76,10 @@ export const Airdrop: React.FC<Props> = ({ airdrop }) => {
         />
         <img
           src={SUNNYSIDE.icons.expression_alerted}
-          className="absolute animate-float pointer-events-none"
+          className={
+            "absolute pointer-events-none" +
+            (showAnimations ? " animate-float" : "")
+          }
           style={{
             left: `${PIXEL_SCALE * 6}px`,
             top: `${PIXEL_SCALE * -12}px`,

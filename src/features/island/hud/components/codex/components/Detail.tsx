@@ -9,6 +9,8 @@ import { KNOWN_IDS } from "features/game/types";
 import { ITEM_DETAILS } from "features/game/types/images";
 import { Label } from "components/ui/Label";
 import classNames from "classnames";
+import { COLLECTIBLE_BUFF_LABELS } from "features/game/types/collectibleItemBuffs";
+import { useAppTranslation } from "lib/i18n/useAppTranslations";
 
 /**
  * Base Layout for Collectible Item Details Page in Codex
@@ -32,11 +34,11 @@ export const Detail: React.FC<Props> = ({
   additionalLabels,
   children,
 }) => {
+  const { t } = useAppTranslation();
   const {
     image,
     description,
     howToGetItem = [],
-    buff,
     itemType,
   } = ITEM_DETAILS[name];
   const [imageWidth, setImageWidth] = React.useState<number>(0);
@@ -53,6 +55,8 @@ export const Detail: React.FC<Props> = ({
 
     image.src = ITEM_DETAILS[name].image;
   }, []);
+
+  const buff = COLLECTIBLE_BUFF_LABELS[name];
 
   return (
     <div className="p-2 relative">
@@ -126,11 +130,11 @@ export const Detail: React.FC<Props> = ({
         <div className="border-b-[1px] border-brown-600 mt-3" />
         {howToGetItem.length > 0 && (
           <div className="flex flex-col">
-            <h3 className="text-sm mb-2">How to get this item?</h3>
+            <h3 className="text-sm mb-2">{t("detail.how.item")}</h3>
             <ul className="text-xxs space-y-1">
               {howToGetItem.map((text, index) => (
                 <li className="flex" key={`how-to-obtain-${index}`}>
-                  <div className="mr-1">-</div>
+                  <div className="mr-1">{"-"}</div>
                   <span>{text}</span>
                 </li>
               ))}
@@ -142,14 +146,14 @@ export const Detail: React.FC<Props> = ({
         {children}
         <div className="flex items-center text-xxs">
           <span>
-            View item on{" "}
+            {t("detail.view.item")}{" "}
             <a
               href={getOpenSeaLink(KNOWN_IDS[name], "collectible")}
               className="underline text-xxs pb-1 pt-0.5 hover:text-blue-500"
               target="_blank"
               rel="noopener noreferrer"
             >
-              OpenSea
+              {t("opensea")}
             </a>
           </span>
         </div>

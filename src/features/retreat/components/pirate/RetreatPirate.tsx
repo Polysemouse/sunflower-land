@@ -1,9 +1,9 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { Action } from "components/ui/Action";
 import { GRID_WIDTH_PX, PIXEL_SCALE } from "features/game/lib/constants";
-import { blacksmithAudio } from "lib/utils/sfx";
+import { blacksmithAudio, loadAudio } from "lib/utils/sfx";
 import { MapPlacement } from "features/game/expansion/components/MapPlacement";
-import { Modal } from "react-bootstrap";
+import { Modal } from "components/ui/Modal";
 import { CloseButtonPanel } from "features/game/components/CloseablePanel";
 import { GoblinPirateItems } from "./components/GoblinPirateItems";
 import { SUNNYSIDE } from "assets/sunnyside";
@@ -24,6 +24,10 @@ const bumpkin: Equipped = {
 export const RetreatPirate: React.FC = () => {
   const [isOpen, setIsOpen] = React.useState(false);
 
+  useEffect(() => {
+    loadAudio([blacksmithAudio]);
+  }, []);
+
   const openPirate = () => {
     setIsOpen(true);
     //Checks if blacksmithAudio is playing, if false, plays the sound
@@ -34,7 +38,7 @@ export const RetreatPirate: React.FC = () => {
 
   return (
     <>
-      <MapPlacement x={16} y={-3} height={3} width={2}>
+      <MapPlacement x={8} y={-13} height={3} width={2}>
         <div
           className="relative w-full h-full cursor-pointer hover:img-highlight"
           onClick={openPirate}
@@ -63,7 +67,7 @@ export const RetreatPirate: React.FC = () => {
           </div>
         </div>
       </MapPlacement>
-      <Modal centered show={isOpen} onHide={() => setIsOpen(false)}>
+      <Modal show={isOpen} onHide={() => setIsOpen(false)}>
         <CloseButtonPanel
           bumpkinParts={bumpkin}
           tabs={[{ name: "Craft", icon: SUNNYSIDE.icons.hammer }]}

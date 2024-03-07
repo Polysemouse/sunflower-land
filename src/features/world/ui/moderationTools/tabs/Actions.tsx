@@ -25,18 +25,19 @@ export const Actions: React.FC<Props> = ({
           <div className="flex flex-col gap-2 h-96">
             <div className="flex items-center gap-2">
               <img src={SoundOffIcon} className="w-8 h-8" />
-              <p className="text-sm">Mute a Player</p>
+              <p className="text-sm">{"Mute"}</p>
             </div>
             <p className="text-xs">
-              In case you need to mute a player that is not online, you can do
-              so here. On their next login, they will be muted.
+              {
+                "In case you need to mute a player that is not online, you can do so here. On their next login, they will be muted."
+              }
             </p>
             <Button
               onClick={() => {
                 setStep("MUTE");
               }}
             >
-              Mute a Player
+              {"Mute a Player"}
             </Button>
           </div>
         )}

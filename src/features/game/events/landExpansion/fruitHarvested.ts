@@ -12,15 +12,14 @@ import {
   FRUIT_SEEDS,
   Fruit,
 } from "features/game/types/fruits";
-import {
-  Collectibles,
-  GameState,
-  PlantedFruit,
-} from "features/game/types/game";
+import { Bumpkin, GameState, PlantedFruit } from "features/game/types/game";
 import cloneDeep from "lodash.clonedeep";
 import { getTimeLeft } from "lib/utils/time";
 import { FruitPatch } from "features/game/types/game";
 import { FruitCompostName } from "features/game/types/composters";
+import { getPlantedAt } from "./fruitPlanted";
+import { isWearableActive } from "features/game/lib/wearables";
+import { translate } from "lib/i18n/translate";
 
 export type HarvestFruitAction = {
   type: "fruit.harvested";
@@ -52,7 +51,7 @@ export const isFruitReadyToHarvest = (
 
 type FruitYield = {
   name: FruitName;
-  collectibles: Collectibles;
+  game: GameState;
   buds: NonNullable<GameState["buds"]>;
   wearables: Equipped;
   fertiliser?: FruitCompostName;
@@ -78,20 +77,20 @@ export function isFruitGrowing(patch: FruitPatch) {
 }
 
 export function getFruitYield({
-  collectibles,
+  game,
   buds,
   name,
   wearables,
   fertiliser,
 }: FruitYield) {
   let amount = 1;
-  if (name === "Apple" && isCollectibleBuilt("Lady Bug", collectibles)) {
+  if (name === "Apple" && isCollectibleBuilt({ name: "Lady Bug", game })) {
     amount += 0.25;
   }
 
   if (
     name === "Blueberry" &&
-    isCollectibleBuilt("Black Bearry", collectibles)
+    isCollectibleBuilt({ name: "Black Bearry", game })
   ) {
     amount += 1;
   }
@@ -101,7 +100,7 @@ export function getFruitYield({
       name === "Orange" ||
       name === "Blueberry" ||
       name === "Banana") &&
-    wearables?.coat === "Fruit Picker Apron"
+    isWearableActive({ name: "Fruit Picker Apron", game })
   ) {
     amount += 0.1;
   }
@@ -110,33 +109,20 @@ export function getFruitYield({
     amount += 0.1;
   }
 
-  if (name === "Banana" && wearables.necklace === "Banana Amulet") {
+  if (name === "Banana" && isWearableActive({ name: "Banana Amulet", game })) {
     amount += 0.5;
+  }
+
+  if (
+    name === "Banana" &&
+    isCollectibleBuilt({ name: "Banana Chicken", game })
+  ) {
+    amount += 0.1;
   }
 
   amount += getBudYieldBoosts(buds, name);
 
   return amount;
-}
-
-function getPlantedAt(
-  fruitName: FruitName,
-  collectibles: Collectibles,
-  createdAt: number
-) {
-  if (
-    fruitName === "Orange" &&
-    isCollectibleBuilt("Squirrel Monkey", collectibles)
-  ) {
-    const orangeTimeInMilliseconds =
-      FRUIT_SEEDS()["Orange Seed"].plantSeconds * 1000;
-
-    const offset = orangeTimeInMilliseconds / 2;
-
-    return createdAt - offset;
-  }
-
-  return createdAt;
 }
 
 export function harvestFruit({
@@ -148,7 +134,7 @@ export function harvestFruit({
   const { fruitPatches, bumpkin, collectibles } = stateCopy;
 
   if (!bumpkin) {
-    throw new Error("You do not have a Bumpkin");
+    throw new Error(translate("no.have.bumpkin"));
   }
 
   const patch = fruitPatches[action.index];
@@ -183,13 +169,14 @@ export function harvestFruit({
 
   patch.fruit.harvestsLeft = patch.fruit.harvestsLeft - 1;
   patch.fruit.harvestedAt = getPlantedAt(
-    name,
-    stateCopy.collectibles,
+    seed,
+    (stateCopy.bumpkin as Bumpkin).equipped,
+    stateCopy,
     createdAt
   );
 
   patch.fruit.amount = getFruitYield({
-    collectibles: collectibles,
+    game: stateCopy,
     buds: stateCopy.buds ?? {},
     wearables: bumpkin.equipped,
     name,

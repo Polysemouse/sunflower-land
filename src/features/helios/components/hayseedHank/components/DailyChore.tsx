@@ -13,6 +13,7 @@ import { SUNNYSIDE } from "assets/sunnyside";
 import { OuterPanel } from "components/ui/Panel";
 import { getSeasonalTicket } from "features/game/types/seasons";
 import { getSeasonChangeover } from "lib/utils/getSeasonWeek";
+import { useAppTranslation } from "lib/i18n/useAppTranslations";
 
 const isDateOnSameDayAsToday = (date: Date) => {
   const today = new Date();
@@ -34,6 +35,7 @@ export const DailyChore: React.FC<Props> = ({ id, chore, isReadOnly }) => {
   const [gameState] = useActor(gameService);
 
   const [isSkipping, setIsSkipping] = useState(false);
+  const { t } = useAppTranslation();
 
   useEffect(() => {
     if (isSkipping && !gameState.matches("autosaving")) {
@@ -55,8 +57,8 @@ export const DailyChore: React.FC<Props> = ({ id, chore, isReadOnly }) => {
 
   if (isSkipping && gameState.matches("autosaving")) {
     return (
-      <OuterPanel className="p-2 mb-2">
-        <span className="loading">Skipping</span>
+      <OuterPanel className="!p-2 mb-2">
+        <span className="loading">{t("skipping")}</span>
       </OuterPanel>
     );
   }
@@ -75,7 +77,7 @@ export const DailyChore: React.FC<Props> = ({ id, chore, isReadOnly }) => {
   });
 
   return (
-    <OuterPanel className="p-2 mb-2">
+    <OuterPanel className="!p-2 mb-2">
       <div className="flex justify-between">
         <span className="text-sm mb-1 flex-1 whitespace-normal pr-2">
           {chore.description}
@@ -101,14 +103,14 @@ export const DailyChore: React.FC<Props> = ({ id, chore, isReadOnly }) => {
         </div>
         {isReadOnly && chore.completedAt && (
           <div className="flex">
-            <span className="text-xs mr-1">Completed</span>
+            <span className="text-xs mr-1">{t("completed")}</span>
             <img src={SUNNYSIDE.icons.confirm} className="h-4" />
           </div>
         )}
         {!isReadOnly &&
           (chore.completedAt ? (
             <div className="flex">
-              <span className="text-xs mr-1">Completed</span>
+              <span className="text-xs mr-1">{t("completed")}</span>
               <img src={SUNNYSIDE.icons.confirm} className="h-4" />
             </div>
           ) : (
@@ -119,7 +121,7 @@ export const DailyChore: React.FC<Props> = ({ id, chore, isReadOnly }) => {
                   onClick={() => skip(id)}
                   disabled={tasksAreFrozen}
                 >
-                  Skip
+                  {t("skip")}
                 </Button>
               )}
 
@@ -128,7 +130,7 @@ export const DailyChore: React.FC<Props> = ({ id, chore, isReadOnly }) => {
                 className="text-sm w-24 h-8"
                 onClick={() => complete(id)}
               >
-                Complete
+                {t("complete")}
               </Button>
             </div>
           ))}

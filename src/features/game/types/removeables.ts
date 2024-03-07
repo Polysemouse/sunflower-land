@@ -16,6 +16,10 @@ import {
 import { isFruitGrowing } from "features/game/events/landExpansion/fruitHarvested";
 import { CompostName, isComposting } from "./composters";
 import { getDailyFishingCount } from "./fishing";
+import { GoblinState } from "features/game/lib/goblinMachine";
+import { FLOWERS, FLOWER_SEEDS } from "./flowers";
+import { getCurrentHoneyProduced } from "../expansion/components/resources/beehive/beehiveMachine";
+import { DEFAULT_HONEY_PRODUCTION_TIME } from "../lib/updateBeehives";
 
 type RESTRICTION_REASON =
   | "No restriction"
@@ -35,8 +39,11 @@ type RESTRICTION_REASON =
   | "Magic Bean is planted"
   | "Bananas are growing"
   | "In use"
+  | "Recently fished"
   | "Recently used"
-  | "Locked during festive season";
+  | "Locked during festive season"
+  | "Bees are busy"
+  | "Flowers are growing";
 
 export type Restriction = [boolean, RESTRICTION_REASON];
 type RemoveCondition = (gameState: GameState) => Restriction;
@@ -46,7 +53,7 @@ type CanRemoveArgs = {
   game: GameState;
 };
 
-function cropIsGrowing({ item, game }: CanRemoveArgs): Restriction {
+export function cropIsGrowing({ item, game }: CanRemoveArgs): Restriction {
   const cropGrowing = Object.values(game.crops ?? {}).some(
     (plot) => isCropGrowing(plot) && plot.crop?.name === item
   );
@@ -59,7 +66,10 @@ function beanIsPlanted(game: GameState): Restriction {
   return [!!beanPlanted, "Magic Bean is planted"];
 }
 
-function areFruitsGrowing(game: GameState, fruit: FruitName): Restriction {
+export function areFruitsGrowing(
+  game: GoblinState,
+  fruit: FruitName
+): Restriction {
   const fruitGrowing = Object.values(game.fruitPatches ?? {}).some(
     (patch) => isFruitGrowing(patch) && patch.fruit?.name === fruit
   );
@@ -67,7 +77,7 @@ function areFruitsGrowing(game: GameState, fruit: FruitName): Restriction {
   return [fruitGrowing, `${fruit} is growing`];
 }
 
-function areAnyFruitsGrowing(game: GameState): Restriction {
+export function areAnyFruitsGrowing(game: GoblinState): Restriction {
   const fruitGrowing = Object.values(game.fruitPatches ?? {}).some((patch) =>
     isFruitGrowing(patch)
   );
@@ -75,7 +85,7 @@ function areAnyFruitsGrowing(game: GameState): Restriction {
   return [fruitGrowing, `Fruits are growing`];
 }
 
-function areAnyCropsGrowing(game: GameState): Restriction {
+export function areAnyCropsGrowing(game: GoblinState): Restriction {
   const cropsGrowing = Object.values(game.crops ?? {}).some((plot) =>
     isCropGrowing(plot)
   );
@@ -150,6 +160,13 @@ function areAnyGoldsMined(game: GameState): Restriction {
   return [goldMined, "Gold is mined"];
 }
 
+function areAnyCrimstonessMined(game: GameState): Restriction {
+  const crimstoneMined = Object.values(game.crimstones ?? {}).some(
+    (crimstone) => !canMine(crimstone)
+  );
+  return [crimstoneMined, "Crimstone is mined"];
+}
+
 function areAnyMineralsMined(game: GameState): Restriction {
   const areStonesMined = areAnyStonesMined(game);
   const areIronsMined = areAnyIronsMined(game);
@@ -165,7 +182,7 @@ function areAnyMineralsMined(game: GameState): Restriction {
   return areGoldsMined;
 }
 
-function areAnyChickensFed(game: GameState): Restriction {
+export function areAnyChickensFed(game: GoblinState): Restriction {
   const chickensAreFed = Object.values(game.chickens).some(
     (chicken) =>
       chicken.fedAt && Date.now() - chicken.fedAt < CHICKEN_TIME_TO_EGG
@@ -196,7 +213,37 @@ function areAnyComposting(game: GameState): Restriction {
 }
 
 function hasFishedToday(game: GameState): Restriction {
-  return [getDailyFishingCount(game) !== 0, "In use"];
+  return [getDailyFishingCount(game) !== 0, "Recently fished"];
+}
+
+function areFlowersGrowing(game: GameState): Restriction {
+  const flowerGrowing = Object.values(game.flowers.flowerBeds).some(
+    (flowerBed) => {
+      const flower = flowerBed.flower;
+
+      if (!flower) return false;
+
+      return (
+        flower.plantedAt +
+          FLOWER_SEEDS()[FLOWERS[flower.name].seed].plantSeconds * 1000 >=
+        Date.now()
+      );
+    }
+  );
+
+  return [flowerGrowing, "Flowers are growing"];
+}
+
+function isBeehivesFull(game: GameState): boolean {
+  // 0.9 Small buffer in case of any rounding errors
+  return Object.values(game.beehives).every(
+    (hive) =>
+      getCurrentHoneyProduced(hive) >= DEFAULT_HONEY_PRODUCTION_TIME * 0.9
+  );
+}
+
+function isProducingHoney(game: GameState): Restriction {
+  return [areFlowersGrowing(game)[0] && !isBeehivesFull(game), "Bees are busy"];
 }
 
 function isFertiliserApplied(
@@ -218,7 +265,10 @@ export const canShake = (shakenAt?: number) => {
 };
 
 function hasShakenManeki(game: GameState): Restriction {
-  const manekiNekos = game.collectibles["Maneki Neko"] ?? [];
+  const manekiNekos = [
+    ...(game.collectibles["Maneki Neko"] ?? []),
+    ...(game.home.collectibles["Maneki Neko"] ?? []),
+  ];
   const hasShakenRecently = manekiNekos.some((maneki) => {
     const shakenAt = maneki.shakenAt || 0;
 
@@ -254,6 +304,7 @@ export const REMOVAL_RESTRICTIONS: Partial<
   Rooster: (game) => areAnyChickensFed(game),
   Bale: (game) => areAnyChickensFed(game),
   "Banana Chicken": (game) => areFruitsGrowing(game, "Banana"),
+  "Crim Peckster": (game) => areAnyCrimstonessMined(game),
 
   // Crop Boosts
   Nancy: (game) => areAnyCropsGrowing(game),
@@ -287,6 +338,7 @@ export const REMOVAL_RESTRICTIONS: Partial<
   "Black Bearry": (game) => areFruitsGrowing(game, "Blueberry"),
   "Lady Bug": (game) => areFruitsGrowing(game, "Apple"),
   Nana: (game) => areFruitsGrowing(game, "Banana"),
+  "Immortal Pear": (game) => areAnyFruitsGrowing(game),
 
   // Composter boosts
   "Soil Krabby": (game) => areAnyComposting(game),
@@ -331,6 +383,10 @@ export const REMOVAL_RESTRICTIONS: Partial<
   // Fishing Boosts
   Alba: (game) => hasFishedToday(game),
   Walrus: (game) => hasFishedToday(game),
+
+  // Honey
+  "Queen Bee": (game) => isProducingHoney(game),
+  "Flower Fox": (game) => areFlowersGrowing(game),
 };
 
 export const BUD_REMOVAL_RESTRICTIONS: Record<

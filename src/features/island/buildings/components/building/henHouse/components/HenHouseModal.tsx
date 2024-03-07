@@ -88,6 +88,7 @@ export const HenHouseModal: React.FC<Props> = ({ onClose }) => {
     gameService.send("LANDSCAPE", {
       placeable: "Chicken",
       action: "chicken.placed",
+      multiple: true,
       // Not used yet
       requirements: {
         sfl: new Decimal(0),
@@ -101,7 +102,7 @@ export const HenHouseModal: React.FC<Props> = ({ onClose }) => {
     if (selectedChicken === "buy") {
       return (
         <div className="flex flex-col justify-center items-center p-2 relative">
-          <span className="text-center">Chicken</span>
+          <span className="text-center">{t("chicken")}</span>
           <img
             src={SUNNYSIDE.resource.chicken}
             className="h-16 img-highlight mt-1"
@@ -155,7 +156,7 @@ export const HenHouseModal: React.FC<Props> = ({ onClose }) => {
             onClick={handlePlace}
             disabled={!canPlaceLazyChicken || autosaving}
           >
-            {autosaving ? "Saving..." : "Place"}
+            {autosaving ? t("saving") : "Place"}
           </Button>
         </div>
       );

@@ -6,10 +6,11 @@ import { GoblinProvider } from "features/game/GoblinProvider";
 import { Game } from "./Game";
 import { Context, GameProvider } from "features/game/GameProvider";
 import { useActor } from "@xstate/react";
-import { GameBoard } from "components/GameBoard";
-import { Modal } from "react-bootstrap";
+import { Modal } from "components/ui/Modal";
 import { Panel } from "components/ui/Panel";
 import { Loading } from "features/auth/components";
+import { Wallet } from "features/wallet/Wallet";
+import { Ocean } from "features/world/ui/Ocean";
 
 const GoblinRetreat: React.FC = () => {
   const { gameService } = useContext(Context);
@@ -17,24 +18,39 @@ const GoblinRetreat: React.FC = () => {
 
   if (!gameState.context.farmAddress) {
     return (
-      <>
-        <GameBoard />
-        <Modal centered show backdrop={false}>
+      <Ocean>
+        {/* <GameBoard /> */}
+        <Modal show backdrop={false}>
           <Panel>
             <Loading />
           </Panel>
         </Modal>
-      </>
+      </Ocean>
     );
   }
 
   return (
-    <GoblinProvider
+    <Wallet
+      action="withdraw"
+      id={gameState.context.farmId}
+      linkedAddress={gameState.context.linkedWallet}
+      wallet={gameState.context.wallet}
       farmAddress={gameState.context.farmAddress}
-      farmId={gameState.context.farmId}
+      wrapper={({ children }) => (
+        <Ocean>
+          <Modal show backdrop={false}>
+            <Panel>{children}</Panel>
+          </Modal>
+        </Ocean>
+      )}
     >
-      <Game />
-    </GoblinProvider>
+      <GoblinProvider
+        farmAddress={gameState.context.farmAddress}
+        farmId={gameState.context.farmId}
+      >
+        <Game />
+      </GoblinProvider>
+    </Wallet>
   );
 };
 
@@ -42,7 +58,7 @@ export const Retreat: React.FC = () => {
   const [scrollIntoView] = useScrollIntoView();
 
   useLayoutEffect(() => {
-    // Start with island centered
+    // Start with island
     scrollIntoView(Section.RetreatBackground, "auto");
   }, []);
 

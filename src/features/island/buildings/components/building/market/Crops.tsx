@@ -5,7 +5,7 @@ import { Button } from "components/ui/Button";
 import { Context } from "features/game/GameProvider";
 import { Crop, CROPS } from "features/game/types/crops";
 import { useActor } from "@xstate/react";
-import { Modal } from "react-bootstrap";
+import { Modal } from "components/ui/Modal";
 import { ITEM_DETAILS } from "features/game/types/images";
 import { getSellPrice } from "features/game/expansion/lib/boosts";
 import { setPrecision } from "lib/utils/formatNumber";
@@ -111,7 +111,8 @@ export const Crops: React.FC<{ cropShortage: boolean }> = ({
 
   const sellOneButtonText = () => {
     // In the case of 0 the button will be disabled
-    if (cropAmount.greaterThanOrEqualTo(1) || cropAmount.eq(0)) return "Sell 1";
+    if (cropAmount.greaterThanOrEqualTo(1) || cropAmount.eq(0))
+      return t("sell.one");
 
     return `Sell ${cropAmount}`;
   };
@@ -256,14 +257,12 @@ export const Crops: React.FC<{ cropShortage: boolean }> = ({
           </div>
         }
       />
-      <Modal centered show={isSellAllModalOpen} onHide={closeConfirmationModal}>
+      <Modal show={isSellAllModalOpen} onHide={closeConfirmationModal}>
         <CloseButtonPanel className="sm:w-4/5 m-auto">
           <div className="flex flex-col p-2">
             <span className="text-sm text-center">
               {t("confirmation.sellCrops")} <br className="hidden sm:block" />
-              {`${t("sell").toLowerCase()} ${cropAmount} ${selected.name} ${t(
-                "for"
-              )} `}
+              {`${t("sell")} ${cropAmount} ${selected.name} ${t("for")} `}
               <br className="hidden sm:block" />
               {`${setPrecision(
                 displaySellPrice(selected).mul(cropAmount)
@@ -275,7 +274,7 @@ export const Crops: React.FC<{ cropShortage: boolean }> = ({
               {t("cancel")}
             </Button>
             <Button disabled={noCrop} onClick={handleSellAll}>
-              Sell All
+              {t("sell.all")}
             </Button>
           </div>
         </CloseButtonPanel>

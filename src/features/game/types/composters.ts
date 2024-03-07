@@ -1,4 +1,5 @@
 import { GameState, InventoryItemName } from "./game";
+import { translate } from "lib/i18n/translate";
 
 export type Worm = "Earthworm" | "Grub" | "Red Wiggler";
 
@@ -14,20 +15,20 @@ export type ComposterName =
 
 export const WORM: Record<Worm, { description: string }> = {
   Earthworm: {
-    description: "A wriggly worm that attracts small fish.",
+    description: translate("worm.earthworm"),
   },
   Grub: {
-    description: "A juicy grub - perfect for advanced fish.",
+    description: translate("worm.grub"),
   },
   "Red Wiggler": {
-    description: "An exotic worm that entices rare fish.",
+    description: translate("worm.redWiggler"),
   },
 };
 
 export const FRUIT_COMPOST: Record<FruitCompostName, { description: string }> =
   {
     "Fruitful Blend": {
-      description: "Fruitful Blend boosts each fruit yield by +0.1",
+      description: translate("compost.fruitfulBlend"),
     },
   };
 
@@ -39,16 +40,16 @@ export const CROP_COMPOST: Record<
   }
 > = {
   "Sprout Mix": {
-    description: "Sprout Mix increases your crop yield by +0.2",
+    description: translate("compost.sproutMix"),
     boostedDescriptions: [
       {
         name: "Knowledge Crab",
-        description: "Sprout Mix increases your crop yield by +0.4",
+        description: translate("compost.sproutMixBoosted"),
       },
     ],
   },
   "Rapid Root": {
-    description: "Rapid Root reduces crop growth time by 50%",
+    description: translate("compost.rapidRoot"),
   },
 };
 
@@ -70,7 +71,7 @@ export const composterDetails: Record<ComposterName, ComposterDetails> = {
     produceAmount: 10,
     timeToFinishMilliseconds: 6 * 60 * 60 * 1000,
     eggBoostRequirements: 10,
-    eggBoostMilliseconds: 1 * 60 * 60 * 1000,
+    eggBoostMilliseconds: 2 * 60 * 60 * 1000,
   },
   "Turbo Composter": {
     produce: "Fruitful Blend",
@@ -78,7 +79,7 @@ export const composterDetails: Record<ComposterName, ComposterDetails> = {
     worm: "Grub",
     timeToFinishMilliseconds: 8 * 60 * 60 * 1000,
     eggBoostRequirements: 20,
-    eggBoostMilliseconds: 2 * 60 * 60 * 1000,
+    eggBoostMilliseconds: 3 * 60 * 60 * 1000,
   },
   "Premium Composter": {
     produce: "Rapid Root",
@@ -86,7 +87,7 @@ export const composterDetails: Record<ComposterName, ComposterDetails> = {
     worm: "Red Wiggler",
     timeToFinishMilliseconds: 12 * 60 * 60 * 1000,
     eggBoostRequirements: 30,
-    eggBoostMilliseconds: 3 * 60 * 60 * 1000,
+    eggBoostMilliseconds: 4 * 60 * 60 * 1000,
   },
 };
 

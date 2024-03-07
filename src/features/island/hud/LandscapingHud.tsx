@@ -10,7 +10,7 @@ import { SUNNYSIDE } from "assets/sunnyside";
 import bush from "assets/icons/decoration.png";
 import chest from "assets/icons/chest.png";
 
-import { useIsMobile } from "lib/utils/hooks/useIsMobile";
+import { isMobile } from "mobile-device-detect";
 
 import {
   MachineInterpreter,
@@ -27,10 +27,11 @@ import { ITEM_DETAILS } from "features/game/types/images";
 import { LandscapingIntroduction } from "./components/LandscapingIntroduction";
 import { getRemoveAction } from "../collectibles/MovableComponent";
 import { InventoryItemName } from "features/game/types/game";
-import { createPortal } from "react-dom";
 import { RemoveKuebikoModal } from "../collectibles/RemoveKuebikoModal";
 import { hasRemoveRestriction } from "features/game/types/removeables";
 import { BudName } from "features/game/types/buds";
+import { CollectibleLocation } from "features/game/types/collectibles";
+import { HudContainer } from "components/ui/HudContainer";
 
 const compareBalance = (prev: Decimal, next: Decimal) => {
   return prev.eq(next);
@@ -45,9 +46,10 @@ const compareBlockBucks = (prev: Decimal, next: Decimal) => {
 const selectMovingItem = (state: MachineState) => state.context.moving;
 const isIdle = (state: MachineState) => state.matches({ editing: "idle" });
 
-const LandscapingHudComponent: React.FC<{ isFarming: boolean }> = () => {
+const LandscapingHudComponent: React.FC<{
+  location: CollectibleLocation;
+}> = ({ location }) => {
   const { gameService } = useContext(Context);
-  const [isMobile] = useIsMobile();
 
   const [showDecorations, setShowDecorations] = useState(false);
   const [showRemoveConfirmation, setShowRemoveConfirmation] = useState(false);
@@ -94,18 +96,15 @@ const LandscapingHudComponent: React.FC<{ isFarming: boolean }> = () => {
         event: action,
         id: selectedItem?.id,
         name: selectedItem?.name,
+        location,
       });
     } else {
       setShowRemoveConfirmation(true);
     }
   };
 
-  return createPortal(
-    <div
-      data-html2canvas-ignore="true"
-      aria-label="Hud"
-      className="absolute z-40"
-    >
+  return (
+    <HudContainer>
       <Balance balance={balance} />
       <BlockBucks blockBucks={blockBucks} />
 
@@ -115,7 +114,7 @@ const LandscapingHudComponent: React.FC<{ isFarming: boolean }> = () => {
         {idle && (
           <>
             <div
-              className="fixed flex z-50 flex-col"
+              className="absolute flex z-50 flex-col"
               style={{
                 marginLeft: `${PIXEL_SCALE * 2}px`,
                 marginBottom: `${PIXEL_SCALE * 25}px`,
@@ -151,32 +150,34 @@ const LandscapingHudComponent: React.FC<{ isFarming: boolean }> = () => {
                 />
               </div>
 
-              <div
-                onClick={() => setShowDecorations(true)}
-                className="w-full z-10 cursor-pointer hover:img-highlight relative"
-                style={{
-                  width: `${PIXEL_SCALE * 22}px`,
-                  height: `${PIXEL_SCALE * 22}px`,
-                  marginBottom: `${PIXEL_SCALE * 4}px`,
-                }}
-              >
-                <img
-                  src={SUNNYSIDE.ui.round_button}
-                  className="absolute"
+              {location === "farm" && (
+                <div
+                  onClick={() => setShowDecorations(true)}
+                  className="w-full z-10 cursor-pointer hover:img-highlight relative"
                   style={{
                     width: `${PIXEL_SCALE * 22}px`,
+                    height: `${PIXEL_SCALE * 22}px`,
+                    marginBottom: `${PIXEL_SCALE * 4}px`,
                   }}
-                />
-                <img
-                  src={bush}
-                  className="absolute"
-                  style={{
-                    top: `${PIXEL_SCALE * 5}px`,
-                    left: `${PIXEL_SCALE * 5}px`,
-                    width: `${PIXEL_SCALE * 12}px`,
-                  }}
-                />
-              </div>
+                >
+                  <img
+                    src={SUNNYSIDE.ui.round_button}
+                    className="absolute"
+                    style={{
+                      width: `${PIXEL_SCALE * 22}px`,
+                    }}
+                  />
+                  <img
+                    src={bush}
+                    className="absolute"
+                    style={{
+                      top: `${PIXEL_SCALE * 5}px`,
+                      left: `${PIXEL_SCALE * 5}px`,
+                      width: `${PIXEL_SCALE * 12}px`,
+                    }}
+                  />
+                </div>
+              )}
               <Chest
                 onPlaceChestItem={(selected) => {
                   child.send("SELECT", {
@@ -189,6 +190,7 @@ const LandscapingHudComponent: React.FC<{ isFarming: boolean }> = () => {
                   child.send("SELECT", {
                     action: "bud.placed",
                     placeable: selected,
+                    location,
                   });
                 }}
               />
@@ -205,7 +207,7 @@ const LandscapingHudComponent: React.FC<{ isFarming: boolean }> = () => {
       {showRemove && (
         <div
           onClick={() => !isRestricted && remove()}
-          className="fixed flex z-50 flex-col cursor-pointer"
+          className="absolute flex z-50 flex-col cursor-pointer"
           style={{
             marginLeft: `${PIXEL_SCALE * 2}px`,
             marginBottom: `${PIXEL_SCALE * 25}px`,
@@ -270,9 +272,8 @@ const LandscapingHudComponent: React.FC<{ isFarming: boolean }> = () => {
         show={showDecorations}
       />
 
-      <PlaceableController />
-    </div>,
-    document.body
+      <PlaceableController location={location} />
+    </HudContainer>
   );
 };
 

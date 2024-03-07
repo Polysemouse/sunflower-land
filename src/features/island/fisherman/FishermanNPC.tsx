@@ -13,7 +13,7 @@ import Spritesheet, {
 } from "components/animation/SpriteAnimator";
 import { PIXEL_SCALE } from "features/game/lib/constants";
 import { Context } from "features/game/GameProvider";
-import { Modal } from "react-bootstrap";
+import { Modal } from "components/ui/Modal";
 import { CloseButtonPanel } from "features/game/components/CloseablePanel";
 import { NPC_WEARABLES } from "lib/npcs";
 import { CONFIG } from "lib/config";
@@ -28,6 +28,7 @@ import { gameAnalytics } from "lib/gameAnalytics";
 import { getBumpkinLevel } from "features/game/lib/level";
 import { Label } from "components/ui/Label";
 import { ITEM_DETAILS } from "features/game/types/images";
+import { useAppTranslation } from "lib/i18n/useAppTranslations";
 
 type SpriteFrames = { startAt: number; endAt: number };
 
@@ -78,6 +79,7 @@ const _catchTheKraken = (state: MachineState) =>
   state.context.state.catchTheKraken;
 
 export const FishermanNPC: React.FC<Props> = ({ onClick }) => {
+  const { t } = useAppTranslation();
   const spriteRef = useRef<SpriteSheetInstance>();
   const didRefresh = useRef(false);
 
@@ -196,13 +198,13 @@ export const FishermanNPC: React.FC<Props> = ({ onClick }) => {
     spriteRef.current?.setStartAt(FISHING_FRAMES.caught.startAt);
     spriteRef.current?.setEndAt(FISHING_FRAMES.caught.endAt);
 
-    gameService.send("fish.missed");
+    gameService.send("fish.missed", { location: "wharf" });
     gameService.send("SAVE");
   };
 
   const claim = () => {
     if (fishing.wharf.caught) {
-      const state = gameService.send("rod.reeled");
+      const state = gameService.send("rod.reeled", { location: "wharf" });
 
       const totalFishCaught = getKeys(FISH).reduce(
         (total, name) =>
@@ -229,19 +231,16 @@ export const FishermanNPC: React.FC<Props> = ({ onClick }) => {
 
   return (
     <>
-      <Modal
-        centered
-        show={showLockedModal}
-        onHide={() => setShowLockedModal(false)}
-      >
+      <Modal show={showLockedModal} onHide={() => setShowLockedModal(false)}>
         <CloseButtonPanel onClose={() => setShowLockedModal(false)}>
           <div className="flex flex-col items-center">
             <Label className="mt-2" icon={lockIcon} type="danger">
-              Level 5 Required
+              {t("warning.level.required")}
+              {": 5"}
             </Label>
             <img src={ITEM_DETAILS.Rod.image} className="w-10 mx-auto my-2" />
             <p className="text-sm text-center mb-2">
-              Visit the Fire Pit to cook food and feed your Bumpkin.
+              {t("statements.visit.firePit")}
             </p>
           </div>
         </CloseButtonPanel>
@@ -271,7 +270,7 @@ export const FishermanNPC: React.FC<Props> = ({ onClick }) => {
         </>
       )}
 
-      <Modal centered show={showCaughtModal} onHide={close} onExited={claim}>
+      <Modal show={showCaughtModal} onHide={close} onExited={claim}>
         <CloseButtonPanel
           onClose={close}
           bumpkinParts={NPC_WEARABLES["reelin roy"]}
@@ -284,7 +283,7 @@ export const FishermanNPC: React.FC<Props> = ({ onClick }) => {
         </CloseButtonPanel>
       </Modal>
 
-      <Modal centered show={showChallenge}>
+      <Modal show={showChallenge}>
         <Panel>
           <FishingChallenge
             difficulty={challengeDifficulty}

@@ -5,7 +5,7 @@ import { secondsToString, TimeFormatLength } from "lib/utils/time";
 import { PIXEL_SCALE } from "features/game/lib/constants";
 import { progressBarBorderStyle } from "features/game/lib/style";
 
-type progressType = "progress" | "health" | "error" | "buff";
+type progressType = "progress" | "health" | "error" | "buff" | "quantity";
 
 interface ProgressBarProps extends React.HTMLAttributes<HTMLDivElement> {
   percentage: number;
@@ -45,6 +45,10 @@ const PROGRESS_COLORS: Record<progressType, progressStyle> = {
     color: "#b65389",
     backgroundColor: "#193c3e",
   },
+  quantity: {
+    color: "#ffb01e",
+    backgroundColor: "#543a2b",
+  },
 };
 
 /**
@@ -77,12 +81,22 @@ export const ResizableBar: React.FC<{
       className="relative"
       style={{
         ...progressBarBorderStyle,
-        transition: "width 0.5s",
         width: `${PIXEL_SCALE * outerDimensions.width}px`,
         height: `${PIXEL_SCALE * outerDimensions.height}px`,
-        backgroundImage: `linear-gradient(to right, ${color} 0%, ${color} ${progressFillPercentage}%, ${backgroundColor} ${progressFillPercentage}%, ${backgroundColor} 100%)`,
+        backgroundColor,
+        // backgroundImage: `linear-gradient(to right, ${color} 0%, ${color} ${progressFillPercentage}%, ${backgroundColor} ${progressFillPercentage}%, ${backgroundColor} 100%)`,
       }}
-    />
+    >
+      <div
+        className="relative h-full"
+        style={{
+          transition: "width 0.5s",
+
+          backgroundColor: color,
+          width: `${progressFillPercentage}%`,
+        }}
+      />
+    </div>
   );
 };
 

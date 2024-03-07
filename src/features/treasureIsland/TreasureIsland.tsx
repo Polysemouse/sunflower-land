@@ -38,7 +38,7 @@ export const TreasureIsland: React.FC = () => {
     useState(false);
 
   useLayoutEffect(() => {
-    // Start with island centered
+    // Start with island
     scrollIntoView(Section.TreasureIsland, "auto");
   }, []);
 
@@ -76,7 +76,7 @@ export const TreasureIsland: React.FC = () => {
         <TreasureTrove />
         <PirateChest />
       </div>
-      <Hud isFarming={false} />
+      <Hud isFarming={false} location="farm" />
     </>
   );
 };

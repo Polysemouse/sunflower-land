@@ -1,5 +1,5 @@
 import React, { useContext, useEffect, useState } from "react";
-import { Modal } from "react-bootstrap";
+import { Modal } from "components/ui/Modal";
 
 import { EXPANSION_ORIGINS, LAND_SIZE } from "../lib/constants";
 import { UpcomingExpansionModal } from "./UpcomingExpansionModal";
@@ -34,6 +34,9 @@ import {
   GameState,
   Inventory,
 } from "features/game/types/game";
+import { expansionRequirements } from "features/game/events/landExpansion/revealLand";
+import { translate } from "lib/i18n/translate";
+import { useAppTranslation } from "lib/i18n/useAppTranslations";
 
 const host = window.location.host.replace(/^www\./, "");
 const LOCAL_STORAGE_KEY = `expansion-read.${host}-${window.location.pathname}`;
@@ -68,24 +71,21 @@ export const ExpandIcon: React.FC<ExpandIconProps> = ({
 
   const showRequirements = inventory["Basic Land"]?.lte(5);
 
+  const { t } = useAppTranslation();
   return (
     <>
-      <Modal
-        centered
-        show={showLockedModal}
-        onHide={() => setShowLockedModal(false)}
-      >
+      <Modal show={showLockedModal} onHide={() => setShowLockedModal(false)}>
         <CloseButtonPanel onClose={() => setShowLockedModal(false)}>
           <div className="flex flex-col items-center">
             <Label className="mt-2" icon={lockIcon} type="danger">
-              {`Level ${requirements.bumpkinLevel} required`}
+              {t("lvl")} {requirements.bumpkinLevel} {t("required")}
             </Label>
             <img
               src={ITEM_DETAILS.Hammer.image}
               className="w-10 mx-auto my-2"
             />
             <p className="text-sm text-center mb-2">
-              Visit the Fire Pit to cook food and feed your Bumpkin.
+              {t("statements.visit.firePit")}
             </p>
           </div>
         </CloseButtonPanel>
@@ -142,11 +142,9 @@ export const ExpandIcon: React.FC<ExpandIconProps> = ({
                   ))}
               </div>
               {isLocked && (
-                <Label
-                  type="default"
-                  icon={lockIcon}
-                  className="mt-2"
-                >{`Level ${requirements.bumpkinLevel}`}</Label>
+                <Label type="default" icon={lockIcon} className="mt-2">
+                  {t("lvl")} {requirements.bumpkinLevel}
+                </Label>
               )}
             </>
           )}
@@ -157,13 +155,17 @@ export const ExpandIcon: React.FC<ExpandIconProps> = ({
                   type="default"
                   icon={SUNNYSIDE.icons.confirm}
                   className="mt-2"
-                >{`Expand`}</Label>
+                >
+                  {t("expand")}
+                </Label>
               ) : (
                 <Label
                   type="default"
                   icon={SUNNYSIDE.icons.cancel}
                   className="mt-2"
-                >{`Expand`}</Label>
+                >
+                  {t("expand")}
+                </Label>
               )}
             </>
           )}
@@ -256,19 +258,24 @@ export const UpcomingExpansion: React.FC = () => {
 
   const playing = gameState.matches("playing");
 
+  const requirements = expansionRequirements({ game: state });
+
+  const { t } = useAppTranslation();
+
   useEffect(() => {
     if (isRevealing && playing) {
       setIsRevealing(false);
     }
   }, [gameState.value]);
 
+  const expansions =
+    (gameState.context.state.inventory["Basic Land"]?.toNumber() ?? 3) + 1;
+
   const onExpand = () => {
     gameService.send("land.expanded");
     gameService.send("SAVE");
 
-    const blockBucks =
-      gameState.context.state.expansionRequirements?.resources["Block Buck"] ??
-      0;
+    const blockBucks = requirements?.resources["Block Buck"] ?? 0;
     if (blockBucks) {
       gameAnalytics.trackSink({
         currency: "Block Buck",
@@ -278,8 +285,6 @@ export const UpcomingExpansion: React.FC = () => {
       });
     }
 
-    const expansions =
-      (gameState.context.state.inventory["Basic Land"]?.toNumber() ?? 3) + 1;
     gameAnalytics.trackMilestone({
       event: `Farm:Expanding:Expansion${expansions}`,
     });
@@ -304,15 +309,20 @@ export const UpcomingExpansion: React.FC = () => {
 
   const isLocked =
     getBumpkinLevel(state.bumpkin?.experience ?? 0) <
-    (state.expansionRequirements?.bumpkinLevel ?? 0);
+    (requirements?.bumpkinLevel ?? 0);
 
-  const canExpand = craftingRequirementsMet(state, state.expansionRequirements);
+  const canExpand = craftingRequirementsMet(state, requirements);
 
   const showHelper =
     canExpand &&
     (state.bumpkin?.activity?.["Tree Chopped"] ?? 0) >= 3 &&
     // Only pulsate first 5 times
     state.inventory["Basic Land"]?.lte(4);
+
+  const maxExpanded = expansions > 9;
+  const islandType = state.island.type;
+
+  const hasFullBasicIsland = maxExpanded && islandType === "basic";
 
   return (
     <>
@@ -324,20 +334,20 @@ export const UpcomingExpansion: React.FC = () => {
         />
       )}
 
-      {!state.expansionConstruction && state.expansionRequirements && (
+      {!state.expansionConstruction && requirements && !hasFullBasicIsland && (
         <ExpandIcon
           canExpand={canExpand}
           inventory={state.inventory}
           isLocked={isLocked}
           onOpen={() => setShowBumpkinModal(true)}
           position={nextPosition}
-          requirements={state.expansionRequirements as ExpansionRequirements}
+          requirements={requirements as ExpansionRequirements}
           showHelper={showHelper ?? false}
         />
       )}
 
       {gameState.matches("revealing") && isRevealing && (
-        <Modal show centered>
+        <Modal show>
           <CloseButtonPanel>
             <Revealing icon={SUNNYSIDE.npcs.goblin_hammering} />
           </CloseButtonPanel>
@@ -345,25 +355,21 @@ export const UpcomingExpansion: React.FC = () => {
       )}
 
       {gameState.matches("revealed") && isRevealing && (
-        <Modal show centered>
+        <Modal show>
           <Panel>
             <Revealed />
           </Panel>
         </Modal>
       )}
-      <Modal
-        show={showBumpkinModal}
-        onHide={() => setShowBumpkinModal(false)}
-        centered
-      >
+      <Modal show={showBumpkinModal} onHide={() => setShowBumpkinModal(false)}>
         {showIntro && (
           <SpeakingModal
             message={[
               {
-                text: "Greetings, budding farmer! I am Grimbly, a seasoned Goblin Builder.",
+                text: translate("grimbly.expansion.one"),
               },
               {
-                text: "With the right materials and my ancient crafting skills, we can turn your island into a masterpiece.",
+                text: translate("grimbly.expansion.two"),
               },
             ]}
             onClose={() => {
@@ -377,7 +383,7 @@ export const UpcomingExpansion: React.FC = () => {
         {!showIntro && (
           <CloseButtonPanel
             bumpkinParts={NPC_WEARABLES.grimbly}
-            title="Expand your land"
+            title={t("expand.land")}
             onClose={() => setShowBumpkinModal(false)}
           >
             <UpcomingExpansionModal

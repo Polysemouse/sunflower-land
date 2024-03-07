@@ -8,17 +8,19 @@ import { Context } from "features/game/GameProvider";
 import { Revealing } from "features/game/components/Revealing";
 import { Revealed } from "features/game/components/Revealed";
 import { Panel } from "components/ui/Panel";
-import Modal from "react-bootstrap/esm/Modal";
+import { Modal } from "components/ui/Modal";
 import classNames from "classnames";
 import { Label } from "components/ui/Label";
 import { CloseButtonPanel } from "features/game/components/CloseablePanel";
 import { NPC_WEARABLES } from "lib/npcs";
+import { useAppTranslation } from "lib/i18n/useAppTranslations";
 
 interface Props {
   id: string;
 }
 
 export const FestiveTree: React.FC<Props> = ({ id }) => {
+  const { t } = useAppTranslation();
   const { gameService } = useContext(Context);
   const [gameState] = useActor(gameService);
 
@@ -56,27 +58,19 @@ export const FestiveTree: React.FC<Props> = ({ id }) => {
 
   return (
     <>
-      <Modal
-        centered
-        show={showGiftedModal}
-        onHide={() => setShowGiftedModal(false)}
-      >
+      <Modal show={showGiftedModal} onHide={() => setShowGiftedModal(false)}>
         <CloseButtonPanel
           bumpkinParts={NPC_WEARABLES.santa}
           onClose={() => setShowGiftedModal(false)}
         >
           <div className="p-2">
-            <Label type="danger">Greedy Bumpkin Detected</Label>
-            <p className="text-sm mt-2">
-              This tree has already been gifted. Wait until next Christmas for
-              more festivities.
-            </p>
+            <Label type="danger">{t("festivetree.greedyBumpkin")}</Label>
+            <p className="text-sm mt-2">{t("festivetree.alreadyGifted")}</p>
           </div>
         </CloseButtonPanel>
       </Modal>
 
       <Modal
-        centered
         show={showWrongTimeModal}
         onHide={() => setShowWrongTimeModal(false)}
       >
@@ -85,10 +79,8 @@ export const FestiveTree: React.FC<Props> = ({ id }) => {
           onClose={() => setShowWrongTimeModal(false)}
         >
           <div className="p-2">
-            <Label type="danger">Greedy Bumpkin Detected</Label>
-            <p className="text-sm mt-2">
-              It is not the Festive season. Come back later.
-            </p>
+            <Label type="danger">{t("festivetree.greedyBumpkin")}</Label>
+            <p className="text-sm mt-2">{t("festivetree.notFestiveSeason")}</p>
           </div>
         </CloseButtonPanel>
       </Modal>
@@ -112,14 +104,14 @@ export const FestiveTree: React.FC<Props> = ({ id }) => {
       </div>
 
       {gameState.matches("revealing") && isRevealing && (
-        <Modal show centered>
+        <Modal show>
           <Panel bumpkinParts={NPC_WEARABLES.santa}>
             <Revealing icon={festiveTreeImage} />
           </Panel>
         </Modal>
       )}
       {gameState.matches("revealed") && isRevealing && (
-        <Modal show centered>
+        <Modal show>
           <Panel bumpkinParts={NPC_WEARABLES.santa}>
             <Revealed onAcknowledged={() => setIsRevealing(false)} />
           </Panel>

@@ -7,6 +7,7 @@ import { getChestBuds, getChestItems } from "./utils/inventory";
 import Decimal from "decimal.js-light";
 import { Button } from "components/ui/Button";
 import chest from "assets/npcs/synced.gif";
+import lightning from "assets/icons/lightning.png";
 
 import { SplitScreenView } from "components/ui/SplitScreenView";
 import { PIXEL_SCALE } from "features/game/lib/constants";
@@ -26,6 +27,12 @@ import { BudName, isBudName } from "features/game/types/buds";
 import { CONFIG } from "lib/config";
 import { BudDetails } from "components/ui/layouts/BudDetails";
 import classNames from "classnames";
+import { RESOURCES } from "features/game/types/resources";
+import { BUILDINGS } from "features/game/types/buildings";
+import { SUNNYSIDE } from "assets/sunnyside";
+import { Label } from "components/ui/Label";
+import { COLLECTIBLE_BUFF_LABELS } from "features/game/types/collectibleItemBuffs";
+import { useAppTranslation } from "lib/i18n/useAppTranslations";
 
 const imageDomain = CONFIG.NETWORK === "mainnet" ? "buds" : "testnet-buds";
 
@@ -65,8 +72,9 @@ export const Chest: React.FC<Props> = ({
 }: Props) => {
   const divRef = useRef<HTMLDivElement>(null);
   const buds = getChestBuds(state);
-  const chestMap = getChestItems(state);
 
+  const chestMap = getChestItems(state);
+  const { t } = useAppTranslation();
   const collectibles = getKeys(chestMap)
     .sort((a, b) => a.localeCompare(b))
     .reduce((acc, item) => {
@@ -118,7 +126,7 @@ export const Chest: React.FC<Props> = ({
           }}
         />
         <span className="text-xs text-center mt-2">
-          Your chest is empty, discover rare items today!
+          {t("statements.empty.chest")}
         </span>
         {onDepositClick && (
           <p
@@ -128,7 +136,7 @@ export const Chest: React.FC<Props> = ({
               closeModal();
             }}
           >
-            Deposit items from your wallet
+            {t("statements.wallet.to.inventory.transfer")}
           </p>
         )}
       </div>
@@ -136,6 +144,7 @@ export const Chest: React.FC<Props> = ({
   }
 
   const PanelContent: React.FC = () => {
+    const { t } = useAppTranslation();
     if (isBudName(selectedChestItem)) {
       const budId = Number(selectedChestItem.split("-")[1]);
       const bud = buds[budId];
@@ -147,7 +156,7 @@ export const Chest: React.FC<Props> = ({
           actionView={
             onPlace && (
               <Button onClick={handlePlace} disabled={isSaving}>
-                {isSaving ? "Saving..." : "Place on map"}
+                {isSaving ? t("saving") : "Place on map"}
               </Button>
             )
           }
@@ -157,7 +166,7 @@ export const Chest: React.FC<Props> = ({
 
     return (
       <InventoryItemDetails
-        collectibles={state.collectibles}
+        game={state}
         details={{
           item: selectedChestItem,
         }}
@@ -167,13 +176,26 @@ export const Chest: React.FC<Props> = ({
         actionView={
           onPlace && (
             <Button onClick={handlePlace} disabled={isSaving}>
-              {isSaving ? "Saving..." : "Place on map"}
+              {isSaving ? t("saving") : t("place.map")}
             </Button>
           )
         }
       />
     );
   };
+
+  // Sort collectibles by type
+  const resources = getKeys(collectibles).filter((name) => name in RESOURCES);
+  const buildings = getKeys(collectibles).filter((name) => name in BUILDINGS());
+  const boosts = getKeys(collectibles).filter(
+    (name) => name in COLLECTIBLE_BUFF_LABELS
+  );
+  const decorations = getKeys(collectibles).filter(
+    (name) =>
+      !resources.includes(name) &&
+      !buildings.includes(name) &&
+      !boosts.includes(name)
+  );
 
   return (
     <SplitScreenView
@@ -186,7 +208,13 @@ export const Chest: React.FC<Props> = ({
         <>
           {!!Object.values(buds).length && (
             <div className="flex flex-col pl-2 mb-2 w-full" key="Buds">
-              <p className="mb-2">Buds</p>
+              <Label
+                type="default"
+                className="my-1"
+                icon={SUNNYSIDE.icons.heart}
+              >
+                {t("buds")}
+              </Label>
               <div className="flex mb-2 flex-wrap -ml-1.5">
                 {getKeys(buds).map((budId) => {
                   const type = buds[budId].type;
@@ -212,7 +240,7 @@ export const Chest: React.FC<Props> = ({
             </div>
           )}
 
-          {Object.values(collectibles) && (
+          {/* {Object.values(collectibles) && (
             <div className="flex flex-col pl-2 mb-2 w-full" key="Collectibles">
               <p className="mb-2">Collectibles</p>
               <div className="flex mb-2 flex-wrap -ml-1.5">
@@ -228,7 +256,96 @@ export const Chest: React.FC<Props> = ({
                 ))}
               </div>
             </div>
+          )} */}
+
+          {resources.length > 0 && (
+            <div className="flex flex-col pl-2 mb-2 w-full" key="Resources">
+              <Label
+                type="default"
+                className="my-1"
+                icon={SUNNYSIDE.resource.tree}
+              >
+                {t("resources")}
+              </Label>
+              <div className="flex mb-2 flex-wrap -ml-1.5">
+                {resources.map((item) => (
+                  <Box
+                    count={chestMap[item]}
+                    isSelected={selectedChestItem === item}
+                    key={item}
+                    onClick={() => handleItemClick(item)}
+                    image={ITEM_ICONS[item] ?? ITEM_DETAILS[item].image}
+                    parentDivRef={divRef}
+                  />
+                ))}
+              </div>
+            </div>
           )}
+
+          {buildings.length > 0 && (
+            <div className="flex flex-col pl-2 mb-2 w-full" key="Buildings">
+              <Label
+                type="default"
+                className="my-1"
+                icon={SUNNYSIDE.icons.hammer}
+              >
+                {t("buildings")}
+              </Label>
+              <div className="flex mb-2 flex-wrap -ml-1.5">
+                {buildings.map((item) => (
+                  <Box
+                    count={chestMap[item]}
+                    isSelected={selectedChestItem === item}
+                    key={item}
+                    onClick={() => handleItemClick(item)}
+                    image={ITEM_ICONS[item] ?? ITEM_DETAILS[item].image}
+                    parentDivRef={divRef}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+
+          {boosts.length > 0 && (
+            <div className="flex flex-col pl-2 mb-2 w-full" key="Boosts">
+              <Label type="default" className="my-1" icon={lightning}>
+                {t("boosts")}
+              </Label>
+              <div className="flex mb-2 flex-wrap -ml-1.5">
+                {boosts.map((item) => (
+                  <Box
+                    count={chestMap[item]}
+                    isSelected={selectedChestItem === item}
+                    key={item}
+                    onClick={() => handleItemClick(item)}
+                    image={ITEM_ICONS[item] ?? ITEM_DETAILS[item].image}
+                    parentDivRef={divRef}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+
+          {decorations.length > 0 && (
+            <div className="flex flex-col pl-2 mb-2 w-full" key="Decorations">
+              <Label type="default" className="my-1">
+                {t("decorations")}
+              </Label>
+              <div className="flex mb-2 flex-wrap -ml-1.5">
+                {decorations.map((item) => (
+                  <Box
+                    count={chestMap[item]}
+                    isSelected={selectedChestItem === item}
+                    key={item}
+                    onClick={() => handleItemClick(item)}
+                    image={ITEM_ICONS[item] ?? ITEM_DETAILS[item].image}
+                    parentDivRef={divRef}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+
           {onDepositClick && (
             <div className="flex w-full ml-1 my-1">
               <p
@@ -238,7 +355,7 @@ export const Chest: React.FC<Props> = ({
                   closeModal();
                 }}
               >
-                Deposit items from your wallet
+                {t("statements.wallet.to.inventory.transfer")}
               </p>
             </div>
           )}

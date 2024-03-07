@@ -1,4 +1,4 @@
-import React, { useContext, useState } from "react";
+import React, { useContext, useEffect, useState } from "react";
 import { useActor, useSelector } from "@xstate/react";
 
 import { SUNNYSIDE } from "assets/sunnyside";
@@ -10,28 +10,32 @@ import { Label } from "components/ui/Label";
 import { OuterPanel } from "components/ui/Panel";
 import { SpeakingText } from "features/game/components/SpeakingModal";
 import { getKeys } from "features/game/types/craftables";
-import {
-  Bumpkin,
-  Inventory,
-  InventoryItemName,
-} from "features/game/types/game";
+import { GameState, InventoryItemName } from "features/game/types/game";
 import { ITEM_DETAILS } from "features/game/types/images";
 import { Context } from "features/game/GameProvider";
 import {
   CHUM_AMOUNTS,
   CHUM_DETAILS,
+  Chum,
   FISH,
   FishingBait,
   getTide,
 } from "features/game/types/fishing";
 import { CloseButtonPanel } from "features/game/components/CloseablePanel";
-import { NPC_WEARABLES } from "lib/npcs";
+import { NPCName, NPC_WEARABLES } from "lib/npcs";
 import { FishingGuide } from "./FishingGuide";
 import {
   getDailyFishingCount,
   getDailyFishingLimit,
 } from "features/game/types/fishing";
 import { MachineState } from "features/game/lib/gameMachine";
+import { isWearableActive } from "features/game/lib/wearables";
+import { translate } from "lib/i18n/translate";
+import { useAppTranslation } from "lib/i18n/useAppTranslations";
+import {
+  getBasketItems,
+  getChestItems,
+} from "../hud/components/inventory/utils/inventory";
 
 const host = window.location.host.replace(/^www\./, "");
 const LOCAL_STORAGE_KEY = `fisherman-read.${host}-${window.location.pathname}`;
@@ -44,33 +48,54 @@ function hasRead() {
   return !!localStorage.getItem(LOCAL_STORAGE_KEY);
 }
 
+const RARE_CHUM: InventoryItemName[] = [
+  "Rich Chicken",
+  "Speed Chicken",
+  "Fat Chicken",
+];
+
 const ChumSelection: React.FC<{
-  inventory: Inventory;
-  onList: (item: InventoryItemName) => void;
+  state: GameState;
+  bait: FishingBait;
+  onList: (item: Chum) => void;
   onCancel: () => void;
-  initial?: InventoryItemName;
-}> = ({ inventory, onList, onCancel, initial }) => {
-  const [selected, setSelected] = useState<InventoryItemName | undefined>(
-    initial
-  );
-  const select = (name: InventoryItemName) => {
+  initial?: Chum;
+}> = ({ state, bait, onList, onCancel, initial }) => {
+  const { t } = useAppTranslation();
+  const [selected, setSelected] = useState<Chum | undefined>(initial);
+  const select = (name: Chum) => {
     setSelected(name);
   };
 
+  const items = {
+    ...getBasketItems(state.inventory),
+    ...getChestItems(state),
+  };
+
   const hasRequirements =
-    selected && inventory[selected]?.gte(CHUM_AMOUNTS[selected] ?? 0);
+    selected && items[selected]?.gte(CHUM_AMOUNTS[selected] ?? 0);
 
   return (
     <div>
-      <p className="mb-1 p-1 text-xs">Select your resource:</p>
+      <p className="mb-1 p-1 text-xs">
+        {t("select.resource")}
+        {":"}{" "}
+      </p>
 
       <div className="flex flex-wrap">
         {getKeys(CHUM_AMOUNTS)
-          .filter((name) => !!inventory[name]?.gte(1))
+          .filter((name) => !!items[name]?.gte(1))
+          .filter((name) => {
+            if (bait !== "Red Wiggler" && RARE_CHUM.includes(name)) {
+              return false;
+            }
+
+            return true;
+          })
           .map((name) => (
             <Box
               image={ITEM_DETAILS[name].image}
-              count={inventory[name]}
+              count={items[name]}
               onClick={() => select(name)}
               key={name}
               isSelected={selected === name}
@@ -91,7 +116,9 @@ const ChumSelection: React.FC<{
             <Label
               type={!hasRequirements ? "danger" : "default"}
               className="mb-1"
-            >{`${CHUM_AMOUNTS[selected]} ${selected} required`}</Label>
+            >
+              {`${CHUM_AMOUNTS[selected]} ${selected}`}
+            </Label>
           </div>
           <p className="text-xs">{CHUM_DETAILS[selected]}</p>
         </div>
@@ -99,13 +126,13 @@ const ChumSelection: React.FC<{
 
       <div className="flex">
         <Button className="mr-1" onClick={() => onCancel()}>
-          Cancel
+          {t("cancel")}
         </Button>
         <Button
           disabled={!hasRequirements}
-          onClick={() => onList(selected as InventoryItemName)}
+          onClick={() => onList(selected as Chum)}
         >
-          Confirm
+          {t("confirm")}
         </Button>
       </div>
     </div>
@@ -128,29 +155,57 @@ const BaitSelection: React.FC<{
       context: { state },
     },
   ] = useActor(gameService);
+
+  const items = {
+    ...getBasketItems(state.inventory),
+    ...getChestItems(state),
+  };
+
+  useEffect(() => {
+    const lastSelectedBait = localStorage.getItem("lastSelectedBait");
+    if (lastSelectedBait) {
+      setBait(lastSelectedBait as FishingBait);
+    }
+    const lastSelectedChum = localStorage.getItem("lastSelectedChum");
+
+    const hasRequirements =
+      lastSelectedChum &&
+      items[lastSelectedChum as InventoryItemName]?.gte(
+        CHUM_AMOUNTS[lastSelectedChum as Chum] ?? 0
+      );
+
+    if (hasRequirements) {
+      setChum(lastSelectedChum as Chum);
+    }
+  }, []);
+
   const [showChum, setShowChum] = useState(false);
-  const [chum, setChum] = useState<InventoryItemName | undefined>();
+  const [chum, setChum] = useState<Chum | undefined>();
   const [bait, setBait] = useState<FishingBait>("Earthworm");
+
+  const { t } = useAppTranslation();
 
   if (showChum) {
     return (
       <ChumSelection
-        inventory={state.inventory}
+        bait={bait}
+        state={state}
         onCancel={() => setShowChum(false)}
         initial={chum}
         onList={(selected) => {
           setChum(selected);
+          localStorage.setItem("lastSelectedChum", selected);
           setShowChum(false);
         }}
       />
     );
   }
 
-  const dailyFishingMax = getDailyFishingLimit(state.bumpkin as Bumpkin);
+  const dailyFishingMax = getDailyFishingLimit(state);
   const dailyFishingCount = getDailyFishingCount(state);
   const fishingLimitReached = dailyFishingCount >= dailyFishingMax;
   const missingRod =
-    state.bumpkin?.equipped?.tool !== "Ancient Rod" &&
+    !isWearableActive({ name: "Ancient Rod", game: state }) &&
     (!state.inventory["Rod"] || state.inventory.Rod.lt(1));
 
   const catches = getKeys(FISH).filter((name) =>
@@ -171,7 +226,7 @@ const BaitSelection: React.FC<{
                 type="formula"
                 className="mr-2"
               >
-                Dusktide
+                {"Dusktide"}
               </Label>
             ) : (
               <Label
@@ -179,7 +234,7 @@ const BaitSelection: React.FC<{
                 type="default"
                 className="mr-2"
               >
-                Dawnlight
+                {"Dawnlight"}
               </Label>
             )}
 
@@ -191,7 +246,10 @@ const BaitSelection: React.FC<{
           </div>
 
           <Label icon={SUNNYSIDE.tools.fishing_rod} type="default">
-            Daily Limit: {dailyFishingCount}/{dailyFishingMax}
+            {t("statements.daily.limit")}
+            {":"} {dailyFishingCount}
+            {"/"}
+            {dailyFishingMax}
           </Label>
         </div>
       </div>
@@ -201,8 +259,11 @@ const BaitSelection: React.FC<{
             <Box
               image={ITEM_DETAILS[name].image}
               isSelected={bait === name}
-              count={state.inventory[name]}
-              onClick={() => setBait(name)}
+              count={items[name]}
+              onClick={() => {
+                setBait(name);
+                localStorage.setItem("lastSelectedBait", name);
+              }}
               key={name}
             />
           ))}
@@ -213,21 +274,21 @@ const BaitSelection: React.FC<{
             <div>
               <p className="text-sm">{bait}</p>
               <p className="text-xs">{ITEM_DETAILS[bait].description}</p>
-              {!state.inventory[bait] && bait !== "Fishing Lure" && (
+              {!items[bait] && bait !== "Fishing Lure" && (
                 <Label className="mt-1" type="default">
-                  Craft at Composter
+                  {t("statements.craft.composter")}
                 </Label>
               )}
-              {!state.inventory[bait] && bait === "Fishing Lure" && (
+              {!items[bait] && bait === "Fishing Lure" && (
                 <Label className="mt-1" type="default">
-                  Craft at Beach
+                  {t("fishermanModal.craft.beach")}
                 </Label>
               )}
             </div>
           </div>
-          {!state.inventory[bait] && (
+          {!items[bait] && (
             <Label className="absolute -top-3 right-0" type={"danger"}>
-              0 available
+              {t("fishermanModal.zero.available")}
             </Label>
           )}
         </OuterPanel>
@@ -241,7 +302,10 @@ const BaitSelection: React.FC<{
           <img
             src={SUNNYSIDE.icons.cancel}
             className="h-5 pr-0.5 cursor-pointer"
-            onClick={() => setChum(undefined)}
+            onClick={() => {
+              setChum(undefined);
+              localStorage.removeItem("lastSelectedChum");
+            }}
           />
         </div>
       ) : (
@@ -251,9 +315,7 @@ const BaitSelection: React.FC<{
               src={SUNNYSIDE.icons.expression_confused}
               className="h-4 mr-1"
             />
-            <p className="text-xs mb-1">
-              Attract fish by throwing chum into the water.
-            </p>
+            <p className="text-xs mb-1">{t("fishermanModal.attractFish")}</p>
           </div>
           <Button
             disabled={fishingLimitReached}
@@ -269,13 +331,13 @@ const BaitSelection: React.FC<{
 
       {fishingLimitReached && (
         <Label className="mb-1" type="danger">
-          You have reached your daily fishing limit of {dailyFishingMax}.
+          {t("fishermanModal.dailyLimitReached")} {dailyFishingMax}
         </Label>
       )}
 
       {!fishingLimitReached && missingRod && (
         <Label className="mb-1" type="danger">
-          You must first craft a rod.
+          {t("fishermanModal.needCraftRod")}
         </Label>
       )}
 
@@ -284,11 +346,11 @@ const BaitSelection: React.FC<{
         disabled={
           fishingLimitReached ||
           missingRod ||
-          !state.inventory[bait as InventoryItemName]?.gte(1)
+          !items[bait as InventoryItemName]?.gte(1)
         }
       >
         <div className="flex items-center">
-          <span className="text-sm mr-1">Cast</span>
+          <span className="text-sm mr-1">{"Cast"}</span>
           <img src={SUNNYSIDE.tools.fishing_rod} className="h-5" />
         </div>
       </Button>
@@ -296,18 +358,27 @@ const BaitSelection: React.FC<{
   );
 };
 
+const capitalizeFirstLetters = (inputString: string) => {
+  return inputString.replace(/\b\w/g, (char) => char.toUpperCase());
+};
+
 interface Props {
   onCast: (bait: FishingBait, chum?: InventoryItemName) => void;
   onClose: () => void;
+  npc?: NPCName;
 }
 
 const currentWeather = (state: MachineState) =>
   state.context.state.fishing.weather;
 
-export const FishermanModal: React.FC<Props> = ({ onCast, onClose }) => {
+export const FishermanModal: React.FC<Props> = ({
+  onCast,
+  onClose,
+  npc = "reelin roy",
+}) => {
   const { gameService } = useContext(Context);
   const weather = useSelector(gameService, currentWeather);
-
+  const { t } = useAppTranslation();
   const [showIntro, setShowIntro] = React.useState(!hasRead());
 
   const [
@@ -324,20 +395,21 @@ export const FishermanModal: React.FC<Props> = ({ onCast, onClose }) => {
   const [tab, setTab] = useState(0);
   if (showIntro) {
     return (
-      <CloseButtonPanel
-        onClose={onClose}
-        bumpkinParts={NPC_WEARABLES["reelin roy"]}
-      >
+      <CloseButtonPanel onClose={onClose} bumpkinParts={NPC_WEARABLES[npc]}>
         <SpeakingText
           message={[
             {
-              text: "Ahoy, fellow islanders! I'm Reelin' Roy, your trusty island fisherman, and I've set my sights on a grand challenge – collecting every fish under the sun!",
+              text: `${t(
+                "fishermanmodal.greetingPart1"
+              )} ${capitalizeFirstLetters(npc)} ${t(
+                "fishermanmodal.greetingPart2"
+              )}`,
             },
             {
-              text: "Fish are great for eating, delivering and claiming rewards!",
+              text: translate("fishermanModal.fishBenefits"),
             },
             {
-              text: "Bring me bait and resources and we'll reel in the rarest prizes that the ocean has to offer!",
+              text: translate("fishermanModal.baitAndResources"),
             },
           ]}
           onClose={() => {
@@ -351,17 +423,14 @@ export const FishermanModal: React.FC<Props> = ({ onCast, onClose }) => {
 
   if (showFishFrenzy) {
     return (
-      <CloseButtonPanel
-        onClose={onClose}
-        bumpkinParts={NPC_WEARABLES["reelin roy"]}
-      >
+      <CloseButtonPanel onClose={onClose} bumpkinParts={NPC_WEARABLES[npc]}>
         <SpeakingText
           message={[
             {
-              text: "Wow, something crazy is happening......It is a fish frenzy!",
+              text: translate("fishermanModal.crazyHappening"),
             },
             {
-              text: "Hurry, you will get a bonus fish for each catch!",
+              text: translate("fishermanModal.bonusFish"),
             },
           ]}
           onClose={() => {
@@ -375,12 +444,12 @@ export const FishermanModal: React.FC<Props> = ({ onCast, onClose }) => {
   return (
     <CloseButtonPanel
       onClose={onClose}
-      bumpkinParts={NPC_WEARABLES["reelin roy"]}
+      bumpkinParts={NPC_WEARABLES[npc]}
       tabs={[
         { icon: SUNNYSIDE.tools.fishing_rod, name: "Fish" },
         {
           icon: SUNNYSIDE.icons.expression_confused,
-          name: "Guide",
+          name: t("guide"),
         },
       ]}
       currentTab={tab}

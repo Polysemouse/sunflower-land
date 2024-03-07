@@ -17,9 +17,9 @@ import token from "assets/icons/token_2.png";
 import lock from "assets/skills/lock.png";
 import Decimal from "decimal.js-light";
 import { OuterPanel } from "components/ui/Panel";
-import { CROP_LIFECYCLE } from "features/island/plots/lib/plant";
-import { Label } from "components/ui/Label";
 import { getBumpkinLevel } from "features/game/lib/level";
+import { useAppTranslation } from "lib/i18n/useAppTranslations";
+import { hasFeatureAccess } from "lib/flags";
 
 const VALID_NUMBER = new RegExp(/^\d*\.?\d*$/);
 const INPUT_MAX_CHAR = 10;
@@ -32,6 +32,7 @@ const ListTrade: React.FC<{
   onList: (items: Items, sfl: number) => void;
   onCancel: () => void;
 }> = ({ inventory, onList, onCancel }) => {
+  const { t } = useAppTranslation();
   const [selected, setSelected] = useState<Items>({});
   const [sfl, setSFL] = useState(1);
   const select = (name: InventoryItemName) => {
@@ -56,7 +57,7 @@ const ListTrade: React.FC<{
 
   return (
     <div>
-      <p className="mb-1 p-1 text-sm">What would you like to list?</p>
+      <p className="mb-1 p-1 text-sm">{t("bumpkinTrade.like.list")}</p>
 
       <div className="flex flex-wrap">
         {getKeys(TRADE_LIMITS)
@@ -131,10 +132,12 @@ const ListTrade: React.FC<{
               />
             </div>
           ))}
-          <p className="text-sm ml-2">Asking price:</p>
+          <p className="text-sm ml-2">{t("bumpkinTrade.askPrice")} </p>
 
           <div className="flex items-center relative">
-            <span className="text-xxs absolute right-[10px] top-[-5px]">{`Max: ${MAX_SFL}`}</span>
+            <span className="text-xxs absolute right-[10px] top-[-5px]">{`${t(
+              "max"
+            )} : ${MAX_SFL}`}</span>
             <Box image={token} />
             <input
               style={{
@@ -176,7 +179,7 @@ const ListTrade: React.FC<{
       )}
       <div className="flex">
         <Button className="mr-1" onClick={() => onCancel()}>
-          Cancel
+          {t("cancel")}
         </Button>
         <Button
           disabled={
@@ -189,7 +192,7 @@ const ListTrade: React.FC<{
           }
           onClick={() => onList(selected, sfl)}
         >
-          List
+          {t("list")}
         </Button>
       </div>
     </div>
@@ -201,14 +204,13 @@ const TradeDetails: React.FC<{
   onCancel: () => void;
   onClaim: () => void;
 }> = ({ trade, onCancel, onClaim }) => {
+  const { t } = useAppTranslation();
   if (trade.boughtAt) {
     return (
       <div>
         <div className="flex items-center   mb-2 mt-1 mx-1">
           <img src={SUNNYSIDE.icons.heart} className="h-4 mr-1" />
-          <p className="text-xs">
-            Congratulations, your listing was purchased!
-          </p>
+          <p className="text-xs">{t("bumpkinTrade.listingPurchased")}</p>
         </div>
         <OuterPanel>
           <div className="flex justify-between">
@@ -230,7 +232,7 @@ const TradeDetails: React.FC<{
             </div>
             <div className="flex flex-col justify-between h-full">
               <Button className="mb-1" onClick={onClaim}>
-                Claim
+                {t("claim")}
               </Button>
 
               <div className="flex items-center mt-3 mr-0.5">
@@ -246,12 +248,6 @@ const TradeDetails: React.FC<{
 
   return (
     <>
-      <div className="flex items-center   mb-2 mt-1 mx-1">
-        <img src={CROP_LIFECYCLE.Pumpkin.crop} className="h-4 mr-1" />
-        <p className="text-xs">
-          Travel to the plaza so players can trade with you
-        </p>
-      </div>
       <OuterPanel>
         <div className="flex justify-between">
           <div className="flex flex-wrap">
@@ -266,7 +262,7 @@ const TradeDetails: React.FC<{
           </div>
           <div className="flex flex-col justify-between h-full">
             <Button className="mb-1" onClick={onCancel}>
-              Cancel
+              {t("cancel")}
             </Button>
 
             <div className="flex items-center">
@@ -279,29 +275,59 @@ const TradeDetails: React.FC<{
     </>
   );
 };
+
 export const Trade: React.FC = () => {
   const { gameService } = useContext(Context);
   const [gameState] = useActor(gameService);
 
   const [showListing, setShowListing] = useState(false);
 
+  const hasAccess = hasFeatureAccess(gameState.context.state, "TRADING_REVAMP");
+
   // Show listings
   const trades = gameState.context.state.trades?.listings ?? {};
-
+  const { t } = useAppTranslation();
   const level = getBumpkinLevel(
     gameState.context.state.bumpkin?.experience ?? 0
   );
 
+  const onList = (items: Items, sfl: number) => {
+    if (hasAccess) {
+      gameService.send("LIST_TRADE", {
+        sellerId: gameState.context.farmId,
+        items,
+        sfl,
+      });
+    } else {
+      gameService.send("trade.listed", { items, sfl });
+      gameService.send("SAVE");
+    }
+
+    setShowListing(false);
+  };
+
   if (level < 10) {
     return (
       <div className="relative">
-        <Label type="info" className="absolute top-2 right-2">
-          Beta
-        </Label>
         <div className="p-1 flex flex-col items-center">
           <img src={lock} className="w-1/5 mx-auto my-2 img-highlight-heavy" />
-          <p className="text-sm">You must be level 10 to trade</p>
-          <p className="text-xs mb-2">Feed your Bumpkin to level up</p>
+          <p className="text-sm">{t("bumpkinTrade.minLevel")}</p>
+          <p className="text-xs mb-2">{t("statements.lvlUp")}</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!gameState.context.state.inventory["Gold Pass"]) {
+    return (
+      <div className="relative">
+        <div className="p-1 flex flex-col items-center">
+          <img
+            src={ITEM_DETAILS["Gold Pass"].image}
+            className="w-1/5 mx-auto my-2 img-highlight-heavy"
+          />
+          <p className="text-sm">{t("bumpkinTrade.goldpass.required")}</p>
+          <p className="text-xs mb-2">{t("bumpkinTrade.purchase")}</p>
         </div>
       </div>
     );
@@ -312,11 +338,7 @@ export const Trade: React.FC = () => {
       <ListTrade
         inventory={gameState.context.state.inventory}
         onCancel={() => setShowListing(false)}
-        onList={(items, sfl) => {
-          gameService.send("trade.listed", { items, sfl });
-          gameService.send("SAVE");
-          setShowListing(false);
-        }}
+        onList={onList}
       />
     );
   }
@@ -324,22 +346,16 @@ export const Trade: React.FC = () => {
   if (getKeys(trades).length === 0) {
     return (
       <div className="relative">
-        <Label type="info" className="absolute top-2 right-2">
-          Beta
-        </Label>
         <div className="p-1 flex flex-col items-center">
           <img src={token} className="w-1/5 mx-auto my-2 img-highlight-heavy" />
-          <p className="text-sm">You have no trades listed.</p>
-          <p className="text-xs mb-2">
-            Sell your resources to other players for SFL.
-          </p>
+          <p className="text-sm">{t("bumpkinTrade.noTradeListed")}</p>
+          <p className="text-xs mb-2">{t("bumpkinTrade.sell")}</p>
         </div>
-        <Button onClick={() => setShowListing(true)}>List trade</Button>
+        <Button onClick={() => setShowListing(true)}>{t("list.trade")}</Button>
       </div>
     );
   }
 
-  // Only 1 trade supported at the moment
   const firstTrade = getKeys(trades)[0];
   const trade = trades[firstTrade];
 
@@ -347,7 +363,37 @@ export const Trade: React.FC = () => {
     return null;
   }
 
-  // Cancel Trade
+  if (hasAccess) {
+    return (
+      <div>
+        {getKeys(trades).map((trade, index) => {
+          return (
+            <TradeDetails
+              key={index}
+              onCancel={() => null}
+              onClaim={() => null}
+              trade={trades[trade]}
+            />
+          );
+        })}
+        {getKeys(trades).length < 3 && (
+          <div className="relative">
+            <div className="p-1 flex flex-col items-center">
+              <img
+                src={token}
+                className="w-1/5 mx-auto my-2 img-highlight-heavy"
+              />
+              <p className="text-xs mb-2">{t("bumpkinTrade.sell")}</p>
+            </div>
+            <Button onClick={() => setShowListing(true)}>
+              {t("list.trade")}
+            </Button>
+          </div>
+        )}
+      </div>
+    );
+  }
+
   return (
     <div>
       <TradeDetails

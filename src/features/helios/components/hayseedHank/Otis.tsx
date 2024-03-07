@@ -2,7 +2,7 @@ import React, { useContext, useEffect, useState } from "react";
 
 import { PIXEL_SCALE } from "features/game/lib/constants";
 
-import { Modal } from "react-bootstrap";
+import { Modal } from "components/ui/Modal";
 import { NPC } from "features/island/bumpkin/components/NPC";
 import { CloseButtonPanel } from "features/game/components/CloseablePanel";
 import { SUNNYSIDE } from "assets/sunnyside";
@@ -61,7 +61,7 @@ export const Otis: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [guide, setGuide] = useState<GuidePath>();
 
-  const { gameService } = useContext(Context);
+  const { gameService, showAnimations } = useContext(Context);
   const [gameState] = useActor(gameService);
 
   const { activeTaskIndex } = getActiveTask(gameState.context.state);
@@ -114,7 +114,10 @@ export const Otis: React.FC = () => {
         {lastAcknowledgedTask() !== activeTask && (
           <img
             src={SUNNYSIDE.icons.expression_confused}
-            className="absolute animate-float pointer-events-none img-highlight-heavy"
+            className={
+              "absolute pointer-events-none img-highlight-heavy" +
+              (showAnimations ? " animate-float" : "")
+            }
             style={{
               width: `${PIXEL_SCALE * 6}px`,
               top: `${PIXEL_SCALE * -4}px`,
@@ -123,7 +126,7 @@ export const Otis: React.FC = () => {
           />
         )}
       </div>
-      <Modal centered show={isOpen} onHide={close}>
+      <Modal show={isOpen} onHide={close}>
         {showIntro && task?.introduction && (
           <Panel bumpkinParts={NPC_WEARABLES["otis"]}>
             <SpeakingText

@@ -1,76 +1,66 @@
-import { getKeys } from "./craftables";
 import { BumpkinItem } from "./bumpkin";
 import { GoblinState } from "../lib/goblinMachine";
 import { getDailyFishingCount } from "./fishing";
+import {
+  areAnyChickensFed,
+  areAnyCropsGrowing,
+  areAnyFruitsGrowing,
+  areFruitsGrowing,
+  cropIsGrowing,
+} from "./removeables";
 
 export const canWithdrawBoostedWearable = (
-  wearable: BumpkinItem,
+  name: BumpkinItem,
   state?: GoblinState
 ) => {
   if (!state) return false;
 
   if (
-    wearable === "Green Amulet" ||
-    wearable === "Angel Wings" ||
-    wearable === "Devil Wings" ||
-    wearable === "Infernal Pitchfork"
+    name === "Green Amulet" ||
+    name === "Angel Wings" ||
+    name === "Devil Wings" ||
+    name === "Infernal Pitchfork"
   ) {
-    return getKeys(state.crops).every((id) => !state.crops[id].crop);
+    return !areAnyCropsGrowing(state)[0];
   }
 
-  if (wearable === "Sunflower Amulet") {
-    return getKeys(state.crops).every(
-      (id) => state.crops[id].crop?.name !== "Sunflower"
-    );
+  if (name === "Sunflower Amulet") {
+    return !cropIsGrowing({ item: "Sunflower", game: state })[0];
   }
 
-  if (wearable === "Carrot Amulet") {
-    return getKeys(state.crops).every(
-      (id) => state.crops[id].crop?.name !== "Carrot"
-    );
+  if (name === "Carrot Amulet") {
+    return !cropIsGrowing({ item: "Carrot", game: state })[0];
   }
 
-  if (wearable === "Beetroot Amulet") {
-    return getKeys(state.crops).every(
-      (id) => state.crops[id].crop?.name !== "Beetroot"
-    );
+  if (name === "Beetroot Amulet") {
+    return !cropIsGrowing({ item: "Beetroot", game: state })[0];
   }
 
-  if (wearable === "Parsnip") {
-    return getKeys(state.crops).every(
-      (id) => state.crops[id].crop?.name !== "Parsnip"
-    );
+  if (name === "Parsnip") {
+    return !cropIsGrowing({ item: "Parsnip", game: state })[0];
   }
 
-  if (wearable === "Eggplant Onesie") {
-    return getKeys(state.crops).every(
-      (id) => state.crops[id].crop?.name !== "Eggplant"
-    );
+  if (name === "Eggplant Onesie") {
+    return !cropIsGrowing({ item: "Eggplant", game: state })[0];
   }
 
-  if (wearable === "Corn Onesie") {
-    return getKeys(state.crops).every(
-      (id) => state.crops[id].crop?.name !== "Corn"
-    );
+  if (name === "Corn Onesie") {
+    return !cropIsGrowing({ item: "Corn", game: state })[0];
   }
 
-  if (wearable === "Fruit Picker Apron") {
-    return getKeys(state.fruitPatches).every(
-      (id) => state.fruitPatches[id].fruit === undefined
-    );
+  if (name === "Fruit Picker Apron") {
+    return !areAnyFruitsGrowing(state)[0];
   }
 
-  if (wearable === "Banana Amulet") {
-    return getKeys(state.fruitPatches).every(
-      (id) => state.fruitPatches[id].fruit?.name !== "Banana"
-    );
+  if (name === "Banana Amulet") {
+    return !areFruitsGrowing(state, "Banana")[0];
   }
 
-  if (wearable === "Cattlegrim") {
-    return getKeys(state.chickens).every((id) => !state.chickens[id].fedAt);
+  if (name === "Cattlegrim") {
+    return !areAnyChickensFed(state)[0];
   }
 
-  if (wearable === "Luna's Hat") {
+  if (name === "Luna's Hat") {
     if (
       state.buildings["Fire Pit"]?.[0].crafting ||
       state.buildings["Kitchen"]?.[0].crafting ||
@@ -83,7 +73,7 @@ export const canWithdrawBoostedWearable = (
     return true;
   }
 
-  if (wearable === "Ancient Rod") {
+  if (name === "Ancient Rod") {
     return getDailyFishingCount(state) == 0;
   }
 

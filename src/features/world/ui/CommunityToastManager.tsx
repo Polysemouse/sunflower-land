@@ -3,6 +3,7 @@ import { InnerPanel } from "components/ui/Panel";
 import { createPortal } from "react-dom";
 import { ITEM_DETAILS } from "../../game/types/images";
 import { InventoryItemName } from "../../game/types/game";
+import { translate } from "lib/i18n/translate";
 
 const PIXEL_SCALE = 2.625;
 const MAX_TOAST = 6;
@@ -46,7 +47,7 @@ export const CommunityToasts: React.FC = () => {
     communityToastManager.listen((toast, isShown) => {
       if (!toast.text) {
         // eslint-disable-next-line no-console
-        return console.warn("Toast text is empty");
+        return console.warn(translate("community.toast"));
       }
 
       const newToast: CommunityToast = {
@@ -78,7 +79,7 @@ export const CommunityToasts: React.FC = () => {
       {toasts.length > 0 &&
         createPortal(
           <InnerPanel
-            className="flex flex-col items-start fixed z-[99999] pointer-events-none"
+            className="flex flex-col items-start absolute z-[99999] pointer-events-none"
             style={{
               top: `${PIXEL_SCALE * 85}px`,
               left: `${PIXEL_SCALE * 3}px`,

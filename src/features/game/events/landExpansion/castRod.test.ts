@@ -2,6 +2,7 @@ import { INITIAL_BUMPKIN, TEST_FARM } from "features/game/lib/constants";
 import { castRod } from "./castRod";
 import Decimal from "decimal.js-light";
 import { Bumpkin } from "features/game/types/game";
+import { Chum } from "features/game/types/fishing";
 
 const farm = { ...TEST_FARM };
 
@@ -13,10 +14,7 @@ describe("castRod", () => {
   it("requires player has a rod", () => {
     expect(() => {
       castRod({
-        action: {
-          bait: "Earthworm",
-          type: "rod.casted",
-        },
+        action: { location: "wharf", bait: "Earthworm", type: "rod.casted" },
         state: farm,
       });
     }).toThrow("Missing rod");
@@ -25,10 +23,7 @@ describe("castRod", () => {
   it("requires player has bait", () => {
     expect(() => {
       castRod({
-        action: {
-          bait: "Earthworm",
-          type: "rod.casted",
-        },
+        action: { location: "wharf", bait: "Earthworm", type: "rod.casted" },
         state: {
           ...farm,
           inventory: {
@@ -43,8 +38,9 @@ describe("castRod", () => {
     expect(() => {
       castRod({
         action: {
+          location: "wharf",
           bait: "Earthworm",
-          chum: "Axe",
+          chum: "Axe" as Chum,
           type: "rod.casted",
         },
         state: {
@@ -62,10 +58,7 @@ describe("castRod", () => {
   it("requires player has not already casts", () => {
     expect(() => {
       castRod({
-        action: {
-          bait: "Earthworm",
-          type: "rod.casted",
-        },
+        action: { location: "wharf", bait: "Earthworm", type: "rod.casted" },
         state: {
           ...farm,
           inventory: {
@@ -78,6 +71,7 @@ describe("castRod", () => {
             wharf: {
               castedAt: 1000000200,
             },
+            beach: {},
             dailyAttempts: {},
           },
         },
@@ -89,6 +83,7 @@ describe("castRod", () => {
     expect(() => {
       castRod({
         action: {
+          location: "wharf",
           bait: "Earthworm",
           chum: "Sunflower",
           type: "rod.casted",
@@ -113,10 +108,7 @@ describe("castRod", () => {
 
     expect(() => {
       castRod({
-        action: {
-          bait: "Earthworm",
-          type: "rod.casted",
-        },
+        action: { location: "wharf", bait: "Earthworm", type: "rod.casted" },
         state: {
           ...farm,
           inventory: {
@@ -130,6 +122,7 @@ describe("castRod", () => {
             },
             weather: "Sunny",
             wharf: {},
+            beach: {},
           },
         },
       });
@@ -138,10 +131,7 @@ describe("castRod", () => {
 
   it("subtracts rod", () => {
     const state = castRod({
-      action: {
-        bait: "Earthworm",
-        type: "rod.casted",
-      },
+      action: { location: "wharf", bait: "Earthworm", type: "rod.casted" },
       state: {
         ...farm,
         inventory: {
@@ -156,10 +146,7 @@ describe("castRod", () => {
 
   it("subtracts bait", () => {
     const state = castRod({
-      action: {
-        bait: "Earthworm",
-        type: "rod.casted",
-      },
+      action: { location: "wharf", bait: "Earthworm", type: "rod.casted" },
       state: {
         ...farm,
         inventory: {
@@ -175,6 +162,7 @@ describe("castRod", () => {
   it("subtracts chum", () => {
     const state = castRod({
       action: {
+        location: "wharf",
         bait: "Earthworm",
         type: "rod.casted",
         chum: "Sunflower",
@@ -208,10 +196,7 @@ describe("castRod", () => {
 
     expect(() =>
       castRod({
-        action: {
-          bait: "Earthworm",
-          type: "rod.casted",
-        },
+        action: { location: "wharf", bait: "Earthworm", type: "rod.casted" },
         state: {
           ...farm,
           bumpkin: bumpkinWithAnglerWaders,
@@ -221,6 +206,7 @@ describe("castRod", () => {
             },
             weather: "Sunny",
             wharf: {},
+            beach: {},
           },
           inventory: {
             Rod: new Decimal(3),
@@ -247,10 +233,7 @@ describe("castRod", () => {
 
     expect(() => {
       castRod({
-        action: {
-          bait: "Earthworm",
-          type: "rod.casted",
-        },
+        action: { location: "wharf", bait: "Earthworm", type: "rod.casted" },
         state: {
           ...farm,
           bumpkin: bumpkinWithAnglerWaders,
@@ -265,6 +248,7 @@ describe("castRod", () => {
             },
             weather: "Sunny",
             wharf: {},
+            beach: {},
           },
         },
       });
@@ -274,10 +258,7 @@ describe("castRod", () => {
   it("casts rod on wharf", () => {
     const now = Date.now();
     const state = castRod({
-      action: {
-        bait: "Earthworm",
-        type: "rod.casted",
-      },
+      action: { location: "wharf", bait: "Earthworm", type: "rod.casted" },
       state: {
         ...farm,
         inventory: {
@@ -295,6 +276,7 @@ describe("castRod", () => {
     const now = Date.now();
     const state = castRod({
       action: {
+        location: "wharf",
         bait: "Earthworm",
         type: "rod.casted",
         chum: "Sunflower",
@@ -319,10 +301,7 @@ describe("castRod", () => {
 
   it("does not subtracts rod if wearing Ancient Rod", () => {
     const state = castRod({
-      action: {
-        bait: "Earthworm",
-        type: "rod.casted",
-      },
+      action: { location: "wharf", bait: "Earthworm", type: "rod.casted" },
       state: {
         ...farm,
         bumpkin: {

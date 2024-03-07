@@ -17,20 +17,33 @@ import { Label } from "components/ui/Label";
 import { Button } from "components/ui/Button";
 import { secondsToString } from "lib/utils/time";
 import { getSeasonalTicket } from "features/game/types/seasons";
+import { useAppTranslation } from "lib/i18n/useAppTranslations";
+import { translate } from "lib/i18n/translate";
 
 interface Props {
   onClose: () => void;
 }
 
 const obsessionDialogues = (itemName: string) => [
-  `Ah, the ${itemName}! I only wish to see it, not possess. Show it to me, and ${getSeasonalTicket()}s will be your reward.`,
-  `You've brought the ${itemName}? I merely want to gaze upon it. Let me see, and ${getSeasonalTicket()}s shall be yours.`,
-  `Is that the ${itemName} you have? A mere glance is all I desire. For this, you'll receive ${getSeasonalTicket()}s.`,
-  `The ${itemName}! I don't want to keep it, just to behold it. Show it to me, and ${getSeasonalTicket()}s are yours.`,
-  `You offer a view of the ${itemName}? All I ask is to see it briefly. For your generosity, ${getSeasonalTicket()}s will be granted to you.`,
+  `${translate("obsessionDialogue.line1.part1")} ${itemName}${translate(
+    "obsessionDialogue.line1.part2"
+  )} ${getSeasonalTicket()}${translate("obsessionDialogue.line1.part3")}`,
+  `${translate("obsessionDialogue.line2.part1")} ${itemName}${translate(
+    "obsessionDialogue.line2.part2"
+  )} ${getSeasonalTicket()}${translate("obsessionDialogue.line2.part3")}`,
+  `${translate("obsessionDialogue.line3.part1")} ${itemName}${translate(
+    "obsessionDialogue.line3.part2"
+  )} ${getSeasonalTicket()}${translate("obsessionDialogue.line3.part3")}`,
+  `${translate("obsessionDialogue.line4.part1")} ${itemName}${translate(
+    "obsessionDialogue.line4.part2"
+  )} ${getSeasonalTicket()}${translate("obsessionDialogue.line4.part3")}`,
+  `${translate("obsessionDialogue.line5.part1")} ${itemName}${translate(
+    "obsessionDialogue.line5.part2"
+  )} ${getSeasonalTicket()}${translate("obsessionDialogue.line5.part3")}`,
 ];
 
 export const Bert: React.FC<Props> = ({ onClose }) => {
+  const { t } = useAppTranslation();
   const { gameService } = useContext(Context);
   const [gameState] = useActor(gameService);
 
@@ -43,14 +56,17 @@ export const Bert: React.FC<Props> = ({ onClose }) => {
   const currentObsession = game.bertObsession;
   const obsessionCompletedAt = game.npcs?.bert?.questCompletedAt;
 
-  const isObsessionCollectible = game.bertObsession?.type === "collectible";
-
   const obsessionDialogue = useRandomItem(
     obsessionDialogues(currentObsession?.name as string)
   );
 
   const obsessionName = game.bertObsession?.name;
   const reward = game.bertObsession?.reward ?? 0;
+
+  let isObsessionCollectible = game.bertObsession?.type === "collectible";
+  if (ITEM_DETAILS[obsessionName as InventoryItemName] === undefined) {
+    isObsessionCollectible = false;
+  }
 
   const image = isObsessionCollectible
     ? ITEM_DETAILS[obsessionName as InventoryItemName].image
@@ -79,7 +95,7 @@ export const Bert: React.FC<Props> = ({ onClose }) => {
       obsessionCompletedAt >= currentObsession.startDate &&
       obsessionCompletedAt <= currentObsession.endDate
     ) {
-      return <Label type="info">Already completed</Label>;
+      return <Label type="info">{t("alr.completed")}</Label>;
     }
 
     return (
@@ -88,11 +104,13 @@ export const Bert: React.FC<Props> = ({ onClose }) => {
           disabled={!canCompleteObsession()}
           onClick={() => gameService.send("bertObsession.completed")}
         >
-          {`Claim ${reward} ${getSeasonalTicket()}${reward > 0 ? "s" : ""}`}
+          {`${t("claim")} ${reward} ${getSeasonalTicket()}${
+            reward > 0 ? "s" : ""
+          }`}
         </Button>
         <span className="text-xs">
-          You cannot withdraw this item for 3 days after claiming{" "}
-          {getSeasonalTicket()}.
+          {t("bert.day")} {getSeasonalTicket()}
+          {"."}
         </span>
       </>
     );
@@ -116,7 +134,7 @@ export const Bert: React.FC<Props> = ({ onClose }) => {
             text: intro,
             actions: [
               {
-                text: "Delivery",
+                text: t("delivery"),
                 cb: () => handleConfirm(0),
               },
               {
@@ -141,13 +159,11 @@ export const Bert: React.FC<Props> = ({ onClose }) => {
       setCurrentTab={setTab}
       currentTab={tab}
     >
-      {tab === 0 && (
-        <DeliveryPanelContent npc="bert" skipIntro onClose={onClose} />
-      )}
+      {tab === 0 && <DeliveryPanelContent npc="bert" onClose={onClose} />}
       {tab === 1 && (
         <div className="w-full flex flex-col items-center">
           {!currentObsession && (
-            <p className="text-center text-sm mb-3">No Obsessions</p>
+            <p className="text-center text-sm mb-3">{t("no.obsessions")}</p>
           )}
           {currentObsession && (
             <div className="w-full flex flex-col items-center mx-auto">

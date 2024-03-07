@@ -1,21 +1,24 @@
 import { useSelector } from "@xstate/react";
-import { Modal } from "react-bootstrap";
+import { Modal } from "components/ui/Modal";
 
 import { Button } from "components/ui/Button";
 import { Context } from "features/game/GameProvider";
-import React, { useContext } from "react";
+import React, { useContext, useState } from "react";
 
 import { MachineState } from "features/game/lib/gameMachine";
 import { NPC_WEARABLES } from "lib/npcs";
 import { ITEM_DETAILS } from "features/game/types/images";
 import { PIXEL_SCALE } from "features/game/lib/constants";
 import { Label } from "components/ui/Label";
-import { SUNNYSIDE } from "assets/sunnyside";
 import { secondsToString } from "lib/utils/time";
 import { CloseButtonPanel } from "features/game/components/CloseablePanel";
 import { acknowledgeSeasonPass } from "features/announcements/announcementsStorage";
-import { getSeasonalBanner } from "features/game/types/seasons";
+import { SEASONS, getSeasonalBanner } from "features/game/types/seasons";
 import { useAppTranslation } from "lib/i18n/useAppTranslations";
+import { SUNNYSIDE } from "assets/sunnyside";
+import blockBuck from "assets/icons/block_buck.png";
+import lockIcon from "assets/skills/lock.png";
+import { ModalContext } from "features/game/components/modal/ModalProvider";
 
 const isPromoting = (state: MachineState) => state.matches("specialOffer");
 const _inventory = (state: MachineState) => state.context.state.inventory;
@@ -24,14 +27,13 @@ export const SpecialOffer: React.FC = () => {
   const { gameService } = useContext(Context);
   const specialOffer = useSelector(gameService, isPromoting);
   const inventory = useSelector(gameService, _inventory);
-
   const hasPreviousSeasonBanner = !!inventory[getSeasonalBanner()];
 
   return (
     <PromotingModal
       isOpen={specialOffer}
       hasDiscount={hasPreviousSeasonBanner}
-      hasPurchased={!!inventory["Catch the Kraken Banner"]}
+      hasPurchased={!!inventory["Spring Blossom Banner"]}
       onClose={() => {
         acknowledgeSeasonPass();
         gameService.send("ACKNOWLEDGE");
@@ -54,34 +56,91 @@ export const PromotingModal: React.FC<Props> = ({
   hasDiscount,
 }) => {
   const { t } = useAppTranslation();
-  // Goes live on 17th of July.
-  // $3.99 for Dawn Breaker Holders, otherwise $5.99.
-  // Discounts on seasonal items, 1 Mystery Airdrop + Bonus Tickets completing chores.
-  // At 1st of August, price changes to $5.99 for everyone and available for 1 month.
 
-  const isPreSeason = Date.now() < new Date("2023-11-01").getTime();
-  const expiresOn = isPreSeason
-    ? new Date("2023-11-01")
-    : new Date("2023-12-01");
+  const { openModal } = useContext(ModalContext);
+
+  const isPreSeason =
+    Date.now() < SEASONS["Spring Blossom"].startDate.getTime();
 
   const { gameService } = useContext(Context);
   const inventory = useSelector(gameService, _inventory);
-  const hasPreviousSeasonBanner = !!inventory["Witches' Eve Banner"];
 
-  let price = hasPreviousSeasonBanner ? "4.99" : "6.99";
+  const [showConfirmation, setShowConfirmation] = useState(false);
+  const [showInsufficientBlockBuck, setShowInsufficientBlockBuck] =
+    useState(false);
+
+  const [showPurchased, setShowPurchased] = useState(hasPurchased);
+
+  let price = hasDiscount ? "35" : "50";
 
   if (!isPreSeason) {
-    price = "8.99";
+    price = "65";
   }
 
+  const onCloseConfirmation = () => {
+    onClose();
+    setShowConfirmation(false);
+  };
+
+  const onCloseInsufficientBlockBucks = () => {
+    setShowInsufficientBlockBuck(false);
+  };
+
+  const buyBlockBucks = () => {
+    openModal("BUY_BLOCK_BUCKS");
+  };
+
   const Content = () => {
-    if (hasPurchased) {
+    if (showConfirmation) {
+      return (
+        <>
+          <p className="text-sm my-2">{`Are you sure you want to purchase the banner for ${price} Block Bucks?`}</p>
+          <div className="flex">
+            <Button className="mr-1" onClick={onCloseConfirmation}>
+              {t("no.thanks")}
+            </Button>
+            <Button
+              onClick={() => {
+                gameService.send("banner.purchased", {
+                  name: "Spring Blossom Banner",
+                });
+                setShowConfirmation(false);
+                setShowPurchased(true);
+              }}
+            >
+              {t("season.buyNow")}
+            </Button>
+          </div>
+        </>
+      );
+    }
+    if (showInsufficientBlockBuck) {
+      return (
+        <>
+          <div className="p-2">
+            <Label icon={lockIcon} type="danger" className="my-2">
+              {t("transaction.buy.BlockBucks")}
+            </Label>
+            <p className="text-sm my-2">{t("offer.not.enough.BlockBucks")}</p>
+          </div>
+          <div className="flex">
+            <Button className="mr-1" onClick={onCloseInsufficientBlockBucks}>
+              {t("no.thanks")}
+            </Button>
+            <Button onClick={buyBlockBucks}>
+              {t("transaction.buy.BlockBucks")}
+            </Button>
+          </div>
+        </>
+      );
+    }
+    if (showPurchased) {
       return (
         <>
           <div className="flex flex-col p-2">
             <div className="flex items-center">
               <img
-                src={ITEM_DETAILS["Catch the Kraken Banner"].image}
+                src={ITEM_DETAILS["Spring Blossom Banner"].image}
                 className="rounded-md my-2 img-highlight mr-2"
                 style={{
                   height: `${PIXEL_SCALE * 16}px`,
@@ -89,7 +148,7 @@ export const PromotingModal: React.FC<Props> = ({
               />
               <p className="text-sm">{t("season.goodLuck")}</p>
             </div>
-            <p className="text-sm">{t("season.accessTo")}</p>
+            <p className="text-sm">{t("season.access")}</p>
             <ul className="list-disc">
               <li className="text-xs ml-4">{t("season.discount")}</li>
               <li className="text-xs ml-4">{t("season.banner")}</li>
@@ -98,17 +157,21 @@ export const PromotingModal: React.FC<Props> = ({
               <li className="text-xs ml-4">{t("season.boostXP")}</li>
             </ul>
 
+            <Label className="my-2" type="default" icon={SUNNYSIDE.icons.drag}>
+              {t("season.place.land")}
+            </Label>
+
             <a
-              href="https://docs.sunflower-land.com/player-guides/seasons/catch-the-kraken#catch-the-kraken-banner"
+              href="https://docs.sunflower-land.com/player-guides/seasons/spring-blossom#spring-blossom-banner"
               target="_blank"
               rel="noopener noreferrer"
               className="underline text-xxs pb-1 pt-0.5 hover:text-blue-500"
             >
-              {t("readMore")}
+              {t("read.more")}
             </a>
           </div>
           <div className="flex">
-            <Button className="mr-1" onClick={onClose}>
+            <Button className="mr-1" onClick={onCloseConfirmation}>
               {t("close")}
             </Button>
           </div>
@@ -116,8 +179,9 @@ export const PromotingModal: React.FC<Props> = ({
       );
     }
 
-    const msLeft = new Date("2023-11-01").getTime() - Date.now();
+    const msLeft = SEASONS["Spring Blossom"].startDate.getTime() - Date.now();
     const secondsLeft = msLeft / 1000;
+    const insufficientBlockBucks = !inventory["Block Buck"]?.gte(price);
 
     return (
       <>
@@ -126,19 +190,26 @@ export const PromotingModal: React.FC<Props> = ({
 
           <div className="flex items-center">
             <img
-              src={ITEM_DETAILS["Catch the Kraken Banner"].image}
+              src={ITEM_DETAILS["Spring Blossom Banner"].image}
               className="rounded-md my-2 img-highlight mr-2"
               style={{
                 height: `${PIXEL_SCALE * 32}px`,
               }}
             />
             <div>
-              <p className="text-sm">{`1 x Catch the Kraken Banner`}</p>
+              <p className="text-sm">{`1 x Spring Blossom Banner`}</p>
               {secondsLeft > 0 ? (
                 <>
                   <div className="flex my-1">
-                    <p className="line-through">$8.99</p>
-                    <p className="ml-2">{`$${price}`}</p>
+                    <img
+                      src={blockBuck}
+                      style={{
+                        width: `${PIXEL_SCALE * 12}px`,
+                        height: `${PIXEL_SCALE * 8}px`,
+                      }}
+                    />
+                    <p className="line-through ml-2">{"65"}</p>
+                    <p className="ml-2">{price}</p>
                   </div>
                   <Label type="danger">
                     {`${secondsToString(secondsLeft, {
@@ -148,7 +219,7 @@ export const PromotingModal: React.FC<Props> = ({
                 </>
               ) : (
                 <div className="flex my-1">
-                  <p>$8.99</p>
+                  <p>{"65"}</p>
                 </div>
               )}
             </div>
@@ -173,37 +244,49 @@ export const PromotingModal: React.FC<Props> = ({
               {t("season.limitedOffer")}
             </Label>
           )}
-
+          {/* <Label
+            type="danger"
+            className="mt-2"
+            style={{
+              width: "fit-content",
+            }}
+          >
+            Sold out
+          </Label> */}
           <a
-            href="https://docs.sunflower-land.com/player-guides/seasons/catch-the-kraken#catch-the-kraken-banner"
+            href="https://docs.sunflower-land.com/player-guides/seasons/spring-blossom#spring-blossom-banner"
             target="_blank"
             rel="noopener noreferrer"
             className="underline text-xxs pb-1 pt-0.5 hover:text-blue-500"
           >
-            {t("readMore")}
+            {t("read.more")}
           </a>
         </div>
         <div className="flex">
-          <Button className="mr-1" onClick={onClose}>
-            {t("noThanks")}
+          <Button className="mr-1" onClick={onCloseConfirmation}>
+            {t("no.thanks")}
           </Button>
           <Button
             onClick={() => {
-              gameService.send("PURCHASE_ITEM", {
-                name: "Catch the Kraken Banner",
-              });
-              onClose();
+              if (insufficientBlockBucks) {
+                setShowInsufficientBlockBuck(true);
+              } else {
+                setShowConfirmation(true);
+              }
             }}
           >
-            {t("season.buyNow")} {price}
+            {t("season.buyNow")}
           </Button>
         </div>
       </>
     );
   };
   return (
-    <Modal centered show={isOpen} onHide={onClose}>
-      <CloseButtonPanel bumpkinParts={NPC_WEARABLES.grubnuk} onClose={onClose}>
+    <Modal show={isOpen} onHide={onCloseConfirmation}>
+      <CloseButtonPanel
+        bumpkinParts={NPC_WEARABLES.grubnuk}
+        onClose={onCloseConfirmation}
+      >
         <Content />
       </CloseButtonPanel>
     </Modal>
