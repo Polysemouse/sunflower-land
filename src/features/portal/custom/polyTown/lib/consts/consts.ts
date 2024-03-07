@@ -1,0 +1,2 @@
+export const POLY_TOWN_INTERACTABLE_DISTANCE = 50;
+export const POLY_TOWN_CAMERA_FADE_MS = 500;

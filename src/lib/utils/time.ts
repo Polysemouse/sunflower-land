@@ -15,11 +15,13 @@ type TimeDuration = {
  * @param length The length of the format.  Short length shows 1 unit, mid shows 2, full shows all 4.
  * @param isShortFormat true, if short format (s, m, h, d) is used.
  * @param removeTrailingZeros true, if trailing zeros are removed (eg. '23h 0m 0s' becomes '23h').
+ * @param unitSeparator Optional.  The separator between the numbers and the units.
  */
 export type TimeFormatOptions = {
   length: TimeFormatLength;
   isShortFormat?: boolean;
   removeTrailingZeros?: boolean;
+  unitSeparator?: string;
 };
 
 /**
@@ -40,11 +42,11 @@ const timeUnitToString = (
   const unit = duration.unit;
 
   if (options.isShortFormat) {
-    return `${value}${unit.substring(0, 1)}`;
+    return `${value}${options.unitSeparator ?? ""}${unit.substring(0, 1)}`;
   }
 
   const pluralizedUnit = value === 1 ? unit : `${unit}s`;
-  return `${value}${pluralizedUnit}`;
+  return `${value}${options.unitSeparator ?? ""}${pluralizedUnit}`;
 };
 
 export const secondsToString = (

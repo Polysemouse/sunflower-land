@@ -141,4 +141,16 @@ export const SPAWNS: SpawnLocation = {
       y: 290,
     },
   },
+  poly_town_plaza: {
+    default: {
+      x: 320,
+      y: 268,
+    },
+  },
+  poly_town_crop_hunt: {
+    default: {
+      x: 856,
+      y: 884,
+    },
+  },
 };

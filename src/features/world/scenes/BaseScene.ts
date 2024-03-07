@@ -76,7 +76,7 @@ export abstract class BaseScene extends Phaser.Scene {
 
   public joystick?: VirtualJoystick;
   private sceneTransitionData?: SceneTransitionData;
-  private switchToScene?: SceneId;
+  protected switchToScene?: SceneId;
   private options: Required<BaseSceneOptions>;
 
   public map: Phaser.Tilemaps.Tilemap = {} as Phaser.Tilemaps.Tilemap;
@@ -565,16 +565,7 @@ export abstract class BaseScene extends Phaser.Scene {
             warpTo &&
             (warpTo !== "beach" || hasFeatureAccess(this.gameState, "BEACH"))
           ) {
-            this.currentPlayer?.stopSpeaking();
-            this.cameras.main.fadeOut(1000);
-
-            this.cameras.main.on(
-              "camerafadeoutcomplete",
-              () => {
-                this.switchToScene = warpTo;
-              },
-              this
-            );
+            this.changeScene(warpTo);
           }
 
           const interactable = (obj2 as any).data?.list?.open;
@@ -710,7 +701,8 @@ export abstract class BaseScene extends Phaser.Scene {
 
     this.sendPositionToServer();
 
-    const isMoving = this.movementAngle !== undefined;
+    const isMoving =
+      this.movementAngle !== undefined && this.walkingSpeed !== 0;
 
     if (this.soundEffects) {
       this.soundEffects.forEach((audio) =>
@@ -967,4 +959,21 @@ export abstract class BaseScene extends Phaser.Scene {
   teleportModerator(x: number, y: number) {
     this.currentPlayer?.setPosition(x, y);
   }
+
+  /**
+   * Changes the scene to the desired scene.
+   * @param {SceneId} scene The desired scene
+   */
+  protected changeScene = (scene: SceneId) => {
+    this.currentPlayer?.stopSpeaking();
+    this.cameras.main.fadeOut();
+
+    this.cameras.main.on(
+      "camerafadeoutcomplete",
+      () => {
+        this.switchToScene = scene;
+      },
+      this
+    );
+  };
 }

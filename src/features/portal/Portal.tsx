@@ -11,10 +11,15 @@ import { CropBoomApp } from "./examples/cropBoom/CropBoom";
 import { MushroomForest } from "./examples/mushroomForest/MushroomForest";
 import { CONFIG } from "lib/config";
 import { GoblinSwarm } from "./examples/goblinSwarm/GoblinSwarm";
+import { PolyTownApp } from "./custom/polyTown/PolyTown";
 
 initialise();
 
 export const PortalApp: React.FC = () => {
+  if (CONFIG.PORTAL_APP === "poly-town") {
+    return <PolyTownApp />;
+  }
+
   if (CONFIG.PORTAL_APP === "crop-boom") {
     return <CropBoomApp />;
   }
