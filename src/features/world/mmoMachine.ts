@@ -10,6 +10,7 @@ import { SPAWNS } from "./lib/spawn";
 import { Moderation } from "features/game/lib/gameMachine";
 
 export type Scenes = {
+  crops_and_chickens: Room<PlazaRoomState> | undefined;
   plaza: Room<PlazaRoomState> | undefined;
   auction_house: Room<PlazaRoomState> | undefined;
   clothes_shop: Room<PlazaRoomState> | undefined;

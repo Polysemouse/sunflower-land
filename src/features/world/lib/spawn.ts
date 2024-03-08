@@ -7,6 +7,12 @@ export type SpawnLocation = Record<
 >;
 
 export const SPAWNS: SpawnLocation = {
+  crops_and_chickens: {
+    default: {
+      x: 856,
+      y: 884,
+    },
+  },
   crop_boom: {
     default: {
       x: 220,

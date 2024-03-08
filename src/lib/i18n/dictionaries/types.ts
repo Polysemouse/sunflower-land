@@ -935,6 +935,18 @@ export type CropFruitDescriptions =
   | "description.bloom.seed"
   | "description.lily.seed";
 
+export type CropsAndChickensMessages =
+  | "crops-and-chickens.welcome"
+  | "crops-and-chickens.collectCrops"
+  | "crops-and-chickens.depositCrops"
+  | "crops-and-chickens.bewareWanderingChickens"
+  | "crops-and-chickens.newChallengeDaily"
+  | "crops-and-chickens.challengeCompleted"
+  | "crops-and-chickens.gameOver"
+  | "crops-and-chickens.scoreInfo"
+  | "crops-and-chickens.exitAndClaimRewards"
+  | "crops-and-chickens.comeBackLater";
+
 export type Deliveryitem =
   | "deliveryitem.inventory"
   | "deliveryitem.itemsToDeliver"
@@ -3132,6 +3144,7 @@ export type TranslationKeys =
   | Conversations
   | CropBoomMessages
   | CropFruitDescriptions
+  | CropsAndChickensMessages
   | Deliveryitem
   | DefaultDialogue
   | DecorationDescriptions

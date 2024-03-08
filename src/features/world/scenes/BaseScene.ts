@@ -95,6 +95,10 @@ export abstract class BaseScene extends Phaser.Scene {
   serverPosition: { x: number; y: number } = { x: 0, y: 0 };
   packetSentAt = 0;
 
+  get isMoving() {
+    return this.movementAngle !== undefined && this.walkingSpeed !== 0;
+  }
+
   playerEntities: {
     [sessionId: string]: BumpkinContainer;
   } = {};
@@ -552,16 +556,6 @@ export abstract class BaseScene extends Phaser.Scene {
       onClick: defaultClick,
     });
 
-    if (!npc) {
-      const nameTag = this.createPlayerText({
-        x: 0,
-        y: 0,
-        text: username ? username : `#${farmId}`,
-      });
-      nameTag.name = "nameTag";
-      entity.add(nameTag);
-    }
-
     // Is current player
     if (isCurrentPlayer) {
       this.currentPlayer = entity;
@@ -596,16 +590,7 @@ export abstract class BaseScene extends Phaser.Scene {
           // Change scenes
           const warpTo = (obj2 as any).data?.list?.warp;
           if (warpTo) {
-            this.currentPlayer?.stopSpeaking();
-            this.cameras.main.fadeOut(1000);
-
-            this.cameras.main.on(
-              "camerafadeoutcomplete",
-              () => {
-                this.switchToScene = warpTo;
-              },
-              this
-            );
+            this.changeScene(warpTo);
           }
 
           const interactable = (obj2 as any).data?.list?.open;
@@ -740,8 +725,6 @@ export abstract class BaseScene extends Phaser.Scene {
 
     this.sendPositionToServer();
 
-    const isMoving = this.movementAngle !== undefined;
-
     if (this.soundEffects) {
       this.soundEffects.forEach((audio) =>
         audio.setVolumeAndPan(
@@ -755,13 +738,13 @@ export abstract class BaseScene extends Phaser.Scene {
     }
 
     if (this.walkAudioController) {
-      this.walkAudioController.handleWalkSound(isMoving);
+      this.walkAudioController.handleWalkSound(this.isMoving);
     } else {
       // eslint-disable-next-line no-console
       console.error("walkAudioController is undefined");
     }
 
-    if (isMoving) {
+    if (this.isMoving) {
       this.currentPlayer.walk();
     } else {
       this.currentPlayer.idle();
@@ -989,4 +972,21 @@ export abstract class BaseScene extends Phaser.Scene {
   teleportModerator(x: number, y: number) {
     this.currentPlayer?.setPosition(x, y);
   }
+
+  /**
+   * Changes the scene to the desired scene.
+   * @param {SceneId} scene The desired scene
+   */
+  protected changeScene = (scene: SceneId) => {
+    this.currentPlayer?.stopSpeaking();
+    this.cameras.main.fadeOut();
+
+    this.cameras.main.on(
+      "camerafadeoutcomplete",
+      () => {
+        this.switchToScene = scene;
+      },
+      this
+    );
+  };
 }

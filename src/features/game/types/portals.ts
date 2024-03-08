@@ -1,4 +1,5 @@
 export type PortalName =
+  | "crops-and-chickens"
   | "crop-boom"
   | "bumpkin-fight-club"
   | "bumpkin-board-game"
@@ -8,6 +9,7 @@ export type PortalName =
   | "chicken-rescue";
 
 export const SUPPORTED_PORTALS: PortalName[] = [
+  "crops-and-chickens",
   "crop-boom",
   "bumpkin-fight-club",
   "bumpkin-board-game",
@@ -20,6 +22,7 @@ export const SUPPORTED_PORTALS: PortalName[] = [
 export const MAX_TOTAL_ARCADE_TOKENS = 50;
 
 export const DAILY_ARCADE_TOKENS: Record<PortalName, number> = {
+  "crops-and-chickens": 1,
   "crop-boom": 1,
   "bumpkin-fight-club": 1,
   "bumpkin-board-game": 1,

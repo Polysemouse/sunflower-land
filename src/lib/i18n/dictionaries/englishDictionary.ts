@@ -169,6 +169,7 @@ import {
   Trader,
   NyonStatue,
   Trading,
+  CropsAndChickensMessages,
 } from "./types";
 
 const generalTerms: Record<GeneralTerms, string> = {
@@ -1322,6 +1323,25 @@ const cropFruitDescriptions: Record<CropFruitDescriptions, string> = {
   "description.sunpetal.seed": "A sunpetal seed",
   "description.bloom.seed": "A bloom seed",
   "description.lily.seed": "A lily seed",
+};
+
+const cropsAndChickens: Record<CropsAndChickensMessages, string> = {
+  "crops-and-chickens.welcome": "Welcome to Crops and Chickens!",
+  "crops-and-chickens.collectCrops":
+    "Venture into the dangerous crop field to gather crops. The farther you roam, the more valuable the crops you'll find!",
+  "crops-and-chickens.depositCrops":
+    "Secure your earnings by depositing crops collected. But remember, the longer you hold out, the greater the risk.",
+  "crops-and-chickens.bewareWanderingChickens":
+    "Avoid wandering chickens at all costs. A collision means losing all your unbanked crops.",
+  "crops-and-chickens.newChallengeDaily":
+    "You can take on the challenge every day to test your skills. Can you navigate the fields, outsmart the chickens, and reap the rewards?",
+  "crops-and-chickens.challengeCompleted":
+    "Congratulations, you have completed today's challenge.",
+  "crops-and-chickens.gameOver": "Game Over",
+  "crops-and-chickens.scoreInfo": "Score: {{score}}",
+  "crops-and-chickens.exitAndClaimRewards": "Exit and Claim Rewards",
+  "crops-and-chickens.comeBackLater":
+    "Come back later for a brand new challenge!",
 };
 
 const decorationDescriptions: Record<DecorationDescriptions, string> = {
@@ -4573,6 +4593,7 @@ export const ENGLISH_TERMS: Record<TranslationKeys, string> = {
   ...conversations,
   ...cropBoomMessages,
   ...cropFruitDescriptions,
+  ...cropsAndChickens,
   ...decorationDescriptions,
   ...defaultDialogue,
   ...delivery,

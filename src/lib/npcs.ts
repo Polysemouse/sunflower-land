@@ -1,6 +1,7 @@
 import { Equipped } from "features/game/types/bumpkin";
 
 export type NPCName =
+  | "chicken"
   | "betty"
   | "bruce"
   | "hank"
@@ -66,6 +67,16 @@ export type NPCName =
 // Ol Salty
 
 export const NPC_WEARABLES: Record<NPCName, Equipped> = {
+  chicken: {
+    background: "Farm Background",
+    body: "Beige Farmer Potion",
+    hair: "Basic Hair",
+    shoes: "Black Farmer Boots",
+    tool: "Farmer Pitchfork",
+    pants: "Farmer Overalls",
+    shirt: "Chic Gala Blouse",
+    hat: "Chicken Hat",
+  },
   evie: {
     background: "Farm Background",
     body: "Beige Farmer Potion",
