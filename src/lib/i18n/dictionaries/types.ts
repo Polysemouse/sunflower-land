@@ -2793,7 +2793,10 @@ export type SpecialEvent =
   | "special.event.airdropHandling"
   | "special.event.walletRequired"
   | "special.event.web3Wallet"
-  | "special.event.airdrop";
+  | "special.event.airdrop"
+  | "special.event.finishedLabel"
+  | "special.event.finished"
+  | "special.event.ineligible";
 
 export type Statements =
   | "statements.adventure"
