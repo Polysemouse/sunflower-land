@@ -77,10 +77,7 @@ const ChumSelection: React.FC<{
 
   return (
     <div>
-      <p className="mb-1 p-1 text-xs">
-        {t("select.resource")}
-        {":"}{" "}
-      </p>
+      <p className="mb-1 p-1 text-xs">{t("select.resource")}</p>
 
       <div className="flex flex-wrap">
         {getKeys(CHUM_AMOUNTS)
@@ -247,7 +244,7 @@ const BaitSelection: React.FC<{
 
           <Label icon={SUNNYSIDE.tools.fishing_rod} type="default">
             {t("statements.daily.limit")}
-            {":"} {dailyFishingCount}
+            {dailyFishingCount}
             {"/"}
             {dailyFishingMax}
           </Label>
@@ -331,7 +328,7 @@ const BaitSelection: React.FC<{
 
       {fishingLimitReached && (
         <Label className="mb-1" type="danger">
-          {t("fishermanModal.dailyLimitReached")} {dailyFishingMax}
+          {t("fishermanModal.dailyLimitReached", { limit: dailyFishingMax })}
         </Label>
       )}
 
@@ -399,11 +396,9 @@ export const FishermanModal: React.FC<Props> = ({
         <SpeakingText
           message={[
             {
-              text: `${t(
-                "fishermanmodal.greetingPart1"
-              )} ${capitalizeFirstLetters(npc)} ${t(
-                "fishermanmodal.greetingPart2"
-              )}`,
+              text: t("fishermanmodal.greeting", {
+                name: capitalizeFirstLetters(npc),
+              }),
             },
             {
               text: translate("fishermanModal.fishBenefits"),

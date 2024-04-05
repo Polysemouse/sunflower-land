@@ -1,9 +1,7 @@
-import { useActor } from "@xstate/react";
 import { Button } from "components/ui/Button";
 import { Context } from "features/game/GameProvider";
+import { ClaimReward } from "features/game/expansion/components/ClaimReward";
 import { Message as IMessage } from "features/game/types/announcements";
-import { getKeys } from "features/game/types/craftables";
-import { ITEM_DETAILS } from "features/game/types/images";
 import { useAppTranslation } from "lib/i18n/useAppTranslations";
 import React, { useContext, useState } from "react";
 
@@ -12,6 +10,7 @@ interface Props {
   read?: boolean;
   onAcknowledge?: () => void;
   message: IMessage;
+  onClose: () => void;
 }
 
 const CONTENT_HEIGHT = 300;
@@ -20,16 +19,16 @@ export const Message: React.FC<Props> = ({
   conversationId,
   read,
   onAcknowledge,
+  onClose,
   message,
 }) => {
   const { t } = useAppTranslation();
   const { gameService } = useContext(Context);
-  const [gameState] = useActor(gameService);
-
   const [showReward, setShowReward] = useState(false);
 
   const acknowledge = () => {
     gameService.send({ type: "message.read", id: conversationId });
+    onClose();
   };
 
   const conversation = message;
@@ -46,31 +45,17 @@ export const Message: React.FC<Props> = ({
   const Content = () => {
     if (showReward && conversation.reward) {
       return (
-        <>
-          <p className="text-center">{t("statements.conversation.one")}</p>
-
-          <div className="flex flex-col items-center">
-            {getKeys(conversation.reward?.items).map((name) => (
-              <img
-                key={`${name}`}
-                src={ITEM_DETAILS[name].image}
-                className="mb-2 w-1/5 my-2 img-highlight"
-              />
-            ))}
-          </div>
-
-          {/* Text*/}
-          <div>
-            {getKeys(conversation.reward?.items).map((name) => (
-              <p
-                key={`${name}`}
-                className="text-center text-sm mb-2"
-              >{`${conversation.reward?.items[name]} x ${name}`}</p>
-            ))}
-          </div>
-
-          <Button onClick={acknowledge}>{t("claim")}</Button>
-        </>
+        <ClaimReward
+          onClaim={acknowledge}
+          reward={{
+            createdAt: Date.now(),
+            id: "mail-bonus",
+            items: conversation.reward.items,
+            wearables: {},
+            sfl: 0,
+            coins: conversation.reward.coins ?? 0,
+          }}
+        />
       );
     }
     return (
@@ -78,7 +63,7 @@ export const Message: React.FC<Props> = ({
         <div className="">
           {conversation.content.map((content, index) => (
             <div className="mb-2" key={index}>
-              <p className="text-sm mb-2">{content.text}</p>
+              <p className="text-sm px-1 mb-2">{content.text}</p>
               {content.image && (
                 <img
                   src={content.image}
@@ -113,7 +98,7 @@ export const Message: React.FC<Props> = ({
   return (
     <div
       style={{ maxHeight: CONTENT_HEIGHT }}
-      className="overflow-y-auto divide-brown-600 p-2 pb-0 scrollable"
+      className="overflow-y-auto divide-brown-600 pb-0 scrollable"
     >
       <Content />
     </div>

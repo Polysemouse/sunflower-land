@@ -9,6 +9,9 @@ import sunpetalSeed from "assets/flowers/sunpetal_seed.webp";
 import bloomSeed from "assets/flowers/bloom_seed.webp";
 import lilySeed from "assets/flowers/lily_seed.webp";
 
+import communityEgg from "assets/sfts/easter_donation_egg.webp";
+import hungryHare from "assets/sfts/hungryHare.png";
+
 // NFTs
 import grinxsHammer from "assets/sfts/grinx_hammer.png";
 import chickenCoop from "assets/sfts/chicken_coop.png";
@@ -333,7 +336,7 @@ import rapidGrowth from "src/assets/fertilisers/rapidGrowth.png";
 // Buildings
 import firePit from "src/assets/buildings/fire_pit.png";
 import kitchen from "src/assets/buildings/kitchen.png";
-import market from "src/assets/buildings/market.png";
+import market from "src/assets/buildings/bettys_market.png";
 import townCenter from "src/assets/buildings/town_center.png";
 import workbench from "src/assets/buildings/workbench.png";
 import tent from "src/assets/buildings/tent.png";
@@ -595,6 +598,7 @@ import whiteLotus from "assets/flowers/white_lotus.webp";
 import purpleLotus from "assets/flowers/purple_lotus.webp";
 
 import babyPanda from "assets/sfts/baby_panda.png";
+import baozi from "assets/sfts/baozi.webp";
 
 import { COUPONS, FERTILISERS, InventoryItemName } from "./game";
 import {
@@ -3224,7 +3228,7 @@ export const ITEM_DETAILS: Items = {
   },
   "Blue Lotus": {
     image: blueLotus,
-    description: translate("description.blue.lotu"),
+    description: translate("description.blue.lotus"),
   },
   "Earn Alliance Banner": {
     image: earnAllianceBanner,
@@ -3245,5 +3249,17 @@ export const ITEM_DETAILS: Items = {
   "Baby Panda": {
     image: babyPanda,
     description: translate("description.babyPanda"),
+  },
+  Baozi: {
+    image: baozi,
+    description: translate("description.baozi"),
+  },
+  "Community Egg": {
+    image: communityEgg,
+    description: translate("description.communityEgg"),
+  },
+  "Hungry Hare": {
+    image: hungryHare,
+    description: translate("description.hungryHare"),
   },
 };

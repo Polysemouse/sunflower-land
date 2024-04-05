@@ -6746,7 +6746,7 @@ export const OPEN_SEA_ITEMS: Record<InventoryItemName, Metadata> = {
     external_url: "https://docs.sunflower-land.com/getting-started/about",
     image: "../public/erc1155/images/492.png",
     attributes: [
-      { trait_type: "Purpose", value: "Boost" },
+      { trait_type: "Boost", value: "Flower" },
       {
         display_type: "boost_percentage",
         trait_type: "Flower Growth Time",
@@ -7038,11 +7038,14 @@ export const OPEN_SEA_ITEMS: Record<InventoryItemName, Metadata> = {
   "Earn Alliance Banner": {
     name: "Earn Alliance Banner",
     description:
-      "A special event banner. Gives a starter bonus of 2x XP in February 2024 for players on the beginner island.",
+      "A special event banner. Gave a starter bonus of 2x XP in February 2024 for players on the beginner island.",
     decimals: 0,
     external_url: "https://docs.sunflower-land.com/getting-started/about",
     image: "../public/erc1155/images/930.png",
-    attributes: [{ trait_type: "Tradable", value: "Yes" }],
+    attributes: [
+      { trait_type: "Purpose", value: "Decoration" },
+      { trait_type: "Tradable", value: "Yes" },
+    ],
   },
   "Treasure Key": {
     name: "Treasure Key",
@@ -7080,10 +7083,45 @@ export const OPEN_SEA_ITEMS: Record<InventoryItemName, Metadata> = {
   },
   "Baby Panda": {
     name: "Baby Panda",
-    description: "A baby panda earned during the Gas Hero collaboration event",
+    description:
+      "A baby panda earned during the Gas Hero collaboration event. Gives new players double XP during March 2024.",
     decimals: 0,
     external_url: "https://docs.sunflower-land.com/getting-started/about",
     image: "../public/erc1155/images/935.png",
     attributes: [{ trait_type: "Tradable", value: "No" }],
+  },
+  Baozi: {
+    name: "Bazoi",
+    description:
+      "A delicious steamed bun. A special event item from Lunar New Year 2024.",
+    decimals: 0,
+    external_url: "https://docs.sunflower-land.com/getting-started/about",
+    image: "../public/erc1155/images/936.gif",
+    attributes: [{ trait_type: "Tradable", value: "Yes" }],
+  },
+  "Community Egg": {
+    name: "Community Egg",
+    description: "Wow, you must really care about the community",
+    decimals: 0,
+    external_url: "https://docs.sunflower-land.com/getting-started/about",
+    image: "../public/erc1155/images/937.png",
+    attributes: [{ trait_type: "Tradable", value: "Yes" }],
+  },
+  "Hungry Hare": {
+    name: "Hungry Hare",
+    description:
+      "This ravenous rabbit hops through your farm. A special event item from Easter 2024",
+    decimals: 0,
+    external_url: "https://docs.sunflower-land.com/getting-started/about",
+    image: "../public/erc1155/images/938.png",
+    attributes: [
+      { trait_type: "Tradable", value: "Yes" },
+      { trait_type: "Boost", value: "XP" },
+      {
+        display_type: "boost_percentage",
+        trait_type: "Increase Fermented Carrots XP",
+        value: 100,
+      },
+    ],
   },
 };

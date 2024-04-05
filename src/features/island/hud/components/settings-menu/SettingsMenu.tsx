@@ -28,6 +28,7 @@ import { PlazaSettings } from "./PlazaSettingsModal";
 import { DEV_HoardingCheck } from "components/dev/DEV_HoardingCheck";
 import { Label } from "components/ui/Label";
 import { shortAddress } from "lib/utils/shortAddress";
+import { getBumpkinLevel } from "features/game/lib/level";
 
 import walletIcon from "assets/icons/wallet.png";
 import { removeJWT } from "features/auth/actions/social";
@@ -35,6 +36,21 @@ import { WalletContext } from "features/wallet/WalletProvider";
 import { CloseButtonPanel } from "features/game/components/CloseablePanel";
 import { useAppTranslation } from "lib/i18n/useAppTranslations";
 import { LanguageSwitcher } from "./LanguageChangeModal";
+import { usePWAInstall } from "features/pwa/PWAInstallProvider";
+import {
+  isMobile,
+  isIOS,
+  isSafari,
+  isAndroid,
+  isChrome,
+} from "mobile-device-detect";
+import { fixInstallPromptTextStyles } from "features/pwa/lib/fixInstallPromptStyles";
+import { InstallAppModal } from "./InstallAppModal";
+import { useIsPWA } from "lib/utils/hooks/useIsPWA";
+import { MachineState } from "features/game/lib/gameMachine";
+import { useSelector } from "@xstate/react";
+import { DepositModal } from "features/goblins/bank/components/Deposit";
+import { DepositArgs } from "lib/blockchain/Deposit";
 
 enum MENU_LEVELS {
   ROOT = "root",
@@ -48,6 +64,10 @@ interface Props {
   onClose: () => void;
   isFarming: boolean;
 }
+
+const _farmAddress = (state: MachineState) => state.context.farmAddress ?? "";
+const _xp = (state: MachineState) =>
+  state.context.state.bumpkin?.experience ?? 0;
 
 export const SettingsMenu: React.FC<Props> = ({ show, onClose, isFarming }) => {
   const { t } = useAppTranslation();
@@ -65,9 +85,20 @@ export const SettingsMenu: React.FC<Props> = ({ show, onClose, isFarming }) => {
   const [showLanguageModal, setShowLanguageModal] = useState(false);
   const [showCaptcha, setShowCaptcha] = useState(false);
   const [showTimeMachine, setShowTimeMachine] = useState(false);
+  const [showInstallAppModal, setShowInstallAppModal] = useState(false);
   const [isConfirmLogoutModalOpen, showConfirmLogoutModal] = useState(false);
+  const [showDepositModal, setShowDepositModal] = useState(false);
+  const [depositDataLoaded, setDepositDataLoaded] = useState(false);
   const [menuLevel, setMenuLevel] = useState(MENU_LEVELS.ROOT);
   const { openModal } = useContext(ModalContext);
+  const isPWA = useIsPWA();
+
+  const isWeb3MobileBrowser = isMobile && !!window.ethereum;
+
+  const pwaInstall = usePWAInstall();
+
+  const farmAddress = useSelector(gameService, _farmAddress);
+  const xp = useSelector(gameService, _xp);
 
   const handleHowToPlay = () => {
     setShowHowToPlay(true);
@@ -93,6 +124,17 @@ export const SettingsMenu: React.FC<Props> = ({ show, onClose, isFarming }) => {
     onClose();
   };
 
+  const handleDeposit = (
+    args: Pick<DepositArgs, "sfl" | "itemIds" | "itemAmounts">
+  ) => {
+    gameService.send("DEPOSIT", args);
+  };
+
+  const handleDepositModal = () => {
+    setShowDepositModal(true);
+    onClose();
+  };
+
   const handleSettingsClick = () => {
     setShowSettingsModal(true);
     onClose();
@@ -115,6 +157,21 @@ export const SettingsMenu: React.FC<Props> = ({ show, onClose, isFarming }) => {
 
   const changeLanguage = () => {
     setShowLanguageModal(true);
+    onClose();
+  };
+
+  const handleInstallApp = () => {
+    if (isMobile && !isWeb3MobileBrowser) {
+      if (isIOS && isSafari) {
+        pwaInstall.current?.showDialog();
+      } else if (isAndroid && isChrome) {
+        pwaInstall.current?.install();
+      }
+
+      fixInstallPromptTextStyles();
+    } else {
+      setShowInstallAppModal(true);
+    }
     onClose();
   };
 
@@ -196,14 +253,26 @@ export const SettingsMenu: React.FC<Props> = ({ show, onClose, isFarming }) => {
                     </li>
                     <li className="p-1">
                       <DEV_HoardingCheck network="mumbai" />
-                    </li>{" "}
-                    <li className="p-1">
-                      <Button onClick={changeLanguage}>
-                        <span>{t("change.Language")}</span>
-                      </Button>
                     </li>
                   </>
                 )}
+                {!isPWA && (
+                  <li className="p-1">
+                    <Button onClick={handleInstallApp}>
+                      <span>{t("install.app")}</span>
+                    </Button>
+                  </li>
+                )}
+                <li className="p-1">
+                  <Button onClick={changeLanguage}>
+                    <span>{t("change.Language")}</span>
+                  </Button>
+                </li>
+                <li className="p-1">
+                  <Button onClick={handleDepositModal}>
+                    <span>{t("deposit")}</span>
+                  </Button>
+                </li>
                 <li className="p-1">
                   <Button onClick={storeOnChain}>
                     <span>{t("settingsMenu.storeOnChain")}</span>
@@ -323,6 +392,18 @@ export const SettingsMenu: React.FC<Props> = ({ show, onClose, isFarming }) => {
       <PlazaSettings
         isOpen={showPlazaSettingsModal}
         onClose={() => setShowPlazaSettingsModal(false)}
+      />
+      <InstallAppModal
+        isOpen={showInstallAppModal}
+        onClose={() => setShowInstallAppModal(false)}
+      />
+
+      <DepositModal
+        farmAddress={farmAddress}
+        canDeposit={getBumpkinLevel(xp) >= 3}
+        handleClose={() => setShowDepositModal(false)}
+        handleDeposit={handleDeposit}
+        showDepositModal={showDepositModal}
       />
 
       {showCaptcha && (

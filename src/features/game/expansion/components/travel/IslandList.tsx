@@ -244,8 +244,7 @@ export const IslandList: React.FC<IslandListProps> = ({
       name: "Goblin Retreat",
       levelRequired: 5 as BumpkinLevel,
       image: goblin,
-      path: `/retreat/${farmId}`,
-      passRequired: true,
+      path: `/world/retreat`,
       labels: [
         <Label type="default" key="trading" icon={SUNNYSIDE.icons.player_small}>
           {t("trading")}
@@ -259,20 +258,6 @@ export const IslandList: React.FC<IslandListProps> = ({
         </Label>,
         <Label type="default" key="crafting" icon={SUNNYSIDE.icons.hammer}>
           {t("crafting")}
-        </Label>,
-      ],
-    },
-    {
-      name: "Helios",
-      levelRequired: 10 as BumpkinLevel,
-      image: SUNNYSIDE.icons.helios,
-      path: `/helios`,
-      labels: [
-        <Label type="default" key="shopping" icon={SUNNYSIDE.icons.basket}>
-          {t("shopping")}
-        </Label>,
-        <Label type="default" key="trash" icon={SUNNYSIDE.icons.cancel}>
-          {t("trash.collection")}
         </Label>,
       ],
     },

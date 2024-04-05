@@ -2,6 +2,8 @@ import { Equipped } from "features/game/types/bumpkin";
 
 export type NPCName =
   | "chicken"
+  | "hopper"
+  | "flopsy"
   | "betty"
   | "bruce"
   | "hank"
@@ -62,7 +64,12 @@ export type NPCName =
   | "stevie"
   | "Chun Long"
   | "evie"
-  | "glinteye";
+  | "gordo"
+  | "goblet"
+  | "garbo"
+  | "guria"
+  | "grabnab"
+  | "greedclaw";
 
 // Ol Salty
 
@@ -77,6 +84,91 @@ export const NPC_WEARABLES: Record<NPCName, Equipped> = {
     shirt: "Chic Gala Blouse",
     hat: "Chicken Hat",
   },
+  flopsy: {
+    body: "Dark Brown Farmer Potion",
+    hair: "Wise Hair",
+    beard: "Wise Beard",
+    pants: "Wise Slacks",
+    shirt: "Wise Robes",
+    tool: "Wise Staff",
+    secondaryTool: "Wise Book",
+    background: "Farm Background",
+    shoes: "Brown Boots",
+    onesie: "Bunny Onesie",
+  },
+  hopper: {
+    body: "Beige Farmer Potion",
+    hair: "Wise Hair",
+    beard: "Wise Beard",
+    pants: "Wise Slacks",
+    shirt: "Wise Robes",
+    tool: "Wise Staff",
+    secondaryTool: "Wise Book",
+    background: "Farm Background",
+    shoes: "Brown Boots",
+    onesie: "Bunny Onesie",
+  },
+  greedclaw: {
+    body: "Goblin Potion",
+    hair: "Wise Hair",
+    beard: "Wise Beard",
+    pants: "Wise Slacks",
+    shirt: "Wise Robes",
+    tool: "Wise Staff",
+    secondaryTool: "Wise Book",
+    background: "Farm Background",
+    shoes: "Brown Boots",
+  },
+  grabnab: {
+    body: "Goblin Potion",
+    background: "Dawn Breaker Background",
+    hair: "Sun Spots",
+    shirt: "Bidder's Brocade",
+    pants: "Auctioneer Slacks",
+    shoes: "Leather Shoes",
+    tool: "Auction Megaphone",
+    hat: "Harry's Hat",
+  },
+  garbo: {
+    body: "Goblin Potion",
+    shirt: "Yellow Farmer Shirt",
+    pants: "Farmer Overalls",
+    hair: "Buzz Cut",
+    background: "Farm Background",
+    shoes: "Black Farmer Boots",
+    tool: "Ancient Goblin Sword",
+  },
+  gordo: {
+    body: "Goblin Potion",
+    shirt: "Hawaiian Shirt",
+    pants: "Farmer Pants",
+    hair: "Sun Spots",
+    background: "Farm Background",
+    shoes: "Black Farmer Boots",
+    tool: "Parsnip",
+  },
+
+  goblet: {
+    body: "Goblin Potion",
+    shirt: "Blue Farmer Shirt",
+    pants: "Farmer Pants",
+    hair: "White Long Hair",
+    hat: "Luna's Hat",
+    background: "Farm Background",
+    shoes: "Black Farmer Boots",
+    tool: "Dawn Lamp",
+  },
+
+  guria: {
+    body: "Goblin Potion",
+    shirt: "Red Farmer Shirt",
+    pants: "Lumberjack Overalls",
+    hair: "Rancher Hair",
+    background: "Farm Background",
+    shoes: "Black Farmer Boots",
+    tool: "Pirate Scimitar",
+  },
+
   evie: {
     background: "Farm Background",
     body: "Beige Farmer Potion",
@@ -664,15 +756,6 @@ export const NPC_WEARABLES: Record<NPCName, Equipped> = {
     background: "China Town Background",
     shoes: "Black Farmer Boots",
     tool: "Farmer Pitchfork",
-  },
-  glinteye: {
-    body: "Goblin Potion",
-    hair: "Basic Hair",
-    shirt: "Bidder's Brocade",
-    pants: "Blue Suspenders",
-    tool: "Auction Megaphone",
-    background: "Farm Background",
-    shoes: "Black Farmer Boots",
   },
 };
 

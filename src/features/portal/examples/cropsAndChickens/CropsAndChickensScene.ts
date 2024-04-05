@@ -540,8 +540,8 @@ export class CropsAndChickensScene extends BaseScene {
 
       await new Promise((res) => setTimeout(res, 1000));
 
-      this.currentPlayer.x = SPAWNS.crops_and_chickens.default.x;
-      this.currentPlayer.y = SPAWNS.crops_and_chickens.default.y;
+      this.currentPlayer.x = SPAWNS().crops_and_chickens.default.x;
+      this.currentPlayer.y = SPAWNS().crops_and_chickens.default.y;
 
       this.isPlayerDead = false;
       this.walkingSpeed = PLAYER_WALKING_SPEED;

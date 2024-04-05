@@ -6,11 +6,37 @@ export type SpawnLocation = Record<
   { default: Coordinates } & Partial<Record<SceneId, Coordinates>>
 >;
 
-export const SPAWNS: SpawnLocation = {
+const randomXOffset = Math.random() * 60;
+const randomYOffset = Math.random() * 20;
+
+export const SPAWNS: () => SpawnLocation = () => ({
   crops_and_chickens: {
     default: {
       x: 856,
       y: 884,
+    },
+  },
+  retreat: {
+    // Make sure everyone doesn't spawn in same spot
+    default: {
+      x: 290 + randomXOffset,
+      y: 420 - randomYOffset,
+    },
+  },
+  plaza: {
+    // Make sure everyone doesn't spawn in same spot
+    default: {
+      x: 400 + randomXOffset,
+      y: 450 - randomYOffset,
+    },
+
+    woodlands: {
+      x: 867,
+      y: 142,
+    },
+    beach: {
+      x: 26,
+      y: 318,
     },
   },
   crop_boom: {
@@ -31,36 +57,7 @@ export const SPAWNS: SpawnLocation = {
       y: 652,
     },
   },
-  plaza: {
-    default: {
-      x: 440,
-      y: 400,
-    },
-    windmill_floor: {
-      x: 420,
-      y: 167,
-    },
-    auction_house: {
-      x: 600,
-      y: 300,
-    },
-    decorations_shop: {
-      x: 793,
-      y: 287,
-    },
-    clothes_shop: {
-      x: 264,
-      y: 300,
-    },
-    woodlands: {
-      x: 867,
-      y: 142,
-    },
-    beach: {
-      x: 26,
-      y: 318,
-    },
-  },
+
   auction_house: {
     default: {
       x: 170,
@@ -91,4 +88,4 @@ export const SPAWNS: SpawnLocation = {
       y: 290,
     },
   },
-};
+});

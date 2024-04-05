@@ -46,8 +46,10 @@ import { PortalName } from "./portals";
 import { FlowerCrossBreedName, FlowerName, FlowerSeedName } from "./flowers";
 import { translate } from "lib/i18n/translate";
 import { SpecialEvents } from "./specialEvents";
+import { TradeableName } from "../actions/sellMarketResource";
 
 export type Reward = {
+  coins?: number;
   sfl?: Decimal;
   items?: {
     name: InventoryItemName;
@@ -78,7 +80,7 @@ export type FieldItem = {
   // Epoch time in milliseconds
   plantedAt: number;
   multiplier?: number;
-  reward?: Reward;
+  reward?: Omit<Reward, "sfl">;
   fertiliser?: CropFertiliser;
 };
 
@@ -375,7 +377,7 @@ export type Position = {
 export type Wood = {
   amount: number;
   choppedAt: number;
-  reward?: Reward;
+  reward?: Omit<Reward, "sfl">;
 };
 
 export type PlantedCrop = {
@@ -383,7 +385,7 @@ export type PlantedCrop = {
   name: CropName;
   plantedAt: number;
   amount: number;
-  reward?: Reward;
+  reward?: Omit<Reward, "sfl">;
 };
 
 export type PlantedFruit = {
@@ -501,6 +503,7 @@ export type Airdrop = {
   items: Partial<Record<InventoryItemName, number>>;
   wearables: Partial<Record<BumpkinItem, number>>;
   sfl: number;
+  coins: number;
   message?: string;
   coordinates?: Coordinates;
 };
@@ -597,10 +600,11 @@ export type Party = {
 export type Order = {
   id: string;
   from: NPCName;
-  items: Partial<Record<InventoryItemName | "sfl", number>>;
+  items: Partial<Record<InventoryItemName | "coins" | "sfl", number>>;
   reward: {
     tickets?: number;
     sfl?: number;
+    coins?: number;
     items?: Partial<Record<InventoryItemName, number>>;
   };
   createdAt: number;
@@ -872,6 +876,7 @@ export interface GameState {
   };
 
   username?: string;
+  coins: number;
   balance: Decimal;
   previousBalance: Decimal;
   airdrops?: Airdrop[];
@@ -895,6 +900,7 @@ export interface GameState {
   inventory: Inventory;
   previousInventory: Inventory;
   wardrobe: Wardrobe;
+  previousWardrobe: Wardrobe;
   stock: Inventory;
   stockExpiry: StockExpiry;
 
@@ -946,6 +952,12 @@ export interface GameState {
     rewardCollectedAt?: number;
     kickedAt?: number;
     kickedById?: number;
+    budBox?: {
+      openedAt: number;
+    };
+    raffle?: {
+      entries: Record<string, number>;
+    };
   };
   conversations: ConversationName[];
   mailbox: {
@@ -973,6 +985,17 @@ export interface GameState {
   springBlossom: Record<number, SpringBlossom>;
   megastore: MegaStore;
   specialEvents: SpecialEvents;
+  goblinMarket: {
+    resources: Partial<
+      Record<
+        TradeableName,
+        {
+          bundlesSold: number;
+          date: number;
+        }
+      >
+    >;
+  };
 }
 
 export interface Context {

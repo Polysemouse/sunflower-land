@@ -2,11 +2,12 @@ import {
   BASIC_REWARDS,
   RARE_REWARDS,
   LUXURY_REWARDS,
+  BUD_BOX_REWARDS,
 } from "features/game/types/chests";
 import { ITEM_DETAILS } from "features/game/types/images";
 import React, { useCallback, useEffect } from "react";
 
-import sfl from "assets/icons/token_2.png";
+import sfl from "assets/icons/sfl.webp";
 import { getImageUrl } from "features/goblins/tailor/TabContent";
 import { ITEM_IDS } from "features/game/types/bumpkin";
 import { getKeys } from "features/game/types/craftables";
@@ -14,13 +15,14 @@ import { Label } from "components/ui/Label";
 import { SUNNYSIDE } from "assets/sunnyside";
 
 interface Props {
-  type: "Treasure Key" | "Rare Key" | "Luxury Key";
+  type: "Treasure Key" | "Rare Key" | "Luxury Key" | "Bud Box";
 }
 
 const CHEST_LOOT = {
   "Treasure Key": BASIC_REWARDS,
   "Rare Key": RARE_REWARDS,
   "Luxury Key": LUXURY_REWARDS,
+  "Bud Box": BUD_BOX_REWARDS,
 };
 
 export const ChestRevealing: React.FC<Props> = ({ type }) => {

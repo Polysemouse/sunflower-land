@@ -37,7 +37,8 @@ export type WalletAction =
   | "donate"
   | "dailyReward"
   | "sync"
-  | "dequip";
+  | "dequip"
+  | "wishingWell";
 
 // Certain actions do not require an NFT to perform
 const NON_NFT_ACTIONS: WalletAction[] = [
@@ -281,6 +282,9 @@ export const walletMachine = createMachine<Context, WalletEvent, WalletState>({
           },
           {
             target: "error",
+            actions: assign<Context, any>({
+              errorCode: (_context, event) => event.data.message,
+            }),
           },
         ],
       },
@@ -339,6 +343,9 @@ export const walletMachine = createMachine<Context, WalletEvent, WalletState>({
           },
           {
             target: "error",
+            actions: assign<Context, any>({
+              errorCode: (_context, event) => event.data.message,
+            }),
           },
         ],
       },
