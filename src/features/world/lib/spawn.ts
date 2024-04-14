@@ -31,7 +31,7 @@ export const SPAWNS: () => SpawnLocation = () => ({
     },
 
     woodlands: {
-      x: 867,
+      x: 850,
       y: 142,
     },
     beach: {
@@ -53,7 +53,7 @@ export const SPAWNS: () => SpawnLocation = () => ({
   },
   beach: {
     default: {
-      x: 438,
+      x: 450,
       y: 652,
     },
   },
@@ -84,7 +84,7 @@ export const SPAWNS: () => SpawnLocation = () => ({
   },
   woodlands: {
     default: {
-      x: 10,
+      x: 30,
       y: 290,
     },
   },
