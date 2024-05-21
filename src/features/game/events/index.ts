@@ -34,7 +34,6 @@ import {
 } from "./landExpansion/feedChicken";
 
 import { GameState } from "../types/game";
-import { trade, TradeAction } from "./trade";
 import { claimAirdrop, ClaimAirdropAction } from "./claimAirdrop";
 import {
   placeBuilding,
@@ -113,7 +112,6 @@ import {
 import { sellTreasure, SellTreasureAction } from "./landExpansion/treasureSold";
 import { restock, RestockAction } from "./landExpansion/restock";
 import { sellGarbage, SellGarbageAction } from "./landExpansion/garbageSold";
-import { startChore, StartChoreAction } from "./landExpansion/startChore";
 import {
   completeChore,
   CompleteChoreAction,
@@ -247,10 +245,6 @@ import {
 import { moveSunstone, MoveSunstoneAction } from "./landExpansion/moveSunstone";
 import { mineSunstone, MineSunstoneAction } from "./landExpansion/mineSunstone";
 import {
-  discoverFlowerPage,
-  FlowerPageDiscoveredAction,
-} from "./landExpansion/discoverFlowerPage";
-import {
   FlowerShopTradedAction,
   tradeFlowerShop,
 } from "./landExpansion/tradeFlowerShop";
@@ -269,9 +263,43 @@ import {
   exchangeSFLtoCoins,
   ExchangeSFLtoCoinsAction,
 } from "./landExpansion/exchangeSFLtoCoins";
+import {
+  pledgeFaction,
+  PledgeFactionAction,
+} from "./landExpansion/pledgeFaction";
+import {
+  moveOilReserve,
+  MoveOilReserveAction,
+} from "./landExpansion/moveOilReserve";
+import {
+  placeOilReserve,
+  PlaceOilReserveAction,
+} from "./landExpansion/placeOilReserve";
+import {
+  donateToFaction,
+  DonateToFactionAction,
+} from "./landExpansion/donateToFaction";
+import {
+  drillOilReserve,
+  DrillOilReserveAction,
+} from "./landExpansion/drillOilReserve";
+import {
+  harvestGreenHouse,
+  HarvestGreenhouseAction,
+} from "./landExpansion/harvestGreenHouse";
+import {
+  plantGreenhouse,
+  PlantGreenhouseAction,
+} from "./landExpansion/plantGreenhouse";
+import {
+  oilGreenhouse,
+  OilGreenhouseAction,
+} from "./landExpansion/oilGreenHouse";
 
 export type PlayingEvent =
-  | TradeAction
+  | OilGreenhouseAction
+  | HarvestGreenhouseAction
+  | PlantGreenhouseAction
   | LandExpansionPlantAction
   | LandExpansionFertiliseCropAction
   | LandExpansionRemoveCropAction
@@ -305,7 +333,6 @@ export type PlayingEvent =
   | RestockAction
   | SellGarbageAction
   // Chores
-  | StartChoreAction
   | CompleteChoreAction
   | SkipChoreAction
   | ExpandLandAction
@@ -344,14 +371,16 @@ export type PlayingEvent =
   | HarvestFlowerAction
   | UpgradeFarmAction
   | PurchaseBannerAction
-  | FlowerPageDiscoveredAction
   | FlowerShopTradedAction
   | BuyMegaStoreItemAction
   | CompleteSpecialEventTaskAction
   | GiftFlowersAction
   | ClaimGiftAction
   | EnterRaffleAction
-  | ExchangeSFLtoCoinsAction;
+  | ExchangeSFLtoCoinsAction
+  | PledgeFactionAction
+  | DonateToFactionAction
+  | DrillOilReserveAction;
 
 export type PlacementEvent =
   | ConstructBuildingAction
@@ -389,7 +418,9 @@ export type PlacementEvent =
   | MoveBeehiveAction
   | PlaceBeehiveAction
   | MoveFlowerBedAction
-  | PlaceFlowerBedAction;
+  | PlaceFlowerBedAction
+  | MoveOilReserveAction
+  | PlaceOilReserveAction;
 
 export type GameEvent = PlayingEvent | PlacementEvent;
 export type GameEventName<T> = Extract<T, { type: string }>["type"];
@@ -415,7 +446,9 @@ type Handlers<T> = {
 };
 
 export const PLAYING_EVENTS: Handlers<PlayingEvent> = {
-  "item.traded": trade,
+  "greenhouse.oiled": oilGreenhouse,
+  "greenhouse.harvested": harvestGreenHouse,
+  "greenhouse.planted": plantGreenhouse,
   "airdrop.claimed": claimAirdrop,
   "bot.detected": detectBot,
   "seed.planted": landExpansionPlant,
@@ -451,7 +484,6 @@ export const PLAYING_EVENTS: Handlers<PlayingEvent> = {
   "shops.restocked": restock,
   "garbage.sold": sellGarbage,
   "chore.completed": completeChore,
-  "chore.started": startChore,
   "chore.skipped": skipChore,
   "land.expanded": expandLand,
   "message.read": readMessage,
@@ -489,7 +521,6 @@ export const PLAYING_EVENTS: Handlers<PlayingEvent> = {
   "flower.harvested": harvestFlower,
   "farm.upgraded": upgrade,
   "banner.purchased": purchaseBanner,
-  "flowerPage.discovered": discoverFlowerPage,
   "flowerShop.traded": tradeFlowerShop,
   "megastoreItem.bought": buyMegaStoreItem,
   "specialEvent.taskCompleted": completeSpecialEventTask,
@@ -497,6 +528,9 @@ export const PLAYING_EVENTS: Handlers<PlayingEvent> = {
   "gift.claimed": claimGift,
   "raffle.entered": enterRaffle,
   "sfl.exchanged": exchangeSFLtoCoins,
+  "faction.pledged": pledgeFaction,
+  "faction.donated": donateToFaction,
+  "oilReserve.drilled": drillOilReserve,
 };
 
 export const PLACEMENT_EVENTS: Handlers<PlacementEvent> = {
@@ -536,6 +570,8 @@ export const PLACEMENT_EVENTS: Handlers<PlacementEvent> = {
   "flowerBed.placed": placeFlowerBed,
   "sunstone.placed": placeSunstone,
   "sunstone.moved": moveSunstone,
+  "oilReserve.moved": moveOilReserve,
+  "oilReserve.placed": placeOilReserve,
 };
 
 export const EVENTS = { ...PLAYING_EVENTS, ...PLACEMENT_EVENTS };

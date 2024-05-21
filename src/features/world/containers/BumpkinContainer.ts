@@ -5,7 +5,7 @@ import { tokenUriBuilder } from "lib/utils/tokenUriBuilder";
 import { Label } from "./Label";
 import debounce from "lodash.debounce";
 import { Player } from "../types/Room";
-import { NPCName, acknowedlgedNPCs } from "lib/npcs";
+import { NPCName, acknowledgedNPCs } from "lib/npcs";
 import { ReactionName } from "features/pumpkinPlaza/components/Reactions";
 
 const NAME_ALIASES: Partial<Record<NPCName, string>> = {
@@ -22,12 +22,15 @@ export class BumpkinContainer extends Phaser.GameObjects.Container {
   public sprite: Phaser.GameObjects.Sprite | undefined;
   public shadow: Phaser.GameObjects.Sprite | undefined;
   public alert: Phaser.GameObjects.Sprite | undefined;
-  public silhoutte: Phaser.GameObjects.Sprite | undefined;
+  public silhouette: Phaser.GameObjects.Sprite | undefined;
   public skull: Phaser.GameObjects.Sprite | undefined;
 
   public speech: SpeechBubble | undefined;
   public reaction: Phaser.GameObjects.Sprite | undefined;
   public invincible = false;
+
+  public icon: Phaser.GameObjects.Sprite | undefined;
+  public fx: Phaser.GameObjects.Sprite | undefined;
 
   public clothing: Player["clothing"];
   private ready = false;
@@ -63,9 +66,9 @@ export class BumpkinContainer extends Phaser.GameObjects.Container {
     this.direction = direction ?? "right";
     scene.physics.add.existing(this);
 
-    this.silhoutte = scene.add.sprite(0, 0, "silhouette");
-    this.add(this.silhoutte);
-    this.sprite = this.silhoutte;
+    this.silhouette = scene.add.sprite(0, 0, "silhouette");
+    this.add(this.silhouette);
+    this.sprite = this.silhouette;
 
     this.loadSprites(scene);
 
@@ -84,7 +87,7 @@ export class BumpkinContainer extends Phaser.GameObjects.Container {
       label.setPosition(label.width / 2, -16);
       if (
         !!NPCS_WITH_ALERTS[name as NPCName] &&
-        !acknowedlgedNPCs()[name as NPCName] &&
+        !acknowledgedNPCs()[name as NPCName] &&
         this.scene.textures.exists("alert")
       ) {
         this.alert = this.scene.add.sprite(1, -23, "alert").setSize(4, 10);
@@ -107,6 +110,10 @@ export class BumpkinContainer extends Phaser.GameObjects.Container {
           }
         }
       );
+    }
+
+    if (clothing.shirt === "Gift Giver") {
+      this.showGift();
     }
   }
 
@@ -140,7 +147,7 @@ export class BumpkinContainer extends Phaser.GameObjects.Container {
 
       this.sprite.play(this.idleAnimationKey, true);
 
-      this.silhoutte?.destroy();
+      this.silhouette?.destroy();
 
       this.ready = true;
     } else {
@@ -175,7 +182,7 @@ export class BumpkinContainer extends Phaser.GameObjects.Container {
         this.sprite.play(this.idleAnimationKey as string, true);
 
         this.ready = true;
-        this.silhoutte?.destroy();
+        this.silhouette?.destroy();
 
         idleLoader.removeAllListeners();
       });
@@ -246,10 +253,64 @@ export class BumpkinContainer extends Phaser.GameObjects.Container {
     this.ready = false;
     this.sprite?.destroy();
 
+    if (
+      this.clothing.shirt !== "Gift Giver" &&
+      clothing.shirt === "Gift Giver"
+    ) {
+      this.showGift();
+    }
+
+    if (
+      this.clothing.shirt === "Gift Giver" &&
+      clothing.shirt !== "Gift Giver"
+    ) {
+      this.removeGift();
+    }
+
     this.clothing = clothing;
     this.loadSprites(this.scene);
 
     this.showSmoke();
+  }
+
+  public showGift() {
+    if (this.icon) {
+      this.removeGift();
+    }
+
+    this.icon = this.scene.add.sprite(0, -12, "gift_icon").setOrigin(0.5);
+    this.add(this.icon);
+
+    if (this.scene.textures.exists("sparkle")) {
+      this.fx = this.scene.add.sprite(0, -8, "sparkle").setOrigin(0.5).setZ(10);
+      this.add(this.fx);
+
+      this.scene.anims.create({
+        key: `sparkel_anim`,
+        frames: this.scene.anims.generateFrameNumbers("sparkle", {
+          start: 0,
+          end: 20,
+        }),
+        repeat: -1,
+        frameRate: 10,
+      });
+
+      this.fx.play(`sparkel_anim`, true);
+    }
+  }
+
+  private removeGift() {
+    if (this.icon) {
+      this.icon.destroy();
+    }
+
+    this.icon = undefined;
+
+    if (this.fx) {
+      this.fx.destroy();
+    }
+
+    this.fx = undefined;
   }
 
   public faceRight() {
@@ -458,5 +519,16 @@ export class BumpkinContainer extends Phaser.GameObjects.Container {
         }
       });
     }
+  }
+
+  public addOnClick(onClick: () => void) {
+    this.setInteractive({ cursor: "pointer" }).on(
+      "pointerdown",
+      (p: Phaser.Input.Pointer) => {
+        if (p.downElement.nodeName === "CANVAS") {
+          onClick();
+        }
+      }
+    );
   }
 }

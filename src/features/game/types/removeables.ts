@@ -1,8 +1,8 @@
 import { canChop } from "features/game/events/landExpansion/chop";
 import { CHICKEN_TIME_TO_EGG } from "features/game/lib/constants";
-import { FruitName } from "features/game/types/fruits";
+import { FruitName, GreenHouseFruitName } from "features/game/types/fruits";
 import { GameState, InventoryItemName } from "features/game/types/game";
-import { CropName } from "features/game/types/crops";
+import { CropName, GreenHouseCropName } from "features/game/types/crops";
 import { canMine } from "features/game/events/landExpansion/stoneMine";
 import { areUnsupportedChickensBrewing } from "features/game/events/landExpansion/removeBuilding";
 import { Bud, StemTrait, TypeTrait } from "./buds";
@@ -15,11 +15,11 @@ import {
 import { isFruitGrowing } from "features/game/events/landExpansion/fruitHarvested";
 import { CompostName, isComposting } from "./composters";
 import { getDailyFishingCount } from "./fishing";
-import { GoblinState } from "features/game/lib/goblinMachine";
 import { FLOWERS, FLOWER_SEEDS } from "./flowers";
 import { getCurrentHoneyProduced } from "../expansion/components/resources/beehive/beehiveMachine";
 import { DEFAULT_HONEY_PRODUCTION_TIME } from "../lib/updateBeehives";
 import { translate } from "lib/i18n/translate";
+import { canDrillOilReserve } from "../events/landExpansion/drillOilReserve";
 
 export type Restriction = [boolean, string];
 type RemoveCondition = (gameState: GameState) => Restriction;
@@ -35,6 +35,31 @@ export function cropIsGrowing({ item, game }: CanRemoveArgs): Restriction {
   );
   return [cropGrowing, translate("restrictionReason.isGrowing", { item })];
 }
+type CanRemoveGreenhouseCropsArgs = {
+  crop: GreenHouseCropName | GreenHouseFruitName;
+  game: GameState;
+};
+
+function greenhouseCropIsGrowing({
+  crop,
+  game,
+}: CanRemoveGreenhouseCropsArgs): Restriction {
+  const cropPlanted = Object.values(game.greenhouse.pots ?? {}).some(
+    (pots) => pots.plant && pots.plant.name === crop
+  );
+  return [
+    cropPlanted,
+    translate("restrictionReason.?cropGrowing", { crop: crop }),
+  ];
+}
+
+function areAnyGreenhouseCropGrowing(game: GameState): Restriction {
+  const cropsPlanted = Object.values(game.greenhouse.pots ?? {}).some(
+    (plot) => !!plot.plant
+  );
+
+  return [cropsPlanted, translate("restrictionReason.cropsGrowing")];
+}
 
 function beanIsPlanted(game: GameState): Restriction {
   const beanPlanted = game.collectibles["Magic Bean"]?.length ?? 0;
@@ -43,7 +68,7 @@ function beanIsPlanted(game: GameState): Restriction {
 }
 
 export function areFruitsGrowing(
-  game: GoblinState,
+  game: GameState,
   fruit: FruitName
 ): Restriction {
   const fruitGrowing = Object.values(game.fruitPatches ?? {}).some(
@@ -56,7 +81,7 @@ export function areFruitsGrowing(
   ];
 }
 
-export function areAnyFruitsGrowing(game: GoblinState): Restriction {
+export function areAnyFruitsGrowing(game: GameState): Restriction {
   const fruitGrowing = Object.values(game.fruitPatches ?? {}).some((patch) =>
     isFruitGrowing(patch)
   );
@@ -64,7 +89,7 @@ export function areAnyFruitsGrowing(game: GoblinState): Restriction {
   return [fruitGrowing, translate("restrictionReason.fruitsGrowing")];
 }
 
-export function areAnyCropsGrowing(game: GoblinState): Restriction {
+export function areAnyCropsGrowing(game: GameState): Restriction {
   const cropsGrowing = Object.values(game.crops ?? {}).some((plot) =>
     isCropGrowing(plot)
   );
@@ -158,7 +183,7 @@ function areAnyMineralsMined(game: GameState): Restriction {
   return areGoldsMined;
 }
 
-export function areAnyChickensFed(game: GoblinState): Restriction {
+export function areAnyChickensFed(game: GameState): Restriction {
   const chickensAreFed = Object.values(game.chickens).some(
     (chicken) =>
       chicken.fedAt && Date.now() - chicken.fedAt < CHICKEN_TIME_TO_EGG
@@ -271,6 +296,17 @@ function hasShakenTree(game: GameState): Restriction {
 
   return [hasShakenRecently, translate("restrictionReason.festiveSeason")];
 }
+
+function areAnyOilReservesDrilled(game: GameState): Restriction {
+  const now = Date.now();
+
+  const oilReservesDrilled = Object.values(game.oilReserves).some(
+    (oilReserve) => !canDrillOilReserve(oilReserve, now)
+  );
+
+  return [oilReservesDrilled, translate("restrictionReason.oilReserveDrilled")];
+}
+
 export const REMOVAL_RESTRICTIONS: Partial<
   Record<InventoryItemName, RemoveCondition>
 > = {
@@ -372,6 +408,17 @@ export const REMOVAL_RESTRICTIONS: Partial<
   // Honey
   "Queen Bee": (game) => isProducingHoney(game),
   "Flower Fox": (game) => areFlowersGrowing(game),
+
+  // Clash of Factions
+  Soybliss: (game) => cropIsGrowing({ item: "Soybean", game }),
+
+  "Knight Chicken": (game) => areAnyOilReservesDrilled(game),
+  "Battle Fish": (game) => areAnyOilReservesDrilled(game),
+  "Turbo Sprout": (game) => areAnyGreenhouseCropGrowing(game),
+  Greenhouse: (game) => areAnyGreenhouseCropGrowing(game),
+  Vinny: (game) => greenhouseCropIsGrowing({ crop: "Grape", game }),
+  "Grape Granny": (game) => greenhouseCropIsGrowing({ crop: "Grape", game }),
+  "Rice Panda": (game) => greenhouseCropIsGrowing({ crop: "Rice", game }),
 };
 
 export const BUD_REMOVAL_RESTRICTIONS: Record<

@@ -76,7 +76,7 @@ export function isFlowerSeed(seed: FlowerSeedName) {
 export const FLOWER_SEEDS: () => Record<FlowerSeedName, FlowerSeed> = () => ({
   "Sunpetal Seed": {
     price: 16,
-    bumpkinLevel: 17,
+    bumpkinLevel: 13,
     plantSeconds: 1 * 24 * 60 * 60,
     description: translate("description.sunpetal.seed"),
     disabled: false,
@@ -319,6 +319,22 @@ export const FLOWER_LIFECYCLE: Record<FlowerName, Lifecycle> = getKeys(
       halfway: `flowers/halfway.webp`,
       almost: `flowers/${IMAGES[name]}_growing.webp`,
       ready: `flowers/${IMAGES[name]}_ready.webp`,
+    },
+  }),
+  {} as Record<FlowerName, Lifecycle>
+);
+
+export const DESERT_FLOWER_LIFECYCLE: Record<FlowerName, Lifecycle> = getKeys(
+  IMAGES
+).reduce(
+  (acc, name) => ({
+    ...acc,
+    [name]: {
+      seedling: `flowers/desert/seedling.webp`,
+      sprout: `flowers/desert/sprout.webp`,
+      halfway: `flowers/desert/halfway.webp`,
+      almost: `flowers/desert/${IMAGES[name]}_growing.webp`,
+      ready: `flowers/desert/${IMAGES[name]}_ready.webp`,
     },
   }),
   {} as Record<FlowerName, Lifecycle>

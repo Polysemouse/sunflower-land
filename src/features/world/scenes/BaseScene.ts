@@ -21,7 +21,7 @@ import {
 } from "../mmoMachine";
 import { Player, PlazaRoomState } from "../types/Room";
 import { playerModalManager } from "../ui/PlayerModals";
-import { GameState } from "features/game/types/game";
+import { FactionName, GameState } from "features/game/types/game";
 import { translate } from "lib/i18n/translate";
 import { Room } from "colyseus.js";
 
@@ -33,6 +33,7 @@ import {
 } from "../../game/lib/audio";
 import { MachineInterpreter } from "features/game/lib/gameMachine";
 import { MachineInterpreter as AuthMachineInterpreter } from "features/auth/lib/authMachine";
+import { capitalize } from "lib/utils/capitalize";
 
 type SceneTransitionData = {
   previousSceneId: SceneId;
@@ -79,6 +80,13 @@ type BaseSceneOptions = {
   };
 };
 
+export const FACTION_NAME_COLORS: Record<FactionName, string> = {
+  sunflorians: "#fee761",
+  bumpkins: "#124e89",
+  goblins: "#265c42",
+  nightshades: "#68386c",
+};
+
 export abstract class BaseScene extends Phaser.Scene {
   abstract sceneId: SceneId;
   eventListener?: (event: EventObject) => void;
@@ -113,15 +121,15 @@ export abstract class BaseScene extends Phaser.Scene {
 
   cursorKeys:
     | {
-        up: Phaser.Input.Keyboard.Key;
-        down: Phaser.Input.Keyboard.Key;
-        left: Phaser.Input.Keyboard.Key;
-        right: Phaser.Input.Keyboard.Key;
-        w?: Phaser.Input.Keyboard.Key;
-        s?: Phaser.Input.Keyboard.Key;
-        a?: Phaser.Input.Keyboard.Key;
-        d?: Phaser.Input.Keyboard.Key;
-      }
+      up: Phaser.Input.Keyboard.Key;
+      down: Phaser.Input.Keyboard.Key;
+      left: Phaser.Input.Keyboard.Key;
+      right: Phaser.Input.Keyboard.Key;
+      w?: Phaser.Input.Keyboard.Key;
+      s?: Phaser.Input.Keyboard.Key;
+      a?: Phaser.Input.Keyboard.Key;
+      d?: Phaser.Input.Keyboard.Key;
+    }
     | undefined;
 
   // Advanced server timing - not used
@@ -202,6 +210,7 @@ export abstract class BaseScene extends Phaser.Scene {
         y: spawn.y ?? 0,
         // gameService
         farmId: Number(this.id),
+        faction: this.gameState.faction?.name,
         username: this.username,
         isCurrentPlayer: true,
         // gameService
@@ -210,6 +219,7 @@ export abstract class BaseScene extends Phaser.Scene {
           updatedAt: 0,
         },
         experience: 0,
+        sessionId: this.mmoServer?.sessionId ?? "",
       });
 
       this.initialiseCamera();
@@ -499,19 +509,23 @@ export abstract class BaseScene extends Phaser.Scene {
     y,
     farmId,
     username,
+    faction,
     isCurrentPlayer,
     clothing,
     npc,
     experience = 0,
+    sessionId,
   }: {
     isCurrentPlayer: boolean;
     x: number;
     y: number;
     farmId: number;
     username?: string;
+    faction?: FactionName;
     clothing: Player["clothing"];
     npc?: NPCName;
     experience?: number;
+    sessionId: string;
   }): BumpkinContainer {
     const defaultClick = () => {
       const distance = Phaser.Math.Distance.BetweenPoints(
@@ -530,7 +544,8 @@ export abstract class BaseScene extends Phaser.Scene {
         if (farmId !== this.id) {
           playerModalManager.open({
             id: farmId,
-            clothing,
+            // Always get the latest clothing
+            clothing: this.playerEntities[sessionId]?.clothing ?? clothing,
             experience,
           });
         }
@@ -615,13 +630,25 @@ export abstract class BaseScene extends Phaser.Scene {
     return entity;
   }
 
-  createPlayerText({ x, y, text }: { x: number; y: number; text: string }) {
+  createPlayerText({
+    x,
+    y,
+    text,
+    color,
+  }: {
+    x: number;
+    y: number;
+    text: string;
+    color?: string;
+  }) {
     const textObject = this.add.text(x, y + NAME_TAG_OFFSET_PX, text, {
       fontSize: "4px",
       fontFamily: "monospace",
       resolution: 4,
       padding: { x: 2, y: 2 },
+      color: color ?? "#ffffff",
     });
+
     textObject.setOrigin(0.5);
 
     this.physics.add.existing(textObject);
@@ -645,6 +672,7 @@ export abstract class BaseScene extends Phaser.Scene {
     this.updatePlayer();
     this.updateOtherPlayers();
     this.updateUsernames();
+    this.updateFactions();
   }
 
   keysToAngle(
@@ -802,10 +830,12 @@ export abstract class BaseScene extends Phaser.Scene {
           y: player.y,
           farmId: player.farmId,
           username: player.username,
+          faction: player.faction,
           clothing: player.clothing,
           isCurrentPlayer: sessionId === server.sessionId,
           npc: player.npc,
           experience: player.experience,
+          sessionId,
         });
       }
     });
@@ -845,6 +875,40 @@ export abstract class BaseScene extends Phaser.Scene {
 
         if (nameTag && player.username && nameTag.text !== player.username) {
           nameTag.setText(player.username);
+        }
+      }
+    });
+  }
+
+  updateFactions() {
+    const server = this.mmoServer;
+    if (!server) return;
+
+    server.state.players.forEach((player, sessionId) => {
+      if (!player.faction) return;
+
+      if (this.playerEntities[sessionId]) {
+        const nameTag = this.playerEntities[sessionId].getByName("nameTag") as
+          | Phaser.GameObjects.Text
+          | undefined;
+        let factionTag = this.playerEntities[sessionId].getByName(
+          "factionTag"
+        ) as Phaser.GameObjects.Text | undefined;
+
+        if (nameTag && factionTag?.text !== `<${capitalize(player.faction)}>`) {
+          const color = FACTION_NAME_COLORS[player.faction as FactionName];
+          factionTag = this.createPlayerText({
+            x: 0,
+            y: 0,
+            text: `<${capitalize(player.faction)}>`,
+            color,
+          });
+
+          // Move name tag down
+          nameTag.setPosition(0, 16);
+
+          factionTag.name = "factionTag";
+          this.playerEntities[sessionId].add(factionTag);
         }
       }
     });
@@ -961,8 +1025,12 @@ export abstract class BaseScene extends Phaser.Scene {
     });
   }
 
-  teleportModerator(x: number, y: number) {
-    this.currentPlayer?.setPosition(x, y);
+  teleportModerator(x: number, y: number, sceneId: SceneId) {
+    if (sceneId === this.sceneId) {
+      this.currentPlayer?.setPosition(x, y);
+    } else {
+      this.switchToScene = sceneId;
+    }
   }
 
   /**

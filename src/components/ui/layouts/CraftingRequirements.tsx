@@ -1,6 +1,5 @@
 import Decimal from "decimal.js-light";
 import { INVENTORY_LIMIT } from "features/game/lib/constants";
-import { GoblinState } from "features/game/lib/goblinMachine";
 import { getBumpkinLevel } from "features/game/lib/level";
 import { getKeys } from "features/game/types/craftables";
 import { GameState, InventoryItemName } from "features/game/types/game";
@@ -16,9 +15,10 @@ import {
   BumpkinItem,
   ITEM_IDS,
 } from "features/game/types/bumpkin";
-import { getImageUrl } from "features/goblins/tailor/TabContent";
 import { NPC } from "features/island/bumpkin/components/NPC";
 import { useAppTranslation } from "lib/i18n/useAppTranslations";
+import { getImageUrl } from "lib/utils/getImageURLS";
+import { ITEM_ICONS } from "features/island/hud/components/inventory/Chest";
 
 /**
  * The props for the details for items.
@@ -86,7 +86,7 @@ interface RequirementsProps {
  * @param actionView The view for displaying the crafting action.
  */
 interface Props {
-  gameState: GameState | GoblinState;
+  gameState: GameState;
   stock?: Decimal;
   isLimitedItem?: boolean;
   details: ItemDetailsProps;
@@ -114,7 +114,9 @@ function getDetails(
     return {
       count: inventoryCount,
       description: ITEM_DETAILS[details.item].description,
-      image: ITEM_DETAILS[details.item].image,
+      image:
+        ITEM_ICONS(game.island.type)[details.item] ??
+        ITEM_DETAILS[details.item].image,
       name: details.item,
       limit: limit as Decimal,
     };

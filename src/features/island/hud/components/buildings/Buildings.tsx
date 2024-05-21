@@ -16,6 +16,7 @@ import { Label } from "components/ui/Label";
 import { ITEM_ICONS } from "../inventory/Chest";
 import { getBumpkinLevel } from "features/game/lib/level";
 import { useAppTranslation } from "lib/i18n/useAppTranslations";
+import { hasFeatureAccess } from "lib/flags";
 
 interface Props {
   onClose: () => void;
@@ -33,6 +34,7 @@ const VALID_BUILDINGS: BuildingName[] = [
   "Compost Bin" as BuildingName,
   "Turbo Composter" as BuildingName,
   "Premium Composter" as BuildingName,
+  "Greenhouse" as BuildingName,
 ].sort(
   (a, b) => BUILDINGS[a][0].unlocksAtLevel - BUILDINGS[b][0].unlocksAtLevel
 );
@@ -95,24 +97,32 @@ export const Buildings: React.FC<Props> = ({ onClose }) => {
     onClose();
   };
 
-  const landLocked = () => {
-    return (
-      <div className="flex flex-col w-full justify-center">
-        <div className="flex items-center justify-center ">
-          <Label
-            type="danger"
-            icon={SUNNYSIDE.icons.player}
-          >{`Level ${nextLockedLevel} required`}</Label>
-        </div>
-      </div>
-    );
-  };
+  const getAction = () => {
+    if (
+      !hasFeatureAccess(state, "GREENHOUSE") &&
+      selectedName === "Greenhouse"
+    ) {
+      return (
+        <Label type="default" icon={lock} className="mx-auto">
+          {t("coming.soon")}
+        </Label>
+      );
+    }
 
-  const action = () => {
     const hasMaxNumberOfBuildings =
       buildingsInInventory.gte(numOfBuildingAllowed);
     // Hasn't unlocked the first
-    if (nextLockedLevel && hasMaxNumberOfBuildings) return landLocked();
+    if (nextLockedLevel && hasMaxNumberOfBuildings)
+      return (
+        <div className="flex flex-col w-full justify-center">
+          <div className="flex items-center justify-center ">
+            <Label
+              type="danger"
+              icon={SUNNYSIDE.icons.player}
+            >{`Level ${nextLockedLevel} required`}</Label>
+          </div>
+        </div>
+      );
 
     if (isAlreadyCrafted) {
       return <p className="text-xxs text-center mb-1">{t("alr.crafted")}</p>;
@@ -148,7 +158,7 @@ export const Buildings: React.FC<Props> = ({ onClose }) => {
               {}
             ),
           }}
-          actionView={action()}
+          actionView={getAction()}
         />
       }
       content={
@@ -177,7 +187,10 @@ export const Buildings: React.FC<Props> = ({ onClose }) => {
                 isSelected={selectedName === name}
                 key={name}
                 onClick={() => setSelectedName(name)}
-                image={ITEM_ICONS[name] ?? ITEM_DETAILS[name].image}
+                image={
+                  ITEM_ICONS(state.island.type)[name] ??
+                  ITEM_DETAILS[name].image
+                }
                 secondaryImage={secondaryIcon}
                 showOverlay={isLocked}
               />

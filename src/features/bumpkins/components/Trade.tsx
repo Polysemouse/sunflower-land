@@ -24,14 +24,29 @@ import { Label } from "components/ui/Label";
 import { TRADE_LIMITS } from "features/world/ui/trader/BuyPanel";
 import { FloorPrices } from "features/game/actions/getListingsFloorPrices";
 import { setPrecision } from "lib/utils/formatNumber";
+import { hasVipAccess } from "features/game/lib/vipAccess";
+import { ModalContext } from "features/game/components/modal/ModalProvider";
+import { VIPAccess } from "features/game/components/VipAccess";
+import { getDayOfYear } from "lib/utils/time";
 
 const VALID_INTEGER = new RegExp(/^\d+$/);
 const VALID_FOUR_DECIMAL_NUMBER = new RegExp(/^\d*(\.\d{0,4})?$/);
 const INPUT_MAX_CHAR = 10;
-
+const MAX_NON_VIP_LISTINGS = 1;
 const MAX_SFL = 150;
 
+function getRemainingFreeListings(dailyListings: {
+  count: number;
+  date: number;
+}) {
+  if (dailyListings.date !== getDayOfYear(new Date())) {
+    return MAX_NON_VIP_LISTINGS;
+  }
+  return MAX_NON_VIP_LISTINGS - dailyListings.count;
+}
+
 type Items = Partial<Record<InventoryItemName, number>>;
+
 const ListTrade: React.FC<{
   inventory: Inventory;
   onList: (items: Items, sfl: number) => void;
@@ -51,50 +66,44 @@ const ListTrade: React.FC<{
 
   if (!selected) {
     return (
-      <div>
-        <div className="flex items-center justify-between m-1 ml-2 mb-3">
+      <div className="space-y-2">
+        <div className="pl-2 pt-2">
           <Label icon={SUNNYSIDE.icons.basket} type="default">
             {t("bumpkinTrade.like.list")}
-          </Label>
-          <Label icon={SUNNYSIDE.icons.confirm} type="success">
-            {`VIP Access`}
           </Label>
         </div>
 
         <div className="flex flex-wrap ">
-          {getKeys(TRADE_LIMITS)
-            .filter((name) => !!inventory[name]?.gte(1))
-
-            .map((name) => (
-              <div
-                key={name}
-                className="w-1/3 sm:w-1/4 md:w-1/5 lg:w-1/6 pr-1 pb-1 mb-2"
+          {getKeys(TRADE_LIMITS).map((name) => (
+            <div
+              key={name}
+              className="w-1/3 sm:w-1/4 md:w-1/5 lg:w-1/6 pr-1 pb-1 mb-2"
+            >
+              <OuterPanel
+                className="w-full relative flex flex-col items-center justify-center cursor-pointer hover:bg-brown-200"
+                onClick={() => {
+                  setSelected(name);
+                }}
               >
-                <OuterPanel
-                  className="w-full relative flex flex-col items-center justify-center cursor-pointer hover:bg-brown-200"
-                  onClick={() => {
-                    setSelected(name);
-                  }}
+                <Label type="default" className="absolute -top-3 -right-2">
+                  {`${setPrecision(new Decimal(inventory?.[name] ?? 0), 0)}`}
+                </Label>
+                <span className="text-xs mb-1">{name}</span>
+                <img src={ITEM_DETAILS[name].image} className="h-10 mb-6" />
+                <Label
+                  type="warning"
+                  className="absolute -bottom-2 text-center mt-1 p-1"
+                  style={{ width: "calc(100% + 10px)" }}
                 >
-                  <Label type="default" className="absolute -top-3 -right-2">
-                    {`${setPrecision(new Decimal(inventory?.[name] ?? 0), 0)}`}
-                  </Label>
-                  <span className="text-xs mb-1">{name}</span>
-                  <img src={ITEM_DETAILS[name].image} className="h-10 mb-6" />
-                  <Label
-                    type="warning"
-                    className="absolute -bottom-2 text-center mt-1 p-1"
-                    style={{ width: "calc(100% + 10px)" }}
-                  >
-                    {t("bumpkinTrade.price/unit", {
-                      price: floorPrices[name]
-                        ? setPrecision(new Decimal(floorPrices[name] ?? 0))
-                        : "?",
-                    })}
-                  </Label>
-                </OuterPanel>
-              </div>
-            ))}
+                  {t("bumpkinTrade.price/unit", {
+                    price: floorPrices[name]
+                      ? setPrecision(new Decimal(floorPrices[name] ?? 0))
+                      : "?",
+                  })}
+                </Label>
+              </OuterPanel>
+            </div>
+          ))}
         </div>
       </div>
     );
@@ -176,8 +185,8 @@ const ListTrade: React.FC<{
               if (e.target.value === "") {
                 setQuantityDisplay(""); // Reset to 0 if input is empty
               } else if (VALID_INTEGER.test(e.target.value)) {
-                const amount = Number(e.target.value.slice(0, INPUT_MAX_CHAR));
-                setQuantityDisplay(`${amount}`);
+                const amount = e.target.value.slice(0, INPUT_MAX_CHAR);
+                setQuantityDisplay(amount);
               }
             }}
             className={classNames(
@@ -223,8 +232,8 @@ const ListTrade: React.FC<{
               if (e.target.value === "") {
                 setSflDisplay(""); // Reset to 0 if input is empty
               } else if (VALID_FOUR_DECIMAL_NUMBER.test(e.target.value)) {
-                const amount = Number(e.target.value.slice(0, INPUT_MAX_CHAR));
-                setSflDisplay(`${amount}`);
+                const amount = e.target.value.slice(0, INPUT_MAX_CHAR);
+                setSflDisplay(amount);
               }
             }}
             className={classNames(
@@ -316,6 +325,7 @@ const TradeDetails: React.FC<{
   onClaim: () => void;
 }> = ({ trade, onCancel, onClaim, isOldListing }) => {
   const { t } = useAppTranslation();
+
   if (trade.boughtAt) {
     return (
       <div>
@@ -355,11 +365,10 @@ const TradeDetails: React.FC<{
     );
   }
 
-  const text = "Cancel Old";
   return (
     <>
       <OuterPanel>
-        <div className="flex justify-between ">
+        <div className="flex justify-between">
           <div className="flex flex-wrap">
             {getKeys(trade.items).map((name) => (
               <Box
@@ -379,7 +388,7 @@ const TradeDetails: React.FC<{
           </div>
           <div className="flex flex-col justify-between h-full">
             <Button className="mb-1" onClick={onCancel}>
-              {isOldListing ? text : t("cancel")}
+              {isOldListing ? "Cancel old" : t("cancel")}
             </Button>
           </div>
         </div>
@@ -394,8 +403,17 @@ export const Trade: React.FC<{ floorPrices: FloorPrices }> = ({
   const { gameService } = useContext(Context);
   const [gameState] = useActor(gameService);
 
+  const { openModal } = useContext(ModalContext);
+
   const [showListing, setShowListing] = useState(false);
 
+  const isVIP = hasVipAccess(gameState.context.state.inventory);
+  const dailyListings = gameState.context.state.trades.dailyListings ?? {
+    count: 0,
+    date: 0,
+  };
+  const remainingListings = getRemainingFreeListings(dailyListings);
+  const hasListingsRemaining = isVIP || remainingListings > 0;
   // Show listings
   const trades = gameState.context.state.trades?.listings ?? {};
   const { t } = useAppTranslation();
@@ -437,21 +455,6 @@ export const Trade: React.FC<{ floorPrices: FloorPrices }> = ({
     );
   }
 
-  if (!gameState.context.state.inventory["Gold Pass"]) {
-    return (
-      <div className="relative">
-        <div className="p-1 flex flex-col items-center">
-          <img
-            src={ITEM_DETAILS["Gold Pass"].image}
-            className="w-1/5 mx-auto my-2 img-highlight-heavy"
-          />
-          <p className="text-sm">{t("bumpkinTrade.goldpass.required")}</p>
-          <p className="text-xs mb-2">{t("bumpkinTrade.purchase")}</p>
-        </div>
-      </div>
-    );
-  }
-
   if (showListing) {
     return (
       <ListTrade
@@ -467,6 +470,28 @@ export const Trade: React.FC<{ floorPrices: FloorPrices }> = ({
   if (getKeys(trades).length === 0) {
     return (
       <div className="relative">
+        <div className="pl-2 pt-2 space-y-1 sm:space-y-0 sm:flex items-center justify-between ml-1.5">
+          <VIPAccess
+            isVIP={isVIP}
+            onUpgrade={() => {
+              openModal("BUY_BANNER");
+            }}
+          />
+          {!isVIP && (
+            <Label
+              type={hasListingsRemaining ? "success" : "danger"}
+              className="-ml-2"
+            >
+              {remainingListings === 1
+                ? `${t("remaining.free.listing")}`
+                : `${t("remaining.free.listings", {
+                    listingsRemaining: hasListingsRemaining
+                      ? remainingListings
+                      : "No",
+                  })}`}
+            </Label>
+          )}
+        </div>
         <div className="p-1 flex flex-col items-center">
           <img
             src={tradeIcon}
@@ -475,13 +500,41 @@ export const Trade: React.FC<{ floorPrices: FloorPrices }> = ({
           <p className="text-sm">{t("bumpkinTrade.noTradeListed")}</p>
           <p className="text-xs mb-2">{t("bumpkinTrade.sell")}</p>
         </div>
-        <Button onClick={() => setShowListing(true)}>{t("list.trade")}</Button>
+
+        <Button
+          onClick={() => setShowListing(true)}
+          disabled={!hasListingsRemaining}
+        >
+          {t("list.trade")}
+        </Button>
       </div>
     );
   }
 
   return (
     <div>
+      <div className="pl-2 pt-2 space-y-1 sm:space-y-0 sm:flex items-center justify-between ml-1.5">
+        <VIPAccess
+          isVIP={isVIP}
+          onUpgrade={() => {
+            openModal("BUY_BANNER");
+          }}
+        />
+        {!isVIP && (
+          <Label
+            type={hasListingsRemaining ? "success" : "danger"}
+            className="-ml-2"
+          >
+            {remainingListings === 1
+              ? `${t("remaining.free.listing")}`
+              : `${t("remaining.free.listings", {
+                  listingsRemaining: hasListingsRemaining
+                    ? remainingListings
+                    : "No",
+                })}`}
+          </Label>
+        )}
+      </div>
       {getKeys(trades).map((listingId, index) => {
         return (
           <div className="mt-2" key={index}>
@@ -503,7 +556,10 @@ export const Trade: React.FC<{ floorPrices: FloorPrices }> = ({
       })}
       {getKeys(trades).length < 3 && (
         <div className="relative mt-2">
-          <Button onClick={() => setShowListing(true)}>
+          <Button
+            onClick={() => setShowListing(true)}
+            disabled={!hasListingsRemaining}
+          >
             {t("list.trade")}
           </Button>
         </div>

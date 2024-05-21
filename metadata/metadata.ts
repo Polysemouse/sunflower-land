@@ -59,6 +59,18 @@ export const OPEN_SEA_ITEMS: Record<InventoryItemName, Metadata> = {
       { trait_type: "Tradable", value: "No" },
     ],
   },
+  "Soybean Seed": {
+    name: "Soybean Seed",
+    description:
+      "A seed used to grow soybean.\n\nYou can buy soybean seeds in game at the market.",
+    decimals: 18,
+    external_url: "https://docs.sunflower-land.com/getting-started/about",
+    image: "../public/erc1155/images/124.png",
+    attributes: [
+      { trait_type: "Purpose", value: "Seed" },
+      { trait_type: "Tradable", value: "No" },
+    ],
+  },
   "Pumpkin Seed": {
     name: "Pumpkin Seed",
     description:
@@ -324,6 +336,17 @@ export const OPEN_SEA_ITEMS: Record<InventoryItemName, Metadata> = {
       { trait_type: "Tradable", value: "Yes" },
     ],
   },
+  Soybean: {
+    name: "Soybean",
+    description: "A crop grown at Sunflower Land.\n\nA versatile legume!",
+    decimals: 18,
+    external_url: "https://docs.sunflower-land.com/getting-started/about",
+    image: "../public/erc1155/images/251.png",
+    attributes: [
+      { trait_type: "Purpose", value: "Crop" },
+      { trait_type: "Tradable", value: "Yes" },
+    ],
+  },
   Parsnip: {
     name: "Parsnip",
     description:
@@ -508,6 +531,18 @@ export const OPEN_SEA_ITEMS: Record<InventoryItemName, Metadata> = {
     decimals: 18,
     external_url: "https://docs.sunflower-land.com/getting-started/about",
     image: "../public/erc1155/images/304.png",
+    attributes: [
+      { trait_type: "Purpose", value: "Tool" },
+      { trait_type: "Tradable", value: "No" },
+    ],
+  },
+  "Oil Drill": {
+    name: "Oil Drill",
+    description:
+      "A tool used to drill for oil. It is burnt after use.\n\nYou can craft an oil drill at the Blacksmith in the game.",
+    decimals: 18,
+    external_url: "https://docs.sunflower-land.com/getting-started/about",
+    image: "../public/erc1155/images/313.png",
     attributes: [
       { trait_type: "Purpose", value: "Tool" },
       { trait_type: "Tradable", value: "No" },
@@ -1290,6 +1325,18 @@ export const OPEN_SEA_ITEMS: Record<InventoryItemName, Metadata> = {
     decimals: 18,
     external_url: "https://docs.sunflower-land.com/getting-started/about",
     image: "../public/erc1155/images/636.png",
+    attributes: [
+      { trait_type: "Purpose", value: "Resource" },
+      { trait_type: "Tradable", value: "Yes" },
+    ],
+  },
+  Oil: {
+    name: "Oil",
+    description:
+      "A resource collected by mining oil mines.\n\nIt is used to power machinery and boost cooking speed.",
+    decimals: 18,
+    external_url: "https://docs.sunflower-land.com/getting-started/about",
+    image: "../public/erc1155/images/639.png",
     attributes: [
       { trait_type: "Purpose", value: "Resource" },
       { trait_type: "Tradable", value: "Yes" },
@@ -2512,7 +2559,7 @@ export const OPEN_SEA_ITEMS: Record<InventoryItemName, Metadata> = {
     external_url: "https://docs.sunflower-land.com/getting-started/about",
     image: "../public/erc1155/images/920.png",
     attributes: [
-      { trait_type: "Purpose", value: "Decoration" },
+      { trait_type: "Purpose", value: "Banner" },
       { trait_type: "Tradable", value: "No" },
     ],
   },
@@ -2591,7 +2638,7 @@ export const OPEN_SEA_ITEMS: Record<InventoryItemName, Metadata> = {
     external_url: "https://docs.sunflower-land.com/getting-started/about",
     image: "../public/erc1155/images/921.png",
     attributes: [
-      { trait_type: "Purpose", value: "Decoration" },
+      { trait_type: "Purpose", value: "Banner" },
       { trait_type: "Tradable", value: "No" },
     ],
   },
@@ -4231,6 +4278,17 @@ export const OPEN_SEA_ITEMS: Record<InventoryItemName, Metadata> = {
       { trait_type: "Tradable", value: "No" },
     ],
   },
+  Scroll: {
+    description: "A ticket used during the Clash of Factions Season",
+    decimals: 0,
+    external_url: "https://docs.sunflower-land.com/getting-started/about",
+    image: "../public/erc1155/images/739.png",
+    attributes: [
+      { trait_type: "Purpose", value: "Coupon" },
+      { trait_type: "Tradable", value: "No" },
+    ],
+  },
+
   "Sunflower Supporter": {
     description: "A true supporter of the project",
     decimals: 0,
@@ -4316,7 +4374,7 @@ export const OPEN_SEA_ITEMS: Record<InventoryItemName, Metadata> = {
     description: "A beautiful piece of land used to plant flowers",
     decimals: 0,
     external_url: "https://docs.sunflower-land.com/getting-started/about",
-    image: "../public/erc1155/images/634.png",
+    image: "../public/erc1155/images/634.gif",
     attributes: [
       { trait_type: "Purpose", value: "Resource Node" },
       { trait_type: "Tradable", value: "No" },
@@ -4356,7 +4414,7 @@ export const OPEN_SEA_ITEMS: Record<InventoryItemName, Metadata> = {
     description: "A rare resource used to mine crimstones",
     decimals: 0,
     external_url: "https://docs.sunflower-land.com/getting-started/about",
-    image: "../public/erc1155/images/635.png",
+    image: "../public/erc1155/images/635.gif",
     attributes: [
       { trait_type: "Purpose", value: "Resource Node" },
       { trait_type: "Tradable", value: "No" },
@@ -4366,7 +4424,17 @@ export const OPEN_SEA_ITEMS: Record<InventoryItemName, Metadata> = {
     description: "A radiant gem, essential for advanced crafting.",
     decimals: 0,
     external_url: "https://docs.sunflower-land.com/getting-started/about",
-    image: "../public/erc1155/images/637.png",
+    image: "../public/erc1155/images/637.gif",
+    attributes: [
+      { trait_type: "Purpose", value: "Resource Node" },
+      { trait_type: "Tradable", value: "No" },
+    ],
+  },
+  "Oil Reserve": {
+    description: "A valuable resource used to mine oil",
+    decimals: 0,
+    external_url: "https://docs.sunflower-land.com/getting-started/about",
+    image: "../public/erc1155/images/640.gif",
     attributes: [
       { trait_type: "Purpose", value: "Resource Node" },
       { trait_type: "Tradable", value: "No" },
@@ -4386,7 +4454,7 @@ export const OPEN_SEA_ITEMS: Record<InventoryItemName, Metadata> = {
     description: "Nature's most precious resource. Used to collect wood",
     decimals: 0,
     external_url: "https://docs.sunflower-land.com/getting-started/about",
-    image: "../public/erc1155/images/618.png",
+    image: "../public/erc1155/images/618.gif",
     attributes: [
       { trait_type: "Purpose", value: "Resource Node" },
       { trait_type: "Tradable", value: "No" },
@@ -4501,7 +4569,7 @@ export const OPEN_SEA_ITEMS: Record<InventoryItemName, Metadata> = {
     external_url: "https://docs.sunflower-land.com/getting-started/about",
     image: "../public/erc1155/images/723.png",
     attributes: [
-      { trait_type: "Purpose", value: "Decoration" },
+      { trait_type: "Purpose", value: "Banner" },
       { trait_type: "Tradable", value: "No" },
     ],
   },
@@ -4512,7 +4580,7 @@ export const OPEN_SEA_ITEMS: Record<InventoryItemName, Metadata> = {
     external_url: "https://docs.sunflower-land.com/getting-started/about",
     image: "../public/erc1155/images/722.png",
     attributes: [
-      { trait_type: "Purpose", value: "Decoration" },
+      { trait_type: "Purpose", value: "Banner" },
       { trait_type: "Tradable", value: "No" },
     ],
   },
@@ -4523,7 +4591,7 @@ export const OPEN_SEA_ITEMS: Record<InventoryItemName, Metadata> = {
     external_url: "https://docs.sunflower-land.com/getting-started/about",
     image: "../public/erc1155/images/724.png",
     attributes: [
-      { trait_type: "Purpose", value: "Decoration" },
+      { trait_type: "Purpose", value: "Banner" },
       { trait_type: "Tradable", value: "No" },
       {
         display_type: "boost_number",
@@ -4539,7 +4607,7 @@ export const OPEN_SEA_ITEMS: Record<InventoryItemName, Metadata> = {
     external_url: "https://docs.sunflower-land.com/getting-started/about",
     image: "../public/erc1155/images/730.png",
     attributes: [
-      { trait_type: "Purpose", value: "Decoration" },
+      { trait_type: "Purpose", value: "Banner" },
       { trait_type: "Tradable", value: "No" },
       {
         display_type: "boost_number",
@@ -4559,7 +4627,7 @@ export const OPEN_SEA_ITEMS: Record<InventoryItemName, Metadata> = {
     external_url: "https://docs.sunflower-land.com/getting-started/about",
     image: "../public/erc1155/images/736.gif",
     attributes: [
-      { trait_type: "Purpose", value: "Decoration" },
+      { trait_type: "Purpose", value: "Banner" },
       { trait_type: "Tradable", value: "No" },
       {
         display_type: "boost_number",
@@ -4571,6 +4639,36 @@ export const OPEN_SEA_ITEMS: Record<InventoryItemName, Metadata> = {
         trait_type: "XP increase during Spring Blossom Season",
         value: 10,
       },
+    ],
+  },
+  "Clash of Factions Banner": {
+    description: "",
+    decimals: 0,
+    external_url: "https://docs.sunflower-land.com/getting-started/about",
+    image: "../public/erc1155/images/738.png",
+    attributes: [
+      { trait_type: "Purpose", value: "Banner" },
+      { trait_type: "Tradable", value: "No" },
+      {
+        display_type: "boost_percentage",
+        trait_type: "XP increase during Clash of Factions Season",
+        value: 10,
+      },
+    ],
+  },
+  "Lifetime Farmer Banner": {
+    description: "Gives lifetime access to all seasons and VIP access.",
+    decimals: 0,
+    external_url: "https://docs.sunflower-land.com/getting-started/about",
+    image: "../public/erc1155/images/740.png",
+    attributes: [
+      { trait_type: "Purpose", value: "Banner" },
+      {
+        display_type: "boost_percentage",
+        trait_type: "Increase XP",
+        value: 10,
+      },
+      { trait_type: "Tradable", value: "No" },
     ],
   },
   "Luminous Lantern": {
@@ -5973,6 +6071,22 @@ export const OPEN_SEA_ITEMS: Record<InventoryItemName, Metadata> = {
       },
     ],
   },
+  "Battle Fish": {
+    description: "The rare armored swimmer of faction season!",
+    decimals: 0,
+    external_url: "https://docs.sunflower-land.com/getting-started/about",
+    image: "../public/erc1155/images/1538.png",
+    attributes: [
+      { trait_type: "Purpose", value: "Fish" },
+      { trait_type: "Tradable", value: "No" },
+      { trait_type: "Boost", value: "Resource" },
+      {
+        display_type: "boost_number",
+        trait_type: "Increase Oil Yield",
+        value: 0.05,
+      },
+    ],
+  },
   Chowder: {
     description:
       "Sailor's delight in a bowl! Dive in, there's treasure inside!",
@@ -6207,6 +6321,21 @@ export const OPEN_SEA_ITEMS: Record<InventoryItemName, Metadata> = {
       { trait_type: "Tradable", value: "Yes" },
     ],
   },
+  "Knight Chicken": {
+    description: "A strong and noble chicken boosting your oil yield.",
+    decimals: 0,
+    external_url: "https://docs.sunflower-land.com/getting-started/about",
+    image: "../public/erc1155/images/500.gif",
+    attributes: [
+      { trait_type: "Boost", value: "Resource" },
+      {
+        display_type: "boost_number",
+        trait_type: "Increase Oil yield",
+        value: 0.1,
+      },
+      { trait_type: "Tradable", value: "Yes" },
+    ],
+  },
 
   "Skill Shrimpy": {
     description:
@@ -6394,6 +6523,19 @@ export const OPEN_SEA_ITEMS: Record<InventoryItemName, Metadata> = {
   },
 
   House: {
+    description: "?",
+    decimals: 0,
+    external_url: "https://docs.sunflower-land.com/getting-started/about",
+    image: "../public/erc1155/images/1017.png",
+
+    attributes: [
+      { trait_type: "Purpose", value: "Building" },
+      { trait_type: "Tradable", value: "No" },
+    ],
+  },
+
+  // TODO feat/manor
+  Manor: {
     description: "?",
     decimals: 0,
     external_url: "https://docs.sunflower-land.com/getting-started/about",
@@ -6925,6 +7067,23 @@ export const OPEN_SEA_ITEMS: Record<InventoryItemName, Metadata> = {
       },
     ],
   },
+
+  "Desert Gnome": {
+    description:
+      "The Blossombeard Gnome is a powerful companion for your farming adventures.",
+    decimals: 0,
+    external_url: "https://docs.sunflower-land.com/getting-started/about",
+    image: "../public/erc1155/images/2017.png",
+    attributes: [
+      { trait_type: "Tradable", value: "No" },
+      { trait_type: "Boost", value: "Other" },
+      {
+        display_type: "boost_percentage",
+        trait_type: "Cooking Time",
+        value: -10,
+      },
+    ],
+  },
   "Red Daffodil": {
     name: "Red Daffodil",
     description: "A flower",
@@ -7043,7 +7202,7 @@ export const OPEN_SEA_ITEMS: Record<InventoryItemName, Metadata> = {
     external_url: "https://docs.sunflower-land.com/getting-started/about",
     image: "../public/erc1155/images/930.png",
     attributes: [
-      { trait_type: "Purpose", value: "Decoration" },
+      { trait_type: "Purpose", value: "Banner" },
       { trait_type: "Tradable", value: "Yes" },
     ],
   },
@@ -7053,15 +7212,21 @@ export const OPEN_SEA_ITEMS: Record<InventoryItemName, Metadata> = {
     decimals: 0,
     external_url: "https://docs.sunflower-land.com/getting-started/about",
     image: "../public/erc1155/images/931.png",
-    attributes: [{ trait_type: "Tradable", value: "Yes" }],
+    attributes: [
+      { trait_type: "Purpose", value: "Coupon" },
+      { trait_type: "Tradable", value: "No" },
+    ],
   },
   "Luxury Key": {
     name: "Luxury Key",
     description: "A magic key that can unlock rewards in the plaza",
     decimals: 0,
     external_url: "https://docs.sunflower-land.com/getting-started/about",
-    image: "../public/erc1155/images/question_mark.png",
-    attributes: [{ trait_type: "Tradable", value: "Yes" }],
+    image: "../public/erc1155/images/932.png",
+    attributes: [
+      { trait_type: "Purpose", value: "Coupon" },
+      { trait_type: "Tradable", value: "No" },
+    ],
   },
 
   "Rare Key": {
@@ -7069,8 +7234,11 @@ export const OPEN_SEA_ITEMS: Record<InventoryItemName, Metadata> = {
     description: "A magic key that can unlock rewards in the plaza",
     decimals: 0,
     external_url: "https://docs.sunflower-land.com/getting-started/about",
-    image: "../public/erc1155/images/question_mark.png",
-    attributes: [{ trait_type: "Tradable", value: "Yes" }],
+    image: "../public/erc1155/images/933.png",
+    attributes: [
+      { trait_type: "Purpose", value: "Coupon" },
+      { trait_type: "Tradable", value: "No" },
+    ],
   },
 
   "Prize Ticket": {
@@ -7078,8 +7246,11 @@ export const OPEN_SEA_ITEMS: Record<InventoryItemName, Metadata> = {
     description: "A free entry into the end of season giveaway",
     decimals: 0,
     external_url: "https://docs.sunflower-land.com/getting-started/about",
-    image: "../public/erc1155/images/question_mark.png",
-    attributes: [{ trait_type: "Tradable", value: "No" }],
+    image: "../public/erc1155/images/934.png",
+    attributes: [
+      { trait_type: "Purpose", value: "Coupon" },
+      { trait_type: "Tradable", value: "No" },
+    ],
   },
   "Baby Panda": {
     name: "Baby Panda",
@@ -7088,7 +7259,10 @@ export const OPEN_SEA_ITEMS: Record<InventoryItemName, Metadata> = {
     decimals: 0,
     external_url: "https://docs.sunflower-land.com/getting-started/about",
     image: "../public/erc1155/images/935.png",
-    attributes: [{ trait_type: "Tradable", value: "No" }],
+    attributes: [
+      { trait_type: "Purpose", value: "Decoration" },
+      { trait_type: "Tradable", value: "Yes" },
+    ],
   },
   Baozi: {
     name: "Bazoi",
@@ -7097,7 +7271,10 @@ export const OPEN_SEA_ITEMS: Record<InventoryItemName, Metadata> = {
     decimals: 0,
     external_url: "https://docs.sunflower-land.com/getting-started/about",
     image: "../public/erc1155/images/936.gif",
-    attributes: [{ trait_type: "Tradable", value: "Yes" }],
+    attributes: [
+      { trait_type: "Purpose", value: "Decoration" },
+      { trait_type: "Tradable", value: "Yes" },
+    ],
   },
   "Community Egg": {
     name: "Community Egg",
@@ -7105,7 +7282,10 @@ export const OPEN_SEA_ITEMS: Record<InventoryItemName, Metadata> = {
     decimals: 0,
     external_url: "https://docs.sunflower-land.com/getting-started/about",
     image: "../public/erc1155/images/937.png",
-    attributes: [{ trait_type: "Tradable", value: "Yes" }],
+    attributes: [
+      { trait_type: "Purpose", value: "Decoration" },
+      { trait_type: "Tradable", value: "Yes" },
+    ],
   },
   "Hungry Hare": {
     name: "Hungry Hare",
@@ -7121,6 +7301,572 @@ export const OPEN_SEA_ITEMS: Record<InventoryItemName, Metadata> = {
         display_type: "boost_percentage",
         trait_type: "Increase Fermented Carrots XP",
         value: 100,
+      },
+    ],
+  },
+  "Sunflorian Faction Banner": {
+    name: "Sunflorian Faction Banner",
+    description:
+      "A banner that shows your allegiance to the Sunflorian Faction.",
+    decimals: 0,
+    external_url: "https://docs.sunflower-land.com/getting-started/about",
+    image: "../public/erc1155/images/941.png",
+    attributes: [
+      { trait_type: "Purpose", value: "Banner" },
+      { trait_type: "Tradable", value: "No" },
+    ],
+  },
+  "Goblin Faction Banner": {
+    name: "Goblin Faction Banner",
+    description: "A banner that shows your allegiance to the Goblin Faction.",
+    decimals: 0,
+    external_url: "https://docs.sunflower-land.com/getting-started/about",
+    image: "../public/erc1155/images/942.png",
+    attributes: [
+      { trait_type: "Purpose", value: "Banner" },
+      { trait_type: "Tradable", value: "No" },
+    ],
+  },
+  "Nightshade Faction Banner": {
+    name: "Nightshades Faction Banner",
+    description:
+      "A banner that shows your allegiance to the Nightshade Faction.",
+    decimals: 0,
+    external_url: "https://docs.sunflower-land.com/getting-started/about",
+    image: "../public/erc1155/images/940.png",
+    attributes: [
+      { trait_type: "Purpose", value: "Banner" },
+      { trait_type: "Tradable", value: "No" },
+    ],
+  },
+  "Bumpkin Faction Banner": {
+    name: "Bumpkin Faction Banner",
+    description: "A banner that shows your allegiance to the Bumpkin Faction.",
+    decimals: 0,
+    external_url: "https://docs.sunflower-land.com/getting-started/about",
+    image: "../public/erc1155/images/939.png",
+    attributes: [
+      { trait_type: "Purpose", value: "Banner" },
+      { trait_type: "Tradable", value: "No" },
+    ],
+  },
+
+  "Turbo Sprout": {
+    name: "Turbo Sprout",
+    description: "An engine that boosts the Green House's growth speed by 50%.",
+    decimals: 0,
+    external_url: "https://docs.sunflower-land.com/getting-started/about",
+    image: "../public/erc1155/images/495.png",
+    attributes: [
+      { trait_type: "Tradable", value: "Yes" },
+      { trait_type: "Boost", value: "Crop" },
+      {
+        display_type: "boost_percentage",
+        trait_type: "Crop Growth Time in Greenhouse",
+        value: -50,
+      },
+    ],
+  },
+
+  Soybliss: {
+    name: "Soybliss",
+    description: "A unique soy creature that gives +1 Soybean yield.",
+    decimals: 0,
+    external_url: "https://docs.sunflower-land.com/getting-started/about",
+    image: "../public/erc1155/images/496.png",
+    attributes: [
+      { trait_type: "Tradable", value: "Yes" },
+      { trait_type: "Boost", value: "Crop" },
+      {
+        display_type: "boost_number",
+        trait_type: "Increase Soybean Yield",
+        value: 1,
+      },
+    ],
+  },
+
+  "Grape Granny": {
+    name: "Grape Granny",
+    description: "Wise matriarch nurturing grapes to flourish with +1 yield.",
+    decimals: 0,
+    external_url: "https://docs.sunflower-land.com/getting-started/about",
+    image: "../public/erc1155/images/497.png",
+    attributes: [
+      { trait_type: "Tradable", value: "Yes" },
+      { trait_type: "Boost", value: "Crop" },
+      {
+        display_type: "boost_number",
+        trait_type: "Increase Grape Yield",
+        value: 1,
+      },
+    ],
+  },
+
+  "Royal Throne": {
+    name: "Royal Throne",
+    description: "A throne fit for the highest ranking farmer.",
+    decimals: 0,
+    external_url: "https://docs.sunflower-land.com/getting-started/about",
+    image: "../public/erc1155/images/498.png",
+    attributes: [
+      { trait_type: "Purpose", value: "Decoration" },
+      { trait_type: "Tradable", value: "Yes" },
+    ],
+  },
+
+  "Lily Egg": {
+    name: "Lily Egg",
+    description: "Tiny delight, grand beauty, endless wonder.",
+    decimals: 0,
+    external_url: "https://docs.sunflower-land.com/getting-started/about",
+    image: "../public/erc1155/images/499.png",
+    attributes: [
+      { trait_type: "Purpose", value: "Decoration" },
+      { trait_type: "Tradable", value: "Yes" },
+    ],
+  },
+
+  Goblet: {
+    name: "Goblet",
+    description: "A goblet that holds the finest of wines.",
+    decimals: 0,
+    external_url: "https://docs.sunflower-land.com/getting-started/about",
+    image: "../public/erc1155/images/482.png",
+    attributes: [
+      { trait_type: "Purpose", value: "Decoration" },
+      { trait_type: "Tradable", value: "Yes" },
+    ],
+  },
+
+  "Fancy Rug": {
+    name: "Fancy Rug",
+    description: "A rug that adds a touch of elegance to any room.",
+    decimals: 0,
+    external_url: "https://docs.sunflower-land.com/getting-started/about",
+    image: "../public/erc1155/images/2014.png",
+    attributes: [
+      { trait_type: "Purpose", value: "Decoration" },
+      { trait_type: "Tradable", value: "Yes" },
+    ],
+  },
+  Clock: {
+    name: "Clock",
+    description:
+      "A Clock that keeps time with the gentle ticking of the seasons.",
+    decimals: 0,
+    external_url: "https://docs.sunflower-land.com/getting-started/about",
+    image: "../public/erc1155/images/2015.png",
+    attributes: [
+      { trait_type: "Purpose", value: "Decoration" },
+      { trait_type: "Tradable", value: "Yes" },
+    ],
+  },
+  Vinny: {
+    name: "Vinny",
+    description: "Vinny, a friendly grapevine, is always ready for a chat.",
+    decimals: 0,
+    external_url: "https://docs.sunflower-land.com/getting-started/about",
+    image: "../public/erc1155/images/2016.png",
+    attributes: [
+      { trait_type: "Boost", value: "Crop" },
+      { trait_type: "Tradable", value: "Yes" },
+      {
+        display_type: "boost_number",
+        trait_type: "Increase Grape Yield",
+        value: 1,
+      },
+    ],
+  },
+  "Beetroot Blaze": {
+    name: "Beetroot Blaze",
+    description: "A spicy beetroot-infused magic mushroom dish",
+    decimals: 0,
+    external_url: "https://docs.sunflower-land.com/getting-started/about",
+    image: "../public/erc1155/images/555.png",
+    attributes: [
+      { trait_type: "Purpose", value: "Consumable" },
+      { trait_type: "Tradable", value: "No" },
+    ],
+  },
+  "Rapid Roast": {
+    name: "Rapid Roast",
+    description: "When you are in a hurry",
+    decimals: 0,
+    external_url: "https://docs.sunflower-land.com/getting-started/about",
+    image: "../public/erc1155/images/556.png",
+    attributes: [
+      { trait_type: "Purpose", value: "Consumable" },
+      { trait_type: "Tradable", value: "No" },
+    ],
+  },
+  "Shroom Syrup": {
+    name: "Shroom Syrup",
+    description: "The essence of bees and enchanted fungi",
+    decimals: 0,
+    external_url: "https://docs.sunflower-land.com/getting-started/about",
+    image: "../public/erc1155/images/557.png",
+    attributes: [
+      { trait_type: "Purpose", value: "Consumable" },
+      { trait_type: "Tradable", value: "No" },
+    ],
+  },
+  "Battlecry Drum": {
+    name: "Battlecry Drum",
+    description: "",
+    decimals: 0,
+    external_url: "https://docs.sunflower-land.com/getting-started/about",
+    image: `../public/erc1155/images/2018.png`,
+    attributes: [{ trait_type: "Purpose", value: "Decoration" }],
+  },
+  "Bullseye Board": {
+    name: "Bullseye Board",
+    description: "Hit the mark every time.!",
+
+    decimals: 0,
+    external_url: "https://docs.sunflower-land.com/getting-started/about",
+    image: `../public/erc1155/images/2019.png`,
+    attributes: [{ trait_type: "Purpose", value: "Decoration" }],
+  },
+  "Chess Rug": {
+    name: "Chess Rug",
+    description: "Checkmate.",
+
+    decimals: 0,
+    external_url: "https://docs.sunflower-land.com/getting-started/about",
+    image: `../public/erc1155/images/2020.png`,
+    attributes: [{ trait_type: "Purpose", value: "Decoration" }],
+  },
+  "Gaucho Rug": {
+    name: "Gaucho Rug",
+    description: "A commerative rug to support South Brazil.",
+    decimals: 0,
+    external_url: "https://docs.sunflower-land.com/getting-started/about",
+    attributes: [{ trait_type: "Purpose", value: "Decoration" }],
+    image: "../public/erc1155/images/2021.png",
+  },
+  "Golden Gallant": {
+    name: "Golden Gallant",
+    description: "",
+
+    decimals: 0,
+    external_url: "https://docs.sunflower-land.com/getting-started/about",
+    image: `../public/erc1155/images/2022.png`,
+    attributes: [{ trait_type: "Purpose", value: "Decoration" }],
+  },
+  "Golden Garrison": {
+    name: "Golden Garrison",
+    description:
+      "Defend your territory in style with this shimmering garrison, a true fortress of flair.",
+
+    decimals: 0,
+    external_url: "https://docs.sunflower-land.com/getting-started/about",
+    image: `../public/erc1155/images/2023.png`,
+    attributes: [{ trait_type: "Purpose", value: "Decoration" }],
+  },
+  "Golden Guardian": {
+    name: "Golden Guardian",
+    description: "",
+
+    decimals: 0,
+    external_url: "https://docs.sunflower-land.com/getting-started/about",
+    image: `../public/erc1155/images/2024.png`,
+    attributes: [{ trait_type: "Purpose", value: "Decoration" }],
+  },
+  "Novice Knight": {
+    name: "Novice Knight",
+    description: "Every move is an adventure.",
+
+    decimals: 0,
+    external_url: "https://docs.sunflower-land.com/getting-started/about",
+    image: `../public/erc1155/images/2025.png`,
+    attributes: [{ trait_type: "Purpose", value: "Decoration" }],
+  },
+  "Regular Pawn": {
+    name: "Regular Pawn",
+    description:
+      "Small but mighty! This pawn may just make a big move in your collection.",
+
+    decimals: 0,
+    external_url: "https://docs.sunflower-land.com/getting-started/about",
+    image: `../public/erc1155/images/2026.png`,
+    attributes: [{ trait_type: "Purpose", value: "Decoration" }],
+  },
+  "Rookie Rook": {
+    name: "Rookie Rook",
+    description: "",
+
+    decimals: 0,
+    external_url: "https://docs.sunflower-land.com/getting-started/about",
+    image: `../public/erc1155/images/2027.png`,
+    attributes: [{ trait_type: "Purpose", value: "Decoration" }],
+  },
+  "Silver Sentinel": {
+    name: "Silver Sentinel",
+    description: "",
+
+    decimals: 0,
+    external_url: "https://docs.sunflower-land.com/getting-started/about",
+    image: `../public/erc1155/images/2028.png`,
+    attributes: [{ trait_type: "Purpose", value: "Decoration" }],
+  },
+  "Silver Squire": {
+    name: "Silver Squire",
+    description: "Add some shine to your collection.",
+
+    decimals: 0,
+    external_url: "https://docs.sunflower-land.com/getting-started/about",
+    image: `../public/erc1155/images/2029.png`,
+    attributes: [{ trait_type: "Purpose", value: "Decoration" }],
+  },
+  "Silver Stallion": {
+    name: "Silver Stallion",
+    description: "",
+
+    decimals: 0,
+    external_url: "https://docs.sunflower-land.com/getting-started/about",
+    image: `../public/erc1155/images/2030.png`,
+    attributes: [{ trait_type: "Purpose", value: "Decoration" }],
+  },
+  "Trainee Target": {
+    name: "Trainee Target",
+    description:
+      "Every champion starts somewhere! Perfect your aim with the Trainee Target.",
+
+    decimals: 0,
+    external_url: "https://docs.sunflower-land.com/getting-started/about",
+    image: `../public/erc1155/images/2031.png`,
+    attributes: [{ trait_type: "Purpose", value: "Decoration" }],
+  },
+  "Twister Rug": {
+    name: "Twister Rug",
+    description:
+      "Twist, turn, and tie your decor together with this playful rug.",
+
+    decimals: 0,
+    external_url: "https://docs.sunflower-land.com/getting-started/about",
+    image: `../public/erc1155/images/2032.png`,
+    attributes: [{ trait_type: "Purpose", value: "Decoration" }],
+  },
+  Cluckapult: {
+    name: "Cluckapult",
+    description: "",
+
+    decimals: 0,
+    external_url: "https://docs.sunflower-land.com/getting-started/about",
+    image: `../public/erc1155/images/2033.png`,
+    attributes: [{ trait_type: "Purpose", value: "Decoration" }],
+  },
+  "Grape Seed": {
+    name: "Grape Seed",
+    description: "A zesty and desired fruit.",
+
+    decimals: 0,
+    external_url: "https://docs.sunflower-land.com/getting-started/about",
+    image: `../public/erc1155/images/125.png`,
+    attributes: [{ trait_type: "Purpose", value: "Seed" }],
+  },
+  "Olive Seed": {
+    name: "Olive Seed",
+    description: "A luxury for advanced farmers.",
+
+    decimals: 0,
+    external_url: "https://docs.sunflower-land.com/getting-started/about",
+    image: `../public/erc1155/images/126.png`,
+    attributes: [{ trait_type: "Purpose", value: "Seed" }],
+  },
+  "Rice Seed": {
+    name: "Rice Seed",
+    description: "Perfect for rations...",
+
+    decimals: 0,
+    external_url: "https://docs.sunflower-land.com/getting-started/about",
+    image: `../public/erc1155/images/127.png`,
+    attributes: [{ trait_type: "Purpose", value: "Seed" }],
+  },
+  Grape: {
+    name: "Grape",
+    description: "A zesty and desired fruit.",
+
+    decimals: 18,
+    external_url: "https://docs.sunflower-land.com/getting-started/about",
+    image: `../public/erc1155/images/252.png`,
+    attributes: [{ trait_type: "Purpose", value: "Crop" }],
+  },
+  Olive: {
+    name: "Olive",
+    description: "A luxury for advanced farmers.",
+
+    decimals: 18,
+    external_url: "https://docs.sunflower-land.com/getting-started/about",
+    image: `../public/erc1155/images/253.png`,
+    attributes: [{ trait_type: "Purpose", value: "Crop" }],
+  },
+  Rice: {
+    name: "Rice",
+    description: "Perfect for rations...",
+
+    decimals: 18,
+    external_url: "https://docs.sunflower-land.com/getting-started/about",
+    image: `../public/erc1155/images/254.png`,
+    attributes: [{ trait_type: "Purpose", value: "Seed" }],
+  },
+  "Carrot Juice": {
+    name: "Carrot Juice",
+    description: "Refreshing drink from farm-fresh carrots",
+    decimals: 0,
+    external_url: "https://docs.sunflower-land.com/getting-started/about",
+    image: "../public/erc1155/images/558.png",
+    attributes: [{ trait_type: "Purpose", value: "Consumable" }],
+  },
+  "Seafood Basket": {
+    name: "Seafood Basket",
+    description: "A bountiful basket of fresh ocean delights",
+    decimals: 0,
+    external_url: "https://docs.sunflower-land.com/getting-started/about",
+    image: "../public/erc1155/images/559.png",
+    attributes: [{ trait_type: "Purpose", value: "Consumable" }],
+  },
+  "Fish Burger": {
+    name: "Fish Burger",
+    description: "Succulent burger made with freshly caught fish",
+    decimals: 0,
+    external_url: "https://docs.sunflower-land.com/getting-started/about",
+    image: "../public/erc1155/images/560.png",
+    attributes: [{ trait_type: "Purpose", value: "Consumable" }],
+  },
+  "Fish n Chips": {
+    name: "Fish n Chips",
+    description: "Crispy chips paired with tender fish fillets",
+    decimals: 0,
+    external_url: "https://docs.sunflower-land.com/getting-started/about",
+    image: "../public/erc1155/images/561.png",
+    attributes: [{ trait_type: "Purpose", value: "Consumable" }],
+  },
+  "Fish Omelette": {
+    name: "Fish Omelette",
+    description: "Fluffy omelette with a flavorful fish filling",
+    decimals: 0,
+    external_url: "https://docs.sunflower-land.com/getting-started/about",
+    image: "../public/erc1155/images/562.png",
+    attributes: [{ trait_type: "Purpose", value: "Consumable" }],
+  },
+  "Fried Calamari": {
+    name: "Fried Calamari",
+    description: "Crispy calamari rings, a seafood delight",
+    decimals: 0,
+    external_url: "https://docs.sunflower-land.com/getting-started/about",
+    image: "../public/erc1155/images/563.png",
+    attributes: [{ trait_type: "Purpose", value: "Consumable" }],
+  },
+  "Fried Tofu": {
+    name: "Fried Tofu",
+    description: "Crispy tofu bites, a vegetarian favorite",
+    decimals: 0,
+    external_url: "https://docs.sunflower-land.com/getting-started/about",
+    image: "../public/erc1155/images/564.png",
+    attributes: [{ trait_type: "Purpose", value: "Consumable" }],
+  },
+  "Grape Juice": {
+    name: "Grape Juice",
+    description: "Sweet and refreshing juice from sun-ripened grapes",
+    decimals: 0,
+    external_url: "https://docs.sunflower-land.com/getting-started/about",
+    image: "../public/erc1155/images/565.png",
+    attributes: [{ trait_type: "Purpose", value: "Consumable" }],
+  },
+  "Ocean's Olive": {
+    name: "Ocean's Olive",
+    description: "Savor the taste of the sea with these ocean-infused olives",
+    decimals: 0,
+    external_url: "https://docs.sunflower-land.com/getting-started/about",
+    image: "../public/erc1155/images/566.png",
+    attributes: [{ trait_type: "Purpose", value: "Consumable" }],
+  },
+  "Quick Juice": {
+    name: "Quick Juice",
+    description: "A swift and energizing juice for busy days",
+    decimals: 0,
+    external_url: "https://docs.sunflower-land.com/getting-started/about",
+    image: "../public/erc1155/images/567.png",
+    attributes: [{ trait_type: "Purpose", value: "Consumable" }],
+  },
+  "Rice Bun": {
+    name: "Rice Bun",
+    description: "Soft buns made with rice flour, perfect for snacking",
+    decimals: 0,
+    external_url: "https://docs.sunflower-land.com/getting-started/about",
+    image: "../public/erc1155/images/568.png",
+    attributes: [{ trait_type: "Purpose", value: "Consumable" }],
+  },
+  "Slow Juice": {
+    name: "Slow Juice",
+    description: "Slowly pressed juice for a burst of natural flavors",
+    decimals: 0,
+    external_url: "https://docs.sunflower-land.com/getting-started/about",
+    image: "../public/erc1155/images/569.png",
+    attributes: [{ trait_type: "Purpose", value: "Consumable" }],
+  },
+  "Steamed Red Rice": {
+    name: "Steamed Red Rice",
+    description: "Nutritious red rice, steamed to perfection",
+    decimals: 0,
+    external_url: "https://docs.sunflower-land.com/getting-started/about",
+    image: "../public/erc1155/images/570.png",
+    attributes: [{ trait_type: "Purpose", value: "Consumable" }],
+  },
+  "Sushi Roll": {
+    name: "Sushi Roll",
+    description: "Delicious sushi rolls filled with fresh ingredients",
+    decimals: 0,
+    external_url: "https://docs.sunflower-land.com/getting-started/about",
+    image: "../public/erc1155/images/571.png",
+    attributes: [{ trait_type: "Purpose", value: "Consumable" }],
+  },
+  "The Lot": {
+    name: "The Lot",
+    description: "A medley of fruits for the adventurous palate",
+    decimals: 0,
+    external_url: "https://docs.sunflower-land.com/getting-started/about",
+    image: "../public/erc1155/images/572.png",
+    attributes: [{ trait_type: "Purpose", value: "Consumable" }],
+  },
+  "Tofu Scramble": {
+    name: "Tofu Scramble",
+    description: "Scrambled tofu with a mix of vegetables, a hearty breakfast",
+    decimals: 0,
+    external_url: "https://docs.sunflower-land.com/getting-started/about",
+    image: "../public/erc1155/images/573.png",
+    attributes: [{ trait_type: "Purpose", value: "Consumable" }],
+  },
+  Antipasto: {
+    name: "Antipasto",
+    description: "A selection of savory bites to start your meal",
+    decimals: 0,
+    external_url: "https://docs.sunflower-land.com/getting-started/about",
+    image: "../public/erc1155/images/574.png",
+    attributes: [{ trait_type: "Purpose", value: "Consumable" }],
+  },
+  Greenhouse: {
+    name: "Greenhouse",
+    description: "A safehaven for sensitive crops",
+    decimals: 0,
+    external_url: "https://docs.sunflower-land.com/getting-started/about",
+    image: `../public/erc1155/images/1019.png`,
+    attributes: [{ trait_type: "Purpose", value: "Building" }],
+  },
+  "Rice Panda": {
+    name: "Rice Panda",
+    description: "A smart panda never forgets to water the rice.",
+    decimals: 0,
+    external_url: "https://docs.sunflower-land.com/getting-started/about",
+    image: "../public/erc1155/images/2034.png",
+    attributes: [
+      { trait_type: "Boost", value: "Crop" },
+      { trait_type: "Tradable", value: "Yes" },
+      {
+        display_type: "boost_number",
+        trait_type: "Increase Rice Yield",
+        value: 0.25,
       },
     ],
   },

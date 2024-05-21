@@ -3,14 +3,10 @@ import ReCAPTCHA from "react-google-recaptcha";
 import { useActor } from "@xstate/react";
 import { CONFIG } from "lib/config";
 
-import * as AuthProvider from "features/auth/lib/Provider";
-
 import { Button } from "components/ui/Button";
 import { WithdrawTokens } from "./WithdrawTokens";
 import { WithdrawItems } from "./WithdrawItems";
-
 import { WithdrawWearables } from "./WithdrawWearables";
-import { WithdrawBumpkin } from "./WithdrawBumpkin";
 import { SUNNYSIDE } from "assets/sunnyside";
 import chest from "assets/icons/chest.png";
 import token from "assets/icons/sfl.webp";
@@ -24,7 +20,6 @@ interface Props {
 }
 export const Withdraw: React.FC<Props> = ({ onClose }) => {
   const { t } = useAppTranslation();
-  const { authService } = useContext(AuthProvider.Context);
   const { gameService } = useContext(Context);
   const [gameState] = useActor(gameService);
 
@@ -122,7 +117,7 @@ export const Withdraw: React.FC<Props> = ({ onClose }) => {
     onClose();
   };
 
-  const proovePersonhood = async () => {
+  const provePersonhood = async () => {
     gameService.send("PROVE_PERSONHOOD");
     onClose();
   };
@@ -131,7 +126,7 @@ export const Withdraw: React.FC<Props> = ({ onClose }) => {
     return (
       <>
         <p className="text-sm p-1 m-1">{t("withdraw.proof")}</p>
-        <Button className="mr-1" onClick={proovePersonhood}>
+        <Button className="mr-1" onClick={provePersonhood}>
           {t("withdraw.verification")}
         </Button>
       </>
@@ -185,12 +180,6 @@ export const Withdraw: React.FC<Props> = ({ onClose }) => {
           </Button>
         </div>
         <div className="flex space-x-1">
-          <Button onClick={() => setPage("bumpkin")}>
-            <div className="flex">
-              <img src={SUNNYSIDE.icons.player} className="h-4 mr-1" />
-              {t("bumpkin")}
-            </div>
-          </Button>
           <Button onClick={() => setPage("buds")}>
             <div className="flex">
               <img src={SUNNYSIDE.icons.plant} className="h-4 mr-1" />
@@ -205,7 +194,6 @@ export const Withdraw: React.FC<Props> = ({ onClose }) => {
       {page === "wearables" && (
         <WithdrawWearables onWithdraw={onWithdrawWearables} />
       )}
-      {page === "bumpkin" && <WithdrawBumpkin onWithdraw={onWithdrawBumpkin} />}
       {page === "buds" && <WithdrawBuds onWithdraw={onWithdrawBuds} />}
     </>
   );

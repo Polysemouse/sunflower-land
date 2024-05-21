@@ -10,7 +10,10 @@ import { Birdie } from "./npcs/Birdie";
 import { HayseedHankV2 } from "features/helios/components/hayseedHank/HayseedHankV2";
 import { PotionHouseShopItems } from "features/helios/components/potions/component/PotionHouseShopItems";
 import { Bert } from "./npcs/Bert";
-import { Donations } from "./donations/Donations";
+import {
+  CommunityDonations,
+  SpecialEventDonations,
+} from "./donations/Donations";
 import { Finn } from "./npcs/Finn";
 import { GoldTooth } from "./npcs/GoldTooth";
 import { Luna } from "./npcs/Luna";
@@ -24,6 +27,7 @@ import { useAppTranslation } from "lib/i18n/useAppTranslations";
 import { SpecialEventModal } from "./SpecialEventModal";
 import { GarbageCollectorModal } from "features/helios/components/garbageCollector/components/GarbageCollectorModal";
 import { Hopper } from "./npcs/Hopper";
+import { FactionModalContent } from "./factions/FactionModalContent";
 
 class NpcModalManager {
   private listener?: (npc: NPCName, isOpen: boolean) => void;
@@ -81,7 +85,7 @@ export const NPCModals: React.FC<Props> = ({ scene, id }) => {
             onClose={closeModal}
             bumpkinParts={NPC_WEARABLES["flopsy"]}
           >
-            <Donations />
+            <CommunityDonations />
           </CloseButtonPanel>
         )}
 
@@ -122,6 +126,15 @@ export const NPCModals: React.FC<Props> = ({ scene, id }) => {
             bumpkinParts={NPC_WEARABLES.garbo}
           >
             <GarbageCollectorModal />
+          </CloseButtonPanel>
+        )}
+
+        {npc === "gaucho" && (
+          <CloseButtonPanel
+            onClose={closeModal}
+            bumpkinParts={NPC_WEARABLES.gaucho}
+          >
+            <SpecialEventDonations />
           </CloseButtonPanel>
         )}
 
@@ -199,6 +212,11 @@ export const NPCModals: React.FC<Props> = ({ scene, id }) => {
         {npc === "guria" && <DeliveryPanel npc={npc} onClose={closeModal} />}
         {npc === "goblet" && <DeliveryPanel npc={npc} onClose={closeModal} />}
         {npc === "gordo" && <DeliveryPanel npc={npc} onClose={closeModal} />}
+
+        {/* faction npcs */}
+        {npc === "lady day" && <FactionModalContent onClose={closeModal} />}
+        {npc === "robert" && <FactionModalContent onClose={closeModal} />}
+        {npc === "grommy" && <FactionModalContent onClose={closeModal} />}
       </Modal>
       {npc === "Chun Long" && (
         <SpecialEventModal

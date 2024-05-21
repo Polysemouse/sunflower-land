@@ -1,12 +1,12 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable unused-imports/no-unused-vars */
 import Decimal from "decimal.js-light";
-import { GameState, Inventory } from "../types/game";
+import { ChoreV2, ChoreV2Name, GameState, Inventory } from "../types/game";
 
 import { BumpkinLevel } from "features/game/lib/level";
 import { getEnabledNodeCount } from "../expansion/lib/expansionNodes";
 import { INITIAL_BUMPKIN, INITIAL_BUMPKIN_LEVEL } from "./bumpkinData";
-import { makeMegaStoreAvailableDates } from "./constants";
+import { EMPTY, makeMegaStoreAvailableDates } from "./constants";
 export const INITIAL_RESOURCES: Pick<
   GameState,
   | "crops"
@@ -20,6 +20,7 @@ export const INITIAL_RESOURCES: Pick<
   | "fruitPatches"
   | "sunstones"
   | "beehives"
+  | "oilReserves"
 > = {
   crops: {
     1: {
@@ -146,6 +147,7 @@ export const INITIAL_RESOURCES: Pick<
     },
   },
   crimstones: {},
+  oilReserves: {},
   fruitPatches: {
     1: {
       x: 7,
@@ -192,6 +194,7 @@ const INITIAL_STOCK: Inventory = {
   "Pumpkin Seed": new Decimal(100),
   "Carrot Seed": new Decimal(100),
   "Cabbage Seed": new Decimal(90),
+  "Soybean Seed": new Decimal(80),
   "Beetroot Seed": new Decimal(80),
   "Cauliflower Seed": new Decimal(80),
   "Parsnip Seed": new Decimal(60),
@@ -208,6 +211,7 @@ const INITIAL_STOCK: Inventory = {
   "Stone Pickaxe": new Decimal(10),
   "Iron Pickaxe": new Decimal(5),
   "Gold Pickaxe": new Decimal(5),
+  "Oil Drill": new Decimal(5),
   "Rusty Shovel": new Decimal(10),
   "Sand Shovel": new Decimal(30),
   "Sand Drill": new Decimal(5),
@@ -269,6 +273,11 @@ const OFFLINE_FARM_FRUIT = getEnabledNodeCount(
 );
 
 export const STATIC_OFFLINE_FARM: GameState = {
+  ...EMPTY,
+  greenhouse: {
+    pots: {},
+    oil: 50,
+  },
   home: {
     collectibles: {
       Wardrobe: [
@@ -296,7 +305,7 @@ export const STATIC_OFFLINE_FARM: GameState = {
     },
   },
   island: {
-    type: "basic",
+    type: "desert",
   },
   mysteryPrizes: {},
   mushrooms: {
@@ -335,7 +344,7 @@ export const STATIC_OFFLINE_FARM: GameState = {
     spawnedAt: 0,
   },
   farmHands: { bumpkins: {} },
-  bumpkin: { ...INITIAL_BUMPKIN, experience: 100000 },
+  bumpkin: { ...INITIAL_BUMPKIN, experience: 100000000 },
   buds: {
     1: {
       aura: "Basic",
@@ -352,7 +361,7 @@ export const STATIC_OFFLINE_FARM: GameState = {
       type: "Woodlands",
     },
   },
-  coins: 100,
+  coins: 10000000,
   balance: new Decimal(100),
   previousBalance: new Decimal(0),
   previousInventory: {
@@ -372,8 +381,43 @@ export const STATIC_OFFLINE_FARM: GameState = {
       },
     },
   },
+  chores: {
+    choresCompleted: 0,
+    choresSkipped: 0,
+    chores: {
+      2: {
+        activity: "Sunflower Planted",
+        bumpkinId: INITIAL_BUMPKIN.id,
+        createdAt: Date.now(),
+        description: "Plant a sunflower",
+        requirement: 1,
+        startCount: 0,
+      },
+    } as Record<ChoreV2Name, ChoreV2>,
+  },
   inventory: {
+    Oil: new Decimal(500),
+    Manor: new Decimal(1),
+    House: new Decimal(1),
+    "Rice Seed": new Decimal(10),
+    "Grape Seed": new Decimal(10),
+    "Olive Seed": new Decimal(10),
+    "Apple Seed": new Decimal(10),
+    Bakery: new Decimal(1),
+    Deli: new Decimal(1),
+    Greenhouse: new Decimal(1),
+    "Desert Gnome": new Decimal(1),
+    Blossombeard: new Decimal(1),
+    Gnome: new Decimal(1),
+    Cobalt: new Decimal(1),
+    Potato: new Decimal(200),
+    Pumpkin: new Decimal(200),
+    "Oil Reserve": new Decimal(0),
+    "Oil Drill": new Decimal(5),
+    "Battle Fish": new Decimal(1),
+    "Knight Chicken": new Decimal(1),
     Baozi: new Decimal(10),
+    Goblet: new Decimal(1),
     "Prize Ticket": new Decimal(10),
     "Rich Chicken": new Decimal(1),
     "Fat Chicken": new Decimal(2),
@@ -381,9 +425,7 @@ export const STATIC_OFFLINE_FARM: GameState = {
     "Mashed Potato": new Decimal(1),
     "Treasure Key": new Decimal(1),
     "Hungry Hare": new Decimal(1),
-    "Earn Alliance Banner": new Decimal(1),
     "Farmhand Coupon": new Decimal(1),
-    "Sunpetal Seed": new Decimal(100),
     "White Festive Fox": new Decimal(3),
     "Red Pansy": new Decimal(3),
     "White Pansy": new Decimal(3),
@@ -393,7 +435,7 @@ export const STATIC_OFFLINE_FARM: GameState = {
     "Yellow Daffodil": new Decimal(3),
     "White Daffodil": new Decimal(3),
     "Red Daffodil": new Decimal(3),
-    Sunflower: new Decimal(5),
+    Sunflower: new Decimal(5000),
     Scarecrow: new Decimal(1),
     Shovel: new Decimal(1),
     Carrot: new Decimal(500),
@@ -410,25 +452,40 @@ export const STATIC_OFFLINE_FARM: GameState = {
     "Town Center": new Decimal(1),
     Market: new Decimal(1),
     Workbench: new Decimal(1),
-    "Basic Land": new Decimal(3),
+    "Basic Land": new Decimal(25),
     Gold: new Decimal(13),
     "Gold Pass": new Decimal(1),
     "Crop Plot": new Decimal(OFFLINE_FARM_CROPS),
     "Water Well": new Decimal(4),
     Tree: new Decimal(3),
-    Blossombeard: new Decimal(1),
     "Stone Rock": new Decimal(2),
     "Iron Rock": new Decimal(OFFLINE_FARM_IRON),
     "Gold Rock": new Decimal(OFFLINE_FARM_GOLD),
     "Crimstone Rock": new Decimal(0),
+    "Gaucho Rug": new Decimal(1),
     "Sunstone Rock": new Decimal(0),
     "Fruit Patch": new Decimal(0),
+    "Battlecry Drum": new Decimal(5),
+    "Bullseye Board": new Decimal(5),
+    "Chess Rug": new Decimal(5),
+    Cluckapult: new Decimal(5),
+    "Golden Gallant": new Decimal(5),
+    "Golden Garrison": new Decimal(5),
+    "Golden Guardian": new Decimal(5),
+    "Novice Knight": new Decimal(5),
+    "Regular Pawn": new Decimal(5),
+    "Rookie Rook": new Decimal(5),
+    "Silver Sentinel": new Decimal(5),
+    "Silver Squire": new Decimal(5),
+    "Silver Stallion": new Decimal(5),
+    "Trainee Target": new Decimal(5),
+    "Twister Rug": new Decimal(5),
     Egg: new Decimal(12),
     Beehive: new Decimal(0),
     Banana: new Decimal(12),
     Wood: new Decimal(500),
     Crimstone: new Decimal(20),
-    "Block Buck": new Decimal(20),
+    "Block Buck": new Decimal(200),
     Stone: new Decimal(100),
     Iron: new Decimal(100),
     "Mermaid Scale": new Decimal(1000),
@@ -446,6 +503,11 @@ export const STATIC_OFFLINE_FARM: GameState = {
     "Flower Cart": new Decimal(1),
     Capybara: new Decimal(1),
     "Golden Cauliflower": new Decimal(1),
+
+    "Sunpetal Seed": new Decimal(20),
+    "Bloom Seed": new Decimal(10),
+    "Lily Seed": new Decimal(5),
+    "Sunflower Seed": new Decimal(1000),
 
     // Foods
     "Pumpkin Soup": new Decimal(1),
@@ -537,8 +599,27 @@ export const STATIC_OFFLINE_FARM: GameState = {
     "Whale Shark": new Decimal(1),
     "Saw Shark": new Decimal(1),
     "White Shark": new Decimal(1),
+
+    // Banners
+    "Human War Banner": new Decimal(1),
+    "Goblin War Banner": new Decimal(1),
+    "Lifetime Farmer Banner": new Decimal(1),
+    "Solar Flare Banner": new Decimal(1),
+    "Dawn Breaker Banner": new Decimal(1),
+    "Witches' Eve Banner": new Decimal(1),
+    "Catch the Kraken Banner": new Decimal(1),
+    "Spring Blossom Banner": new Decimal(1),
+    "Clash of Factions Banner": new Decimal(1),
+    "Bumpkin Faction Banner": new Decimal(1),
+    "Goblin Faction Banner": new Decimal(1),
+    "Sunflorian Faction Banner": new Decimal(1),
+    "Nightshade Faction Banner": new Decimal(1),
+    "Earn Alliance Banner": new Decimal(1),
   },
   wardrobe: {
+    "Tofu Mask": 1,
+    "Royal Scepter": 1,
+    "Olive Royalty Shirt": 2,
     "Elf Suit": 1,
     "Banana Onesie": 1,
     "Beige Farmer Potion": 2,
@@ -573,8 +654,6 @@ export const STATIC_OFFLINE_FARM: GameState = {
 
   createdAt: new Date().getTime(),
 
-  ...INITIAL_RESOURCES,
-
   conversations: ["hank-intro"],
 
   fishing: {
@@ -607,65 +686,30 @@ export const STATIC_OFFLINE_FARM: GameState = {
     },
   },
   buildings: {
-    "Town Center": [
+    Greenhouse: [
       {
-        id: "123",
-        readyAt: 0,
         coordinates: {
-          x: 2,
-          y: 3,
+          x: -2,
+          y: -2,
         },
         createdAt: 0,
-      },
-    ],
-    Workbench: [
-      {
-        id: "123",
+        id: "1",
         readyAt: 0,
-        coordinates: {
-          x: 4,
-          y: 8,
-        },
-        createdAt: 0,
       },
     ],
-
     Market: [
       {
-        id: "123",
-        readyAt: 0,
         coordinates: {
-          x: 6,
-          y: 5,
+          x: -5,
+          y: -2,
         },
         createdAt: 0,
-      },
-    ],
-    "Fire Pit": [
-      {
-        id: "123",
+        id: "1",
         readyAt: 0,
-        coordinates: {
-          x: 3,
-          y: -1,
-        },
-        createdAt: 0,
       },
     ],
   },
-  collectibles: {
-    // "Golden Cauliflower": [
-    //   {
-    //     id: "123",
-    //     createdAt: 0,
-    //     readyAt: 0,
-    //     coordinates: {
-    //       x: 3,
-    //       y: 3,
-    //     },
-    //   },
-    // ],
-  },
+  collectibles: {},
   pumpkinPlaza: {
     raffle: {
       entries: {
@@ -686,7 +730,6 @@ export const STATIC_OFFLINE_FARM: GameState = {
         from: "pumpkin' pete",
         reward: {
           items: {},
-          sfl: 0.12,
         },
         id: "1",
         items: {
@@ -729,6 +772,19 @@ export const STATIC_OFFLINE_FARM: GameState = {
     },
   },
 
+  ...INITIAL_RESOURCES,
+  flowers: {
+    discovered: {},
+    flowerBeds: {
+      "123": {
+        createdAt: 0,
+        height: 1,
+        width: 3,
+        x: 2,
+        y: 0,
+      },
+    },
+  },
   farmActivity: {},
   milestones: {},
   catchTheKraken: {
@@ -742,7 +798,6 @@ export const STATIC_OFFLINE_FARM: GameState = {
   },
   airdrops: [],
   username: "Local Hero",
-  springBlossom: {},
   specialEvents: {
     current: {
       "Lunar New Year": {
@@ -1157,5 +1212,21 @@ export const STATIC_OFFLINE_FARM: GameState = {
   },
   goblinMarket: {
     resources: {},
+  },
+  dailyFactionDonationRequest: {
+    resource: "Sunflower",
+    amount: new Decimal(1000),
+  },
+  faction: {
+    name: "goblins",
+    pledgedAt: 0,
+    points: 0,
+    donated: {
+      daily: {
+        sfl: {},
+        resources: {},
+      },
+      totalItems: {},
+    },
   },
 };

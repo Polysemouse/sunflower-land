@@ -26,6 +26,10 @@ import { makeListingType } from "lib/utils/makeTradeListingType";
 import { Label } from "components/ui/Label";
 import { Loading } from "features/auth/components";
 import { FloorPrices } from "features/game/actions/getListingsFloorPrices";
+import { ModalContext } from "features/game/components/modal/ModalProvider";
+import { hasVipAccess } from "features/game/lib/vipAccess";
+import { VIPAccess } from "features/game/components/VipAccess";
+import { getDayOfYear } from "lib/utils/time";
 
 export const TRADE_LIMITS: Partial<Record<InventoryItemName, number>> = {
   Sunflower: 2000,
@@ -33,6 +37,7 @@ export const TRADE_LIMITS: Partial<Record<InventoryItemName, number>> = {
   Pumpkin: 2000,
   Carrot: 2000,
   Cabbage: 2000,
+  Soybean: 2000,
   Beetroot: 1000,
   Cauliflower: 1000,
   Parsnip: 1000,
@@ -50,7 +55,21 @@ export const TRADE_LIMITS: Partial<Record<InventoryItemName, number>> = {
   Iron: 200,
   Gold: 100,
   Egg: 500,
+  Honey: 100,
+  Crimstone: 20,
 };
+
+const MAX_NON_VIP_PURCHASES = 3;
+
+function getRemainingFreePurchases(dailyPurchases: {
+  count: number;
+  date: number;
+}) {
+  if (dailyPurchases.date != getDayOfYear(new Date())) {
+    return MAX_NON_VIP_PURCHASES;
+  }
+  return MAX_NON_VIP_PURCHASES - dailyPurchases.count;
+}
 
 export const BuyPanel: React.FC<{
   floorPrices: FloorPrices;
@@ -59,6 +78,8 @@ export const BuyPanel: React.FC<{
   const { gameService } = useContext(Context);
   const { authService } = useContext(AuthContext);
   const [authState] = useActor(authService);
+
+  const { openModal } = useContext(ModalContext);
 
   const [view, setView] = useState<"search" | "list">("search");
   const selected = useRef<InventoryItemName>();
@@ -79,6 +100,11 @@ export const BuyPanel: React.FC<{
     setFloor(floorPrices);
   }, [floorPrices]);
 
+  const isVIP = hasVipAccess(state.inventory);
+  const dailyPurchases = state.trades.dailyPurchases ?? { count: 0, date: 0 };
+  const remainingFreePurchases = getRemainingFreePurchases(dailyPurchases);
+  const hasPurchasesRemaining = isVIP || remainingFreePurchases > 0;
+
   const searchView = () => {
     if (floor.Sunflower == undefined) {
       return <Loading />;
@@ -86,10 +112,11 @@ export const BuyPanel: React.FC<{
 
     return (
       <div className="p-2">
-        <Label type="default" icon={SUNNYSIDE.icons.basket}>
-          {t("trading.select.resources")}
-        </Label>
-
+        {hasPurchasesRemaining && (
+          <Label type="default" icon={SUNNYSIDE.icons.basket} className="ml-2">
+            {t("trading.select.resources")}
+          </Label>
+        )}
         <div className="flex flex-wrap mt-2">
           {getKeys(TRADE_LIMITS).map((name) => (
             <div
@@ -98,9 +125,7 @@ export const BuyPanel: React.FC<{
             >
               <OuterPanel
                 className="w-full relative flex flex-col items-center justify-center cursor-pointer hover:bg-brown-200"
-                onClick={() => {
-                  onSearch(name);
-                }}
+                onClick={() => onSearch(name)}
               >
                 <span className="text-xs mt-1">{name}</span>
                 <img
@@ -109,7 +134,7 @@ export const BuyPanel: React.FC<{
                 />
                 <Label
                   type="warning"
-                  className="absolute -bottom-2 text-center mt-1 p-1"
+                  className={"absolute -bottom-2 text-center mt-1 p-1"}
                   style={{ width: "calc(100% + 10px)" }}
                 >
                   {t("bumpkinTrade.price/unit", {
@@ -151,8 +176,8 @@ export const BuyPanel: React.FC<{
               {selected.current}
             </Label>
           </div>
-          <div className="flex flex-col items-center justify-center py-4">
-            <img src={SUNNYSIDE.icons.search} className="w-1/5 mx-auto my-2" />
+          <div className="flex flex-col items-center justify-center pb-4">
+            <img src={SUNNYSIDE.icons.search} className="w-16 mx-auto my-2" />
             <p className="text-sm">{t("trading.no.listings")}</p>
           </div>
         </div>
@@ -197,7 +222,7 @@ export const BuyPanel: React.FC<{
       setLoading(true);
     };
 
-    const Action = (listing: Listing) => {
+    const getAction = (listing: Listing) => {
       if (listing.farmId == farmId) {
         return (
           <div className="flex items-center mt-1  justify-end mr-0.5">
@@ -220,7 +245,7 @@ export const BuyPanel: React.FC<{
       }
 
       const hasSFL = state.balance.gte(listing.sfl);
-      const disabled = !hasSFL;
+      const disabled = !hasSFL || !hasPurchasesRemaining;
 
       return (
         <Button
@@ -278,7 +303,7 @@ export const BuyPanel: React.FC<{
               <p className="text-sm mb-2 text-center">
                 {t("trading.listing.fulfilled")}
               </p>
-              <OuterPanel className="mb-2">
+              <OuterPanel>
                 <div className="flex justify-between">
                   <div>
                     <div className="flex flex-wrap w-52">
@@ -291,7 +316,7 @@ export const BuyPanel: React.FC<{
                         />
                       ))}
                       <div className="ml-1">
-                        <div className="flex justfy-end items-center mb-1">
+                        <div className="flex justify-end items-center mb-1">
                           <img src={token} className="h-6 mr-1" />
                           <p className="text-xs">{`${selectedListing.sfl} SFL`}</p>
                         </div>
@@ -374,7 +399,7 @@ export const BuyPanel: React.FC<{
                     </div>
                   </div>
 
-                  <div>{Action(listing)}</div>
+                  <div>{getAction(listing)}</div>
                 </div>
               </OuterPanel>
             );
@@ -398,32 +423,41 @@ export const BuyPanel: React.FC<{
     setView("list");
   };
 
-  if (!state.inventory["Gold Pass"]) {
-    return (
-      <div className="relative">
-        <div className="p-1 flex flex-col items-center">
-          <img
-            src={ITEM_DETAILS["Gold Pass"].image}
-            className="w-1/5 mx-auto my-2 img-highlight-heavy"
+  return (
+    <>
+      <div className="max-h-[400px] min-h-[150px] overflow-y-auto pr-1 divide-brown-600 scrollable">
+        <div className="pl-2 pt-2 space-y-1 sm:space-y-0 sm:flex items-center justify-between ml-1.5">
+          <VIPAccess
+            isVIP={isVIP}
+            onUpgrade={() => {
+              openModal("BUY_BANNER");
+            }}
           />
-          <p className="text-sm">{t("bumpkinTrade.goldpass.required")}</p>
-          <p className="text-xs mb-2">{t("bumpkinTrade.purchase")}</p>
+          {!isVIP && (
+            <Label
+              type={hasPurchasesRemaining ? "success" : "danger"}
+              className="-ml-2"
+            >
+              {remainingFreePurchases == 0
+                ? `${t("remaining.free.purchase")}`
+                : `${t("remaining.free.purchases", {
+                    purchasesRemaining: hasPurchasesRemaining
+                      ? remainingFreePurchases
+                      : "No",
+                  })}`}
+            </Label>
+          )}
+        </div>
+        <div className="flex items-start justify-between mb-2">
+          {isSearching && <p className="loading mt-1">{t("searching")}</p>}
+          {!isSearching && (
+            <div className="relative w-full">
+              {view === "search" && searchView()}
+              {view === "list" && listView(listings)}
+            </div>
+          )}
         </div>
       </div>
-    );
-  }
-
-  return (
-    <div className="max-h-[400px] min-h-[400px] overflow-y-auto pr-1 divide-brown-600 scrollable">
-      <div className="flex items-start justify-between mb-2">
-        {isSearching && <p className="loading">{t("searching")}</p>}
-        {!isSearching && (
-          <div className="relative w-full">
-            {view === "search" && searchView()}
-            {view === "list" && listView(listings)}
-          </div>
-        )}
-      </div>
-    </div>
+    </>
   );
 };

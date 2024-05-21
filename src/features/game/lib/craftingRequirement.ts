@@ -1,6 +1,5 @@
 import { getKeys } from "../types/craftables";
 import { ExpansionRequirements, GameState } from "../types/game";
-import { GoblinState } from "./goblinMachine";
 import { getBumpkinLevel } from "./level";
 
 /**
@@ -9,12 +8,14 @@ import { getBumpkinLevel } from "./level";
  * @param requirements The crafting requirements.
  */
 export const craftingRequirementsMet = (
-  gameState: Readonly<GameState | GoblinState>,
+  gameState: Readonly<GameState>,
   requirements?: ExpansionRequirements
 ) => {
   if (!requirements) {
     return false;
   }
+
+  const hasCoins = gameState.coins >= (requirements.coins ?? 0);
 
   const hasResources = getKeys(requirements.resources).every((name) =>
     gameState.inventory[name]?.gte(requirements.resources[name] ?? 0)
@@ -24,6 +25,7 @@ export const craftingRequirementsMet = (
     ? getBumpkinLevel(gameState.bumpkin?.experience || 0) >=
       (requirements.bumpkinLevel ?? 0)
     : !!gameState.bumpkin;
-  const canCraft = hasResources && hasLevel;
+
+  const canCraft = hasResources && hasLevel && hasCoins;
   return canCraft;
 };

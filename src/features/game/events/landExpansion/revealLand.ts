@@ -14,6 +14,7 @@ import cloneDeep from "lodash.clonedeep";
 import { getKeys } from "features/game/types/craftables";
 import { pickEmptyPosition } from "features/game/expansion/placeable/lib/collisionDetection";
 import { isCollectibleBuilt } from "features/game/lib/collectibleBuilt";
+import { CRIMSTONE_RECOVERY_TIME } from "features/game/lib/constants";
 
 export type RevealLandAction = {
   type: "land.revealed";
@@ -159,7 +160,7 @@ export function revealLand({
 
   // Add sun stones
   land.sunstones?.forEach((coords) => {
-    const id = Object.keys(game.sunstones).length;
+    const id = randomUUID();
     game.sunstones[id] = {
       height: 2,
       width: 2,
@@ -175,7 +176,7 @@ export function revealLand({
 
   // Add bee hives
   land.beehives?.forEach((coords) => {
-    const id = Object.keys(game.beehives).length;
+    const id = randomUUID();
     game.beehives[id] = {
       height: 1,
       width: 1,
@@ -192,7 +193,7 @@ export function revealLand({
 
   // Add flower beds
   land.flowerBeds?.forEach((coords) => {
-    const id = Object.keys(game.flowers.flowerBeds).length;
+    const id = randomUUID();
     game.flowers.flowerBeds[id] = {
       height: 1,
       width: 3,
@@ -203,6 +204,25 @@ export function revealLand({
   });
   inventory["Flower Bed"] = (inventory["Flower Bed"] || new Decimal(0)).add(
     land.flowerBeds?.length ?? 0
+  );
+
+  land.oilReserves?.forEach((coords) => {
+    const id = randomUUID();
+    game.oilReserves[id] = {
+      height: 2,
+      width: 2,
+      x: coords.x + origin.x,
+      y: coords.y + origin.y,
+      createdAt,
+      drilled: 0,
+      oil: {
+        amount: 10,
+        drilledAt: 0,
+      },
+    };
+  });
+  inventory["Oil Reserve"] = (inventory["Oil Reserve"] || new Decimal(0)).add(
+    land.oilReserves?.length ?? 0
   );
 
   // Refresh all basic resources
@@ -257,6 +277,19 @@ export function revealLand({
       },
     };
   }, {} as GameState["gold"]);
+
+  game.crimstones = getKeys(game.crimstones).reduce((acc, id) => {
+    return {
+      ...acc,
+      [id]: {
+        ...game.crimstones[id],
+        stone: {
+          ...game.crimstones[id].stone,
+          minedAt: createdAt - CRIMSTONE_RECOVERY_TIME * 1000,
+        },
+      },
+    };
+  }, {} as GameState["crimstones"]);
 
   // Add any rewards
   const rewards = getRewards({ game, createdAt });
@@ -437,6 +470,45 @@ export function getRewards({
           coins: 0,
           wearables: {},
           message: "You are on OG expander, here's a reward!",
+          coordinates: position && {
+            x: position.x,
+            y: position.y,
+          },
+        },
+      ];
+    }
+  }
+
+  // Expansion Desert Refunds
+  if (game.island.type === "desert") {
+    // Expansion 5 on desert should refund expansion 17 of spring island
+    const expectedLand = expansions.add(12);
+
+    if (expectedLand.lte(game.island.previousExpansions ?? 0)) {
+      const refund = EXPANSION_REQUIREMENTS.spring[expectedLand.toNumber()];
+
+      const expansionBoundaries = {
+        x: EXPANSION_ORIGINS[expansions.toNumber() - 1].x - LAND_SIZE / 2,
+        y: EXPANSION_ORIGINS[expansions.toNumber() - 1].y + LAND_SIZE / 2,
+        width: LAND_SIZE,
+        height: LAND_SIZE,
+      };
+
+      const position = pickEmptyPosition({
+        gameState: game,
+        bounding: expansionBoundaries,
+      });
+
+      airdrops = [
+        ...airdrops,
+        {
+          createdAt,
+          id: `desert-expansion-refund-${expectedLand.toNumber()}`,
+          items: refund.resources,
+          sfl: 0,
+          coins: 0,
+          wearables: {},
+          message: "You are a Petal Paradise expander, here's a reward!",
           coordinates: position && {
             x: position.x,
             y: position.y,

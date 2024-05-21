@@ -243,13 +243,50 @@ import { BabyPanda } from "./components/BabyPanda";
 import { Baozi } from "./components/Baozi";
 import { CommunityEgg } from "./components/CommunityEgg";
 import { HungryHare } from "./components/HungryHare";
+import { SunflorianFactionBanner } from "./components/SunflorianFactionBanner";
+import { GoblinFactionBanner } from "./components/GoblinFactionBanner";
+import { NightshadeFactionBanner } from "./components/NightshadeFactionBanner";
+import { BumpkinFactionBanner } from "./components/BumpkinFactionBanner";
+import { ClashOfFactionsBanner } from "./components/ClashOfFactionsBanner";
+import { LifetimeFarmerBanner } from "./components/LifetimeFarmerBanner";
+import { TurboSprout } from "./components/TurboSprout";
+import { Soybliss } from "./components/Soybliss";
+import { GrapeGranny } from "./components/GrapeGranny";
+import { RoyalThrone } from "./components/RoyalThrone";
+import { LilyEgg } from "./components/LilyEgg";
+import { Goblet } from "./components/Goblet";
+import { FancyRug } from "./components/FancyRug";
+import { Clock } from "./components/Clock";
+import { Vinny } from "./components/Vinny";
+import { KnightChicken } from "./components/KnightChicken";
+import { BattleFish } from "./components/BattleFish";
+import { GauchoRug } from "./components/GauchoRug";
+import { BattlecryDrum } from "./components/BattleCryDrum";
+import { BullseyeBoard } from "./components/BullseyeBoard";
+import { ChessRug } from "./components/ChessRug";
+import { GoldenGallant } from "./components/GoldenGallant";
+import { GoldenGarrison } from "./components/GoldenGarrison";
+import { GoldenGuardian } from "./components/GoldenGuardian";
+import { NoviceKnight } from "./components/NoviceKnight";
+import { RegularPawn } from "./components/RegularPawn";
+import { RookieRook } from "./components/RookieRook";
+import { SilverSentinel } from "./components/SilverSentinel";
+import { SilverSquire } from "./components/SilverSquire";
+import { SilverStallion } from "./components/SilverStallion";
+import { TraineeTarget } from "./components/TraineeTarget";
+import { TwisterRug } from "./components/TwisterRug";
+import { Cluckapult } from "./components/Cluckapult";
+import { DesertGnome } from "./components/DesertGnome";
 
 // TODO: Remove partial once all placeable treasures have been added (waiting on artwork)
+import { RicePanda } from "./components/RicePanda";
 
 export const COLLECTIBLE_COMPONENTS: Record<
   CollectibleName | "Bud",
   React.FC<CollectibleProps>
 > = {
+  "Gaucho Rug": GauchoRug,
+
   "Hungry Hare": HungryHare,
   "Community Egg": CommunityEgg,
   Baozi: Baozi,
@@ -432,6 +469,8 @@ export const COLLECTIBLE_COMPONENTS: Record<
   "Goblin War Banner": GoblinBanner,
   "Catch the Kraken Banner": CatchTheKrakenBanner,
   "Spring Blossom Banner": SpringBlossomBanner,
+  "Clash of Factions Banner": ClashOfFactionsBanner,
+  "Lifetime Farmer Banner": LifetimeFarmerBanner,
 
   "Bonnie's Tombstone": BonniesTombstone,
   "Chestnut Fungi Stool": ChestnutFungiStool,
@@ -446,6 +485,7 @@ export const COLLECTIBLE_COMPONENTS: Record<
   Clementine: Clementine,
   Cobalt: Cobalt,
   Blossombeard: Blossombeard,
+  "Desert Gnome": DesertGnome,
 
   // Dawn Breaker items
   "Mushroom House": MushroomHouse,
@@ -490,6 +530,7 @@ export const COLLECTIBLE_COMPONENTS: Record<
   "Gilded Swordfish": GildedSwordfish,
   "Kraken Tentacle": KrakenTentacle,
   "Crimson Carp": CrimsonCarp,
+  "Battle Fish": BattleFish,
 
   // Catch the Kraken
   "Lifeguard Ring": LifeguardRing,
@@ -509,6 +550,7 @@ export const COLLECTIBLE_COMPONENTS: Record<
   "Soil Krabby": SoilKrabby,
   Nana: Nana,
   "Crim Peckster": CrimPeckster,
+  "Knight Chicken": KnightChicken,
 
   "Bumpkin Nutcracker": Nutcracker,
   "Festive Tree": FestiveTree,
@@ -531,6 +573,38 @@ export const COLLECTIBLE_COMPONENTS: Record<
   "Prism Petal": PrismPetal,
   "Celestial Frostbloom": CelestialFrostbloom,
   "Primula Enigma": PrimulaEnigma,
+
+  "Sunflorian Faction Banner": SunflorianFactionBanner,
+  "Goblin Faction Banner": GoblinFactionBanner,
+  "Nightshade Faction Banner": NightshadeFactionBanner,
+  "Bumpkin Faction Banner": BumpkinFactionBanner,
+
+  // Clash of Factions
+  "Turbo Sprout": TurboSprout,
+  Soybliss: Soybliss,
+  "Grape Granny": GrapeGranny,
+  "Royal Throne": RoyalThrone,
+  "Lily Egg": LilyEgg,
+  Goblet: Goblet,
+  "Fancy Rug": FancyRug,
+  Clock: Clock,
+  Vinny: Vinny,
+  "Battlecry Drum": BattlecryDrum,
+  "Bullseye Board": BullseyeBoard,
+  "Chess Rug": ChessRug,
+  "Golden Gallant": GoldenGallant,
+  "Golden Garrison": GoldenGarrison,
+  "Golden Guardian": GoldenGuardian,
+  "Novice Knight": NoviceKnight,
+  "Regular Pawn": RegularPawn,
+  "Rookie Rook": RookieRook,
+  "Silver Sentinel": SilverSentinel,
+  "Silver Squire": SilverSquire,
+  "Silver Stallion": SilverStallion,
+  "Trainee Target": TraineeTarget,
+  "Twister Rug": TwisterRug,
+  Cluckapult: Cluckapult,
+  "Rice Panda": RicePanda,
 };
 // Need readonly versions for some troublesome components while in design mode
 

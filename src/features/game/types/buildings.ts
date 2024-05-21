@@ -3,7 +3,7 @@ import { CollectibleName } from "./craftables";
 import { InventoryItemName } from "./game";
 import { ResourceName } from "./resources";
 
-export type Home = "Tent" | "House";
+export type Home = "Tent" | "House" | "Manor";
 
 export type BuildingName =
   | "Fire Pit"
@@ -21,6 +21,7 @@ export type BuildingName =
   | "Compost Bin"
   | "Turbo Composter"
   | "Premium Composter"
+  | "Greenhouse"
   | Home;
 
 export type Ingredient = {
@@ -54,6 +55,14 @@ export const BUILDINGS: Record<BuildingName, BuildingBluePrint[]> = {
     },
   ],
   House: [
+    {
+      unlocksAtLevel: 99,
+      coins: 0,
+      constructionSeconds: 30,
+      ingredients: [],
+    },
+  ],
+  Manor: [
     {
       unlocksAtLevel: 99,
       coins: 0,
@@ -405,6 +414,31 @@ export const BUILDINGS: Record<BuildingName, BuildingBluePrint[]> = {
       ],
     },
   ],
+  Greenhouse: [
+    {
+      unlocksAtLevel: 46,
+      coins: 4800,
+      constructionSeconds: 60 * 60 * 4,
+      ingredients: [
+        {
+          item: "Wood",
+          amount: new Decimal(500),
+        },
+        {
+          item: "Stone",
+          amount: new Decimal(100),
+        },
+        {
+          item: "Crimstone",
+          amount: new Decimal(25),
+        },
+        {
+          item: "Oil",
+          amount: new Decimal(100),
+        },
+      ],
+    },
+  ],
 };
 
 export type Dimensions = { width: number; height: number };
@@ -414,6 +448,7 @@ export const BUILDINGS_DIMENSIONS: Record<BuildingName, Dimensions> = {
   "Fire Pit": { height: 2, width: 3 },
   "Town Center": { height: 3, width: 4 },
   House: { height: 4, width: 4 },
+  Manor: { height: 4, width: 5 },
   Workbench: { height: 2, width: 3 },
   Kitchen: { height: 3, width: 4 },
   Bakery: { height: 3, width: 4 },
@@ -427,4 +462,5 @@ export const BUILDINGS_DIMENSIONS: Record<BuildingName, Dimensions> = {
   "Compost Bin": { height: 2, width: 2 },
   "Turbo Composter": { height: 2, width: 2 },
   "Premium Composter": { height: 2, width: 2 },
+  Greenhouse: { height: 4, width: 4 },
 };

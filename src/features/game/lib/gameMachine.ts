@@ -56,6 +56,7 @@ import { CollectibleLocation, PurchasableItems } from "../types/collectibles";
 import {
   getGameRulesLastRead,
   getIntroductionRead,
+  getSeasonPassRead,
 } from "features/announcements/announcementsStorage";
 import { depositToFarm } from "lib/blockchain/Deposit";
 import Decimal from "decimal.js-light";
@@ -79,14 +80,11 @@ import { BudName } from "../types/buds";
 import { gameAnalytics } from "lib/gameAnalytics";
 import { isValidRedirect } from "features/portal/examples/cropBoom/lib/portalUtil";
 import { portal } from "features/world/ui/community/actions/portal";
-import { BUMPKIN_EXPANSIONS_LEVEL } from "../types/expansions";
-import { getBumpkinLevel } from "./level";
 import { listRequest } from "../actions/listTrade";
 import { deleteListingRequest } from "../actions/deleteListing";
 import { fulfillTradeListingRequest } from "../actions/fulfillTradeListing";
 import {
   withdrawBuds,
-  withdrawBumpkin,
   withdrawItems,
   withdrawSFL,
   withdrawWearables,
@@ -470,7 +468,6 @@ export type BlockchainState = {
     | "buds"
     | "airdrop"
     | "noBumpkinFound"
-    | "weakBumpkin"
     | "coolingDown"
     | "buyingBlockBucks"
     | "auctionResults"
@@ -784,21 +781,6 @@ export function startGame(authContext: AuthContext) {
                 !event.data?.state.bumpkin && !context.state.bumpkin,
             },
             {
-              target: "weakBumpkin",
-              cond: (context: Context) => {
-                const requiredLevel =
-                  BUMPKIN_EXPANSIONS_LEVEL[context.state.island.type][
-                    context.state.inventory["Basic Land"]?.toNumber() ?? 3
-                  ];
-
-                const level = getBumpkinLevel(
-                  context.state.bumpkin?.experience ?? 0
-                );
-
-                return requiredLevel > level;
-              },
-            },
-            {
               target: "introduction",
               cond: (context) => {
                 return (
@@ -817,13 +799,13 @@ export function startGame(authContext: AuthContext) {
               target: "swarming",
               cond: () => isSwarming(),
             },
-            // {
-            //   target: "specialOffer",
-            //   cond: (context) =>
-            //     (context.state.bumpkin?.experience ?? 0) > 100 &&
-            //     !context.state.collectibles["Spring Blossom Banner"] &&
-            //     !getSeasonPassRead(),
-            // },
+            {
+              target: "specialOffer",
+              cond: (context) =>
+                (context.state.bumpkin?.experience ?? 0) > 100 &&
+                !context.state.collectibles["Clash of Factions Banner"] &&
+                !getSeasonPassRead(),
+            },
             // EVENTS THAT TARGET NOTIFYING OR LOADING MUST GO ABOVE THIS LINE
 
             // EVENTS THAT TARGET PLAYING MUST GO BELOW THIS LINE
@@ -868,7 +850,6 @@ export function startGame(authContext: AuthContext) {
             },
           },
         },
-        weakBumpkin: {},
         specialOffer: {
           on: {
             "banner.purchased": (GAME_EVENT_HANDLERS as any)[
@@ -1964,19 +1945,6 @@ export function startGame(authContext: AuthContext) {
                   ids: wearableIds,
                   captcha,
                   transactionId: context.transactionId as string,
-                });
-
-                return {
-                  sessionId,
-                };
-              }
-
-              if (bumpkinId) {
-                const { sessionId } = await withdrawBumpkin({
-                  farmId: Number(context.farmId),
-                  token: authContext.user.rawToken as string,
-                  transactionId: context.transactionId as string,
-                  bumpkinId: bumpkinId,
                 });
 
                 return {
