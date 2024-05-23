@@ -174,6 +174,7 @@ import {
   Leaderboard,
   GameOptions,
   GreenhouseKeys,
+  Minigame,
 } from "./types";
 
 const generalTerms: Record<GeneralTerms, string> = {
@@ -651,6 +652,7 @@ const availableSeeds: Record<AvailableSeeds, string> = {
 const base: Record<Base, string> = {
   "base.missing": "Missing name in config",
   "base.far.away": "You are too far away",
+  "base.iam.far.away": "I am too far away",
 };
 
 const basicTreasure: Record<BasicTreasure, string> = {
@@ -957,7 +959,7 @@ const boostEffectDescriptions: Record<BoostEffectDescriptions, string> = {
   "description.oil.can.boost": "+2 Oil",
   "description.olive.shield.boost": "+1 Olive",
   "description.pan.boost": "+25% XP",
-  "description.paw.shield.boost": "+25% Faction Pet feeding XP",
+  "description.paw.shield.boost": "+25% Faction Pet Satiation",
   "description.vinny.boost": "+0.25 Grape",
   "description.rice.panda.boost": "+0.25 Rice",
 };
@@ -4188,6 +4190,7 @@ const rewardTerms: Record<RewardTerms, string> = {
   "reward.promo.code": "Enter your promo code:",
   "reward.woohoo": "Woohoo! You found a hidden reward.",
   "reward.connectWeb3Wallet": "Connect a Web3 Wallet for a daily reward.",
+  "reward.factionPoints": "Earn glory for your faction!",
 };
 
 const rulesGameStart: Record<RulesGameStart, string> = {
@@ -4880,6 +4883,17 @@ const greenhouse: Record<GreenhouseKeys, string> = {
   "greenhouse.numberOil": "{{oil}} Oil",
 };
 
+const minigame: Record<Minigame, string> = {
+  "minigame.chickenRescue": "Minigame - Chicken Rescue",
+  "minigame.comingSoon": "Coming soon...",
+  "minigame.completed": "Complete",
+  "minigame.confirm": "Are you sure you want to spend ",
+  "minigame.noPrizeAvailable": "No daily prize available",
+  "minigame.playNow": "Play now",
+  "minigame.purchase": "Purchase",
+  "minigame.chickenRescueHelp": "Can you help me rescue the chickens?",
+};
+
 export const ENGLISH_TERMS: Record<TranslationKeys, string> = {
   ...achievementTerms,
   ...addSFL,
@@ -4981,6 +4995,7 @@ export const ENGLISH_TERMS: Record<TranslationKeys, string> = {
   ...megaStore,
   ...milestoneMessages,
   ...modalDescription,
+  ...minigame,
   ...nftminting,
   ...noaccount,
   ...noBumpkin,
