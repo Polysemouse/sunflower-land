@@ -408,6 +408,7 @@ export const STATIC_OFFLINE_FARM: GameState = {
     } as Record<ChoreV2Name, ChoreV2>,
   },
   inventory: {
+    Wheat: new Decimal(100),
     Oil: new Decimal(500),
     Manor: new Decimal(1),
     House: new Decimal(1),
@@ -415,6 +416,7 @@ export const STATIC_OFFLINE_FARM: GameState = {
     "Grape Seed": new Decimal(10),
     "Olive Seed": new Decimal(10),
     "Apple Seed": new Decimal(10),
+    "Crop Machine": new Decimal(1),
     Bakery: new Decimal(1),
     Deli: new Decimal(1),
     Greenhouse: new Decimal(1),
@@ -680,7 +682,56 @@ export const STATIC_OFFLINE_FARM: GameState = {
 
   stock: INITIAL_STOCK,
   stockExpiry: {},
-  chickens: {},
+  chickens: {
+    "1": {
+      multiplier: 1,
+      coordinates: {
+        x: 10,
+        y: 0,
+      },
+      fedAt: 1,
+    },
+    "2": {
+      multiplier: 1,
+      coordinates: {
+        x: 10,
+        y: 1,
+      },
+      fedAt: 1,
+    },
+    "3": {
+      multiplier: 1,
+      coordinates: {
+        x: 10,
+        y: 2,
+      },
+      fedAt: 1,
+    },
+    "4": {
+      multiplier: 1,
+      coordinates: {
+        x: 11,
+        y: 0,
+      },
+      fedAt: 1,
+    },
+    "5": {
+      multiplier: 1,
+      coordinates: {
+        x: 11,
+        y: 1,
+      },
+      fedAt: 1,
+    },
+    "6": {
+      multiplier: 1,
+      coordinates: {
+        x: 11,
+        y: 2,
+      },
+      fedAt: 1,
+    },
+  },
   trades: {
     listings: {
       "1": {

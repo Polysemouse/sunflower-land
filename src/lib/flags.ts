@@ -28,7 +28,8 @@ export type FeatureName =
   | "BANNER_SALES"
   | "PRESTIGE_DESERT"
   | "DESERT_RECIPES"
-  | "CHICKEN_RESCUE";
+  | "CHICKEN_RESCUE"
+  | "CROP_MACHINE";
 
 // Used for testing production features
 export const ADMIN_IDS = [1, 2, 3, 39488];
@@ -36,7 +37,7 @@ export const ADMIN_IDS = [1, 2, 3, 39488];
 type FeatureFlag = (game: GameState) => boolean;
 
 const featureFlags: Record<FeatureName, FeatureFlag> = {
-  CHICKEN_RESCUE: testnetFeatureFlag,
+  CHICKEN_RESCUE: defaultFeatureFlag,
   PORTALS: testnetFeatureFlag,
   JEST_TEST: defaultFeatureFlag,
   DESERT_RECIPES: defaultFeatureFlag,
@@ -53,6 +54,7 @@ const featureFlags: Record<FeatureName, FeatureFlag> = {
   BANNER_SALES: clashOfFactionsFeatureFlag,
   PRESTIGE_DESERT: defaultFeatureFlag,
   GREENHOUSE: defaultFeatureFlag,
+  CROP_MACHINE: defaultFeatureFlag,
 };
 
 export const hasFeatureAccess = (game: GameState, featureName: FeatureName) => {
