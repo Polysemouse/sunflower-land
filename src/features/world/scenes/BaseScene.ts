@@ -121,15 +121,15 @@ export abstract class BaseScene extends Phaser.Scene {
 
   cursorKeys:
     | {
-      up: Phaser.Input.Keyboard.Key;
-      down: Phaser.Input.Keyboard.Key;
-      left: Phaser.Input.Keyboard.Key;
-      right: Phaser.Input.Keyboard.Key;
-      w?: Phaser.Input.Keyboard.Key;
-      s?: Phaser.Input.Keyboard.Key;
-      a?: Phaser.Input.Keyboard.Key;
-      d?: Phaser.Input.Keyboard.Key;
-    }
+        up: Phaser.Input.Keyboard.Key;
+        down: Phaser.Input.Keyboard.Key;
+        left: Phaser.Input.Keyboard.Key;
+        right: Phaser.Input.Keyboard.Key;
+        w?: Phaser.Input.Keyboard.Key;
+        s?: Phaser.Input.Keyboard.Key;
+        a?: Phaser.Input.Keyboard.Key;
+        d?: Phaser.Input.Keyboard.Key;
+      }
     | undefined;
 
   // Advanced server timing - not used
