@@ -8,8 +8,6 @@ import { MachineInterpreter } from "./lib/portalMachine";
 import {
   BOARD_OFFSET,
   BOARD_WIDTH,
-  CHICKEN_MAX_XY,
-  CHICKEN_MIN_XY,
   CHICKEN_SPAWN_CONFIGURATIONS,
   CHICKEN_SPEEDS,
   CHICKEN_SPRITE_PROPERTIES,
@@ -179,20 +177,32 @@ export class CropsAndChickensScene extends BaseScene {
       this.portalService?.send("START");
     }
 
-    this.currentPlayer.x = Phaser.Math.Wrap(
+    // warp player
+    const playerX = Phaser.Math.Wrap(
       this.currentPlayer.x,
       PLAYER_MIN_XY,
       PLAYER_MAX_XY
     );
-    this.currentPlayer.y = Phaser.Math.Wrap(
+    const playerY = Phaser.Math.Wrap(
       this.currentPlayer.y,
       PLAYER_MIN_XY,
       PLAYER_MAX_XY
     );
+    this.currentPlayer.x = playerX;
+    this.currentPlayer.y = playerY;
 
+    // warp chickens around player
     this.chickens.forEach((chicken) => {
-      chicken.x = Phaser.Math.Wrap(chicken.x, CHICKEN_MIN_XY, CHICKEN_MAX_XY);
-      chicken.y = Phaser.Math.Wrap(chicken.y, CHICKEN_MIN_XY, CHICKEN_MAX_XY);
+      chicken.x = Phaser.Math.Wrap(
+        chicken.x,
+        playerX - BOARD_WIDTH / 2,
+        playerX + BOARD_WIDTH / 2
+      );
+      chicken.y = Phaser.Math.Wrap(
+        chicken.y,
+        playerY - BOARD_WIDTH / 2,
+        playerY + BOARD_WIDTH / 2
+      );
       chicken.setDepth(chicken.y);
     });
 
@@ -330,12 +340,7 @@ export class CropsAndChickensScene extends BaseScene {
     const spriteName = `chicken_${direction}`;
     const spriteKey = `chicken_${direction}_anim`;
 
-    const chickens = [
-      this.add.sprite(x, y, spriteName),
-      this.add.sprite(x + BOARD_WIDTH, y, spriteName),
-      this.add.sprite(x, y + BOARD_WIDTH, spriteName),
-      this.add.sprite(x + BOARD_WIDTH, y + BOARD_WIDTH, spriteName),
-    ];
+    const chicken = this.add.sprite(x, y, spriteName);
 
     const startFrame = Phaser.Math.RND.integerInRange(
       0,
@@ -350,70 +355,67 @@ export class CropsAndChickensScene extends BaseScene {
       CHICKEN_SPEEDS.sidewaysMax
     );
 
-    chickens.forEach((chicken, index) => {
-      chicken.play({ key: spriteKey, startFrame: startFrame });
+    chicken.play({ key: spriteKey, startFrame: startFrame });
 
-      chicken.on(
-        "animationupdate",
-        (
-          _animation: Phaser.Animations.Animation,
-          frame: Phaser.Animations.AnimationFrame
-        ) => {
-          if (index === 0 && frame.index === 4) {
-            forwardSpeed = Phaser.Math.Clamp(
-              forwardSpeed +
-                Phaser.Math.RND.realInRange(
-                  -0.5 * (forwardSpeed - CHICKEN_SPEEDS.forwardMin) - 2,
-                  0.5 * (CHICKEN_SPEEDS.forwardMax - forwardSpeed) + 2
-                ),
-              CHICKEN_SPEEDS.forwardMin,
-              CHICKEN_SPEEDS.forwardMax
-            );
-            sidewaysSpeed = Phaser.Math.Clamp(
-              sidewaysSpeed +
-                Phaser.Math.RND.realInRange(
-                  0.2 *
-                    (direction === "left" || direction === "right"
-                      ? y - SQUARE_WIDTH * 4 - chicken.y
-                      : x - SQUARE_WIDTH * 4 - chicken.x) -
-                    2,
-                  0.2 *
-                    (direction === "left" || direction === "right"
-                      ? y + SQUARE_WIDTH * 4 - chicken.y
-                      : x + SQUARE_WIDTH * 4 - chicken.x) +
-                    2
-                ),
-              -CHICKEN_SPEEDS.sidewaysMax,
-              CHICKEN_SPEEDS.sidewaysMax
-            );
-          }
-          if (!chicken.body) return;
-
-          if (frame.index < 4) {
-            chicken.body.velocity.x =
-              direction === "left"
-                ? -forwardSpeed
-                : direction === "right"
-                ? forwardSpeed
-                : sidewaysSpeed;
-            chicken.body.velocity.y =
-              direction === "up"
-                ? -forwardSpeed
-                : direction === "down"
-                ? forwardSpeed
-                : sidewaysSpeed;
-          }
-          if (frame.index >= 4) {
-            chicken.body.velocity.x = 0;
-            chicken.body.velocity.y = 0;
-          }
+    chicken.on(
+      "animationupdate",
+      (
+        _animation: Phaser.Animations.Animation,
+        frame: Phaser.Animations.AnimationFrame
+      ) => {
+        if (frame.index === 4) {
+          forwardSpeed = Phaser.Math.Clamp(
+            forwardSpeed +
+              Phaser.Math.RND.realInRange(
+                -0.5 * (forwardSpeed - CHICKEN_SPEEDS.forwardMin) - 2,
+                0.5 * (CHICKEN_SPEEDS.forwardMax - forwardSpeed) + 2
+              ),
+            CHICKEN_SPEEDS.forwardMin,
+            CHICKEN_SPEEDS.forwardMax
+          );
+          sidewaysSpeed = Phaser.Math.Clamp(
+            sidewaysSpeed +
+              Phaser.Math.RND.realInRange(
+                0.2 *
+                  (direction === "left" || direction === "right"
+                    ? y - SQUARE_WIDTH * 4 - chicken.y
+                    : x - SQUARE_WIDTH * 4 - chicken.x) -
+                  2,
+                0.2 *
+                  (direction === "left" || direction === "right"
+                    ? y + SQUARE_WIDTH * 4 - chicken.y
+                    : x + SQUARE_WIDTH * 4 - chicken.x) +
+                  2
+              ),
+            -CHICKEN_SPEEDS.sidewaysMax,
+            CHICKEN_SPEEDS.sidewaysMax
+          );
         }
-      );
-      this.physics.add.existing(chicken);
+        if (!chicken.body) return;
 
-      if (!chicken.body) return;
-      if (!this.currentPlayer) return;
+        if (frame.index < 4) {
+          chicken.body.velocity.x =
+            direction === "left"
+              ? -forwardSpeed
+              : direction === "right"
+              ? forwardSpeed
+              : sidewaysSpeed;
+          chicken.body.velocity.y =
+            direction === "up"
+              ? -forwardSpeed
+              : direction === "down"
+              ? forwardSpeed
+              : sidewaysSpeed;
+        }
+        if (frame.index >= 4) {
+          chicken.body.velocity.x = 0;
+          chicken.body.velocity.y = 0;
+        }
+      }
+    );
+    this.physics.add.existing(chicken);
 
+    if (!!chicken.body && !!this.currentPlayer) {
       (chicken.body as Physics.Arcade.Body)
         .setSize(11, 9)
         .setOffset(1, 3)
@@ -429,9 +431,9 @@ export class CropsAndChickensScene extends BaseScene {
         undefined,
         this
       );
-    });
+    }
 
-    return chickens;
+    return chicken;
   }
 
   /**
@@ -454,7 +456,7 @@ export class CropsAndChickensScene extends BaseScene {
           direction
         )
       )
-    ).flatMap((chicken) => chicken);
+    );
   }
 
   /**

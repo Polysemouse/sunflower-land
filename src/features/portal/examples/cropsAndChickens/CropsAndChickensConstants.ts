@@ -10,9 +10,6 @@ export const BOARD_WIDTH = SQUARE_WIDTH * 52;
 export const PLAYER_MIN_XY = BOARD_WIDTH * 0.5 + BOARD_OFFSET;
 export const PLAYER_MAX_XY = BOARD_WIDTH * 1.5 + BOARD_OFFSET;
 
-export const CHICKEN_MIN_XY = BOARD_OFFSET;
-export const CHICKEN_MAX_XY = BOARD_WIDTH * 2 + BOARD_OFFSET;
-
 export const TOTAL_CROP_TYPES = 13;
 
 export const CROP_DEPOSIT_AREA_DIMENSIONS = {
