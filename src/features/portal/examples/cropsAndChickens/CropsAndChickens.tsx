@@ -104,10 +104,9 @@ export const CropsAndChickens: React.FC = () => {
               </Label>
               <div className="flex items-center">
                 <span className="mr-2">
-                  {`${t("crops-and-chickens.scoreInfo")}`.replace(
-                    "{{score}}",
-                    `${portalState.context.depositedScore}`
-                  )}
+                  {t("crops-and-chickens.score", {
+                    score: portalState.context.depositedScore,
+                  })}
                 </span>
                 <SquareIcon
                   icon={ITEM_DETAILS["Pirate Bounty"].image}

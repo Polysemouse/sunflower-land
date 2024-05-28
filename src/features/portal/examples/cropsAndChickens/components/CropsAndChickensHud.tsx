@@ -6,18 +6,18 @@ import { SUNNYSIDE } from "assets/sunnyside";
 import worldIcon from "assets/icons/world.png";
 import { goHome } from "../lib/portalUtil";
 import { HudContainer } from "components/ui/HudContainer";
-import { InnerPanel } from "components/ui/Panel";
 import { secondsToString } from "lib/utils/time";
-import { SquareIcon } from "components/ui/SquareIcon";
 import useUiRefresher from "lib/utils/hooks/useUiRefresher";
 import { GAME_SECONDS } from "../CropsAndChickensConstants";
-import { ITEM_DETAILS } from "features/game/types/images";
+import { Label } from "components/ui/Label";
+import { useAppTranslation } from "lib/i18n/useAppTranslations";
 
 export const CropsAndChickensHud: React.FC = () => {
   useUiRefresher({ delay: 100 });
 
   const { portalService } = useContext(PortalContext);
   const [portalState] = useActor(portalService);
+  const { t } = useAppTranslation();
 
   const travelHome = () => {
     goHome();
@@ -28,41 +28,74 @@ export const CropsAndChickensHud: React.FC = () => {
     ? GAME_SECONDS
     : Math.max(endAt - Date.now(), 0) / 1000;
 
+  const target = 1000;
+
   return (
     <>
       <HudContainer>
-        <InnerPanel
+        <div
           className="absolute"
           style={{
-            top: `${PIXEL_SCALE * 3}px`,
-            right: `${PIXEL_SCALE * 3}px`,
+            top: `${PIXEL_SCALE * 4}px`,
+            left: `${PIXEL_SCALE * 6}px`,
           }}
         >
-          <div className="flex items-center">
-            <SquareIcon icon={ITEM_DETAILS["Pirate Bounty"].image} width={16} />
-            <span className="text-sm mx-2">{depositedScore}</span>
-          </div>
-          <div className="flex items-center">
-            <SquareIcon icon={SUNNYSIDE.icons.basket} width={16} />
-            <span className="text-sm mx-2">{inventoryScore}</span>
-          </div>
-        </InnerPanel>
-
-        <InnerPanel
-          className="absolute left-1/2 transform -translate-x-1/2"
-          style={{
-            top: `${PIXEL_SCALE * 3}px`,
-          }}
-        >
-          <div className="flex items-center">
-            <SquareIcon icon={SUNNYSIDE.icons.stopwatch} width={16} />
-            <span className="text-sm mx-2">
-              {secondsToString(secondsLeft, {
-                length: "full",
+          {!!target && (
+            <Label icon={SUNNYSIDE.resource.pirate_bounty} type="vibrant">
+              {t("crops-and-chickens.targetScore", {
+                target: target,
               })}
-            </span>
+            </Label>
+          )}
+          <div className="relative">
+            <div className="h-12 w-full bg-black opacity-30 absolute coins-bb-hud-backdrop-reverse" />
+            <div
+              className="flex items-center space-x-2 text-stroke z-10"
+              style={{
+                width: "200px",
+                paddingTop: "3px",
+                paddingLeft: "3px",
+              }}
+            >
+              <span>
+                {t("crops-and-chickens.score", {
+                  score: depositedScore,
+                })}
+              </span>
+            </div>
           </div>
-        </InnerPanel>
+          <div className="relative">
+            <div className="h-12 w-full bg-black opacity-30 absolute coins-bb-hud-backdrop-reverse" />
+            <div
+              className="flex items-center space-x-2 text-stroke"
+              style={{
+                width: "200px",
+                paddingTop: "3px",
+                paddingLeft: "3px",
+              }}
+            >
+              <span>
+                {t("crops-and-chickens.inventory", {
+                  inventory: inventoryScore,
+                })}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <Label
+          className="absolute left-1/2 transform -translate-x-1/2"
+          icon={SUNNYSIDE.icons.stopwatch}
+          type="info"
+          style={{
+            top: `${PIXEL_SCALE * 4}px`,
+          }}
+        >
+          {secondsToString(secondsLeft, {
+            length: "full",
+          })}
+        </Label>
+
         <div
           className="fixed z-50 flex flex-col justify-between"
           style={{

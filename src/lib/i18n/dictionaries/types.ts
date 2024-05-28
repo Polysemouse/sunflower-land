@@ -1064,7 +1064,9 @@ export type CropsAndChickensMessages =
   | "crops-and-chickens.newChallengeDaily"
   | "crops-and-chickens.challengeCompleted"
   | "crops-and-chickens.gameOver"
-  | "crops-and-chickens.scoreInfo"
+  | "crops-and-chickens.targetScore"
+  | "crops-and-chickens.score"
+  | "crops-and-chickens.inventory"
   | "crops-and-chickens.exitAndClaimRewards"
   | "crops-and-chickens.comeBackLater";
 
