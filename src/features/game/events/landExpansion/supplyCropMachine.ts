@@ -32,10 +32,9 @@ export const MAX_OIL_CAPACITY_IN_MILLIS = 48 * 60 * 60 * 1000;
 
 export function getTotalOilMillisInMachine(
   queue: CropMachineQueueItem[],
-  unallocatedOilTime: number
+  unallocatedOilTime: number,
+  now: number = Date.now()
 ) {
-  const now = Date.now();
-
   const oil = queue.reduce((totalOil, item) => {
     // There is no oil to allocated to this pack
     if (!item.startTime) return totalOil;
@@ -127,14 +126,14 @@ export function updateCropMachine({
 
   queue.forEach((pack, index) => {
     // Skip packs that are already grown or if there's no oil left
-    if (pack.growTimeRemaining === 0 || !cropMachine.unallocatedOilTime) {
+    if (!!pack.readyAt || !cropMachine.unallocatedOilTime) {
       return;
     }
 
     const previousQueueItemReadyAt = queue[index - 1]?.readyAt ?? now;
 
     // Allocate oil to the pack and update its state
-    if (cropMachine.unallocatedOilTime > pack.growTimeRemaining) {
+    if (cropMachine.unallocatedOilTime >= pack.growTimeRemaining) {
       completelyAllocatePack(
         pack,
         cropMachine,
@@ -180,7 +179,8 @@ function completelyAllocatePack(
     delete pack.growsUntil;
   } else {
     // If the pack was not previously growing, set its readyAt time
-    pack.readyAt = previousQueueItemReadyAt + pack.growTimeRemaining;
+    pack.readyAt =
+      Math.max(previousQueueItemReadyAt, now) + pack.growTimeRemaining;
   }
 
   pack.growTimeRemaining = 0;
@@ -198,16 +198,12 @@ function partiallyAllocatedPack(
 ) {
   setPackStartTime(pack, index, previousQueueItemReadyAt, now);
 
-  if (index === 0) {
-    pack.growsUntil = now + (cropMachine.unallocatedOilTime as number);
-  } else {
-    updateGrowsUntil(
-      pack,
-      previousQueueItemReadyAt,
-      now,
-      cropMachine.unallocatedOilTime as number
-    );
-  }
+  updateGrowsUntil(
+    pack,
+    previousQueueItemReadyAt,
+    now,
+    cropMachine.unallocatedOilTime as number
+  );
 
   pack.growTimeRemaining -= cropMachine.unallocatedOilTime as number;
   cropMachine.unallocatedOilTime = 0;
@@ -223,7 +219,8 @@ function setPackStartTime(
   now: number
 ) {
   if (!pack.startTime) {
-    pack.startTime = index === 0 ? now : previousQueueItemReadyAt;
+    pack.startTime =
+      index === 0 ? now : Math.max(previousQueueItemReadyAt, now);
   }
 }
 
@@ -330,7 +327,9 @@ export function supplyCropMachine({
   if (seedsAdded.amount > 0) {
     queue.push({
       seeds: seedsAdded.amount,
-      amount: getPackYieldAmount(seedsAdded.amount, crop, stateCopy),
+      // getPackYieldAmount is computationally expensive - let the backend provide this
+      amount: 0,
+      // amount: getPackYieldAmount(seedsAdded.amount, crop, stateCopy),
       crop,
       growTimeRemaining: calculateCropTime(seedsAdded),
       totalGrowTime: calculateCropTime(seedsAdded),

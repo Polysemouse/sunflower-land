@@ -18,6 +18,7 @@ import { NPCName, NPC_WEARABLES } from "lib/npcs";
 import { FactionName, GameState } from "features/game/types/game";
 import { capitalize } from "lib/utils/capitalize";
 import { translate } from "lib/i18n/translate";
+import { FACTION_POINT_CUTOFF } from "features/game/events/landExpansion/donateToFaction";
 
 const FAN_NPCS: { name: FanArtNPC; x: number; y: number }[] = [
   {
@@ -42,7 +43,7 @@ const FAN_NPCS: { name: FanArtNPC; x: number; y: number }[] = [
   },
 ];
 
-type FactionNPC = {
+export type FactionNPC = {
   npc: NPCName;
   x: number;
   y: number;
@@ -556,7 +557,10 @@ export class PlazaScene extends BaseScene {
     super.create();
 
     // Faction setup
-    if (hasFeatureAccess(this.gameState, "FACTIONS")) {
+    if (
+      hasFeatureAccess(this.gameState, "FACTIONS") &&
+      Date.now() < FACTION_POINT_CUTOFF.getTime()
+    ) {
       this.chosenFaction = this.gameService.state.context.state?.faction?.name;
       this.setUpFactionBanners();
       this.setUpFactionNPCS();

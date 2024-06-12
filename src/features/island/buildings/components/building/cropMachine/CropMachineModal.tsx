@@ -143,14 +143,14 @@ export const CropMachineModal: React.FC<Props> = ({
 
   const getMachineStatusLabel = () => {
     if (running) {
-      return <Label type="default">{`Crop machine is running`}</Label>;
+      return <Label type="default">{t("cropMachine.running")}</Label>;
     }
 
     if (paused) {
-      return <Label type="warning">{`Crop machine has stopped`}</Label>;
+      return <Label type="warning">{t("cropMachine.stopped")}</Label>;
     }
 
-    return <Label type="default">{`Crop machine is idle`}</Label>;
+    return <Label type="default">{t("cropMachine.idle")}</Label>;
   };
 
   const getQueueItemCountLabelType = (
@@ -220,11 +220,14 @@ export const CropMachineModal: React.FC<Props> = ({
   ];
 
   const readyPacks = queue.filter((pack) => isCropPackReady(pack));
-
+  const onHide = () => {
+    setOverlayScreen(undefined);
+    onClose();
+  };
   return (
-    <Modal show={show} onHide={onClose}>
+    <Modal show={show} onHide={onHide}>
       <CloseButtonPanel
-        tabs={[{ icon: SUNNYSIDE.icons.seedling, name: "Crop Machine" }]}
+        tabs={[{ icon: SUNNYSIDE.icons.seedling, name: t("cropMachine.name") }]}
         currentTab={tab}
         setCurrentTab={setTab}
         onClose={onClose}
@@ -252,11 +255,14 @@ export const CropMachineModal: React.FC<Props> = ({
                   </div>
                 )}
                 <div className="flex">
-                  <Box
-                    image={ITEM_DETAILS[`${selectedPack.crop} Seed`].image}
-                  />
+                  <Box image={ITEM_DETAILS[selectedPack.crop].image} />
                   <div className="flex flex-col justify-center space-y-1">
-                    <span className="text-xs">{`${selectedPack.amount} x ${selectedPack.crop} Seeds`}</span>
+                    <span className="text-xs">
+                      {`${t("growing")} `}
+                      {selectedPack.crop === "Potato"
+                        ? `${selectedPack.crop}es`
+                        : `${selectedPack.crop}s`}
+                    </span>
                     {show && (
                       <PackGrowthProgressBar
                         paused={paused}
@@ -295,7 +301,7 @@ export const CropMachineModal: React.FC<Props> = ({
                     <span className="text-xs">
                       {t("cropMachine.totalCrops", {
                         cropName: selectedPack.crop.toLocaleLowerCase(),
-                        total: selectedPack.amount,
+                        total: setPrecision(new Decimal(selectedPack.amount)),
                       })}
                     </span>
                   </div>
@@ -500,7 +506,11 @@ export const CropMachineModal: React.FC<Props> = ({
                 stopped={paused || idle}
                 queue={queue}
                 unallocatedOilTime={unallocatedOilTime}
-                onAddOil={() => setOverlayScreen("addOil")}
+                onAddOil={() => {
+                  // Reset Oil Before showing Overlay to Prevent accidental adding
+                  setTotalOil(0);
+                  setOverlayScreen("addOil");
+                }}
               />
             )}
           </div>

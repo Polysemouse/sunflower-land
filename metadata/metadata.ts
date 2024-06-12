@@ -7530,13 +7530,13 @@ export const OPEN_SEA_ITEMS: Record<InventoryItemName, Metadata> = {
       { trait_type: "Tradable", value: "No" },
     ],
   },
-  "Battlecry Drum": {
-    name: "Battlecry Drum",
-    description: "",
+  "Gaucho Rug": {
+    name: "Gaucho Rug",
+    description: "A commerative rug to support South Brazil.",
     decimals: 0,
     external_url: "https://docs.sunflower-land.com/getting-started/about",
-    image: `../public/erc1155/images/2018.png`,
     attributes: [{ trait_type: "Purpose", value: "Decoration" }],
+    image: "../public/erc1155/images/2018.png",
   },
   "Bullseye Board": {
     name: "Bullseye Board",
@@ -7556,13 +7556,14 @@ export const OPEN_SEA_ITEMS: Record<InventoryItemName, Metadata> = {
     image: `../public/erc1155/images/2020.png`,
     attributes: [{ trait_type: "Purpose", value: "Decoration" }],
   },
-  "Gaucho Rug": {
-    name: "Gaucho Rug",
-    description: "A commerative rug to support South Brazil.",
+  Cluckapult: {
+    name: "Cluckapult",
+    description: "",
+
     decimals: 0,
     external_url: "https://docs.sunflower-land.com/getting-started/about",
+    image: `../public/erc1155/images/2021.png`,
     attributes: [{ trait_type: "Purpose", value: "Decoration" }],
-    image: "../public/erc1155/images/2021.png",
   },
   "Golden Gallant": {
     name: "Golden Gallant",
@@ -7667,10 +7668,9 @@ export const OPEN_SEA_ITEMS: Record<InventoryItemName, Metadata> = {
     image: `../public/erc1155/images/2032.png`,
     attributes: [{ trait_type: "Purpose", value: "Decoration" }],
   },
-  Cluckapult: {
-    name: "Cluckapult",
+  "Battlecry Drum": {
+    name: "Battlecry Drum",
     description: "",
-
     decimals: 0,
     external_url: "https://docs.sunflower-land.com/getting-started/about",
     image: `../public/erc1155/images/2033.png`,
@@ -7889,5 +7889,53 @@ export const OPEN_SEA_ITEMS: Record<InventoryItemName, Metadata> = {
         value: 0.25,
       },
     ],
+  },
+
+  "Bumpkin Emblem": {
+    name: "Bumpkin Emblem",
+    description:
+      "A symbol of the Bumpkin Faction. Show your support for the Bumpkin Faction with this emblem.",
+    decimals: 0,
+    external_url: "https://docs.sunflower-land.com/getting-started/about",
+    image: "../public/erc1155/images/742.png",
+    attributes: [{ trait_type: "Purpose", value: "Decoration" }],
+  },
+
+  "Goblin Emblem": {
+    name: "Goblin Emblem",
+    description:
+      "A symbol of the Goblin Faction. Show your support for the Goblin Faction with this emblem.",
+    decimals: 0,
+    external_url: "https://docs.sunflower-land.com/getting-started/about",
+    image: "../public/erc1155/images/741.png",
+    attributes: [{ trait_type: "Purpose", value: "Decoration" }],
+  },
+
+  "Nightshade Emblem": {
+    name: "Nightshade Emblem",
+    description:
+      "A symbol of the Nightshade Faction. Show your support for the Nightshade Faction with this emblem.",
+    decimals: 0,
+    external_url: "https://docs.sunflower-land.com/getting-started/about",
+    image: "../public/erc1155/images/744.png",
+    attributes: [{ trait_type: "Purpose", value: "Decoration" }],
+  },
+
+  "Sunflorian Emblem": {
+    name: "Sunflorian Emblem",
+    description:
+      "A symbol of the Sunflorian Faction. Show your support for the Sunflorian Faction with this emblem.",
+    decimals: 0,
+    external_url: "https://docs.sunflower-land.com/getting-started/about",
+    image: "../public/erc1155/images/743.png",
+    attributes: [{ trait_type: "Purpose", value: "Decoration" }],
+  },
+  Mark: {
+    name: "Mark",
+    description: "Currency of the Factions. Use this in the Marks Shop.",
+    decimals: 0,
+    external_url: "https://docs.sunflower-land.com/getting-started/about",
+    image: "../public/erc1155/images/745.png",
+    attributes: [{ trait_type: "Purpose", value: "Decoration" }],
   },
 };

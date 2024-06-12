@@ -6,9 +6,7 @@ import {
   AvailableSeeds,
   Base,
   BasicTreasure,
-  Beach,
   Beehive,
-  BeachLuck,
   BirdiePlaza,
   BoostDescriptions,
   BoostEffectDescriptions,
@@ -178,29 +176,23 @@ import {
   Minigame,
   RemoveCropMachine,
   Username,
+  EasterEggKeys,
 } from "./types";
 
 const generalTerms: Record<GeneralTerms, string> = {
   "2x.sale": "2x Sale",
-  advanced: "Advanced",
   achievements: "Achievements",
-  accept: "Accept:",
-  "accepting.terms": "Accepting terms...",
-  "already.own.item": "You already own this item",
   "amount.matic": "Amount in MATIC",
   deposit: "Deposit",
   add: "Add",
   addSFL: "Add SFL",
   "add.liquidity": "Add Liquidity",
-  "alr.bought": "Already Bought!",
   "alr.claim": "Already Claimed!",
   "alr.completed": "Already Completed",
   "alr.crafted": "Already Crafted!",
   "alr.minted": "Already minted!",
   "are.you.sure": "Are you sure?",
   auction: "Auction",
-  auctions: "Auctions",
-  "available.all.year": "Available all year round: ",
   available: "Available",
   back: "Back",
   bait: "Bait",
@@ -209,7 +201,6 @@ const generalTerms: Record<GeneralTerms, string> = {
   banner: "Banner",
   banners: "Banners",
   basket: "Basket",
-  "beach.bounty": "Beach Bounty",
   beta: "Beta",
   bid: "Bid",
   bounty: "Bounty",
@@ -217,7 +208,6 @@ const generalTerms: Record<GeneralTerms, string> = {
   buy: "Buy",
   cancel: "Cancel",
   "card.cash": "Card / Cash",
-  caught: "Caught",
   check: "Check",
   chest: "Chest",
   chores: "Chores",
@@ -230,12 +220,10 @@ const generalTerms: Record<GeneralTerms, string> = {
   coins: "Coins",
   collect: "Collect",
   "coming.soon": "Coming soon",
-  common: "Common",
   completed: "Completed",
   complete: "Complete",
   confirm: "Confirm",
   congrats: "Congratulations",
-  connected: "Connected",
   connecting: "Connecting",
   continue: "Continue",
   cook: "Cook",
@@ -245,12 +233,9 @@ const generalTerms: Record<GeneralTerms, string> = {
   "copy.failed": "Copy Failed!",
   coupons: "Coupons",
   craft: "Craft",
-  crafting: "Crafting",
   crops: "Crops",
-  "currently.Unavailable": "Currently Unavailable!",
   danger: "Danger",
   date: "Date",
-  decoration: "Decoration",
   deliver: "Deliver",
   deliveries: "Deliveries",
   "deliveries.closed": "Ticket deliveries closed",
@@ -258,12 +243,7 @@ const generalTerms: Record<GeneralTerms, string> = {
   details: "Details:",
   donate: "Donate",
   donating: "Donating",
-  donation: "Donation",
   donations: "Donations",
-  "drafting.noitem": "No items available to list",
-  "drafting.select": "Select an item to list",
-  "drafting.trade.detail": "Trade Details",
-  dragMe: "Drag me",
   earn: "Earn",
   "easter.eggs": "Easter Eggs",
   egg: "Egg",
@@ -278,7 +258,6 @@ const generalTerms: Record<GeneralTerms, string> = {
   explore: "Explore",
   faction: "Faction",
   farm: "Farm",
-  "farm.storage": "Farm Storage",
   featured: "Featured",
   fee: "fee",
   "feed.bumpkin": "Feed Bumpkin",
@@ -289,31 +268,23 @@ const generalTerms: Record<GeneralTerms, string> = {
   "flowers.found": "Flowers Found",
   foods: "Foods",
   for: "for",
-  "for.info.wearable": "for more info about this wearable",
   forbidden: "Forbidden",
   free: "Free",
   fruit: "Fruit",
   fruits: "Fruits",
   gift: "Gift",
   "go.home": "Go Home",
-  "goblin.delivery":
-    "Goblins keep their delivery cut in the treasury. View them also on {{opensea}}",
   gotIt: "Got it",
-  goto: "Go to",
   "grant.wish": "Grant New Wish",
   greenhouse: "Greenhouse",
+  growing: "Growing",
   guide: "Guide",
-  harvested: "Harvested",
   honey: "Honey",
   "hungry?": "Hungry?",
   info: "Info",
-  kick: "Kick",
   item: "Item:",
   land: "Land",
-  "land.id": "Land ID: ",
   "last.updated": "Last updated:",
-  left: "Left",
-  "let'sDoThis": "Let's do this!",
   "lets.go": "Let's Go!",
   limit: "Limit",
   "linked.wallet": "Linked wallet",
@@ -328,8 +299,6 @@ const generalTerms: Record<GeneralTerms, string> = {
   "making.wish": "Making a wish",
   max: "Max",
   "max.reached": "Max reached",
-  message: "Message",
-  messages: "Messages",
   minimum: "Minimum",
   mint: "Mint",
   minting: "Minting",
@@ -339,8 +308,6 @@ const generalTerms: Record<GeneralTerms, string> = {
   nextSkillPtLvl: "Next skill point: level",
   no: "No",
   "no.delivery.avl": "No deliveries available",
-  "no.event": "No Event",
-  "no.have.bumpkin": "You do not have a Bumpkin!",
   "no.limits.exceeded": "No limits exceeded",
   "no.mail": "Your mailbox is empty.",
   "no.obsessions": "No Obsessions",
@@ -353,8 +320,6 @@ const generalTerms: Record<GeneralTerms, string> = {
   open: "Open",
   optional: "Optional",
   "open.gift": "Open Gift",
-  "p2p.trading": "P2P Trading",
-  "pass.required": "Pass Required",
   place: "Place",
   "place.map": "Place on map",
   "place.bid": "Place your bid",
@@ -363,17 +328,12 @@ const generalTerms: Record<GeneralTerms, string> = {
   player: "Player",
   "play.again": "Play again",
   "please.try.again": "Please try again later.",
-  "please.wait": "Please wait",
   "pay.attention.feedback": "Pay attention to the feedback icons:",
   print: "Print",
-  "promo.code": "Promo Code",
-  "providing.liquidity": "Providing Liquidity",
   purchased: "purchased",
   purchasing: "Purchasing",
   rank: "Rank",
-  rare: "Rare",
   "read.more": "Read more",
-  "ready.trade": "Ready to trade?",
   refresh: "Refresh",
   refreshing: "Refreshing",
   remaining: "remaining",
@@ -385,10 +345,8 @@ const generalTerms: Record<GeneralTerms, string> = {
   reqSkillPts: "Required Skill Points:",
   reqSkills: "Required Skills:",
   required: "Required",
-  "not.required": "Not Required",
   requires: "Requires",
   requirements: "Requirements",
-  resale: "Resale",
   resources: "Resources",
   restock: "Restock",
   retry: "Retry",
@@ -396,9 +354,7 @@ const generalTerms: Record<GeneralTerms, string> = {
   "reward.discovered": "Reward Discovered",
   save: "Save",
   saving: "Saving",
-  search: "Search",
   searching: "Searching",
-  "seasonal.treasure": "Seasonal Treasure",
   seeds: "Seeds",
   selected: "Selected",
   "select.resource": "Select your resource: ",
@@ -406,42 +362,29 @@ const generalTerms: Record<GeneralTerms, string> = {
   "sell.all": "Sell All",
   "sell.one": "Sell 1",
   "sell.ten": "Sell 10",
-  "session.expire": "Your session has expired",
   "session.expired": "Session expired!",
-  settings: "Settings",
   share: "Share",
-  shopping: "Shopping",
   skillPts: "Skill Points:",
   skills: "Skills",
   skipping: "Skipping",
   "skip.order": "Skip Order",
   "sound.effects": "Sound Effects:",
-  "special.event": "Special Event",
-  spin: "Spin",
   start: "Start",
-  "start.new.chore": "Start New Chore",
   submit: "Submit",
   submitting: "Submitting",
   success: "Success!",
-  "support.team": "Support Team",
   swapping: "Swapping",
   syncing: "Syncing",
   task: "Task",
-  "terms.condition": "Terms and conditions",
   test: "Test",
   "thank.you": "Thank you!",
-  time: "Time",
   tools: "Tools",
   total: "Total",
   trades: "Trades",
   trading: "Trading",
   transfer: "Transfer",
-  "trash.collection": "Trash Collection",
-  travel: "Travel",
-  "traveller.ready": "Hey Traveller! Ready to explore?",
   "try.again": "Try again",
   uhOh: "Uh oh!",
-  uncommon: "Uncommon",
   "unlock.land": "Unlock more land",
   unlocking: "Unlocking",
   unmute: "Unmute",
@@ -450,20 +393,13 @@ const generalTerms: Record<GeneralTerms, string> = {
   version: "Version",
   viewAll: "View all",
   visit: "Visit",
-  "visit.enter.land": "Enter a Land ID to browse what's on offer.",
-  "visit.friend": "Visit Friend",
-  "visit.land": "Visit land",
-  wallet: "Wallet",
   warning: "Warning",
   welcome: "Welcome!",
   "wishing.well": "Wishing Well",
   withdraw: "Withdraw",
-  withdrawing: "Withdrawing",
   wish: "wish",
   yes: "Yes",
   "yes.please": "Yes Please",
-  "you.are.here": "You are here",
-  "hoarding.check": "Hoarder Check",
   opensea: "Opensea",
   layouts: "Layouts",
   labels: "Labels",
@@ -478,13 +414,6 @@ const generalTerms: Record<GeneralTerms, string> = {
   collectibles: "Collectibles",
   buds: "Buds",
   wearables: "Wearables",
-  bumpkin: "Bumpkin",
-  storage: "Storage",
-  upcoming: "Upcoming",
-  collection: "Collection",
-  purchase: "Purchase",
-  listing: "Listing",
-  cancelling: "Cancelling",
   skip: "Skip",
   docs: "Docs",
   exit: "Exit",
@@ -498,24 +427,46 @@ const generalTerms: Record<GeneralTerms, string> = {
   boosts: "Boosts",
   decorations: "Decorations",
   "sfl/coins": "SFL/Coins",
-  "goblin.exchange": "Goblin Exchange",
-  "goblin.deliveries": "Goblin Deliveries",
   vipAccess: "VIP Access",
-  vip: "VIP",
   bought: "Bought",
 };
 
 const timeUnits: Record<TimeUnits, string> = {
-  // time
-  sec: "sec",
-  min: "min",
-  hr: "hr",
-  day: "day",
+  // Full Singular
+  "time.second.full": "second",
+  "time.minute.full": "minute",
+  "time.hour.full": "hour",
+  "time.day.full": "day",
 
-  secs: "secs",
-  mins: "mins",
-  hrs: "hrs",
-  days: "days",
+  // Full Plural
+  "time.seconds.full": "seconds",
+  "time.minutes.full": "minutes",
+  "time.hours.full": "hours",
+  "time.days.full": "days",
+
+  // Medium Singular
+  "time.sec.med": "sec",
+  "time.min.med": "min",
+  "time.hr.med": "hr",
+  "time.day.med": "day",
+
+  // Medium Plural
+  "time.secs.med": "secs",
+  "time.mins.med": "mins",
+  "time.hrs.med": "hrs",
+  "time.days.med": "days",
+
+  // Short
+  "time.second.short": "s",
+  "time.minute.short": "m",
+  "time.hour.short": "h",
+  "time.day.short": "d",
+
+  // Relative Time
+  "time.seconds.ago": "{{time}} {{secondORseconds}} ago",
+  "time.minutes.ago": "{{time}} {{minuteORminutes}} ago ",
+  "time.hours.ago": "{{time}} {{hourORhours}} ago ",
+  "time.days.ago": "{{time}} {{dayORdays}} ago",
 };
 
 const achievementTerms: Record<AchievementsTerms, string> = {
@@ -621,7 +572,6 @@ const achievementTerms: Record<AchievementsTerms, string> = {
     "Howdy, egg collector! Chickens are wonderful farm companions that provide us with delicious eggs.",
   "eggcellentCollection.two":
     "By collecting eggs, you'll have a fresh supply of ingredients for cooking, and you'll also unlock special recipes and bonuses.",
-  "task.harvestSunflowers": "Harvest 10 Sunflowers",
 };
 
 const addSFL: Record<AddSFL, string> = {
@@ -655,7 +605,6 @@ const availableSeeds: Record<AvailableSeeds, string> = {
 };
 
 const base: Record<Base, string> = {
-  "base.missing": "Missing name in config",
   "base.far.away": "You are too far away",
   "base.iam.far.away": "I am too far away",
 };
@@ -664,15 +613,13 @@ const basicTreasure: Record<BasicTreasure, string> = {
   "giftGiver.description":
     "Congratulations, you discovered a gift giver! Each day you can claim a free prize from them.",
   "giftGiver.label": "Gift Giver",
-  "giftGiver.opened": "Already opened today",
+
   "basic.treasure.missingKey": "Missing Key",
   "basic.treasure.needKey": "You need a Treasure Key to open this chest",
   "rare.treasure.needKey": "You need a Rare Key to open this chest",
   "luxury.treasure.needKey": "You need a Luxury Key to open this chest",
   "basic.treasure.getKey":
     "You can get treasure keys by completing tasks for Bumpkins",
-  "basic.treasure.goodLuck": "Good Luck",
-  "basic.treasure.key": "Treasure Key",
   "basic.treasure.congratsKey": "Congratulations, you have the key!",
   "basic.treasure.openChest":
     "Would you like to open the chest and claim a reward?",
@@ -688,19 +635,6 @@ const basicTreasure: Record<BasicTreasure, string> = {
   "raffle.how":
     "You can collect Prize Tickets for free through special events and Bumpkin deliveries.",
   "raffle.enter": "Enter",
-};
-
-const beach: Record<Beach, string> = {
-  "beach.party": "We are working hard to prepare for a beach party.",
-  "beach.ready": "Get your sunscreen and umbrellas ready, Summer is coming!",
-};
-
-const beachLuck: Record<BeachLuck, string> = {
-  "beachLuck.tryLuck": "Wanna try your luck today?",
-  "beachLuck.uncleFound":
-    "My uncle found a diamond ring digging at this beach. All I keep finding is boring SFL coins.",
-  "beachLuck.grabShovel": "Just grab a shovel and start digging.",
-  "beachLuck.refreshesIn": "Treasures Refreshes in: ",
 };
 
 const beehive: Record<Beehive, string> = {
@@ -721,7 +655,7 @@ const birdiePlaza: Record<BirdiePlaza, string> = {
   "birdieplaza.collectTickets":
     "Collect enough {{seasonalTicket}}s and you can craft rare NFTs. That's how I got this rare outfit!",
   "birdieplaza.whatIsSeason": "What is a season?",
-  "birdieplaza.howToEarnTickets": "How do I earn {{seasonalTicket}}s?",
+  "birdieplaza.howToEarnTickets": "{{seasonalTicket}}s?",
   "birdieplaza.earnTicketsVariety":
     "You can earn {{seasonalTicket}} in a variety of ways.",
   "birdieplaza.commonMethod":
@@ -838,15 +772,13 @@ const boostDescriptions: Record<BoostDescriptions, string> = {
   "description.genie.lamp":
     "A magical lamp that contains a genie who will grant you three wishes.",
   "description.basic.scarecrow":
-    "Choosy defender of your farm's VIP (Very Important Plants)",
+    "Boost nearby Sunflowers, Potatoes and Pumpkins.",
   "description.scary.mike":
-    "The veggie whisperer and champion of frightfully good harvests!",
+    "Boost nearby Carrots, Cabbages, Beetroots and Cauliflowers",
   "description.laurie.chuckle.crow":
-    "With her disconcerting chuckle, she shooes peckers away from your crops!",
-  "description.immortal.pear":
-    "A long-lived pear that makes fruit trees growing in patches last longer.",
-  "description.bale":
-    "A poultry's favorite neighbor, providing a cozy retreat for chickens",
+    "Boost nearby Eggplant, Corn, Radish, Wheat and Kale",
+  "description.immortal.pear": "Increase the survival of your fruit patches.",
+  "description.bale": "Boost nearby chickens.",
   "description.sir.goldensnout":
     "A royal member, Sir Goldensnout infuses your farm with sovereign prosperity through its golden manure.",
   "description.freya.fox":
@@ -861,15 +793,11 @@ const boostEffectDescriptions: Record<BoostEffectDescriptions, string> = {
   "description.freya.fox.boost": "+0.5 Pumpkin",
   "description.sir.goldensnout.boost": "+0.5 Crop (AOE 4x4)",
   "description.maximus.boost": "+1 Eggplant",
-  "description.basic.scarecrow.boost":
-    "-20% Basic Crop Growth Time: Sunflower, Potato and Pumpkin (AOE 3x3)",
-  "description.scary.mike.boost":
-    "+0.2 Medium Crop: Carrot, Cabbage, Soybean, Beetroot, Cauliflower and Parsnip (AOE 3x3)",
-  "description.laurie.chuckle.crow.boost":
-    "+0.2 Advanced Crop: Eggplant, Corn, Radish, Wheat, Kale (AOE 3x3)",
-  "description.bale.boost": "+0.2 Egg (AOE 4x4)",
-  "description.immortal.pear.boost":
-    "+1 Fruit Harvest for fruit seeds growing on Fruit Patches",
+  "description.basic.scarecrow.boost": "-20% Growth Time",
+  "description.scary.mike.boost": "+0.2 Medium Crops",
+  "description.laurie.chuckle.crow.boost": "+0.2 Advanced Crops",
+  "description.bale.boost": "+0.2 Eggs",
+  "description.immortal.pear.boost": "+1 Fruit Harvest per seed",
   "description.treasure.map.boost": "+20% Coins on Treasure Bounty Sales",
   "description.poppy.boost": "+0.1 Corn",
   "description.kernaldo.boost": "-25% Corn Growth Time",
@@ -969,6 +897,7 @@ const boostEffectDescriptions: Record<BoostEffectDescriptions, string> = {
   "description.vinny.boost": "+0.25 Grape",
   "description.rice.panda.boost": "+0.25 Rice",
   "description.olive.shirt.boost": "+0.25 Olive",
+  "description.tofu.mask.boost": "+0.1 Soybean",
 };
 
 const bountyDescription: Record<BountyDescription, string> = {
@@ -1017,16 +946,15 @@ const buildingDescriptions: Record<BuildingDescriptions, string> = {
   "description.tent": "(Discontinued)",
   "description.house": "A place to rest your head",
   "description.crop.machine": "Automate your crop production",
+  "building.oil.remaining": "{{oil}} Oil in building",
+
+  "cooking.building.oil.description":
+    "You can boost your recipe cooking times by {{boost}}% when adding oil into the {{buildingName}}.",
+  "cooking.building.oil.boost": "Oil boost",
+  "cooking.building.runtime": "Runtime {{time}}",
 };
 
 const bumpkinDelivery: Record<BumpkinDelivery, string> = {
-  "bumpkin.delivery.haveFlower":
-    "Have you got a flower for me? Make sure it is something I like.",
-  "bumpkin.delivery.notFavorite":
-    "Hmmmm, this isn't my favorite flower. But I guess it's the thought that counts.",
-  "bumpkin.delivery.loveFlower": "Wow, thanks! I love this flower!",
-  "bumpkin.delivery.favoriteFlower":
-    "This is my favorite flower! Thanks a bunch!",
   "bumpkin.delivery.selectFlower": "Select a flower",
   "bumpkin.delivery.noFlowers": "Oh no, you don't have any flowers to gift!",
   "bumpkin.delivery.thanks": "Gee Wizz thanks Bumpkin!!!",
@@ -1147,10 +1075,14 @@ const bumpkinTrade: Record<BumpkinTrade, string> = {
   "bumpkinTrade.list": "List",
   "bumpkinTrade.maxListings": "Max listings reached",
   "bumpkinTrade.max": "Max: {{max}}",
+  "bumpkinTrade.min": "Min: {{min}}",
+  "bumpkinTrade.minimumFloor": "Min unit price: {{min}}",
+  "bumpkinTrade.maximumFloor": "Max unit price: {{max}}",
   "bumpkinTrade.floorPrice": "Floor Price: {{price}} SFL",
-  "bumpkinTrade.price/unit": "{{price}} / unit",
   "bumpkinTrade.sellConfirmation":
     "Sell {{quantity}} {{resource}} for {{price}} SFL?",
+  "bumpkinTrade.cant.sell.all": "Can't sell all",
+  "bumpkinTrade.price/unit": "{{price}}/unit",
 };
 
 const goblinTrade: Record<GoblinTrade, string> = {
@@ -1203,6 +1135,7 @@ const choresStart: Record<ChoresStart, string> = {
   "chores.noChore": "Sorry, I don't have any chores that need doing right now.",
   "chores.newSeason": "A new season approaches, chores will temporarily close.",
   "chores.choresFrozen": "New seasonal chores will be available soon.",
+  "chores.left": "{{chores}} left",
 };
 
 const chumDetails: Record<ChumDetails, string> = {
@@ -1244,6 +1177,8 @@ const chumDetails: Record<ChumDetails, string> = {
   "chumDetails.speedChicken": "Fast food dessert for sharp-teeth hunters.",
   "chumDetails.richChicken":
     "Delicacy for the bright-bellied terror of the screen.",
+  "chumDetails.sunfish": "Perfect for a full moon...",
+  "chumDetails.horseMackerel": "Only for the biggest appetites",
 };
 
 const claimAchievement: Record<ClaimAchievement, string> = {
@@ -1258,10 +1193,13 @@ const community: Record<Community, string> = {
 };
 
 const compostDescription: Record<CompostDescription, string> = {
-  "compost.fruitfulBlend": "Fruitful Blend boosts each fruit yield by +0.1",
-  "compost.sproutMix": "Sprout Mix increases your crop yield by +0.2",
-  "compost.sproutMixBoosted": "Sprout Mix increases your crop yield by +0.4",
-  "compost.rapidRoot": "Rapid Root reduces crop growth time by 50%",
+  "compost.fruitfulBlend":
+    "Fruitful Blend boosts the yield of each fruit growing on fruit patches by +0.1",
+  "compost.sproutMix":
+    "Sprout Mix increases your crop yield from plots by +0.2",
+  "compost.sproutMixBoosted":
+    "Sprout Mix increases your crop yield from plots by +0.4",
+  "compost.rapidRoot": "Rapid Root reduces crop growth time from plots by 50%",
 };
 
 const composterDescription: Record<ComposterDescription, string> = {
@@ -1273,6 +1211,8 @@ const composterDescription: Record<ComposterDescription, string> = {
 const confirmationTerms: Record<ConfirmationTerms, string> = {
   "confirmation.sellCrops":
     "Are you sure you want to sell {{cropAmount}} {{cropName}} for {{coinAmount}} Coins?",
+  "confirmation.buyCrops":
+    "Are you sure you want to spend {{coinAmount}} Coins to buy {{seedNo}} {{seedName}}s?",
 };
 
 const confirmSkill: Record<ConfirmSkill, string> = {
@@ -1298,14 +1238,19 @@ const conversations: Record<Conversations, string> = {
     "Bring me your finest harvest, and I will give you a fair price for them!",
   "betty-intro.three":
     "You need seeds? From potatoes to parsnips, I've got you covered!",
-  "betty.market-intro.one":
-    "Hey there, Bumpkin! It's Betty from the farmer's market. I travel between islands to buy crops and sell fresh seeds.",
+  "betty.market-intro.one": "Great work Bumpkin! You've just discovered Crops!",
   "betty.market-intro.two":
-    "Good news: you just stumbled upon a shiny new shovel! Bad news: we've hit a bit of a crop shortage.",
+    "You can harvest and sell them at my market to earn coins and grow your island.",
+
   "betty.market-intro.three":
-    "For a limited time I am offering newcomers double the money for any crops you bring to me.",
+    "You can harvest them and sell them at my market to earn coins and grow your farming empire",
   "betty.market-intro.four":
     "Harvest those Sunflowers and let's start your farming empire.",
+
+  "firepit-intro.one": "Congratulations Bumpkin...You're a natural!",
+  "firepit-intro.two":
+    "If you want to level up & unlock new abilities, gather crops and visit my fire pit. I can cook some nutritious food for you.",
+
   "bruce-intro.headline": "Cooking Introduction",
   "bruce-intro.one": "I'm the owner of this lovely little bistro.",
   "bruce-intro.two":
@@ -1330,9 +1275,9 @@ const conversations: Record<Conversations, string> = {
     "Head over to the work bench and craft a scarecrow to speed up those Sunflowers.",
   "pete.levelthree.one": "Congratulations, your green thumb is truly shining!",
   "pete.levelthree.two":
-    "It's high time we head to the Plaza, where your farming prowess can shine even brighter.",
+    "It looks like you've got some deliveries in the Plaza to complete.",
   "pete.levelthree.three":
-    "At the plaza you can deliver your resources for rewards, craft magical items & trade with other players.",
+    "View your deliveries in the bottom left of the screen. Once you've gathered the resources, you can travel and deliver the items to the Bumpkins.",
   "pete.levelthree.four":
     "You can travel by clicking on the world icon in the bottom left.",
   "pete.help.zero": "Visit the fire pit, cook food and eat to level up.",
@@ -1449,8 +1394,8 @@ const cropMachine: Record<CropMachine, string> = {
   "cropMachine.paused": "Paused",
   "cropMachine.readyToHarvest": "Ready to harvest",
   "cropMachine.boosted": "Boosted",
-  "cropMachine.totalSeeds": "Total seeds: {{total}}",
-  "cropMachine.totalCrops": "Total {{cropName}}: {{total}}",
+  "cropMachine.totalSeeds": "Total seeds planted: {{total}}",
+  "cropMachine.totalCrops": "Total {{cropName}} yield: {{total}}",
   "cropMachine.harvest": "Harvest",
   "cropMachine.pickSeed": "Select a seed",
   "cropMachine.addSeeds": "Add {{seedType}}s",
@@ -1470,6 +1415,10 @@ const cropMachine: Record<CropMachine, string> = {
   "cropMachine.maxRuntime": "Max runtime: {{time}}",
   "cropMachine.oilToAdd": "Oil to add: {{amount}}",
   "cropMachine.totalRuntime": "Total runtime: {{time}}",
+  "cropMachine.running": "Crop Machine is running",
+  "cropMachine.stopped": "Crop Machine has stopped",
+  "cropMachine.idle": "Crop Machine is idle",
+  "cropMachine.name": "Crop Machine",
 };
 
 const cropsAndChickens: Record<CropsAndChickensMessages, string> = {
@@ -1612,12 +1561,12 @@ const decorationDescriptions: Record<DecorationDescriptions, string> = {
   "description.palm.tree":
     "Tall, beachy, shady and chic, palm trees make waves sashay.",
   "description.battleCryDrum": "",
-  "description.bullseyBoard": "",
+  "description.bullseyeBoard": "",
   "description.chessRug": "",
   "description.cluckapult": "",
   "description.goldenGallant": "",
   "description.goldenGarrison": "",
-  "description.goldenGurdian": "",
+  "description.goldenGuardian": "",
   "description.noviceKnight": "",
   "description.regularPawn": "",
   "description.rookieRook": "",
@@ -1931,6 +1880,13 @@ const discordBonus: Record<DiscordBonus, string> = {
   "discord.bonus.freeGift":
     "The best part...everyone who joins gets a free gift!",
   "discord.bonus.connect": "Connect to Discord",
+  "fontReward.bonus.claim":
+    "Sunflower Land has had a makeover! Thanks for everyone involved in this beautiful update. For extra customisation, you can go to Settings > Appearance.",
+  "fontReward.bonus.intro1": "Huh...something strange has happened.",
+  "fontReward.bonus.intro2":
+    "Sunflower Land feels different. I wonder what it is?",
+  "fontReward.bonus.intro3":
+    "Ah ah! It's the font - I can see everything clearly now!",
 };
 
 const donation: Record<Donation, string> = {
@@ -1999,8 +1955,6 @@ const errorTerms: Record<ErrorTerms, string> = {
   "error.composterAlreadyBoosted": "Already boosted",
   "error.missingEggs": "Missing Eggs",
   "error.insufficientSFL": "Insufficient SFL",
-  "error.insufficientCoins": "Insufficient Coins",
-  "error.insufficientSpaceForChickens": "Insufficient space for more chickens",
   "error.dailyAttemptsExhausted": "Daily attempts exhausted",
   "error.missingRod": "Missing rod",
   "error.missingBait": "Missing ",
@@ -2023,17 +1977,13 @@ const errorTerms: Record<ErrorTerms, string> = {
   "error.requiredBuildingNotExist": "Required building does not exist",
   "error.cookingInProgress": "Cooking already in progress",
   "error.insufficientIngredient": "Insufficient ingredient",
-  "error.itemNotExist": "Item does not exist",
-  "error.notEnoughStock": "Not enough stock",
-  "error.tooEarly": "Too early",
-  "error.tooLate": "Too late",
-  "error.decorationCollides": "Decoration collides",
-  "error.idAlreadyExists": "ID already exists",
   "error.ClientRPC": "Client RPC Error",
   "error.walletInUse.one": "Wallet in Use",
   "error.walletInUse.two":
     "This wallet is already linked to a farm. Please use social login or another wallet.",
   "error.walletInUse.three": "Try another login method",
+  "error.notEnoughOil": "Not enough oil",
+  "error.oilCapacityExceeded": "Oil capacity exceeded",
 };
 
 const event: Record<Event, string> = {
@@ -2065,7 +2015,7 @@ const factions: Record<Factions, string> = {
     "The Nightshades are the mysterious and magical beings of Sunflower Land. Do you believe in magic and secrets?",
   "faction.countdown": "In {{timeUntil}} the faction battle begins.",
   "faction.join.confirm": "Do you want to join the {{faction}}?",
-  "faction.cannot.change": "You cannot change factions once you have chosen.",
+  "faction.cannot.change": "You cannot change factions.",
   "faction.joined.sunflorians.intro":
     "Greetings, noble Sunflorian! Join us as we rally our forces to claim supremacy and uphold the honor of our kingdom.",
   "faction.joined.bumpkins.intro":
@@ -2094,6 +2044,49 @@ const factions: Record<Factions, string> = {
   "faction.points.title": "Faction Points",
   "faction.points.pledge.warning":
     "Pledge a faction to receive faction points!",
+  "faction.emblemAirdrop": "Emblem Airdrop",
+  "faction.emblemAirdrop.closes": "Ends: {{date}}",
+
+  // Kingdom NPCs
+  "faction.restrited.area":
+    "Hold up farmer! This castle is off limits to you. Only the {{faction}} are allowed here.",
+  "faction.not.pledged":
+    "Hmm. It looks like you haven't pledged to a faction yet. Would you like to join the {{faction}}?",
+  "faction.cost":
+    "Show your allegiance and join the {{faction}}. Entry to the faction costs {{cost}} SFL.",
+  "faction.pledge.reward":
+    "In exchange, you will receive a {{banner}} and {{emblems}} emblems.",
+  "faction.welcome": "Welcome to the {{faction}}!",
+  "faction.greeting.goblins": "Hail the Goblin King!",
+  "faction.greeting.sunflorians": "Our lineage will reign supreme!",
+  "faction.greeting.bumpkins": "We must unite the farmers!",
+  "faction.greeting.nightshades": "The shadows will guide us to victory!",
+
+  // Faction Claim Emblems
+  "faction.claimEmblems.alreadyClaimed":
+    "Hey! We already rewarded you with your emblems!",
+  "faction.claimEmblems.emblemsEarned": "Emblems Earned",
+  "faction.claimEmblems.yourRank": "Your Rank",
+  "faction.claimEmblems.yourPercentile": "Your Percentile",
+  "faction.claimEmblems.yourEmblems": "Your Emblems",
+  "faction.claimEmblems.noContribution":
+    "You have not contributed any points to the faction.",
+  "faction.claimEmblems.statistics": "Statistics",
+  "faction.claimEmblems.thankYou":
+    "Thank you {{player}}for your contributions to the {{Faction}}! Take these emblems, they represent your ownership of the faction!",
+  "faction.claimEmblems.claimMessage":
+    "You contributed {{count}} faction points. Your rank was {{rank}}. You in the top {{percentile}}% of {{Faction}}.",
+  "faction.claimEmblems.claim": "Claim {{count}} Emblems",
+  "faction.claimEmblems.congratulations":
+    "Congratulations! You've received {{count}} emblems!",
+  "faction.claimEmblems.comparison":
+    "Here is how you compare to your faction members.",
+  "faction.claimEmblems.totalMembers": "Total Faction Members",
+  "faction.claimEmblems.totalEmblems": "Total Faction Emblems",
+  "faction.claimEmblems.percentile": "Top {{percentile}}%",
+  "faction.claimEmblems.travelNow": "Travel Now",
+  "faction.claimEmblems.visitMe":
+    "Visit me, {{recruiterName}}, in the Kingdom to claim your emblems.",
 };
 
 const festiveTree: Record<FestiveTree, string> = {
@@ -2215,6 +2208,8 @@ const fishermanModal: Record<FishermanModal, string> = {
     "Bring me bait and resources and we'll reel in the rarest prizes that the ocean has to offer!",
   "fishermanModal.crazyHappening":
     "Wow, something crazy is happening......It is a fish frenzy!",
+  "fishermanModal.fullMoon":
+    "Wow, look at that full moon! I've heard rumours that during this time you have a chance to catch rare Marine Marvels.",
   "fishermanModal.bonusFish":
     "Hurry, you will get a bonus fish for each catch!",
   "fishermanModal.dailyLimitReached":
@@ -2406,7 +2401,7 @@ const foodDescriptions: Record<FoodDescriptions, string> = {
   "description.slowJuice": "Nutrient-rich juice, handcrafted by bumpkins.",
   "description.steamedRedRice":
     "Perfectly steamed red rice, a bumpkin's delight.",
-  "description.sushirRoll": "Delicious sushi roll, skillfully prepared.",
+  "description.sushiRoll": "Delicious sushi roll, skillfully prepared.",
   "description.theLot": "Flavorful fruit blend, refreshing and nutritious.",
   "description.tofuScramble":
     "Hearty scramble, packed with protein and flavor.",
@@ -2542,6 +2537,13 @@ const gameDescriptions: Record<GameDescriptions, string> = {
 
   //Home
   "description.homeOwnerPainting": "A painting of the owner of this home.",
+
+  // Emblems
+  "description.goblin.emblem": "Show your allegiance to the Goblins",
+  "description.sunflorian.emblem": "Show your allegiance to the Sunflorians",
+  "description.bumpkin.emblem": "Show your allegiance to the Bumpkins",
+  "description.nightshade.emblem": "Show your allegiance to the Nightshades",
+  "description.faction.mark": "Use these in the faction shop",
 };
 
 const gameTerms: Record<GameTerms, string> = {
@@ -2567,6 +2569,8 @@ const gameTerms: Record<GameTerms, string> = {
   "aoe.locked": "AOE Locked",
   sunflowerLandCodex: "Sunflower Land Codex",
   "visiting.farmId": "Visting #{{farmId}}",
+  "stock.inStock": "{{stock}} in stock",
+  "stock.left": "{{stock}} left",
 };
 
 const garbageCollector: Record<GarbageCollector, string> = {
@@ -2624,8 +2628,8 @@ const goldTooth: Record<GoldTooth, string> = {
 };
 
 const guideCompost: Record<GuideCompost, string> = {
-  "guide.compost.add.eggs.speed": "Add eggs to speed up production",
-  "guide.compost.add.eggs": "Add Eggs",
+  "guide.compost.addEggs.speed": "Add eggs to speed up production",
+  "guide.compost.addEggs": "Add Eggs",
   "guide.compost.eggs": "Eggs",
   "guide.compost.cropGrowthTime": "-50% Crop Growth Time",
   "guide.compost.fishingBait": "Fishing bait",
@@ -2636,6 +2640,8 @@ const guideCompost: Record<GuideCompost, string> = {
     "Each compost yields worms that can be used as bait for fishing",
   "guide.compost.useEggs":
     "Tired of waiting? Use Eggs to speed up the compost production",
+  "guide.compost.addEggs.confirmation":
+    "Are you sure you want to add {{noEggs}} Eggs to reduce compost production time by {{time}}?",
 };
 
 const guideTerms: Record<GuideTerms, string> = {
@@ -2756,7 +2762,7 @@ const hayseedHankV2: Record<HayseedHankV2, string> = {
     "However, my bones ain't what they used to be. If you can help me with my daily chores, I will reward you with {{seasonalTicket}}.",
   "hayseedHankv2.action": "Let's do it",
   "hayseedHankv2.title": "Hank's Daily Chores",
-  "hayseedHankv2.newChoresAvailable": "New chores available in",
+  "hayseedHankv2.newChoresAvailable": "New chores:",
   "hayseedHankv2.skipChores": "You can skip chores each new day",
   "hayseedHankv2.greeting":
     "Well, howdy there, young whippersnappers! I'm Hayseed Hank...",
@@ -2915,7 +2921,7 @@ const interactableModals: Record<InteractableModals, string> = {
     "Rumour has it they are searching for Bumpkin apprentices to grow mutant crops with them.",
   "interactableModals.guildHouse.message":
     "Hold on Bumpkin! You need a Bud if you want to enter the Guild House.",
-  "interactableModals.guildHouse.budsCollection": "Buds Collection on Opensea",
+  "interactableModals.guildHouse.budsCollection": "Opensea",
   "interactableModals.bettyHome.message":
     "Oh, sweetie, as much as I love my crops, my house is a private space, not open to visitors right now.",
   "interactableModals.bertHome.message":
@@ -2947,6 +2953,7 @@ const islandName: Record<IslandName, string> = {
   "island.home": "Home",
   "island.pumpkin.plaza": "Pumpkin Plaza",
   "island.beach": "Beach",
+  "island.kingdom": "Kingdom",
   "island.woodlands": "Woodlands",
   "island.helios": "Helios",
   "island.goblin.retreat": "Goblin Retreat",
@@ -2979,7 +2986,8 @@ const islandupgrade: Record<Islandupgrade, string> = {
     "This area of Sunflower Land is known for its exotic resources. Expand your land to discover fruit, flowers, bee hives & rare minerals!",
   "islandupgrade.desertResourcesDescription":
     "The harsh desert environment requires new technology to survive. Expand your land to discover new buildings and what's inside!",
-  "islandupgrade.requiredIsland": "Unlocks on {{islandType}} Island",
+  "islandupgrade.requiredIsland": "Unlocks at {{islandType}}",
+  "islandupgrade.otherIsland": "{{island}} Island",
 };
 
 const landscapeTerms: Record<LandscapeTerms, string> = {
@@ -3163,8 +3171,10 @@ const noaccount: Record<Noaccount, string> = {
   "noaccount.createNewFarm": "Create new farm",
   "noaccount.selectNFTID": "Select your NFT ID:",
   "noaccount.welcomeMessage":
-    "Welcome to Sunflower Land. It looks like you don't have a farm yet.",
+    "Welcome to Sunflower Land. Do you want to create a farm?",
   "noaccount.promoCodeLabel": "Promo Code",
+  "noaccount.haveFarm": "No, I have one",
+  "noaccount.letsGo": "Yes, let's go!",
 };
 
 const noBumpkin: Record<NoBumpkin, string> = {
@@ -3429,6 +3439,60 @@ const npc_message: Record<NPC_MESSAGE, string> = {
     "Kraken's causing panic, Bumpkins missing. Help me gather its tentacles for their safety.",
   "npcMessages.shelly.msg8":
     "Bumpkins' safety's my top priority, and I'm afraid the Kraken's involved. Tentacles can make a difference!",
+
+  "npcMessages.gambit.msg1":
+    "Feeling lucky today? I've got a wager that might pique your interest!",
+  "npcMessages.gambit.msg2":
+    "Step right up! Ready to test your luck and play a game?",
+  "npcMessages.gambit.msg3":
+    "The stakes are high and the game is on. Are you in?",
+  "npcMessages.gambit.msg4":
+    "I've got a risky proposition for you. Care to place a bet?",
+  "npcMessages.gambit.msg5":
+    "Luck favors the bold! Let's see if you can outwit me.",
+  "npcMessages.gambit.msg6":
+    "Fancy a game of chance? The odds might be in your favor.",
+  "npcMessages.gambit.msg7":
+    "Ready for a gamble? I've got just the challenge for you.",
+  "npcMessages.gambit.msg8":
+    "Place your bets and let's see who comes out on top!",
+  "npcMessages.gambit.msg9":
+    "Feeling daring? I've got a high-stakes game just for you.",
+  "npcMessages.queenVictoria.msg1":
+    "Peasant, have you brought my taxes? The throne's coffers must be filled.",
+  "npcMessages.queenVictoria.msg2":
+    "I expect nothing less than perfection. Have you completed my orders?",
+  "npcMessages.queenVictoria.msg3":
+    "Do you have what I require, or are you wasting my time?",
+  "npcMessages.queenVictoria.msg4":
+    "The throne sits idle, and so do my coffers. Have you brought my dues?",
+  "npcMessages.queenVictoria.msg5":
+    "I trust you have brought what I asked for. Do not disappoint me.",
+  "npcMessages.queenVictoria.msg6":
+    "I have no time for idle chatter. Show me what you've brought.",
+  "npcMessages.queenVictoria.msg7":
+    "The kingdom's wealth must grow. Have you fulfilled your duty?",
+  "npcMessages.queenVictoria.msg8":
+    "Peasant, your queen awaits. Have you completed your task?",
+  "npcMessages.queenVictoria.msg9":
+    "I demand excellence. Have you brought my taxes?",
+  "npcMessages.jester.msg1":
+    "Welcome to the court! Ready for a jest or two about the royals?",
+  "npcMessages.jester.msg2":
+    "Ah, a new face! Fancy a laugh at the queen's expense?",
+  "npcMessages.jester.msg3": "The court's a lively place! Got any good jokes?",
+  "npcMessages.jester.msg4":
+    "Hello, adventurer! Let's share a laugh about the royals.",
+  "npcMessages.jester.msg5":
+    "Ahoy! Ready to hear the latest jest about our dear queen?",
+  "npcMessages.jester.msg6":
+    "Step into the court and enjoy the humor. Got any good jokes?",
+  "npcMessages.jester.msg7":
+    "Greetings, friend! The court is always lively with jesters around.",
+  "npcMessages.jester.msg8":
+    "Well, well, look who’s here! Got any funny stories?",
+  "npcMessages.jester.msg9":
+    "The queen loves a good laugh. Ready to join the fun?",
 };
 
 const npc: Record<Npc, string> = {
@@ -3959,15 +4023,155 @@ const npcDialogues: Record<NpcDialogues, string> = {
     "Wow, thanks Bumpkin. Here is a small gift for your help!",
   "npcDialogues.default.locked": "Please come back tomorrow.",
 
-  // Glinteye Intro
-  "npcDialogues.glinteye.intro1":
-    "Ah, adventurer! Glinteye at your service. Ready to trade secrets and resources? Dive into my listings or add your own. Let's make a deal!",
-  "npcDialogues.glinteye.intro2":
-    "Welcome, curious soul! I'm Glinteye, your guide to trading wonders. Seek or list resources with me; fortune favors the bold!",
-  "npcDialogues.glinteye.intro3":
-    "Glinteye's my name, trading's my game! Browse or list, there's always a twist. What's your fancy today?",
-  "npcDialogues.glinteye.intro4":
-    "Hello there! I'm Glinteye, the goblin of trade. Explore player trades or list your items. Let's see what we can find together!",
+  // Queen Victoria Intro
+  "npcDialogues.queenVictoria.intro1":
+    "Oh, it's you. Do you have my taxes ready, peasant?",
+  "npcDialogues.queenVictoria.intro2":
+    "Greetings, subject. I trust you have brought the taxes I demanded?",
+  "npcDialogues.queenVictoria.intro3":
+    "What do you want, peasant? I'm busy worrying about the throne. Have you brought my taxes?",
+  "npcDialogues.queenVictoria.intro4":
+    "Oh, the things I must tolerate. Make it quick, peasant. Did you bring my taxes?",
+  "npcDialogues.queenVictoria.intro5":
+    "The throne sits idle, and here you are. I hope you brought my taxes, peasant.",
+
+  // Queen Victoria Positive Delivery
+  "npcDialogues.queenVictoria.positiveDelivery1":
+    "Finally, something done right. You've brought my taxes. Consider yourself acknowledged.",
+  "npcDialogues.queenVictoria.positiveDelivery2":
+    "Very well, this will suffice. You've brought the taxes. You may go now.",
+  "npcDialogues.queenVictoria.positiveDelivery3":
+    "Acceptable. You've brought my taxes. Perhaps you're not entirely useless.",
+  "npcDialogues.queenVictoria.positiveDelivery4":
+    "Impressive, for a peasant. The taxes are in order. You may leave.",
+  "npcDialogues.queenVictoria.positiveDelivery5":
+    "Good. You've managed to bring my taxes. The throne shall not remain empty forever.",
+
+  // Queen Victoria Negative Delivery
+  "npcDialogues.queenVictoria.negativeDelivery1":
+    "What is this? You haven't brought my taxes? How utterly disappointing.",
+  "npcDialogues.queenVictoria.negativeDelivery2":
+    "Pathetic. No taxes? How do you expect the kingdom to thrive?",
+  "npcDialogues.queenVictoria.negativeDelivery3":
+    "Disgraceful. You come to me without the taxes. This is unacceptable.",
+  "npcDialogues.queenVictoria.negativeDelivery4":
+    "Really? No taxes? I should have known not to expect much from peasants.",
+  "npcDialogues.queenVictoria.negativeDelivery5":
+    "Useless! Without the taxes, how can I maintain the kingdom's wealth?",
+
+  // Queen Victoria NoOrder
+  "npcDialogues.queenVictoria.noOrder1":
+    "Hmph, it seems I have no tasks for you at the moment. You're free to go, but don't forget who rules here.",
+  "npcDialogues.queenVictoria.noOrder2":
+    "No active orders for now, peasant. Consider yourself lucky. Be gone.",
+
+  // Queen Victoria gift dialogues
+  "npcDialogues.queenVictoria.reward":
+    "Very well, I suppose you deserve a token for your services. Don't expect this often.",
+  "npcDialogues.queenVictoria.flowerIntro":
+    "Have you laid eyes on the magnificent Primula Enigma? I desire one...",
+  "npcDialogues.queenVictoria.averageFlower":
+    "This is not what I envisioned, but I suppose it will do. Leave it here.",
+  "npcDialogues.queenVictoria.badFlower":
+    "This is utterly unsuitable. Find me a better one, peasant.",
+  "npcDialogues.queenVictoria.goodFlower":
+    "Ah, splendid! This Primula Enigma is precisely what I wanted. Well done, for once.",
+
+  // Gambit Intro
+  "npcDialogues.gambit.intro1":
+    "Hehe, what do we have here? Ready to play a game of chance, friend?",
+  "npcDialogues.gambit.intro2":
+    "Well, well, if it isn't my favorite risk-taker! Care to place a bet?",
+  "npcDialogues.gambit.intro3":
+    "Greetings, my fellow adventurer! Shall we test our luck today?",
+  "npcDialogues.gambit.intro4":
+    "Ah, a new face! Ready to gamble your way to fortune, or perhaps misfortune?",
+  "npcDialogues.gambit.intro5":
+    "Hey there! Fancy a game of wits and chance? The stakes are high, just the way I like it.",
+
+  // Gambit Positive Delivery
+  "npcDialogues.gambit.positiveDelivery1":
+    "Aha! You've come through! Seems luck is on your side today.",
+  "npcDialogues.gambit.positiveDelivery2":
+    "Well played! You've brought exactly what I needed. Fortune favors the bold!",
+  "npcDialogues.gambit.positiveDelivery3":
+    "Perfect! You've delivered just what I was hoping for. Let's see if your luck holds!",
+  "npcDialogues.gambit.positiveDelivery4":
+    "Excellent! You've got what I needed. Seems the odds were in your favor this time.",
+  "npcDialogues.gambit.positiveDelivery5":
+    "Bravo! You've brought what I asked for. Perhaps there's more fortune to be found.",
+
+  // Gambit Negative Delivery
+  "npcDialogues.gambit.negativeDelivery1":
+    "Oh, tough luck! You don't have what I need. Better luck next time!",
+  "npcDialogues.gambit.negativeDelivery2":
+    "Not quite what I was hoping for. Keep trying, and maybe the odds will be in your favor.",
+  "npcDialogues.gambit.negativeDelivery3":
+    "Ah, bad luck! You don't have it. But don't give up, there's always another chance!",
+  "npcDialogues.gambit.negativeDelivery4":
+    "Close, but not quite! You don't have what I'm looking for. Try again, the game isn't over.",
+  "npcDialogues.gambit.negativeDelivery5":
+    "Oops, seems you're out of luck this time. But don't worry, keep playing and you'll win eventually.",
+
+  // Gambit NoOrder
+  "npcDialogues.gambit.noOrder1":
+    "Looks like I don't have any bets for you right now. Come back later and we'll see what we can wager!",
+  "npcDialogues.gambit.noOrder2":
+    "No games for you today, my friend. But stick around, the stakes are always changing!",
+
+  // Jester Intro
+  "npcDialogues.jester.intro1":
+    "Ah, a new face in the court! Ready for a jest or two?",
+  "npcDialogues.jester.intro2":
+    "Greetings, friend! Fancy a laugh at the royals' expense?",
+  "npcDialogues.jester.intro3":
+    "Well, well, look who’s graced the court! Got any good jokes?",
+  "npcDialogues.jester.intro4":
+    "Hello, adventurer! Ready to hear the latest about our dear queen?",
+  "npcDialogues.jester.intro5":
+    "Ahoy! Step into the court and let's share a laugh or two about the royals.",
+
+  // Jester Positive Delivery
+  "npcDialogues.jester.positiveDelivery1":
+    "Haha! You've brought exactly what I need. You're funnier than I thought!",
+  "npcDialogues.jester.positiveDelivery2":
+    "Perfect! You've got just what I asked for. Maybe you should be the jester!",
+  "npcDialogues.jester.positiveDelivery3":
+    "Marvelous! You've delivered right on cue. The court will be delighted!",
+  "npcDialogues.jester.positiveDelivery4":
+    "Fantastic! You've brought the goods. The queen will be amused!",
+  "npcDialogues.jester.positiveDelivery5":
+    "Splendid! Just what I needed. You might have a knack for this!",
+
+  // Jester Negative Delivery
+  "npcDialogues.jester.negativeDelivery1":
+    "Oh dear, that's not what I needed. But hey, it's the thought that counts!",
+  "npcDialogues.jester.negativeDelivery2":
+    "Oops, not quite right! But don't worry, even the best jesters miss the mark sometimes.",
+  "npcDialogues.jester.negativeDelivery3":
+    "Oh no, that's not it! But don't fret, we'll laugh about this later.",
+  "npcDialogues.jester.negativeDelivery4":
+    "Haha, not what I asked for! But I appreciate the effort. Try again?",
+  "npcDialogues.jester.negativeDelivery5":
+    "Whoops, that's not what I needed. But hey, every joke has its off day!",
+
+  // Jester NoOrder
+  "npcDialogues.jester.noOrder1":
+    "No tasks for you right now, friend. But feel free to stick around and enjoy the court's humor!",
+  "npcDialogues.jester.noOrder2":
+    "No orders today, but don't be a stranger! The court is always lively with jesters around.",
+
+  // Jester gift dialogues
+  "npcDialogues.jester.reward":
+    "Bravo! Here’s a little something for your trouble. Keep the laughs coming!",
+  "npcDialogues.jester.flowerIntro":
+    "Ever seen a Red Balloon Flower or a Red Carnation? They always bring a smile to my face...",
+  "npcDialogues.jester.averageFlower":
+    "Hmm, not exactly a knee-slapper, but it'll do. Thanks!",
+  "npcDialogues.jester.badFlower":
+    "Oh no, this flower is as funny as a wet sock! Try again, will you?",
+  "npcDialogues.jester.goodFlower":
+    "Splendid! This flower is perfect. Almost as good as one of my jokes!",
 };
 
 const nyeButton: Record<NyeButton, string> = {
@@ -4192,8 +4396,7 @@ const removeHungryCaterpillar: Record<RemoveHungryCaterpillar, string> = {
 const removeCropMachine: Record<RemoveCropMachine, string> = {
   "removeCropMachine.title": "Remove Crop Machine?",
   "removeCropMachine.description":
-    "This action will remove oil and all the seeds stored in your crop machine.",
-  "removeCropMachine.removeSeeds": "Remove seeds",
+    "This action will remove all the oil stored in your crop machine.",
 };
 
 const resale: Record<Resale, string> = {
@@ -4217,7 +4420,8 @@ const restock: Record<Restock, string> = {
   "restock.one.buck":
     "You are going to use 1 Block Buck to restock all shop items in the game.",
   "restock.sure": "Are you sure you want to Restock?",
-  "restock.seed.buy": "You have too many seeds in your basket!",
+  "restock.tooManySeeds": "You have too many seeds in your basket!",
+  "seeds.reachingInventoryLimit": "You are reaching your seed basket limit!",
 };
 
 const retreatTerms: Record<RetreatTerms, string> = {
@@ -4454,7 +4658,7 @@ const statements: Record<Statements, string> = {
   "statements.mutant.chicken":
     "Congratulations, your chicken has laid a very rare mutant chicken!",
   "statements.news":
-    "Recieve the latest news, complete chores & feed your Bumpkin.",
+    "Receive the latest news, complete chores & feed your Bumpkin.",
   "statements.ohNo": "Oh no! Something went wrong!",
   "statements.openGuide": "Open guide",
   "statements.patience": "Thank you for your patience.",
@@ -4509,7 +4713,6 @@ const statements: Record<Statements, string> = {
   "statements.water.well.needed.two":
     "In order to support more crops, build a well.",
   "statements.soldOut": "Sold out",
-  "statements.inStock": "in stock",
   "statements.soldOutWearables": "View sold out wearables",
   "statements.craft.composter": "Craft at Composter",
   "statements.wallet.to.inventory.transfer": "Deposit items from your wallet",
@@ -4704,7 +4907,7 @@ const wallet: Record<Wallet, string> = {
     "Some actions require a Farm NFT. This helps keep all of your items secure on the Blockchain",
   "wallet.uniqueFarmNFT":
     "A unique farm NFT will be minted to store your progress",
-  "wallet.mintFreeNFT": "Mint your free NFT",
+  "wallet.mintFreeNFT": "Mint your NFT",
   "wallet.wrongChain": "Wrong Chain",
   "wallet.walletAlreadyLinked": "Wallet already linked",
   "wallet.linkAnotherWallet": "Please link another wallet",
@@ -4820,7 +5023,13 @@ const world: Record<World, string> = {
     "Howdy Bumpkin, welcome to the Pumpkin Plaza. Here Bumpkins from far and wide come together to trade, complete deliveries and play mini-games.",
   "world.intro.two":
     "Explore the Plaza and find Bumpkins who are waiting for your deliveries. In exchange, they will give you rewards!",
-  "world.intro.three": "A few quick hints before you begin your adventure:",
+  "world.intro.missingDelivery":
+    "Hmmm, it looks like you haven't gathered resources for a delivery yet. You can still explore in the meantime.",
+  "world.intro.delivery":
+    "Oh great, it looks like you've got the resources for a delivery!",
+  "world.intro.levelUpToTravel": "Level up to travel",
+  "world.intro.findNPC": "Explore the plaza and find {{name}}.",
+  "world.intro.find": "Find",
   "world.intro.visit":
     "Visit NPCs and complete deliveries to earn SFL, Coins and rare rewards.",
   "world.intro.craft":
@@ -4843,6 +5052,9 @@ const world: Record<World, string> = {
   "world.retreat": "Retreat",
   "world.home": "Home",
   "world.kingdom": "Kingdom",
+  "world.travelTo": "Travel to",
+  "world.plazaShort": "Plaza",
+  "world.retreatShort": "Retreat",
 };
 
 const wornDescription: Record<WornDescription, string> = {
@@ -4889,6 +5101,8 @@ const restrictionReason: Record<RestrictionReason, string> = {
   "restrictionReason.noRestriction": "No restriction",
   "restrictionReason.genieLampRubbed": "Genie Lamp rubbed",
   "restrictionReason.oilReserveDrilled": "Oil reserves are drilled",
+  "restrictionReason.buildingInUse": "Building is in use",
+  "restrictionReason.beehiveInUse": "Beehive in use",
 };
 
 export const leaderboardTerms: Record<Leaderboard, string> = {
@@ -4923,6 +5137,11 @@ const gameOptions: Record<GameOptions, string> = {
   "gameOptions.generalSettings.connectDiscord": "Connect to Discord",
   "gameOptions.generalSettings.assignRole": "Assign Discord Role",
   "gameOptions.generalSettings.changeLanguage": "Change Language",
+  "gameOptions.generalSettings.darkMode": "Dark Mode",
+  "gameOptions.generalSettings.lightMode": "Light Mode",
+  "gameOptions.generalSettings.appearance": "Appearance",
+  "gameOptions.generalSettings.font": "Font",
+
   "gameOptions.generalSettings.disableAnimations": "Disable Animations",
   "gameOptions.generalSettings.enableAnimations": "Enable Animations",
   "gameOptions.generalSettings.share": "Share",
@@ -4958,6 +5177,25 @@ const minigame: Record<Minigame, string> = {
   "minigame.chickenRescueHelp": "Can you help me rescue the chickens?",
 };
 
+export const easterEggTerms: Record<EasterEggKeys, string> = {
+  "easterEgg.queensDiary": "Victoria's Diary",
+  "easterEgg.jesterDiary": "Jester's Diary",
+  "easterEgg.tywinDiary": "Tywin's Diary",
+  "easterEgg.kingDiary": "King's Diary",
+  "easterEgg.lostKnight": "Lost Knight",
+  "easterEgg.knight": "Hellllllp...Don't trust the Gambit or his dirty tricks!",
+  "easterEgg.kingdomBook1":
+    "Dear Diary, I fear the king may never return. Whispers in the court suggest someone may seize the throne in his absence. This kingdom teeters on a knife's edge.",
+  "easterEgg.kingdomBook2":
+    "Tywin is too weak and far too soft on the Bumpkins. They need to pay more taxes. This kingdom needs a firm hand, not his gentle touch.",
+  "easterEgg.kingdomBook3":
+    "The royals are a cruel bunch. They treat everyone like dirt beneath their feet. No wonder no one likes them! At least they give me plenty of material for my jokes.",
+  "easterEgg.kingdomBook4":
+    "Authority and respect are crucial to suppressing the Goblins. We didn’t endure the war only to hand them power. They must be kept in their place for our kingdom's safety.",
+  "easterEgg.kingdomBook5":
+    "To be king, I must be extra cruel. Once I ascend the throne, all Goblins will suffer. Their rebellion ends with me, and our kingdom will be stronger for it.",
+};
+
 export const ENGLISH_TERMS: Record<TranslationKeys, string> = {
   ...achievementTerms,
   ...addSFL,
@@ -4965,8 +5203,6 @@ export const ENGLISH_TERMS: Record<TranslationKeys, string> = {
   ...availableSeeds,
   ...base,
   ...basicTreasure,
-  ...beach,
-  ...beachLuck,
   ...beehive,
   ...birdiePlaza,
   ...boostDescriptions,
@@ -5137,4 +5373,5 @@ export const ENGLISH_TERMS: Record<TranslationKeys, string> = {
   ...wornDescription,
   ...restrictionReason,
   ...removeCropMachine,
+  ...easterEggTerms,
 };

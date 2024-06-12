@@ -149,7 +149,7 @@ export abstract class BaseScene extends Phaser.Scene {
 
   constructor(options: BaseSceneOptions) {
     if (!options.name) {
-      throw new Error(translate("base.missing"));
+      throw new Error("Missing name in config");
     }
 
     const defaultedOptions: Required<BaseSceneOptions> = {
@@ -332,6 +332,8 @@ export abstract class BaseScene extends Phaser.Scene {
       "Building Layer 3",
       "Building Layer 4",
       "Club House Roof",
+      "Building Layer 4",
+      "Building Decorations 2",
     ];
     this.map.layers.forEach((layerData, idx) => {
       if (layerData.name === "Crows") return;

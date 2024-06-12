@@ -255,6 +255,11 @@ import crowFeather from "assets/icons/crow_feather.webp";
 import mermaidScale from "assets/icons/mermaid_scale.webp";
 import tulipBulb from "assets/icons/tulip_bulb.png";
 import scroll from "assets/icons/scroll.webp";
+import goblinEmblem from "assets/icons/goblin_emblem.webp";
+import bumpkinEmblem from "assets/icons/bumpkin_emblem.webp";
+import sunflorianEmblem from "assets/icons/sunflorian_emblem.webp";
+import nightshadeEmblem from "assets/icons/nightshade_emblem.webp";
+import mark from "assets/icons/faction_mark.webp";
 import supporterTicket from "assets/icons/supporter_ticket.png";
 import solarFlareBanner from "assets/decorations/banners/solar_flare_banner.png";
 import dawnBreakerBanner from "assets/decorations/banners/dawn_breaker_banner.png";
@@ -362,6 +367,8 @@ import riceBun from "assets/food/rice_bun.webp";
 import slowJuice from "assets/food/slow_juice.webp";
 import redRice from "assets/food/red_rice.webp";
 import sushiRoll from "assets/food/sushi_roll.webp";
+import friedTofu from "assets/food/fried_tofu.png";
+import tofuScramble from "assets/food/tofu_scramble.png";
 
 import goblinKey from "src/assets/sfts/quest/goblin_key.png";
 import sunflowerKey from "src/assets/sfts/quest/sunflower_key.png";
@@ -2444,6 +2451,26 @@ export const ITEM_DETAILS: Items = {
     image: scroll,
     description: translate("description.scroll"),
   },
+  "Bumpkin Emblem": {
+    image: bumpkinEmblem,
+    description: translate("description.bumpkin.emblem"),
+  },
+  "Goblin Emblem": {
+    image: goblinEmblem,
+    description: translate("description.goblin.emblem"),
+  },
+  "Nightshade Emblem": {
+    image: nightshadeEmblem,
+    description: translate("description.nightshade.emblem"),
+  },
+  "Sunflorian Emblem": {
+    image: sunflorianEmblem,
+    description: translate("description.sunflorian.emblem"),
+  },
+  Mark: {
+    image: mark,
+    description: translate("description.faction.mark"),
+  },
 
   "Sunflower Supporter": {
     image: supporterTicket,
@@ -3461,7 +3488,7 @@ export const ITEM_DETAILS: Items = {
   },
   "Bullseye Board": {
     image: bullseyBoard,
-    description: translate("description.bullseyBoard"),
+    description: translate("description.bullseyeBoard"),
   },
   "Chess Rug": {
     image: chessRug,
@@ -3481,7 +3508,7 @@ export const ITEM_DETAILS: Items = {
   },
   "Golden Guardian": {
     image: goldenGurdian,
-    description: translate("description.goldenGurdian"),
+    description: translate("description.goldenGuardian"),
   },
   "Novice Knight": {
     image: noviceKnight,
@@ -3568,7 +3595,7 @@ export const ITEM_DETAILS: Items = {
     description: translate("description.friedCalamari"),
   },
   "Fried Tofu": {
-    image: SUNNYSIDE.icons.expression_confused,
+    image: friedTofu,
     description: translate("description.friedTofu"),
   },
   "Grape Juice": {
@@ -3597,14 +3624,14 @@ export const ITEM_DETAILS: Items = {
   },
   "Sushi Roll": {
     image: sushiRoll,
-    description: translate("description.sushirRoll"),
+    description: translate("description.sushiRoll"),
   },
   "The Lot": {
     image: theLot,
     description: translate("description.theLot"),
   },
   "Tofu Scramble": {
-    image: SUNNYSIDE.icons.expression_confused,
+    image: tofuScramble,
     description: translate("description.tofuScramble"),
   },
   Greenhouse: {

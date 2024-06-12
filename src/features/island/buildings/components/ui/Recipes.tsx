@@ -5,6 +5,7 @@ import Decimal from "decimal.js-light";
 import { Box } from "components/ui/Box";
 import { Button } from "components/ui/Button";
 import { Context } from "features/game/GameProvider";
+import { Label } from "components/ui/Label";
 import { ITEM_DETAILS } from "features/game/types/images";
 import { getKeys } from "features/game/types/craftables";
 import {
@@ -23,8 +24,14 @@ import { Bumpkin } from "features/game/types/game";
 import { SplitScreenView } from "components/ui/SplitScreenView";
 import { CraftingRequirements } from "components/ui/layouts/CraftingRequirements";
 import { useAppTranslation } from "lib/i18n/useAppTranslations";
-import { FLAGGED_RECIPES } from "features/game/events/landExpansion/cook";
+import {
+  FLAGGED_RECIPES,
+  getCookingOilBoost,
+} from "features/game/events/landExpansion/cook";
 import { FeatureName, hasFeatureAccess } from "lib/flags";
+import { BuildingName } from "features/game/types/buildings";
+import { BuildingOilTank } from "../building/BuildingOilTank";
+import pumpkinSoup from "assets/food/pumpkin_soup.png";
 
 interface Props {
   selected: Cookable;
@@ -34,6 +41,9 @@ interface Props {
   onCook: (name: CookableName) => void;
   craftingService?: MachineInterpreter;
   crafting: boolean;
+  buildingName: BuildingName;
+  buildingId?: string;
+  currentlyCooking?: CookableName;
 }
 
 /**
@@ -54,6 +64,9 @@ export const Recipes: React.FC<Props> = ({
   onCook,
   crafting,
   craftingService,
+  buildingId,
+  currentlyCooking,
+  buildingName,
 }) => {
   const { gameService } = useContext(Context);
   const { t } = useAppTranslation();
@@ -85,7 +98,7 @@ export const Recipes: React.FC<Props> = ({
           {t("cook")}
         </Button>
         {crafting && (
-          <p className="text-xxs sm:text-xs text-center my-1">
+          <p className="sm:text-xs text-center my-1">
             {t("sceneDialogues.chefIsBusy")}
           </p>
         )}
@@ -113,6 +126,7 @@ export const Recipes: React.FC<Props> = ({
           details={{
             item: selected.name,
           }}
+          hideDescription
           requirements={{
             resources: selected.ingredients,
             xp: new Decimal(
@@ -124,7 +138,7 @@ export const Recipes: React.FC<Props> = ({
               )
             ),
             timeSeconds: getCookingTime(
-              selected.cookingSeconds,
+              getCookingOilBoost(selected.name, state, buildingId).timeToCook,
               state.bumpkin,
               state
             ),
@@ -140,7 +154,17 @@ export const Recipes: React.FC<Props> = ({
               onClose={onClose}
             />
           )}
-          {crafting && <p className="mb-2 w-full">{t("recipes")}</p>}
+          {crafting && (
+            <div className="w-full">
+              <Label
+                className="mr-3 ml-2 mb-1"
+                icon={pumpkinSoup}
+                type="default"
+              >
+                {t("recipes")}
+              </Label>
+            </div>
+          )}
           <div className="flex flex-wrap h-fit">
             {validRecipes.map((item) => (
               <Box
@@ -152,6 +176,13 @@ export const Recipes: React.FC<Props> = ({
               />
             ))}
           </div>
+          {buildingId ? (
+            <BuildingOilTank
+              buildingName={buildingName}
+              buildingId={buildingId}
+              currentlyCooking={currentlyCooking}
+            />
+          ) : null}
         </>
       }
     />

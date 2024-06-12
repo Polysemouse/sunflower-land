@@ -150,6 +150,12 @@ export type EasterEventItemName = "Easter Bunny" | "Pablo The Bunny";
 
 export type MOMEventItem = "Engine Core";
 
+export type FactionEmblem =
+  | "Goblin Emblem"
+  | "Bumpkin Emblem"
+  | "Sunflorian Emblem"
+  | "Nightshade Emblem";
+
 export type MutantChicken =
   | "Speed Chicken"
   | "Rich Chicken"
@@ -182,7 +188,9 @@ export type Coupons =
   | "Rare Key"
   | "Luxury Key"
   | "Prize Ticket"
-  | SeasonalTicket;
+  | "Mark"
+  | SeasonalTicket
+  | FactionEmblem;
 
 export const COUPONS: Record<Coupons, { description: string }> = {
   "Gold Pass": {
@@ -265,6 +273,21 @@ export const COUPONS: Record<Coupons, { description: string }> = {
   },
   Scroll: {
     description: translate("description.scroll"),
+  },
+  "Goblin Emblem": {
+    description: translate("description.goblin.emblem"),
+  },
+  "Bumpkin Emblem": {
+    description: translate("description.bumpkin.emblem"),
+  },
+  "Sunflorian Emblem": {
+    description: translate("description.sunflorian.emblem"),
+  },
+  "Nightshade Emblem": {
+    description: translate("description.nightshade.emblem"),
+  },
+  Mark: {
+    description: translate("description.faction.mark"),
   },
 };
 
@@ -428,6 +451,7 @@ export type PlantedFruit = {
 
 export type Tree = {
   wood: Wood;
+  createdAt?: number;
 } & Position;
 
 export type Stone = {
@@ -442,6 +466,7 @@ export type FiniteResource = {
 
 export type Rock = {
   stone: Stone;
+  createdAt?: number;
 } & Position;
 
 export type Oil = {
@@ -482,6 +507,7 @@ export type Mine = Position;
 export type BuildingProduct = {
   name: CookableName;
   readyAt: number;
+  boost?: Partial<Record<InventoryItemName, number>>;
 };
 
 export type BuildingProduce = {
@@ -496,6 +522,7 @@ export type PlacedItem = {
   readyAt: number;
   createdAt: number;
 
+  oil?: number;
   crafting?: BuildingProduct;
 };
 
@@ -757,6 +784,29 @@ export type ChoreV2 = {
   startCount: number;
 };
 
+export type KingdomChores = {
+  chores: Record<number, KingdomChore>;
+  week: number;
+  choresCompleted: number;
+  choresSkipped: number;
+  weeklyChoresCompleted: number;
+  weeklyChoresSkipped: number;
+  weeklyChores: number;
+};
+
+export type KingdomChore = {
+  activity: BumpkinActivityName;
+  description: string;
+  resource: InventoryItemName;
+  createdAt: number;
+  completedAt?: number;
+  requirement: number;
+  bumpkinId: number;
+  startCount: number;
+  marks: number;
+  active?: boolean;
+};
+
 export type SeasonWeek = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13;
 
 export type MazeAttempt = {
@@ -808,7 +858,8 @@ export type MinigamePrize = {
   endAt: number;
   score: number;
   coins: number;
-  factionPoints: number;
+  factionPoints?: number;
+  marks?: number;
 };
 
 export type MinigameHistory = {
@@ -947,6 +998,7 @@ export type FactionName =
 export type Faction = {
   name: FactionName;
   pledgedAt: number;
+  emblemsClaimedAt?: number;
   points: number;
   donated: {
     daily: {
@@ -1089,6 +1141,7 @@ export interface GameState {
     bid?: Bid;
   };
   chores?: ChoresV2;
+  kingdomChores?: KingdomChores;
   mushrooms: Mushrooms;
   catchTheKraken: CatchTheKraken;
   potionHouse?: PotionHouse;
