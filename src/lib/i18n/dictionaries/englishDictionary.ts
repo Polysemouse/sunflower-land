@@ -1434,7 +1434,7 @@ const cropsAndChickens: Record<CropsAndChickensMessages, string> = {
   "crops-and-chickens.challengeCompleted":
     "Congratulations, you have completed today's challenge.",
   "crops-and-chickens.gameOver": "Game Over",
-  "crops-and-chickens.targetScore": "Target Score: {{target}}",
+  "crops-and-chickens.targetScore": "Target: {{target}}",
   "crops-and-chickens.score": "Score: {{score}}",
   "crops-and-chickens.inventory": "Inventory: {{inventory}}",
   "crops-and-chickens.exitAndClaimRewards": "Exit and Claim Rewards",

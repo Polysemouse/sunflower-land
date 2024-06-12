@@ -48,12 +48,12 @@ export const CropsAndChickensHud: React.FC = () => {
             </Label>
           )}
           <div className="relative">
-            <div className="h-12 w-full bg-black opacity-30 absolute coins-bb-hud-backdrop-reverse" />
+            <div className="h-12 w-full bg-black opacity-50 absolute coins-bb-hud-backdrop-reverse" />
             <div
-              className="flex items-center space-x-2 text-stroke z-10"
+              className="flex items-center space-x-2 text-xs text-white"
               style={{
-                width: "200px",
-                paddingTop: "3px",
+                width: "180px",
+                paddingTop: "7px",
                 paddingLeft: "3px",
               }}
             >
@@ -65,12 +65,12 @@ export const CropsAndChickensHud: React.FC = () => {
             </div>
           </div>
           <div className="relative">
-            <div className="h-12 w-full bg-black opacity-30 absolute coins-bb-hud-backdrop-reverse" />
+            <div className="h-12 w-full bg-black opacity-50 absolute coins-bb-hud-backdrop-reverse" />
             <div
-              className="flex items-center space-x-2 text-stroke"
+              className="flex items-center space-x-2 text-xs text-white"
               style={{
-                width: "200px",
-                paddingTop: "3px",
+                width: "180px",
+                paddingTop: "7px",
                 paddingLeft: "3px",
               }}
             >
@@ -84,11 +84,12 @@ export const CropsAndChickensHud: React.FC = () => {
         </div>
 
         <Label
-          className="absolute left-1/2 transform -translate-x-1/2"
+          className="absolute"
           icon={SUNNYSIDE.icons.stopwatch}
           type="info"
           style={{
             top: `${PIXEL_SCALE * 4}px`,
+            right: `${PIXEL_SCALE * 6}px`,
           }}
         >
           {secondsToString(secondsLeft, {
