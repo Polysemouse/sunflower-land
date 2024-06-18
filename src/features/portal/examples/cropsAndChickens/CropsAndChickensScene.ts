@@ -528,8 +528,12 @@ export class CropsAndChickensScene extends BaseScene {
       this.currentPlayer.y = SPAWNS().crops_and_chickens.default.y;
 
       this.isPlayerDead = false;
-      this.walkingSpeed = PLAYER_WALKING_SPEED;
-      this.currentPlayer.setVisible(true);
+
+      // does not allow player from walking around if player respawns after time is out
+      if (this.isGameStarted) {
+        this.walkingSpeed = PLAYER_WALKING_SPEED;
+        this.currentPlayer.setVisible(true);
+      }
 
       playerDeath.destroy();
     });
@@ -551,7 +555,7 @@ export class CropsAndChickensScene extends BaseScene {
 
       // adjust the angle and distance for the crop to radiate outward
       const angle = Phaser.Math.RND.angle();
-      const distance = Phaser.Math.RND.between(40, 60);
+      const distance = Phaser.Math.RND.between(30, 50);
 
       this.tweens.add({
         targets: cropSprite,

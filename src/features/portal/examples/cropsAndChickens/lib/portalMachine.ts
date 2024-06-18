@@ -127,8 +127,8 @@ export const portalMachine = createMachine<Context, PortalEvent, PortalState>({
               jwt: context.jwt,
               bumpkin: game?.bumpkin,
               farmId,
-              x: SPAWNS.crops_and_chickens.default.x,
-              y: SPAWNS.crops_and_chickens.default.y,
+              x: SPAWNS().crops_and_chickens.default.x,
+              y: SPAWNS().crops_and_chickens.default.y,
               sceneId: "crops_and_chickens",
               experience: game.bumpkin?.experience ?? 0,
             });
@@ -245,6 +245,11 @@ export const portalMachine = createMachine<Context, PortalEvent, PortalState>({
       on: {
         RETRY: {
           target: "initialising",
+          actions: assign<Context, any>({
+            inventoryScore: () => 0,
+            depositedScore: () => 0,
+            endAt: () => 0,
+          }),
         },
       },
     },
