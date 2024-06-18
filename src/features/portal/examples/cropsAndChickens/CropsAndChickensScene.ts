@@ -6,6 +6,7 @@ import { BaseScene } from "features/world/scenes/BaseScene";
 import { Physics } from "phaser";
 import { MachineInterpreter } from "./lib/portalMachine";
 import {
+  DEPOSIT_CHEST_XY,
   BOARD_OFFSET,
   BOARD_WIDTH,
   CHICKEN_SPAWN_CONFIGURATIONS,
@@ -467,6 +468,7 @@ export class CropsAndChickensScene extends BaseScene {
     sound.play({ volume: 0.1 });
 
     // score and throw all crops out of the inventory
+    this.animateDepositingCrops();
     this.collectedCropIndexes = [];
     this.portalService?.send("CROP_DEPOSITED");
   }
@@ -486,7 +488,7 @@ export class CropsAndChickensScene extends BaseScene {
     sound.play({ volume: 0.1 });
 
     // throw all crops out of the inventory
-    this.animateCropsRadiatingOut();
+    this.animateDroppingCrops();
     this.collectedCropIndexes = [];
     this.portalService?.send("KILL_PLAYER");
 
@@ -539,7 +541,58 @@ export class CropsAndChickensScene extends BaseScene {
     });
   }
 
-  private animateCropsRadiatingOut() {
+  private animateDepositingCrops() {
+    if (!this.currentPlayer) {
+      return;
+    }
+    const player = this.currentPlayer;
+
+    this.collectedCropIndexes.forEach(async (cropIndex, index) => {
+      const cropSprite = this.add.sprite(
+        player.x,
+        player.y,
+        "crop_harvested",
+        cropIndex
+      );
+
+      // adjust the angle and distance for the crop to radiate outward
+      const angle = Phaser.Math.RND.angle();
+      const distance = Phaser.Math.RND.between(16, 20);
+
+      this.tweens.add({
+        targets: cropSprite,
+        x: player.x + distance * Math.cos(angle),
+        y: player.y + distance * Math.sin(angle),
+        duration: 200,
+        ease: "Quad.easeOut",
+        onUpdate: () => {
+          cropSprite.setDepth(cropSprite.y);
+        },
+        onComplete: (
+          _: Phaser.Tweens.Tween,
+          targets: Phaser.GameObjects.Sprite[]
+        ) => {
+          // fading tween starts when movement tween is complete
+          targets.forEach((cropSprite) => {
+            this.tweens.add({
+              targets: cropSprite,
+              x: DEPOSIT_CHEST_XY,
+              y: DEPOSIT_CHEST_XY,
+              duration: 250,
+              delay: index * 100, // delay each crop animation slightly
+              ease: "Cubic.easeIn",
+              onUpdate: () => {
+                cropSprite.setDepth(cropSprite.y);
+              },
+              onComplete: () => cropSprite.destroy(),
+            });
+          });
+        },
+      });
+    });
+  }
+
+  private animateDroppingCrops() {
     if (!this.currentPlayer) {
       return;
     }
@@ -562,7 +615,7 @@ export class CropsAndChickensScene extends BaseScene {
         x: player.x + distance * Math.cos(angle),
         y: player.y + distance * Math.sin(angle),
         duration: 400,
-        ease: "Power1", // qudratic
+        ease: "Quad.easeOut",
         onUpdate: () => {
           cropSprite.setDepth(cropSprite.y);
         },

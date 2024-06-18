@@ -7,6 +7,8 @@ export const PLAYER_WALKING_SPEED = 50;
 export const BOARD_OFFSET = SQUARE_WIDTH * 2;
 export const BOARD_WIDTH = SQUARE_WIDTH * 52;
 
+export const DEPOSIT_CHEST_XY = BOARD_WIDTH + BOARD_OFFSET - 8;
+
 export const PLAYER_MIN_XY = BOARD_WIDTH * 0.5 + BOARD_OFFSET;
 export const PLAYER_MAX_XY = BOARD_WIDTH * 1.5 + BOARD_OFFSET;
 
