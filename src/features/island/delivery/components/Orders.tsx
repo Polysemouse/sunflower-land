@@ -47,6 +47,7 @@ import { hasFeatureAccess } from "lib/flags";
 import { Loading } from "features/auth/components";
 import { useNavigate } from "react-router-dom";
 import { getBumpkinLevel } from "features/game/lib/level";
+import { SquareIcon } from "components/ui/SquareIcon";
 
 // Bumpkins
 export const BEACH_BUMPKINS: NPCName[] = [
@@ -70,6 +71,7 @@ export const RETREAT_BUMPKINS: NPCName[] = [
 interface Props {
   selectedId?: string;
   onSelect: (id?: string) => void;
+  onClose: () => void;
 }
 
 const _delivery = (state: MachineState) => state.context.state.delivery;
@@ -101,7 +103,11 @@ export function hasOrderRequirements({
   });
 }
 
-export const DeliveryOrders: React.FC<Props> = ({ selectedId, onSelect }) => {
+export const DeliveryOrders: React.FC<Props> = ({
+  selectedId,
+  onSelect,
+  onClose,
+}) => {
   const { gameService } = useContext(Context);
 
   const navigate = useNavigate();
@@ -572,7 +578,7 @@ export const DeliveryOrders: React.FC<Props> = ({ selectedId, onSelect }) => {
                   </Label>
                 )}
               </div>
-              <div className="pt-1 pb-2">
+              <div className="">
                 {getKeys(previewOrder.items).map((itemName, index) => {
                   if (itemName === "sfl") {
                     return (
@@ -614,43 +620,93 @@ export const DeliveryOrders: React.FC<Props> = ({ selectedId, onSelect }) => {
                   );
                 })}
               </div>
-              {hasOrderRequirements({
-                order: previewOrder,
-                sfl,
-                coins,
-                inventory,
-              }) && (
-                <Button
-                  className="!text-xs !mt-0 !-mb-1"
-                  onClick={() => {
-                    if (
-                      RETREAT_BUMPKINS.includes(previewOrder?.from as NPCName)
-                    ) {
-                      navigate("/world/retreat");
-                    } else if (
-                      BEACH_BUMPKINS.includes(previewOrder?.from as NPCName)
-                    ) {
-                      navigate("/world/beach");
-                    } else if (
-                      KINGDOM_BUMPKINS.includes(previewOrder?.from as NPCName)
-                    ) {
-                      navigate("/world/kingdom");
-                    } else {
-                      navigate("/world/plaza");
+              <div
+                className="flex justify-between w-full"
+                style={{
+                  marginTop: "2px",
+                  paddingTop: "3px",
+                  borderStyle: "dashed",
+                  borderTop: "1px dashed #ead4aa",
+                  marginBottom: "6px",
+                }}
+              >
+                <div className="flex items-center">
+                  <SquareIcon
+                    icon={
+                      previewOrder.reward.coins
+                        ? coinsImg
+                        : previewOrder.reward.sfl
+                        ? sflIcon
+                        : ITEM_DETAILS[getSeasonalTicket()].image
                     }
-                  }}
-                >
-                  {`${t("world.travelTo")} ${
-                    RETREAT_BUMPKINS.includes(previewOrder?.from as NPCName)
-                      ? t("world.retreatShort")
-                      : BEACH_BUMPKINS.includes(previewOrder?.from as NPCName)
-                      ? t("world.beach")
-                      : KINGDOM_BUMPKINS.includes(previewOrder?.from as NPCName)
-                      ? t("world.kingdom")
-                      : t("world.plazaShort")
-                  }`}
-                </Button>
-              )}
+                    width={7}
+                  />
+                  <span className="text-xs ml-1">{t("reward")}</span>
+                </div>
+                <Label type="warning">
+                  <span>{`${
+                    generateDeliveryTickets({
+                      game: gameState,
+                      npc: previewOrder.from,
+                    }) || makeRewardAmountForLabel(previewOrder)
+                  } ${
+                    previewOrder.reward.coins
+                      ? t("coins")
+                      : previewOrder.reward.sfl
+                      ? "SFL"
+                      : `${getSeasonalTicket()}s`
+                  }`}</span>
+                </Label>
+              </div>
+              {!previewOrder.completedAt &&
+                hasOrderRequirements({
+                  order: previewOrder,
+                  sfl,
+                  coins,
+                  inventory,
+                }) && (
+                  <Button
+                    className="!text-xs !mt-0 !-mb-1"
+                    onClick={() => {
+                      onClose();
+                      {
+                        if (
+                          RETREAT_BUMPKINS.includes(
+                            previewOrder?.from as NPCName
+                          )
+                        ) {
+                          navigate("/world/retreat");
+                        } else if (
+                          BEACH_BUMPKINS.includes(previewOrder?.from as NPCName)
+                        ) {
+                          navigate("/world/beach");
+                        } else if (
+                          KINGDOM_BUMPKINS.includes(
+                            previewOrder?.from as NPCName
+                          )
+                        ) {
+                          navigate("/world/kingdom");
+                        } else {
+                          navigate("/world/plaza");
+                        }
+                      }
+                    }}
+                  >
+                    {t("world.travelTo", {
+                      location: RETREAT_BUMPKINS.includes(
+                        previewOrder?.from as NPCName
+                      )
+                        ? t("world.retreat")
+                        : BEACH_BUMPKINS.includes(previewOrder?.from as NPCName)
+                        ? t("world.beach")
+                        : KINGDOM_BUMPKINS.includes(
+                            previewOrder?.from as NPCName
+                          )
+                        ? t("world.kingdom")
+                        : t("world.plaza"),
+                    })}
+                  </Button>
+                )}
               {previewOrder.completedAt ? (
                 <div className="flex">
                   <img src={SUNNYSIDE.icons.confirm} className="mr-2 h-4" />

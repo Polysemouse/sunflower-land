@@ -9,7 +9,6 @@ import { Label } from "components/ui/Label";
 
 import coins from "assets/icons/coins.webp";
 import factions from "assets/icons/factions.webp";
-import flagIcon from "assets/icons/faction_point.webp";
 import markIcon from "assets/icons/faction_mark.webp";
 
 import { Portal } from "./Portal";
@@ -19,7 +18,7 @@ import { MinigameHistory, MinigamePrize } from "features/game/types/game";
 import { secondsToString } from "lib/utils/time";
 import { isMinigameComplete } from "features/game/events/minigames/claimMinigamePrize";
 import { ClaimReward } from "features/game/expansion/components/ClaimReward";
-import { hasFeatureAccess } from "lib/flags";
+import { SpeakingText } from "features/game/components/SpeakingModal";
 
 export const MinigamePrizeUI: React.FC<{
   prize?: MinigamePrize;
@@ -58,14 +57,9 @@ export const MinigamePrizeUI: React.FC<{
           )}
 
           <div className="flex items-center space-x-2">
-            {prize.factionPoints && (
-              <Label icon={flagIcon} type="warning">
-                {`${prize.factionPoints} Faction Points`}
-              </Label>
-            )}
             {prize.marks && (
               <Label icon={markIcon} type="warning">
-                {`${prize.marks} Marks`}
+                {`Reward: ${prize.marks} Marks`}
               </Label>
             )}
             {!!prize.coins && (
@@ -88,25 +82,30 @@ export const ChickenRescue: React.FC<Props> = ({ onClose }) => {
   const { gameService } = useContext(Context);
   const [gameState] = useActor(gameService);
 
+  const minigame = gameState.context.state.minigames.games["chicken-rescue"];
+
+  const [showIntro, setShowIntro] = useState(!minigame?.history);
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
 
   const { t } = useAppTranslation();
 
-  if (!hasFeatureAccess(gameState.context.state, "CHICKEN_RESCUE")) {
+  if (showIntro) {
     return (
-      <>
-        <div className="mb-1 p-2">
-          <Label type="default" className="mb-1" icon={factions}>
-            {t("minigame.chickenRescue")}
-          </Label>
-          <InlineDialogue message={t("minigame.comingSoon")} />
-        </div>
-      </>
+      <SpeakingText
+        message={[
+          {
+            text: t("minigame.discovered.one"),
+          },
+          {
+            text: t("minigame.discovered.two"),
+          },
+        ]}
+        onClose={() => setShowIntro(false)}
+      />
     );
   }
 
   const dateKey = new Date().toISOString().slice(0, 10);
-  const minigame = gameState.context.state.minigames.games["chicken-rescue"];
   const history = minigame?.history ?? {};
 
   const dailyAttempt = history[dateKey] ?? {
@@ -149,9 +148,11 @@ export const ChickenRescue: React.FC<Props> = ({ onClose }) => {
           message:
             "Congratulations, you rescued the chickens! Here is your reward.",
           createdAt: Date.now(),
-          factionPoints: 10,
+          factionPoints: 0,
           id: "discord-bonus",
-          items: {},
+          items: {
+            Mark: prize?.marks ?? 0,
+          },
           wearables: {},
           sfl: 0,
           coins: 0,

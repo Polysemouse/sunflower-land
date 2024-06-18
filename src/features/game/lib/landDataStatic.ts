@@ -25,68 +25,17 @@ export const INITIAL_RESOURCES: Pick<
   crops: {
     1: {
       createdAt: Date.now(),
-      crop: { name: "Sunflower", plantedAt: 0, amount: 1 },
+      crop: {
+        name: "Sunflower",
+        plantedAt: 0,
+        amount: 1,
+        reward: {
+          coins: 100,
+          // items: {},
+        },
+      },
       x: -2,
       y: 0,
-      height: 1,
-      width: 1,
-    },
-    2: {
-      createdAt: Date.now(),
-      crop: { name: "Potato", plantedAt: Date.now(), amount: 1 },
-      x: -1,
-      y: 0,
-      height: 1,
-      width: 1,
-    },
-    3: {
-      createdAt: Date.now(),
-      crop: { name: "Pumpkin", plantedAt: Date.now(), amount: 1 },
-      x: 0,
-      y: 0,
-      height: 1,
-      width: 1,
-    },
-    4: {
-      createdAt: Date.now(),
-      x: -2,
-      y: -1,
-      height: 1,
-      width: 1,
-    },
-    5: {
-      createdAt: Date.now(),
-      x: -1,
-      y: -1,
-      height: 1,
-      width: 1,
-    },
-    6: {
-      createdAt: Date.now(),
-      x: 0,
-      y: -1,
-      height: 1,
-      width: 1,
-    },
-
-    7: {
-      createdAt: Date.now(),
-      x: -2,
-      y: 1,
-      height: 1,
-      width: 1,
-    },
-    8: {
-      createdAt: Date.now(),
-      x: -1,
-      y: 1,
-      height: 1,
-      width: 1,
-    },
-    9: {
-      createdAt: Date.now(),
-      x: 0,
-      y: 1,
       height: 1,
       width: 1,
     },
@@ -409,8 +358,13 @@ export const STATIC_OFFLINE_FARM: GameState = {
     } as Record<ChoreV2Name, ChoreV2>,
   },
   inventory: {
+    "Splendor Flag": new Decimal(5),
+    "Benevolence Flag": new Decimal(1),
+    "Generosity Flag": new Decimal(1),
+    "Devotion Flag": new Decimal(1),
     Axe: new Decimal(100),
     Pickaxe: new Decimal(100),
+    Warehouse: new Decimal(1),
     Wheat: new Decimal(100),
     Oil: new Decimal(500),
     Manor: new Decimal(1),
@@ -452,7 +406,7 @@ export const STATIC_OFFLINE_FARM: GameState = {
     "Yellow Daffodil": new Decimal(3),
     "White Daffodil": new Decimal(3),
     "Red Daffodil": new Decimal(3),
-    Sunflower: new Decimal(5000),
+    Sunflower: new Decimal(7),
     Scarecrow: new Decimal(1),
     Shovel: new Decimal(1),
     Carrot: new Decimal(500),
@@ -469,7 +423,7 @@ export const STATIC_OFFLINE_FARM: GameState = {
     "Town Center": new Decimal(1),
     Market: new Decimal(1),
     Workbench: new Decimal(1),
-    "Basic Land": new Decimal(3),
+    "Basic Land": new Decimal(10),
     "Gold Pass": new Decimal(1),
     "Crop Plot": new Decimal(OFFLINE_FARM_CROPS),
     "Water Well": new Decimal(4),
@@ -481,6 +435,7 @@ export const STATIC_OFFLINE_FARM: GameState = {
     "Gaucho Rug": new Decimal(1),
     "Sunstone Rock": new Decimal(0),
     "Fruit Patch": new Decimal(0),
+    "Flower Bed": new Decimal(1),
     "Battlecry Drum": new Decimal(5),
     "Bullseye Board": new Decimal(5),
     "Chess Rug": new Decimal(5),
@@ -497,7 +452,7 @@ export const STATIC_OFFLINE_FARM: GameState = {
     "Trainee Target": new Decimal(5),
     "Twister Rug": new Decimal(5),
     Egg: new Decimal(12),
-    Beehive: new Decimal(0),
+    Beehive: new Decimal(1),
     Banana: new Decimal(12),
     Crimstone: new Decimal(20),
     "Block Buck": new Decimal(200),
@@ -524,7 +479,7 @@ export const STATIC_OFFLINE_FARM: GameState = {
     "Sunpetal Seed": new Decimal(20),
     "Bloom Seed": new Decimal(10),
     "Lily Seed": new Decimal(5),
-    "Sunflower Seed": new Decimal(992),
+    // "Sunflower Seed": new Decimal(992),
 
     // Foods
     "Pumpkin Soup": new Decimal(1),
@@ -651,6 +606,9 @@ export const STATIC_OFFLINE_FARM: GameState = {
     "Farm Background": 1,
     "Santa Beard": 1,
     "Sunflower Amulet": 2,
+    "Beekeeper Hat": 1,
+    "Honeycomb Shield": 1,
+    "Bee Suit": 1,
   },
   previousWardrobe: {
     "Elf Suit": 1,
@@ -669,7 +627,7 @@ export const STATIC_OFFLINE_FARM: GameState = {
     "Sunflower Amulet": 2,
   },
 
-  createdAt: new Date().getTime(),
+  createdAt: new Date("2024-06-16").getTime(),
 
   conversations: ["hank-intro"],
 
@@ -763,7 +721,7 @@ export const STATIC_OFFLINE_FARM: GameState = {
         readyAt: 0,
       },
     ],
-    "Hen House": [
+    Greenhouse: [
       {
         coordinates: {
           x: -5,
@@ -774,7 +732,7 @@ export const STATIC_OFFLINE_FARM: GameState = {
         readyAt: 0,
       },
     ],
-    Workbench: [
+    Market: [
       {
         coordinates: {
           x: -5,
@@ -785,7 +743,7 @@ export const STATIC_OFFLINE_FARM: GameState = {
         createdAt: 0,
       },
     ],
-    Toolshed: [
+    "Fire Pit": [
       {
         coordinates: {
           x: -5,
@@ -820,6 +778,20 @@ export const STATIC_OFFLINE_FARM: GameState = {
           items: {},
         },
         id: "1",
+        items: {
+          Sunflower: 20,
+          Potato: 20,
+          Pumpkin: 20,
+        },
+      },
+      {
+        createdAt: Date.now(),
+        readyAt: Date.now(),
+        from: "victoria",
+        reward: {
+          coins: 10000,
+        },
+        id: "12",
         items: {
           Sunflower: 20,
           Potato: 20,
@@ -1319,6 +1291,15 @@ export const STATIC_OFFLINE_FARM: GameState = {
         resources: {},
       },
       totalItems: {},
+    },
+    kitchen: {
+      week: 1,
+      requests: [
+        { item: "Sunflower", amount: 1, deliveryCount: 0 },
+        { item: "Honey", amount: 1, deliveryCount: 0 },
+        { item: "Tuna", amount: 1, deliveryCount: 0 },
+      ],
+      points: 0,
     },
   },
 };

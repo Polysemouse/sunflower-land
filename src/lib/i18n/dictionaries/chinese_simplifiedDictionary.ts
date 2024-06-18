@@ -177,6 +177,7 @@ import {
   RemoveCropMachine,
   Username,
   EasterEggKeys,
+  ChangeLanguage,
 } from "./types";
 
 const generalTerms: Record<GeneralTerms, string> = {
@@ -594,6 +595,9 @@ const availableSeeds: Record<AvailableSeeds, string> = {
   "availableSeeds.select.plant": "您希望选择哪个种子来种植？",
   "quickSelect.empty": "无温室种子",
   "quickSelect.label": "快速选择",
+  "quickSelect.cropSeeds": ENGLISH_TERMS["quickSelect.cropSeeds"],
+  "quickSelect.greenhouseSeeds": ENGLISH_TERMS["quickSelect.greenhouseSeeds"],
+  "quickSelect.purchase": ENGLISH_TERMS["quickSelect.purchase"],
 };
 
 const base: Record<Base, string> = {
@@ -633,6 +637,14 @@ const beehive: Record<Beehive, string> = {
   "beehive.beeSwarm": "蜂群",
   "beehive.pollinationCelebration":
     "授粉庆典！友善的蜂群给你的庄稼带来了 0.2 的增益！",
+  "beehive.honeyProductionPaused": "蜂蜜生产暂停",
+  "beehive.yield": "产量",
+  "beehive.honeyPerFullHive": "1 蜂蜜 / 满蜂窝",
+  "beehive.speed": "速度",
+  "beehive.fullHivePerDay": "每天 {{speed}} 个{{hive}}",
+  "beehive.estimatedFull": "预计满员",
+  "beehive.hive.singular": "蜂窝",
+  "beehive.hives.plural": "蜂窝",
 };
 
 const birdiePlaza: Record<BirdiePlaza, string> = {
@@ -733,11 +745,10 @@ const boostDescriptions: Record<BoostDescriptions, string> = {
     "一张魔法地图，能引领持有者找到珍贵的财宝。沙岸财宝的利润 +20 %",
   "description.genie.lamp":
     "一盏有魔力的灯，里面有一个能帮你实现三个愿望的精灵",
-  "description.basic.scarecrow":
-    "您农场 VIP (Very Important Plants)的挑剔守护者",
-  "description.scary.mike": "蔬菜私语者和惊人丰盛收成的冠军！",
+  "description.basic.scarecrow": ENGLISH_TERMS["description.basic.scarecrow"],
+  "description.scary.mike": ENGLISH_TERMS["description.scary.mike"],
   "description.laurie.chuckle.crow":
-    "她那令人不安的笑声，将啄食你庄稼的鸟儿赶走！",
+    ENGLISH_TERMS["description.laurie.chuckle.crow"],
   "description.immortal.pear": "一种能使果树寿命变长的长寿梨",
   "description.bale": "家禽们最喜欢的邻居，为鸡们提供一个舒适的休息地",
   "description.sir.goldensnout":
@@ -1038,6 +1049,13 @@ const buyFarmHand: Record<BuyFarmHand, string> = {
   "buyFarmHand.newFarmhandGreeting": "我是您的新雇农。我已经等不及要开干了！",
 };
 
+const changeLanguage: Record<ChangeLanguage, string> = {
+  "changeLanguage.confirm": "此操作将刷新您的浏览器。您确定要更改语言吗？",
+  "changeLanguage.contribute": ENGLISH_TERMS["changeLanguage.contribute"],
+  "changeLanguage.contribute.message":
+    ENGLISH_TERMS["changeLanguage.contribute.message"],
+};
+
 const chat: Record<Chat, string> = {
   "chat.Fail": "连接失败",
   "chat.mute": "您已被禁言",
@@ -1139,8 +1157,12 @@ const confirmSkill: Record<ConfirmSkill, string> = {
 };
 
 const conversations: Record<Conversations, string> = {
+  "home-intro.one": ENGLISH_TERMS["home-intro.one"],
+  "home-intro.three": ENGLISH_TERMS["home-intro.three"],
+  "home-intro.two": ENGLISH_TERMS["home-intro.two"],
   "firepit-intro.one": ENGLISH_TERMS["firepit-intro.one"],
   "firepit-intro.two": ENGLISH_TERMS["firepit-intro.two"],
+  "firepit.increasedXP": ENGLISH_TERMS["firepit.increasedXP"],
   "hank-intro.headline": "帮帮老人家？",
   "hank-intro.one": "好喂，乡包佬！欢迎来到我们这小块桃园天堂。",
   "hank-intro.two": "我在这儿耕地已有 50 余年了，但帮手当然也不嫌少。",
@@ -1616,6 +1638,10 @@ const decorationDescriptions: Record<DecorationDescriptions, string> = {
   "description.twisterRug": ENGLISH_TERMS["description.twisterRug"],
   "description.gauchoRug": "纪念驰援南巴西的地毯。",
   "description.ricePanda": "熊猫很聪明，从不忘记给稻米浇水。",
+  "description.benevolenceFlag": ENGLISH_TERMS["description.benevolenceFlag"],
+  "description.devotionFlag": ENGLISH_TERMS["description.devotionFlag"],
+  "description.generosityFlag": ENGLISH_TERMS["description.generosityFlag"],
+  "description.splendorFlag": ENGLISH_TERMS["description.splendorFlag"],
 };
 
 const defaultDialogue: Record<DefaultDialogue, string> = {
@@ -1883,6 +1909,19 @@ const factions: Record<Factions, string> = {
   "faction.claimEmblems.travelNow":
     ENGLISH_TERMS["faction.claimEmblems.travelNow"],
   "faction.claimEmblems.visitMe": ENGLISH_TERMS["faction.claimEmblems.visitMe"],
+  "faction.kitchen.gatherResources":
+    ENGLISH_TERMS["faction.kitchen.gatherResources"],
+  "faction.kitchen.opensIn": ENGLISH_TERMS["faction.kitchen.opensIn"],
+  "faction.kitchen.notReady": ENGLISH_TERMS["faction.kitchen.notReady"],
+  "faction.kitchen.preparing": ENGLISH_TERMS["faction.kitchen.preparing"],
+  "faction.kitchen.newRequests": ENGLISH_TERMS["faction.kitchen.newRequests"],
+  "faction.openingSoon": ENGLISH_TERMS["faction.openingSoon"],
+  "faction.emblems": ENGLISH_TERMS["faction.emblems"],
+  "faction.emblems.intro.one": ENGLISH_TERMS["faction.emblems.intro.one"],
+  "faction.emblems.intro.three": ENGLISH_TERMS["faction.emblems.intro.three"],
+  "faction.emblems.intro.two": ENGLISH_TERMS["faction.emblems.intro.two"],
+  "faction.tradeEmblems": ENGLISH_TERMS["faction.tradeEmblems"],
+  "faction.marksBoost": ENGLISH_TERMS["faction.marksBoost"],
 };
 
 const festiveTree: Record<FestiveTree, string> = {
@@ -4119,11 +4158,7 @@ const statements: Record<Statements, string> = {
   "statements.startgame": ENGLISH_TERMS["statements.startgame"],
   "statements.session.expired": ENGLISH_TERMS["statements.session.expired"],
   "statements.price.change": ENGLISH_TERMS["statements.price.change"],
-  "statements.translation.contribution":
-    ENGLISH_TERMS["statements.translation.contribution"],
   "statements.translation.joinDiscord": "加入 Discord",
-  "statements.translation.want2contribute":
-    ENGLISH_TERMS["statements.translation.want2contribute"],
 };
 
 const stopGoblin: Record<StopGoblin, string> = {
@@ -4175,6 +4210,7 @@ const trader: Record<Trader, string> = {
 };
 
 const transactionTerms: Record<TransactionTerms, string> = {
+  "transaction.starterOffer": ENGLISH_TERMS["transaction.starterOffer"],
   "transaction.t&c.one": ENGLISH_TERMS["transaction.t&c.one"],
   "transaction.t&c.two": ENGLISH_TERMS["transaction.t&c.two"],
   "transaction.mintFarm": ENGLISH_TERMS["transaction.mintFarm"],
@@ -4400,9 +4436,7 @@ const world: Record<World, string> = {
   "world.home": "家园",
   "world.kingdom": "王国",
   "world.woodlands": "林地",
-  "world.travelTo": ENGLISH_TERMS["world.travelTo"],
-  "world.plazaShort": ENGLISH_TERMS["world.plazaShort"],
-  "world.retreatShort": ENGLISH_TERMS["world.retreatShort"],
+  "world.travelTo": "前往{{location}}",
 };
 
 const wornDescription: Record<WornDescription, string> = {
@@ -4512,6 +4546,8 @@ const minigame: Record<Minigame, string> = {
   "minigame.playNow": ENGLISH_TERMS["minigame.playNow"],
   "minigame.purchase": ENGLISH_TERMS["minigame.purchase"],
   "minigame.chickenRescueHelp": ENGLISH_TERMS["minigame.chickenRescueHelp"],
+  "minigame.discovered.one": ENGLISH_TERMS["minigame.discovered.one"],
+  "minigame.discovered.two": ENGLISH_TERMS["minigame.discovered.two"],
 };
 
 export const easterEggTerms: Record<EasterEggKeys, string> = {
@@ -4547,6 +4583,7 @@ export const CHINESE_SIMPLIFIED_TERMS: Record<TranslationKeys, string> = {
   ...bumpkinSkillsDescription,
   ...bumpkinTrade,
   ...buyFarmHand,
+  ...changeLanguage,
   ...chat,
   ...chickenWinner,
   ...choresStart,

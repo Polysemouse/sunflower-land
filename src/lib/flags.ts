@@ -28,7 +28,6 @@ export type FeatureName =
   | "PORTALS"
   | "EASTER"
   | "FACTIONS"
-  | "FACTION_LEADERBOARD"
   | "BANNER_SALES"
   | "PRESTIGE_DESERT"
   | "CHICKEN_RESCUE"
@@ -36,7 +35,10 @@ export type FeatureName =
   | "DESERT_RECIPES"
   | "KINGDOM"
   | "FACTION_HOUSE"
-  | "CLAIM_EMBLEMS";
+  | "CLAIM_EMBLEMS"
+  | "EMBLEM_TRADING"
+  | "CROP_QUICK_SELECT"
+  | "MARKS_LEADERBOARD";
 
 // Used for testing production features
 export const ADMIN_IDS = [1, 2, 3, 39488];
@@ -44,10 +46,16 @@ export const ADMIN_IDS = [1, 2, 3, 39488];
 type FeatureFlag = (game: GameState) => boolean;
 
 const featureFlags: Record<FeatureName, FeatureFlag> = {
+  CROP_QUICK_SELECT: defaultFeatureFlag,
   CHICKEN_RESCUE: defaultFeatureFlag,
   PORTALS: testnetFeatureFlag,
   JEST_TEST: defaultFeatureFlag,
   DESERT_RECIPES: defaultFeatureFlag,
+  EMBLEM_TRADING: (game) => {
+    if (defaultFeatureFlag(game)) return true;
+
+    return Date.now() > new Date("2024-06-14T01:00:00Z").getTime();
+  },
   KINGDOM: (game) => {
     const hasCastleBud = getKeys(game.buds ?? {}).some(
       (id) => game.buds?.[id].type === "Castle"
@@ -55,7 +63,9 @@ const featureFlags: Record<FeatureName, FeatureFlag> = {
 
     if (hasCastleBud) return true;
 
-    return defaultFeatureFlag(game);
+    if (defaultFeatureFlag(game)) return true;
+
+    return Date.now() > new Date("2024-06-14T00:00:00Z").getTime();
   },
   FACTION_HOUSE: defaultFeatureFlag,
   EASTER: (game) => {
@@ -67,12 +77,12 @@ const featureFlags: Record<FeatureName, FeatureFlag> = {
     return Date.now() > new Date("2024-03-31T00:00:00Z").getTime();
   },
   FACTIONS: clashOfFactionsFeatureFlag,
-  FACTION_LEADERBOARD: clashOfFactionsFeatureFlag,
   BANNER_SALES: clashOfFactionsFeatureFlag,
   PRESTIGE_DESERT: defaultFeatureFlag,
   // Just in case we need to disable the crop machine, leave the flag in temporarily
   CROP_MACHINE: () => true,
   CLAIM_EMBLEMS: timeBasedFeatureFlag(new Date("2024-06-14T00:00:00Z")),
+  MARKS_LEADERBOARD: defaultFeatureFlag,
 };
 
 export const hasFeatureAccess = (game: GameState, featureName: FeatureName) => {

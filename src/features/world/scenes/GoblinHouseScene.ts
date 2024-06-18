@@ -1,4 +1,4 @@
-import mapJSON from "assets/map/faction_house.json";
+import mapJSON from "assets/map/goblin_house.json";
 
 import { SceneId } from "../mmoMachine";
 import { BaseScene, NPCBumpkin } from "./BaseScene";
@@ -16,6 +16,11 @@ export const GOBLIN_HOUSE_NPCS: NPCBumpkin[] = [
     y: 360,
     npc: "grizzle",
     direction: "right",
+  },
+  {
+    x: 115,
+    y: 249,
+    npc: "chef tuck",
   },
 ];
 

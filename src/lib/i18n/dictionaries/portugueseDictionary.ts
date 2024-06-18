@@ -178,6 +178,7 @@ import {
   RemoveCropMachine,
   Username,
   EasterEggKeys,
+  ChangeLanguage,
 } from "./types";
 
 const generalTerms: Record<GeneralTerms, string> = {
@@ -603,6 +604,9 @@ const availableSeeds: Record<AvailableSeeds, string> = {
     "Qual semente você gostaria de selecionar e plantar?",
   "quickSelect.empty": ENGLISH_TERMS["quickSelect.empty"],
   "quickSelect.label": ENGLISH_TERMS["quickSelect.label"],
+  "quickSelect.cropSeeds": ENGLISH_TERMS["quickSelect.cropSeeds"],
+  "quickSelect.greenhouseSeeds": ENGLISH_TERMS["quickSelect.greenhouseSeeds"],
+  "quickSelect.purchase": ENGLISH_TERMS["quickSelect.purchase"],
 };
 
 const base: Record<Base, string> = {
@@ -642,6 +646,15 @@ const beehive: Record<Beehive, string> = {
   "beehive.beeSwarm": "Enxame de abelhas",
   "beehive.pollinationCelebration":
     "Celebração da polinização! Suas colheitas terão um boost de 0,2 graças a um enxame de abelhas amigáveis!",
+  "beehive.honeyProductionPaused":
+    ENGLISH_TERMS["beehive.honeyProductionPaused"],
+  "beehive.yield": ENGLISH_TERMS["beehive.yield"],
+  "beehive.honeyPerFullHive": ENGLISH_TERMS["beehive.honeyPerFullHive"],
+  "beehive.speed": ENGLISH_TERMS["beehive.speed"],
+  "beehive.fullHivePerDay": ENGLISH_TERMS["beehive.fullHivePerDay"],
+  "beehive.estimatedFull": ENGLISH_TERMS["beehive.estimatedFull"],
+  "beehive.hive.singular": ENGLISH_TERMS["beehive.hive.singular"],
+  "beehive.hives.plural": ENGLISH_TERMS["beehive.hives.plural"],
 };
 
 const birdiePlaza: Record<BirdiePlaza, string> = {
@@ -764,12 +777,10 @@ const boostDescriptions: Record<BoostDescriptions, string> = {
     "Um mapa encantado que leva o portador a tesouros valiosos. +20% de lucro com a venda de itens de recompensa da praia.",
   "description.genie.lamp":
     "Uma lâmpada mágica que contém um gênio que concederá três desejos.",
-  "description.basic.scarecrow":
-    "Defensor seletivo das plantas VIP (Muito Importantes) de sua fazenda",
-  "description.scary.mike":
-    "O sussurrador de vegetais e campeão de colheitas assustadoramente boas!",
+  "description.basic.scarecrow": ENGLISH_TERMS["description.basic.scarecrow"],
+  "description.scary.mike": ENGLISH_TERMS["description.scary.mike"],
   "description.laurie.chuckle.crow":
-    "Com sua risada desconcertante, ela espanta bicadas de suas colheitas!",
+    ENGLISH_TERMS["description.laurie.chuckle.crow"],
   "description.immortal.pear": ENGLISH_TERMS["description.immortal.pear"],
   "description.bale":
     "Vizinho favorito das aves, fornece um retiro aconchegante para as galinhas",
@@ -1132,6 +1143,13 @@ const claimAchievement: Record<ClaimAchievement, string> = {
   "claimAchievement.requirementsNotMet": "Você não atende aos requisitos",
 };
 
+const changeLanguage: Record<ChangeLanguage, string> = {
+  "changeLanguage.confirm": ENGLISH_TERMS["changeLanguage.confirm"],
+  "changeLanguage.contribute": ENGLISH_TERMS["changeLanguage.contribute"],
+  "changeLanguage.contribute.message":
+    ENGLISH_TERMS["changeLanguage.contribute.message"],
+};
+
 const chat: Record<Chat, string> = {
   "chat.Fail": "Conexão falhou",
   "chat.mute": "Você está silenciado",
@@ -1251,8 +1269,12 @@ const confirmationTerms: Record<ConfirmationTerms, string> = {
 };
 
 const conversations: Record<Conversations, string> = {
+  "home-intro.one": ENGLISH_TERMS["home-intro.one"],
+  "home-intro.three": ENGLISH_TERMS["home-intro.three"],
+  "home-intro.two": ENGLISH_TERMS["home-intro.two"],
   "firepit-intro.one": ENGLISH_TERMS["firepit-intro.one"],
   "firepit-intro.two": ENGLISH_TERMS["firepit-intro.two"],
+  "firepit.increasedXP": ENGLISH_TERMS["firepit.increasedXP"],
   "hank-intro.headline": "Ajude um velho?",
   "hank-intro.one": "Como vai, Bumpkin! Bem-vindo ao nosso pequeno paraíso.",
   "hank-intro.two":
@@ -1852,6 +1874,10 @@ const decorationDescriptions: Record<DecorationDescriptions, string> = {
   "description.traineeTarget": ENGLISH_TERMS["description.traineeTarget"],
   "description.twisterRug": ENGLISH_TERMS["description.twisterRug"],
   "description.ricePanda": ENGLISH_TERMS["description.ricePanda"],
+  "description.benevolenceFlag": ENGLISH_TERMS["description.benevolenceFlag"],
+  "description.devotionFlag": ENGLISH_TERMS["description.devotionFlag"],
+  "description.generosityFlag": ENGLISH_TERMS["description.generosityFlag"],
+  "description.splendorFlag": ENGLISH_TERMS["description.splendorFlag"],
 };
 
 const delivery: Record<Delivery, string> = {
@@ -2027,6 +2053,13 @@ const exoticShopItems: Record<ExoticShopItems, string> = {
 };
 
 const factions: Record<Factions, string> = {
+  "faction.emblems": ENGLISH_TERMS["faction.emblems"],
+  "faction.emblems.intro.one": ENGLISH_TERMS["faction.emblems.intro.one"],
+  "faction.emblems.intro.three": ENGLISH_TERMS["faction.emblems.intro.three"],
+  "faction.emblems.intro.two": ENGLISH_TERMS["faction.emblems.intro.two"],
+  "faction.tradeEmblems": ENGLISH_TERMS["faction.tradeEmblems"],
+  "faction.marksBoost": ENGLISH_TERMS["faction.marksBoost"],
+  "faction.openingSoon": ENGLISH_TERMS["faction.openingSoon"],
   "faction.join": ENGLISH_TERMS["faction.join"],
   "faction.description.bumpkins": ENGLISH_TERMS["faction.description.bumpkins"],
   "faction.description.goblins": ENGLISH_TERMS["faction.description.goblins"],
@@ -2112,6 +2145,12 @@ const factions: Record<Factions, string> = {
   "faction.claimEmblems.travelNow":
     ENGLISH_TERMS["faction.claimEmblems.travelNow"],
   "faction.claimEmblems.visitMe": ENGLISH_TERMS["faction.claimEmblems.visitMe"],
+  "faction.kitchen.gatherResources":
+    ENGLISH_TERMS["faction.kitchen.gatherResources"],
+  "faction.kitchen.opensIn": ENGLISH_TERMS["faction.kitchen.opensIn"],
+  "faction.kitchen.notReady": ENGLISH_TERMS["faction.kitchen.notReady"],
+  "faction.kitchen.preparing": ENGLISH_TERMS["faction.kitchen.preparing"],
+  "faction.kitchen.newRequests": ENGLISH_TERMS["faction.kitchen.newRequests"],
 };
 
 const festiveTree: Record<FestiveTree, string> = {
@@ -2802,7 +2841,7 @@ const heliosSunflower: Record<HeliosSunflower, string> = {
   "heliosSunflower.title": "Clytie, a Girassol",
   "heliosSunflower.description":
     "Apenas o verdadeiro salvador pode voltar e colher este Girassol.",
-  "confirmation.craft": "Tem certeza de que deseja criar",
+  "confirmation.craft": ENGLISH_TERMS["confirmation.craft"],
 };
 
 const helper: Record<Helper, string> = {
@@ -4672,10 +4711,6 @@ const statements: Record<Statements, string> = {
 
   "statements.session.expired":
     "Parece que sua sessão expirou. Atualize a página para continuar jogando.",
-  "statements.translation.want2contribute":
-    ENGLISH_TERMS["statements.translation.want2contribute"],
-  "statements.translation.contribution":
-    ENGLISH_TERMS["statements.translation.contribution"],
   "statements.translation.joinDiscord":
     ENGLISH_TERMS["statements.translation.joinDiscord"],
 };
@@ -4736,6 +4771,7 @@ const trader: Record<Trader, string> = {
 };
 
 const transactionTerms: Record<TransactionTerms, string> = {
+  "transaction.starterOffer": ENGLISH_TERMS["transaction.starterOffer"],
   "transaction.t&c.one":
     "Aceite os termos e condições para entrar no Sunflower Land.",
   "transaction.t&c.two": "Aceitar Termos e Condições",
@@ -5002,8 +5038,6 @@ const world: Record<World, string> = {
   "world.home": ENGLISH_TERMS["world.home"],
   "world.kingdom": ENGLISH_TERMS["world.kingdom"],
   "world.travelTo": ENGLISH_TERMS["world.travelTo"],
-  "world.plazaShort": ENGLISH_TERMS["world.plazaShort"],
-  "world.retreatShort": ENGLISH_TERMS["world.retreatShort"],
 };
 
 const wornDescription: Record<WornDescription, string> = {
@@ -5188,6 +5222,8 @@ const minigame: Record<Minigame, string> = {
   "minigame.playNow": ENGLISH_TERMS["minigame.playNow"],
   "minigame.purchase": ENGLISH_TERMS["minigame.purchase"],
   "minigame.chickenRescueHelp": ENGLISH_TERMS["minigame.chickenRescueHelp"],
+  "minigame.discovered.one": ENGLISH_TERMS["minigame.discovered.one"],
+  "minigame.discovered.two": ENGLISH_TERMS["minigame.discovered.two"],
 };
 
 export const easterEggTerms: Record<EasterEggKeys, string> = {
@@ -5225,6 +5261,7 @@ export const PORTUGUESE_TERMS: Record<TranslationKeys, string> = {
   ...bumpkinTrade,
   ...buyFarmHand,
   ...claimAchievement,
+  ...changeLanguage,
   ...chat,
   ...chickenWinner,
   ...choresStart,

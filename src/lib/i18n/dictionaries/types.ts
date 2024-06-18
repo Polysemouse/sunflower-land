@@ -378,7 +378,10 @@ export type AvailableSeeds =
   | "availableSeeds.select"
   | "availableSeeds.select.plant"
   | "quickSelect.label"
-  | "quickSelect.empty";
+  | "quickSelect.empty"
+  | "quickSelect.purchase"
+  | "quickSelect.cropSeeds"
+  | "quickSelect.greenhouseSeeds";
 
 export type Base = "base.far.away" | "base.iam.far.away";
 
@@ -407,7 +410,15 @@ export type Beehive =
   | "beehive.harvestHoney"
   | "beehive.noFlowersGrowing"
   | "beehive.beeSwarm"
-  | "beehive.pollinationCelebration";
+  | "beehive.pollinationCelebration"
+  | "beehive.honeyProductionPaused"
+  | "beehive.yield"
+  | "beehive.honeyPerFullHive"
+  | "beehive.speed"
+  | "beehive.fullHivePerDay"
+  | "beehive.estimatedFull"
+  | "beehive.hive.singular"
+  | "beehive.hives.plural";
 
 export type BirdiePlaza =
   | "birdieplaza.birdieIntro"
@@ -877,12 +888,16 @@ export type Conversations =
   | "betty-intro.one"
   | "betty-intro.two"
   | "betty-intro.three"
+  | "home-intro.one"
+  | "home-intro.two"
+  | "home-intro.three"
   | "betty.market-intro.one"
   | "betty.market-intro.two"
   | "betty.market-intro.three"
   | "betty.market-intro.four"
   | "firepit-intro.one"
   | "firepit-intro.two"
+  | "firepit.increasedXP"
   | "bruce-intro.headline"
   | "bruce-intro.one"
   | "bruce-intro.two"
@@ -1306,7 +1321,11 @@ export type DecorationDescriptions =
   | "description.fancy.rug"
   | "description.clock"
   | "description.vinny"
-  | "description.ricePanda";
+  | "description.ricePanda"
+  | "description.splendorFlag"
+  | "description.benevolenceFlag"
+  | "description.devotionFlag"
+  | "description.generosityFlag";
 
 export type Delivery =
   | "delivery.resource"
@@ -1479,6 +1498,11 @@ export type Factions =
   | "faction.greeting.sunflorians"
   | "faction.greeting.bumpkins"
   | "faction.greeting.nightshades"
+  | "faction.kitchen.opensIn"
+  | "faction.kitchen.notReady"
+  | "faction.kitchen.gatherResources"
+  | "faction.kitchen.preparing"
+  | "faction.kitchen.newRequests"
   // Emblem Airdrop
   | "faction.claimEmblems.alreadyClaimed"
   | "faction.claimEmblems.emblemsEarned"
@@ -1496,7 +1520,14 @@ export type Factions =
   | "faction.claimEmblems.totalEmblems"
   | "faction.claimEmblems.percentile"
   | "faction.claimEmblems.travelNow"
-  | "faction.claimEmblems.visitMe";
+  | "faction.claimEmblems.visitMe"
+  | "faction.openingSoon"
+  | "faction.emblems"
+  | "faction.emblems.intro.one"
+  | "faction.emblems.intro.two"
+  | "faction.emblems.intro.three"
+  | "faction.tradeEmblems"
+  | "faction.marksBoost";
 
 export type FestiveTree =
   | "festivetree.greedyBumpkin"
@@ -3166,8 +3197,6 @@ export type Statements =
   | "statements.startgame"
   | "statements.session.expired"
   | "statements.price.change"
-  | "statements.translation.want2contribute"
-  | "statements.translation.contribution"
   | "statements.translation.joinDiscord";
 
 export type StopGoblin =
@@ -3207,6 +3236,7 @@ export type TransactionTerms =
   | "transaction.creditCard"
   | "transaction.estimated.fee"
   | "transaction.excludeFees"
+  | "transaction.starterOffer"
   | "transaction.id"
   | "transaction.termsOfService"
   | "transaction.matic"
@@ -3391,8 +3421,6 @@ export type World =
   | "world.woodlands"
   | "world.home"
   | "world.kingdom"
-  | "world.retreatShort"
-  | "world.plazaShort"
   | "world.travelTo";
 
 export type Event =
@@ -3511,7 +3539,9 @@ export type Minigame =
   | "minigame.confirm"
   | "minigame.purchase"
   | "minigame.comingSoon"
-  | "minigame.chickenRescueHelp";
+  | "minigame.chickenRescueHelp"
+  | "minigame.discovered.one"
+  | "minigame.discovered.two";
 
 export type KitchenKeys = "kitchen.oilRemaining";
 
@@ -3527,6 +3557,11 @@ export type EasterEggKeys =
   | "easterEgg.kingdomBook4"
   | "easterEgg.kingdomBook5"
   | "easterEgg.knight";
+
+export type ChangeLanguage =
+  | "changeLanguage.confirm"
+  | "changeLanguage.contribute"
+  | "changeLanguage.contribute.message";
 
 export type TranslationKeys =
   | AchievementsTerms
@@ -3548,11 +3583,12 @@ export type TranslationKeys =
   | BumpkinSkillsDescription
   | BumpkinTrade
   | BuyFarmHand
-  | ClaimAchievement
+  | ChangeLanguage
   | Chat
   | ChickenWinner
   | ChoresStart
   | ChumDetails
+  | ClaimAchievement
   | Community
   | CompostDescription
   | ComposterDescription

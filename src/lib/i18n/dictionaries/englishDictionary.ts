@@ -177,10 +177,11 @@ import {
   RemoveCropMachine,
   Username,
   EasterEggKeys,
+  ChangeLanguage,
 } from "./types";
 
 const generalTerms: Record<GeneralTerms, string> = {
-  "2x.sale": "2x Sale",
+  "2x.sale": "2x Coins",
   achievements: "Achievements",
   "amount.matic": "Amount in MATIC",
   deposit: "Deposit",
@@ -601,7 +602,10 @@ const availableSeeds: Record<AvailableSeeds, string> = {
   "availableSeeds.select.plant":
     "What seed would you like to select and plant?",
   "quickSelect.empty": "No greenhouse seeds.",
+  "quickSelect.purchase": "Purchase {{name}} at the Market.",
   "quickSelect.label": "Quick select",
+  "quickSelect.cropSeeds": "crop seeds",
+  "quickSelect.greenhouseSeeds": "greenhouse seeds",
 };
 
 const base: Record<Base, string> = {
@@ -643,6 +647,14 @@ const beehive: Record<Beehive, string> = {
   "beehive.beeSwarm": "Bee swarm",
   "beehive.pollinationCelebration":
     "Pollination celebration! Your crops are in for a treat with a 0.2 boost from a friendly bee swarm!",
+  "beehive.honeyProductionPaused": "Honey production paused",
+  "beehive.yield": "Yield",
+  "beehive.honeyPerFullHive": "{{multiplier}} honey / full hive",
+  "beehive.speed": "Speed",
+  "beehive.fullHivePerDay": "{{speed}} full {{hive}} / day",
+  "beehive.estimatedFull": "Estimated full",
+  "beehive.hive.singular": "hive",
+  "beehive.hives.plural": "hives",
 };
 
 const birdiePlaza: Record<BirdiePlaza, string> = {
@@ -774,7 +786,7 @@ const boostDescriptions: Record<BoostDescriptions, string> = {
   "description.basic.scarecrow":
     "Boost nearby Sunflowers, Potatoes and Pumpkins.",
   "description.scary.mike":
-    "Boost nearby Carrots, Cabbages, Beetroots and Cauliflowers",
+    "Boost nearby Carrots, Cabbages, Soybeans, Beetroots, Cauliflowers and Parsnips",
   "description.laurie.chuckle.crow":
     "Boost nearby Eggplant, Corn, Radish, Wheat and Kale",
   "description.immortal.pear": "Increase the survival of your fruit patches.",
@@ -1109,6 +1121,14 @@ const buyFarmHand: Record<BuyFarmHand, string> = {
     "I am your new farmhand. I can't wait to get to work!",
 };
 
+const changeLanguage: Record<ChangeLanguage, string> = {
+  "changeLanguage.confirm":
+    "This action will refresh the browser. Are you sure you want to change your language?",
+  "changeLanguage.contribute": "Want to contribute your Language?",
+  "changeLanguage.contribute.message":
+    "If you are interested in contributing translations for your preferred language, please contact one of the Moderators in the Sunflower Land Discord Server:",
+};
+
 const chat: Record<Chat, string> = {
   "chat.Fail": "Connection failed",
   "chat.mute": "You are muted",
@@ -1220,6 +1240,12 @@ const confirmSkill: Record<ConfirmSkill, string> = {
 };
 
 const conversations: Record<Conversations, string> = {
+  "home-intro.one":
+    "Howdy Bumpkin, welcome to your home...It's not much, but we all have to start somewhere!",
+  "home-intro.two":
+    "Throughout your adventures you will be able to store rare collectibles you find here.",
+  "home-intro.three":
+    "The bigger your home, the more Bumpkins that can live on your island.",
   "hank-intro.headline": "Help an old man?",
   "hank-intro.one": "Howdy Bumpkin! Welcome to our little patch of paradise.",
   "hank-intro.two":
@@ -1250,7 +1276,7 @@ const conversations: Record<Conversations, string> = {
   "firepit-intro.one": "Congratulations Bumpkin...You're a natural!",
   "firepit-intro.two":
     "If you want to level up & unlock new abilities, gather crops and visit my fire pit. I can cook some nutritious food for you.",
-
+  "firepit.increasedXP": "Increased XP",
   "bruce-intro.headline": "Cooking Introduction",
   "bruce-intro.one": "I'm the owner of this lovely little bistro.",
   "bruce-intro.two":
@@ -1801,6 +1827,14 @@ const decorationDescriptions: Record<DecorationDescriptions, string> = {
   "description.vinny":
     "Vinny, a friendly grapevine, is always ready for a chat.",
   "description.ricePanda": "A smart panda never forgets to water the rice.",
+  "description.benevolenceFlag":
+    "For players who have shown great benevolence by contributing significantly to the Bumpkins.",
+  "description.devotionFlag":
+    "For players who have shown unwavering devotion by donating extensively to the Nightshades, reflecting their cult-like dedication",
+  "description.generosityFlag":
+    "For players who have donated substantial resources to the Goblins.",
+  "description.splendorFlag":
+    "For players who have generously supported the Sunflorians, symbolizing their splendor in generosity.",
 };
 
 const defaultDialogue: Record<DefaultDialogue, string> = {
@@ -2038,7 +2072,7 @@ const factions: Record<Factions, string> = {
   "faction.donation.bulk.resources.unlimited.per.day":
     "{{donatedToday}}/unlimited per day",
   "faction.donation.confirm":
-    "Are you sure you want to donate the following for a total of {{factionPoints}} faction points?",
+    "Are you sure you want to donate the following for a total of {{factionPoints}} {{reward}}?",
   "faction.seasonal.delivery.start.at": "Seasonal Deliveries begin in {{days}}",
   "faction.points.with.number": "Faction points: {{points}}",
   "faction.points.title": "Faction Points",
@@ -2087,6 +2121,27 @@ const factions: Record<Factions, string> = {
   "faction.claimEmblems.travelNow": "Travel Now",
   "faction.claimEmblems.visitMe":
     "Visit me, {{recruiterName}}, in the Kingdom to claim your emblems.",
+
+  "faction.kitchen.opensIn": "Opens in {{time}}",
+  "faction.kitchen.notReady":
+    "Ahhh I love your enthusiasm! However, the kitchen is not open yet. Please come back later.",
+  "faction.kitchen.gatherResources":
+    "So many new recruits... how will we feed them all! Can you help me gather some resources?",
+  "faction.kitchen.preparing":
+    "I'm still preparing my orders! Please come back in a few minutes.",
+  "faction.kitchen.newRequests": "New requests: {{time}}",
+  "faction.openingSoon":
+    "Faction houses are opening on July 1st. Earn marks, compete for glory and claim rewards!",
+  "faction.emblems": "Emblems",
+  "faction.emblems.intro.one":
+    "Wow, look at all those emblems. You are a true warrior!",
+  "faction.emblems.intro.two":
+    "On July 1st the Faction House will open. You will be able to complete tasks, earn marks and claim rewards.",
+  "faction.emblems.intro.three":
+    "The more emblems you have, the higher your rank and more marks you can earn.",
+  "faction.tradeEmblems": "Trade emblems to climb the ranks and attain perks.",
+  "faction.marksBoost":
+    "Marks boost applies to faction activities coming July 1st.",
 };
 
 const festiveTree: Record<FestiveTree, string> = {
@@ -2772,7 +2827,7 @@ const heliosSunflower: Record<HeliosSunflower, string> = {
   "heliosSunflower.title": "Clytie the Sunflower",
   "heliosSunflower.description":
     "Only the true saviour can return and harvest this Sunflower.",
-  "confirmation.craft": "Are you sure you want to craft",
+  "confirmation.craft": "Are you sure you want to craft {{item}}?",
 };
 
 const helper: Record<Helper, string> = {
@@ -4727,9 +4782,6 @@ const statements: Record<Statements, string> = {
 
   "statements.session.expired":
     "It looks like your session has expired. Please refresh the page to continue playing.",
-  "statements.translation.want2contribute": "Want to contribute your Language?",
-  "statements.translation.contribution":
-    "If you are interested in contributing translations for your preferred language, please contact one of the Moderators in the Sunflower Land Discord Server:",
   "statements.translation.joinDiscord": "Join Discord",
 };
 
@@ -4787,6 +4839,7 @@ const trader: Record<Trader, string> = {
 };
 
 const transactionTerms: Record<TransactionTerms, string> = {
+  "transaction.starterOffer": "Starter offer",
   "transaction.t&c.one":
     "Accept the terms and conditions to sign in to Sunflower Land.",
   "transaction.t&c.two": "Accept Terms and Conditions",
@@ -5052,9 +5105,7 @@ const world: Record<World, string> = {
   "world.retreat": "Retreat",
   "world.home": "Home",
   "world.kingdom": "Kingdom",
-  "world.travelTo": "Travel to",
-  "world.plazaShort": "Plaza",
-  "world.retreatShort": "Retreat",
+  "world.travelTo": "Travel to {{location}}",
 };
 
 const wornDescription: Record<WornDescription, string> = {
@@ -5175,6 +5226,9 @@ const minigame: Record<Minigame, string> = {
   "minigame.playNow": "Play now",
   "minigame.purchase": "Purchase",
   "minigame.chickenRescueHelp": "Can you help me rescue the chickens?",
+  "minigame.discovered.one": "Howdy Bumpkin, you've discovered a portal!",
+  "minigame.discovered.two":
+    "Step into the magical realm to earn rewards and glory. Good luck!",
 };
 
 export const easterEggTerms: Record<EasterEggKeys, string> = {
@@ -5216,6 +5270,7 @@ export const ENGLISH_TERMS: Record<TranslationKeys, string> = {
   ...bumpkinSkillsDescription,
   ...bumpkinTrade,
   ...buyFarmHand,
+  ...changeLanguage,
   ...chat,
   ...chickenWinner,
   ...choresStart,

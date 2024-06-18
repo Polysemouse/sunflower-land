@@ -2,7 +2,10 @@ import React, { useEffect, useState } from "react";
 import { PotionHouse } from "features/game/expansion/components/potions/PotionHouse";
 import { Modal } from "components/ui/Modal";
 import { CloseButtonPanel } from "features/game/components/CloseablePanel";
-import { SpeakingModal } from "features/game/components/SpeakingModal";
+import {
+  SpeakingModal,
+  SpeakingText,
+} from "features/game/components/SpeakingModal";
 import { NPC_WEARABLES } from "lib/npcs";
 import { KrakenIntro } from "./npcs/Shelly";
 import { AuctionHouseModal } from "./AuctionHouseModal";
@@ -34,6 +37,7 @@ export type FanArtNPC = "fan_npc_1" | "fan_npc_2" | "fan_npc_3" | "fan_npc_4";
 type InteractableName =
   | FanArtNPC
   | "vip_chest"
+  | "faction_launch"
   | "donations"
   | "garbage_collector"
   | "basic_chest"
@@ -597,6 +601,19 @@ export const InteractableModals: React.FC<Props> = ({ id, scene }) => {
         </Panel>
       </Modal>
 
+      <Modal show={interactable === "faction_launch"} onHide={closeModal}>
+        <Panel>
+          <SpeakingText
+            message={[
+              {
+                text: t("faction.openingSoon"),
+              },
+            ]}
+            onClose={closeModal}
+          />
+        </Panel>
+      </Modal>
+
       <Modal
         show={
           interactable === "fan_npc_1" ||
@@ -611,7 +628,7 @@ export const InteractableModals: React.FC<Props> = ({ id, scene }) => {
 
       <Modal show={interactable === "kingdom_knight"} onHide={closeModal}>
         <CloseButtonPanel onClose={closeModal}>
-          <div className="h-32 p-2">
+          <div className="p-2">
             <Label type="default" className="mb-2">
               {t("easterEgg.lostKnight")}
             </Label>
@@ -622,7 +639,7 @@ export const InteractableModals: React.FC<Props> = ({ id, scene }) => {
 
       <Modal show={interactable === "kingdom_book_1"} onHide={closeModal}>
         <CloseButtonPanel onClose={closeModal}>
-          <div className="h-32 p-2">
+          <div className="p-2">
             <Label type="default" className="mb-2">
               {t("easterEgg.queensDiary")}
             </Label>
@@ -633,7 +650,7 @@ export const InteractableModals: React.FC<Props> = ({ id, scene }) => {
 
       <Modal show={interactable === "kingdom_book_2"} onHide={closeModal}>
         <CloseButtonPanel onClose={closeModal}>
-          <div className="h-32 p-2">
+          <div className="p-2">
             <Label type="default" className="mb-2">
               {t("easterEgg.queensDiary")}
             </Label>
@@ -644,7 +661,7 @@ export const InteractableModals: React.FC<Props> = ({ id, scene }) => {
 
       <Modal show={interactable === "kingdom_book_3"} onHide={closeModal}>
         <CloseButtonPanel onClose={closeModal}>
-          <div className="h-32 p-2">
+          <div className="p-2">
             <Label type="default" className="mb-2">
               {t("easterEgg.jesterDiary")}
             </Label>
@@ -655,7 +672,7 @@ export const InteractableModals: React.FC<Props> = ({ id, scene }) => {
 
       <Modal show={interactable === "kingdom_book_4"} onHide={closeModal}>
         <CloseButtonPanel onClose={closeModal}>
-          <div className="h-32 p-2">
+          <div className="p-2">
             <Label type="default" className="mb-2">
               {t("easterEgg.kingDiary")}
             </Label>
@@ -666,7 +683,7 @@ export const InteractableModals: React.FC<Props> = ({ id, scene }) => {
 
       <Modal show={interactable === "kingdom_book_5"} onHide={closeModal}>
         <CloseButtonPanel onClose={closeModal}>
-          <div className="h-32 p-2">
+          <div className="p-2">
             <Label type="default" className="mb-2">
               {t("easterEgg.tywinDiary")}
             </Label>

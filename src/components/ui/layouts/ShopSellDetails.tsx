@@ -59,7 +59,7 @@ export const ShopSellDetails: React.FC<Props> = ({
           )}
           <span className="sm:text-center">{title}</span>
         </div>
-        <span className="text-xs sm:mt-1 whitespace-pre-line sm:text-center">
+        <span className="text-xs mb-2 sm:mt-1 whitespace-pre-line sm:text-center">
           {description}
         </span>
       </>
@@ -70,7 +70,7 @@ export const ShopSellDetails: React.FC<Props> = ({
     if (!properties) return <></>;
 
     return (
-      <div className="border-t border-white w-full my-2 pt-2 flex justify-between gap-x-3 gap-y-2 flex-wrap sm:flex-col sm:items-center sm:flex-nowrap">
+      <div className="border-t border-white w-full mb-2 pt-2 flex justify-between gap-x-3 gap-y-2 flex-wrap sm:flex-col sm:items-center sm:flex-nowrap">
         {/* Price display */}
         {properties.coins !== undefined && (
           <RequirementLabel

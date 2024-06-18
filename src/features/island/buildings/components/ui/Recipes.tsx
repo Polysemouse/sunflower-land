@@ -32,6 +32,7 @@ import { FeatureName, hasFeatureAccess } from "lib/flags";
 import { BuildingName } from "features/game/types/buildings";
 import { BuildingOilTank } from "../building/BuildingOilTank";
 import pumpkinSoup from "assets/food/pumpkin_soup.png";
+import powerup from "assets/icons/level_up.png";
 
 interface Props {
   selected: Cookable;
@@ -118,33 +119,44 @@ export const Recipes: React.FC<Props> = ({
     );
   });
 
+  const isOilBoosted =
+    state.buildings?.[buildingName]?.[0].crafting?.boost?.["Oil"];
+
   return (
     <SplitScreenView
       panel={
-        <CraftingRequirements
-          gameState={state}
-          details={{
-            item: selected.name,
-          }}
-          hideDescription
-          requirements={{
-            resources: selected.ingredients,
-            xp: new Decimal(
-              getFoodExpBoost(
-                selected,
-                state.bumpkin as Bumpkin,
-                state,
-                state.buds ?? {}
-              )
-            ),
-            timeSeconds: getCookingTime(
-              getCookingOilBoost(selected.name, state, buildingId).timeToCook,
-              state.bumpkin,
-              state
-            ),
-          }}
-          actionView={Action()}
-        />
+        <>
+          {selected.name === "Reindeer Carrot" &&
+            Date.now() < new Date("2024-06-22").getTime() && (
+              <Label className="mx-auto" type="info" icon={powerup}>
+                {t("firepit.increasedXP")}
+              </Label>
+            )}
+          <CraftingRequirements
+            gameState={state}
+            details={{
+              item: selected.name,
+            }}
+            hideDescription
+            requirements={{
+              resources: selected.ingredients,
+              xp: new Decimal(
+                getFoodExpBoost(
+                  selected,
+                  state.bumpkin as Bumpkin,
+                  state,
+                  state.buds ?? {}
+                )
+              ),
+              timeSeconds: getCookingTime(
+                getCookingOilBoost(selected.name, state, buildingId).timeToCook,
+                state.bumpkin,
+                state
+              ),
+            }}
+            actionView={Action()}
+          />
+        </>
       }
       content={
         <>
@@ -152,6 +164,7 @@ export const Recipes: React.FC<Props> = ({
             <InProgressInfo
               craftingService={craftingService}
               onClose={onClose}
+              isOilBoosted={!!isOilBoosted}
             />
           )}
           {crafting && (

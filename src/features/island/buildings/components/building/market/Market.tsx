@@ -14,8 +14,11 @@ import { getKeys } from "features/game/types/craftables";
 import { CROPS } from "features/game/types/crops";
 import { Bumpkin } from "features/game/types/game";
 import { loadAudio, shopAudio } from "lib/utils/sfx";
-import { isCropShortage } from "features/game/expansion/lib/boosts";
+import { CROP_SHORTAGE_HOURS } from "features/game/expansion/lib/boosts";
 import { MARKET_VARIANTS } from "features/island/lib/alternateArt";
+import { Label } from "components/ui/Label";
+import { useAppTranslation } from "lib/i18n/useAppTranslations";
+import { secondsToString } from "lib/utils/time";
 
 const hasSoldCropsBefore = (bumpkin?: Bumpkin) => {
   if (!bumpkin) return false;
@@ -46,6 +49,8 @@ export const Market: React.FC<BuildingProps> = ({
   const { gameService } = useContext(Context);
   const [gameState] = useActor(gameService);
 
+  const { t } = useAppTranslation();
+
   useEffect(() => {
     loadAudio([shopAudio]);
   }, []);
@@ -71,6 +76,13 @@ export const Market: React.FC<BuildingProps> = ({
     gameState.context.state.bumpkin?.activity?.["Sunflower Harvested"] === 9 &&
     !gameState.context.state.bumpkin?.activity?.["Sunflower Sold"];
 
+  const cropShortageSecondsLeft =
+    (gameState.context.state.createdAt +
+      CROP_SHORTAGE_HOURS * 60 * 60 * 1000 -
+      Date.now()) /
+    1000;
+  const isCropShortage = cropShortageSecondsLeft >= 0;
+
   return (
     <>
       <BuildingImageWrapper name="Market" onClick={handleClick}>
@@ -79,7 +91,6 @@ export const Market: React.FC<BuildingProps> = ({
           className="absolute bottom-0 pointer-events-none"
           style={{
             width: `${PIXEL_SCALE * 48}px`,
-            height: `${PIXEL_SCALE * 38}px`,
           }}
         />
 
@@ -130,9 +141,22 @@ export const Market: React.FC<BuildingProps> = ({
         <ShopItems
           onClose={() => setIsOpen(false)}
           hasSoldBefore={hasSoldBefore}
-          cropShortage={isCropShortage({ game: gameState.context.state })}
           showBuyHelper={showBuyHelper}
         />
+        {isCropShortage && (
+          <Label
+            icon={SUNNYSIDE.icons.stopwatch}
+            type="vibrant"
+            className="absolute right-0 -top-7 shadow-md"
+            style={{
+              wordSpacing: 0,
+            }}
+          >
+            {`${t("2x.sale")}: ${secondsToString(cropShortageSecondsLeft, {
+              length: "medium",
+            })} left`}
+          </Label>
+        )}
       </Modal>
     </>
   );
