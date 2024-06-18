@@ -108,9 +108,13 @@ export class CropsAndChickensScene extends BaseScene {
       frameWidth: CHICKEN_SPRITE_PROPERTIES.frameWidth,
       frameHeight: CHICKEN_SPRITE_PROPERTIES.frameHeight,
     });
-    this.load.spritesheet("crop", "world/crops.png", {
+    this.load.spritesheet("crop_planted", "world/crops_planted.png", {
       frameWidth: 16,
       frameHeight: 20,
+    });
+    this.load.spritesheet("crop_harvested", "world/crops_harvested.png", {
+      frameWidth: 16,
+      frameHeight: 16,
     });
 
     // ambience SFX
@@ -267,10 +271,11 @@ export class CropsAndChickensScene extends BaseScene {
    * @returns The crop group for that crop.
    */
   private createCrop(cropIndex: number, x: number, y: number) {
+    // wrap crop positions around the board
     x = Phaser.Math.Wrap(x, BOARD_OFFSET, BOARD_OFFSET + BOARD_WIDTH);
     y = Phaser.Math.Wrap(y, BOARD_OFFSET, BOARD_OFFSET + BOARD_WIDTH);
 
-    const spriteName = "crop";
+    const spriteName = "crop_planted";
 
     const crops = [
       this.add.sprite(x, y, spriteName, cropIndex),
@@ -279,7 +284,7 @@ export class CropsAndChickensScene extends BaseScene {
       this.add.sprite(x + BOARD_WIDTH, y + BOARD_WIDTH, spriteName, cropIndex),
     ];
 
-    crops.forEach((crop, index) => {
+    crops.forEach((crop) => {
       this.physics.add.existing(crop);
       crop.setDepth(crop.y);
 
@@ -334,9 +339,6 @@ export class CropsAndChickensScene extends BaseScene {
    * @returns The chicken group for that chicken.
    */
   private createChicken(x: number, y: number, direction: ChickenDirection) {
-    x = Phaser.Math.Wrap(x, BOARD_OFFSET, BOARD_OFFSET + BOARD_WIDTH);
-    y = Phaser.Math.Wrap(y, BOARD_OFFSET, BOARD_OFFSET + BOARD_WIDTH);
-
     const spriteName = `chicken_${direction}`;
     const spriteKey = `chicken_${direction}_anim`;
 
@@ -349,10 +351,6 @@ export class CropsAndChickensScene extends BaseScene {
     let forwardSpeed = Phaser.Math.RND.realInRange(
       CHICKEN_SPEEDS.forwardMin,
       CHICKEN_SPEEDS.forwardMax
-    );
-    let sidewaysSpeed = Phaser.Math.RND.realInRange(
-      -CHICKEN_SPEEDS.sidewaysMax,
-      CHICKEN_SPEEDS.sidewaysMax
     );
 
     chicken.play({ key: spriteKey, startFrame: startFrame });
@@ -373,23 +371,6 @@ export class CropsAndChickensScene extends BaseScene {
             CHICKEN_SPEEDS.forwardMin,
             CHICKEN_SPEEDS.forwardMax
           );
-          sidewaysSpeed = Phaser.Math.Clamp(
-            sidewaysSpeed +
-              Phaser.Math.RND.realInRange(
-                0.2 *
-                  (direction === "left" || direction === "right"
-                    ? y - SQUARE_WIDTH * 4 - chicken.y
-                    : x - SQUARE_WIDTH * 4 - chicken.x) -
-                  2,
-                0.2 *
-                  (direction === "left" || direction === "right"
-                    ? y + SQUARE_WIDTH * 4 - chicken.y
-                    : x + SQUARE_WIDTH * 4 - chicken.x) +
-                  2
-              ),
-            -CHICKEN_SPEEDS.sidewaysMax,
-            CHICKEN_SPEEDS.sidewaysMax
-          );
         }
         if (!chicken.body) return;
 
@@ -399,13 +380,13 @@ export class CropsAndChickensScene extends BaseScene {
               ? -forwardSpeed
               : direction === "right"
               ? forwardSpeed
-              : sidewaysSpeed;
+              : 0;
           chicken.body.velocity.y =
             direction === "up"
               ? -forwardSpeed
               : direction === "down"
               ? forwardSpeed
-              : sidewaysSpeed;
+              : 0;
         }
         if (frame.index >= 4) {
           chicken.body.velocity.x = 0;
@@ -505,6 +486,7 @@ export class CropsAndChickensScene extends BaseScene {
     sound.play({ volume: 0.1 });
 
     // throw all crops out of the inventory
+    this.animateCropsRadiatingOut();
     this.collectedCropIndexes = [];
     this.portalService?.send("KILL_PLAYER");
 
@@ -550,6 +532,54 @@ export class CropsAndChickensScene extends BaseScene {
       this.currentPlayer.setVisible(true);
 
       playerDeath.destroy();
+    });
+  }
+
+  private animateCropsRadiatingOut() {
+    if (!this.currentPlayer) {
+      return;
+    }
+    const player = this.currentPlayer;
+
+    this.collectedCropIndexes.forEach((cropIndex) => {
+      const cropSprite = this.add.sprite(
+        player.x,
+        player.y,
+        "crop_harvested",
+        cropIndex
+      );
+
+      // adjust the angle and distance for the crop to radiate outward
+      const angle = Phaser.Math.RND.angle();
+      const distance = Phaser.Math.RND.between(40, 60);
+
+      this.tweens.add({
+        targets: cropSprite,
+        x: player.x + distance * Math.cos(angle),
+        y: player.y + distance * Math.sin(angle),
+        duration: 400,
+        ease: "Power1", // qudratic
+        onUpdate: () => {
+          cropSprite.setDepth(cropSprite.y);
+        },
+        onComplete: (
+          _: Phaser.Tweens.Tween,
+          targets: Phaser.GameObjects.Sprite[]
+        ) => {
+          // fading tween starts when movement tween is complete
+          targets.forEach((cropSprite) => {
+            this.tweens.add({
+              targets: cropSprite,
+              alpha: 0, // fade out to completely transparent
+              delay: 500,
+              duration: 500, // fade out duration
+              onComplete: () => {
+                cropSprite.destroy(); // destroy sprite after fading out
+              },
+            });
+          });
+        },
+      });
     });
   }
 
