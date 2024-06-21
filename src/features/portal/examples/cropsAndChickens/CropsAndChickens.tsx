@@ -5,13 +5,12 @@ import { Modal } from "components/ui/Modal";
 import { Panel } from "components/ui/Panel";
 import { Button } from "components/ui/Button";
 
-import { PortalContext, PortalProvider } from "./lib/PortalProvider";
+import { PortalContext } from "./lib/PortalProvider";
 import { CropsAndChickensHud } from "features/portal/examples/cropsAndChickens/components/CropsAndChickensHud";
 import { CropsAndChickensPhaser } from "./CropsAndChickensPhaser";
 import { Label } from "components/ui/Label";
 import { SUNNYSIDE } from "assets/sunnyside";
 import { NPC_WEARABLES } from "lib/npcs";
-import { goHome } from "features/portal/examples/cropBoom/lib/portalUtil";
 import { CropsAndChickensRules } from "./components/CropsAndChickensRules";
 import { useAppTranslation } from "lib/i18n/useAppTranslations";
 import { PortalMachineState } from "./lib/cropsAndChickensMachine";
@@ -20,19 +19,16 @@ import { CONFIG } from "lib/config";
 import lock from "assets/skills/lock.png";
 import sfl from "assets/icons/sfl.webp";
 import { UNLIMITED_ATTEMPTS_SFL } from "./CropsAndChickensConstants";
-import { complete, purchase } from "./lib/portalUtil";
+import {
+  authorisePortal,
+  claimPrize,
+  goHome,
+  purchase,
+} from "../../lib/portalUtil";
 import { CropsAndChickensPrize } from "./components/CropsAndChickensPrize";
 import { CropsAndChickensAttempts } from "./components/CropsAndChickensAttempts";
 
-export const CropsAndChickensApp: React.FC = () => {
-  return (
-    <PortalProvider>
-      <CropsAndChickens />
-    </PortalProvider>
-  );
-};
-
-const _gameState = (state: PortalMachineState) => state.context.state!;
+const _gameState = (state: PortalMachineState) => state.context.state;
 
 export const CropsAndChickens: React.FC = () => {
   const { portalService } = useContext(PortalContext);
@@ -49,28 +45,8 @@ export const CropsAndChickens: React.FC = () => {
 
     window.addEventListener("beforeunload", handleBeforeUnload);
 
-    const handleMessage = (event: MessageEvent) => {
-      // TODO
-      const isValidOrigin = true; //event.oring === 'https://example.com'
-
-      // Check if the origin of the message is trusted
-      if (isValidOrigin) {
-        // Handle the received message
-        if (event.data.event === "purchased") {
-          portalService.send("PURCHASED");
-        }
-      } else {
-        // eslint-disable-next-line no-console
-        console.error("Received message from untrusted origin:", event.origin);
-      }
-    };
-
-    // Add event listener to listen for messages from the parent window
-    window.addEventListener("message", handleMessage);
-
     // Clean up the event listener when component unmounts
     return () => {
-      window.removeEventListener("message", handleMessage);
       window.removeEventListener("beforeunload", handleBeforeUnload);
     };
   }, []);
@@ -99,7 +75,7 @@ export const CropsAndChickens: React.FC = () => {
             <Label type="danger">{t("error")}</Label>
             <span className="text-sm my-2">{t("session.expired")}</span>
           </div>
-          <Button onClick={goHome}>{t("close")}</Button>
+          <Button onClick={authorisePortal}>{t("welcome.login")}</Button>
         </Panel>
       </Modal>
     );
@@ -119,10 +95,10 @@ export const CropsAndChickens: React.FC = () => {
   }
 
   const dateKey = new Date().toISOString().slice(0, 10);
-  const minigame = gameState.minigames.games["crops-and-chickens"];
+  const minigame = gameState?.minigames.games["crops-and-chickens"];
   const history = minigame?.history ?? {};
 
-  const prize = gameState.minigames.prizes["crops-and-chickens"];
+  const prize = gameState?.minigames.prizes["crops-and-chickens"];
 
   const weeklyAttempt = history[dateKey] ?? {
     attempts: 0,
@@ -154,7 +130,7 @@ export const CropsAndChickens: React.FC = () => {
                 <Label
                   icon={sfl}
                   type={
-                    gameState.balance.lt(UNLIMITED_ATTEMPTS_SFL)
+                    gameState?.balance.lt(UNLIMITED_ATTEMPTS_SFL)
                       ? "danger"
                       : "default"
                   }
@@ -177,8 +153,10 @@ export const CropsAndChickens: React.FC = () => {
                 {t("exit")}
               </Button>
               <Button
-                disabled={gameState.balance.lt(UNLIMITED_ATTEMPTS_SFL)}
-                onClick={() => purchase({ sfl: UNLIMITED_ATTEMPTS_SFL })}
+                disabled={gameState?.balance.lt(UNLIMITED_ATTEMPTS_SFL)}
+                onClick={() =>
+                  purchase({ sfl: UNLIMITED_ATTEMPTS_SFL, items: {} })
+                }
               >
                 {t("crops-and-chickens.unlockAttempts")}
               </Button>
@@ -264,7 +242,7 @@ export const CropsAndChickens: React.FC = () => {
               <Button
                 className="mt-1 whitespace-nowrap capitalize"
                 onClick={() => {
-                  complete();
+                  claimPrize();
                 }}
               >
                 {t("claim")}
@@ -305,7 +283,7 @@ export const CropsAndChickens: React.FC = () => {
         </Modal>
       )}
 
-      {portalState.context.state && (
+      {gameState && (
         <>
           <CropsAndChickensHud />
           <CropsAndChickensPhaser />

@@ -2,7 +2,7 @@
 
 Crops And Chickens is a mini-game where players must gather crops in a dangerous field of wandering chickens.
 
-Those who deposit enough crops are rewarded with an Arcade Token!
+Those who deposit enough crops are rewarded with various rewards!
 
 ## Setup
 
@@ -17,4 +17,4 @@ VITE_PORTAL_APP=crops-and-chickens
 `CropsAndChickens.ts` - Handles the major states in the game (loading, rules, completed, error). Will show the game scene once 'ready'.
 `CropsAndChickensPhaser.tsx` - Initialises the World Scene and components used inside of the game.
 `CropsAndChickensScene.tsx` - Sets up the game logic - custom mechanics.
-`lib/portalMachine.ts` - Handles the connection to Sunflower Land API and any API interactions.
+`lib/cropsAndChickensMachine.ts` - Handles the connection to Sunflower Land API and any API interactions.

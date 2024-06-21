@@ -16,6 +16,12 @@ export const SPAWNS: () => SpawnLocation = () => ({
       y: 884,
     },
   },
+  portal_example: {
+    default: {
+      x: 400 + randomXOffset,
+      y: 450 - randomYOffset,
+    },
+  },
   goblin_house: {
     // Make sure everyone doesn't spawn in same spot
     default: {

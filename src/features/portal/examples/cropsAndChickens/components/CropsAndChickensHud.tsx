@@ -4,7 +4,7 @@ import { PortalContext } from "../lib/PortalProvider";
 import { PIXEL_SCALE } from "features/game/lib/constants";
 import { SUNNYSIDE } from "assets/sunnyside";
 import worldIcon from "assets/icons/world.png";
-import { goHome } from "../lib/portalUtil";
+import { goHome } from "features/portal/lib/portalUtil";
 import { HudContainer } from "components/ui/HudContainer";
 import { secondsToString } from "lib/utils/time";
 import useUiRefresher from "lib/utils/hooks/useUiRefresher";

@@ -1,6 +1,5 @@
 import { OFFLINE_FARM } from "features/game/lib/landData";
 import { assign, createMachine, Interpreter, State } from "xstate";
-import { getUrl, loadPortal } from "../actions/loadPortal";
 import { CONFIG } from "lib/config";
 import { decodeToken } from "features/auth/actions/login";
 import {
@@ -10,8 +9,9 @@ import {
 } from "../CropsAndChickensConstants";
 import { GameState } from "features/game/types/game";
 import { purchaseMinigameItem } from "features/game/events/minigames/purchaseMinigameItem";
-import { played } from "./portalUtil";
 import { playMinigame } from "features/game/events/minigames/playMinigame";
+import { played } from "features/portal/lib/portalUtil";
+import { getUrl, loadPortal } from "features/portal/actions/loadPortal";
 
 const getJWT = () => {
   const code = new URLSearchParams(window.location.search).get("jwt");
