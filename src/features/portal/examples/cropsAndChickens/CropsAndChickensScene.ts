@@ -4,7 +4,7 @@ import { SPAWNS } from "features/world/lib/spawn";
 import { SceneId } from "features/world/mmoMachine";
 import { BaseScene } from "features/world/scenes/BaseScene";
 import { Physics } from "phaser";
-import { MachineInterpreter } from "./lib/portalMachine";
+import { MachineInterpreter } from "./lib/cropsAndChickensMachine";
 import {
   DEPOSIT_CHEST_XY,
   BOARD_OFFSET,
@@ -308,7 +308,7 @@ export class CropsAndChickensScene extends BaseScene {
 
           const cropIndex = Number(crop.frame.name);
           this.collectedCropIndexes = [...this.collectedCropIndexes, cropIndex];
-          const cropPoint = SCORE_TABLE[cropIndex];
+          const cropPoint = SCORE_TABLE[cropIndex].points;
           this.portalService?.send("CROP_HARVESTED", { points: cropPoint });
         },
         undefined,

@@ -259,6 +259,14 @@ export const STATIC_OFFLINE_FARM: GameState = {
         items: {},
         wearables: {},
       },
+      "crops-and-chickens": {
+        coins: 100,
+        startAt: new Date("2023-01-01").getTime(),
+        endAt: new Date("2025-01-01").getTime(),
+        score: 1000,
+        items: {},
+        wearables: {},
+      },
       "festival-of-colors": {
         coins: 0,
         startAt: new Date().getTime() - 500,

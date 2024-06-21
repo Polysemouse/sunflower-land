@@ -11,6 +11,8 @@ import useUiRefresher from "lib/utils/hooks/useUiRefresher";
 import { GAME_SECONDS } from "../CropsAndChickensConstants";
 import { Label } from "components/ui/Label";
 import { useAppTranslation } from "lib/i18n/useAppTranslations";
+import { setPrecision } from "lib/utils/formatNumber";
+import sflIcon from "assets/icons/sfl.webp";
 
 export const CropsAndChickensHud: React.FC = () => {
   useUiRefresher({ delay: 100 });
@@ -23,12 +25,12 @@ export const CropsAndChickensHud: React.FC = () => {
     goHome();
   };
 
-  const { inventoryScore, depositedScore, endAt } = portalState.context;
+  const { inventory, score, endAt, state } = portalState.context;
   const secondsLeft = !endAt
     ? GAME_SECONDS
     : Math.max(endAt - Date.now(), 0) / 1000;
 
-  const target = 1000;
+  const target = state?.minigames.prizes["crops-and-chickens"]?.score ?? 0;
 
   return (
     <>
@@ -40,13 +42,11 @@ export const CropsAndChickensHud: React.FC = () => {
             left: `${PIXEL_SCALE * 6}px`,
           }}
         >
-          {!!target && (
-            <Label icon={SUNNYSIDE.resource.pirate_bounty} type="vibrant">
-              {t("crops-and-chickens.targetScore", {
-                target: target,
-              })}
-            </Label>
-          )}
+          <Label icon={SUNNYSIDE.resource.pirate_bounty} type="vibrant">
+            {t("crops-and-chickens.targetScore", {
+              target: target,
+            })}
+          </Label>
           <div className="relative">
             <div className="h-12 w-full bg-black opacity-50 absolute coins-bb-hud-backdrop-reverse" />
             <div
@@ -59,7 +59,7 @@ export const CropsAndChickensHud: React.FC = () => {
             >
               <span>
                 {t("crops-and-chickens.score", {
-                  score: depositedScore,
+                  score: score,
                 })}
               </span>
             </div>
@@ -76,10 +76,26 @@ export const CropsAndChickensHud: React.FC = () => {
             >
               <span>
                 {t("crops-and-chickens.inventory", {
-                  inventory: inventoryScore,
+                  inventory: inventory,
                 })}
               </span>
             </div>
+          </div>
+        </div>
+
+        <div className="flex flex-col absolute space-y-1 items-end z-50 right-3 top-3 !text-[28px] text-stroke">
+          <div className="flex items-center space-x-2 relative">
+            <div className="h-9 w-full bg-black opacity-25 absolute sfl-hud-backdrop -z-10" />
+            <span className="balance-text">
+              {setPrecision(portalState.context.state!.balance).toString()}
+            </span>
+            <img
+              src={sflIcon}
+              alt="SFL"
+              style={{
+                width: 26,
+              }}
+            />
           </div>
         </div>
 
@@ -88,7 +104,7 @@ export const CropsAndChickensHud: React.FC = () => {
           icon={SUNNYSIDE.icons.stopwatch}
           type="info"
           style={{
-            top: `${PIXEL_SCALE * 4}px`,
+            top: `${PIXEL_SCALE * 16}px`,
             right: `${PIXEL_SCALE * 6}px`,
           }}
         >
@@ -106,7 +122,6 @@ export const CropsAndChickensHud: React.FC = () => {
           }}
         >
           <div
-            id="deliveries"
             className="flex relative z-50 justify-center cursor-pointer hover:img-highlight"
             style={{
               width: `${PIXEL_SCALE * 22}px`,

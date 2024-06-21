@@ -1464,26 +1464,55 @@ const cropMachine: Record<CropMachine, string> = {
 };
 
 const cropsAndChickens: Record<CropsAndChickensMessages, string> = {
-  "crops-and-chickens.welcome": ENGLISH_TERMS["crops-and-chickens.welcome"],
-  "crops-and-chickens.collectCrops":
-    ENGLISH_TERMS["crops-and-chickens.collectCrops"],
-  "crops-and-chickens.depositCrops":
-    ENGLISH_TERMS["crops-and-chickens.depositCrops"],
-  "crops-and-chickens.bewareWanderingChickens":
-    ENGLISH_TERMS["crops-and-chickens.bewareWanderingChickens"],
-  "crops-and-chickens.newChallengeDaily":
-    ENGLISH_TERMS["crops-and-chickens.newChallengeDaily"],
-  "crops-and-chickens.challengeCompleted":
-    ENGLISH_TERMS["crops-and-chickens.challengeCompleted"],
-  "crops-and-chickens.gameOver": ENGLISH_TERMS["crops-and-chickens.gameOver"],
+  "crops-and-chickens.mission": ENGLISH_TERMS["crops-and-chickens.mission"],
+  "crops-and-chickens.rules": ENGLISH_TERMS["crops-and-chickens.rules"],
+  "crops-and-chickens.legend": ENGLISH_TERMS["crops-and-chickens.legend"],
+  "crops-and-chickens.cropDescription":
+    ENGLISH_TERMS["crops-and-chickens.legend"],
+  "crops-and-chickens.depositAreaDescription":
+    ENGLISH_TERMS["crops-and-chickens.depositAreaDescription"],
+  "crops-and-chickens.chickenDescription":
+    ENGLISH_TERMS["crops-and-chickens.chickenDescription"],
+  "crops-and-chickens.minigame": ENGLISH_TERMS["crops-and-chickens.minigame"],
+  "crops-and-chickens.missionObjectives":
+    ENGLISH_TERMS["crops-and-chickens.missionObjectives"],
+  "crops-and-chickens.completed": ENGLISH_TERMS["crops-and-chickens.completed"],
+  "crops-and-chickens.confirm": ENGLISH_TERMS["crops-and-chickens.confirm"],
+  "crops-and-chickens.noPrizeAvailable":
+    ENGLISH_TERMS["crops-and-chickens.noPrizeAvailable"],
+  "crops-and-chickens.playNow": ENGLISH_TERMS["crops-and-chickens.playNow"],
+  "crops-and-chickens.purchase": ENGLISH_TERMS["crops-and-chickens.purchase"],
+  "crops-and-chickens.chickenRescueHelp":
+    ENGLISH_TERMS["crops-and-chickens.chickenRescueHelp"],
+  "crops-and-chickens.noAttemptsRemaining":
+    ENGLISH_TERMS["crops-and-chickens.noAttemptsRemaining"],
+  "crops-and-chickens.unlimitedAttempts":
+    ENGLISH_TERMS["crops-and-chickens.unlimitedAttempts"],
+  "crops-and-chickens.sflRequired":
+    ENGLISH_TERMS["crops-and-chickens.sflRequired"],
+  "crops-and-chickens.youHaveRunOutOfAttempts":
+    ENGLISH_TERMS["crops-and-chickens.youHaveRunOutOfAttempts"],
+  "crops-and-chickens.wouldYouLikeToUnlock":
+    ENGLISH_TERMS["crops-and-chickens.wouldYouLikeToUnlock"],
+  "crops-and-chickens.unlockAttempts":
+    ENGLISH_TERMS["crops-and-chickens.unlockAttempts"],
+  "crops-and-chickens.missionComplete":
+    ENGLISH_TERMS["crops-and-chickens.missionComplete"],
+  "crops-and-chickens.missionFailed":
+    ENGLISH_TERMS["crops-and-chickens.missionFailed"],
+  "crops-and-chickens.attemptsRemainingPlural":
+    ENGLISH_TERMS["crops-and-chickens.attemptsRemainingPlural"],
+  "crops-and-chickens.attemptsRemainingSingular":
+    ENGLISH_TERMS["crops-and-chickens.attemptsRemainingSingular"],
+  "crops-and-chickens.rules1": ENGLISH_TERMS["crops-and-chickens.rules1"],
+  "crops-and-chickens.rules2": ENGLISH_TERMS["crops-and-chickens.rules2"],
+  "crops-and-chickens.rules3": ENGLISH_TERMS["crops-and-chickens.rules3"],
+  "crops-and-chickens.rules4": ENGLISH_TERMS["crops-and-chickens.rules4"],
   "crops-and-chickens.targetScore":
     ENGLISH_TERMS["crops-and-chickens.targetScore"],
   "crops-and-chickens.score": ENGLISH_TERMS["crops-and-chickens.score"],
+  "crops-and-chickens.highscore": ENGLISH_TERMS["crops-and-chickens.highscore"],
   "crops-and-chickens.inventory": ENGLISH_TERMS["crops-and-chickens.inventory"],
-  "crops-and-chickens.exitAndClaimRewards":
-    ENGLISH_TERMS["crops-and-chickens.exitAndClaimRewards"],
-  "crops-and-chickens.comeBackLater":
-    ENGLISH_TERMS["crops-and-chickens.comeBackLater"],
 };
 
 const deliveryitem: Record<DeliveryItem, string> = {

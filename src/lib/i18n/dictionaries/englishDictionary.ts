@@ -1448,24 +1448,44 @@ const cropMachine: Record<CropMachine, string> = {
 };
 
 const cropsAndChickens: Record<CropsAndChickensMessages, string> = {
-  "crops-and-chickens.welcome": "Welcome to Crops and Chickens!",
-  "crops-and-chickens.collectCrops":
+  "crops-and-chickens.mission": "Mission",
+  "crops-and-chickens.rules": "Rules",
+  "crops-and-chickens.legend": "Legend",
+  "crops-and-chickens.cropDescription": "Points: {{points}}",
+  "crops-and-chickens.depositAreaDescription": "Deposit your crops safely",
+  "crops-and-chickens.chickenDescription": "Kills you upon contact",
+  "crops-and-chickens.minigame": "Minigame - Crops and Chickens",
+  "crops-and-chickens.missionObjectives":
+    "Mission: Deposit {{targetScore}} points worth of crops",
+  "crops-and-chickens.completed": "Completed",
+  "crops-and-chickens.confirm": "Are you sure you want to spend {{sfl}} SFL",
+  "crops-and-chickens.noPrizeAvailable": "No weekly prize available",
+  "crops-and-chickens.playNow": "Play now",
+  "crops-and-chickens.purchase": "Purchase",
+  "crops-and-chickens.chickenRescueHelp": "Can you help me collect the crops?",
+  "crops-and-chickens.noAttemptsRemaining": "No attempts remaining",
+  "crops-and-chickens.unlimitedAttempts": "Unlimited attempts",
+  "crops-and-chickens.sflRequired": "SFL required",
+  "crops-and-chickens.youHaveRunOutOfAttempts": "You have run out of attempts",
+  "crops-and-chickens.wouldYouLikeToUnlock":
+    "Would you like to unlock unlimited attempts for 7 days?",
+  "crops-and-chickens.unlockAttempts": "Unlock attempts",
+  "crops-and-chickens.missionComplete": "Mission completed",
+  "crops-and-chickens.missionFailed": "Mission failed",
+  "crops-and-chickens.attemptsRemainingPlural": "{{attempts}} attempts left",
+  "crops-and-chickens.attemptsRemainingSingular": "{{attempts}} attempt left",
+  "crops-and-chickens.rules1":
     "Venture into the dangerous crop field to gather crops. The farther you roam, the more valuable the crops you'll find!",
-  "crops-and-chickens.depositCrops":
+  "crops-and-chickens.rules2":
     "Secure your earnings by depositing crops collected. But remember, the longer you hold out, the greater the risk.",
-  "crops-and-chickens.bewareWanderingChickens":
+  "crops-and-chickens.rules3":
     "Avoid wandering chickens at all costs. A collision means losing all your unbanked crops.",
-  "crops-and-chickens.newChallengeDaily":
-    "You can take on the challenge every day to test your skills. Can you navigate the fields, outsmart the chickens, and reap the rewards?",
-  "crops-and-chickens.challengeCompleted":
-    "Congratulations, you have completed today's challenge.",
-  "crops-and-chickens.gameOver": "Game Over",
+  "crops-and-chickens.rules4":
+    "You can take on the challenge every week to test your skills. Can you navigate the fields, outsmart the chickens, and reap the rewards?",
   "crops-and-chickens.targetScore": "Target Score: {{target}}",
   "crops-and-chickens.score": "Score: {{score}}",
+  "crops-and-chickens.highscore": "Highscore: {{highscore}}",
   "crops-and-chickens.inventory": "Inventory: {{inventory}}",
-  "crops-and-chickens.exitAndClaimRewards": "Exit and Claim Rewards",
-  "crops-and-chickens.comeBackLater":
-    "Come back later for a brand new challenge!",
 };
 
 const decorationDescriptions: Record<DecorationDescriptions, string> = {

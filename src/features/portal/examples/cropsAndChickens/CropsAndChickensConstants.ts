@@ -1,4 +1,8 @@
 import { SQUARE_WIDTH } from "features/game/lib/constants";
+import { InventoryItemName } from "features/game/types/game";
+
+export const UNLIMITED_ATTEMPTS_SFL = 20;
+export const WEEKLY_ATTEMPTS = 5;
 
 export const GAME_SECONDS = 120;
 
@@ -38,18 +42,23 @@ export const CHICKEN_SPEEDS = {
   forwardMax: 80,
 };
 
-export const SCORE_TABLE: { [key: number]: number } = {
-  0: 1,
-  1: 2,
-  2: 5,
-  3: 10,
-  4: 20,
-  5: 50,
-  6: 100,
-  7: 200,
-  8: 500,
-  9: 1000,
-  10: 2000,
+export const SCORE_TABLE: {
+  [key: number]: {
+    item: InventoryItemName;
+    points: number;
+  };
+} = {
+  0: { item: "Sunflower", points: 1 },
+  1: { item: "Potato", points: 2 },
+  2: { item: "Pumpkin", points: 5 },
+  3: { item: "Carrot", points: 10 },
+  4: { item: "Cabbage", points: 20 },
+  5: { item: "Beetroot", points: 50 },
+  6: { item: "Cauliflower", points: 100 },
+  7: { item: "Parsnip", points: 400 },
+  8: { item: "Radish", points: 1000 },
+  9: { item: "Wheat", points: 2500 },
+  10: { item: "Kale", points: 10000 },
 };
 
 // the crops positions in board coordinates

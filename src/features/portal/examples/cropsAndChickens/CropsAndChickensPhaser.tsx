@@ -71,7 +71,6 @@ export const CropsAndChickensPhaser: React.FC = () => {
     game.current.registry.set("initialScene", scene);
     game.current.registry.set("gameState", portalState.context.state);
     game.current.registry.set("id", portalState.context.id);
-    game.current.registry.set("mmoServer", portalState.context.mmoServer);
     game.current.registry.set("portalService", portalService);
 
     setLoaded(true);
