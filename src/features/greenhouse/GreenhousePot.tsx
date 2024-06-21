@@ -73,7 +73,8 @@ const selectPots = (state: MachineState) => state.context.state.greenhouse.pots;
 const selectInventory = (state: MachineState) => state.context.state.inventory;
 
 export const GreenhousePot: React.FC<Props> = ({ id }) => {
-  const { gameService, selectedItem, showTimers } = useContext(Context);
+  const { gameService, selectedItem, showAnimations, showTimers } =
+    useContext(Context);
 
   const { t } = useAppTranslation();
   const [_, setRender] = useState<number>(0);
@@ -89,18 +90,20 @@ export const GreenhousePot: React.FC<Props> = ({ id }) => {
 
   const pot = pots[id];
 
-  const plant = async () => {
+  const plant = async (
+    seed: GreenHouseCropSeedName = selectedItem as GreenHouseCropSeedName
+  ) => {
     if (
-      !selectedItem ||
-      !SEED_TO_PLANT[selectedItem as GreenHouseCropSeedName] ||
-      !inventory[selectedItem]?.gte(1)
+      !seed ||
+      !SEED_TO_PLANT[seed as GreenHouseCropSeedName] ||
+      !inventory[seed]?.gte(1)
     ) {
       setShowQuickSelect(true);
       return;
     }
 
     if (
-      OIL_USAGE[selectedItem as GreenHouseCropSeedName] >
+      OIL_USAGE[seed as GreenHouseCropSeedName] >
       gameService.state.context.state.greenhouse.oil
     ) {
       setShowOilWarning(true);
@@ -111,7 +114,7 @@ export const GreenhousePot: React.FC<Props> = ({ id }) => {
 
     gameService.send("greenhouse.planted", {
       id,
-      seed: selectedItem,
+      seed,
     });
   };
 
@@ -123,41 +126,43 @@ export const GreenhousePot: React.FC<Props> = ({ id }) => {
         }}
       >
         {/* Harvest Animation */}
-        <Transition
-          appear={true}
-          id="oil-reserve-collected-amount"
-          show={showHarvested}
-          enter="transition-opacity transition-transform duration-200"
-          enterFrom="opacity-0 translate-y-6"
-          enterTo="opacity-100 -translate-y-2"
-          leave="transition-opacity duration-100"
-          leaveFrom="opacity-100"
-          leaveTo="opacity-0"
-          className="flex -top-2 left-[40%] absolute w-full z-40 pointer-events-none"
-        >
-          <img
-            src={ITEM_DETAILS[harvested.current?.name ?? "Rice"].image}
-            className="mr-2 img-highlight-heavy"
-            style={{
-              width: `${PIXEL_SCALE * 7}px`,
-            }}
-          />
-          <span className="text-sm yield-text">{`+${harvested.current?.amount.toFixed(
-            2
-          )}`}</span>
-        </Transition>
+        {showAnimations && (
+          <Transition
+            appear={true}
+            id="oil-reserve-collected-amount"
+            show={showHarvested}
+            enter="transition-opacity transition-transform duration-200"
+            enterFrom="opacity-0 translate-y-6"
+            enterTo="opacity-100 -translate-y-2"
+            leave="transition-opacity duration-100"
+            leaveFrom="opacity-100"
+            leaveTo="opacity-0"
+            className="flex -top-2 left-[40%] absolute w-full z-40 pointer-events-none"
+          >
+            <img
+              src={ITEM_DETAILS[harvested.current?.name ?? "Rice"].image}
+              className="mr-2 img-highlight-heavy"
+              style={{
+                width: `${PIXEL_SCALE * 7}px`,
+              }}
+            />
+            <span className="text-sm yield-text">{`+${harvested.current?.amount.toFixed(
+              2
+            )}`}</span>
+          </Transition>
+        )}
 
         {/* Quick Select */}
         <Transition
           appear={true}
           show={showQuickSelect}
-          enter="transition-opacity transition-transform duration-200"
+          enter="transition-opacity  duration-300"
           enterFrom="opacity-0"
           enterTo="opacity-100"
-          leave="transition-opacity duration-100"
+          leave="transition-opacity duration-300"
           leaveFrom="opacity-100"
           leaveTo="opacity-0"
-          className="flex top-[-200%] absolute z-40 shadow-md"
+          className="flex top-[-200%] left-[50%] absolute z-40 shadow-md"
         >
           <QuickSelect
             icon={SUNNYSIDE.icons.seeds}
@@ -167,7 +172,10 @@ export const GreenhousePot: React.FC<Props> = ({ id }) => {
               { name: "Olive Seed", icon: "Olive" },
             ]}
             onClose={() => setShowQuickSelect(false)}
-            onSelected={() => setPulsating(true)}
+            onSelected={(seed) => {
+              plant(seed as GreenHouseCropSeedName);
+              setShowQuickSelect(false);
+            }}
             type={t("quickSelect.greenhouseSeeds")}
           />
         </Transition>
@@ -199,7 +207,7 @@ export const GreenhousePot: React.FC<Props> = ({ id }) => {
           style={{
             width: `${PIXEL_SCALE * 28}px`,
           }}
-          onClick={plant}
+          onClick={() => plant()}
         />
       </div>
     );
@@ -231,11 +239,13 @@ export const GreenhousePot: React.FC<Props> = ({ id }) => {
       id,
     });
 
-    setShowHarvested(true);
+    if (showAnimations) {
+      setShowHarvested(true);
 
-    await new Promise((res) => setTimeout(res, 2000));
+      await new Promise((res) => setTimeout(res, 2000));
 
-    setShowHarvested(false);
+      setShowHarvested(false);
+    }
   };
 
   let stage: Stage = "ready";

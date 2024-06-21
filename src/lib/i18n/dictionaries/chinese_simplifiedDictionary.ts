@@ -1316,7 +1316,7 @@ const cropMachine: Record<CropMachine, string> = {
   "cropMachine.growTime": "生长时长： {{time}}",
   "cropMachine.growTimeRemaining": "生长剩余时长: {{time}}",
   "cropMachine.harvest": "收割",
-  "cropMachine.harvestAllCrops": "收割所有庄稼",
+  "cropMachine.harvestCropPack": "收割所有庄稼",
   "cropMachine.machineRuntime": "机器运作时长： {{time}}",
   "cropMachine.maxRuntime": "最高运作时长: {{time}}",
   "cropMachine.moreOilRequired": "需要更多的石油",
@@ -1642,6 +1642,8 @@ const decorationDescriptions: Record<DecorationDescriptions, string> = {
   "description.devotionFlag": ENGLISH_TERMS["description.devotionFlag"],
   "description.generosityFlag": ENGLISH_TERMS["description.generosityFlag"],
   "description.splendorFlag": ENGLISH_TERMS["description.splendorFlag"],
+  "description.jellyLamp": ENGLISH_TERMS["description.jellyLamp"],
+  "description.paintCan": ENGLISH_TERMS["description.paintCan"],
 };
 
 const defaultDialogue: Record<DefaultDialogue, string> = {
@@ -4548,6 +4550,14 @@ const minigame: Record<Minigame, string> = {
   "minigame.chickenRescueHelp": ENGLISH_TERMS["minigame.chickenRescueHelp"],
   "minigame.discovered.one": ENGLISH_TERMS["minigame.discovered.one"],
   "minigame.discovered.two": ENGLISH_TERMS["minigame.discovered.two"],
+  "minigame.communityEvent": ENGLISH_TERMS["minigame.communityEvent"],
+  "minigame.festivalOfColors": ENGLISH_TERMS["minigame.festivalOfColors"],
+  "minigame.festivalOfColors.comingSoon":
+    ENGLISH_TERMS["minigame.festivalOfColors.comingSoon"],
+  "minigame.festivalOfColors.intro":
+    ENGLISH_TERMS["minigame.festivalOfColors.intro"],
+  "minigame.festivalOfColors.mission":
+    ENGLISH_TERMS["minigame.festivalOfColors.mission"],
 };
 
 export const easterEggTerms: Record<EasterEggKeys, string> = {

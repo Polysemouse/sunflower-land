@@ -1433,8 +1433,8 @@ const cropMachine: Record<CropMachine, string> = {
   "cropMachine.seedPacks": "Seed packs",
   "cropMachine.readyCropPacks": "Ready crop packs",
   "cropMachine.readyCropPacks.description":
-    "You currently have {{totalReady}} crop packs to harvest! Click the harvest button to collect all your crops.",
-  "cropMachine.harvestAllCrops": "Harvest all crops",
+    "You currently have {{totalReady}} crop packs to harvest! Click the the pack you want to harvest.",
+  "cropMachine.harvestCropPack": "Harvest crop pack",
   "cropMachine.addOil": "Add oil",
   "cropMachine.oil.description":
     "Your machine needs oil to run. Every seed pack will require a certain amount of oil based on how long the crops take to grow. As you add oil you can see how long the machine will run when given that amount.",
@@ -1835,6 +1835,8 @@ const decorationDescriptions: Record<DecorationDescriptions, string> = {
     "For players who have donated substantial resources to the Goblins.",
   "description.splendorFlag":
     "For players who have generously supported the Sunflorians, symbolizing their splendor in generosity.",
+  "description.jellyLamp": "A lamp that brings a touch of luxury to any room.",
+  "description.paintCan": "A paint can discovered in the festival of colors",
 };
 
 const defaultDialogue: Record<DefaultDialogue, string> = {
@@ -3237,9 +3239,9 @@ const noBumpkin: Record<NoBumpkin, string> = {
   "noBumpkin.play": "Play",
   "noBumpkin.missingBumpkin": "You are missing your Bumpkin",
   "noBumpkin.bumpkinNFT":
-    "A Bumpkin is an NFT that is minted on the Blockchain.",
+    "Hmmm, that's strange. It looks like you are playing on a legacy account without a Bumpkin.",
   "noBumpkin.bumpkinHelp":
-    "You need a Bumpkin to help you plant, harvest, chop, mine and expand your land.",
+    "You need a Bumpkin to help you plant, harvest, chop, mine and expand your land. Support is coming soon to add a Bumpkin!.",
   "noBumpkin.mintBumpkin": "You can get a Bumpkin from OpenSea:",
   "noBumpkin.allBumpkins": "Wow, look at all those Bumpkins!",
   "noBumpkin.chooseBumpkin": "Which Bumpkin would you like to play with?",
@@ -5221,7 +5223,7 @@ const minigame: Record<Minigame, string> = {
   "minigame.chickenRescue": "Minigame - Chicken Rescue",
   "minigame.comingSoon": "Coming soon...",
   "minigame.completed": "Complete",
-  "minigame.confirm": "Are you sure you want to spend ",
+  "minigame.confirm": "Are you sure you want to spend the following:",
   "minigame.noPrizeAvailable": "No daily prize available",
   "minigame.playNow": "Play now",
   "minigame.purchase": "Purchase",
@@ -5229,6 +5231,13 @@ const minigame: Record<Minigame, string> = {
   "minigame.discovered.one": "Howdy Bumpkin, you've discovered a portal!",
   "minigame.discovered.two":
     "Step into the magical realm to earn rewards and glory. Good luck!",
+  "minigame.communityEvent": "Community event",
+  "minigame.festivalOfColors": "Festival of colors",
+  "minigame.festivalOfColors.comingSoon":
+    "A community event is coming on the 25th of June...",
+  "minigame.festivalOfColors.intro":
+    "Celebrate the season of colors in this community designed event.",
+  "minigame.festivalOfColors.mission": "Find the paint bombs!",
 };
 
 export const easterEggTerms: Record<EasterEggKeys, string> = {

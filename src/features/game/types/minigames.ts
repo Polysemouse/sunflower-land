@@ -6,7 +6,8 @@ export type MinigameName =
   | "sfl-world"
   | "maze-run"
   | "board-game"
-  | "chicken-rescue";
+  | "chicken-rescue"
+  | "festival-of-colors";
 
 export const SUPPORTED_MINIGAMES: MinigameName[] = [
   "crops-and-chickens",
@@ -17,4 +18,5 @@ export const SUPPORTED_MINIGAMES: MinigameName[] = [
   "maze-run",
   "board-game",
   "chicken-rescue",
+  "festival-of-colors",
 ];

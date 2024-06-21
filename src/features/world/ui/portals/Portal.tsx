@@ -16,11 +16,22 @@ import { CONFIG } from "lib/config";
 
 import { portal } from "../community/actions/portal";
 import { Loading } from "features/auth/components";
+import { InventoryItemName } from "features/game/types/game";
+import { Box } from "components/ui/Box";
+import { getKeys } from "features/game/types/craftables";
+import { ITEM_DETAILS } from "features/game/types/images";
+
+import sflIcon from "assets/icons/sfl.webp";
 
 interface Props {
   portalName: MinigameName;
   onClose: () => void;
 }
+
+type PortalPurchase = {
+  sfl: number;
+  items?: Partial<Record<InventoryItemName, number>>;
+};
 
 export const Portal: React.FC<Props> = ({ portalName, onClose }) => {
   const iframeRef = useRef<HTMLIFrameElement>(null);
@@ -34,7 +45,9 @@ export const Portal: React.FC<Props> = ({ portalName, onClose }) => {
 
   const [loading, setLoading] = useState(true);
   const [isComplete, setIsComplete] = useState(false);
-  const [purchase, setPurchase] = useState<number | undefined>(undefined);
+  const [purchase, setPurchase] = useState<PortalPurchase | undefined>(
+    undefined
+  );
 
   const { t } = useAppTranslation();
 
@@ -86,7 +99,7 @@ export const Portal: React.FC<Props> = ({ portalName, onClose }) => {
 
     if (event.data.event === "purchase") {
       // Purchase the item
-      setPurchase(event.data.sfl);
+      setPurchase(event.data);
     }
 
     if (event.data.event === "played") {
@@ -112,7 +125,8 @@ export const Portal: React.FC<Props> = ({ portalName, onClose }) => {
   const confirmPurchase = () => {
     gameService.send("minigame.itemPurchased", {
       id: portalName,
-      sfl: purchase,
+      sfl: purchase?.sfl,
+      items: purchase?.items,
     });
     gameService.send("SAVE");
 
@@ -120,7 +134,8 @@ export const Portal: React.FC<Props> = ({ portalName, onClose }) => {
       iframeRef.current.contentWindow?.postMessage(
         {
           event: "purchased",
-          sfl: url,
+          sfl: purchase?.sfl,
+          items: purchase?.items,
         },
         "*"
       );
@@ -142,22 +157,19 @@ export const Portal: React.FC<Props> = ({ portalName, onClose }) => {
   }
 
   if (isComplete) {
-    const prize = gameState.context.state.minigames.prizes["chicken-rescue"];
+    const prize = gameState.context.state.minigames.prizes[portalName];
     return (
       <ClaimReward
         onClaim={onClaim}
         reward={{
-          message:
-            "Congratulations, you rescued the chickens! Here is your reward.",
+          message: "Congratulations, you completed the mission!",
           createdAt: Date.now(),
           factionPoints: 0,
           id: "discord-bonus",
-          items: {
-            Mark: prize?.marks ?? 0,
-          },
-          wearables: {},
+          items: prize?.items ?? {},
+          wearables: prize?.wearables ?? {},
           sfl: 0,
-          coins: 0,
+          coins: prize?.coins ?? 0,
         }}
       />
     );
@@ -185,15 +197,31 @@ export const Portal: React.FC<Props> = ({ portalName, onClose }) => {
             data-html2canvas-ignore="true"
             aria-label="Hud"
             className="fixed inset-safe-area z-[60] flex items-center justify-center"
+            style={{
+              background: "rgb(0 0 0 / 56%)",
+            }}
           >
             <CloseButtonPanel onClose={() => setPurchase(undefined)}>
               <div className="p-1">
                 <Label type="default" className="mb-2">
                   {t("minigame.purchase")}
                 </Label>
-                <p className="text-sm">
-                  {`${t("minigame.confirm")} ${purchase} SFL`}
-                </p>
+                <p className="text-sm">{`${t("minigame.confirm")}`}</p>
+                {!!purchase.sfl && (
+                  <div className="flex mb-1  items-center">
+                    <Box image={sflIcon} />
+                    <span className="ml-1">{`${purchase.sfl} x  SFL`}</span>
+                  </div>
+                )}
+                {getKeys(purchase.items ?? {}).map((key) => {
+                  const item = purchase.items?.[key] ?? 0;
+                  return (
+                    <div className="flex mb-1 items-center" key={key}>
+                      <Box image={ITEM_DETAILS[key].image} />
+                      <span className="ml-1">{`${item} x  ${key}`}</span>
+                    </div>
+                  );
+                })}
               </div>
               <Button onClick={confirmPurchase}> {t("confirm")}</Button>
             </CloseButtonPanel>

@@ -181,11 +181,13 @@ export const Plot: React.FC<Props> = ({ id, index }) => {
 
     harvested.current = crop;
 
-    setShowHarvested(true);
+    if (showAnimations) {
+      setShowHarvested(true);
 
-    await new Promise((res) => setTimeout(res, 2000));
+      await new Promise((res) => setTimeout(res, 2000));
 
-    setShowHarvested(false);
+      setShowHarvested(false);
+    }
   };
 
   const onClick = (seed: SeedName = selectedItem as SeedName) => {
@@ -240,9 +242,7 @@ export const Plot: React.FC<Props> = ({ id, index }) => {
     if (!crop) {
       if (
         hasFeatureAccess(state, "CROP_QUICK_SELECT") &&
-        (!selectedItem ||
-          !(selectedItem in CROP_SEEDS()) ||
-          !inventory[selectedItem]?.gte(1))
+        (!seed || !(seed in CROP_SEEDS()) || !inventory[seed]?.gte(1))
       ) {
         setShowQuickSelect(true);
         return;
@@ -267,7 +267,7 @@ export const Plot: React.FC<Props> = ({ id, index }) => {
 
       if (
         planted >= 3 &&
-        selectedItem === "Sunflower Seed" &&
+        seed === "Sunflower Seed" &&
         !newState.context.state.inventory["Sunflower Seed"]?.gt(0) &&
         !newState.context.state.inventory["Basic Scarecrow"]
       ) {
@@ -299,13 +299,13 @@ export const Plot: React.FC<Props> = ({ id, index }) => {
       <Transition
         appear={true}
         show={showQuickSelect}
-        enter="transition-opacity transition-transform duration-200"
+        enter="transition-opacity duration-300"
         enterFrom="opacity-0"
         enterTo="opacity-100"
-        leave="transition-opacity duration-100"
+        leave="transition-opacity duration-300"
         leaveFrom="opacity-100"
         leaveTo="opacity-0"
-        className="flex top-[-255%] left-[-90px] absolute z-40 shadow-md"
+        className="flex top-[-255%] left-[50%] absolute z-40"
       >
         <QuickSelect
           icon={SUNNYSIDE.icons.seeds}
@@ -314,7 +314,10 @@ export const Plot: React.FC<Props> = ({ id, index }) => {
             icon: CROP_SEEDS()[seed].yield as InventoryItemName,
           }))}
           onClose={() => setShowQuickSelect(false)}
-          onSelected={() => setPulsating(true)}
+          onSelected={(seed) => {
+            onClick(seed as SeedName);
+            setShowQuickSelect(false);
+          }}
           type={t("quickSelect.cropSeeds")}
         />
       </Transition>
@@ -375,28 +378,30 @@ export const Plot: React.FC<Props> = ({ id, index }) => {
       />
 
       {/* Harvest Animation */}
-      <Transition
-        appear={true}
-        id="oil-reserve-collected-amount"
-        show={showHarvested}
-        enter="transition-opacity transition-transform duration-200"
-        enterFrom="opacity-0 translate-y-4"
-        enterTo="opacity-100 -translate-y-0"
-        leave="transition-opacity duration-100"
-        leaveFrom="opacity-100"
-        leaveTo="opacity-0"
-        className="flex -top-2 left-[40%] absolute z-40 pointer-events-none"
-      >
-        <span
-          className="text-sm yield-text"
-          style={{
-            color: getYieldColour(harvested.current?.amount ?? 0),
-          }}
-        >{`+${setPrecision(
-          new Decimal(harvested.current?.amount ?? 0),
-          2
-        )}`}</span>
-      </Transition>
+      {showAnimations && (
+        <Transition
+          appear={true}
+          id="oil-reserve-collected-amount"
+          show={showHarvested}
+          enter="transition-opacity transition-transform duration-200"
+          enterFrom="opacity-0 translate-y-4"
+          enterTo="opacity-100 -translate-y-0"
+          leave="transition-opacity duration-100"
+          leaveFrom="opacity-100"
+          leaveTo="opacity-0"
+          className="flex -top-2 left-[40%] absolute z-40 pointer-events-none"
+        >
+          <span
+            className="text-sm yield-text"
+            style={{
+              color: getYieldColour(harvested.current?.amount ?? 0),
+            }}
+          >{`+${setPrecision(
+            new Decimal(harvested.current?.amount ?? 0),
+            2
+          )}`}</span>
+        </Transition>
+      )}
     </>
   );
 };

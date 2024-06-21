@@ -1017,7 +1017,7 @@ export type CropMachine =
   | "cropMachine.seedPacks"
   | "cropMachine.readyCropPacks"
   | "cropMachine.readyCropPacks.description"
-  | "cropMachine.harvestAllCrops"
+  | "cropMachine.harvestCropPack"
   | "cropMachine.maxRuntime"
   | "cropMachine.oilToAdd"
   | "cropMachine.totalRuntime"
@@ -1325,7 +1325,9 @@ export type DecorationDescriptions =
   | "description.splendorFlag"
   | "description.benevolenceFlag"
   | "description.devotionFlag"
-  | "description.generosityFlag";
+  | "description.generosityFlag"
+  | "description.jellyLamp"
+  | "description.paintCan";
 
 export type Delivery =
   | "delivery.resource"
@@ -3541,7 +3543,12 @@ export type Minigame =
   | "minigame.comingSoon"
   | "minigame.chickenRescueHelp"
   | "minigame.discovered.one"
-  | "minigame.discovered.two";
+  | "minigame.discovered.two"
+  | "minigame.festivalOfColors"
+  | "minigame.communityEvent"
+  | "minigame.festivalOfColors.intro"
+  | "minigame.festivalOfColors.mission"
+  | "minigame.festivalOfColors.comingSoon";
 
 export type KitchenKeys = "kitchen.oilRemaining";
 

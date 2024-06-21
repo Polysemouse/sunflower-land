@@ -1438,7 +1438,7 @@ const cropMachine: Record<CropMachine, string> = {
   "cropMachine.growTimeRemaining":
     ENGLISH_TERMS["cropMachine.growTimeRemaining"],
   "cropMachine.harvest": ENGLISH_TERMS["cropMachine.harvest"],
-  "cropMachine.harvestAllCrops": ENGLISH_TERMS["cropMachine.harvestAllCrops"],
+  "cropMachine.harvestCropPack": ENGLISH_TERMS["cropMachine.harvestCropPack"],
   "cropMachine.machineRuntime": ENGLISH_TERMS["cropMachine.machineRuntime"],
   "cropMachine.maxRuntime": ENGLISH_TERMS["cropMachine.maxRuntime"],
   "cropMachine.moreOilRequired": ENGLISH_TERMS["cropMachine.moreOilRequired"],
@@ -1878,6 +1878,8 @@ const decorationDescriptions: Record<DecorationDescriptions, string> = {
   "description.devotionFlag": ENGLISH_TERMS["description.devotionFlag"],
   "description.generosityFlag": ENGLISH_TERMS["description.generosityFlag"],
   "description.splendorFlag": ENGLISH_TERMS["description.splendorFlag"],
+  "description.jellyLamp": ENGLISH_TERMS["description.jellyLamp"],
+  "description.paintCan": ENGLISH_TERMS["description.paintCan"],
 };
 
 const delivery: Record<Delivery, string> = {
@@ -5224,6 +5226,14 @@ const minigame: Record<Minigame, string> = {
   "minigame.chickenRescueHelp": ENGLISH_TERMS["minigame.chickenRescueHelp"],
   "minigame.discovered.one": ENGLISH_TERMS["minigame.discovered.one"],
   "minigame.discovered.two": ENGLISH_TERMS["minigame.discovered.two"],
+  "minigame.communityEvent": ENGLISH_TERMS["minigame.communityEvent"],
+  "minigame.festivalOfColors": ENGLISH_TERMS["minigame.festivalOfColors"],
+  "minigame.festivalOfColors.comingSoon":
+    ENGLISH_TERMS["minigame.festivalOfColors.comingSoon"],
+  "minigame.festivalOfColors.intro":
+    ENGLISH_TERMS["minigame.festivalOfColors.intro"],
+  "minigame.festivalOfColors.mission":
+    ENGLISH_TERMS["minigame.festivalOfColors.mission"],
 };
 
 export const easterEggTerms: Record<EasterEggKeys, string> = {
