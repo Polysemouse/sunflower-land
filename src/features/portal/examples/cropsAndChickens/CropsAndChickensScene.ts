@@ -20,6 +20,7 @@ import {
   PLAYER_MIN_XY,
   PLAYER_WALKING_SPEED,
   SCORE_TABLE,
+  DEPOSIT_INDICATOR_PLAYER_DISTANCE,
 } from "./CropsAndChickensConstants";
 
 type ChickenDirection = "left" | "right" | "up" | "down";
@@ -30,6 +31,8 @@ export class CropsAndChickensScene extends BaseScene {
   isPlayerDead = false;
   chickens: Phaser.GameObjects.Sprite[] = [];
   collectedCropIndexes: number[] = [];
+
+  cropDepositArrow?: Phaser.GameObjects.Sprite;
 
   initializeStates = () => {
     this.isPlayerDead = false;
@@ -118,6 +121,22 @@ export class CropsAndChickensScene extends BaseScene {
       frameHeight: 16,
     });
 
+    // crop deposit arrow
+    this.load.spritesheet(
+      "crop_deposit_arrow",
+      "world/crop_deposit_arrow.png",
+      {
+        frameWidth: 11,
+        frameHeight: 10,
+      }
+    );
+
+    // crop deposit arrow
+    this.load.spritesheet("crop_harvested", "world/crops_harvested.png", {
+      frameWidth: 16,
+      frameHeight: 16,
+    });
+
     // ambience SFX
     if (!this.sound.get("nature_1")) {
       const nature1 = this.sound.add("nature_1");
@@ -166,6 +185,23 @@ export class CropsAndChickensScene extends BaseScene {
         this.walkingSpeed = PLAYER_WALKING_SPEED;
       }
     });
+
+    // create an off screen indicator
+    this.cropDepositArrow = this.add.sprite(
+      DEPOSIT_CHEST_XY,
+      DEPOSIT_CHEST_XY,
+      "crop_deposit_arrow"
+    );
+    this.cropDepositArrow.setDepth(1000000);
+    this.cropDepositArrow.setVisible(false); // hide the indicator initially
+
+    this.tweens.add({
+      targets: this.cropDepositArrow,
+      alpha: { from: 1, to: 0 },
+      duration: 500, // duration of the blink (half cycle)
+      yoyo: true,
+      repeat: -1, // repeat indefinitely
+    });
   }
 
   update() {
@@ -211,7 +247,42 @@ export class CropsAndChickensScene extends BaseScene {
       chicken.setDepth(chicken.y);
     });
 
+    // show indicator if off screen
+    if (
+      !this.cameras.main.worldView.contains(DEPOSIT_CHEST_XY, DEPOSIT_CHEST_XY)
+    ) {
+      this.moveCropDepositIndicator(playerX, playerY);
+    } else {
+      // hide the indicator if the object is on the screen
+      this.cropDepositArrow?.setVisible(false);
+    }
+
     super.update();
+  }
+
+  /**
+   * Moves the crop deposit arrow indicator.
+   */
+  moveCropDepositIndicator(playerX: number, playerY: number) {
+    const angle = Phaser.Math.Angle.Between(
+      playerX,
+      playerY,
+      DEPOSIT_CHEST_XY,
+      DEPOSIT_CHEST_XY
+    );
+
+    // calculate the position of the indicator
+    const indicatorX =
+      playerX + Math.cos(angle) * DEPOSIT_INDICATOR_PLAYER_DISTANCE;
+    const indicatorY =
+      playerY + Math.sin(angle) * DEPOSIT_INDICATOR_PLAYER_DISTANCE;
+
+    // position the indicator sprite and make it visible
+    this.cropDepositArrow?.setPosition(indicatorX, indicatorY);
+    this.cropDepositArrow?.setVisible(this.collectedCropIndexes.length > 0);
+
+    // rotate the indicator to point towards the object
+    this.cropDepositArrow?.setRotation(angle);
   }
 
   /**
