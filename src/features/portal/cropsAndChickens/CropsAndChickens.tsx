@@ -6,7 +6,7 @@ import { Panel } from "components/ui/Panel";
 import { Button } from "components/ui/Button";
 
 import { PortalContext } from "./lib/PortalProvider";
-import { CropsAndChickensHud } from "features/portal/examples/cropsAndChickens/components/CropsAndChickensHud";
+import { CropsAndChickensHud } from "features/portal/cropsAndChickens/components/CropsAndChickensHud";
 import { CropsAndChickensPhaser } from "./CropsAndChickensPhaser";
 import { Label } from "components/ui/Label";
 import { SUNNYSIDE } from "assets/sunnyside";
@@ -24,7 +24,7 @@ import {
   claimPrize,
   goHome,
   purchase,
-} from "../../lib/portalUtil";
+} from "../lib/portalUtil";
 import { CropsAndChickensPrize } from "./components/CropsAndChickensPrize";
 import { CropsAndChickensAttempts } from "./components/CropsAndChickensAttempts";
 

@@ -4,8 +4,8 @@ import { Ocean } from "features/world/ui/Ocean";
 
 import { WalletProvider } from "features/wallet/WalletProvider";
 
-import { CropsAndChickens } from "./examples/cropsAndChickens/CropsAndChickens";
-import { PortalProvider } from "./examples/cropsAndChickens/lib/PortalProvider";
+import { CropsAndChickens } from "./cropsAndChickens/CropsAndChickens";
+import { PortalProvider } from "./cropsAndChickens/lib/PortalProvider";
 
 export const PortalApp: React.FC = () => {
   return (
