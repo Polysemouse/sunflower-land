@@ -8,10 +8,12 @@ export const GAME_SECONDS = 120;
 
 export const PLAYER_WALKING_SPEED = 50;
 
+export const SPRITE_FRAME_RATE = 10;
+
 export const BOARD_OFFSET = SQUARE_WIDTH * 2;
 export const BOARD_WIDTH = SQUARE_WIDTH * 52;
 
-export const DEPOSIT_CHEST_XY = BOARD_WIDTH + BOARD_OFFSET - 8;
+export const DEPOSIT_CHEST_XY = BOARD_WIDTH + BOARD_OFFSET - SQUARE_WIDTH / 2;
 
 export const PLAYER_MIN_XY = BOARD_WIDTH * 0.5 + BOARD_OFFSET;
 export const PLAYER_MAX_XY = BOARD_WIDTH * 1.5 + BOARD_OFFSET;
@@ -42,6 +44,7 @@ export const CHICKEN_SPRITE_PROPERTIES = {
 export const CHICKEN_SPEEDS = {
   forwardMin: 40,
   forwardMax: 80,
+  sidewaysMax: 4,
 };
 
 export const SCORE_TABLE: {
@@ -57,7 +60,7 @@ export const SCORE_TABLE: {
   4: { item: "Cabbage", points: 20 },
   5: { item: "Beetroot", points: 50 },
   6: { item: "Cauliflower", points: 100 },
-  7: { item: "Parsnip", points: 400 },
+  7: { item: "Parsnip", points: 250 },
   8: { item: "Radish", points: 1000 },
   9: { item: "Wheat", points: 2500 },
   10: { item: "Kale", points: 10000 },

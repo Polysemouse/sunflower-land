@@ -21,6 +21,7 @@ import {
   PLAYER_WALKING_SPEED,
   SCORE_TABLE,
   DEPOSIT_INDICATOR_PLAYER_DISTANCE,
+  SPRITE_FRAME_RATE,
 } from "./CropsAndChickensConstants";
 
 type ChickenDirection = "left" | "right" | "up" | "down";
@@ -28,6 +29,7 @@ type ChickenDirection = "left" | "right" | "up" | "down";
 export class CropsAndChickensScene extends BaseScene {
   sceneId: SceneId = "crops_and_chickens";
 
+  isTimeTickingSoundPlayed = false;
   isPlayerDead = false;
   chickens: Phaser.GameObjects.Sprite[] = [];
   collectedCropIndexes: number[] = [];
@@ -35,6 +37,7 @@ export class CropsAndChickensScene extends BaseScene {
   cropDepositArrow?: Phaser.GameObjects.Sprite;
 
   initializeStates = () => {
+    this.isTimeTickingSoundPlayed = false;
     this.isPlayerDead = false;
     this.chickens = [];
     this.collectedCropIndexes = [];
@@ -145,8 +148,11 @@ export class CropsAndChickensScene extends BaseScene {
 
     // load Sound Effects
     this.load.audio("crop_deposit", "world/crop_deposit.mp3");
+    this.load.audio("crop_deposit_pop", "world/crop_deposit_pop.mp3");
     this.load.audio("harvest", "world/harvest.mp3");
     this.load.audio("player_death", "world/player_death.mp3");
+    this.load.audio("time_ticking", "world/time_ticking.mp3");
+    this.load.audio("game_over", "world/game_over.mp3");
 
     // shut down the sound when the scene changes
     this.events.once("shutdown", () => {
@@ -207,6 +213,12 @@ export class CropsAndChickensScene extends BaseScene {
   update() {
     if (!this.currentPlayer || !this.currentPlayer.body) {
       return;
+    }
+
+    if (!this.isTimeTickingSoundPlayed && this.secondsLeft <= 10) {
+      this.isTimeTickingSoundPlayed = true;
+      const sound = this.sound.add("time_ticking");
+      sound.play({ volume: 0.2 });
     }
 
     if (this.isGameStarted && this.secondsLeft <= 0) {
@@ -299,7 +311,7 @@ export class CropsAndChickensScene extends BaseScene {
           end: CHICKEN_SPRITE_PROPERTIES.frames - 1,
         }),
         repeat: -1,
-        frameRate: 10,
+        frameRate: SPRITE_FRAME_RATE,
       });
     });
   }
@@ -419,11 +431,19 @@ export class CropsAndChickensScene extends BaseScene {
     const startFrame = Phaser.Math.RND.integerInRange(
       0,
       CHICKEN_SPRITE_PROPERTIES.frames - 1
-    );
+    ); // start frame starts form 0
+    const landingFrame = 4; // frame index starts form 1
+    const jumpingDuration = (landingFrame - 1) / SPRITE_FRAME_RATE;
+
     let forwardSpeed = Phaser.Math.RND.realInRange(
       CHICKEN_SPEEDS.forwardMin,
       CHICKEN_SPEEDS.forwardMax
     );
+    let sidewaysSpeed = Phaser.Math.RND.realInRange(
+      -CHICKEN_SPEEDS.sidewaysMax,
+      CHICKEN_SPEEDS.sidewaysMax
+    );
+    let sidewaysDisplacement = 0;
 
     chicken.play({ key: spriteKey, startFrame: startFrame });
 
@@ -433,7 +453,7 @@ export class CropsAndChickensScene extends BaseScene {
         _animation: Phaser.Animations.Animation,
         frame: Phaser.Animations.AnimationFrame
       ) => {
-        if (frame.index === 4) {
+        if (frame.index === landingFrame) {
           forwardSpeed = Phaser.Math.Clamp(
             forwardSpeed +
               Phaser.Math.RND.realInRange(
@@ -443,24 +463,34 @@ export class CropsAndChickensScene extends BaseScene {
             CHICKEN_SPEEDS.forwardMin,
             CHICKEN_SPEEDS.forwardMax
           );
+          sidewaysSpeed = Phaser.Math.Clamp(
+            sidewaysSpeed +
+              Phaser.Math.RND.realInRange(
+                -sidewaysDisplacement * 0.1 - CHICKEN_SPEEDS.sidewaysMax,
+                -sidewaysDisplacement * 0.1 + CHICKEN_SPEEDS.sidewaysMax
+              ),
+            -CHICKEN_SPEEDS.sidewaysMax,
+            CHICKEN_SPEEDS.sidewaysMax
+          );
+          sidewaysDisplacement += sidewaysSpeed * jumpingDuration;
         }
         if (!chicken.body) return;
 
-        if (frame.index < 4) {
+        if (frame.index < landingFrame) {
           chicken.body.velocity.x =
             direction === "left"
               ? -forwardSpeed
               : direction === "right"
               ? forwardSpeed
-              : 0;
+              : sidewaysSpeed;
           chicken.body.velocity.y =
             direction === "up"
               ? -forwardSpeed
               : direction === "down"
               ? forwardSpeed
-              : 0;
+              : sidewaysSpeed;
         }
-        if (frame.index >= 4) {
+        if (frame.index >= landingFrame) {
           chicken.body.velocity.x = 0;
           chicken.body.velocity.y = 0;
         }
@@ -581,7 +611,7 @@ export class CropsAndChickensScene extends BaseScene {
           end: PLAYER_DEATH_SPRITE_PROPERTIES.frames - 1,
         }),
         repeat: 0,
-        frameRate: 10,
+        frameRate: SPRITE_FRAME_RATE,
       });
     }
 
@@ -650,12 +680,16 @@ export class CropsAndChickensScene extends BaseScene {
               x: DEPOSIT_CHEST_XY,
               y: DEPOSIT_CHEST_XY,
               duration: 250,
-              delay: index * 100, // delay each crop animation slightly
+              delay: index * 50, // delay each crop animation slightly
               ease: "Cubic.easeIn",
               onUpdate: () => {
                 cropSprite.setDepth(cropSprite.y);
               },
-              onComplete: () => cropSprite.destroy(),
+              onComplete: () => {
+                cropSprite.destroy();
+                const sound = this.sound.add("crop_deposit_pop");
+                sound.play({ volume: 0.1 });
+              },
             });
           });
         },
@@ -714,6 +748,10 @@ export class CropsAndChickensScene extends BaseScene {
   private endGame() {
     this.portalService?.send("GAME_OVER");
     this.collectedCropIndexes = [];
+
+    // play sound
+    const sound = this.sound.add("game_over");
+    sound.play({ volume: 0.5 });
 
     // freeze player
     this.walkingSpeed = 0;

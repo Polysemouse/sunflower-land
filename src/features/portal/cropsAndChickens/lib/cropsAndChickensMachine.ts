@@ -294,7 +294,7 @@ export const portalMachine = createMachine<Context, PortalEvent, PortalState>({
           actions: assign({
             score: () => 0,
             inventory: () => 0,
-            endAt: () => Date.now() + GAME_SECONDS * 1000,
+            endAt: () => 0,
           }) as any,
         },
       },
@@ -307,7 +307,7 @@ export const portalMachine = createMachine<Context, PortalEvent, PortalState>({
           actions: assign({
             score: () => 0,
             inventory: () => 0,
-            endAt: () => Date.now() + GAME_SECONDS * 1000,
+            endAt: () => 0,
           }) as any,
         },
       },
@@ -320,7 +320,7 @@ export const portalMachine = createMachine<Context, PortalEvent, PortalState>({
           actions: assign({
             score: () => 0,
             inventory: () => 0,
-            endAt: () => Date.now() + GAME_SECONDS * 1000,
+            endAt: () => 0,
           }) as any,
         },
       },
