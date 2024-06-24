@@ -12,5 +12,5 @@ To play Crops And Chickens locally, run `cp .env.local .env` first then `yarn` t
 
 `CropsAndChickens.ts` - Handles the major states in the game (eg. loading, rules, completed, error). Will show the game scene once 'ready'.
 `CropsAndChickensPhaser.tsx` - Initialises the World Scene and scene components used inside of the game.
-`CropsAndChickensScene.tsx` - Sets up the game logic - custom mechanics.
+`CropsAndChickensScene.tsx` - Sets up the game logic, eg. custom mechanics.
 `lib/cropsAndChickensMachine.ts` - Handles the connection to Sunflower Land API and any API interactions.
