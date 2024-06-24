@@ -61,7 +61,7 @@ export const CropsAndChickensHud: React.FC = () => {
             <div
               className="flex items-center space-x-2 text-xs text-white"
               style={{
-                width: "180px",
+                width: "200px",
                 paddingTop: "7px",
                 paddingLeft: "3px",
               }}
@@ -78,7 +78,7 @@ export const CropsAndChickensHud: React.FC = () => {
             <div
               className="flex items-center space-x-2 text-xs text-white"
               style={{
-                width: "180px",
+                width: "200px",
                 paddingTop: "7px",
                 paddingLeft: "3px",
               }}

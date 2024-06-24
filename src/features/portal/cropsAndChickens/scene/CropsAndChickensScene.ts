@@ -578,7 +578,7 @@ export class CropsAndChickensScene extends BaseScene {
 
     // play sound
     const sound = this.sound.add("player_death");
-    sound.play({ volume: 0.1 });
+    sound.play({ volume: 0.25 });
 
     // throw all crops out of the inventory
     this.animateDroppingCrops();

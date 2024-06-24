@@ -260,10 +260,10 @@ export const STATIC_OFFLINE_FARM: GameState = {
         wearables: {},
       },
       "crops-and-chickens": {
-        coins: 100,
+        coins: 10,
         startAt: new Date("2023-01-01").getTime(),
         endAt: new Date("2025-01-01").getTime(),
-        score: 1000,
+        score: 100,
         items: {},
         wearables: {},
       },
