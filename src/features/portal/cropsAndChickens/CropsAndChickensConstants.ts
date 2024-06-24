@@ -50,6 +50,9 @@ export const CHICKEN_SPEEDS = {
   sidewaysMax: 6,
 };
 
+export const HUNTER_CHICKEN_INITIAL_DISTANCE = 100;
+export const HUNTER_CHICKEN_SPEED_MULTIPLIER = 0.75;
+
 export const SCORE_TABLE: {
   [key: number]: {
     item: InventoryItemName;

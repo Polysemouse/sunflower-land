@@ -23,6 +23,8 @@ import {
   DEPOSIT_INDICATOR_PLAYER_DISTANCE,
   SPRITE_FRAME_RATE,
   TIME_TICKING_SECONDS,
+  HUNTER_CHICKEN_INITIAL_DISTANCE,
+  HUNTER_CHICKEN_SPEED_MULTIPLIER,
 } from "./CropsAndChickensConstants";
 
 type ChickenDirection = "left" | "right" | "up" | "down";
@@ -37,7 +39,9 @@ export class CropsAndChickensScene extends BaseScene {
     | Phaser.Sound.HTML5AudioSound
     | Phaser.Sound.WebAudioSound;
   chickens: Phaser.GameObjects.Sprite[] = [];
+  hunterChicken?: Phaser.GameObjects.Sprite;
   collectedCropIndexes: number[] = [];
+  storageArea?: Phaser.GameObjects.Sprite;
 
   cropDepositArrow?: Phaser.GameObjects.Sprite;
 
@@ -100,6 +104,7 @@ export class CropsAndChickensScene extends BaseScene {
       frameWidth: PLAYER_DEATH_SPRITE_PROPERTIES.frameWidth,
       frameHeight: PLAYER_DEATH_SPRITE_PROPERTIES.frameHeight,
     });
+
     this.load.spritesheet(
       "chicken_normal_left",
       "world/chicken_normal_left_movements.png",
@@ -132,6 +137,40 @@ export class CropsAndChickensScene extends BaseScene {
         frameHeight: CHICKEN_SPRITE_PROPERTIES.frameHeight,
       }
     );
+
+    this.load.spritesheet(
+      "chicken_hunter_left",
+      "world/chicken_hunter_left_movements.png",
+      {
+        frameWidth: CHICKEN_SPRITE_PROPERTIES.frameWidth,
+        frameHeight: CHICKEN_SPRITE_PROPERTIES.frameHeight,
+      }
+    );
+    this.load.spritesheet(
+      "chicken_hunter_right",
+      "world/chicken_hunter_right_movements.png",
+      {
+        frameWidth: CHICKEN_SPRITE_PROPERTIES.frameWidth,
+        frameHeight: CHICKEN_SPRITE_PROPERTIES.frameHeight,
+      }
+    );
+    this.load.spritesheet(
+      "chicken_hunter_up",
+      "world/chicken_hunter_up_movements.png",
+      {
+        frameWidth: CHICKEN_SPRITE_PROPERTIES.frameWidth,
+        frameHeight: CHICKEN_SPRITE_PROPERTIES.frameHeight,
+      }
+    );
+    this.load.spritesheet(
+      "chicken_hunter_down",
+      "world/chicken_hunter_down_movements.png",
+      {
+        frameWidth: CHICKEN_SPRITE_PROPERTIES.frameWidth,
+        frameHeight: CHICKEN_SPRITE_PROPERTIES.frameHeight,
+      }
+    );
+
     this.load.spritesheet("crop_planted", "world/crops_planted.png", {
       frameWidth: 16,
       frameHeight: 20,
@@ -193,7 +232,8 @@ export class CropsAndChickensScene extends BaseScene {
     this.createAllCrops();
 
     this.createChickenAnimations();
-    this.createAllChickens();
+    this.createAllNormalChickens();
+    this.hunterChicken = this.createHunterChicken();
 
     // reload scene when player hit retry
     this.portalService?.onEvent((event) => {
@@ -281,6 +321,20 @@ export class CropsAndChickensScene extends BaseScene {
       chicken.setDepth(chicken.y);
     });
 
+    if (this.hunterChicken) {
+      this.hunterChicken.x = Phaser.Math.Wrap(
+        this.hunterChicken.x,
+        playerX - BOARD_WIDTH / 2,
+        playerX + BOARD_WIDTH / 2
+      );
+      this.hunterChicken.y = Phaser.Math.Wrap(
+        this.hunterChicken.y,
+        playerY - BOARD_WIDTH / 2,
+        playerY + BOARD_WIDTH / 2
+      );
+      this.hunterChicken.setDepth(this.hunterChicken.y);
+    }
+
     // show indicator if off screen
     if (
       !this.cameras.main.worldView.contains(DEPOSIT_CHEST_XY, DEPOSIT_CHEST_XY)
@@ -336,21 +390,35 @@ export class CropsAndChickensScene extends BaseScene {
         frameRate: SPRITE_FRAME_RATE,
       });
     });
+
+    ["left", "right", "up", "down"].forEach((direction) => {
+      const spriteName = `chicken_hunter_${direction}`;
+      const spriteKey = `chicken_hunter_${direction}_anim`;
+      this.anims.create({
+        key: spriteKey,
+        frames: this.anims.generateFrameNumbers(spriteName, {
+          start: 0,
+          end: CHICKEN_SPRITE_PROPERTIES.frames - 1,
+        }),
+        repeat: -1,
+        frameRate: SPRITE_FRAME_RATE,
+      });
+    });
   }
 
   private createStorageArea() {
-    const storageArea = this.add.sprite(
+    this.storageArea = this.add.sprite(
       CROP_DEPOSIT_AREA_DIMENSIONS.x,
       CROP_DEPOSIT_AREA_DIMENSIONS.y,
       ""
     );
-    this.physics.add.existing(storageArea);
-    storageArea.setVisible(false);
+    this.physics.add.existing(this.storageArea);
+    this.storageArea.setVisible(false);
 
-    if (!storageArea.body) return;
+    if (!this.storageArea.body) return;
     if (!this.currentPlayer) return;
 
-    (storageArea.body as Physics.Arcade.Body)
+    (this.storageArea.body as Physics.Arcade.Body)
       .setSize(
         CROP_DEPOSIT_AREA_DIMENSIONS.width,
         CROP_DEPOSIT_AREA_DIMENSIONS.height
@@ -361,7 +429,7 @@ export class CropsAndChickensScene extends BaseScene {
 
     this.physics.add.overlap(
       this.currentPlayer,
-      storageArea,
+      this.storageArea,
       () => {
         this.depositCrops();
       },
@@ -444,7 +512,11 @@ export class CropsAndChickensScene extends BaseScene {
    * @param direction The chicken direction.
    * @returns The chicken group for that chicken.
    */
-  private createChicken(x: number, y: number, direction: ChickenDirection) {
+  private createNormalChicken(
+    x: number,
+    y: number,
+    direction: ChickenDirection
+  ) {
     const spriteName = `chicken_normal_${direction}`;
     const spriteKey = `chicken_normal_${direction}_anim`;
 
@@ -541,13 +613,193 @@ export class CropsAndChickensScene extends BaseScene {
     return chicken;
   }
 
+  private isPlayerInDepositArea() {
+    if (!this.currentPlayer || !this.storageArea) return false;
+
+    return this.physics.overlap(this.storageArea, this.currentPlayer);
+  }
+
+  private getRandomSpawnHunterChickenPosition() {
+    const initialAngle = Phaser.Math.Angle.Random();
+    const playerCoordinates = this.currentPlayer
+      ? { x: this.currentPlayer.x, y: this.currentPlayer.y }
+      : SPAWNS().crops_and_chickens.default;
+    return {
+      x:
+        playerCoordinates.x +
+        HUNTER_CHICKEN_INITIAL_DISTANCE * Math.cos(initialAngle),
+      y:
+        playerCoordinates.y +
+        HUNTER_CHICKEN_INITIAL_DISTANCE * Math.sin(initialAngle),
+    };
+  }
+
+  /**
+   * Creates a chicken that follows the player.
+   */
+  private createHunterChicken() {
+    let direction = "down";
+
+    const spriteName = `chicken_hunter_${direction}`;
+    const spriteKey = `chicken_hunter_${direction}_anim`;
+
+    const hunterChickenForwardMin =
+      CHICKEN_SPEEDS.forwardMin * HUNTER_CHICKEN_SPEED_MULTIPLIER;
+    const hunterChickenForwardMax =
+      CHICKEN_SPEEDS.forwardMax * HUNTER_CHICKEN_SPEED_MULTIPLIER;
+
+    const initialCoordinates = this.getRandomSpawnHunterChickenPosition();
+
+    let angle = Phaser.Math.Angle.Between(
+      initialCoordinates.x,
+      initialCoordinates.y,
+      this.currentPlayer?.x ?? SPAWNS().crops_and_chickens.default.x,
+      this.currentPlayer?.y ?? SPAWNS().crops_and_chickens.default.y
+    );
+
+    const chicken = this.add.sprite(
+      initialCoordinates.x,
+      initialCoordinates.y,
+      spriteName
+    );
+
+    const startFrame = CHICKEN_SPRITE_PROPERTIES.frames - 1; // start frame starts form 0
+    const landingFrame = 4; // frame index starts form 1
+
+    let forwardSpeed = 0;
+
+    chicken.play({ key: spriteKey, startFrame: startFrame });
+
+    chicken.on(
+      "animationupdate",
+      (
+        _animation: Phaser.Animations.Animation,
+        frame: Phaser.Animations.AnimationFrame
+      ) => {
+        if (!chicken.body || !this.currentPlayer) return;
+
+        chicken.setTexture(`chicken_hunter_${direction}`, frame.index);
+
+        // consider unwarpped distance
+        let minDistance = Infinity;
+        let unwarpedChickenPosition = { x: 0, y: 0 };
+        for (let i = -1; i <= 1; i++) {
+          for (let j = -1; j <= 1; j++) {
+            // calculate the position in the grid relative to the chicken
+            const wrappedPositionX = chicken.x + i * BOARD_WIDTH;
+            const wrappedPositionY = chicken.y + j * BOARD_WIDTH;
+
+            // calculate the distance between the chicken and the current grid position
+            const unwarpedDistance = Phaser.Math.Distance.Between(
+              this.currentPlayer.x,
+              this.currentPlayer.y,
+              wrappedPositionX,
+              wrappedPositionY
+            );
+
+            // check if this distance is smaller than the current minimum distance
+            if (unwarpedDistance < minDistance) {
+              minDistance = unwarpedDistance;
+              unwarpedChickenPosition = {
+                x: wrappedPositionX,
+                y: wrappedPositionY,
+              };
+            }
+          }
+        }
+        minDistance = Phaser.Math.Distance.Between(
+          this.currentPlayer.x,
+          this.currentPlayer.y,
+          chicken.x,
+          chicken.y
+        );
+        unwarpedChickenPosition = {
+          x: chicken.x,
+          y: chicken.y,
+        };
+
+        if (frame.index === landingFrame) {
+          forwardSpeed = Phaser.Math.Clamp(
+            forwardSpeed +
+              Phaser.Math.RND.realInRange(
+                -0.5 * (forwardSpeed - hunterChickenForwardMin) - 2,
+                0.5 * (hunterChickenForwardMax - forwardSpeed) + 2
+              ),
+            hunterChickenForwardMin,
+            hunterChickenForwardMax
+          );
+          if (this.isPlayerDead || this.isPlayerInDepositArea())
+            forwardSpeed = 0;
+
+          if (minDistance >= HUNTER_CHICKEN_INITIAL_DISTANCE) {
+            forwardSpeed *= Math.pow(
+              minDistance / HUNTER_CHICKEN_INITIAL_DISTANCE,
+              2
+            );
+          }
+
+          angle = Phaser.Math.Angle.Between(
+            unwarpedChickenPosition.x,
+            unwarpedChickenPosition.y,
+            this.currentPlayer.x,
+            this.currentPlayer.y
+          );
+
+          if (angle >= -Math.PI / 4 && angle <= Math.PI / 4) {
+            direction = "right";
+          } else if (angle > Math.PI / 4 && angle <= (3 * Math.PI) / 4) {
+            direction = "down";
+          } else if (
+            (angle > (3 * Math.PI) / 4 && angle <= Math.PI) ||
+            (angle >= -Math.PI && angle < (-3 * Math.PI) / 4)
+          ) {
+            direction = "left";
+          } else {
+            direction = "up";
+          }
+        }
+
+        if (frame.index < landingFrame) {
+          chicken.body.velocity.x = forwardSpeed * Math.cos(angle);
+          chicken.body.velocity.y = forwardSpeed * Math.sin(angle);
+        }
+
+        if (frame.index >= landingFrame) {
+          chicken.body.velocity.x = 0;
+          chicken.body.velocity.y = 0;
+        }
+      }
+    );
+    this.physics.add.existing(chicken);
+
+    if (!!chicken.body && !!this.currentPlayer) {
+      (chicken.body as Physics.Arcade.Body)
+        .setSize(11, 9)
+        .setOffset(1, 3)
+        .setImmovable(true)
+        .setCollideWorldBounds(false);
+
+      this.physics.add.overlap(
+        this.currentPlayer,
+        chicken,
+        () => {
+          this.killPlayer();
+        },
+        undefined,
+        this
+      );
+    }
+
+    return chicken;
+  }
+
   /**
    * Creates chickens for a given direction.
    */
-  private createChickens(direction: ChickenDirection) {
+  private createNormalChickens(direction: ChickenDirection) {
     return CHICKEN_SPAWN_CONFIGURATIONS.flatMap((config) =>
       Array.from({ length: config.count }, () =>
-        this.createChicken(
+        this.createNormalChicken(
           direction === "left" || direction === "right"
             ? Phaser.Math.RND.realInRange(0, BOARD_WIDTH) + BOARD_OFFSET
             : SQUARE_WIDTH *
@@ -565,13 +817,13 @@ export class CropsAndChickensScene extends BaseScene {
   }
 
   /**
-   * Creates all the chickens for the map.
+   * Creates all the normal chickens for the map.
    */
-  private createAllChickens() {
-    const chickensFacingLeft = this.createChickens("left");
-    const chickensFacingRight = this.createChickens("right");
-    const chickensFacingUp = this.createChickens("up");
-    const chickensFacingDown = this.createChickens("down");
+  private createAllNormalChickens() {
+    const chickensFacingLeft = this.createNormalChickens("left");
+    const chickensFacingRight = this.createNormalChickens("right");
+    const chickensFacingUp = this.createNormalChickens("up");
+    const chickensFacingDown = this.createNormalChickens("down");
 
     this.chickens = [
       ...chickensFacingLeft,
@@ -661,6 +913,12 @@ export class CropsAndChickensScene extends BaseScene {
       }
 
       playerDeath.destroy();
+      if (this.hunterChicken) {
+        const newHunterChickenPosition =
+          this.getRandomSpawnHunterChickenPosition();
+        this.hunterChicken.x = newHunterChickenPosition.x;
+        this.hunterChicken.y = newHunterChickenPosition.y;
+      }
     });
   }
 
@@ -679,7 +937,7 @@ export class CropsAndChickensScene extends BaseScene {
       );
 
       // adjust the angle and distance for the crop to radiate outward
-      const angle = Phaser.Math.RND.angle();
+      const angle = Phaser.Math.Angle.Random();
       const distance = Phaser.Math.RND.between(16, 20);
 
       this.tweens.add({
@@ -734,7 +992,7 @@ export class CropsAndChickensScene extends BaseScene {
       );
 
       // adjust the angle and distance for the crop to radiate outward
-      const angle = Phaser.Math.RND.angle();
+      const angle = Phaser.Math.Angle.Random();
       const distance = Phaser.Math.RND.between(30, 50);
 
       this.tweens.add({

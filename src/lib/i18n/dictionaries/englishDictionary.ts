@@ -1487,7 +1487,9 @@ const cropsAndChickens: Record<CropsAndChickensMessages, string> = {
   "crops-and-chickens.legend": "Legend",
   "crops-and-chickens.cropDescription": "Points: {{points}}",
   "crops-and-chickens.depositAreaDescription": "Deposit your crops safely",
-  "crops-and-chickens.chickenDescription": "Kills you upon contact",
+  "crops-and-chickens.normalChickenDescription": "Kills you upon contact",
+  "crops-and-chickens.hunterChickenDescription":
+    "Follows you and kills you upon contact",
   "crops-and-chickens.minigame": "Minigame - Crops and Chickens",
   "crops-and-chickens.missionObjectives":
     "Mission: Deposit {{targetScore}} points worth of crops",

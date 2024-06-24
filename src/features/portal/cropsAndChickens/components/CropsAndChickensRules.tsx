@@ -14,6 +14,7 @@ import { CropsAndChickensPrize } from "./CropsAndChickensPrize";
 import { CropsAndChickensAttempts } from "./CropsAndChickensAttempts";
 import factions from "assets/icons/factions.webp";
 import chores from "assets/icons/chores.webp";
+import chickenHunter from "public/world/chicken_hunter.png";
 import { SCORE_TABLE } from "../CropsAndChickensConstants";
 
 interface Props {
@@ -155,7 +156,17 @@ export const CropsAndChickensRules: React.FC<Props> = ({
               </div>
             </td>
             <td style={{ border: "1px solid #b96f50" }} className="p-1.5">
-              {t("crops-and-chickens.chickenDescription")}
+              {t("crops-and-chickens.normalChickenDescription")}
+            </td>
+          </tr>
+          <tr>
+            <td style={{ border: "1px solid #b96f50" }} className="p-1.5">
+              <div className="flex items-center justify-center">
+                <SquareIcon icon={chickenHunter} width={7} />
+              </div>
+            </td>
+            <td style={{ border: "1px solid #b96f50" }} className="p-1.5">
+              {t("crops-and-chickens.hunterChickenDescription")}
             </td>
           </tr>
         </tbody>
