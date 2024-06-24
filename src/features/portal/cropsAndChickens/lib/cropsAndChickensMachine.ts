@@ -39,6 +39,7 @@ export type PortalEvent =
   | { type: "PURCHASED" }
   | { type: "RETRY" }
   | { type: "CONTINUE" }
+  | { type: "END_GAME_EARLY" }
   | { type: "GAME_OVER" }
   | CropHarvestedEvent
   | { type: "CROP_DEPOSITED" }
@@ -232,6 +233,11 @@ export const portalMachine = createMachine<Context, PortalEvent, PortalState>({
         KILL_PLAYER: {
           actions: assign<Context, any>({
             inventory: () => 0,
+          }),
+        },
+        END_GAME_EARLY: {
+          actions: assign<Context, any>({
+            endAt: () => Date.now(),
           }),
         },
         GAME_OVER: {

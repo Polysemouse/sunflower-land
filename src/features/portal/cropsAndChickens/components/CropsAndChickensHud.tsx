@@ -1,5 +1,5 @@
-import React, { useContext } from "react";
-import { useActor } from "@xstate/react";
+import React, { useContext, useEffect, useState } from "react";
+import { useActor, useSelector } from "@xstate/react";
 import { PortalContext } from "../lib/PortalProvider";
 import { PIXEL_SCALE } from "features/game/lib/constants";
 import { SUNNYSIDE } from "assets/sunnyside";
@@ -13,17 +13,20 @@ import { Label } from "components/ui/Label";
 import { useAppTranslation } from "lib/i18n/useAppTranslations";
 import { setPrecision } from "lib/utils/formatNumber";
 import sflIcon from "assets/icons/sfl.webp";
+import { ConfirmationModal } from "components/ui/ConfirmationModal";
+import { PortalMachineState } from "../lib/cropsAndChickensMachine";
+
+const _isPlaying = (state: PortalMachineState) => state.matches("playing");
 
 export const CropsAndChickensHud: React.FC = () => {
   useUiRefresher({ delay: 100 });
 
   const { portalService } = useContext(PortalContext);
   const [portalState] = useActor(portalService);
+  const isPlaying = useSelector(portalService, _isPlaying);
   const { t } = useAppTranslation();
 
-  const travelHome = () => {
-    goHome();
-  };
+  const [showExitConfirmation, setShowExitConfirmation] = useState(false);
 
   const { inventory, score, endAt, state } = portalState.context;
   const secondsLeft = !endAt
@@ -31,6 +34,12 @@ export const CropsAndChickensHud: React.FC = () => {
     : Math.max(endAt - Date.now(), 0) / 1000;
 
   const target = state?.minigames.prizes["crops-and-chickens"]?.score ?? 0;
+
+  useEffect(() => {
+    if (!isPlaying) {
+      setShowExitConfirmation(false);
+    }
+  }, [isPlaying]);
 
   return (
     <>
@@ -130,7 +139,11 @@ export const CropsAndChickensHud: React.FC = () => {
             onClick={(e) => {
               e.stopPropagation();
               e.preventDefault();
-              travelHome();
+              if (isPlaying) {
+                setShowExitConfirmation(true);
+              } else {
+                goHome();
+              }
             }}
           >
             <img
@@ -151,6 +164,17 @@ export const CropsAndChickensHud: React.FC = () => {
             />
           </div>
         </div>
+        <ConfirmationModal
+          show={showExitConfirmation}
+          onHide={() => setShowExitConfirmation(false)}
+          messages={[t("crops-and-chickens.endGameConfirmation")]}
+          onCancel={() => setShowExitConfirmation(false)}
+          onConfirm={() => {
+            portalService.send("END_GAME_EARLY");
+            setShowExitConfirmation(false);
+          }}
+          confirmButtonLabel={t("crops-and-chickens.endGame")}
+        />
       </HudContainer>
     </>
   );

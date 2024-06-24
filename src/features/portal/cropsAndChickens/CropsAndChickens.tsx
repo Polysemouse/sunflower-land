@@ -135,9 +135,7 @@ export const CropsAndChickens: React.FC = () => {
                       : "default"
                   }
                 >
-                  {`${UNLIMITED_ATTEMPTS_SFL} ${t(
-                    "crops-and-chickens.sflRequired"
-                  )}`}
+                  {t("crops-and-chickens.sflRequired")}
                 </Label>
               </div>
 
@@ -148,17 +146,34 @@ export const CropsAndChickens: React.FC = () => {
                 {t("crops-and-chickens.wouldYouLikeToUnlock")}
               </p>
             </div>
-            <div className="flex">
-              <Button onClick={goHome} className="mr-1">
-                {t("exit")}
-              </Button>
+            <div className="flex flex-col gap-1">
+              <Button onClick={goHome}>{t("exit")}</Button>
+              {/* <Button
+                disabled={gameState?.balance.lt(RESTOCK_ATTEMPTS_SFL)}
+                onClick={() =>
+                  purchase({
+                    sfl: RESTOCK_ATTEMPTS_SFL,
+                    items: {},
+                  })
+                }
+              >
+                {t("crops-and-chickens.buyAttempts", {
+                  attempts: WEEKLY_ATTEMPTS,
+                  sfl: RESTOCK_ATTEMPTS_SFL,
+                })}
+              </Button> */}
               <Button
                 disabled={gameState?.balance.lt(UNLIMITED_ATTEMPTS_SFL)}
                 onClick={() =>
-                  purchase({ sfl: UNLIMITED_ATTEMPTS_SFL, items: {} })
+                  purchase({
+                    sfl: UNLIMITED_ATTEMPTS_SFL,
+                    items: {},
+                  })
                 }
               >
-                {t("crops-and-chickens.unlockAttempts")}
+                {t("crops-and-chickens.unlockAttempts", {
+                  sfl: UNLIMITED_ATTEMPTS_SFL,
+                })}
               </Button>
             </div>
           </Panel>

@@ -1,7 +1,8 @@
 import { SQUARE_WIDTH } from "features/game/lib/constants";
 import { InventoryItemName } from "features/game/types/game";
 
-export const UNLIMITED_ATTEMPTS_SFL = 20;
+export const UNLIMITED_ATTEMPTS_SFL = 5;
+export const RESTOCK_ATTEMPTS_SFL = 1;
 export const WEEKLY_ATTEMPTS = 5;
 
 export const GAME_SECONDS = 120;
@@ -9,6 +10,8 @@ export const GAME_SECONDS = 120;
 export const PLAYER_WALKING_SPEED = 50;
 
 export const SPRITE_FRAME_RATE = 10;
+
+export const TIME_TICKING_SECONDS = 10;
 
 export const BOARD_OFFSET = SQUARE_WIDTH * 2;
 export const BOARD_WIDTH = SQUARE_WIDTH * 52;

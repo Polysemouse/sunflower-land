@@ -22,6 +22,7 @@ import {
   SCORE_TABLE,
   DEPOSIT_INDICATOR_PLAYER_DISTANCE,
   SPRITE_FRAME_RATE,
+  TIME_TICKING_SECONDS,
 } from "./CropsAndChickensConstants";
 
 type ChickenDirection = "left" | "right" | "up" | "down";
@@ -31,6 +32,10 @@ export class CropsAndChickensScene extends BaseScene {
 
   isTimeTickingSoundPlayed = false;
   isPlayerDead = false;
+  timeTickingSound?:
+    | Phaser.Sound.NoAudioSound
+    | Phaser.Sound.HTML5AudioSound
+    | Phaser.Sound.WebAudioSound;
   chickens: Phaser.GameObjects.Sprite[] = [];
   collectedCropIndexes: number[] = [];
 
@@ -215,14 +220,19 @@ export class CropsAndChickensScene extends BaseScene {
       return;
     }
 
-    if (!this.isTimeTickingSoundPlayed && this.secondsLeft <= 10) {
+    if (
+      !this.isTimeTickingSoundPlayed &&
+      this.secondsLeft <= TIME_TICKING_SECONDS &&
+      this.secondsLeft >= 1
+    ) {
       this.isTimeTickingSoundPlayed = true;
-      const sound = this.sound.add("time_ticking");
-      sound.play({ volume: 0.2 });
+      this.timeTickingSound = this.sound.add("time_ticking");
+      this.timeTickingSound?.play({ volume: 0.2 });
     }
 
     if (this.isGameStarted && this.secondsLeft <= 0) {
       this.endGame();
+      this.timeTickingSound?.stop();
     }
 
     // start game if player decides to move

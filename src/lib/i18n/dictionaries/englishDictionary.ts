@@ -1468,8 +1468,10 @@ const cropsAndChickens: Record<CropsAndChickensMessages, string> = {
   "crops-and-chickens.sflRequired": "SFL required",
   "crops-and-chickens.youHaveRunOutOfAttempts": "You have run out of attempts",
   "crops-and-chickens.wouldYouLikeToUnlock":
-    "Would you like to unlock unlimited attempts for 7 days?",
-  "crops-and-chickens.unlockAttempts": "Unlock attempts",
+    "Would you like to buy more attempts?",
+  "crops-and-chickens.buyAttempts": "Buy {{attempts}} attempts ({{sfl}} SFL)",
+  "crops-and-chickens.unlockAttempts":
+    "Unlock unlimited attempts for 7 days ({{sfl}} SFL)",
   "crops-and-chickens.missionComplete": "Mission completed",
   "crops-and-chickens.missionFailed": "Mission failed",
   "crops-and-chickens.attemptsRemainingPlural": "{{attempts}} attempts left",
@@ -1486,6 +1488,9 @@ const cropsAndChickens: Record<CropsAndChickensMessages, string> = {
   "crops-and-chickens.score": "Score: {{score}}",
   "crops-and-chickens.highscore": "Highscore: {{highscore}}",
   "crops-and-chickens.inventory": "Inventory: {{inventory}}",
+  "crops-and-chickens.endGameConfirmation":
+    "Are you sure you want to end the game early?",
+  "crops-and-chickens.endGame": "End game",
 };
 
 const decorationDescriptions: Record<DecorationDescriptions, string> = {

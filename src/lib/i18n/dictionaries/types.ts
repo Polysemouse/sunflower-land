@@ -1046,6 +1046,7 @@ export type CropsAndChickensMessages =
   | "crops-and-chickens.sflRequired"
   | "crops-and-chickens.youHaveRunOutOfAttempts"
   | "crops-and-chickens.wouldYouLikeToUnlock"
+  | "crops-and-chickens.buyAttempts"
   | "crops-and-chickens.unlockAttempts"
   | "crops-and-chickens.missionComplete"
   | "crops-and-chickens.missionFailed"
@@ -1058,7 +1059,9 @@ export type CropsAndChickensMessages =
   | "crops-and-chickens.targetScore"
   | "crops-and-chickens.score"
   | "crops-and-chickens.highscore"
-  | "crops-and-chickens.inventory";
+  | "crops-and-chickens.inventory"
+  | "crops-and-chickens.endGameConfirmation"
+  | "crops-and-chickens.endGame";
 
 export type DeliveryItem =
   | "deliveryitem.inventory"

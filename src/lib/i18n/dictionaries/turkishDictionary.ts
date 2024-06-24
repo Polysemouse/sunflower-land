@@ -1483,6 +1483,8 @@ const cropsAndChickens: Record<CropsAndChickensMessages, string> = {
     ENGLISH_TERMS["crops-and-chickens.youHaveRunOutOfAttempts"],
   "crops-and-chickens.wouldYouLikeToUnlock":
     ENGLISH_TERMS["crops-and-chickens.wouldYouLikeToUnlock"],
+  "crops-and-chickens.buyAttempts":
+    ENGLISH_TERMS["crops-and-chickens.buyAttempts"],
   "crops-and-chickens.unlockAttempts":
     ENGLISH_TERMS["crops-and-chickens.unlockAttempts"],
   "crops-and-chickens.missionComplete":
@@ -1502,6 +1504,9 @@ const cropsAndChickens: Record<CropsAndChickensMessages, string> = {
   "crops-and-chickens.score": ENGLISH_TERMS["crops-and-chickens.score"],
   "crops-and-chickens.highscore": ENGLISH_TERMS["crops-and-chickens.highscore"],
   "crops-and-chickens.inventory": ENGLISH_TERMS["crops-and-chickens.inventory"],
+  "crops-and-chickens.endGameConfirmation":
+    ENGLISH_TERMS["crops-and-chickens.endGameConfirmation"],
+  "crops-and-chickens.endGame": ENGLISH_TERMS["crops-and-chickens.endGame"],
 };
 
 const decorationDescriptions: Record<DecorationDescriptions, string> = {
