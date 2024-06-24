@@ -6,7 +6,7 @@ import VirtualJoystickPlugin from "phaser3-rex-plugins/plugins/virtualjoystick-p
 import { Preloader } from "features/world/scenes/Preloader";
 import { PortalContext } from "./lib/PortalProvider";
 import { useActor } from "@xstate/react";
-import { CropsAndChickensScene } from "./CropsAndChickensScene";
+import { CropsAndChickensScene } from "./scene/CropsAndChickensScene";
 import { SceneId } from "features/world/mmoMachine";
 
 export const CropsAndChickensPhaser: React.FC = () => {
