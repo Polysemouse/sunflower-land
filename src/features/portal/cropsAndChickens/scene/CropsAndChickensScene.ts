@@ -203,7 +203,7 @@ export class CropsAndChickensScene extends BaseScene {
     this.load.audio("crop_deposit", "world/crop_deposit.mp3");
     this.load.audio("crop_deposit_pop", "world/crop_deposit_pop.mp3");
     this.load.audio("harvest", "world/harvest.mp3");
-    this.load.audio("player_death", "world/player_death.mp3");
+    this.load.audio("player_killed", "world/player_killed.mp3");
     this.load.audio("time_ticking", "world/time_ticking.mp3");
     this.load.audio("game_over", "world/game_over.mp3");
 
@@ -577,7 +577,7 @@ export class CropsAndChickensScene extends BaseScene {
     this.currentPlayer.setVisible(false);
 
     // play sound
-    const sound = this.sound.add("player_death");
+    const sound = this.sound.add("player_killed");
     sound.play({ volume: 0.25 });
 
     // throw all crops out of the inventory
