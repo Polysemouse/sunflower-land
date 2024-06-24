@@ -276,10 +276,6 @@ import {
   PlaceOilReserveAction,
 } from "./landExpansion/placeOilReserve";
 import {
-  donateToFaction,
-  DonateToFactionAction,
-} from "./landExpansion/donateToFaction";
-import {
   drillOilReserve,
   DrillOilReserveAction,
 } from "./landExpansion/drillOilReserve";
@@ -327,6 +323,10 @@ import {
   DeliverFactionKitchenAction,
   deliverFactionKitchen,
 } from "./landExpansion/deliverFactionKitchen";
+import {
+  BuyFactionShopItemAction,
+  buyFactionShopItem,
+} from "./landExpansion/buyFactionShopItem";
 
 export type PlayingEvent =
   | OilGreenhouseAction
@@ -410,7 +410,6 @@ export type PlayingEvent =
   | ClaimGiftAction
   | EnterRaffleAction
   | ExchangeSFLtoCoinsAction
-  | DonateToFactionAction
   | DrillOilReserveAction
   | ClaimMinigamePrizeAction
   | PurchaseMinigameAction
@@ -422,7 +421,8 @@ export type PlayingEvent =
   | JoinFactionAction
   | ClaimEmblemsAction
   | CompleteKingdomChoreAction
-  | DeliverFactionKitchenAction;
+  | DeliverFactionKitchenAction
+  | BuyFactionShopItemAction;
 
 export type PlacementEvent =
   | ConstructBuildingAction
@@ -576,7 +576,6 @@ export const PLAYING_EVENTS: Handlers<PlayingEvent> = {
   "faction.pledged": pledgeFaction,
   // To replace pledgeFaction
   "faction.joined": joinFaction,
-  "faction.donated": donateToFaction,
   "oilReserve.drilled": drillOilReserve,
   "cropMachine.supplied": supplyCropMachine,
   "cropMachine.harvested": harvestCropMachine,
@@ -584,6 +583,7 @@ export const PLAYING_EVENTS: Handlers<PlayingEvent> = {
   "emblems.claimed": claimEmblems,
   "kingdomChore.completed": completeKingdomChore,
   "factionKitchen.delivered": deliverFactionKitchen,
+  "factionShopItem.bought": buyFactionShopItem,
 };
 
 export const PLACEMENT_EVENTS: Handlers<PlacementEvent> = {
