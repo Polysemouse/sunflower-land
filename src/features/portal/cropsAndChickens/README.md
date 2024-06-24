@@ -6,11 +6,7 @@ Those who deposit enough crops are rewarded with various rewards!
 
 ## Setup
 
-To play Crops And Chickens locally, add the following variable to your `.env`
-
-```
-VITE_PORTAL_APP=crops-and-chickens
-```
+To play Crops And Chickens locally, run `cp .env.local .env` first then `yarn` then `yarn dev`
 
 ## Architecture
 
