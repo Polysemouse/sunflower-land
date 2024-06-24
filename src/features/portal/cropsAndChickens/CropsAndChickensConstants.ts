@@ -47,7 +47,7 @@ export const CHICKEN_SPRITE_PROPERTIES = {
 export const CHICKEN_SPEEDS = {
   forwardMin: 40,
   forwardMax: 80,
-  sidewaysMax: 4,
+  sidewaysMax: 6,
 };
 
 export const SCORE_TABLE: {

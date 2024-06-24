@@ -100,26 +100,38 @@ export class CropsAndChickensScene extends BaseScene {
       frameWidth: PLAYER_DEATH_SPRITE_PROPERTIES.frameWidth,
       frameHeight: PLAYER_DEATH_SPRITE_PROPERTIES.frameHeight,
     });
-    this.load.spritesheet("chicken_left", "world/chicken_left_movements.png", {
-      frameWidth: CHICKEN_SPRITE_PROPERTIES.frameWidth,
-      frameHeight: CHICKEN_SPRITE_PROPERTIES.frameHeight,
-    });
     this.load.spritesheet(
-      "chicken_right",
-      "world/chicken_right_movements.png",
+      "chicken_normal_left",
+      "world/chicken_normal_left_movements.png",
       {
         frameWidth: CHICKEN_SPRITE_PROPERTIES.frameWidth,
         frameHeight: CHICKEN_SPRITE_PROPERTIES.frameHeight,
       }
     );
-    this.load.spritesheet("chicken_up", "world/chicken_up_movements.png", {
-      frameWidth: CHICKEN_SPRITE_PROPERTIES.frameWidth,
-      frameHeight: CHICKEN_SPRITE_PROPERTIES.frameHeight,
-    });
-    this.load.spritesheet("chicken_down", "world/chicken_down_movements.png", {
-      frameWidth: CHICKEN_SPRITE_PROPERTIES.frameWidth,
-      frameHeight: CHICKEN_SPRITE_PROPERTIES.frameHeight,
-    });
+    this.load.spritesheet(
+      "chicken_normal_right",
+      "world/chicken_normal_right_movements.png",
+      {
+        frameWidth: CHICKEN_SPRITE_PROPERTIES.frameWidth,
+        frameHeight: CHICKEN_SPRITE_PROPERTIES.frameHeight,
+      }
+    );
+    this.load.spritesheet(
+      "chicken_normal_up",
+      "world/chicken_normal_up_movements.png",
+      {
+        frameWidth: CHICKEN_SPRITE_PROPERTIES.frameWidth,
+        frameHeight: CHICKEN_SPRITE_PROPERTIES.frameHeight,
+      }
+    );
+    this.load.spritesheet(
+      "chicken_normal_down",
+      "world/chicken_normal_down_movements.png",
+      {
+        frameWidth: CHICKEN_SPRITE_PROPERTIES.frameWidth,
+        frameHeight: CHICKEN_SPRITE_PROPERTIES.frameHeight,
+      }
+    );
     this.load.spritesheet("crop_planted", "world/crops_planted.png", {
       frameWidth: 16,
       frameHeight: 20,
@@ -312,8 +324,8 @@ export class CropsAndChickensScene extends BaseScene {
    */
   private createChickenAnimations() {
     ["left", "right", "up", "down"].forEach((direction) => {
-      const spriteName = `chicken_${direction}`;
-      const spriteKey = `chicken_${direction}_anim`;
+      const spriteName = `chicken_normal_${direction}`;
+      const spriteKey = `chicken_normal_${direction}_anim`;
       this.anims.create({
         key: spriteKey,
         frames: this.anims.generateFrameNumbers(spriteName, {
@@ -433,8 +445,8 @@ export class CropsAndChickensScene extends BaseScene {
    * @returns The chicken group for that chicken.
    */
   private createChicken(x: number, y: number, direction: ChickenDirection) {
-    const spriteName = `chicken_${direction}`;
-    const spriteKey = `chicken_${direction}_anim`;
+    const spriteName = `chicken_normal_${direction}`;
+    const spriteKey = `chicken_normal_${direction}_anim`;
 
     const chicken = this.add.sprite(x, y, spriteName);
 
