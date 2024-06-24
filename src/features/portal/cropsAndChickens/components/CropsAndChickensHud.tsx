@@ -1,45 +1,46 @@
 import React, { useContext, useEffect, useState } from "react";
-import { useActor, useSelector } from "@xstate/react";
+import { useSelector } from "@xstate/react";
 import { PortalContext } from "../lib/PortalProvider";
 import { PIXEL_SCALE } from "features/game/lib/constants";
 import { SUNNYSIDE } from "assets/sunnyside";
 import worldIcon from "assets/icons/world.png";
 import { goHome } from "features/portal/lib/portalUtil";
 import { HudContainer } from "components/ui/HudContainer";
-import { secondsToString } from "lib/utils/time";
-import useUiRefresher from "lib/utils/hooks/useUiRefresher";
-import { GAME_SECONDS } from "../CropsAndChickensConstants";
 import { Label } from "components/ui/Label";
 import { useAppTranslation } from "lib/i18n/useAppTranslations";
 import { setPrecision } from "lib/utils/formatNumber";
 import sflIcon from "assets/icons/sfl.webp";
 import { ConfirmationModal } from "components/ui/ConfirmationModal";
 import { PortalMachineState } from "../lib/cropsAndChickensMachine";
+import { NPC_WEARABLES } from "lib/npcs";
+import Decimal from "decimal.js-light";
+import { CropsAndChickensTimer } from "./CropsAndChickensTimer";
 
 const _isReady = (state: PortalMachineState) => state.matches("ready");
 const _isPlaying = (state: PortalMachineState) => state.matches("playing");
+const _inventory = (state: PortalMachineState) => state.context.inventory;
+const _score = (state: PortalMachineState) => state.context.score;
+const _target = (state: PortalMachineState) =>
+  state.context.state?.minigames.prizes["crops-and-chickens"]?.score ?? 0;
+const _sflBalance = (state: PortalMachineState) =>
+  state.context.state?.balance ?? new Decimal(0);
 
 export const CropsAndChickensHud: React.FC = () => {
-  useUiRefresher({ delay: 100 });
-
   const { portalService } = useContext(PortalContext);
-  const [portalState] = useActor(portalService);
+  const { t } = useAppTranslation();
+
   const isReady = useSelector(portalService, _isReady);
   const isPlaying = useSelector(portalService, _isPlaying);
-  const { t } = useAppTranslation();
+  const inventory = useSelector(portalService, _inventory);
+  const score = useSelector(portalService, _score);
+  const target = useSelector(portalService, _target);
+  const sflBalance = useSelector(portalService, _sflBalance);
 
   const [showExitConfirmation, setShowExitConfirmation] = useState(false);
   const [previousScore, setPreviousScore] = useState(0);
   const [scoreDifference, setScoreDifference] = useState(0);
   const [previousInventory, setPreviousInventory] = useState(0);
   const [inventoryDifference, setInventoryDifference] = useState(0);
-
-  const { inventory, score, endAt, state } = portalState.context;
-  const secondsLeft = !endAt
-    ? GAME_SECONDS
-    : Math.max(endAt - Date.now(), 0) / 1000;
-
-  const target = state?.minigames.prizes["crops-and-chickens"]?.score ?? 0;
 
   // hide exit confirmation when game ends
   useEffect(() => {
@@ -151,7 +152,7 @@ export const CropsAndChickensHud: React.FC = () => {
           <div className="flex items-center space-x-2 relative">
             <div className="h-9 w-full bg-black opacity-25 absolute sfl-hud-backdrop -z-10" />
             <span className="balance-text">
-              {setPrecision(portalState.context.state!.balance).toString()}
+              {setPrecision(sflBalance).toString()}
             </span>
             <img
               src={sflIcon}
@@ -163,19 +164,7 @@ export const CropsAndChickensHud: React.FC = () => {
           </div>
         </div>
 
-        <Label
-          className="absolute"
-          icon={SUNNYSIDE.icons.stopwatch}
-          type="info"
-          style={{
-            top: `${PIXEL_SCALE * 16}px`,
-            right: `${PIXEL_SCALE * 6}px`,
-          }}
-        >
-          {secondsToString(secondsLeft, {
-            length: "full",
-          })}
-        </Label>
+        <CropsAndChickensTimer />
 
         <div
           className="fixed z-50 flex flex-col justify-between"
@@ -220,6 +209,7 @@ export const CropsAndChickensHud: React.FC = () => {
           </div>
         </div>
         <ConfirmationModal
+          bumpkinParts={NPC_WEARABLES["chicken farmer"]}
           show={showExitConfirmation}
           onHide={() => setShowExitConfirmation(false)}
           messages={[t("crops-and-chickens.endGameConfirmation")]}

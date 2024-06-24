@@ -1,6 +1,6 @@
 import React, { useContext, useEffect } from "react";
 
-import { useActor, useSelector } from "@xstate/react";
+import { useSelector } from "@xstate/react";
 import { Modal } from "components/ui/Modal";
 import { Panel } from "components/ui/Panel";
 import { Button } from "components/ui/Button";
@@ -9,7 +9,6 @@ import { PortalContext } from "./lib/PortalProvider";
 import { CropsAndChickensHud } from "features/portal/cropsAndChickens/components/CropsAndChickensHud";
 import { CropsAndChickensPhaser } from "./CropsAndChickensPhaser";
 import { Label } from "components/ui/Label";
-import { SUNNYSIDE } from "assets/sunnyside";
 import { NPC_WEARABLES } from "lib/npcs";
 import { CropsAndChickensRules } from "./components/CropsAndChickensRules";
 import { useAppTranslation } from "lib/i18n/useAppTranslations";
@@ -29,22 +28,41 @@ import {
   goHome,
   purchase,
 } from "../lib/portalUtil";
-import { CropsAndChickensPrize } from "./components/CropsAndChickensPrize";
-import { CropsAndChickensAttempts } from "./components/CropsAndChickensAttempts";
-import { getAttemptsLeft } from "./lib/cropsAndChickensUtils";
+import { CropsAndChickensMainMenu } from "./components/CropsAndChickensMainMenu";
+import { CloseButtonPanel } from "features/game/components/CloseablePanel";
 
-const _gameState = (state: PortalMachineState) => state.context.state;
+const _sflBalance = (state: PortalMachineState) => state.context.state?.balance;
+const _isError = (state: PortalMachineState) => state.matches("error");
+const _isUnauthorised = (state: PortalMachineState) =>
+  state.matches("unauthorised");
+const _isLoading = (state: PortalMachineState) => state.matches("loading");
+const _isIdle = (state: PortalMachineState) => state.matches("idle");
+const _isNoAttempts = (state: PortalMachineState) =>
+  state.matches("noAttempts");
+const _isIntroduction = (state: PortalMachineState) =>
+  state.matches("introduction");
+const _isWinner = (state: PortalMachineState) => state.matches("loser");
+const _isLoser = (state: PortalMachineState) => state.matches("winner");
+const _isComplete = (state: PortalMachineState) => state.matches("complete");
 
 export const CropsAndChickens: React.FC = () => {
   const { portalService } = useContext(PortalContext);
-  const [portalState] = useActor(portalService);
   const { t } = useAppTranslation();
 
-  const gameState = useSelector(portalService, _gameState);
+  const sflBalance = useSelector(portalService, _sflBalance);
+  const isError = useSelector(portalService, _isError);
+  const isUnauthorised = useSelector(portalService, _isUnauthorised);
+  const isLoading = useSelector(portalService, _isLoading);
+  const isIdle = useSelector(portalService, _isIdle);
+  const isNoAttempts = useSelector(portalService, _isNoAttempts);
+  const isIntroduction = useSelector(portalService, _isIntroduction);
+  const isWinner = useSelector(portalService, _isWinner);
+  const isLoser = useSelector(portalService, _isLoser);
+  const isComplete = useSelector(portalService, _isComplete);
 
   useEffect(() => {
     // If a player tries to quit while playing, mark it as an attempt
-    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+    const handleBeforeUnload = () => {
       portalService.send("GAME_OVER");
     };
 
@@ -56,7 +74,7 @@ export const CropsAndChickens: React.FC = () => {
     };
   }, []);
 
-  if (portalState.matches("error")) {
+  if (isError) {
     return (
       <Modal show>
         <Panel>
@@ -72,7 +90,7 @@ export const CropsAndChickens: React.FC = () => {
     );
   }
 
-  if (portalState.matches("unauthorised")) {
+  if (isUnauthorised) {
     return (
       <Modal show>
         <Panel>
@@ -86,7 +104,7 @@ export const CropsAndChickens: React.FC = () => {
     );
   }
 
-  if (portalState.matches("loading")) {
+  if (isLoading) {
     return (
       <Modal show>
         <Panel>
@@ -99,19 +117,9 @@ export const CropsAndChickens: React.FC = () => {
     );
   }
 
-  const dateKey = new Date().toISOString().slice(0, 10);
-  const minigame = gameState?.minigames.games["crops-and-chickens"];
-  const history = minigame?.history ?? {};
-
-  const prize = gameState?.minigames.prizes["crops-and-chickens"];
-
-  const dailyHighscore = history[dateKey]?.highscore ?? 0;
-
-  const attemptsLeft = getAttemptsLeft(minigame);
-
   return (
     <div>
-      {portalState.matches("idle") && (
+      {isIdle && (
         <Modal show>
           <Panel>
             <Button onClick={() => portalService.send("START")}>
@@ -121,7 +129,7 @@ export const CropsAndChickens: React.FC = () => {
         </Modal>
       )}
 
-      {portalState.matches("noAttempts") && (
+      {isNoAttempts && (
         <Modal show>
           <Panel>
             <div className="p-1">
@@ -132,9 +140,7 @@ export const CropsAndChickens: React.FC = () => {
                 <Label
                   icon={sfl}
                   type={
-                    gameState?.balance.lt(RESTOCK_ATTEMPTS_SFL)
-                      ? "danger"
-                      : "default"
+                    sflBalance?.lt(RESTOCK_ATTEMPTS_SFL) ? "danger" : "default"
                   }
                 >
                   {t("crops-and-chickens.sflRequired")}
@@ -151,7 +157,7 @@ export const CropsAndChickens: React.FC = () => {
             <div className="flex flex-col gap-1">
               <Button onClick={goHome}>{t("exit")}</Button>
               <Button
-                disabled={gameState?.balance.lt(RESTOCK_ATTEMPTS_SFL)}
+                disabled={sflBalance?.lt(RESTOCK_ATTEMPTS_SFL)}
                 onClick={() =>
                   purchase({
                     sfl: RESTOCK_ATTEMPTS_SFL,
@@ -165,7 +171,7 @@ export const CropsAndChickens: React.FC = () => {
                 })}
               </Button>
               <Button
-                disabled={gameState?.balance.lt(UNLIMITED_ATTEMPTS_SFL)}
+                disabled={sflBalance?.lt(UNLIMITED_ATTEMPTS_SFL)}
                 onClick={() =>
                   purchase({
                     sfl: UNLIMITED_ATTEMPTS_SFL,
@@ -182,127 +188,57 @@ export const CropsAndChickens: React.FC = () => {
         </Modal>
       )}
 
-      {portalState.matches("introduction") && (
+      {isIntroduction && (
         <Modal show>
           <CropsAndChickensRules
             onAcknowledged={() => portalService.send("CONTINUE")}
-            onClose={() => goHome()}
           />
         </Modal>
       )}
 
-      {portalState.matches("loser") && (
+      {isLoser && (
         <Modal show>
-          <Panel bumpkinParts={NPC_WEARABLES.chicken}>
-            <div className="w-full gap-1 relative flex justify-between p-1 items-center">
-              <Label type="danger" icon={SUNNYSIDE.icons.death}>
-                {t("crops-and-chickens.missionFailed")}
-              </Label>
-              <CropsAndChickensAttempts attemptsLeft={attemptsLeft} />
-            </div>
-            <div className="mt-1 flex justify-between flex-col space-y-1 px-1 mb-2">
-              <span className="text-sm">
-                {t("crops-and-chickens.score", {
-                  score: portalState.context.score,
-                })}
-              </span>
-              <span className="text-xs">
-                {t("crops-and-chickens.highscore", {
-                  allTimeHighscore: minigame?.highscore ?? 0,
-                })}
-              </span>
-            </div>
-            <CropsAndChickensPrize
-              dailyHighscore={dailyHighscore}
-              prize={prize}
+          <CloseButtonPanel bumpkinParts={NPC_WEARABLES["chicken farmer"]}>
+            <CropsAndChickensMainMenu
+              mode={"failed"}
+              showScore={true}
+              showExitButton={true}
+              confirmButtonText={t("play.again")}
+              onConfirm={() => portalService.send("RETRY")}
             />
-            <div className="flex mt-1">
-              <Button onClick={goHome} className="mr-1">
-                {t("go.home")}
-              </Button>
-              <Button onClick={() => portalService.send("RETRY")}>
-                {t("play.again")}
-              </Button>
-            </div>
-          </Panel>
+          </CloseButtonPanel>
         </Modal>
       )}
 
-      {portalState.matches("winner") && (
+      {isWinner && (
         <Modal show>
-          <Panel bumpkinParts={NPC_WEARABLES.chicken}>
-            <>
-              <div>
-                <div className="w-full relative flex justify-between p-1">
-                  <Label type="success" icon={SUNNYSIDE.icons.confirm}>
-                    {t("crops-and-chickens.missionComplete")}
-                  </Label>
-                  <CropsAndChickensAttempts attemptsLeft={attemptsLeft} />
-                </div>
-                <div className="mt-1 flex justify-between flex-col space-y-1 px-1 mb-2">
-                  <span className="text-sm">
-                    {t("crops-and-chickens.score", {
-                      score: portalState.context.score,
-                    })}
-                  </span>
-                  <span className="text-xs">
-                    {t("crops-and-chickens.highscore", {
-                      allTimeHighscore: minigame?.highscore ?? 0,
-                    })}
-                  </span>
-                </div>
-                <CropsAndChickensPrize
-                  dailyHighscore={dailyHighscore}
-                  prize={prize}
-                />
-              </div>
-              <Button
-                className="mt-1 whitespace-nowrap capitalize"
-                onClick={() => {
-                  claimPrize();
-                }}
-              >
-                {t("claim")}
-              </Button>
-            </>
-          </Panel>
+          <CloseButtonPanel bumpkinParts={NPC_WEARABLES["chicken farmer"]}>
+            <CropsAndChickensMainMenu
+              mode={"success"}
+              showScore={true}
+              showExitButton={false}
+              confirmButtonText={t("claim")}
+              onConfirm={claimPrize}
+            />
+          </CloseButtonPanel>
         </Modal>
       )}
 
-      {portalState.matches("complete") && (
+      {isComplete && (
         <Modal show>
-          <Panel bumpkinParts={NPC_WEARABLES.chicken}>
-            <div className="w-full relative flex justify-between p-1 items-center">
-              <Label type="default" icon={SUNNYSIDE.icons.death}>
-                {t("minigame.chickenRescue")}
-              </Label>
-              <CropsAndChickensAttempts attemptsLeft={attemptsLeft} />
-            </div>
-            <div className="mt-1 flex justify-between flex-col space-y-1 px-1 mb-2">
-              <span className="text-sm">
-                {t("crops-and-chickens.score", {
-                  score: portalState.context.score,
-                })}
-              </span>
-              <span className="text-xs">
-                {t("crops-and-chickens.highscore", {
-                  allTimeHighscore: minigame?.highscore ?? 0,
-                })}
-              </span>
-            </div>
-            <div className="flex mt-1">
-              <Button onClick={goHome} className="mr-1">
-                {t("go.home")}
-              </Button>
-              <Button onClick={() => portalService.send("RETRY")}>
-                {t("play.again")}
-              </Button>
-            </div>
-          </Panel>
+          <CloseButtonPanel bumpkinParts={NPC_WEARABLES["chicken farmer"]}>
+            <CropsAndChickensMainMenu
+              mode={"introduction"}
+              showScore={true}
+              showExitButton={true}
+              confirmButtonText={t("play.again")}
+              onConfirm={() => portalService.send("RETRY")}
+            />
+          </CloseButtonPanel>
         </Modal>
       )}
 
-      {gameState && (
+      {sflBalance && (
         <>
           <CropsAndChickensHud />
           <CropsAndChickensPhaser />

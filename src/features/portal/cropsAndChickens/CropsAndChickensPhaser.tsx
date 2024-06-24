@@ -5,15 +5,21 @@ import VirtualJoystickPlugin from "phaser3-rex-plugins/plugins/virtualjoystick-p
 
 import { Preloader } from "features/world/scenes/Preloader";
 import { PortalContext } from "./lib/PortalProvider";
-import { useActor } from "@xstate/react";
+import { useSelector } from "@xstate/react";
 import { CropsAndChickensScene } from "./scene/CropsAndChickensScene";
 import { SceneId } from "features/world/mmoMachine";
+import { PortalMachineState } from "./lib/cropsAndChickensMachine";
+
+const _gameState = (state: PortalMachineState) => state.context.state;
+const _id = (state: PortalMachineState) => state.context.id;
 
 export const CropsAndChickensPhaser: React.FC = () => {
   const { portalService } = useContext(PortalContext);
-  const [portalState] = useActor(portalService);
 
-  const [loaded, setLoaded] = useState(false);
+  const gameState = useSelector(portalService, _gameState);
+  const id = useSelector(portalService, _id);
+
+  const [, setLoaded] = useState(false);
 
   const game = useRef<Game>();
 
@@ -69,8 +75,8 @@ export const CropsAndChickensPhaser: React.FC = () => {
     });
 
     game.current.registry.set("initialScene", scene);
-    game.current.registry.set("gameState", portalState.context.state);
-    game.current.registry.set("id", portalState.context.id);
+    game.current.registry.set("gameState", gameState);
+    game.current.registry.set("id", id);
     game.current.registry.set("portalService", portalService);
 
     setLoaded(true);

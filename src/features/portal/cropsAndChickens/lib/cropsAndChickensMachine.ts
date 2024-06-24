@@ -261,7 +261,7 @@ export const portalMachine = createMachine<Context, PortalEvent, PortalState>({
     gameOver: {
       always: [
         {
-          // They have already completed the mission before
+          // they have already completed the mission before
           target: "complete",
           cond: (context) => {
             const dateKey = new Date().toISOString().slice(0, 10);

@@ -1,23 +1,37 @@
-import React from "react";
+import React, { useContext } from "react";
 
 import { SUNNYSIDE } from "assets/sunnyside";
 import { useAppTranslation } from "lib/i18n/useAppTranslations";
-import { MinigamePrize } from "features/game/types/game";
 import { OuterPanel } from "components/ui/Panel";
 import { secondsToString } from "lib/utils/time";
 import coins from "assets/icons/coins.webp";
 import { Label } from "components/ui/Label";
+import { PortalMachineState } from "../lib/cropsAndChickensMachine";
+import { useSelector } from "@xstate/react";
+import { PortalContext } from "../lib/PortalProvider";
 
-interface Props {
-  prize?: MinigamePrize;
-  dailyHighscore: number;
-}
+const _dailyHighscore = (state: PortalMachineState) => {
+  const dateKey = new Date().toISOString().slice(0, 10);
+  const minigame = state.context.state?.minigames.games["crops-and-chickens"];
+  const history = minigame?.history ?? {};
 
-export const CropsAndChickensPrize: React.FC<Props> = ({
-  prize,
-  dailyHighscore,
-}) => {
+  return history[dateKey]?.highscore ?? 0;
+};
+const _prize = (state: PortalMachineState) => {
+  return state.context.state?.minigames.prizes["crops-and-chickens"];
+};
+
+export const CropsAndChickensPrize: React.FC = () => {
+  const { portalService } = useContext(PortalContext);
   const { t } = useAppTranslation();
+
+  const prize = useSelector(
+    portalService,
+    _prize,
+    (prev, next) => JSON.stringify(prev) === JSON.stringify(next)
+  );
+  const dailyHighscore = useSelector(portalService, _dailyHighscore);
+
   if (!prize) {
     return (
       <OuterPanel>
