@@ -4,6 +4,7 @@ import { CONFIG } from "lib/config";
 import { decodeToken } from "features/auth/actions/login";
 import {
   GAME_SECONDS,
+  RESTOCK_ATTEMPTS_SFL,
   UNLIMITED_ATTEMPTS_SFL,
   WEEKLY_ATTEMPTS,
 } from "../CropsAndChickensConstants";
@@ -12,6 +13,7 @@ import { purchaseMinigameItem } from "features/game/events/minigames/purchaseMin
 import { playMinigame } from "features/game/events/minigames/playMinigame";
 import { played } from "features/portal/lib/portalUtil";
 import { getUrl, loadPortal } from "features/portal/actions/loadPortal";
+import { getAttemptsLeft } from "./cropsAndChickensUtils";
 
 const getJWT = () => {
   const code = new URLSearchParams(window.location.search).get("jwt");
@@ -36,7 +38,8 @@ type CropHarvestedEvent = {
 export type PortalEvent =
   | { type: "START" }
   | { type: "CLAIM" }
-  | { type: "PURCHASED" }
+  | { type: "PURCHASED_RESTOCK" }
+  | { type: "PURCHASED_UNLIMITED" }
   | { type: "RETRY" }
   | { type: "CONTINUE" }
   | { type: "END_GAME_EARLY" }
@@ -83,7 +86,7 @@ export const portalMachine = createMachine<Context, PortalEvent, PortalState>({
 
     score: 0,
     inventory: 0,
-    attemptsLeft: WEEKLY_ATTEMPTS,
+    attemptsLeft: 0,
     endAt: 0,
   },
   states: {
@@ -115,17 +118,8 @@ export const portalMachine = createMachine<Context, PortalEvent, PortalState>({
             token: context.jwt as string,
           });
 
-          const dateKey = new Date().toISOString().slice(0, 10);
-
           const minigame = game.minigames.games["crops-and-chickens"];
-          const history = minigame?.history ?? {};
-
-          const dailyAttempt = history[dateKey] ?? {
-            attempts: 0,
-            highscore: 0,
-          };
-
-          const attemptsLeft = WEEKLY_ATTEMPTS - dailyAttempt.attempts;
+          const attemptsLeft = getAttemptsLeft(minigame);
 
           return { game, farmId, attemptsLeft };
         },
@@ -147,7 +141,22 @@ export const portalMachine = createMachine<Context, PortalEvent, PortalState>({
 
     noAttempts: {
       on: {
-        PURCHASED: {
+        PURCHASED_RESTOCK: {
+          target: "introduction",
+          actions: assign<Context>({
+            state: (context: Context) =>
+              purchaseMinigameItem({
+                state: context.state!,
+                action: {
+                  id: "crops-and-chickens",
+                  sfl: RESTOCK_ATTEMPTS_SFL,
+                  type: "minigame.itemPurchased",
+                  items: {},
+                },
+              }),
+          }) as any,
+        },
+        PURCHASED_UNLIMITED: {
           target: "introduction",
           actions: assign<Context>({
             state: (context: Context) =>
@@ -172,19 +181,9 @@ export const portalMachine = createMachine<Context, PortalEvent, PortalState>({
           cond: (context) => {
             const minigame =
               context.state?.minigames.games["crops-and-chickens"];
-            const purchases = minigame?.purchases ?? [];
+            const attemptsLeft = getAttemptsLeft(minigame);
 
-            // There is only one type of purchase with crops-and-chickens - if they have activated in last 7 days
-            const hasUnlimitedAttempts = purchases.some(
-              (purchase) =>
-                purchase.purchasedAt > Date.now() - 7 * 24 * 60 * 60 * 1000
-            );
-
-            if (hasUnlimitedAttempts) {
-              return false;
-            }
-
-            return context.attemptsLeft <= 0;
+            return attemptsLeft <= 0;
           },
         },
         {

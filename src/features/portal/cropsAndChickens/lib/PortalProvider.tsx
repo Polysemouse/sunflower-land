@@ -1,6 +1,10 @@
 import React, { useEffect } from "react";
 import { useInterpret } from "@xstate/react";
 import { MachineInterpreter, portalMachine } from "./cropsAndChickensMachine";
+import {
+  RESTOCK_ATTEMPTS_SFL,
+  UNLIMITED_ATTEMPTS_SFL,
+} from "../CropsAndChickensConstants";
 
 interface PortalContext {
   portalService: MachineInterpreter;
@@ -20,10 +24,16 @@ export const PortalProvider: React.FC = ({ children }) => {
    */
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
-      // Handle the received message
-      if (event.data.event === "purchased") {
-        // Put in your handlers here
-        portalService.send("PURCHASED");
+      if (
+        event.data.event === "purchased" &&
+        event.data.sfl === RESTOCK_ATTEMPTS_SFL
+      ) {
+        portalService.send("PURCHASED_RESTOCK");
+      } else if (
+        event.data.event === "purchased" &&
+        event.data.sfl === UNLIMITED_ATTEMPTS_SFL
+      ) {
+        portalService.send("PURCHASED_UNLIMITED");
       }
     };
 

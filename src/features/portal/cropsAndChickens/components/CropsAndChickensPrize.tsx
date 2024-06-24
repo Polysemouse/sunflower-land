@@ -2,7 +2,7 @@ import React from "react";
 
 import { SUNNYSIDE } from "assets/sunnyside";
 import { useAppTranslation } from "lib/i18n/useAppTranslations";
-import { MinigameHistory, MinigamePrize } from "features/game/types/game";
+import { MinigamePrize } from "features/game/types/game";
 import { OuterPanel } from "components/ui/Panel";
 import { secondsToString } from "lib/utils/time";
 import coins from "assets/icons/coins.webp";
@@ -10,10 +10,13 @@ import { Label } from "components/ui/Label";
 
 interface Props {
   prize?: MinigamePrize;
-  history?: MinigameHistory;
+  dailyHighscore: number;
 }
 
-export const CropsAndChickensPrize: React.FC<Props> = ({ prize, history }) => {
+export const CropsAndChickensPrize: React.FC<Props> = ({
+  prize,
+  dailyHighscore,
+}) => {
   const { t } = useAppTranslation();
   if (!prize) {
     return (
@@ -27,7 +30,7 @@ export const CropsAndChickensPrize: React.FC<Props> = ({ prize, history }) => {
     );
   }
 
-  const isComplete = history && history.highscore > prize.score;
+  const isComplete = dailyHighscore > prize.score;
   const secondsLeft = (prize.endAt - Date.now()) / 1000;
 
   return (

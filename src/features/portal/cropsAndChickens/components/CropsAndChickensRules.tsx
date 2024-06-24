@@ -16,6 +16,7 @@ import factions from "assets/icons/factions.webp";
 import chores from "assets/icons/chores.webp";
 import chickenHunter from "public/world/chicken_hunter.png";
 import { SCORE_TABLE } from "../CropsAndChickensConstants";
+import { getAttemptsLeft } from "../lib/cropsAndChickensUtils";
 
 interface Props {
   onAcknowledged: () => void;
@@ -35,12 +36,9 @@ export const CropsAndChickensRules: React.FC<Props> = ({
   const minigame =
     portalState.context.state!.minigames.games["crops-and-chickens"];
   const history = minigame?.history ?? {};
-  const attemptsLeft = portalState.context.attemptsLeft;
+  const attemptsLeft = getAttemptsLeft(minigame);
 
-  const weeklyAttempt = history[dateKey] ?? {
-    attempts: 0,
-    highscore: 0,
-  };
+  const dailyHighscore = history[dateKey]?.highscore ?? 0;
 
   const prize =
     portalState.context.state!.minigames.prizes["crops-and-chickens"];
@@ -54,12 +52,12 @@ export const CropsAndChickensRules: React.FC<Props> = ({
               {t("crops-and-chickens.minigame")}
             </Label>
 
-            <CropsAndChickensAttempts
-              attemptsLeft={attemptsLeft}
-              purchases={minigame?.purchases}
-            />
+            <CropsAndChickensAttempts attemptsLeft={attemptsLeft} />
           </div>
-          <CropsAndChickensPrize history={weeklyAttempt} prize={prize} />
+          <CropsAndChickensPrize
+            dailyHighscore={dailyHighscore}
+            prize={prize}
+          />
         </div>
         <div className="flex space-x-1">
           <Button

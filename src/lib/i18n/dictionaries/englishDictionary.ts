@@ -1522,7 +1522,7 @@ const cropsAndChickens: Record<CropsAndChickensMessages, string> = {
     "You can take on the challenge every week to test your skills. Can you navigate the fields, outsmart the chickens, and reap the rewards?",
   "crops-and-chickens.targetScore": "Target Score: {{target}}",
   "crops-and-chickens.score": "Score: {{score}}",
-  "crops-and-chickens.highscore": "Highscore: {{highscore}}",
+  "crops-and-chickens.highscore": "Highscore: {{allTimeHighscore}}",
   "crops-and-chickens.inventory": "Inventory: {{inventory}}",
   "crops-and-chickens.endGameConfirmation":
     "Are you sure you want to end the game early?",

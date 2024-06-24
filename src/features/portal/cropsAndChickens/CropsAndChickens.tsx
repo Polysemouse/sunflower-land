@@ -18,7 +18,11 @@ import { Loading } from "features/auth/components";
 import { CONFIG } from "lib/config";
 import lock from "assets/skills/lock.png";
 import sfl from "assets/icons/sfl.webp";
-import { UNLIMITED_ATTEMPTS_SFL } from "./CropsAndChickensConstants";
+import {
+  RESTOCK_ATTEMPTS_SFL,
+  UNLIMITED_ATTEMPTS_SFL,
+  WEEKLY_ATTEMPTS,
+} from "./CropsAndChickensConstants";
 import {
   authorisePortal,
   claimPrize,
@@ -27,6 +31,7 @@ import {
 } from "../lib/portalUtil";
 import { CropsAndChickensPrize } from "./components/CropsAndChickensPrize";
 import { CropsAndChickensAttempts } from "./components/CropsAndChickensAttempts";
+import { getAttemptsLeft } from "./lib/cropsAndChickensUtils";
 
 const _gameState = (state: PortalMachineState) => state.context.state;
 
@@ -100,12 +105,9 @@ export const CropsAndChickens: React.FC = () => {
 
   const prize = gameState?.minigames.prizes["crops-and-chickens"];
 
-  const weeklyAttempt = history[dateKey] ?? {
-    attempts: 0,
-    highscore: 0,
-  };
+  const dailyHighscore = history[dateKey]?.highscore ?? 0;
 
-  const attemptsLeft = portalState.context.attemptsLeft;
+  const attemptsLeft = getAttemptsLeft(minigame);
 
   return (
     <div>
@@ -130,7 +132,7 @@ export const CropsAndChickens: React.FC = () => {
                 <Label
                   icon={sfl}
                   type={
-                    gameState?.balance.lt(UNLIMITED_ATTEMPTS_SFL)
+                    gameState?.balance.lt(RESTOCK_ATTEMPTS_SFL)
                       ? "danger"
                       : "default"
                   }
@@ -148,7 +150,7 @@ export const CropsAndChickens: React.FC = () => {
             </div>
             <div className="flex flex-col gap-1">
               <Button onClick={goHome}>{t("exit")}</Button>
-              {/* <Button
+              <Button
                 disabled={gameState?.balance.lt(RESTOCK_ATTEMPTS_SFL)}
                 onClick={() =>
                   purchase({
@@ -161,7 +163,7 @@ export const CropsAndChickens: React.FC = () => {
                   attempts: WEEKLY_ATTEMPTS,
                   sfl: RESTOCK_ATTEMPTS_SFL,
                 })}
-              </Button> */}
+              </Button>
               <Button
                 disabled={gameState?.balance.lt(UNLIMITED_ATTEMPTS_SFL)}
                 onClick={() =>
@@ -196,10 +198,7 @@ export const CropsAndChickens: React.FC = () => {
               <Label type="danger" icon={SUNNYSIDE.icons.death}>
                 {t("crops-and-chickens.missionFailed")}
               </Label>
-              <CropsAndChickensAttempts
-                attemptsLeft={attemptsLeft}
-                purchases={minigame?.purchases}
-              />
+              <CropsAndChickensAttempts attemptsLeft={attemptsLeft} />
             </div>
             <div className="mt-1 flex justify-between flex-col space-y-1 px-1 mb-2">
               <span className="text-sm">
@@ -209,11 +208,14 @@ export const CropsAndChickens: React.FC = () => {
               </span>
               <span className="text-xs">
                 {t("crops-and-chickens.highscore", {
-                  highscore: minigame?.highscore ?? 0,
+                  allTimeHighscore: minigame?.highscore ?? 0,
                 })}
               </span>
             </div>
-            <CropsAndChickensPrize history={weeklyAttempt} prize={prize} />
+            <CropsAndChickensPrize
+              dailyHighscore={dailyHighscore}
+              prize={prize}
+            />
             <div className="flex mt-1">
               <Button onClick={goHome} className="mr-1">
                 {t("go.home")}
@@ -235,10 +237,7 @@ export const CropsAndChickens: React.FC = () => {
                   <Label type="success" icon={SUNNYSIDE.icons.confirm}>
                     {t("crops-and-chickens.missionComplete")}
                   </Label>
-                  <CropsAndChickensAttempts
-                    attemptsLeft={attemptsLeft}
-                    purchases={minigame?.purchases}
-                  />
+                  <CropsAndChickensAttempts attemptsLeft={attemptsLeft} />
                 </div>
                 <div className="mt-1 flex justify-between flex-col space-y-1 px-1 mb-2">
                   <span className="text-sm">
@@ -248,11 +247,14 @@ export const CropsAndChickens: React.FC = () => {
                   </span>
                   <span className="text-xs">
                     {t("crops-and-chickens.highscore", {
-                      highscore: minigame?.highscore ?? 0,
+                      allTimeHighscore: minigame?.highscore ?? 0,
                     })}
                   </span>
                 </div>
-                <CropsAndChickensPrize history={weeklyAttempt} prize={prize} />
+                <CropsAndChickensPrize
+                  dailyHighscore={dailyHighscore}
+                  prize={prize}
+                />
               </div>
               <Button
                 className="mt-1 whitespace-nowrap capitalize"
@@ -274,17 +276,19 @@ export const CropsAndChickens: React.FC = () => {
               <Label type="default" icon={SUNNYSIDE.icons.death}>
                 {t("minigame.chickenRescue")}
               </Label>
-              <CropsAndChickensAttempts
-                attemptsLeft={attemptsLeft}
-                purchases={minigame?.purchases}
-              />
+              <CropsAndChickensAttempts attemptsLeft={attemptsLeft} />
             </div>
             <div className="mt-1 flex justify-between flex-col space-y-1 px-1 mb-2">
-              <span className="text-sm">{`Score: ${portalState.context.score}`}</span>
-              <span className="text-xs">{`Highscore: ${Math.max(
-                portalState.context.score,
-                minigame?.highscore ?? 0
-              )}`}</span>
+              <span className="text-sm">
+                {t("crops-and-chickens.score", {
+                  score: portalState.context.score,
+                })}
+              </span>
+              <span className="text-xs">
+                {t("crops-and-chickens.highscore", {
+                  allTimeHighscore: minigame?.highscore ?? 0,
+                })}
+              </span>
             </div>
             <div className="flex mt-1">
               <Button onClick={goHome} className="mr-1">
