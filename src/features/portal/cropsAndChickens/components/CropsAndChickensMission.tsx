@@ -25,7 +25,7 @@ const _minigame = (state: PortalMachineState) =>
   state.context.state?.minigames.games["crops-and-chickens"];
 const _score = (state: PortalMachineState) => state.context.score;
 
-export const CropsAndChickensMainMenu: React.FC<Props> = ({
+export const CropsAndChickensMission: React.FC<Props> = ({
   mode,
   showScore,
   showExitButton,

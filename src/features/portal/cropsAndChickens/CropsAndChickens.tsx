@@ -9,8 +9,6 @@ import { PortalContext } from "./lib/PortalProvider";
 import { CropsAndChickensHud } from "features/portal/cropsAndChickens/components/CropsAndChickensHud";
 import { CropsAndChickensPhaser } from "./CropsAndChickensPhaser";
 import { Label } from "components/ui/Label";
-import { NPC_WEARABLES } from "lib/npcs";
-import { CropsAndChickensRules } from "./components/CropsAndChickensRules";
 import { useAppTranslation } from "lib/i18n/useAppTranslations";
 import { PortalMachineState } from "./lib/cropsAndChickensMachine";
 import { Loading } from "features/auth/components";
@@ -28,8 +26,7 @@ import {
   goHome,
   purchase,
 } from "../lib/portalUtil";
-import { CropsAndChickensMainMenu } from "./components/CropsAndChickensMainMenu";
-import { CloseButtonPanel } from "features/game/components/CloseablePanel";
+import { CropsAndChickensRulesPanel } from "./components/CropsAndChickensRulesPanel";
 
 const _sflBalance = (state: PortalMachineState) => state.context.state?.balance;
 const _isError = (state: PortalMachineState) => state.matches("error");
@@ -41,8 +38,8 @@ const _isNoAttempts = (state: PortalMachineState) =>
   state.matches("noAttempts");
 const _isIntroduction = (state: PortalMachineState) =>
   state.matches("introduction");
-const _isWinner = (state: PortalMachineState) => state.matches("loser");
-const _isLoser = (state: PortalMachineState) => state.matches("winner");
+const _isLoser = (state: PortalMachineState) => state.matches("loser");
+const _isWinner = (state: PortalMachineState) => state.matches("winner");
 const _isComplete = (state: PortalMachineState) => state.matches("complete");
 
 export const CropsAndChickens: React.FC = () => {
@@ -190,51 +187,49 @@ export const CropsAndChickens: React.FC = () => {
 
       {isIntroduction && (
         <Modal show>
-          <CropsAndChickensRules
-            onAcknowledged={() => portalService.send("CONTINUE")}
+          <CropsAndChickensRulesPanel
+            mode={"introduction"}
+            showScore={false}
+            showExitButton={true}
+            confirmButtonText={t("start")}
+            onConfirm={() => portalService.send("CONTINUE")}
           />
         </Modal>
       )}
 
       {isLoser && (
         <Modal show>
-          <CloseButtonPanel bumpkinParts={NPC_WEARABLES["chicken farmer"]}>
-            <CropsAndChickensMainMenu
-              mode={"failed"}
-              showScore={true}
-              showExitButton={true}
-              confirmButtonText={t("play.again")}
-              onConfirm={() => portalService.send("RETRY")}
-            />
-          </CloseButtonPanel>
+          <CropsAndChickensRulesPanel
+            mode={"failed"}
+            showScore={true}
+            showExitButton={true}
+            confirmButtonText={t("play.again")}
+            onConfirm={() => portalService.send("RETRY")}
+          />
         </Modal>
       )}
 
       {isWinner && (
         <Modal show>
-          <CloseButtonPanel bumpkinParts={NPC_WEARABLES["chicken farmer"]}>
-            <CropsAndChickensMainMenu
-              mode={"success"}
-              showScore={true}
-              showExitButton={false}
-              confirmButtonText={t("claim")}
-              onConfirm={claimPrize}
-            />
-          </CloseButtonPanel>
+          <CropsAndChickensRulesPanel
+            mode={"success"}
+            showScore={true}
+            showExitButton={false}
+            confirmButtonText={t("claim")}
+            onConfirm={claimPrize}
+          />
         </Modal>
       )}
 
       {isComplete && (
         <Modal show>
-          <CloseButtonPanel bumpkinParts={NPC_WEARABLES["chicken farmer"]}>
-            <CropsAndChickensMainMenu
-              mode={"introduction"}
-              showScore={true}
-              showExitButton={true}
-              confirmButtonText={t("play.again")}
-              onConfirm={() => portalService.send("RETRY")}
-            />
-          </CloseButtonPanel>
+          <CropsAndChickensRulesPanel
+            mode={"introduction"}
+            showScore={true}
+            showExitButton={true}
+            confirmButtonText={t("play.again")}
+            onConfirm={() => portalService.send("RETRY")}
+          />
         </Modal>
       )}
 
