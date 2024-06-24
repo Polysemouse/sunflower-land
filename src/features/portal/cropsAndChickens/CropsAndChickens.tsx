@@ -50,7 +50,7 @@ export const CropsAndChickens: React.FC = () => {
 
     window.addEventListener("beforeunload", handleBeforeUnload);
 
-    // Clean up the event listener when component unmounts
+    // clean up the event listener when component unmounts
     return () => {
       window.removeEventListener("beforeunload", handleBeforeUnload);
     };

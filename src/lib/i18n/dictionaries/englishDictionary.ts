@@ -1486,7 +1486,7 @@ const cropsAndChickens: Record<CropsAndChickensMessages, string> = {
   "crops-and-chickens.rules": "Rules",
   "crops-and-chickens.legend": "Legend",
   "crops-and-chickens.cropDescription": "Points: {{points}}",
-  "crops-and-chickens.depositAreaDescription": "Deposit your crops safely",
+  "crops-and-chickens.depositAreaDescription": "Deposits your crops safely",
   "crops-and-chickens.normalChickenDescription": "Kills you upon contact",
   "crops-and-chickens.hunterChickenDescription":
     "Follows you and kills you upon contact",

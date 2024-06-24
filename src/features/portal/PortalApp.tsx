@@ -1,11 +1,10 @@
 import React from "react";
 
-import { Ocean } from "features/world/ui/Ocean";
-
 import { WalletProvider } from "features/wallet/WalletProvider";
 
 import { CropsAndChickens } from "./cropsAndChickens/CropsAndChickens";
 import { PortalProvider } from "./cropsAndChickens/lib/PortalProvider";
+import { Grassland } from "features/world/ui/Grassland";
 
 export const PortalApp: React.FC = () => {
   return (
@@ -13,9 +12,9 @@ export const PortalApp: React.FC = () => {
     <WalletProvider>
       {/* PortalProvider - gives you access to a xstate machine which handles state management */}
       <PortalProvider>
-        <Ocean>
+        <Grassland>
           <CropsAndChickens />
-        </Ocean>
+        </Grassland>
       </PortalProvider>
     </WalletProvider>
   );

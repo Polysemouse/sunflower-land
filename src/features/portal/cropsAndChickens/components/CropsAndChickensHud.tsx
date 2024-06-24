@@ -16,6 +16,7 @@ import sflIcon from "assets/icons/sfl.webp";
 import { ConfirmationModal } from "components/ui/ConfirmationModal";
 import { PortalMachineState } from "../lib/cropsAndChickensMachine";
 
+const _isReady = (state: PortalMachineState) => state.matches("ready");
 const _isPlaying = (state: PortalMachineState) => state.matches("playing");
 
 export const CropsAndChickensHud: React.FC = () => {
@@ -23,10 +24,15 @@ export const CropsAndChickensHud: React.FC = () => {
 
   const { portalService } = useContext(PortalContext);
   const [portalState] = useActor(portalService);
+  const isReady = useSelector(portalService, _isReady);
   const isPlaying = useSelector(portalService, _isPlaying);
   const { t } = useAppTranslation();
 
   const [showExitConfirmation, setShowExitConfirmation] = useState(false);
+  const [previousScore, setPreviousScore] = useState(0);
+  const [scoreDifference, setScoreDifference] = useState(0);
+  const [previousInventory, setPreviousInventory] = useState(0);
+  const [inventoryDifference, setInventoryDifference] = useState(0);
 
   const { inventory, score, endAt, state } = portalState.context;
   const secondsLeft = !endAt
@@ -35,11 +41,58 @@ export const CropsAndChickensHud: React.FC = () => {
 
   const target = state?.minigames.prizes["crops-and-chickens"]?.score ?? 0;
 
+  // hide exit confirmation when game ends
   useEffect(() => {
-    if (!isPlaying) {
-      setShowExitConfirmation(false);
-    }
+    if (!isReady) return;
+
+    setPreviousScore(0);
+    setScoreDifference(0);
+    setPreviousInventory(0);
+    setInventoryDifference(0);
+  }, [isReady]);
+
+  // hide exit confirmation when game ends
+  useEffect(() => {
+    if (isPlaying) return;
+
+    setShowExitConfirmation(false);
   }, [isPlaying]);
+
+  useEffect(() => {
+    if (!isPlaying) return;
+
+    setScoreDifference(score - previousScore);
+    setPreviousScore(score);
+
+    // create a timeout to reset score difference after 2 seconds
+    const timeout = setTimeout(() => {
+      setScoreDifference(0);
+    }, 2000);
+
+    // cleanup function to clear timeout if score changes before 2 seconds
+    return () => clearTimeout(timeout);
+  }, [score]);
+
+  useEffect(() => {
+    if (!isPlaying) return;
+
+    setInventoryDifference(inventory - previousInventory);
+    setPreviousInventory(inventory);
+
+    // create a timeout to reset score difference after 2 seconds
+    const timeout = setTimeout(() => {
+      setInventoryDifference(0);
+    }, 2000);
+
+    // cleanup function to clear timeout if score changes before 2 seconds
+    return () => clearTimeout(timeout);
+  }, [inventory]);
+
+  const getDifferenceDisplay = (difference: number) => {
+    if (!difference) return "";
+
+    return `(${difference > 0 ? "+" : ""}${difference})`;
+  };
 
   return (
     <>
@@ -59,7 +112,7 @@ export const CropsAndChickensHud: React.FC = () => {
           <div className="relative">
             <div className="h-12 w-full bg-black opacity-50 absolute coins-bb-hud-backdrop-reverse" />
             <div
-              className="flex items-center space-x-2 text-xs text-white"
+              className="flex items-center space-x-2 text-xs text-white text-shadow"
               style={{
                 width: "200px",
                 paddingTop: "7px",
@@ -68,15 +121,16 @@ export const CropsAndChickensHud: React.FC = () => {
             >
               <span>
                 {t("crops-and-chickens.score", {
-                  score: score,
+                  score: previousScore,
                 })}
               </span>
+              <span>{getDifferenceDisplay(scoreDifference)}</span>
             </div>
           </div>
           <div className="relative">
             <div className="h-12 w-full bg-black opacity-50 absolute coins-bb-hud-backdrop-reverse" />
             <div
-              className="flex items-center space-x-2 text-xs text-white"
+              className="flex items-center space-x-2 text-xs text-white text-shadow"
               style={{
                 width: "200px",
                 paddingTop: "7px",
@@ -85,9 +139,10 @@ export const CropsAndChickensHud: React.FC = () => {
             >
               <span>
                 {t("crops-and-chickens.inventory", {
-                  inventory: inventory,
+                  inventory: previousInventory,
                 })}
               </span>
+              <span>{getDifferenceDisplay(inventoryDifference)}</span>
             </div>
           </div>
         </div>
