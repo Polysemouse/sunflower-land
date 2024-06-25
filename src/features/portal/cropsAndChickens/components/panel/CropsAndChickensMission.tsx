@@ -3,14 +3,14 @@ import React, { useContext } from "react";
 import { Button } from "components/ui/Button";
 import { useAppTranslation } from "lib/i18n/useAppTranslations";
 import { useSelector } from "@xstate/react";
-import { PortalContext } from "../lib/PortalProvider";
+import { PortalContext } from "../../lib/PortalProvider";
 import { Label } from "components/ui/Label";
 import { CropsAndChickensPrize } from "./CropsAndChickensPrize";
 import { CropsAndChickensAttempts } from "./CropsAndChickensAttempts";
 import factions from "assets/icons/factions.webp";
-import { getAttemptsLeft } from "../lib/cropsAndChickensUtils";
+import { getAttemptsLeft } from "../../lib/cropsAndChickensUtils";
 import { goHome } from "features/portal/lib/portalUtil";
-import { PortalMachineState } from "../lib/cropsAndChickensMachine";
+import { PortalMachineState } from "../../lib/cropsAndChickensMachine";
 import { SUNNYSIDE } from "assets/sunnyside";
 
 interface Props {

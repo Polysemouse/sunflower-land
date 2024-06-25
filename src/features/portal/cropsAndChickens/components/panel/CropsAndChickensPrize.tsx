@@ -6,9 +6,9 @@ import { OuterPanel } from "components/ui/Panel";
 import { secondsToString } from "lib/utils/time";
 import coins from "assets/icons/coins.webp";
 import { Label } from "components/ui/Label";
-import { PortalMachineState } from "../lib/cropsAndChickensMachine";
+import { PortalMachineState } from "../../lib/cropsAndChickensMachine";
 import { useSelector } from "@xstate/react";
-import { PortalContext } from "../lib/PortalProvider";
+import { PortalContext } from "../../lib/PortalProvider";
 
 const _dailyHighscore = (state: PortalMachineState) => {
   const dateKey = new Date().toISOString().slice(0, 10);

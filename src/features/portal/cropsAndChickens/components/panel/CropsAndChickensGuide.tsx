@@ -4,9 +4,9 @@ import { useAppTranslation } from "lib/i18n/useAppTranslations";
 import { SUNNYSIDE } from "assets/sunnyside";
 import { SquareIcon } from "components/ui/SquareIcon";
 import { ITEM_DETAILS } from "features/game/types/images";
-import { SCORE_TABLE } from "../CropsAndChickensConstants";
 import chickenHunter from "public/world/chicken_hunter.png";
 import { Label } from "components/ui/Label";
+import { SCORE_TABLE } from "../../CropsAndChickensConstants";
 
 export const CropsAndChickensGuide: React.FC = () => {
   const { t } = useAppTranslation();

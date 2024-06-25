@@ -26,7 +26,7 @@ import {
   goHome,
   purchase,
 } from "../lib/portalUtil";
-import { CropsAndChickensRulesPanel } from "./components/CropsAndChickensRulesPanel";
+import { CropsAndChickensRulesPanel } from "./components/panel/CropsAndChickensRulesPanel";
 
 const _sflBalance = (state: PortalMachineState) => state.context.state?.balance;
 const _isError = (state: PortalMachineState) => state.matches("error");

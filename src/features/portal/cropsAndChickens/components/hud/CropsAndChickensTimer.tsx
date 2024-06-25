@@ -1,13 +1,13 @@
 import React, { useContext } from "react";
 import { useSelector } from "@xstate/react";
-import { PortalContext } from "../lib/PortalProvider";
+import { PortalContext } from "../../lib/PortalProvider";
 import { PIXEL_SCALE } from "features/game/lib/constants";
 import { SUNNYSIDE } from "assets/sunnyside";
 import { secondsToString } from "lib/utils/time";
 import useUiRefresher from "lib/utils/hooks/useUiRefresher";
-import { GAME_SECONDS } from "../CropsAndChickensConstants";
+import { GAME_SECONDS } from "../../CropsAndChickensConstants";
 import { Label } from "components/ui/Label";
-import { PortalMachineState } from "../lib/cropsAndChickensMachine";
+import { PortalMachineState } from "../../lib/cropsAndChickensMachine";
 
 const _endAt = (state: PortalMachineState) => state.context.endAt;
 
