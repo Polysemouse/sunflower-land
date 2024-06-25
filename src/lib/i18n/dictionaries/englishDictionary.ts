@@ -1486,7 +1486,7 @@ const cropsAndChickens: Record<CropsAndChickensMessages, string> = {
   "crops-and-chickens.rules": "Rules",
   "crops-and-chickens.legend": "Legend",
   "crops-and-chickens.donationDescription":
-    "This minigame was created for the community and donations are greatly appreciated!",
+    "This minigame was created for the community. Donations are greatly appreciated!",
   "crops-and-chickens.cropDescription": "Points: {{points}}",
   "crops-and-chickens.depositAreaDescription": "Deposits your crops safely",
   "crops-and-chickens.normalChickenDescription": "Kills you upon contact",
@@ -1515,13 +1515,12 @@ const cropsAndChickens: Record<CropsAndChickensMessages, string> = {
   "crops-and-chickens.attemptsRemainingPlural": "{{attempts}} attempts left",
   "crops-and-chickens.attemptsRemainingSingular": "{{attempts}} attempt left",
   "crops-and-chickens.rules1":
-    "Venture into the dangerous crop field to gather crops. The farther you roam, the more valuable the crops you'll find!",
+    "Explore the field for valuable crops, with better rewards the further you go.",
   "crops-and-chickens.rules2":
-    "Secure your earnings by depositing crops collected. But remember, the longer you hold out, the greater the risk.",
+    "Deposit your crops to secure earnings. The longer you wait, the riskier it gets.",
   "crops-and-chickens.rules3":
-    "Avoid wandering chickens at all costs. A collision means losing all your unbanked crops.",
-  "crops-and-chickens.rules4":
-    "You can take on the challenge every week to test your skills. Can you navigate the fields, outsmart the chickens, and reap the rewards?",
+    "Collision with chickens means losing all your unbanked crops.",
+  "crops-and-chickens.rules4": "Are you ready to take on the daily challenges?",
   "crops-and-chickens.targetScore": "Target Score: {{target}}",
   "crops-and-chickens.score": "Score: {{score}}",
   "crops-and-chickens.highscore": "Highscore: {{allTimeHighscore}}",
