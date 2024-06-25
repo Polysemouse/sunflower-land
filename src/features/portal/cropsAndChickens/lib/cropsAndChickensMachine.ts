@@ -23,6 +23,7 @@ const getJWT = () => {
 export interface Context {
   id: number;
   jwt: string | null;
+  isJoystickActive: boolean;
   state: GameState | undefined;
   score: number;
   inventory: number;
@@ -35,7 +36,13 @@ type CropHarvestedEvent = {
   points: number;
 };
 
+type SetJoystickActiveEvent = {
+  type: "SET_JOYSTICK_ACTIVE";
+  isJoystickActive: boolean;
+};
+
 export type PortalEvent =
+  | SetJoystickActiveEvent
   | { type: "START" }
   | { type: "CLAIM" }
   | { type: "PURCHASED_RESTOCK" }
@@ -82,12 +89,24 @@ export const portalMachine = createMachine<Context, PortalEvent, PortalState>({
   context: {
     id: 0,
     jwt: getJWT(),
+
+    isJoystickActive: false,
+
     state: CONFIG.API_URL ? undefined : OFFLINE_FARM,
 
     score: 0,
     inventory: 0,
     attemptsLeft: 0,
     endAt: 0,
+  },
+  on: {
+    SET_JOYSTICK_ACTIVE: {
+      actions: assign<Context, any>({
+        isJoystickActive: (_: Context, event: SetJoystickActiveEvent) => {
+          return event.isJoystickActive;
+        },
+      }),
+    },
   },
   states: {
     initialising: {

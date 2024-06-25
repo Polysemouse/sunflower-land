@@ -26,6 +26,8 @@ import {
 } from "../CropsAndChickensConstants";
 import { NormalChickenContainer } from "./containers/NormalChickenContainer";
 import { HunterChickenContainer } from "./containers/HunterChickenContainer";
+import { DarkModePipeline } from "../shaders/darkModeShader";
+import { getDarkModeSetting } from "lib/utils/hooks/useIsDarkMode";
 
 export class CropsAndChickensScene extends BaseScene {
   sceneId: SceneId = "crops_and_chickens";
@@ -222,6 +224,11 @@ export class CropsAndChickensScene extends BaseScene {
 
     super.create();
 
+    (
+      this.renderer as Phaser.Renderer.WebGL.WebGLRenderer
+    ).pipelines.addPostPipeline("DarkModePipeline", DarkModePipeline);
+    this.cameras.main.setPostPipeline(DarkModePipeline);
+
     this.initializeStates();
 
     this.createStorageArea();
@@ -274,6 +281,11 @@ export class CropsAndChickensScene extends BaseScene {
   }
 
   update() {
+    // set joystick state in machine
+    this.portalService?.send("SET_JOYSTICK_ACTIVE", {
+      isJoystickActive: !!this.joystick?.force,
+    });
+
     if (!this.currentPlayer || !this.currentPlayer.body) {
       return;
     }
@@ -350,6 +362,11 @@ export class CropsAndChickensScene extends BaseScene {
       // hide the indicator if the object is on the screen
       this.cropDepositArrow?.setVisible(false);
     }
+
+    // toggle dark mode
+    (
+      this.cameras.main.getPostPipeline("DarkModePipeline") as DarkModePipeline
+    ).isDarkMode = getDarkModeSetting();
 
     super.update();
   }

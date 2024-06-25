@@ -1,20 +1,18 @@
 import React, { useContext, useEffect, useState } from "react";
 import { useSelector } from "@xstate/react";
-import { PortalContext } from "../lib/PortalProvider";
+import { PortalContext } from "../../lib/PortalProvider";
 import { PIXEL_SCALE } from "features/game/lib/constants";
 import { SUNNYSIDE } from "assets/sunnyside";
-import worldIcon from "assets/icons/world.png";
-import { goHome } from "features/portal/lib/portalUtil";
 import { HudContainer } from "components/ui/HudContainer";
 import { Label } from "components/ui/Label";
 import { useAppTranslation } from "lib/i18n/useAppTranslations";
 import { setPrecision } from "lib/utils/formatNumber";
 import sflIcon from "assets/icons/sfl.webp";
-import { ConfirmationModal } from "components/ui/ConfirmationModal";
-import { PortalMachineState } from "../lib/cropsAndChickensMachine";
-import { NPC_WEARABLES } from "lib/npcs";
+import { PortalMachineState } from "../../lib/cropsAndChickensMachine";
 import Decimal from "decimal.js-light";
-import { CropsAndChickensTimer } from "./CropsAndChickensTimer";
+import { CropsAndChickensTimer } from "../CropsAndChickensTimer";
+import { CropsAndChickensSettings } from "./CropsAndChickensSettings";
+import { CropsAndChickensTravel } from "./CropsAndChickensTravel";
 
 const _isReady = (state: PortalMachineState) => state.matches("ready");
 const _isPlaying = (state: PortalMachineState) => state.matches("playing");
@@ -36,7 +34,6 @@ export const CropsAndChickensHud: React.FC = () => {
   const target = useSelector(portalService, _target);
   const sflBalance = useSelector(portalService, _sflBalance);
 
-  const [showExitConfirmation, setShowExitConfirmation] = useState(false);
   const [previousScore, setPreviousScore] = useState(0);
   const [scoreDifference, setScoreDifference] = useState(0);
   const [previousInventory, setPreviousInventory] = useState(0);
@@ -51,13 +48,6 @@ export const CropsAndChickensHud: React.FC = () => {
     setPreviousInventory(0);
     setInventoryDifference(0);
   }, [isReady]);
-
-  // hide exit confirmation when game ends
-  useEffect(() => {
-    if (isPlaying) return;
-
-    setShowExitConfirmation(false);
-  }, [isPlaying]);
 
   useEffect(() => {
     if (!isPlaying) return;
@@ -165,61 +155,8 @@ export const CropsAndChickensHud: React.FC = () => {
         </div>
 
         <CropsAndChickensTimer />
-
-        <div
-          className="fixed z-50 flex flex-col justify-between"
-          style={{
-            left: `${PIXEL_SCALE * 3}px`,
-            bottom: `${PIXEL_SCALE * 3}px`,
-            width: `${PIXEL_SCALE * 22}px`,
-          }}
-        >
-          <div
-            className="flex relative z-50 justify-center cursor-pointer hover:img-highlight"
-            style={{
-              width: `${PIXEL_SCALE * 22}px`,
-              height: `${PIXEL_SCALE * 23}px`,
-            }}
-            onClick={(e) => {
-              e.stopPropagation();
-              e.preventDefault();
-              if (isPlaying) {
-                setShowExitConfirmation(true);
-              } else {
-                goHome();
-              }
-            }}
-          >
-            <img
-              src={SUNNYSIDE.ui.round_button}
-              className="absolute"
-              style={{
-                width: `${PIXEL_SCALE * 22}px`,
-              }}
-            />
-            <img
-              src={worldIcon}
-              style={{
-                width: `${PIXEL_SCALE * 12}px`,
-                left: `${PIXEL_SCALE * 5}px`,
-                top: `${PIXEL_SCALE * 4}px`,
-              }}
-              className="absolute"
-            />
-          </div>
-        </div>
-        <ConfirmationModal
-          bumpkinParts={NPC_WEARABLES["chicken farmer"]}
-          show={showExitConfirmation}
-          onHide={() => setShowExitConfirmation(false)}
-          messages={[t("crops-and-chickens.endGameConfirmation")]}
-          onCancel={() => setShowExitConfirmation(false)}
-          onConfirm={() => {
-            portalService.send("END_GAME_EARLY");
-            setShowExitConfirmation(false);
-          }}
-          confirmButtonLabel={t("crops-and-chickens.endGame")}
-        />
+        <CropsAndChickensTravel />
+        <CropsAndChickensSettings />
       </HudContainer>
     </>
   );

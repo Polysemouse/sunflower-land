@@ -6,7 +6,7 @@ import { Panel } from "components/ui/Panel";
 import { Button } from "components/ui/Button";
 
 import { PortalContext } from "./lib/PortalProvider";
-import { CropsAndChickensHud } from "features/portal/cropsAndChickens/components/CropsAndChickensHud";
+import { CropsAndChickensHud } from "features/portal/cropsAndChickens/components/hud/CropsAndChickensHud";
 import { CropsAndChickensPhaser } from "./CropsAndChickensPhaser";
 import { Label } from "components/ui/Label";
 import { useAppTranslation } from "lib/i18n/useAppTranslations";
