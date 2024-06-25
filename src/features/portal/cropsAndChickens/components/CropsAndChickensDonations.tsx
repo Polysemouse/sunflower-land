@@ -18,7 +18,6 @@ export const CropsAndChickensDonations: React.FC = () => {
 
   const [state, send] = useMachine(donationMachine);
   const [donation, setDonation] = useState(1);
-  const CHRISTMAS_EVENT_DONATION_ADDRESS = CONFIG.CHRISTMAS_EVENT_DONATION;
   const onDonationChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     // If keyboard input "" convert to 0
     // Typed input validation will happen in onBlur
@@ -29,9 +28,7 @@ export const CropsAndChickensDonations: React.FC = () => {
   };
 
   const decrementDonation = () => {
-    if (donation === 0.2) {
-      setDonation(0.2);
-    } else if (donation < 0.2) {
+    if (donation <= 0.1) {
       setDonation(0.1);
     } else setDonation((prevState) => roundToOneDecimal(prevState - 0.1));
   };
@@ -39,7 +36,7 @@ export const CropsAndChickensDonations: React.FC = () => {
   const donate = () => {
     send("DONATE", {
       donation,
-      to: CHRISTMAS_EVENT_DONATION_ADDRESS,
+      to: CONFIG.CROPS_AND_CHICKENS_DONATION,
     });
   };
 
@@ -54,7 +51,7 @@ export const CropsAndChickensDonations: React.FC = () => {
             {t("crops-and-chickens.donationDescription")}
           </p>
 
-          <div className="flex flex-wrap mt-1 mb-2 gap-1 justify-center">
+          <div className="flex flex-wrap mt-1 mb-4 gap-x-3 gap-y-1 justify-center">
             {CONTRIBUTORS.map((name) => (
               <Label
                 key={name}
@@ -67,15 +64,12 @@ export const CropsAndChickensDonations: React.FC = () => {
           </div>
           <div className="flex flex-col items-center">
             <div className="flex">
-              <Button
-                className="cursor-pointer w-12"
-                onClick={decrementDonation}
-              >
+              <Button className="w-12" onClick={decrementDonation}>
                 {"-"}
               </Button>
               <input
                 type="number"
-                className="text-shadow shadow-inner shadow-black bg-brown-200 w-24 p-1 mx-2 text-center"
+                className="text-shadow shadow-inner shadow-black bg-brown-200 w-24 mx-2 text-center"
                 step="0.1"
                 min={0.1}
                 value={donation}
@@ -85,10 +79,7 @@ export const CropsAndChickensDonations: React.FC = () => {
                   if (donation < 0.1) setDonation(0.1);
                 }}
               />
-              <Button
-                className="cursor-pointer w-12"
-                onClick={incrementDonation}
-              >
+              <Button className="w-12" onClick={incrementDonation}>
                 {"+"}
               </Button>
             </div>

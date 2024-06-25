@@ -69,6 +69,9 @@ const GREEDY_GOBLIN_DONATION = import.meta.env
 const CHICKEN_FIGHT_DONATION = import.meta.env
   .VITE_CHICKEN_FIGHT_DONATION as string;
 
+const CROPS_AND_CHICKENS_DONATION = import.meta.env
+  .CROPS_AND_CHICKENS_DONATION as string;
+
 const GAME_ANALYTICS_APP_ID = import.meta.env
   .VITE_GAME_ANALYTICS_APP_ID as string;
 const GAME_ANALYTICS_PUB_KEY = import.meta.env
@@ -130,6 +133,9 @@ export const CONFIG = {
 
   GREEDY_GOBLIN_DONATION,
   CHICKEN_FIGHT_DONATION,
+
+  CROPS_AND_CHICKENS_DONATION,
+
   PROTECTED_IMAGE_URL,
   ROOM_URL,
   POKO_API_KEY,

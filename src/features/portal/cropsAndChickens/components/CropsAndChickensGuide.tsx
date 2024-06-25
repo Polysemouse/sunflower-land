@@ -15,28 +15,28 @@ export const CropsAndChickensGuide: React.FC = () => {
     <div className="flex flex-col gap-2 mt-1">
       <Label type="default">{t("crops-and-chickens.instructions")}</Label>
       <div>
-        <div className="flex items-center mb-3">
+        <div className="flex items-center mb-3 mx-2">
           <SquareIcon icon={ITEM_DETAILS["Sunflower"].image} width={7} />
           <p className="text-xs ml-3 flex-1">
             {t("crops-and-chickens.instructions1")}
           </p>
         </div>
 
-        <div className="flex items-center mb-3">
+        <div className="flex items-center mb-3 mx-2">
           <SquareIcon icon={SUNNYSIDE.icons.basket} width={7} />
           <p className="text-xs ml-3 flex-1">
             {t("crops-and-chickens.instructions2")}
           </p>
         </div>
 
-        <div className="flex items-center mb-3">
+        <div className="flex items-center mb-3 mx-2">
           <SquareIcon icon={ITEM_DETAILS["Chicken"].image} width={7} />
           <p className="text-xs ml-3 flex-1">
             {t("crops-and-chickens.instructions3")}
           </p>
         </div>
 
-        <div className="flex items-center mb-3">
+        <div className="flex items-center mb-3 mx-2">
           <SquareIcon icon={SUNNYSIDE.icons.stopwatch} width={7} />
           <p className="text-xs ml-3 flex-1">
             {t("crops-and-chickens.instructions4")}
