@@ -41,13 +41,21 @@ void main() {
   if (isRightHalf) {
     // basic corrections
     vec3 nightColor = gamma(texColor.rgb, 0.7);
-    nightColor = saturation(nightColor, 0.35);
-    nightColor = exposure(nightColor, 2.2);
-    nightColor = contrast(nightColor, 1.6);
+    nightColor = saturation(nightColor, 0.45);
+    nightColor = exposure(nightColor, 2.5);
+    nightColor = contrast(nightColor, 1.5);
 
     // apply a bluish tint for moonlight effect
-    vec3 moonlightTint = vec3(0.25, 0.25, 0.7);
-    nightColor = nightColor * moonlightTint;
+    vec3 moonlightTint = vec3(0.25, 0.25, 0.6);
+    nightColor *= moonlightTint;
+
+    // brightness-based tinting
+    float brightness = dot(nightColor, vec3(0.2126, 0.7152, 0.0722));
+    vec3 yellowTint = vec3(1.0, 1.0, 0.2);
+    vec3 blueTint = vec3(0.2, 0.2, 1.0);
+    float tintStrength = 0.15;
+    vec3 finalTint = mix(blueTint, yellowTint, brightness);
+    nightColor = mix(nightColor, finalTint, tintStrength);
 
     // ensure color values are within valid range
     nightColor = clamp(nightColor, 0.0, 1.0);

@@ -139,7 +139,7 @@ export const CropsAndChickensHud: React.FC = () => {
         </div>
 
         <div className="flex flex-col absolute space-y-1 items-end z-50 right-3 top-3 !text-[28px] text-stroke">
-          <div className="flex items-center space-x-2 relative">
+          <div className="flex items-center space-x-1 relative">
             <div className="h-9 w-full bg-black opacity-25 absolute sfl-hud-backdrop -z-10" />
             <span className="balance-text">
               {setPrecision(sflBalance).toString()}
