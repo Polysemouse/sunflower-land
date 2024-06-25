@@ -354,6 +354,7 @@ const generalTerms: Record<GeneralTerms, string> = {
   retry: "Retry",
   reward: "Reward",
   "reward.discovered": "Reward Discovered",
+  "reward.whatsNew": "What's new",
   save: "Save",
   saving: "Saving",
   searching: "Searching",
