@@ -8,6 +8,7 @@ import chores from "assets/icons/chores.webp";
 import { CropsAndChickensMission } from "./CropsAndChickensMission";
 import { CropsAndChickensInstructions } from "./CropsAndChickensInstructions";
 import { CropsAndChickensLegend } from "./CropsAndChickensLegend";
+import { CropsAndChickensDonations } from "./CropsAndChickensDonations";
 
 interface Props {
   mode: "introduction" | "success" | "failed";
@@ -41,6 +42,10 @@ export const CropsAndChickensRulesPanel: React.FC<Props> = ({
           icon: SUNNYSIDE.icons.expression_confused,
           name: t("crops-and-chickens.legend"),
         },
+        {
+          icon: SUNNYSIDE.icons.heart,
+          name: t("donate"),
+        },
       ]}
     >
       <>
@@ -55,6 +60,7 @@ export const CropsAndChickensRulesPanel: React.FC<Props> = ({
         )}
         {tab === 1 && <CropsAndChickensInstructions />}
         {tab === 2 && <CropsAndChickensLegend />}
+        {tab === 3 && <CropsAndChickensDonations />}
       </>
     </CloseButtonPanel>
   );

@@ -1406,6 +1406,8 @@ const cropsAndChickens: Record<CropsAndChickensMessages, string> = {
   "crops-and-chickens.mission": ENGLISH_TERMS["crops-and-chickens.mission"],
   "crops-and-chickens.rules": ENGLISH_TERMS["crops-and-chickens.rules"],
   "crops-and-chickens.legend": ENGLISH_TERMS["crops-and-chickens.legend"],
+  "crops-and-chickens.donationDescription":
+    ENGLISH_TERMS["crops-and-chickens.donationDescription"],
   "crops-and-chickens.cropDescription":
     ENGLISH_TERMS["crops-and-chickens.legend"],
   "crops-and-chickens.depositAreaDescription":

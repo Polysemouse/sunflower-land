@@ -1061,6 +1061,7 @@ export type CropsAndChickensMessages =
   | "crops-and-chickens.mission"
   | "crops-and-chickens.rules"
   | "crops-and-chickens.legend"
+  | "crops-and-chickens.donationDescription"
   | "crops-and-chickens.cropDescription"
   | "crops-and-chickens.depositAreaDescription"
   | "crops-and-chickens.normalChickenDescription"
