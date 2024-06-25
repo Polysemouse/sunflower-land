@@ -16,20 +16,20 @@ export const CropsAndChickensAttempts: React.FC<Props> = ({ attemptsLeft }) => {
     );
   }
 
-  if (attemptsLeft > 1) {
+  if (attemptsLeft > 0 && attemptsLeft !== 1) {
     return (
       <Label type="vibrant">
-        {t("crops-and-chickens.attemptsRemainingSingular", {
+        {t("crops-and-chickens.attemptsRemainingPlural", {
           attempts: attemptsLeft,
         })}
       </Label>
     );
   }
 
-  if (attemptsLeft > 0) {
+  if (attemptsLeft === 1) {
     return (
       <Label type="vibrant">
-        {t("crops-and-chickens.attemptsRemainingPlural", {
+        {t("crops-and-chickens.attemptsRemainingSingular", {
           attempts: attemptsLeft,
         })}
       </Label>
