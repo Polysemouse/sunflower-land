@@ -1509,7 +1509,7 @@ const cropsAndChickens: Record<CropsAndChickensMessages, string> = {
     "Would you like to buy more attempts?",
   "crops-and-chickens.buyAttempts": "Buy {{attempts}} attempts ({{sfl}} SFL)",
   "crops-and-chickens.unlockAttempts":
-    "Unlock unlimited attempts for 7 days ({{sfl}} SFL)",
+    "Unlock unlimited attempts for this week ({{sfl}} SFL)",
   "crops-and-chickens.missionComplete": "Mission completed",
   "crops-and-chickens.missionFailed": "Mission failed",
   "crops-and-chickens.attemptsRemainingPlural": "{{attempts}} attempts left",
