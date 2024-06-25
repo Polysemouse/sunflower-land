@@ -1526,12 +1526,14 @@ const cropMachine: Record<CropMachine, string> = {
 
 const cropsAndChickens: Record<CropsAndChickensMessages, string> = {
   "crops-and-chickens.mission": ENGLISH_TERMS["crops-and-chickens.mission"],
-  "crops-and-chickens.rules": ENGLISH_TERMS["crops-and-chickens.rules"],
+  "crops-and-chickens.guide": ENGLISH_TERMS["crops-and-chickens.guide"],
+  "crops-and-chickens.instructions":
+    ENGLISH_TERMS["crops-and-chickens.instructions"],
   "crops-and-chickens.legend": ENGLISH_TERMS["crops-and-chickens.legend"],
   "crops-and-chickens.donationDescription":
     ENGLISH_TERMS["crops-and-chickens.donationDescription"],
   "crops-and-chickens.cropDescription":
-    ENGLISH_TERMS["crops-and-chickens.legend"],
+    ENGLISH_TERMS["crops-and-chickens.cropDescription"],
   "crops-and-chickens.depositAreaDescription":
     ENGLISH_TERMS["crops-and-chickens.depositAreaDescription"],
   "crops-and-chickens.normalChickenDescription":
@@ -1571,10 +1573,14 @@ const cropsAndChickens: Record<CropsAndChickensMessages, string> = {
     ENGLISH_TERMS["crops-and-chickens.attemptsRemainingPlural"],
   "crops-and-chickens.attemptsRemainingSingular":
     ENGLISH_TERMS["crops-and-chickens.attemptsRemainingSingular"],
-  "crops-and-chickens.rules1": ENGLISH_TERMS["crops-and-chickens.rules1"],
-  "crops-and-chickens.rules2": ENGLISH_TERMS["crops-and-chickens.rules2"],
-  "crops-and-chickens.rules3": ENGLISH_TERMS["crops-and-chickens.rules3"],
-  "crops-and-chickens.rules4": ENGLISH_TERMS["crops-and-chickens.rules4"],
+  "crops-and-chickens.instructions1":
+    ENGLISH_TERMS["crops-and-chickens.instructions1"],
+  "crops-and-chickens.instructions2":
+    ENGLISH_TERMS["crops-and-chickens.instructions2"],
+  "crops-and-chickens.instructions3":
+    ENGLISH_TERMS["crops-and-chickens.instructions3"],
+  "crops-and-chickens.instructions4":
+    ENGLISH_TERMS["crops-and-chickens.instructions4"],
   "crops-and-chickens.targetScore":
     ENGLISH_TERMS["crops-and-chickens.targetScore"],
   "crops-and-chickens.score": ENGLISH_TERMS["crops-and-chickens.score"],

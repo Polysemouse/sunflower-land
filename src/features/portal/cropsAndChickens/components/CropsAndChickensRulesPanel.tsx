@@ -6,8 +6,7 @@ import { CloseButtonPanel } from "features/game/components/CloseablePanel";
 import { NPC_WEARABLES } from "lib/npcs";
 import chores from "assets/icons/chores.webp";
 import { CropsAndChickensMission } from "./CropsAndChickensMission";
-import { CropsAndChickensInstructions } from "./CropsAndChickensInstructions";
-import { CropsAndChickensLegend } from "./CropsAndChickensLegend";
+import { CropsAndChickensGuide } from "./CropsAndChickensGuide";
 import { CropsAndChickensDonations } from "./CropsAndChickensDonations";
 
 interface Props {
@@ -37,11 +36,7 @@ export const CropsAndChickensRulesPanel: React.FC<Props> = ({
           icon: SUNNYSIDE.icons.plant,
           name: t("crops-and-chickens.mission"),
         },
-        { icon: chores, name: t("crops-and-chickens.rules") },
-        {
-          icon: SUNNYSIDE.icons.expression_confused,
-          name: t("crops-and-chickens.legend"),
-        },
+        { icon: chores, name: t("crops-and-chickens.guide") },
         {
           icon: SUNNYSIDE.icons.heart,
           name: t("donate"),
@@ -58,9 +53,8 @@ export const CropsAndChickensRulesPanel: React.FC<Props> = ({
             onConfirm={onConfirm}
           />
         )}
-        {tab === 1 && <CropsAndChickensInstructions />}
-        {tab === 2 && <CropsAndChickensLegend />}
-        {tab === 3 && <CropsAndChickensDonations />}
+        {tab === 1 && <CropsAndChickensGuide />}
+        {tab === 2 && <CropsAndChickensDonations />}
       </>
     </CloseButtonPanel>
   );

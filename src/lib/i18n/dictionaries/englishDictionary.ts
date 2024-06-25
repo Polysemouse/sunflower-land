@@ -1483,7 +1483,8 @@ const cropMachine: Record<CropMachine, string> = {
 
 const cropsAndChickens: Record<CropsAndChickensMessages, string> = {
   "crops-and-chickens.mission": "Mission",
-  "crops-and-chickens.rules": "Rules",
+  "crops-and-chickens.guide": "Guide",
+  "crops-and-chickens.instructions": "Instructions",
   "crops-and-chickens.legend": "Legend",
   "crops-and-chickens.donationDescription":
     "This minigame was created for the community. Donations are greatly appreciated!",
@@ -1514,13 +1515,14 @@ const cropsAndChickens: Record<CropsAndChickensMessages, string> = {
   "crops-and-chickens.missionFailed": "Mission failed",
   "crops-and-chickens.attemptsRemainingPlural": "{{attempts}} attempts left",
   "crops-and-chickens.attemptsRemainingSingular": "{{attempts}} attempt left",
-  "crops-and-chickens.rules1":
+  "crops-and-chickens.instructions1":
     "Explore the field for valuable crops, with better rewards the further you go.",
-  "crops-and-chickens.rules2":
+  "crops-and-chickens.instructions2":
     "Deposit your crops to secure earnings. The longer you wait, the riskier it gets.",
-  "crops-and-chickens.rules3":
+  "crops-and-chickens.instructions3":
     "Collision with chickens means losing all your unbanked crops.",
-  "crops-and-chickens.rules4": "Are you ready to take on the daily challenges?",
+  "crops-and-chickens.instructions4":
+    "Are you ready to take on the daily challenges?",
   "crops-and-chickens.targetScore": "Target Score: {{target}}",
   "crops-and-chickens.score": "Score: {{score}}",
   "crops-and-chickens.highscore": "Highscore: {{allTimeHighscore}}",
