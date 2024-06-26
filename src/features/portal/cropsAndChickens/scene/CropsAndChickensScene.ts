@@ -11,7 +11,6 @@ import {
   BOARD_WIDTH,
   CHICKEN_SPAWN_CONFIGURATIONS,
   CHICKEN_SPRITE_PROPERTIES,
-  CROP_DEPOSIT_AREA_DIMENSIONS,
   CROP_SPAWN_CONFIGURATIONS,
   GAME_SECONDS,
   PLAYER_DEATH_SPRITE_PROPERTIES,
@@ -27,6 +26,7 @@ import { NormalChickenContainer } from "./containers/NormalChickenContainer";
 import { HunterChickenContainer } from "./containers/HunterChickenContainer";
 import { DarkModePipeline } from "../shaders/darkModeShader";
 import { getDarkModeSetting } from "lib/utils/hooks/useIsDarkMode";
+import { StorageAreaContainer } from "./containers/StorageAreaContainer";
 
 export class CropsAndChickensScene extends BaseScene {
   sceneId: SceneId = "crops_and_chickens";
@@ -40,7 +40,7 @@ export class CropsAndChickensScene extends BaseScene {
   chickens: NormalChickenContainer[] = [];
   hunterChicken?: HunterChickenContainer;
   collectedCropIndexes: number[] = [];
-  storageArea?: Phaser.GameObjects.Sprite;
+  storageArea?: StorageAreaContainer;
 
   cropDepositArrow?: Phaser.GameObjects.Sprite;
 
@@ -231,20 +231,21 @@ export class CropsAndChickensScene extends BaseScene {
     super.create();
 
     this.initializeStates();
-
     this.initializeShaders();
 
-    this.createStorageArea();
-
     this.createAllCrops();
-
     this.createAllNormalChickens();
+    this.storageArea = new StorageAreaContainer({
+      scene: this,
+      player: this.currentPlayer,
+      depositCrops: () => this.depositCrops(),
+    });
     this.hunterChicken = new HunterChickenContainer({
       scene: this,
       player: this.currentPlayer,
       isChickenFrozen: () =>
         this.isPlayerDead || this.isPlayerInDepositArea || !this.isGamePlaying,
-      killPlayer: this.killPlayer,
+      killPlayer: () => this.killPlayer(),
     });
 
     // reload scene when player hit retry
@@ -393,38 +394,6 @@ export class CropsAndChickensScene extends BaseScene {
 
     // rotate the indicator to point towards the object
     this.cropDepositArrow?.setRotation(angle);
-  }
-
-  private createStorageArea() {
-    this.storageArea = this.add.sprite(
-      CROP_DEPOSIT_AREA_DIMENSIONS.x,
-      CROP_DEPOSIT_AREA_DIMENSIONS.y,
-      ""
-    );
-    this.physics.add.existing(this.storageArea);
-    this.storageArea.setVisible(false);
-
-    if (!this.storageArea.body) return;
-    if (!this.currentPlayer) return;
-
-    (this.storageArea.body as Physics.Arcade.Body)
-      .setSize(
-        CROP_DEPOSIT_AREA_DIMENSIONS.width,
-        CROP_DEPOSIT_AREA_DIMENSIONS.height
-      )
-      .setOffset(0, 0)
-      .setImmovable(true)
-      .setCollideWorldBounds(false);
-
-    this.physics.add.overlap(
-      this.currentPlayer,
-      this.storageArea,
-      () => {
-        this.depositCrops();
-      },
-      undefined,
-      this
-    );
   }
 
   /**

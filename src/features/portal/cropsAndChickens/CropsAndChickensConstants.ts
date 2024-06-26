@@ -26,8 +26,8 @@ export const DEPOSIT_INDICATOR_PLAYER_DISTANCE = 50;
 export const TOTAL_CROP_TYPES = 11;
 
 export const CROP_DEPOSIT_AREA_DIMENSIONS = {
-  x: 52 * SQUARE_WIDTH,
-  y: 52 * SQUARE_WIDTH,
+  x: 51 * SQUARE_WIDTH,
+  y: 51 * SQUARE_WIDTH,
   width: 5 * SQUARE_WIDTH,
   height: 5 * SQUARE_WIDTH,
 };
