@@ -4,7 +4,6 @@ import {
   CHICKEN_SPRITE_PROPERTIES,
   HUNTER_CHICKEN_INITIAL_DISTANCE,
   HUNTER_CHICKEN_SPEED_MULTIPLIER,
-  PLAYER_COORDINATES_OFFSET,
   SPRITE_FRAME_RATE,
 } from "../../CropsAndChickensConstants";
 import { Physics } from "phaser";
@@ -48,16 +47,20 @@ export class HunterChickenContainer extends Phaser.GameObjects.Container {
     const spriteName = `chicken_hunter_${direction}`;
     const spriteKey = `chicken_hunter_${direction}_anim`;
 
+    // offset when calculating angles and distances to player
+    const playerCoordinatesOffset = {
+      x: -5,
+      y: 0,
+    };
+
     const playerCoordinates = player
       ? {
-          x: player.x + PLAYER_COORDINATES_OFFSET.x,
-          y: player.y + PLAYER_COORDINATES_OFFSET.y,
+          x: player.x + playerCoordinatesOffset.x,
+          y: player.y + playerCoordinatesOffset.y,
         }
       : {
-          x:
-            SPAWNS().crops_and_chickens.default.x + PLAYER_COORDINATES_OFFSET.x,
-          y:
-            SPAWNS().crops_and_chickens.default.y + PLAYER_COORDINATES_OFFSET.y,
+          x: SPAWNS().crops_and_chickens.default.x + playerCoordinatesOffset.x,
+          y: SPAWNS().crops_and_chickens.default.y + playerCoordinatesOffset.y,
         };
     let angle = Phaser.Math.Angle.Between(
       this.x,
@@ -66,7 +69,8 @@ export class HunterChickenContainer extends Phaser.GameObjects.Container {
       playerCoordinates.y
     );
 
-    const chicken = scene.add.sprite(1, 0, spriteName);
+    // add chicken sprite with offset
+    const chicken = scene.add.sprite(5.5, 5, spriteName);
 
     const hunterChickenForwardMin =
       CHICKEN_SPEEDS.forwardMin * HUNTER_CHICKEN_SPEED_MULTIPLIER;
@@ -91,8 +95,8 @@ export class HunterChickenContainer extends Phaser.GameObjects.Container {
         chicken.setTexture(`chicken_hunter_${direction}`, frame.index - 1);
 
         const distance = Phaser.Math.Distance.Between(
-          player.x + PLAYER_COORDINATES_OFFSET.x,
-          player.y + PLAYER_COORDINATES_OFFSET.y,
+          player.x + playerCoordinatesOffset.x,
+          player.y + playerCoordinatesOffset.y,
           this.x,
           this.y
         );
@@ -120,8 +124,8 @@ export class HunterChickenContainer extends Phaser.GameObjects.Container {
           angle = Phaser.Math.Angle.Between(
             this.x,
             this.y,
-            player.x + PLAYER_COORDINATES_OFFSET.x,
-            player.y + PLAYER_COORDINATES_OFFSET.y
+            player.x + playerCoordinatesOffset.x,
+            player.y + playerCoordinatesOffset.y
           );
 
           if (angle >= -Math.PI / 4 && angle <= Math.PI / 4) {
@@ -155,7 +159,7 @@ export class HunterChickenContainer extends Phaser.GameObjects.Container {
     if (!!this.body && !!player) {
       (this.body as Physics.Arcade.Body)
         .setSize(11, 8)
-        .setOffset(-4.5, -3)
+        .setOffset(0, 2) // set offset to ensure correct rendering depth
         .setImmovable(true)
         .setCollideWorldBounds(false);
 

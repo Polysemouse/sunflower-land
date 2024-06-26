@@ -783,7 +783,7 @@ export abstract class BaseScene extends Phaser.Scene {
       this.currentPlayer.idle();
     }
 
-    this.currentPlayer.setDepth(this.currentPlayer.y + 5);
+    this.currentPlayer.setDepth(this.currentPlayer.y);
 
     // this.cameras.main.setScroll(this.currentPlayer.x, this.currentPlayer.y);
   }

@@ -25,11 +25,6 @@ export const DEPOSIT_INDICATOR_PLAYER_DISTANCE = 50;
 
 export const TOTAL_CROP_TYPES = 11;
 
-export const PLAYER_COORDINATES_OFFSET = {
-  x: 0.5,
-  y: 5,
-};
-
 export const CROP_DEPOSIT_AREA_DIMENSIONS = {
   x: 51 * SQUARE_WIDTH,
   y: 51 * SQUARE_WIDTH,

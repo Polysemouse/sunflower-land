@@ -17,7 +17,7 @@ interface Props {
 
 export class NormalChickenContainer extends Phaser.GameObjects.Container {
   constructor({ x, y, direction, scene, player, killPlayer }: Props) {
-    super(scene, x, y);
+    super(scene, x - 4.5, y - 5); // with position soffset
     this.scene = scene;
 
     const spriteName = `chicken_normal_${direction}`;
@@ -35,7 +35,8 @@ export class NormalChickenContainer extends Phaser.GameObjects.Container {
       });
     }
 
-    const chicken = scene.add.sprite(1, 0, spriteName);
+    // add chicken sprite with offset
+    const chicken = scene.add.sprite(5.5, 5, spriteName);
 
     const startFrame = Phaser.Math.RND.integerInRange(
       0,
@@ -111,7 +112,7 @@ export class NormalChickenContainer extends Phaser.GameObjects.Container {
     if (!!this.body && !!player) {
       (this.body as Physics.Arcade.Body)
         .setSize(11, 8)
-        .setOffset(-4.5, -3)
+        .setOffset(0, 2) // set offset to ensure correct rendering depth
         .setImmovable(true)
         .setCollideWorldBounds(false);
 

@@ -16,9 +16,9 @@ export class CropContainer extends Phaser.GameObjects.Container {
     super(scene, 8, 1); // crop sprites offset
     this.scene = scene;
 
-    // wrap crop positions around the board
-    x = Phaser.Math.Wrap(x, BOARD_OFFSET, BOARD_OFFSET + BOARD_WIDTH);
-    y = Phaser.Math.Wrap(y, BOARD_OFFSET, BOARD_OFFSET + BOARD_WIDTH);
+    // wrap crop positions around the board, with sprite offset
+    x = Phaser.Math.Wrap(x + 8, BOARD_OFFSET, BOARD_OFFSET + BOARD_WIDTH);
+    y = Phaser.Math.Wrap(y + 1, BOARD_OFFSET, BOARD_OFFSET + BOARD_WIDTH);
 
     // create crop sprites
     const spriteName = "crop_planted";
@@ -54,12 +54,9 @@ export class CropContainer extends Phaser.GameObjects.Container {
         undefined,
         this
       );
+
+      // do not add the sprite to the container and add the container to the scene
+      // or else it will mess up the rendering depth
     });
-
-    // add the sprite to the container
-    this.add(crops);
-
-    // add the container to the scene
-    scene.add.existing(this);
   }
 }
