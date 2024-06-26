@@ -44,33 +44,6 @@ export class CropsAndChickensScene extends BaseScene {
 
   cropDepositArrow?: Phaser.GameObjects.Sprite;
 
-  initializeStates = () => {
-    this.isTimeTickingSoundPlayed = false;
-    this.isPlayerDead = false;
-    this.chickens = [];
-    this.collectedCropIndexes = [];
-
-    this.walkingSpeed = 0;
-    this.currentPlayer?.setVisible(true);
-
-    this.time.addEvent({
-      delay: 500,
-      callback: () => {
-        if (this.isRulesRead) {
-          this.walkingSpeed = PLAYER_WALKING_SPEED;
-        }
-      },
-      callbackScope: this,
-    });
-  };
-
-  initializeShaders = () => {
-    (
-      this.renderer as Phaser.Renderer.WebGL.WebGLRenderer
-    ).pipelines.addPostPipeline("DarkModePipeline", DarkModePipeline);
-    this.cameras.main.setPostPipeline(DarkModePipeline);
-  };
-
   constructor() {
     super({
       name: "crops_and_chickens",
@@ -79,11 +52,17 @@ export class CropsAndChickensScene extends BaseScene {
     });
   }
 
-  public get portalService() {
+  /**
+   * The portal service.
+   */
+  private get portalService() {
     return this.registry.get("portalService") as MachineInterpreter | undefined;
   }
 
-  get secondsLeft() {
+  /**
+   * The number of seconds left for the game.
+   */
+  private get secondsLeft() {
     const endAt = this.portalService?.state.context.endAt;
     const secondsLeft = !endAt
       ? GAME_SECONDS
@@ -91,29 +70,44 @@ export class CropsAndChickensScene extends BaseScene {
     return secondsLeft;
   }
 
-  get isRulesRead() {
+  /**
+   * Whether the player has read the rules.
+   */
+  private get isRulesRead() {
     return (
       this.portalService?.state.matches("ready") === true ||
       this.portalService?.state.matches("playing") === true
     );
   }
 
-  get isGamePlaying() {
+  /**
+   * Whether the game is in the playing state.
+   */
+  private get isGamePlaying() {
     return this.portalService?.state.matches("playing") === true;
   }
 
+  /**
+   * Whether the player is in the deposit area.
+   */
+  private get isPlayerInDepositArea() {
+    if (!this.currentPlayer || !this.storageArea) return false;
+    return this.physics.overlap(this.storageArea, this.currentPlayer);
+  }
+
+  /**
+   * Called when the scene is preloaded.
+   */
   preload() {
     super.preload();
 
-    // spritesheets
-
-    // player death
+    // player death spritesheets
     this.load.spritesheet("player_death", "world/player_death.png", {
       frameWidth: PLAYER_DEATH_SPRITE_PROPERTIES.frameWidth,
       frameHeight: PLAYER_DEATH_SPRITE_PROPERTIES.frameHeight,
     });
 
-    // normal chicken
+    // normal chicken spritesheets
     this.load.spritesheet(
       "chicken_normal_left",
       "world/chicken_normal_left_movements.png",
@@ -147,7 +141,7 @@ export class CropsAndChickensScene extends BaseScene {
       }
     );
 
-    // hunter chicken
+    // hunter chicken spritesheets
     this.load.spritesheet(
       "chicken_hunter_left",
       "world/chicken_hunter_left_movements.png",
@@ -181,7 +175,7 @@ export class CropsAndChickensScene extends BaseScene {
       }
     );
 
-    // crops
+    // crops spritesheets
     this.load.spritesheet("crop_planted", "world/crops_planted.png", {
       frameWidth: 16,
       frameHeight: 20,
@@ -207,7 +201,7 @@ export class CropsAndChickensScene extends BaseScene {
       nature1.play({ loop: true, volume: 0.01 });
     }
 
-    // sound Effects
+    // sound effects
     this.load.audio("crop_deposit", "world/crop_deposit.mp3");
     this.load.audio("crop_deposit_pop", "world/crop_deposit_pop.mp3");
     this.load.audio("harvest", "world/harvest.mp3");
@@ -223,6 +217,9 @@ export class CropsAndChickensScene extends BaseScene {
     });
   }
 
+  /**
+   * Called when the scene is created.
+   */
   async create() {
     this.map = this.make.tilemap({
       key: "main-map",
@@ -235,6 +232,7 @@ export class CropsAndChickensScene extends BaseScene {
 
     this.createAllCrops();
     this.createAllNormalChickens();
+
     this.storageArea = new StorageAreaContainer({
       scene: this,
       player: this.currentPlayer,
@@ -280,15 +278,19 @@ export class CropsAndChickensScene extends BaseScene {
     });
   }
 
+  /**
+   * Called every time there is a frame update.
+   */
   update() {
     // set joystick state in machine
     this.portalService?.send("SET_JOYSTICK_ACTIVE", {
       isJoystickActive: !!this.joystick?.force,
     });
 
-    if (!this.currentPlayer || !this.currentPlayer.body) {
-      return;
-    }
+    // toggle dark mode
+    (
+      this.cameras.main.getPostPipeline("DarkModePipeline") as DarkModePipeline
+    ).isDarkMode = getDarkModeSetting();
 
     if (
       !this.isTimeTickingSoundPlayed &&
@@ -308,6 +310,10 @@ export class CropsAndChickensScene extends BaseScene {
     // start game if player decides to move
     if (!this.isGamePlaying && this.isMoving) {
       this.portalService?.send("START");
+    }
+
+    if (!this.currentPlayer || !this.currentPlayer.body) {
+      return;
     }
 
     // warp player
@@ -363,13 +369,41 @@ export class CropsAndChickensScene extends BaseScene {
       this.cropDepositArrow?.setVisible(false);
     }
 
-    // toggle dark mode
-    (
-      this.cameras.main.getPostPipeline("DarkModePipeline") as DarkModePipeline
-    ).isDarkMode = getDarkModeSetting();
-
     super.update();
   }
+
+  /**
+   * Initializes the game state.
+   */
+  private initializeStates = () => {
+    this.isTimeTickingSoundPlayed = false;
+    this.isPlayerDead = false;
+    this.chickens = [];
+    this.collectedCropIndexes = [];
+
+    this.walkingSpeed = 0;
+    this.currentPlayer?.setVisible(true);
+
+    this.time.addEvent({
+      delay: 500,
+      callback: () => {
+        if (this.isRulesRead) {
+          this.walkingSpeed = PLAYER_WALKING_SPEED;
+        }
+      },
+      callbackScope: this,
+    });
+  };
+
+  /**
+   * Initializes the camera shader.
+   */
+  private initializeShaders = () => {
+    (
+      this.renderer as Phaser.Renderer.WebGL.WebGLRenderer
+    ).pipelines.addPostPipeline("DarkModePipeline", DarkModePipeline);
+    this.cameras.main.setPostPipeline(DarkModePipeline);
+  };
 
   /**
    * Moves the crop deposit arrow indicator.
@@ -463,16 +497,10 @@ export class CropsAndChickensScene extends BaseScene {
     );
   }
 
-  private get isPlayerInDepositArea() {
-    if (!this.currentPlayer || !this.storageArea) return false;
-
-    return this.physics.overlap(this.storageArea, this.currentPlayer);
-  }
-
   /**
-   * Creates chickens for a given direction.
-   * @param direction The chicken direction.
-   * @returns All normal chickens for that particular direction.
+   * Creates normal chickens for a given direction.
+   * @param direction The direction.
+   * @returns All normal chickens for a given direction.
    */
   private createNormalChickens = (
     direction: "left" | "right" | "up" | "down"
@@ -497,14 +525,14 @@ export class CropsAndChickensScene extends BaseScene {
             direction: direction,
             scene: this,
             player: this.currentPlayer,
-            killPlayer: this.killPlayer,
+            killPlayer: () => this.killPlayer(),
           })
       )
     );
   };
 
   /**
-   * Creates all the normal chickens for the map.
+   * Creates all normal chickens in the game.
    * @returns All normal chickens in the game.
    */
   private createAllNormalChickens = () => {
@@ -521,21 +549,135 @@ export class CropsAndChickensScene extends BaseScene {
     ];
   };
 
-  private depositCrops() {
-    if (this.collectedCropIndexes.length === 0) {
-      return;
-    }
+  /**
+   * Animates depositing crops.
+   */
+  private animateDepositingCrops = () => {
+    // skip function if player not found
+    if (!this.currentPlayer) return;
+    const player = this.currentPlayer;
+
+    // animate for each crop in inventory
+    this.collectedCropIndexes.forEach(async (cropIndex, index) => {
+      const cropSprite = this.add.sprite(
+        player.x,
+        player.y,
+        "crop_harvested",
+        cropIndex
+      );
+
+      // adjust the angle and distance for the crop to radiate outward
+      const angle = Phaser.Math.Angle.Random();
+      const distance = Phaser.Math.RND.between(16, 20);
+
+      this.tweens.add({
+        targets: cropSprite,
+        x: player.x + distance * Math.cos(angle),
+        y: player.y + distance * Math.sin(angle),
+        duration: 200,
+        ease: "Quad.easeOut",
+        onUpdate: () => {
+          cropSprite.setDepth(cropSprite.y);
+        },
+        onComplete: (
+          _: Phaser.Tweens.Tween,
+          targets: Phaser.GameObjects.Sprite[]
+        ) => {
+          // fading tween starts when movement tween is complete
+          targets.forEach((cropSprite) => {
+            this.tweens.add({
+              targets: cropSprite,
+              x: DEPOSIT_CHEST_XY,
+              y: DEPOSIT_CHEST_XY,
+              duration: 250,
+              delay: index * 50, // delay each crop animation slightly
+              ease: "Cubic.easeIn",
+              onUpdate: () => {
+                cropSprite.setDepth(cropSprite.y);
+              },
+              onComplete: () => {
+                cropSprite.destroy();
+                const sound = this.sound.add("crop_deposit_pop");
+                sound.play({ volume: 0.1 });
+              },
+            });
+          });
+        },
+      });
+    });
+  };
+
+  /**
+   * Deposits crops.
+   */
+  private depositCrops = () => {
+    // skip function if there are nothing to deposit
+    if (this.collectedCropIndexes.length === 0) return;
 
     // play sound
     const sound = this.sound.add("crop_deposit");
     sound.play({ volume: 0.1 });
 
-    // score and throw all crops out of the inventory
+    // score and remove all crops from inventory
     this.animateDepositingCrops();
     this.collectedCropIndexes = [];
     this.portalService?.send("CROP_DEPOSITED");
-  }
+  };
 
+  /**
+   * Animates dropping crops when player is killed.
+   */
+  private animateDroppingCrops = () => {
+    // skip function if player not found
+    if (!this.currentPlayer) return;
+    const player = this.currentPlayer;
+
+    // animate for each crop in inventory
+    this.collectedCropIndexes.forEach((cropIndex) => {
+      const cropSprite = this.add.sprite(
+        player.x,
+        player.y,
+        "crop_harvested",
+        cropIndex
+      );
+
+      // adjust the angle and distance for the crop to radiate outward
+      const angle = Phaser.Math.Angle.Random();
+      const distance = Phaser.Math.RND.between(30, 50);
+
+      this.tweens.add({
+        targets: cropSprite,
+        x: player.x + distance * Math.cos(angle),
+        y: player.y + distance * Math.sin(angle),
+        duration: 400,
+        ease: "Quad.easeOut",
+        onUpdate: () => {
+          cropSprite.setDepth(cropSprite.y);
+        },
+        onComplete: (
+          _: Phaser.Tweens.Tween,
+          targets: Phaser.GameObjects.Sprite[]
+        ) => {
+          // fading tween starts when movement tween is complete
+          targets.forEach((cropSprite) => {
+            this.tweens.add({
+              targets: cropSprite,
+              alpha: 0, // fade out to completely transparent
+              delay: 500,
+              duration: 500, // fade out duration
+              onComplete: () => {
+                cropSprite.destroy(); // destroy sprite after fading out
+              },
+            });
+          });
+        },
+      });
+    });
+  };
+
+  /**
+   * Kills the player then respawns the player.
+   */
   private killPlayer = () => {
     if (!this.currentPlayer || this.isPlayerDead || !this.isGamePlaying) {
       return;
@@ -605,110 +747,10 @@ export class CropsAndChickensScene extends BaseScene {
     });
   };
 
-  private animateDepositingCrops() {
-    if (!this.currentPlayer) {
-      return;
-    }
-    const player = this.currentPlayer;
-
-    this.collectedCropIndexes.forEach(async (cropIndex, index) => {
-      const cropSprite = this.add.sprite(
-        player.x,
-        player.y,
-        "crop_harvested",
-        cropIndex
-      );
-
-      // adjust the angle and distance for the crop to radiate outward
-      const angle = Phaser.Math.Angle.Random();
-      const distance = Phaser.Math.RND.between(16, 20);
-
-      this.tweens.add({
-        targets: cropSprite,
-        x: player.x + distance * Math.cos(angle),
-        y: player.y + distance * Math.sin(angle),
-        duration: 200,
-        ease: "Quad.easeOut",
-        onUpdate: () => {
-          cropSprite.setDepth(cropSprite.y);
-        },
-        onComplete: (
-          _: Phaser.Tweens.Tween,
-          targets: Phaser.GameObjects.Sprite[]
-        ) => {
-          // fading tween starts when movement tween is complete
-          targets.forEach((cropSprite) => {
-            this.tweens.add({
-              targets: cropSprite,
-              x: DEPOSIT_CHEST_XY,
-              y: DEPOSIT_CHEST_XY,
-              duration: 250,
-              delay: index * 50, // delay each crop animation slightly
-              ease: "Cubic.easeIn",
-              onUpdate: () => {
-                cropSprite.setDepth(cropSprite.y);
-              },
-              onComplete: () => {
-                cropSprite.destroy();
-                const sound = this.sound.add("crop_deposit_pop");
-                sound.play({ volume: 0.1 });
-              },
-            });
-          });
-        },
-      });
-    });
-  }
-
-  private animateDroppingCrops() {
-    if (!this.currentPlayer) {
-      return;
-    }
-    const player = this.currentPlayer;
-
-    this.collectedCropIndexes.forEach((cropIndex) => {
-      const cropSprite = this.add.sprite(
-        player.x,
-        player.y,
-        "crop_harvested",
-        cropIndex
-      );
-
-      // adjust the angle and distance for the crop to radiate outward
-      const angle = Phaser.Math.Angle.Random();
-      const distance = Phaser.Math.RND.between(30, 50);
-
-      this.tweens.add({
-        targets: cropSprite,
-        x: player.x + distance * Math.cos(angle),
-        y: player.y + distance * Math.sin(angle),
-        duration: 400,
-        ease: "Quad.easeOut",
-        onUpdate: () => {
-          cropSprite.setDepth(cropSprite.y);
-        },
-        onComplete: (
-          _: Phaser.Tweens.Tween,
-          targets: Phaser.GameObjects.Sprite[]
-        ) => {
-          // fading tween starts when movement tween is complete
-          targets.forEach((cropSprite) => {
-            this.tweens.add({
-              targets: cropSprite,
-              alpha: 0, // fade out to completely transparent
-              delay: 500,
-              duration: 500, // fade out duration
-              onComplete: () => {
-                cropSprite.destroy(); // destroy sprite after fading out
-              },
-            });
-          });
-        },
-      });
-    });
-  }
-
-  private endGame() {
+  /**
+   * Ends the game.
+   */
+  private endGame = () => {
     this.portalService?.send("GAME_OVER");
     this.collectedCropIndexes = [];
 
@@ -719,5 +761,5 @@ export class CropsAndChickensScene extends BaseScene {
     // freeze player
     this.walkingSpeed = 0;
     this.currentPlayer?.setVisible(false);
-  }
+  };
 }
