@@ -12,23 +12,18 @@ import { SPAWNS } from "features/world/lib/spawn";
 interface Props {
   scene: Phaser.Scene;
   player?: BumpkinContainer;
-  getRandomSpawnHunterChickenPosition: () => { x: number; y: number };
   isChickenFrozen: () => boolean;
   killPlayer: () => void;
 }
 
 export class HunterChickenContainer extends Phaser.GameObjects.Container {
-  constructor({
-    scene,
-    player,
-    getRandomSpawnHunterChickenPosition,
-    isChickenFrozen,
-    killPlayer,
-  }: Props) {
-    const initialCoordinates = getRandomSpawnHunterChickenPosition();
+  player?: BumpkinContainer;
 
-    super(scene, initialCoordinates.x, initialCoordinates.y);
+  constructor({ scene, player, isChickenFrozen, killPlayer }: Props) {
+    super(scene, 0, 0);
     this.scene = scene;
+    this.player = player;
+    this.respawn();
 
     ["left", "right", "up", "down"].forEach((animDirection) => {
       const animSpriteName = `chicken_hunter_${animDirection}`;
@@ -65,8 +60,8 @@ export class HunterChickenContainer extends Phaser.GameObjects.Container {
           y: SPAWNS().crops_and_chickens.default.y + playerCoordinatesOffset.y,
         };
     let angle = Phaser.Math.Angle.Between(
-      initialCoordinates.x,
-      initialCoordinates.y,
+      this.x,
+      this.y,
       playerCoordinates.x,
       playerCoordinates.y
     );
@@ -173,4 +168,21 @@ export class HunterChickenContainer extends Phaser.GameObjects.Container {
     // add the container to the scene
     this.scene.add.existing(this);
   }
+
+  /**
+   * Respawns the chicken.
+   */
+  public respawn = () => {
+    const initialAngle = Phaser.Math.Angle.Random();
+    const playerCoordinates = this.player
+      ? { x: this.player.x, y: this.player.y }
+      : SPAWNS().crops_and_chickens.default;
+
+    this.x =
+      playerCoordinates.x +
+      HUNTER_CHICKEN_INITIAL_DISTANCE * Math.cos(initialAngle);
+    this.y =
+      playerCoordinates.y +
+      HUNTER_CHICKEN_INITIAL_DISTANCE * Math.sin(initialAngle);
+  };
 }

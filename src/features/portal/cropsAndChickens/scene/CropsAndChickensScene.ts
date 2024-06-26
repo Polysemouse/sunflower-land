@@ -22,7 +22,6 @@ import {
   DEPOSIT_INDICATOR_PLAYER_DISTANCE,
   SPRITE_FRAME_RATE,
   TIME_TICKING_SECONDS,
-  HUNTER_CHICKEN_INITIAL_DISTANCE,
 } from "../CropsAndChickensConstants";
 import { NormalChickenContainer } from "./containers/NormalChickenContainer";
 import { HunterChickenContainer } from "./containers/HunterChickenContainer";
@@ -63,6 +62,13 @@ export class CropsAndChickensScene extends BaseScene {
       },
       callbackScope: this,
     });
+  };
+
+  initializeShaders = () => {
+    (
+      this.renderer as Phaser.Renderer.WebGL.WebGLRenderer
+    ).pipelines.addPostPipeline("DarkModePipeline", DarkModePipeline);
+    this.cameras.main.setPostPipeline(DarkModePipeline);
   };
 
   constructor() {
@@ -224,12 +230,9 @@ export class CropsAndChickensScene extends BaseScene {
 
     super.create();
 
-    (
-      this.renderer as Phaser.Renderer.WebGL.WebGLRenderer
-    ).pipelines.addPostPipeline("DarkModePipeline", DarkModePipeline);
-    this.cameras.main.setPostPipeline(DarkModePipeline);
-
     this.initializeStates();
+
+    this.initializeShaders();
 
     this.createStorageArea();
 
@@ -239,12 +242,8 @@ export class CropsAndChickensScene extends BaseScene {
     this.hunterChicken = new HunterChickenContainer({
       scene: this,
       player: this.currentPlayer,
-      getRandomSpawnHunterChickenPosition:
-        this.getRandomSpawnHunterChickenPosition,
       isChickenFrozen: () =>
-        this.isPlayerDead ||
-        this.isPlayerInDepositArea() ||
-        !this.isGamePlaying,
+        this.isPlayerDead || this.isPlayerInDepositArea || !this.isGamePlaying,
       killPlayer: this.killPlayer,
     });
 
@@ -495,26 +494,11 @@ export class CropsAndChickensScene extends BaseScene {
     );
   }
 
-  private isPlayerInDepositArea() {
+  private get isPlayerInDepositArea() {
     if (!this.currentPlayer || !this.storageArea) return false;
 
     return this.physics.overlap(this.storageArea, this.currentPlayer);
   }
-
-  private getRandomSpawnHunterChickenPosition = () => {
-    const initialAngle = Phaser.Math.Angle.Random();
-    const playerCoordinates = this.currentPlayer
-      ? { x: this.currentPlayer.x, y: this.currentPlayer.y }
-      : SPAWNS().crops_and_chickens.default;
-    return {
-      x:
-        playerCoordinates.x +
-        HUNTER_CHICKEN_INITIAL_DISTANCE * Math.cos(initialAngle),
-      y:
-        playerCoordinates.y +
-        HUNTER_CHICKEN_INITIAL_DISTANCE * Math.sin(initialAngle),
-    };
-  };
 
   /**
    * Creates chickens for a given direction.
@@ -648,12 +632,7 @@ export class CropsAndChickensScene extends BaseScene {
       }
 
       playerDeath.destroy();
-      if (this.hunterChicken) {
-        const newHunterChickenPosition =
-          this.getRandomSpawnHunterChickenPosition();
-        this.hunterChicken.x = newHunterChickenPosition.x;
-        this.hunterChicken.y = newHunterChickenPosition.y;
-      }
+      this.hunterChicken?.respawn();
     });
   };
 

@@ -44,7 +44,7 @@ vec3 saturation(vec3 color, float amount) {
 }
 
 vec3 lightEffect(vec3 color) {
-  vec3 lightSourceTint = vec3(1.0, 1.0, 0.8);
+  vec3 lightSourceTint = vec3(1.0, 1.0, 0.5);
   vec3 modifiedColor = color * lightSourceTint;
   modifiedColor = saturation(modifiedColor, 1.1);
   modifiedColor = exposure(modifiedColor, 1.2);
@@ -85,7 +85,7 @@ void main() {
     float dist = distance(normalizedCoords, center * aspect);
 
     // set the radius to a fixed percentage of the screen size up to a certain maximum
-    float radius = min(min(screenResolution.x, screenResolution.y) * 0.7, 500.0) / min(screenResolution.x, screenResolution.y);
+    float radius = min(min(screenResolution.x, screenResolution.y) * 0.75, 500.0) / min(screenResolution.x, screenResolution.y);
 
     // smoothstep function to create a smooth transition at the edges of the circle
     float falloff = smoothstep(radius, radius * 0.05, dist);  // adding a small epsilon for smooth falloff

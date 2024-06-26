@@ -38,7 +38,9 @@ export const CropsAndChickensTravel: React.FC = () => {
   return (
     <>
       <div
-        className="fixed z-50 flex flex-col justify-between"
+        className={classNames("fixed z-50 flex flex-col justify-between", {
+          "pointer-events-none": isJoystickActive,
+        })}
         style={{
           left: `${PIXEL_SCALE * 3}px`,
           bottom: `${PIXEL_SCALE * 3}px`,
@@ -49,7 +51,6 @@ export const CropsAndChickensTravel: React.FC = () => {
             "flex relative z-50 justify-center cursor-pointer",
             {
               "hover:img-highlight": !isJoystickActive && !isTouchDevice(),
-              "pointer-events-none": isJoystickActive,
             }
           )}
           style={{
