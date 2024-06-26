@@ -20,7 +20,7 @@ export class StorageAreaContainer extends Phaser.GameObjects.Container {
     this.scene = scene;
     this.player = player;
 
-    this.scene.physics.add.existing(this);
+    scene.physics.add.existing(this);
 
     if (!!this.body && !!player) {
       (this.body as Physics.Arcade.Body)
@@ -32,16 +32,10 @@ export class StorageAreaContainer extends Phaser.GameObjects.Container {
         .setImmovable(true)
         .setCollideWorldBounds(false);
 
-      this.scene.physics.add.overlap(
-        player,
-        this,
-        depositCrops,
-        undefined,
-        this
-      );
+      scene.physics.add.overlap(player, this, depositCrops, undefined, this);
     }
 
     // add the container to the scene
-    this.scene.add.existing(this);
+    scene.add.existing(this);
   }
 }

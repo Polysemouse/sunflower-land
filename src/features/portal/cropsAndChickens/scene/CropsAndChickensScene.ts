@@ -3,7 +3,6 @@ import { SQUARE_WIDTH } from "features/game/lib/constants";
 import { SPAWNS } from "features/world/lib/spawn";
 import { SceneId } from "features/world/mmoMachine";
 import { BaseScene } from "features/world/scenes/BaseScene";
-import { Physics } from "phaser";
 import { MachineInterpreter } from "../lib/cropsAndChickensMachine";
 import {
   DEPOSIT_CHEST_XY,
@@ -27,6 +26,7 @@ import { DarkModePipeline } from "../shaders/darkModeShader";
 import { getDarkModeSetting } from "lib/utils/hooks/useIsDarkMode";
 import { StorageAreaContainer } from "./containers/StorageAreaContainer";
 import { DepositIndicatorContainer } from "./containers/DepositIndicatorContainer";
+import { CropContainer } from "./containers/CropContainer";
 
 export class CropsAndChickensScene extends BaseScene {
   sceneId: SceneId = "crops_and_chickens";
@@ -292,62 +292,63 @@ export class CropsAndChickensScene extends BaseScene {
       this.timeTickingSound.play({ volume: 0.2 });
     }
 
+    // start game if player decides to move
+    if (!this.isGamePlaying && this.isMoving) {
+      this.portalService?.send("START");
+    }
+
+    // end game when time is up
     if (this.isGamePlaying && this.secondsLeft <= 0) {
       this.endGame();
       this.timeTickingSound?.stop();
       this.timeTickingSound = undefined;
     }
 
-    // start game if player decides to move
-    if (!this.isGamePlaying && this.isMoving) {
-      this.portalService?.send("START");
-    }
-
-    if (!this.currentPlayer || !this.currentPlayer.body) {
-      return;
-    }
-
-    // warp player
-    const playerX = Phaser.Math.Wrap(
-      this.currentPlayer.x,
-      PLAYER_MIN_XY,
-      PLAYER_MAX_XY
-    );
-    const playerY = Phaser.Math.Wrap(
-      this.currentPlayer.y,
-      PLAYER_MIN_XY,
-      PLAYER_MAX_XY
-    );
-    this.currentPlayer.x = playerX;
-    this.currentPlayer.y = playerY;
-
-    // warp chickens around player
-    this.chickens.forEach((chicken) => {
-      chicken.x = Phaser.Math.Wrap(
-        chicken.x,
-        playerX - BOARD_WIDTH / 2,
-        playerX + BOARD_WIDTH / 2
+    // warp entities
+    if (this.currentPlayer) {
+      // warp player
+      const playerX = Phaser.Math.Wrap(
+        this.currentPlayer.x,
+        PLAYER_MIN_XY,
+        PLAYER_MAX_XY
       );
-      chicken.y = Phaser.Math.Wrap(
-        chicken.y,
-        playerY - BOARD_WIDTH / 2,
-        playerY + BOARD_WIDTH / 2
+      const playerY = Phaser.Math.Wrap(
+        this.currentPlayer.y,
+        PLAYER_MIN_XY,
+        PLAYER_MAX_XY
       );
-      chicken.setDepth(chicken.y);
-    });
+      this.currentPlayer.x = playerX;
+      this.currentPlayer.y = playerY;
 
-    if (this.hunterChicken) {
-      this.hunterChicken.x = Phaser.Math.Wrap(
-        this.hunterChicken.x,
-        playerX - BOARD_WIDTH / 2,
-        playerX + BOARD_WIDTH / 2
-      );
-      this.hunterChicken.y = Phaser.Math.Wrap(
-        this.hunterChicken.y,
-        playerY - BOARD_WIDTH / 2,
-        playerY + BOARD_WIDTH / 2
-      );
-      this.hunterChicken.setDepth(this.hunterChicken.y);
+      // warp chickens around player
+      this.chickens.forEach((chicken) => {
+        chicken.x = Phaser.Math.Wrap(
+          chicken.x,
+          playerX - BOARD_WIDTH / 2,
+          playerX + BOARD_WIDTH / 2
+        );
+        chicken.y = Phaser.Math.Wrap(
+          chicken.y,
+          playerY - BOARD_WIDTH / 2,
+          playerY + BOARD_WIDTH / 2
+        );
+        chicken.setDepth(chicken.y);
+      });
+
+      // warp hunter chicken around player
+      if (this.hunterChicken) {
+        this.hunterChicken.x = Phaser.Math.Wrap(
+          this.hunterChicken.x,
+          playerX - BOARD_WIDTH / 2,
+          playerX + BOARD_WIDTH / 2
+        );
+        this.hunterChicken.y = Phaser.Math.Wrap(
+          this.hunterChicken.y,
+          playerY - BOARD_WIDTH / 2,
+          playerY + BOARD_WIDTH / 2
+        );
+        this.hunterChicken.setDepth(this.hunterChicken.y);
+      }
     }
 
     this.depositIndicator?.update();
@@ -388,69 +389,19 @@ export class CropsAndChickensScene extends BaseScene {
   };
 
   /**
-   * Creates a crop.
-   * @param x The x coordinate of the crop.
-   * @param y The y coordinate of the crop.
-   * @returns The crop group for that crop.
-   */
-  private createCrop(cropIndex: number, x: number, y: number) {
-    // wrap crop positions around the board
-    x = Phaser.Math.Wrap(x, BOARD_OFFSET, BOARD_OFFSET + BOARD_WIDTH);
-    y = Phaser.Math.Wrap(y, BOARD_OFFSET, BOARD_OFFSET + BOARD_WIDTH);
-
-    const spriteName = "crop_planted";
-
-    const crops = [
-      this.add.sprite(x, y, spriteName, cropIndex),
-      this.add.sprite(x + BOARD_WIDTH, y, spriteName, cropIndex),
-      this.add.sprite(x, y + BOARD_WIDTH, spriteName, cropIndex),
-      this.add.sprite(x + BOARD_WIDTH, y + BOARD_WIDTH, spriteName, cropIndex),
-    ];
-
-    crops.forEach((crop) => {
-      this.physics.add.existing(crop);
-      crop.setDepth(crop.y);
-
-      if (!crop.body) return;
-      if (!this.currentPlayer) return;
-
-      (crop.body as Physics.Arcade.Body)
-        .setSize(16, 12)
-        .setOffset(0, 11)
-        .setImmovable(true)
-        .setCollideWorldBounds(true);
-
-      this.physics.add.overlap(
-        this.currentPlayer,
-        crop,
-        () => {
-          crops.forEach((crop) => crop.destroy());
-          const sound = this.sound.add("harvest");
-          sound.play({ volume: 0.1 });
-
-          const cropIndex = Number(crop.frame.name);
-          this.collectedCropIndexes = [...this.collectedCropIndexes, cropIndex];
-          const cropPoint = SCORE_TABLE[cropIndex].points;
-          this.portalService?.send("CROP_HARVESTED", { points: cropPoint });
-        },
-        undefined,
-        this
-      );
-    });
-
-    return crops;
-  }
-
-  /**
    * Creates all the crops for the map.
    */
   private createAllCrops() {
-    return CROP_SPAWN_CONFIGURATIONS.map((config) =>
-      this.createCrop(
-        config.cropIndex,
-        SQUARE_WIDTH * config.x + 8,
-        SQUARE_WIDTH * config.y + 1
-      )
+    return CROP_SPAWN_CONFIGURATIONS.map(
+      (config) =>
+        new CropContainer({
+          x: SQUARE_WIDTH * config.x,
+          y: SQUARE_WIDTH * config.y,
+          cropIndex: config.cropIndex,
+          scene: this,
+          player: this.currentPlayer,
+          harvestCrop: (crops, cropIndex) => this.harvestCrop(crops, cropIndex),
+        })
     );
   }
 
@@ -562,6 +513,28 @@ export class CropsAndChickensScene extends BaseScene {
         },
       });
     });
+  };
+
+  /**
+   * Harvests a crop.
+   * @param crops The crop sprites.
+   * @param cropIndex The crop index.
+   */
+  private harvestCrop = (
+    crops: Phaser.GameObjects.Sprite[],
+    cropIndex: number
+  ) => {
+    // destroy planted crop sprites
+    crops.forEach((crop) => crop.destroy());
+
+    // play sound
+    const sound = this.sound.add("harvest");
+    sound.play({ volume: 0.1 });
+
+    // add crop to inventory
+    this.collectedCropIndexes = [...this.collectedCropIndexes, cropIndex];
+    const cropPoint = SCORE_TABLE[cropIndex].points;
+    this.portalService?.send("CROP_HARVESTED", { points: cropPoint });
   };
 
   /**

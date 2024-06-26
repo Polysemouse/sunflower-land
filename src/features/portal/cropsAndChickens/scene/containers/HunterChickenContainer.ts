@@ -4,6 +4,7 @@ import {
   CHICKEN_SPRITE_PROPERTIES,
   HUNTER_CHICKEN_INITIAL_DISTANCE,
   HUNTER_CHICKEN_SPEED_MULTIPLIER,
+  PLAYER_COORDINATES_OFFSET,
   SPRITE_FRAME_RATE,
 } from "../../CropsAndChickensConstants";
 import { Physics } from "phaser";
@@ -29,11 +30,11 @@ export class HunterChickenContainer extends Phaser.GameObjects.Container {
       const animSpriteName = `chicken_hunter_${animDirection}`;
       const animSpriteKey = `chicken_hunter_${animDirection}_anim`;
 
-      if (this.scene.anims.exists(animSpriteKey)) return;
+      if (scene.anims.exists(animSpriteKey)) return;
 
-      this.scene.anims.create({
+      scene.anims.create({
         key: animSpriteKey,
-        frames: this.scene.anims.generateFrameNumbers(animSpriteName, {
+        frames: scene.anims.generateFrameNumbers(animSpriteName, {
           start: 0,
           end: CHICKEN_SPRITE_PROPERTIES.frames - 1,
         }),
@@ -47,17 +48,16 @@ export class HunterChickenContainer extends Phaser.GameObjects.Container {
     const spriteName = `chicken_hunter_${direction}`;
     const spriteKey = `chicken_hunter_${direction}_anim`;
 
-    // player hitbox offset
-    const playerCoordinatesOffset = { x: -0.5, y: 5 };
-
     const playerCoordinates = player
       ? {
-          x: player.x + playerCoordinatesOffset.x,
-          y: player.y + playerCoordinatesOffset.y,
+          x: player.x + PLAYER_COORDINATES_OFFSET.x,
+          y: player.y + PLAYER_COORDINATES_OFFSET.y,
         }
       : {
-          x: SPAWNS().crops_and_chickens.default.x + playerCoordinatesOffset.x,
-          y: SPAWNS().crops_and_chickens.default.y + playerCoordinatesOffset.y,
+          x:
+            SPAWNS().crops_and_chickens.default.x + PLAYER_COORDINATES_OFFSET.x,
+          y:
+            SPAWNS().crops_and_chickens.default.y + PLAYER_COORDINATES_OFFSET.y,
         };
     let angle = Phaser.Math.Angle.Between(
       this.x,
@@ -91,8 +91,8 @@ export class HunterChickenContainer extends Phaser.GameObjects.Container {
         chicken.setTexture(`chicken_hunter_${direction}`, frame.index - 1);
 
         const distance = Phaser.Math.Distance.Between(
-          player.x + playerCoordinatesOffset.x,
-          player.y + playerCoordinatesOffset.y,
+          player.x + PLAYER_COORDINATES_OFFSET.x,
+          player.y + PLAYER_COORDINATES_OFFSET.y,
           this.x,
           this.y
         );
@@ -120,8 +120,8 @@ export class HunterChickenContainer extends Phaser.GameObjects.Container {
           angle = Phaser.Math.Angle.Between(
             this.x,
             this.y,
-            player.x + playerCoordinatesOffset.x,
-            player.y + playerCoordinatesOffset.y
+            player.x + PLAYER_COORDINATES_OFFSET.x,
+            player.y + PLAYER_COORDINATES_OFFSET.y
           );
 
           if (angle >= -Math.PI / 4 && angle <= Math.PI / 4) {
@@ -150,7 +150,7 @@ export class HunterChickenContainer extends Phaser.GameObjects.Container {
       }
     );
 
-    this.scene.physics.add.existing(this);
+    scene.physics.add.existing(this);
 
     if (!!this.body && !!player) {
       (this.body as Physics.Arcade.Body)
@@ -159,14 +159,14 @@ export class HunterChickenContainer extends Phaser.GameObjects.Container {
         .setImmovable(true)
         .setCollideWorldBounds(false);
 
-      this.scene.physics.add.overlap(player, this, killPlayer, undefined, this);
+      scene.physics.add.overlap(player, this, killPlayer, undefined, this);
     }
 
     // add the sprite to the container
     this.add(chicken);
 
     // add the container to the scene
-    this.scene.add.existing(this);
+    scene.add.existing(this);
   }
 
   /**

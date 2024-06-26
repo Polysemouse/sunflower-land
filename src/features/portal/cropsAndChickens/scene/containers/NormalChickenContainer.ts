@@ -23,10 +23,10 @@ export class NormalChickenContainer extends Phaser.GameObjects.Container {
     const spriteName = `chicken_normal_${direction}`;
     const spriteKey = `chicken_normal_${direction}_anim`;
 
-    if (!this.scene.anims.exists(spriteKey)) {
-      this.scene.anims.create({
+    if (!scene.anims.exists(spriteKey)) {
+      scene.anims.create({
         key: spriteKey,
-        frames: this.scene.anims.generateFrameNumbers(spriteName, {
+        frames: scene.anims.generateFrameNumbers(spriteName, {
           start: 0,
           end: CHICKEN_SPRITE_PROPERTIES.frames - 1,
         }),
@@ -106,7 +106,7 @@ export class NormalChickenContainer extends Phaser.GameObjects.Container {
       }
     );
 
-    this.scene.physics.add.existing(this);
+    scene.physics.add.existing(this);
 
     if (!!this.body && !!player) {
       (this.body as Physics.Arcade.Body)
@@ -115,13 +115,13 @@ export class NormalChickenContainer extends Phaser.GameObjects.Container {
         .setImmovable(true)
         .setCollideWorldBounds(false);
 
-      this.scene.physics.add.overlap(player, this, killPlayer, undefined, this);
+      scene.physics.add.overlap(player, this, killPlayer, undefined, this);
     }
 
     // add the sprite to the container
     this.add(chicken);
 
     // add the container to the scene
-    this.scene.add.existing(this);
+    scene.add.existing(this);
   }
 }

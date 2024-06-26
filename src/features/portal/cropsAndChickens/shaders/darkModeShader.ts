@@ -47,7 +47,7 @@ vec3 lightEffect(vec3 color) {
   vec3 lightSourceTint = vec3(1.0, 1.0, 0.5);
   vec3 modifiedColor = color * lightSourceTint;
   modifiedColor = saturation(modifiedColor, 1.2);
-  modifiedColor = exposure(modifiedColor, 1.2);
+  modifiedColor = exposure(modifiedColor, 1.4);
   return modifiedColor;
 }
 
@@ -70,7 +70,7 @@ void main() {
     nightColor = contrast(nightColor, 0.9);
     nightColor = popLights(nightColor, 0.3, 0.8);
     nightColor = brightness(nightColor, -0.05);
-    nightColor = exposure(nightColor, 1.8);
+    nightColor = exposure(nightColor, 1.6);
 
     // apply a bluish tint for moonlight effect
     vec3 moonlightTint = vec3(0.3, 0.3, 0.7);

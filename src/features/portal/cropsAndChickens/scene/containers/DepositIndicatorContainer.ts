@@ -21,12 +21,12 @@ export class DepositIndicatorContainer extends Phaser.GameObjects.Container {
     this.hasCropsInInventory = hasCropsInInventory;
 
     // create an off screen indicator
-    const cropDepositArrow = this.scene.add.sprite(0, 0, "crop_deposit_arrow");
+    const cropDepositArrow = scene.add.sprite(0, 0, "crop_deposit_arrow");
 
     this.setDepth(1000000);
     this.setVisible(false); // hide the indicator initially
 
-    this.scene.tweens.add({
+    scene.tweens.add({
       targets: this,
       alpha: { from: 1, to: 0 },
       duration: 500, // duration of the blink (half cycle)
@@ -38,7 +38,7 @@ export class DepositIndicatorContainer extends Phaser.GameObjects.Container {
     this.add(cropDepositArrow);
 
     // add the container to the scene
-    this.scene.add.existing(this);
+    scene.add.existing(this);
   }
 
   /**
