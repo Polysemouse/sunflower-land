@@ -18,7 +18,6 @@ import {
   PLAYER_MIN_XY,
   PLAYER_WALKING_SPEED,
   SCORE_TABLE,
-  DEPOSIT_INDICATOR_PLAYER_DISTANCE,
   SPRITE_FRAME_RATE,
   TIME_TICKING_SECONDS,
 } from "../CropsAndChickensConstants";
@@ -27,22 +26,23 @@ import { HunterChickenContainer } from "./containers/HunterChickenContainer";
 import { DarkModePipeline } from "../shaders/darkModeShader";
 import { getDarkModeSetting } from "lib/utils/hooks/useIsDarkMode";
 import { StorageAreaContainer } from "./containers/StorageAreaContainer";
+import { DepositIndicatorContainer } from "./containers/DepositIndicatorContainer";
 
 export class CropsAndChickensScene extends BaseScene {
   sceneId: SceneId = "crops_and_chickens";
 
-  isTimeTickingSoundPlayed = false;
   isPlayerDead = false;
+  collectedCropIndexes: number[] = [];
+
+  chickens: NormalChickenContainer[] = [];
+  hunterChicken?: HunterChickenContainer;
+  storageArea?: StorageAreaContainer;
+  depositIndicator?: DepositIndicatorContainer;
+
   timeTickingSound?:
     | Phaser.Sound.NoAudioSound
     | Phaser.Sound.HTML5AudioSound
     | Phaser.Sound.WebAudioSound;
-  chickens: NormalChickenContainer[] = [];
-  hunterChicken?: HunterChickenContainer;
-  collectedCropIndexes: number[] = [];
-  storageArea?: StorageAreaContainer;
-
-  cropDepositArrow?: Phaser.GameObjects.Sprite;
 
   constructor() {
     super({
@@ -185,7 +185,7 @@ export class CropsAndChickensScene extends BaseScene {
       frameHeight: 16,
     });
 
-    // crop deposit arrow
+    // deposit indicator
     this.load.spritesheet(
       "crop_deposit_arrow",
       "world/crop_deposit_arrow.png",
@@ -233,17 +233,24 @@ export class CropsAndChickensScene extends BaseScene {
     this.createAllCrops();
     this.createAllNormalChickens();
 
-    this.storageArea = new StorageAreaContainer({
-      scene: this,
-      player: this.currentPlayer,
-      depositCrops: () => this.depositCrops(),
-    });
     this.hunterChicken = new HunterChickenContainer({
       scene: this,
       player: this.currentPlayer,
       isChickenFrozen: () =>
         this.isPlayerDead || this.isPlayerInDepositArea || !this.isGamePlaying,
       killPlayer: () => this.killPlayer(),
+    });
+
+    this.storageArea = new StorageAreaContainer({
+      scene: this,
+      player: this.currentPlayer,
+      depositCrops: () => this.depositCrops(),
+    });
+
+    this.depositIndicator = new DepositIndicatorContainer({
+      scene: this,
+      player: this.currentPlayer,
+      hasCropsInInventory: () => this.collectedCropIndexes.length > 0,
     });
 
     // reload scene when player hit retry
@@ -258,23 +265,6 @@ export class CropsAndChickensScene extends BaseScene {
       if (event.type === "CONTINUE") {
         this.walkingSpeed = PLAYER_WALKING_SPEED;
       }
-    });
-
-    // create an off screen indicator
-    this.cropDepositArrow = this.add.sprite(
-      DEPOSIT_CHEST_XY,
-      DEPOSIT_CHEST_XY,
-      "crop_deposit_arrow"
-    );
-    this.cropDepositArrow.setDepth(1000000);
-    this.cropDepositArrow.setVisible(false); // hide the indicator initially
-
-    this.tweens.add({
-      targets: this.cropDepositArrow,
-      alpha: { from: 1, to: 0 },
-      duration: 500, // duration of the blink (half cycle)
-      yoyo: true,
-      repeat: -1, // repeat indefinitely
     });
   }
 
@@ -293,18 +283,19 @@ export class CropsAndChickensScene extends BaseScene {
     ).isDarkMode = getDarkModeSetting();
 
     if (
-      !this.isTimeTickingSoundPlayed &&
+      this.isGamePlaying &&
+      !this.timeTickingSound &&
       this.secondsLeft <= TIME_TICKING_SECONDS &&
-      this.secondsLeft >= 1
+      this.secondsLeft > 0
     ) {
-      this.isTimeTickingSoundPlayed = true;
       this.timeTickingSound = this.sound.add("time_ticking");
-      this.timeTickingSound?.play({ volume: 0.2 });
+      this.timeTickingSound.play({ volume: 0.2 });
     }
 
     if (this.isGamePlaying && this.secondsLeft <= 0) {
       this.endGame();
       this.timeTickingSound?.stop();
+      this.timeTickingSound = undefined;
     }
 
     // start game if player decides to move
@@ -359,15 +350,7 @@ export class CropsAndChickensScene extends BaseScene {
       this.hunterChicken.setDepth(this.hunterChicken.y);
     }
 
-    // show indicator if off screen
-    if (
-      !this.cameras.main.worldView.contains(DEPOSIT_CHEST_XY, DEPOSIT_CHEST_XY)
-    ) {
-      this.moveCropDepositIndicator(playerX, playerY);
-    } else {
-      // hide the indicator if the object is on the screen
-      this.cropDepositArrow?.setVisible(false);
-    }
+    this.depositIndicator?.update();
 
     super.update();
   }
@@ -376,7 +359,6 @@ export class CropsAndChickensScene extends BaseScene {
    * Initializes the game state.
    */
   private initializeStates = () => {
-    this.isTimeTickingSoundPlayed = false;
     this.isPlayerDead = false;
     this.chickens = [];
     this.collectedCropIndexes = [];
@@ -404,31 +386,6 @@ export class CropsAndChickensScene extends BaseScene {
     ).pipelines.addPostPipeline("DarkModePipeline", DarkModePipeline);
     this.cameras.main.setPostPipeline(DarkModePipeline);
   };
-
-  /**
-   * Moves the crop deposit arrow indicator.
-   */
-  moveCropDepositIndicator(playerX: number, playerY: number) {
-    const angle = Phaser.Math.Angle.Between(
-      playerX,
-      playerY,
-      DEPOSIT_CHEST_XY,
-      DEPOSIT_CHEST_XY
-    );
-
-    // calculate the position of the indicator
-    const indicatorX =
-      playerX + Math.cos(angle) * DEPOSIT_INDICATOR_PLAYER_DISTANCE;
-    const indicatorY =
-      playerY + Math.sin(angle) * DEPOSIT_INDICATOR_PLAYER_DISTANCE;
-
-    // position the indicator sprite and make it visible
-    this.cropDepositArrow?.setPosition(indicatorX, indicatorY);
-    this.cropDepositArrow?.setVisible(this.collectedCropIndexes.length > 0);
-
-    // rotate the indicator to point towards the object
-    this.cropDepositArrow?.setRotation(angle);
-  }
 
   /**
    * Creates a crop.
