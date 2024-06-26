@@ -282,6 +282,7 @@ export class CropsAndChickensScene extends BaseScene {
       this.cameras.main.getPostPipeline("DarkModePipeline") as DarkModePipeline
     ).isDarkMode = getDarkModeSetting();
 
+    // play ticking sound if time is going to run out
     if (
       this.isGamePlaying &&
       !this.timeTickingSound &&
@@ -351,6 +352,7 @@ export class CropsAndChickensScene extends BaseScene {
       }
     }
 
+    // update deposit indicator position
     this.depositIndicator?.update();
 
     super.update();
