@@ -50,7 +50,7 @@ vec3 lightEffect(vec3 color) {
   vec3 lightSourceTint = vec3(1.0, 1.0, 0.5);
   vec3 modifiedColor = color * lightSourceTint;
   modifiedColor = saturation(modifiedColor, 1.25);
-  modifiedColor = exposure(modifiedColor, 1.8);
+  modifiedColor = exposure(modifiedColor, 1.7);
   return modifiedColor;
 }
 
