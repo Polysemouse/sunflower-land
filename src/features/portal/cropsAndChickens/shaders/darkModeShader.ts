@@ -1,3 +1,5 @@
+const MAX_LIGHT_SOURCES = 1000;
+
 const fragShader = `
 #define SHADER_NAME DARK_MODE_SHADER
 
@@ -9,6 +11,7 @@ varying vec2 outTexCoord;
 uniform sampler2D uMainSampler;
 uniform float isDarkMode;
 uniform vec2 screenResolution;
+uniform vec2 lightSources[${MAX_LIGHT_SOURCES}];
 
 float getLuminance(vec3 color) {
   return dot(color, vec3(0.299, 0.587, 0.114));
@@ -47,7 +50,7 @@ vec3 lightEffect(vec3 color) {
   vec3 lightSourceTint = vec3(1.0, 1.0, 0.5);
   vec3 modifiedColor = color * lightSourceTint;
   modifiedColor = saturation(modifiedColor, 1.25);
-  modifiedColor = exposure(modifiedColor, 1.5);
+  modifiedColor = exposure(modifiedColor, 1.8);
   return modifiedColor;
 }
 
@@ -78,24 +81,36 @@ void main() {
 
     // calculate normalized coordinates of current fragment
     vec2 aspect = vec2(screenResolution.x/screenResolution.y, 1.0); // aspect scale vector
-    vec2 center = vec2(0.5, 0.5); // center of the screen
     vec2 normalizedCoords = gl_FragCoord.xy / screenResolution.xy * aspect;
-
-    // calculate the distance from the center
-    float dist = distance(normalizedCoords, center * aspect);
 
     // set the radius to a fixed percentage of the screen size up to a certain maximum
     float radius = min(min(screenResolution.x, screenResolution.y) * 0.5, 500.0) / min(screenResolution.x, screenResolution.y);
 
-    // smoothstep function to create a smooth transition at the edges of the circle
-    float falloff = smoothstep(radius, radius * 0.05, dist);  // adding a small epsilon for smooth falloff
+    // get the total light
+    float maxFalloff = 0.0;
+    for (int i = 0; i < ${MAX_LIGHT_SOURCES}; i++) {
+      vec2 center = lightSources[i]; // center of the light source
+      
+      // skip light sources that are not initialized
+      // assuming no one will be exactly at (0.0, 0.0)
+      if (center == vec2(0.0, 0.0)) {
+        break;
+      }
+      
+      // calculate the distance from the center
+      float dist = distance(normalizedCoords, center * aspect);
+
+      // smoothstep function to create a smooth transition at the edges of the circle
+      float falloff = smoothstep(radius, radius * 0.05, dist);  // adding a small epsilon for smooth falloff
+      maxFalloff = max(maxFalloff, falloff);
+    }
 
     // apply the effect based on the falloff mask
     vec3 maskedEffect = lightEffect(nightColor);
     maskedEffect = mix(maskedEffect, texColor.rgb, 0.15); // mix in some original color
 
     // combine with the original color to keep the rest untouched
-    nightColor = mix(nightColor, maskedEffect, falloff);
+    nightColor = mix(nightColor, maskedEffect, maxFalloff);
 
     // output the final color with original alpha
     gl_FragColor = vec4(nightColor, texColor.a);
@@ -109,6 +124,7 @@ void main() {
 export class DarkModePipeline extends Phaser.Renderer.WebGL.Pipelines
   .PostFXPipeline {
   isDarkMode = false;
+  lightSources: { x: number; y: number }[] = [];
 
   constructor(game: Phaser.Game) {
     super({
@@ -123,6 +139,13 @@ export class DarkModePipeline extends Phaser.Renderer.WebGL.Pipelines
       "screenResolution",
       Number(this.game.config.width) ?? 1,
       Number(this.game.config.height) ?? 1
+    );
+    this.set2fv(
+      "lightSources",
+      this.lightSources
+        .slice(0, MAX_LIGHT_SOURCES)
+        .map((source) => [source.x, 1 - source.y])
+        .flat()
     );
   }
 }

@@ -272,15 +272,13 @@ export class CropsAndChickensScene extends BaseScene {
    * Called every time there is a frame update.
    */
   update() {
+    // update shader rendering
+    this.updateShaders();
+
     // set joystick state in machine
     this.portalService?.send("SET_JOYSTICK_ACTIVE", {
       isJoystickActive: !!this.joystick?.force,
     });
-
-    // toggle dark mode
-    (
-      this.cameras.main.getPostPipeline("DarkModePipeline") as DarkModePipeline
-    ).isDarkMode = getDarkModeSetting();
 
     // play ticking sound if time is going to run out
     if (
@@ -457,6 +455,34 @@ export class CropsAndChickensScene extends BaseScene {
       ...chickensFacingUp,
       ...chickensFacingDown,
     ];
+  };
+
+  /**
+   * Updates the camera shader.
+   */
+  private updateShaders = () => {
+    // get pipeline
+    const darkModePipeline = this.cameras.main.getPostPipeline(
+      "DarkModePipeline"
+    ) as DarkModePipeline;
+
+    // toggle dark mode
+    darkModePipeline.isDarkMode = getDarkModeSetting();
+
+    if (this.currentPlayer) {
+      // calculate the player's position relative to the camera
+      const relativeX =
+        ((this.currentPlayer.x - this.cameras.main.worldView.x) /
+          this.cameras.main.width) *
+        this.cameras.main.zoom;
+      const relativeY =
+        ((this.currentPlayer.y - this.cameras.main.worldView.y) /
+          this.cameras.main.height) *
+        this.cameras.main.zoom;
+
+      // set the light sources
+      darkModePipeline.lightSources = [{ x: relativeX, y: relativeY }];
+    }
   };
 
   /**
