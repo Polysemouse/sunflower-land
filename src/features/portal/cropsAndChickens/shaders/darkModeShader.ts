@@ -46,8 +46,8 @@ vec3 saturation(vec3 color, float amount) {
 vec3 lightEffect(vec3 color) {
   vec3 lightSourceTint = vec3(1.0, 1.0, 0.5);
   vec3 modifiedColor = color * lightSourceTint;
-  modifiedColor = saturation(modifiedColor, 1.2);
-  modifiedColor = exposure(modifiedColor, 1.4);
+  modifiedColor = saturation(modifiedColor, 1.25);
+  modifiedColor = exposure(modifiedColor, 1.5);
   return modifiedColor;
 }
 
@@ -70,10 +70,10 @@ void main() {
     nightColor = contrast(nightColor, 0.9);
     nightColor = popLights(nightColor, 0.3, 0.8);
     nightColor = brightness(nightColor, -0.05);
-    nightColor = exposure(nightColor, 1.6);
+    nightColor = exposure(nightColor, 1.5);
 
     // apply a bluish tint for moonlight effect
-    vec3 moonlightTint = vec3(0.3, 0.3, 0.7);
+    vec3 moonlightTint = vec3(0.3, 0.3, 0.65);
     nightColor *= moonlightTint;
 
     // calculate normalized coordinates of current fragment
@@ -85,7 +85,7 @@ void main() {
     float dist = distance(normalizedCoords, center * aspect);
 
     // set the radius to a fixed percentage of the screen size up to a certain maximum
-    float radius = min(min(screenResolution.x, screenResolution.y) * 0.75, 750.0) / min(screenResolution.x, screenResolution.y);
+    float radius = min(min(screenResolution.x, screenResolution.y) * 0.5, 500.0) / min(screenResolution.x, screenResolution.y);
 
     // smoothstep function to create a smooth transition at the edges of the circle
     float falloff = smoothstep(radius, radius * 0.05, dist);  // adding a small epsilon for smooth falloff

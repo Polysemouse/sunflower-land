@@ -3,8 +3,8 @@ import React from "react";
 import { WalletProvider } from "features/wallet/WalletProvider";
 
 import { CropsAndChickens } from "./cropsAndChickens/CropsAndChickens";
+import { CropsAndChickensBackground } from "./cropsAndChickens/CropsAndChickensBackground";
 import { PortalProvider } from "./cropsAndChickens/lib/PortalProvider";
-import { Grassland } from "features/world/ui/Grassland";
 
 export const PortalApp: React.FC = () => {
   return (
@@ -12,9 +12,9 @@ export const PortalApp: React.FC = () => {
     <WalletProvider>
       {/* PortalProvider - gives you access to a xstate machine which handles state management */}
       <PortalProvider>
-        <Grassland>
+        <CropsAndChickensBackground>
           <CropsAndChickens />
-        </Grassland>
+        </CropsAndChickensBackground>
       </PortalProvider>
     </WalletProvider>
   );
