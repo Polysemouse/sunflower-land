@@ -26,7 +26,9 @@ export const CropsAndChickensTimer: React.FC = () => {
     <Label
       className="absolute"
       icon={SUNNYSIDE.icons.stopwatch}
-      type="info"
+      type={
+        secondsLeft <= 0 ? "danger" : secondsLeft <= 10 ? "warning" : "info"
+      }
       style={{
         top: `${PIXEL_SCALE * 16}px`,
         right: `${PIXEL_SCALE * 6}px`,
