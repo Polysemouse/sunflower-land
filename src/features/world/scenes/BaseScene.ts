@@ -452,16 +452,91 @@ export abstract class BaseScene extends Phaser.Scene {
   public initialiseControls() {
     if (isTouchDevice()) {
       // Initialise joystick
-      const { x, y, centerX, centerY, width, height } = this.cameras.main;
-      this.joystick = new VirtualJoystick(this, {
+      const { centerX, centerY, width, height } = this.cameras.main;
+
+      const minScreenDimension = Math.min(width, height);
+      const positionMargin = (minScreenDimension * 0.15) / this.zoom;
+      const idleOpacity = 0.4;
+      const joystickBase = this.add
+        .circle(0, 0, 15, 0x000000, 0.2)
+        .setDepth(1000000000)
+        .setAlpha(idleOpacity);
+      const joystickThumb = this.add
+        .circle(0, 0, 7, 0xffffff, 0.2)
+        .setDepth(1000000000)
+        .setAlpha(idleOpacity);
+      const defaultPosition = {
         x: centerX,
-        y: centerY - 35 + height / this.zoom / 2,
-        radius: 15,
-        base: this.add.circle(0, 0, 15, 0x000000, 0.2).setDepth(1000000000),
-        thumb: this.add.circle(0, 0, 7, 0xffffff, 0.2).setDepth(1000000000),
+        y: centerY + (height * 0.3) / this.zoom,
+      };
+
+      const joystickRadius = 15;
+      const joystick = new VirtualJoystick(this, {
+        x: defaultPosition.x,
+        y: defaultPosition.y,
+        radius: joystickRadius,
+        base: joystickBase,
+        thumb: joystickThumb,
         forceMin: 2,
       });
+
+      this.joystick = joystick;
+
+      // swipe for pointer input
+      this.input.on("pointerdown", (pointer: Phaser.Input.Pointer) => {
+        const setPositionX = centerX + (pointer.x - centerX) / this.zoom;
+        const setPositionY = centerY + (pointer.y - centerY) / this.zoom;
+
+        // only activate joystick if within margin
+        if (
+          Phaser.Math.Distance.Between(
+            setPositionX,
+            setPositionY,
+            defaultPosition.x,
+            defaultPosition.y
+          ) > positionMargin
+        )
+          return;
+
+        // set opacity and set joystick base to starting position
+        joystickBase.setAlpha(1.0);
+        joystickThumb.setAlpha(1.0);
+        joystick.setPosition(setPositionX, setPositionY);
+      });
+      this.input.on("pointermove", (pointer: Phaser.Input.Pointer) => {
+        if (!pointer.isDown) return;
+
+        const moveMargin = positionMargin - joystickRadius / this.zoom;
+        const setPositionX = centerX + (pointer.x - centerX) / this.zoom;
+        const setPositionY = centerY + (pointer.y - centerY) / this.zoom;
+
+        const angle = (joystick.angle / 180.0) * Math.PI;
+        const distance = joystick.force;
+
+        // move joystick base up to margin
+        if (distance > joystickRadius) {
+          joystick.setPosition(
+            Phaser.Math.Clamp(
+              setPositionX - joystickRadius * Math.cos(angle),
+              defaultPosition.x - moveMargin,
+              defaultPosition.x + moveMargin
+            ),
+            Phaser.Math.Clamp(
+              setPositionY - joystickRadius * Math.sin(angle),
+              defaultPosition.y - moveMargin,
+              defaultPosition.y + moveMargin
+            )
+          );
+        }
+      });
+      this.input.on("pointerup", () => {
+        // reset joystick position and opacity when swipe is done
+        joystickBase.setAlpha(idleOpacity);
+        joystickThumb.setAlpha(idleOpacity);
+        joystick.setPosition(defaultPosition.x, defaultPosition.y);
+      });
     }
+
     // Initialise Keyboard
     this.cursorKeys = this.input.keyboard?.createCursorKeys();
     if (this.cursorKeys) {
