@@ -527,7 +527,10 @@ export class CropsAndChickensScene extends BaseScene {
               onComplete: () => {
                 cropSprite.destroy();
                 const sound = this.sound.add("crop_deposit_pop");
-                sound.play({ volume: 0.1 });
+                sound.play({
+                  volume: 0.1,
+                  detune: Phaser.Math.RND.between(-300, 300),
+                });
               },
             });
           });
