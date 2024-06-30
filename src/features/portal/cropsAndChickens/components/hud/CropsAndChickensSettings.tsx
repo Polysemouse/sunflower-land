@@ -129,9 +129,7 @@ export const CropsAndChickensSettings: React.FC = () => {
 
   return (
     <div
-      className={classNames("fixed z-50 flex flex-col justify-between", {
-        "pointer-events-none": isJoystickActive,
-      })}
+      className="fixed z-50 flex flex-col justify-between"
       style={{
         right: `${PIXEL_SCALE * 3}px`,
         bottom: `${PIXEL_SCALE * 3}px`,

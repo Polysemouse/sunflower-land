@@ -186,14 +186,7 @@ export class CropsAndChickensScene extends BaseScene {
     });
 
     // deposit indicator
-    this.load.spritesheet(
-      "crop_deposit_arrow",
-      "world/crop_deposit_arrow.png",
-      {
-        frameWidth: 11,
-        frameHeight: 10,
-      }
-    );
+    this.load.image("crop_deposit_arrow", "world/crop_deposit_arrow.png");
 
     // ambience SFX
     if (!this.sound.get("nature_1")) {

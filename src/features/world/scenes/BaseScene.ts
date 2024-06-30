@@ -452,10 +452,8 @@ export abstract class BaseScene extends Phaser.Scene {
   public initialiseControls() {
     if (isTouchDevice()) {
       // Initialise joystick
-      const { centerX, centerY, width, height } = this.cameras.main;
+      const { centerX, centerY, height } = this.cameras.main;
 
-      const minScreenDimension = Math.min(width, height);
-      const positionMargin = (minScreenDimension * 0.15) / this.zoom;
       const idleOpacity = 0.4;
       const joystickBase = this.add
         .circle(0, 0, 15, 0x000000, 0.2)
@@ -487,17 +485,6 @@ export abstract class BaseScene extends Phaser.Scene {
         const setPositionX = centerX + (pointer.x - centerX) / this.zoom;
         const setPositionY = centerY + (pointer.y - centerY) / this.zoom;
 
-        // only activate joystick if within margin
-        if (
-          Phaser.Math.Distance.Between(
-            setPositionX,
-            setPositionY,
-            defaultPosition.x,
-            defaultPosition.y
-          ) > positionMargin
-        )
-          return;
-
         // set opacity and set joystick base to starting position
         joystickBase.setAlpha(1.0);
         joystickThumb.setAlpha(1.0);
@@ -506,26 +493,17 @@ export abstract class BaseScene extends Phaser.Scene {
       this.input.on("pointermove", (pointer: Phaser.Input.Pointer) => {
         if (!pointer.isDown) return;
 
-        const moveMargin = positionMargin - joystickRadius / this.zoom;
         const setPositionX = centerX + (pointer.x - centerX) / this.zoom;
         const setPositionY = centerY + (pointer.y - centerY) / this.zoom;
 
         const angle = (joystick.angle / 180.0) * Math.PI;
         const distance = joystick.force;
 
-        // move joystick base up to margin
+        // move joystick base if moving too far away
         if (distance > joystickRadius) {
           joystick.setPosition(
-            Phaser.Math.Clamp(
-              setPositionX - joystickRadius * Math.cos(angle),
-              defaultPosition.x - moveMargin,
-              defaultPosition.x + moveMargin
-            ),
-            Phaser.Math.Clamp(
-              setPositionY - joystickRadius * Math.sin(angle),
-              defaultPosition.y - moveMargin,
-              defaultPosition.y + moveMargin
-            )
+            setPositionX - joystickRadius * Math.cos(angle),
+            setPositionY - joystickRadius * Math.sin(angle)
           );
         }
       });
