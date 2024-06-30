@@ -87,6 +87,9 @@ export const FACTION_NAME_COLORS: Record<FactionName, string> = {
   nightshades: "#a878ac",
 };
 
+const JOYSTICK_RADIUS = 15;
+const JOYSTICK_FORCE_MIN = 2;
+
 export abstract class BaseScene extends Phaser.Scene {
   abstract sceneId: SceneId;
   eventListener?: (event: EventObject) => void;
@@ -99,6 +102,8 @@ export abstract class BaseScene extends Phaser.Scene {
   public map: Phaser.Tilemaps.Tilemap = {} as Phaser.Tilemaps.Tilemap;
 
   currentPlayer: BumpkinContainer | undefined;
+  joystickIndicatorBase: Phaser.GameObjects.Arc | undefined;
+  joystickIndicatorDot: Phaser.GameObjects.Sprite | undefined;
   isFacingLeft = false;
   movementAngle: number | undefined;
   serverPosition: { x: number; y: number } = { x: 0, y: 0 };
@@ -221,6 +226,15 @@ export abstract class BaseScene extends Phaser.Scene {
         experience: 0,
         sessionId: this.mmoServer?.sessionId ?? "",
       });
+
+      this.joystickIndicatorBase = this.add
+        .circle(0, 0, 10, 0x000000, 0.1)
+        .setVisible(false)
+        .setDepth(1000000);
+      this.joystickIndicatorDot = this.add
+        .sprite(spawn.x ?? 0, spawn.y ?? 0, "joystick_indicator_dot")
+        .setVisible(false)
+        .setDepth(1000001);
 
       this.initialiseCamera();
 
@@ -468,14 +482,13 @@ export abstract class BaseScene extends Phaser.Scene {
         y: centerY + (height * 0.3) / this.zoom,
       };
 
-      const joystickRadius = 15;
       const joystick = new VirtualJoystick(this, {
         x: defaultPosition.x,
         y: defaultPosition.y,
-        radius: joystickRadius,
+        radius: JOYSTICK_RADIUS,
         base: joystickBase,
         thumb: joystickThumb,
-        forceMin: 2,
+        forceMin: 0,
       });
 
       this.joystick = joystick;
@@ -489,23 +502,6 @@ export abstract class BaseScene extends Phaser.Scene {
         joystickBase.setAlpha(1.0);
         joystickThumb.setAlpha(1.0);
         joystick.setPosition(setPositionX, setPositionY);
-      });
-      this.input.on("pointermove", (pointer: Phaser.Input.Pointer) => {
-        if (!pointer.isDown) return;
-
-        const setPositionX = centerX + (pointer.x - centerX) / this.zoom;
-        const setPositionY = centerY + (pointer.y - centerY) / this.zoom;
-
-        const angle = (joystick.angle / 180.0) * Math.PI;
-        const distance = joystick.force;
-
-        // move joystick base if moving too far away
-        if (distance > joystickRadius) {
-          joystick.setPosition(
-            setPositionX - joystickRadius * Math.cos(angle),
-            setPositionY - joystickRadius * Math.sin(angle)
-          );
-        }
       });
       this.input.on("pointerup", () => {
         // reset joystick position and opacity when swipe is done
@@ -765,10 +761,11 @@ export abstract class BaseScene extends Phaser.Scene {
       return;
     }
 
-    // joystick is active if force is greater than zero
-    this.movementAngle = this.joystick?.force
-      ? this.joystick?.angle
-      : undefined;
+    // joystick is active if force is greater than JOYSTICK_FORCE_MIN
+    this.movementAngle =
+      this.joystick && this.joystick.force > JOYSTICK_FORCE_MIN
+        ? this.joystick.angle
+        : undefined;
 
     // use keyboard control if joystick is not active
     if (this.movementAngle === undefined) {
@@ -807,6 +804,30 @@ export abstract class BaseScene extends Phaser.Scene {
       );
     } else {
       currentPlayerBody.setVelocity(0, 0);
+    }
+
+    // set joystick indicator dot if joystick is active
+    if (this.joystick && this.joystick.force) {
+      const angle = (this.joystick.angle / 180.0) * Math.PI;
+      const distance = Math.min(this.joystick.force, JOYSTICK_RADIUS);
+      const offset = { x: 5, y: 1 };
+      const scale = 0.7;
+
+      this.joystickIndicatorBase
+        ?.setVisible(true)
+        .setPosition(
+          currentPlayerBody.x + offset.x,
+          currentPlayerBody.y + offset.y
+        );
+      this.joystickIndicatorDot
+        ?.setVisible(true)
+        .setPosition(
+          currentPlayerBody.x + offset.x + distance * Math.cos(angle) * scale,
+          currentPlayerBody.y + offset.y + distance * Math.sin(angle) * scale
+        );
+    } else {
+      this.joystickIndicatorBase?.setVisible(false);
+      this.joystickIndicatorDot?.setVisible(false);
     }
 
     this.sendPositionToServer();

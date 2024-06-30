@@ -47,13 +47,16 @@ export class DepositIndicatorContainer extends Phaser.GameObjects.Container {
   update(): void {
     // show indicator if off screen
     if (
-      this.player &&
+      this.player?.body?.position &&
       !this.scene.cameras.main.worldView.contains(
         DEPOSIT_CHEST_XY,
         DEPOSIT_CHEST_XY
       )
     ) {
-      this.moveIndicator(this.player.x, this.player.y);
+      this.moveIndicator(
+        this.player.body.position.x,
+        this.player.body.position.y
+      );
     } else {
       // hide the indicator if the object is on the screen
       this.setVisible(false);
