@@ -10,6 +10,7 @@ To play Crops And Chickens locally, run `cp .env.local .env` first then `yarn` t
 
 ## Architecture
 
+`components` - React components.
 `CropsAndChickens.ts` - Handles the major states in the game (eg. loading, rules, completed, error). Will show the game scene once 'ready'.
 `CropsAndChickensPhaser.tsx` - Initialises the World Scene and scene components used inside of the game.
 `CropsAndChickensScene.tsx` - Sets up the game logic, eg. custom mechanics.
