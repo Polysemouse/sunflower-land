@@ -20,7 +20,6 @@ import {
   SceneId,
 } from "../mmoMachine";
 import { Player, PlazaRoomState } from "../types/Room";
-import { playerModalManager } from "../ui/PlayerModals";
 import { FactionName, GameState } from "features/game/types/game";
 import { translate } from "lib/i18n/translate";
 import { Room } from "colyseus.js";
@@ -589,40 +588,12 @@ export abstract class BaseScene extends Phaser.Scene {
     experience?: number;
     sessionId: string;
   }): BumpkinContainer {
-    const defaultClick = () => {
-      const distance = Phaser.Math.Distance.BetweenPoints(
-        entity,
-        this.currentPlayer as BumpkinContainer,
-      );
-
-      if (distance > 50) {
-        entity.speak(translate("base.far.away"));
-        return;
-      }
-
-      if (npc) {
-        npcModalManager.open(npc);
-      } else {
-        if (farmId !== this.id) {
-          playerModalManager.open({
-            id: farmId,
-            // Always get the latest clothing
-            clothing: this.playerEntities[sessionId]?.clothing ?? clothing,
-            experience,
-          });
-        }
-      }
-
-      // TODO - open player modals
-    };
-
     const entity = new BumpkinContainer({
       scene: this,
       x,
       y,
       clothing,
       name: npc,
-      onClick: defaultClick,
     });
 
     // Is current player
