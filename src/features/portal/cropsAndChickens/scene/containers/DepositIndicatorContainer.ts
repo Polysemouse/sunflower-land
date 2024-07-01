@@ -50,12 +50,12 @@ export class DepositIndicatorContainer extends Phaser.GameObjects.Container {
       this.player?.body?.position &&
       !this.scene.cameras.main.worldView.contains(
         DEPOSIT_CHEST_XY,
-        DEPOSIT_CHEST_XY
+        DEPOSIT_CHEST_XY,
       )
     ) {
       this.moveIndicator(
         this.player.body.position.x,
-        this.player.body.position.y
+        this.player.body.position.y,
       );
     } else {
       // hide the indicator if the object is on the screen
@@ -74,7 +74,7 @@ export class DepositIndicatorContainer extends Phaser.GameObjects.Container {
       playerX,
       playerY,
       DEPOSIT_CHEST_XY,
-      DEPOSIT_CHEST_XY
+      DEPOSIT_CHEST_XY,
     );
 
     // calculate the position of the indicator

@@ -30,7 +30,7 @@ export class CropContainer extends Phaser.GameObjects.Container {
         x + BOARD_WIDTH,
         y + BOARD_WIDTH,
         spriteName,
-        cropIndex
+        cropIndex,
       ),
     ];
 
@@ -52,7 +52,7 @@ export class CropContainer extends Phaser.GameObjects.Container {
         crop,
         () => harvestCrop(crops, cropIndex),
         undefined,
-        this
+        this,
       );
 
       // do not add the sprite to the container and add the container to the scene

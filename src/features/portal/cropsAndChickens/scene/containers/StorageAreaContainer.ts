@@ -15,7 +15,7 @@ export class StorageAreaContainer extends Phaser.GameObjects.Container {
     super(
       scene,
       CROP_DEPOSIT_AREA_DIMENSIONS.x,
-      CROP_DEPOSIT_AREA_DIMENSIONS.y
+      CROP_DEPOSIT_AREA_DIMENSIONS.y,
     );
     this.scene = scene;
     this.player = player;
@@ -26,7 +26,7 @@ export class StorageAreaContainer extends Phaser.GameObjects.Container {
       (this.body as Physics.Arcade.Body)
         .setSize(
           CROP_DEPOSIT_AREA_DIMENSIONS.width,
-          CROP_DEPOSIT_AREA_DIMENSIONS.height
+          CROP_DEPOSIT_AREA_DIMENSIONS.height,
         )
         .setOffset(0, 0)
         .setImmovable(true)

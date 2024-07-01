@@ -28,7 +28,7 @@ export const CropsAndChickensPrize: React.FC = () => {
   const prize = useSelector(
     portalService,
     _prize,
-    (prev, next) => JSON.stringify(prev) === JSON.stringify(next)
+    (prev, next) => JSON.stringify(prev) === JSON.stringify(next),
   );
   const dailyHighscore = useSelector(portalService, _dailyHighscore);
 

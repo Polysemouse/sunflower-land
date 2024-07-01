@@ -55,7 +55,7 @@ export const CropsAndChickensSettings: React.FC = () => {
   const settingButton = (
     index: number,
     onClick: () => void,
-    children: JSX.Element
+    children: JSX.Element,
   ) => {
     const rightMargin = 8;
 
@@ -103,7 +103,7 @@ export const CropsAndChickensSettings: React.FC = () => {
           left: `${PIXEL_SCALE * 6}px`,
           width: `${PIXEL_SCALE * 10}px`,
         }}
-      />
+      />,
     );
 
   const gearButton = (index: number) =>
@@ -121,7 +121,7 @@ export const CropsAndChickensSettings: React.FC = () => {
           left: `${PIXEL_SCALE * 4}px`,
           width: `${PIXEL_SCALE * 14}px`,
         }}
-      />
+      />,
     );
 
   // list of buttons to show in the HUD from right to left in order

@@ -138,14 +138,14 @@ export class DarkModePipeline extends Phaser.Renderer.WebGL.Pipelines
     this.set2f(
       "screenResolution",
       Number(this.game.config.width) ?? 1,
-      Number(this.game.config.height) ?? 1
+      Number(this.game.config.height) ?? 1,
     );
     this.set2fv(
       "lightSources",
       this.lightSources
         .slice(0, MAX_LIGHT_SOURCES)
         .map((source) => [source.x, 1 - source.y])
-        .flat()
+        .flat(),
     );
   }
 }

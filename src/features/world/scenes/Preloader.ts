@@ -75,7 +75,7 @@ export abstract class Preloader extends Phaser.Scene {
 
       this.load.image(
         "joystick_indicator_dot",
-        "world/joystick_indicator_dot.png"
+        "world/joystick_indicator_dot.png",
       );
 
       this.load.spritesheet("silhouette", "world/silhouette.webp", {

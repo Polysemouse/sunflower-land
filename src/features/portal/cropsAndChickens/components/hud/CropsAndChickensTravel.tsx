@@ -49,7 +49,7 @@ export const CropsAndChickensTravel: React.FC = () => {
             "flex relative z-50 justify-center cursor-pointer",
             {
               "hover:img-highlight": !isJoystickActive && !isTouchDevice(),
-            }
+            },
           )}
           style={{
             width: `${PIXEL_SCALE * 22}px`,

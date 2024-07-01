@@ -66,7 +66,7 @@ export class HunterChickenContainer extends Phaser.GameObjects.Container {
       this.x,
       this.y,
       playerCoordinates.x,
-      playerCoordinates.y
+      playerCoordinates.y,
     );
 
     // add chicken sprite with offset
@@ -88,7 +88,7 @@ export class HunterChickenContainer extends Phaser.GameObjects.Container {
       "animationupdate",
       (
         _animation: Phaser.Animations.Animation,
-        frame: Phaser.Animations.AnimationFrame
+        frame: Phaser.Animations.AnimationFrame,
       ) => {
         if (!this.body || !player) return;
 
@@ -98,7 +98,7 @@ export class HunterChickenContainer extends Phaser.GameObjects.Container {
           player.x + playerCoordinatesOffset.x,
           player.y + playerCoordinatesOffset.y,
           this.x,
-          this.y
+          this.y,
         );
 
         if (frame.index === landingFrame) {
@@ -106,16 +106,16 @@ export class HunterChickenContainer extends Phaser.GameObjects.Container {
             forwardSpeed +
               Phaser.Math.RND.realInRange(
                 -0.5 * (forwardSpeed - hunterChickenForwardMin) - 2,
-                0.5 * (hunterChickenForwardMax - forwardSpeed) + 2
+                0.5 * (hunterChickenForwardMax - forwardSpeed) + 2,
               ),
             hunterChickenForwardMin,
-            hunterChickenForwardMax
+            hunterChickenForwardMax,
           );
 
           if (distance >= HUNTER_CHICKEN_INITIAL_DISTANCE) {
             forwardSpeed *= Math.pow(
               distance / HUNTER_CHICKEN_INITIAL_DISTANCE,
-              2
+              2,
             );
           }
 
@@ -125,7 +125,7 @@ export class HunterChickenContainer extends Phaser.GameObjects.Container {
             this.x,
             this.y,
             player.x + playerCoordinatesOffset.x,
-            player.y + playerCoordinatesOffset.y
+            player.y + playerCoordinatesOffset.y,
           );
 
           if (angle >= -Math.PI / 4 && angle <= Math.PI / 4) {
@@ -151,7 +151,7 @@ export class HunterChickenContainer extends Phaser.GameObjects.Container {
           this.body.velocity.x = 0;
           this.body.velocity.y = 0;
         }
-      }
+      },
     );
 
     scene.physics.add.existing(this);

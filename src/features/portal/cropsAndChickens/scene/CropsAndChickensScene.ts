@@ -114,7 +114,7 @@ export class CropsAndChickensScene extends BaseScene {
       {
         frameWidth: CHICKEN_SPRITE_PROPERTIES.frameWidth,
         frameHeight: CHICKEN_SPRITE_PROPERTIES.frameHeight,
-      }
+      },
     );
     this.load.spritesheet(
       "chicken_normal_right",
@@ -122,7 +122,7 @@ export class CropsAndChickensScene extends BaseScene {
       {
         frameWidth: CHICKEN_SPRITE_PROPERTIES.frameWidth,
         frameHeight: CHICKEN_SPRITE_PROPERTIES.frameHeight,
-      }
+      },
     );
     this.load.spritesheet(
       "chicken_normal_up",
@@ -130,7 +130,7 @@ export class CropsAndChickensScene extends BaseScene {
       {
         frameWidth: CHICKEN_SPRITE_PROPERTIES.frameWidth,
         frameHeight: CHICKEN_SPRITE_PROPERTIES.frameHeight,
-      }
+      },
     );
     this.load.spritesheet(
       "chicken_normal_down",
@@ -138,7 +138,7 @@ export class CropsAndChickensScene extends BaseScene {
       {
         frameWidth: CHICKEN_SPRITE_PROPERTIES.frameWidth,
         frameHeight: CHICKEN_SPRITE_PROPERTIES.frameHeight,
-      }
+      },
     );
 
     // hunter chicken spritesheets
@@ -148,7 +148,7 @@ export class CropsAndChickensScene extends BaseScene {
       {
         frameWidth: CHICKEN_SPRITE_PROPERTIES.frameWidth,
         frameHeight: CHICKEN_SPRITE_PROPERTIES.frameHeight,
-      }
+      },
     );
     this.load.spritesheet(
       "chicken_hunter_right",
@@ -156,7 +156,7 @@ export class CropsAndChickensScene extends BaseScene {
       {
         frameWidth: CHICKEN_SPRITE_PROPERTIES.frameWidth,
         frameHeight: CHICKEN_SPRITE_PROPERTIES.frameHeight,
-      }
+      },
     );
     this.load.spritesheet(
       "chicken_hunter_up",
@@ -164,7 +164,7 @@ export class CropsAndChickensScene extends BaseScene {
       {
         frameWidth: CHICKEN_SPRITE_PROPERTIES.frameWidth,
         frameHeight: CHICKEN_SPRITE_PROPERTIES.frameHeight,
-      }
+      },
     );
     this.load.spritesheet(
       "chicken_hunter_down",
@@ -172,7 +172,7 @@ export class CropsAndChickensScene extends BaseScene {
       {
         frameWidth: CHICKEN_SPRITE_PROPERTIES.frameWidth,
         frameHeight: CHICKEN_SPRITE_PROPERTIES.frameHeight,
-      }
+      },
     );
 
     // crops spritesheets
@@ -302,12 +302,12 @@ export class CropsAndChickensScene extends BaseScene {
       const playerX = Phaser.Math.Wrap(
         this.currentPlayer.x,
         PLAYER_MIN_XY,
-        PLAYER_MAX_XY
+        PLAYER_MAX_XY,
       );
       const playerY = Phaser.Math.Wrap(
         this.currentPlayer.y,
         PLAYER_MIN_XY,
-        PLAYER_MAX_XY
+        PLAYER_MAX_XY,
       );
       this.currentPlayer.x = playerX;
       this.currentPlayer.y = playerY;
@@ -317,12 +317,12 @@ export class CropsAndChickensScene extends BaseScene {
         chicken.x = Phaser.Math.Wrap(
           chicken.x,
           playerX - BOARD_WIDTH / 2,
-          playerX + BOARD_WIDTH / 2
+          playerX + BOARD_WIDTH / 2,
         );
         chicken.y = Phaser.Math.Wrap(
           chicken.y,
           playerY - BOARD_WIDTH / 2,
-          playerY + BOARD_WIDTH / 2
+          playerY + BOARD_WIDTH / 2,
         );
         chicken.setDepth(chicken.y);
       });
@@ -332,12 +332,12 @@ export class CropsAndChickensScene extends BaseScene {
         this.hunterChicken.x = Phaser.Math.Wrap(
           this.hunterChicken.x,
           playerX - BOARD_WIDTH / 2,
-          playerX + BOARD_WIDTH / 2
+          playerX + BOARD_WIDTH / 2,
         );
         this.hunterChicken.y = Phaser.Math.Wrap(
           this.hunterChicken.y,
           playerY - BOARD_WIDTH / 2,
-          playerY + BOARD_WIDTH / 2
+          playerY + BOARD_WIDTH / 2,
         );
         this.hunterChicken.setDepth(this.hunterChicken.y);
       }
@@ -394,7 +394,7 @@ export class CropsAndChickensScene extends BaseScene {
           scene: this,
           player: this.currentPlayer,
           harvestCrop: (crops, cropIndex) => this.harvestCrop(crops, cropIndex),
-        })
+        }),
     );
   }
 
@@ -404,7 +404,7 @@ export class CropsAndChickensScene extends BaseScene {
    * @returns All normal chickens for a given direction.
    */
   private createNormalChickens = (
-    direction: "left" | "right" | "up" | "down"
+    direction: "left" | "right" | "up" | "down",
   ) => {
     return CHICKEN_SPAWN_CONFIGURATIONS.flatMap((config) =>
       Array.from(
@@ -427,8 +427,8 @@ export class CropsAndChickensScene extends BaseScene {
             scene: this,
             player: this.currentPlayer,
             killPlayer: () => this.killPlayer(),
-          })
-      )
+          }),
+      ),
     );
   };
 
@@ -456,7 +456,7 @@ export class CropsAndChickensScene extends BaseScene {
   private updateShaders = () => {
     // get pipeline
     const darkModePipeline = this.cameras.main.getPostPipeline(
-      "DarkModePipeline"
+      "DarkModePipeline",
     ) as DarkModePipeline;
 
     // toggle dark mode
@@ -492,7 +492,7 @@ export class CropsAndChickensScene extends BaseScene {
         player.x,
         player.y,
         "crop_harvested",
-        cropIndex
+        cropIndex,
       );
 
       // adjust the angle and distance for the crop to radiate outward
@@ -510,7 +510,7 @@ export class CropsAndChickensScene extends BaseScene {
         },
         onComplete: (
           _: Phaser.Tweens.Tween,
-          targets: Phaser.GameObjects.Sprite[]
+          targets: Phaser.GameObjects.Sprite[],
         ) => {
           // fading tween starts when movement tween is complete
           targets.forEach((cropSprite) => {
@@ -546,7 +546,7 @@ export class CropsAndChickensScene extends BaseScene {
    */
   private harvestCrop = (
     crops: Phaser.GameObjects.Sprite[],
-    cropIndex: number
+    cropIndex: number,
   ) => {
     // destroy planted crop sprites
     crops.forEach((crop) => crop.destroy());
@@ -592,7 +592,7 @@ export class CropsAndChickensScene extends BaseScene {
         player.x,
         player.y,
         "crop_harvested",
-        cropIndex
+        cropIndex,
       );
 
       // adjust the angle and distance for the crop to radiate outward
@@ -610,7 +610,7 @@ export class CropsAndChickensScene extends BaseScene {
         },
         onComplete: (
           _: Phaser.Tweens.Tween,
-          targets: Phaser.GameObjects.Sprite[]
+          targets: Phaser.GameObjects.Sprite[],
         ) => {
           // fading tween starts when movement tween is complete
           targets.forEach((cropSprite) => {
@@ -657,7 +657,7 @@ export class CropsAndChickensScene extends BaseScene {
     const playerDeath = this.add.sprite(
       this.currentPlayer.x,
       this.currentPlayer.y - 1,
-      spriteName
+      spriteName,
     );
     playerDeath.setDepth(playerDeath.y);
 

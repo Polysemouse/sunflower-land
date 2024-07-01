@@ -18,7 +18,7 @@ export const getAttemptsLeft = (minigame: Minigame | undefined) => {
     (purchase) =>
       purchase.sfl === UNLIMITED_ATTEMPTS_SFL &&
       purchase.purchasedAt >= startOfThisWeekUTC &&
-      purchase.purchasedAt < endOfThisWeekUTC
+      purchase.purchasedAt < endOfThisWeekUTC,
   );
 
   if (hasUnlimitedAttempts) return Infinity;
@@ -31,7 +31,7 @@ export const getAttemptsLeft = (minigame: Minigame | undefined) => {
     0,
     0,
     0,
-    0
+    0,
   );
   const endOfTodayUTC = startOfTodayUTC + 24 * 60 * 60 * 1000; // 24 hours later
 
@@ -39,7 +39,7 @@ export const getAttemptsLeft = (minigame: Minigame | undefined) => {
     (purchase) =>
       purchase.sfl === RESTOCK_ATTEMPTS_SFL &&
       purchase.purchasedAt >= startOfTodayUTC &&
-      purchase.purchasedAt < endOfTodayUTC
+      purchase.purchasedAt < endOfTodayUTC,
   ).length;
 
   const attemptsToday = history[dateKey]?.attempts ?? 0;

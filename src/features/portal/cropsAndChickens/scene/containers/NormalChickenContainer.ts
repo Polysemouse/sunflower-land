@@ -40,18 +40,18 @@ export class NormalChickenContainer extends Phaser.GameObjects.Container {
 
     const startFrame = Phaser.Math.RND.integerInRange(
       0,
-      CHICKEN_SPRITE_PROPERTIES.frames - 1
+      CHICKEN_SPRITE_PROPERTIES.frames - 1,
     ); // start frame starts form 0
     const landingFrame = 4; // frame index starts form 1
     const jumpingDuration = (landingFrame - 1) / SPRITE_FRAME_RATE;
 
     let forwardSpeed = Phaser.Math.RND.realInRange(
       CHICKEN_SPEEDS.forwardMin,
-      CHICKEN_SPEEDS.forwardMax
+      CHICKEN_SPEEDS.forwardMax,
     );
     let sidewaysSpeed = Phaser.Math.RND.realInRange(
       -CHICKEN_SPEEDS.sidewaysMax,
-      CHICKEN_SPEEDS.sidewaysMax
+      CHICKEN_SPEEDS.sidewaysMax,
     );
     let sidewaysDisplacement = 0;
 
@@ -61,26 +61,26 @@ export class NormalChickenContainer extends Phaser.GameObjects.Container {
       "animationupdate",
       (
         _animation: Phaser.Animations.Animation,
-        frame: Phaser.Animations.AnimationFrame
+        frame: Phaser.Animations.AnimationFrame,
       ) => {
         if (frame.index === landingFrame) {
           forwardSpeed = Phaser.Math.Clamp(
             forwardSpeed +
               Phaser.Math.RND.realInRange(
                 -0.5 * (forwardSpeed - CHICKEN_SPEEDS.forwardMin) - 2,
-                0.5 * (CHICKEN_SPEEDS.forwardMax - forwardSpeed) + 2
+                0.5 * (CHICKEN_SPEEDS.forwardMax - forwardSpeed) + 2,
               ),
             CHICKEN_SPEEDS.forwardMin,
-            CHICKEN_SPEEDS.forwardMax
+            CHICKEN_SPEEDS.forwardMax,
           );
           sidewaysSpeed = Phaser.Math.Clamp(
             sidewaysSpeed +
               Phaser.Math.RND.realInRange(
                 -sidewaysDisplacement * 0.1 - CHICKEN_SPEEDS.sidewaysMax,
-                -sidewaysDisplacement * 0.1 + CHICKEN_SPEEDS.sidewaysMax
+                -sidewaysDisplacement * 0.1 + CHICKEN_SPEEDS.sidewaysMax,
               ),
             -CHICKEN_SPEEDS.sidewaysMax,
-            CHICKEN_SPEEDS.sidewaysMax
+            CHICKEN_SPEEDS.sidewaysMax,
           );
           sidewaysDisplacement += sidewaysSpeed * jumpingDuration;
         }
@@ -91,20 +91,20 @@ export class NormalChickenContainer extends Phaser.GameObjects.Container {
             direction === "left"
               ? -forwardSpeed
               : direction === "right"
-              ? forwardSpeed
-              : sidewaysSpeed;
+                ? forwardSpeed
+                : sidewaysSpeed;
           this.body.velocity.y =
             direction === "up"
               ? -forwardSpeed
               : direction === "down"
-              ? forwardSpeed
-              : sidewaysSpeed;
+                ? forwardSpeed
+                : sidewaysSpeed;
         }
         if (frame.index >= landingFrame) {
           this.body.velocity.x = 0;
           this.body.velocity.y = 0;
         }
-      }
+      },
     );
 
     scene.physics.add.existing(this);
