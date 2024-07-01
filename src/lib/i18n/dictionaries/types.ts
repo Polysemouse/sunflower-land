@@ -3039,7 +3039,7 @@ export type Portal =
   | "portal.example.claimPrize";
 
 export type PurchaseableBaitTranslation =
-  | "purchaseableBait.fishingLure.description";
+  "purchaseableBait.fishingLure.description";
 
 export type Quest =
   | "quest.mint.free"

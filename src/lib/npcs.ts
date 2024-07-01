@@ -1078,7 +1078,7 @@ export function acknowledgeNPC(npcName: NPCName) {
     JSON.stringify({
       ...previous,
       [npcName]: Date.now().toString(),
-    })
+    }),
   );
 }
 
