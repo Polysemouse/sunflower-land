@@ -633,7 +633,7 @@ export class CropsAndChickensScene extends BaseScene {
    * Kills the player then respawns the player.
    */
   private killPlayer = () => {
-    if (!this.currentPlayer || this.isPlayerDead || !this.isGamePlaying) {
+    if (!this.currentPlayer?.body || this.isPlayerDead || !this.isGamePlaying) {
       return;
     }
 
@@ -659,7 +659,7 @@ export class CropsAndChickensScene extends BaseScene {
       this.currentPlayer.y - 1,
       spriteName,
     );
-    playerDeath.setDepth(playerDeath.y);
+    playerDeath.setDepth(this.currentPlayer.body.position.y);
 
     if (!this.anims.exists(spriteKey as string)) {
       this.anims.create({

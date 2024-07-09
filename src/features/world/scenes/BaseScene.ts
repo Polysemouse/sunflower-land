@@ -228,12 +228,11 @@ export abstract class BaseScene extends Phaser.Scene {
 
       this.joystickIndicatorBase = this.add
         .circle(0, 0, 10, 0x000000, 0.1)
-        .setVisible(false)
-        .setDepth(1000000);
+        .setVisible(false);
       this.joystickIndicatorDot = this.add
         .sprite(spawn.x ?? 0, spawn.y ?? 0, "joystick_indicator_dot")
         .setVisible(false)
-        .setDepth(1000001);
+        .setDepth(1000000);
 
       this.initialiseCamera();
 
@@ -828,6 +827,7 @@ export abstract class BaseScene extends Phaser.Scene {
       this.currentPlayer.idle();
     }
 
+    this.joystickIndicatorBase?.setDepth(this.currentPlayer.y - 0.0001);
     this.currentPlayer.setDepth(this.currentPlayer.y);
 
     // this.cameras.main.setScroll(this.currentPlayer.x, this.currentPlayer.y);
