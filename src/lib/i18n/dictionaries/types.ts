@@ -1089,7 +1089,7 @@ export type CropsAndChickensMessages =
   | "crops-and-chickens.missionObjectives"
   | "crops-and-chickens.completed"
   | "crops-and-chickens.confirm"
-  | "crops-and-chickens.noPrizeAvailable"
+  | "crops-and-chickens.noPrizesAvailable"
   | "crops-and-chickens.playNow"
   | "crops-and-chickens.purchase"
   | "crops-and-chickens.chickenRescueHelp"

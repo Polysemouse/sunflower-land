@@ -2,7 +2,7 @@ import { Minigame } from "features/game/types/game";
 import {
   RESTOCK_ATTEMPTS_SFL,
   UNLIMITED_ATTEMPTS_SFL,
-  WEEKLY_ATTEMPTS,
+  DAILY_ATTEMPTS,
 } from "../CropsAndChickensConstants";
 
 export const getAttemptsLeft = (minigame: Minigame | undefined) => {
@@ -12,28 +12,16 @@ export const getAttemptsLeft = (minigame: Minigame | undefined) => {
   const purchases = minigame?.purchases ?? [];
 
   const now = new Date();
-  const startOfThisWeekUTC = getStartOfUTCWeek(now);
-  const endOfThisWeekUTC = startOfThisWeekUTC + 7 * 24 * 60 * 60 * 1000; // 7 days later
+  const startOfTodayUTC = getStartOfUTCDay(now);
+  const endOfTodayUTC = startOfTodayUTC + 24 * 60 * 60 * 1000; // 24 hours later
   const hasUnlimitedAttempts = purchases.some(
     (purchase) =>
       purchase.sfl === UNLIMITED_ATTEMPTS_SFL &&
-      purchase.purchasedAt >= startOfThisWeekUTC &&
-      purchase.purchasedAt < endOfThisWeekUTC,
+      purchase.purchasedAt >= startOfTodayUTC &&
+      purchase.purchasedAt < endOfTodayUTC,
   );
 
   if (hasUnlimitedAttempts) return Infinity;
-
-  // get current UTC date (midnight UTC of today)
-  const startOfTodayUTC = Date.UTC(
-    now.getUTCFullYear(),
-    now.getUTCMonth(),
-    now.getUTCDate(),
-    0,
-    0,
-    0,
-    0,
-  );
-  const endOfTodayUTC = startOfTodayUTC + 24 * 60 * 60 * 1000; // 24 hours later
 
   const restockedCount = purchases.filter(
     (purchase) =>
@@ -44,15 +32,13 @@ export const getAttemptsLeft = (minigame: Minigame | undefined) => {
 
   const attemptsToday = history[dateKey]?.attempts ?? 0;
   const attemptsLeft =
-    WEEKLY_ATTEMPTS - attemptsToday + WEEKLY_ATTEMPTS * restockedCount;
+    DAILY_ATTEMPTS - attemptsToday + DAILY_ATTEMPTS * restockedCount;
 
   return attemptsLeft;
 };
 
-const getStartOfUTCWeek = (date: Date) => {
-  const dayOfWeek = date.getUTCDay(); // 0 (Sunday) to 6 (Saturday)
-  const startOfWeek = new Date(date);
-  startOfWeek.setUTCDate(startOfWeek.getUTCDate() - dayOfWeek); // go to the start of the week
-  startOfWeek.setUTCHours(0, 0, 0, 0); // set time to midnight UTC
-  return startOfWeek.getTime();
+const getStartOfUTCDay = (date: Date) => {
+  const startOfDay = new Date(date);
+  startOfDay.setUTCHours(0, 0, 0, 0); // set time to midnight UTC
+  return startOfDay.getTime();
 };

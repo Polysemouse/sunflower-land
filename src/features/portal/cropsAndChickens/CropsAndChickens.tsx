@@ -18,7 +18,7 @@ import sfl from "assets/icons/sfl.webp";
 import {
   RESTOCK_ATTEMPTS_SFL,
   UNLIMITED_ATTEMPTS_SFL,
-  WEEKLY_ATTEMPTS,
+  DAILY_ATTEMPTS,
 } from "./CropsAndChickensConstants";
 import {
   authorisePortal,
@@ -163,7 +163,7 @@ export const CropsAndChickens: React.FC = () => {
                 }
               >
                 {t("crops-and-chickens.buyAttempts", {
-                  attempts: WEEKLY_ATTEMPTS,
+                  attempts: DAILY_ATTEMPTS,
                   sfl: RESTOCK_ATTEMPTS_SFL,
                 })}
               </Button>

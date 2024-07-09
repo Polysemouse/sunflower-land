@@ -1029,8 +1029,6 @@ export abstract class BaseScene extends Phaser.Scene {
       const warpTo = this.switchToScene;
       this.switchToScene = undefined;
 
-      this.registry.get("navigate")(`/world/${warpTo}`);
-
       // this.mmoService?.state.context.server?.send(0, { sceneId: warpTo });
       this.mmoService?.send("SWITCH_SCENE", { sceneId: warpTo });
       this.scene.start(warpTo, { previousSceneId: this.sceneId });

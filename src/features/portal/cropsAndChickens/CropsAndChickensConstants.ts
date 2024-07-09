@@ -1,9 +1,9 @@
 import { SQUARE_WIDTH } from "features/game/lib/constants";
 import { InventoryItemName } from "features/game/types/game";
 
-export const UNLIMITED_ATTEMPTS_SFL = 5;
+export const UNLIMITED_ATTEMPTS_SFL = 3;
 export const RESTOCK_ATTEMPTS_SFL = 1;
-export const WEEKLY_ATTEMPTS = 5;
+export const DAILY_ATTEMPTS = 5;
 
 export const GAME_SECONDS = 120;
 

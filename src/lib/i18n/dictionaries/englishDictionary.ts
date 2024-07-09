@@ -1523,19 +1523,20 @@ const cropsAndChickens: Record<CropsAndChickensMessages, string> = {
     "Mission: Deposit {{targetScore}} points worth of crops",
   "crops-and-chickens.completed": "Completed",
   "crops-and-chickens.confirm": "Are you sure you want to spend {{sfl}} SFL",
-  "crops-and-chickens.noPrizeAvailable": "No weekly prize available",
+  "crops-and-chickens.noPrizesAvailable": "No prizes available",
   "crops-and-chickens.playNow": "Play now",
   "crops-and-chickens.purchase": "Purchase",
   "crops-and-chickens.chickenRescueHelp": "Can you help me collect the crops?",
   "crops-and-chickens.noAttemptsRemaining": "No attempts remaining",
   "crops-and-chickens.unlimitedAttempts": "Unlimited attempts",
   "crops-and-chickens.sflRequired": "SFL required",
-  "crops-and-chickens.youHaveRunOutOfAttempts": "You have run out of attempts",
+  "crops-and-chickens.youHaveRunOutOfAttempts":
+    "You have run out of attempts for today.",
   "crops-and-chickens.wouldYouLikeToUnlock":
     "Would you like to buy more attempts?",
   "crops-and-chickens.buyAttempts": "Buy {{attempts}} attempts ({{sfl}} SFL)",
   "crops-and-chickens.unlockAttempts":
-    "Unlock unlimited attempts for this week ({{sfl}} SFL)",
+    "Unlock unlimited attempts for today ({{sfl}} SFL)",
   "crops-and-chickens.missionComplete": "Mission completed",
   "crops-and-chickens.missionFailed": "Mission failed",
   "crops-and-chickens.attemptsRemainingPlural": "{{attempts}} attempts left",

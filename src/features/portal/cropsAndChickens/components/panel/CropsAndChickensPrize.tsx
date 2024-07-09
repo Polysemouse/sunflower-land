@@ -37,7 +37,7 @@ export const CropsAndChickensPrize: React.FC = () => {
       <OuterPanel>
         <div className="px-1">
           <Label type="danger" icon={SUNNYSIDE.icons.sad}>
-            {t("crops-and-chickens.noPrizeAvailable")}
+            {t("crops-and-chickens.noPrizesAvailable")}
           </Label>
         </div>
       </OuterPanel>

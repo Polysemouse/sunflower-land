@@ -6,7 +6,7 @@ import {
   GAME_SECONDS,
   RESTOCK_ATTEMPTS_SFL,
   UNLIMITED_ATTEMPTS_SFL,
-  WEEKLY_ATTEMPTS,
+  DAILY_ATTEMPTS,
 } from "../CropsAndChickensConstants";
 import { GameState } from "features/game/types/game";
 import { purchaseMinigameItem } from "features/game/events/minigames/purchaseMinigameItem";
@@ -126,7 +126,7 @@ export const portalMachine = createMachine<Context, PortalEvent, PortalState>({
       invoke: {
         src: async (context) => {
           if (!getUrl()) {
-            return { game: OFFLINE_FARM, attemptsLeft: WEEKLY_ATTEMPTS };
+            return { game: OFFLINE_FARM, attemptsLeft: DAILY_ATTEMPTS };
           }
 
           const { farmId } = decodeToken(context.jwt as string);
