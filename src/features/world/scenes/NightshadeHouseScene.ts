@@ -43,6 +43,10 @@ export class NightshadeHouseScene extends FactionHouseScene {
       frameWidth: 8,
       frameHeight: 12,
     });
+
+    this.load.image("pet_sleeping", "world/nightshades_pet_sleeping.webp");
+    this.load.image("pet_happy", "world/nightshades_pet_happy.webp");
+    this.load.image("pet_hungry", "world/nightshades_pet_hungry.webp");
   }
 
   create() {
@@ -68,5 +72,8 @@ export class NightshadeHouseScene extends FactionHouseScene {
     fire2.play("fire_anim", true);
 
     this.setupPrize({ x: 240, y: 416 });
+    this.setUpPet();
+
+    this.setupNotice({ x: 313, y: 368 });
   }
 }

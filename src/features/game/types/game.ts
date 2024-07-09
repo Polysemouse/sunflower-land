@@ -795,27 +795,25 @@ export type ChoreV2 = {
 };
 
 export type KingdomChores = {
-  chores: Record<number, KingdomChore>;
-  week: number;
+  chores: KingdomChore[];
   choresCompleted: number;
   choresSkipped: number;
-  weeklyChoresCompleted: number;
-  weeklyChoresSkipped: number;
-  weeklyChores: number;
+  skipAvailableAt?: number;
+  resetsAt?: number;
 };
 
 export type KingdomChore = {
   activity: BumpkinActivityName;
   description: string;
-  resource: InventoryItemName;
-  createdAt: number;
-  completedAt?: number;
+  image: InventoryItemName;
   requirement: number;
-  bumpkinId: number;
-  startCount: number;
   marks: number;
-  active?: boolean;
-};
+  completedAt?: number;
+  skippedAt?: number;
+} & (
+  | { startedAt: number; startCount: number }
+  | { startedAt?: never; startCount?: never }
+);
 
 export type SeasonWeek = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13;
 
@@ -1013,27 +1011,27 @@ export type FactionName =
 export type ResourceRequest = {
   item: InventoryItemName;
   amount: number;
-  deliveryCount: number;
-};
-
-export type FactionKitchen = {
-  points: number;
-  week: number;
-  requests: ResourceRequest[];
-};
-
-export type FactionDonated = {
-  daily: {
-    sfl: {
-      day?: number;
-      amount?: number;
-    };
-    resources: {
-      day?: number;
-      amount?: number;
-    };
+  dailyFulfilled: {
+    [day: number]: number;
   };
-  totalItems: Partial<Record<InventoryItemName | "sfl", number>>;
+};
+
+export type FactionPetRequest = {
+  food: ConsumableName;
+  quantity: number;
+  dailyFulfilled: {
+    [day: number]: number;
+  };
+};
+
+export type FactionPet = {
+  week: string;
+  requests: FactionPetRequest[];
+};
+
+type FactionKitchen = {
+  week: string;
+  requests: ResourceRequest[];
 };
 
 export type FactionPrize = {
@@ -1042,23 +1040,32 @@ export type FactionPrize = {
   items: Partial<Record<InventoryItemName, number>>;
 };
 
+export type CollectivePet = {
+  totalXP: number;
+  goalXP: number;
+  goalReached: boolean;
+  streak: number;
+};
+
 export type FactionHistory = {
   score: number;
-
+  petXP: number;
   results?: {
     rank: number;
     reward?: FactionPrize;
     claimedAt?: number;
   };
+
+  collectivePet?: CollectivePet;
 };
 
 export type Faction = {
   name: FactionName;
   pledgedAt: number;
   emblemsClaimedAt?: number;
-  points: number;
-  donated: FactionDonated;
+  points?: number;
   kitchen?: FactionKitchen;
+  pet?: FactionPet;
   history: Record<string, FactionHistory>;
 };
 
@@ -1188,7 +1195,7 @@ export interface GameState {
     bid?: Bid;
   };
   chores?: ChoresV2;
-  kingdomChores?: KingdomChores;
+  kingdomChores: KingdomChores;
   mushrooms: Mushrooms;
   catchTheKraken: CatchTheKraken;
   potionHouse?: PotionHouse;

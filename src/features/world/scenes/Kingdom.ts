@@ -2,7 +2,11 @@ import mapJSON from "assets/map/kingdom.json";
 
 import { SceneId } from "../mmoMachine";
 import { BaseScene, NPCBumpkin } from "./BaseScene";
-import { fetchLeaderboardData } from "features/game/expansion/components/leaderboard/actions/leaderboard";
+import {
+  KingdomLeaderboard,
+  fetchLeaderboardData,
+  getChampionsLeaderboard,
+} from "features/game/expansion/components/leaderboard/actions/leaderboard";
 import { interactableModalManager } from "../ui/InteractableModals";
 import { translate } from "lib/i18n/translate";
 import { SOUNDS } from "assets/sound-effects/soundEffects";
@@ -11,6 +15,16 @@ import {
   getCachedAudioSetting,
 } from "features/game/lib/audio";
 import { npcModalManager } from "../ui/NPCModals";
+import { FactionName } from "features/game/types/game";
+import { Coordinates } from "features/game/expansion/components/MapPlacement";
+import { getKeys } from "features/game/types/decorations";
+import { JoinFactionAction } from "features/game/events/landExpansion/joinFaction";
+import { hasFeatureAccess } from "lib/flags";
+import {
+  getPreviousWeek,
+  secondsTillWeekReset,
+} from "features/game/lib/factions";
+import { hasReadKingdomNotice } from "../ui/kingdom/KingdomNoticeboard";
 
 export const KINGDOM_NPCS: NPCBumpkin[] = [
   {
@@ -61,6 +75,20 @@ export const KINGDOM_NPCS: NPCBumpkin[] = [
   { npc: "eldric", x: 129, y: 562 },
 ];
 
+const DOORS: Record<FactionName, Coordinates & { door: string }> = {
+  goblins: { x: 120, y: 760, door: "green_door" },
+  sunflorians: { x: 21 * 16 + 8, y: 38 * 16 + 8, door: "orange_door" },
+  nightshades: { x: 7 * 16 + 8, y: 26 * 16 + 8, door: "red_door" },
+  bumpkins: { x: 23 * 16 + 8, y: 27 * 16 + 8, door: "red_door" },
+};
+
+const THRONES: Record<FactionName, string> = {
+  goblins: "goblin_champions",
+  sunflorians: "sunflorian_champions",
+  nightshades: "nightshade_champions",
+  bumpkins: "sunflorian_champions",
+};
+
 export class KingdomScene extends BaseScene {
   sceneId: SceneId = "kingdom";
 
@@ -80,6 +108,8 @@ export class KingdomScene extends BaseScene {
     // Preload the leaderboard data (async).
     // This is used by the faction spruikers when claiming emblems.
     fetchLeaderboardData(this.id);
+
+    this.load.image("question_disc", "world/question_disc.png");
 
     this.load.spritesheet("portal", "world/portal_well_sheet.png", {
       frameWidth: 20,
@@ -109,6 +139,14 @@ export class KingdomScene extends BaseScene {
     this.load.image("knights_gambit", "world/knights_gambit.png");
     this.load.image("sunflorian_helmet", "world/sunflorian_helmet.png");
     this.load.image("shop_icon", "world/shop_disc.png");
+    getKeys(DOORS).forEach((key) => {
+      this.load.image(DOORS[key].door, `world/${DOORS[key].door}.png`);
+    });
+
+    this.load.image("empty_champions", "world/empty_champions.png");
+    getKeys(THRONES).forEach((key) => {
+      this.load.image(THRONES[key], `world/${THRONES[key]}.png`);
+    });
   }
 
   addShopDisplayItems() {
@@ -224,6 +262,44 @@ export class KingdomScene extends BaseScene {
     });
     bud3.setScale(-1, 1).play("castle_bud_3_anim", true);
 
+    const faction = this.gameService.state.context.state.faction?.name;
+    getKeys(DOORS).forEach((key) => {
+      if (faction === key && hasFeatureAccess(this.gameState, "FACTION_HOUSE"))
+        return;
+
+      const door = this.add.image(DOORS[key].x, DOORS[key].y, DOORS[key].door);
+      this.physics.add.existing(door);
+      (door.body as Phaser.Physics.Arcade.Body)
+        .setSize(16, 16)
+        .setImmovable(true)
+        .setCollideWorldBounds(true);
+      this.colliders?.add(door);
+      this.physics.world.enable(door);
+
+      this.gameService.onEvent((e) => {
+        if (
+          e.type === "faction.joined" &&
+          (e as JoinFactionAction).faction === key
+        ) {
+          door.destroy();
+        }
+      });
+    });
+
+    if (hasFeatureAccess(this.gameState, "FACTION_HOUSE")) {
+      this.setChampions();
+
+      // After 30 seconds of new week, show the new throne!
+      const secondsTillReset = secondsTillWeekReset() + 30;
+      setTimeout(() => {
+        this.setChampions();
+      }, secondsTillReset * 1000);
+    }
+
+    if (!hasReadKingdomNotice()) {
+      this.add.image(280, 720, "question_disc").setDepth(1000000);
+    }
+
     const audioMuted = getCachedAudioSetting<boolean>(
       AudioLocalStorageKeys.audioMuted,
       false,
@@ -242,6 +318,96 @@ export class KingdomScene extends BaseScene {
       this.sound.getAllPlaying().forEach((sound) => {
         sound.destroy();
       });
+    });
+  }
+
+  public champions: Phaser.GameObjects.Sprite | undefined;
+
+  async setChampions() {
+    if (this.champions) {
+      this.champions.destroy();
+      this.showPoof();
+      this.champions = undefined;
+    }
+
+    this.champions = this.add.sprite(240, 646, "empty_champions");
+    this.physics.add.existing(this.champions);
+    (this.champions.body as Phaser.Physics.Arcade.Body)
+      .setSize(51, 38)
+      .setImmovable(true)
+      .setCollideWorldBounds(true);
+    this.colliders?.add(this.champions);
+    this.physics.world.enable(this.champions);
+    this.champions
+      .setInteractive({ cursor: "pointer" })
+      .on("pointerdown", () => {
+        interactableModalManager.open("champions");
+      });
+
+    const leaderboard = await getChampionsLeaderboard<KingdomLeaderboard>({
+      farmId: Number(this.gameService.state.context.farmId),
+      date: getPreviousWeek(),
+    });
+
+    if (!leaderboard || leaderboard.status === "pending") {
+      return;
+    }
+
+    const totals = leaderboard.marks.totalTickets;
+    const winningFaction = getKeys(totals).reduce((winner, name) => {
+      return totals[winner] > totals[name] ? winner : name;
+    }, "bumpkins");
+
+    this.champions.destroy();
+    this.champions = undefined;
+
+    const throne = THRONES[winningFaction];
+
+    if (!this.textures.exists(throne)) {
+      return;
+    }
+
+    this.champions = this.add.sprite(240, 646, throne);
+
+    this.physics.add.existing(this.champions);
+    (this.champions.body as Phaser.Physics.Arcade.Body)
+      .setSize(51, 38)
+      .setImmovable(true)
+      .setCollideWorldBounds(true);
+    this.colliders?.add(this.champions);
+    this.physics.world.enable(this.champions);
+
+    this.champions
+      .setInteractive({ cursor: "pointer" })
+      .on("pointerdown", () => {
+        interactableModalManager.open("champions");
+      });
+
+    this.showPoof();
+  }
+
+  showPoof() {
+    const poof = this.add.sprite(240, 646, "poof").setDepth(1000000);
+
+    this.anims.create({
+      key: `poof_anim`,
+      frames: this.anims.generateFrameNumbers("poof", {
+        start: 0,
+        // TODO - buds with longer animation frames?
+        end: 8,
+      }),
+      repeat: 0,
+      frameRate: 10,
+    });
+
+    poof.play(`poof_anim`, true);
+
+    // Listen for the animation complete event
+    poof.on("animationcomplete", function (animation: { key: string }) {
+      if (animation.key === "poof_anim") {
+        // Animation 'poof_anim' has completed, destroy the sprite
+        poof.destroy();
+      }
     });
   }
 }

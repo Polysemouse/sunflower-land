@@ -119,6 +119,7 @@ export type GeneralTerms =
   | "maintenance"
   | "make.wish"
   | "making.wish"
+  | "marks"
   | "max"
   | "max.reached"
   | "minimum"
@@ -190,6 +191,7 @@ export type GeneralTerms =
   | "share"
   | "skillPts"
   | "skills"
+  | "skipped"
   | "skipping"
   | "skip.order"
   | "sound.effects"
@@ -213,6 +215,7 @@ export type GeneralTerms =
   | "unlock.land"
   | "unlocking"
   | "unmute"
+  | "upcoming"
   | "use.craft"
   | "verify"
   | "version"
@@ -851,7 +854,16 @@ export type ChoresStart =
   | "chores.noChore"
   | "chores.newSeason"
   | "chores.choresFrozen"
-  | "chores.left";
+  | "kingdomChores.preparing"
+  | "kingdomChores.completed"
+  | "kingdomChores.noChores"
+  | "kingdomChores.noUpcoming"
+  | "kingdomChores.progress"
+  | "kingdomChores.nextSkip"
+  | "kingdomChores.skipWarning"
+  | "kingdomChores.completeActive"
+  | "kingdomChores.loading"
+  | "kingdomChores.reset";
 
 export type ChumDetails =
   | "chumDetails.gold"
@@ -921,6 +933,9 @@ export type Conversations =
   | "betty-intro.one"
   | "betty-intro.two"
   | "betty-intro.three"
+  | "faction-intro.one"
+  | "faction-intro.two"
+  | "faction-intro.three"
   | "home-intro.one"
   | "home-intro.two"
   | "home-intro.three"
@@ -1547,6 +1562,14 @@ export type Factions =
   | "faction.emblemAirdrop"
   | "faction.emblemAirdrop.closes"
   // Kingdom
+  | "kingdom.noticeboard.one"
+  | "kingdom.noticeboard.two"
+  | "kingdom.noticeboard.three"
+  | "kingdom.noticeboard.four"
+  | "faction.noticeboard.one"
+  | "faction.noticeboard.two"
+  | "faction.noticeboard.three"
+  | "faction.noticeboard.four"
   | "faction.restrited.area"
   | "faction.not.pledged"
   | "faction.cost"
@@ -1561,6 +1584,7 @@ export type Factions =
   | "faction.kitchen.gatherResources"
   | "faction.kitchen.preparing"
   | "faction.kitchen.newRequests"
+  | "faction.pet.gatherResources"
   // Emblem Airdrop
   | "faction.claimEmblems.alreadyClaimed"
   | "faction.claimEmblems.emblemsEarned"
@@ -1589,7 +1613,16 @@ export type Factions =
   | "faction.shop.onlyFor"
   | "faction.shop.welcome"
   | "faction.noPrizeFound"
-  | "faction.goodLuck";
+  | "faction.goodLuck"
+
+  // Faction Pet
+  | "faction.pet.weeklyGoal"
+  | "faction.pet.hungry"
+  | "faction.pet.fed"
+  | "faction.pet.sleeping"
+  | "faction.pet.newRequests"
+  | "faction.pet.streak"
+  | "faction.pet.wakes.in";
 
 export type FactionShopDescription =
   | "description.factionShop.sunflorianThrone"
@@ -2057,6 +2090,13 @@ export type GuideCompost =
   | "guide.compost.useEggs"
   | "guide.compost.addEggs.confirmation";
 
+export type GuideFactionPet =
+  | "guide.factionPet.one"
+  | "guide.factionPet.two"
+  | "guide.factionPet.three"
+  | "guide.factionPet.four"
+  | "guide.factionPet.five";
+
 export type GuideTerms =
   | "guide.intro"
   | "gathering.guide.one"
@@ -2083,7 +2123,10 @@ export type GuideTerms =
   | "deliveries.guide.two"
   | "deliveries.intro"
   | "deliveries.new"
-  | "chores.intro"
+  | "chores.hank"
+  | "chores.hank.intro"
+  | "chores.kingdom"
+  | "chores.kingdom.intro"
   | "scavenger.guide.one"
   | "scavenger.guide.two"
   | "fruit.guide.one"
@@ -3618,7 +3661,20 @@ export type Leaderboard =
   | "leaderboard.initialising"
   | "leaderboard.topTen"
   | "leaderboard.yourPosition"
-  | "leaderboard.factionMembers";
+  | "leaderboard.factionMembers"
+  | "leaderboard.resultsPending"
+  | "leaderboard.champions"
+  | "leaderboard.congratulations"
+  | "leaderboard.position"
+  | "leaderboard.player"
+  | "leaderboard.score"
+  | "leaderboard.prizes"
+  | "leaderboard.faction.description"
+  | "leaderboard.faction.champion"
+  | "leaderboard.faction.championPrizes"
+  | "leaderboard.faction.bonusMarks"
+  | "leaderboard.faction.topPlayers"
+  | "leaderboard.faction.topPlayerPrizes";
 
 export type GameOptions =
   | "gameOptions.title"
@@ -3875,4 +3931,5 @@ export type TranslationKeys =
   | Trading
   | RestrictionReason
   | Leaderboard
-  | EasterEggKeys;
+  | EasterEggKeys
+  | GuideFactionPet;

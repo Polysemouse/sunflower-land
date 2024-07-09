@@ -7,7 +7,7 @@ import { KNOWN_IDS } from "features/game/types";
 
 const IMAGES: Partial<Record<InventoryItemName, string>> = {
   "Goblin Gold Champion": "src/assets/sfts/goblin_gold_champion.png",
-  "Goblin Silver Champion": "src/assets/sfts/goblin_gold_champion.png",
+  "Goblin Silver Champion": "src/assets/sfts/goblin_silver_champion.png",
   "Goblin Bronze Champion": "src/assets/sfts/goblin_bronze_champion.png",
   "Bumpkin Bronze Champion": "src/assets/sfts/bumpkin_gold_champion.png",
   "Bumpkin Gold Champion": "src/assets/sfts/bumpkin_silver_champion.png",
@@ -20,6 +20,7 @@ const IMAGES: Partial<Record<InventoryItemName, string>> = {
   "Sunflorian Gold Champion": "src/assets/sfts/sunflorian_silver_champion.png",
   "Sunflorian Silver Champion":
     "src/assets/sfts/sunflorian_bronze_champion.png",
+  "Jelly Lamp": "src/assets/sfts/jelly_lamp.webp",
 };
 
 const WIDTH = 1920;

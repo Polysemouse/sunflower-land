@@ -2,16 +2,17 @@ import { CONFIG } from "lib/config";
 import { ERRORS } from "lib/errors";
 import {
   Leaderboards,
-  cacheLeaderboardData,
+  cacheLeaderboard,
   getCachedLeaderboardData,
 } from "./cache";
 import { FactionName, MazeAttempt } from "features/game/types/game";
+import { getFactionWeek } from "features/game/lib/factions";
 
 const API_URL = CONFIG.API_URL;
 
 type Options = {
   farmId: number;
-  leaderboardName: "maze" | "tickets" | "factions" | "kingdom";
+  leaderboardName: keyof Leaderboards;
 };
 
 export type RankData = {
@@ -44,17 +45,23 @@ export type FactionLeaderboard = {
 };
 
 export type KingdomLeaderboard = {
-  emblems: {
-    topTens: Record<FactionName, RankData[]>;
-    totalMembers: Record<FactionName, number>;
-    totalTickets: Record<FactionName, number>;
-    emblemRankingData?: RankData[] | null;
-  };
   marks: {
     topTens: Record<FactionName, RankData[]>;
     totalMembers: Record<FactionName, number>;
     totalTickets: Record<FactionName, number>;
     marksRankingData?: RankData[] | null;
+  };
+  lastUpdated: number;
+  status: "ready" | "pending";
+  week: string;
+};
+
+export type EmblemsLeaderboard = {
+  emblems: {
+    topTens: Record<FactionName, RankData[]>;
+    totalMembers: Record<FactionName, number>;
+    totalTickets: Record<FactionName, number>;
+    emblemRankingData?: RankData[] | null;
   };
   lastUpdated: number;
 };
@@ -63,15 +70,22 @@ export async function getLeaderboard<T>({
   farmId,
   leaderboardName,
 }: Options): Promise<T | undefined> {
-  const response = await window.fetch(
-    `${API_URL}/leaderboard/${leaderboardName}/${farmId}`,
-    {
-      method: "GET",
-      headers: {
-        "content-type": "application/json;charset=UTF-8",
-      },
+  const cache = getCachedLeaderboardData({
+    name: leaderboardName,
+  });
+
+  if (cache) {
+    return cache as T;
+  }
+
+  const url = `${API_URL}/leaderboard/${leaderboardName}/${farmId}`;
+
+  const response = await window.fetch(url, {
+    method: "GET",
+    headers: {
+      "content-type": "application/json;charset=UTF-8",
     },
-  );
+  });
 
   if (response.status === 429) {
     throw new Error(ERRORS.TOO_MANY_REQUESTS);
@@ -81,62 +95,91 @@ export async function getLeaderboard<T>({
     return;
   }
 
-  return await response.json();
+  const data = await response.json();
+
+  cacheLeaderboard({ name: leaderboardName, data });
+
+  return data;
+}
+
+const KINGDOM_LEADERBOARD_CACHE = 10 * 60 * 1000;
+
+export async function getChampionsLeaderboard<T>({
+  farmId,
+  date,
+}: {
+  farmId: number;
+  date: string;
+}): Promise<KingdomLeaderboard | undefined> {
+  const cache = getCachedLeaderboardData({
+    name: "champions",
+    duration: KINGDOM_LEADERBOARD_CACHE,
+  });
+
+  const isCorrectWeek =
+    cache?.week === getFactionWeek({ date: new Date(date) });
+
+  if (cache && isCorrectWeek) {
+    return cache;
+  }
+
+  const url = `${API_URL}/leaderboard/kingdom/${farmId}?date=${date}`;
+
+  const response = await window.fetch(url, {
+    method: "GET",
+    headers: {
+      "content-type": "application/json;charset=UTF-8",
+    },
+  });
+
+  if (response.status === 429) {
+    throw new Error(ERRORS.TOO_MANY_REQUESTS);
+  }
+
+  if (response.status >= 400) {
+    return;
+  }
+
+  const data = await response.json();
+
+  cacheLeaderboard({ name: "champions", data });
+
+  return data;
 }
 
 export async function fetchLeaderboardData(
   farmId: number,
 ): Promise<Leaderboards | null> {
-  let cachedLeaderboardData = getCachedLeaderboardData();
-
-  // This is only required for one hour after kingdom launch
-  // If reading this comment after kingdom launch, June 14th, 2024, delete this conditional
-  // and update `let` to `const` above.
-  if (
-    cachedLeaderboardData !== null &&
-    !("percentiles" in cachedLeaderboardData.factions)
-  ) {
-    cachedLeaderboardData = null;
-  }
-
-  if (cachedLeaderboardData) return cachedLeaderboardData;
-
   try {
-    const [ticketLeaderboard, factionsLeaderboard, kingdomLeaderboard] =
-      await Promise.all([
-        getLeaderboard<TicketLeaderboard>({
-          farmId: Number(farmId),
-          leaderboardName: "tickets",
-        }),
-        getLeaderboard<FactionLeaderboard>({
-          farmId: Number(farmId),
-          leaderboardName: "factions",
-        }),
-        getLeaderboard<KingdomLeaderboard>({
-          farmId: Number(farmId),
-          leaderboardName: "kingdom",
-        }),
-      ]);
-
-    // Leaderboard are created at the same time, so if one is missing, the other is too
-    if (!ticketLeaderboard || !factionsLeaderboard || !kingdomLeaderboard)
-      return null;
-
-    // Likewise, their lastUpdated timestamps should be the same
-    const lastUpdated = ticketLeaderboard.lastUpdated;
-
-    cacheLeaderboardData({
-      tickets: ticketLeaderboard,
-      factions: factionsLeaderboard,
-      kingdom: kingdomLeaderboard,
-      lastUpdated,
-    });
+    const [
+      ticketLeaderboard,
+      factionsLeaderboard,
+      kingdomLeaderboard,
+      emblemsLeaderboard,
+    ] = await Promise.all([
+      getLeaderboard<TicketLeaderboard>({
+        farmId: Number(farmId),
+        leaderboardName: "tickets",
+      }),
+      getLeaderboard<FactionLeaderboard>({
+        farmId: Number(farmId),
+        leaderboardName: "factions",
+      }),
+      getLeaderboard<KingdomLeaderboard>({
+        farmId: Number(farmId),
+        leaderboardName: "kingdom",
+      }),
+      getLeaderboard<EmblemsLeaderboard>({
+        farmId: Number(farmId),
+        leaderboardName: "emblems",
+      }),
+    ]);
 
     return {
       tickets: ticketLeaderboard,
       factions: factionsLeaderboard,
       kingdom: kingdomLeaderboard,
-      lastUpdated,
+      emblems: emblemsLeaderboard,
     };
   } catch (error) {
     // eslint-disable-next-line no-console
@@ -144,3 +187,40 @@ export async function fetchLeaderboardData(
     return null;
   }
 }
+
+// export async function fetchKingdomLeaderboard(
+//   farmId: number,
+//   week: string
+// ): Promise<Leaderboards | null> {
+//   let cachedLeaderboardData = getCachedLeaderboardData();
+
+//   if (cachedLeaderboardData && cachedLeaderboardData?.kingdom.week === week) {
+//     return cachedLeaderboardData;
+//   }
+
+//   const kingdomLeaderboard = await getLeaderboard<TicketLeaderboard>({
+//         farmId: Number(farmId),
+//         leaderboardName: "tickets",
+//       })
+
+//     cacheLeaderboardData({
+//       tickets: cachedLeaderboardData?.tickets,
+//       factions: cachedLeaderboardData.factions,
+//       kingdom: kingdomLeaderboard,
+//       emblems: cachedLeaderboardData.emblems,
+//       lastUpdated: cachedLeaderboardData?.lastUpdated,
+//     });
+
+//     return {
+//       tickets: ticketLeaderboard,
+//       factions: factionsLeaderboard,
+//       kingdom: kingdomLeaderboard,
+//       emblems: emblemsLeaderboard,
+//       lastUpdated,
+//     };
+//   } catch (error) {
+//     // eslint-disable-next-line no-console
+//     console.error("error", error);
+//     return null;
+//   }
+// }

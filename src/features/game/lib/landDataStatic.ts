@@ -1349,16 +1349,30 @@ export const STATIC_OFFLINE_FARM: GameState = {
     name: "nightshades",
     pledgedAt: 0,
     points: 100,
-    donated: {
-      daily: {
-        sfl: {},
-        resources: {},
-      },
-      totalItems: {},
+    pet: {
+      week: "2024/07/08",
+      requests: [
+        {
+          food: "Pumpkin Soup",
+          quantity: 2,
+          dailyFulfilled: {},
+        },
+        {
+          food: "Sunflower Cake",
+          quantity: 1,
+          dailyFulfilled: {},
+        },
+        {
+          food: "Carrot Cake",
+          quantity: 1,
+          dailyFulfilled: {},
+        },
+      ],
     },
     history: {
-      "2024-06-24": {
+      "2024-07-08": {
         score: 200,
+        petXP: 0,
         results: {
           rank: 10,
           reward: {
@@ -1369,16 +1383,21 @@ export const STATIC_OFFLINE_FARM: GameState = {
             },
           },
         },
+        collectivePet: {
+          totalXP: 1000,
+          goalReached: false,
+          goalXP: 2000,
+          streak: 0,
+        },
       },
     },
     kitchen: {
-      week: 1,
+      week: "2024-06-24",
       requests: [
-        { item: "Sunflower", amount: 1, deliveryCount: 0 },
-        { item: "Honey", amount: 1, deliveryCount: 0 },
-        { item: "Tuna", amount: 1, deliveryCount: 0 },
+        { item: "Sunflower", amount: 1, dailyFulfilled: {} },
+        { item: "Honey", amount: 1, dailyFulfilled: {} },
+        { item: "Tuna", amount: 1, dailyFulfilled: {} },
       ],
-      points: 0,
     },
   },
 };

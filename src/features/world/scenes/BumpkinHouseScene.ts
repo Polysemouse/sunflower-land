@@ -39,7 +39,9 @@ export class BumpkinHouseScene extends FactionHouseScene {
   preload() {
     super.preload();
 
-    this.load.image("basic_chest", "world/basic_chest.png");
+    this.load.image("pet_sleeping", "world/bumpkins_pet_sleeping.webp");
+    this.load.image("pet_happy", "world/bumpkins_pet_happy.webp");
+    this.load.image("pet_hungry", "world/bumpkins_pet_hungry.webp");
   }
 
   create() {
@@ -51,5 +53,7 @@ export class BumpkinHouseScene extends FactionHouseScene {
     this.initialiseNPCs(BUMPKIN_HOUSE_NPCS);
 
     this.setupPrize({ x: 240, y: 368 });
+    this.setUpPet();
+    this.setupNotice({ x: 328, y: 288 });
   }
 }

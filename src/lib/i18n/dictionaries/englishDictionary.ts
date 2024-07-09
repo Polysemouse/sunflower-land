@@ -178,6 +178,7 @@ import {
   EasterEggKeys,
   ChangeLanguage,
   FactionShopDescription,
+  GuideFactionPet,
 } from "./types";
 
 const generalTerms: Record<GeneralTerms, string> = {
@@ -300,6 +301,7 @@ const generalTerms: Record<GeneralTerms, string> = {
   maintenance: "Maintenance",
   "make.wish": "Make a Wish",
   "making.wish": "Making a wish",
+  marks: "Marks",
   max: "Max",
   "max.reached": "Max reached",
   minimum: "Minimum",
@@ -370,6 +372,7 @@ const generalTerms: Record<GeneralTerms, string> = {
   share: "Share",
   skillPts: "Skill Points:",
   skills: "Skills",
+  skipped: "Skipped",
   skipping: "Skipping",
   "skip.order": "Skip Order",
   "sound.effects": "Sound Effects:",
@@ -393,6 +396,7 @@ const generalTerms: Record<GeneralTerms, string> = {
   "unlock.land": "Unlock more land",
   unlocking: "Unlocking",
   unmute: "Unmute",
+  upcoming: "Upcoming",
   "use.craft": "Used to craft items",
   verify: "Verify",
   version: "Version",
@@ -632,7 +636,7 @@ const basicTreasure: Record<BasicTreasure, string> = {
   "basic.treasure.openChest":
     "Would you like to open the chest and claim a reward?",
   "budBox.open": "Open",
-  "budBox.opened": "Opened",
+  "budBox.opened": "Opened today",
   "budBox.title": "Bud box",
   "budBox.description": "Each day, a bud type can unlock farming rewards.",
   "raffle.title": "Goblin Raffle",
@@ -1192,7 +1196,18 @@ const choresStart: Record<ChoresStart, string> = {
   "chores.noChore": "Sorry, I don't have any chores that need doing right now.",
   "chores.newSeason": "A new season approaches, chores will temporarily close.",
   "chores.choresFrozen": "New seasonal chores will be available soon.",
-  "chores.left": "{{chores}} left",
+  "kingdomChores.preparing": "Just a second. I'm preparing some chores.",
+  "kingdomChores.completed":
+    "Looks like you have completed all your chores for now. Come back soon!",
+  "kingdomChores.noChores":
+    "I'm sorry, I don't have any chores available right now. Come back soon!",
+  "kingdomChores.noUpcoming": "No upcoming chores",
+  "kingdomChores.progress": "Progress: {{progress}}",
+  "kingdomChores.nextSkip": "Next Skip: {{skip}}",
+  "kingdomChores.skipWarning": "You can only skip one chore every 24 hours",
+  "kingdomChores.completeActive": "Complete active chores to unlock",
+  "kingdomChores.loading": "Loading new chores",
+  "kingdomChores.reset": "New Kingdom Chores in: {{reset}}",
 };
 
 const chumDetails: Record<ChumDetails, string> = {
@@ -1277,6 +1292,12 @@ const confirmSkill: Record<ConfirmSkill, string> = {
 };
 
 const conversations: Record<Conversations, string> = {
+  "faction-intro.one":
+    "Welcome to your new faction house... We need your help to become more powerful and dominate the kingdom.",
+  "faction-intro.two":
+    "You will be rewarded with marks by completing chores, delivering items to the kitchen and feeding our magestic pet.",
+  "faction-intro.three":
+    "At the end of each week, bonus prizes will be given to our best members. Good luck!",
   "home-intro.one":
     "Howdy Bumpkin, welcome to your home...It's not much, but we all have to start somewhere!",
   "home-intro.two":
@@ -2030,8 +2051,7 @@ const errorTerms: Record<ErrorTerms, string> = {
   "error.connection.four":
     "If the issue remains, you can reach out for help by either contacting our support team or jumping over to our discord and asking our community",
   "error.diagnostic.info": "Diagnostic Information",
-  "error.forbidden.goblinVillage":
-    "You are not allowed to visit Goblin Village!",
+  "error.forbidden.goblinVillage": "You are not supposed to be here!",
   "error.multipleDevices.one": "Multiple devices open",
   "error.multipleDevices.two":
     "Please close any other browser tabs or devices that you are operating on.",
@@ -2143,6 +2163,20 @@ const factions: Record<Factions, string> = {
     "Pledge a faction to receive faction points!",
   "faction.emblemAirdrop": "Emblem Airdrop",
   "faction.emblemAirdrop.closes": "Ends: {{date}}",
+  "kingdom.noticeboard.one":
+    "Welcome to the Kingdom - It is time to join a faction and compete for Glory!",
+  "kingdom.noticeboard.two":
+    "Play mini-games, complete faction tasks, climb the leaderboard & earn marks.",
+  "kingdom.noticeboard.three": "Each week the top players can claim a prize!",
+  "kingdom.noticeboard.four":
+    "Visit the Kingdom shop to claim rewards & collectibles",
+  "faction.noticeboard.one":
+    "Deliver resources to the kitchen & complete chores to earn marks.",
+  "faction.noticeboard.two": "Feed our grumpy pet to unlock a bonus XP boost!",
+  "faction.noticeboard.three":
+    "The top players each week will receive a bonus prize.",
+  "faction.noticeboard.four":
+    "Trade emblems to climb the ranks and access bonus perks.",
 
   // Kingdom NPCs
   "faction.restrited.area":
@@ -2190,6 +2224,7 @@ const factions: Record<Factions, string> = {
     "Ahhh I love your enthusiasm! However, the kitchen is not open yet. Please come back later.",
   "faction.kitchen.gatherResources":
     "So many new recruits... how will we feed them all! Can you help me gather some resources?",
+  "faction.pet.gatherResources": "Grrrrghhhhhh...",
   "faction.kitchen.preparing":
     "I'm still preparing my orders! Please come back in a few minutes.",
   "faction.kitchen.newRequests": "New requests: {{time}}",
@@ -2210,6 +2245,16 @@ const factions: Record<Factions, string> = {
     "Welcome to the Faction Shop! Use your marks to purchase temporary boosts, stylish wearables, and rare collectibles. Dive in and find your next great addition!",
   "faction.goodLuck": "Good luck this week!",
   "faction.noPrizeFound": "No prize found",
+  "faction.pet.weeklyGoal": "Weekly goal: {{totalXP}}/{{goalXP}} XP",
+  "faction.pet.hungry":
+    "Our beloved pet relies on you to stay alive! Feed it 30% more each week to meet its growing hunger. Maintain a streak to earn your faction incredible XP bonuses and additional marks!",
+  "faction.pet.fed":
+    "Fantastic job! You've unlocked a valuable bonus. The faction's pet is healthier than ever, and all members receive an XP boost. Let's aim for the next streak!",
+  "faction.pet.sleeping":
+    "The pet has gone to sleep for 24 hours due to hunger. Make sure to feed it well when it wakes up to keep our streak alive.",
+  "faction.pet.newRequests": "New requests in {{time}}",
+  "faction.pet.streak": "{{streak}} week streak",
+  "faction.pet.wakes.in": "Wakes in {{time}}",
 };
 
 const factionShopDescription: Record<FactionShopDescription, string> = {
@@ -2888,6 +2933,19 @@ const guideCompost: Record<GuideCompost, string> = {
     "Are you sure you want to add {{noEggs}} Eggs to reduce compost production time by {{time}}?",
 };
 
+const guideFactionPet: Record<GuideFactionPet, string> = {
+  "guide.factionPet.one":
+    "Each week the pet will request 3 foods. When fed, the XP from the food will go to the total XP tally for the faction.",
+  "guide.factionPet.two":
+    "Your faction will have a goal xp they need to reach each week. If the faction reaches the goal, the next week goal will be 30% harder than the total xp achieved for the week! If the goal isn't reached, the next week goal will be 30% easier than the last weeks total xp.",
+  "guide.factionPet.three":
+    "If the faction doesn't reach the goal then the pet will go to sleep for 1 day.",
+  "guide.factionPet.four":
+    "Once the faction reaches a streak of 3 or more weeks, an XP bonus will be given to each contributing faction member when their bumpkin eats!",
+  "guide.factionPet.five":
+    "You will be awared marks for each food delivered. Every time you deliver the reward will reduce by 2. These rewards will reset daily. Players with an emblem bonus will get an additional bonus based on their faction bonus rank.",
+};
+
 const guideTerms: Record<GuideTerms, string> = {
   "guide.intro":
     "From humble beginnings to expert farming, this guide has got you covered!",
@@ -2944,8 +3002,12 @@ const guideTerms: Record<GuideTerms, string> = {
   "deliveries.intro":
     "Travel to different islands and deliver goods to earn rewards.",
   "deliveries.new": "New delivery",
-  "chores.intro":
+  "chores.hank": "Hank's Chores",
+  "chores.hank.intro":
     "Complete tasks around the farm to earn rewards from Bumpkins.",
+  "chores.kingdom": "Kingdom Chores",
+  "chores.kingdom.intro":
+    "Complete tasks around your farm to earn Marks from your Faction House",
   "scavenger.guide.one":
     "Scavenging in Sunflower Land offers exciting opportunities to uncover hidden treasures and gather valuable resources. The first aspect of scavenging is digging for treasure on Treasure Island, where you can become a pirate treasure hunter. By crafting a sand shovel and venturing to Treasure Island, you can dig in dark sandy areas to uncover a variety of treasures, including bounty, decorations, and even ancient SFTs with utility.",
   "scavenger.guide.two":
@@ -2998,7 +3060,7 @@ const hayseedHankV2: Record<HayseedHankV2, string> = {
     "However, my bones ain't what they used to be. If you can help me with my daily chores, I will reward you with {{seasonalTicket}}.",
   "hayseedHankv2.action": "Let's do it",
   "hayseedHankv2.title": "Hank's Daily Chores",
-  "hayseedHankv2.newChoresAvailable": "New chores:",
+  "hayseedHankv2.newChoresAvailable": "New Chores in:",
   "hayseedHankv2.skipChores": "You can skip chores each new day",
   "hayseedHankv2.greeting":
     "Well, howdy there, young whippersnappers! I'm Hayseed Hank...",
@@ -5347,6 +5409,22 @@ export const leaderboardTerms: Record<Leaderboard, string> = {
   "leaderboard.topTen": "Top ten",
   "leaderboard.yourPosition": "Your position",
   "leaderboard.factionMembers": "Faction Members",
+  "leaderboard.champions": "Champions",
+  "leaderboard.congratulations": "Congratulations to the {{faction}}!",
+  "leaderboard.resultsPending": "Results pending...",
+
+  "leaderboard.position": "Position",
+  "leaderboard.player": "Player",
+  "leaderboard.score": "Score",
+  "leaderboard.prizes": "Prizes",
+  "leaderboard.faction.description": "Each week you can win bonus prizes.",
+  "leaderboard.faction.champion": "Champion faction",
+  "leaderboard.faction.championPrizes":
+    "The players in the winning faction will receive:",
+  "leaderboard.faction.bonusMarks": "Bonus +10% Marks",
+  "leaderboard.faction.topPlayers": "Top Player Prizes",
+  "leaderboard.faction.topPlayerPrizes":
+    "The top 50 players in each faction will receive:",
 };
 
 const gameOptions: Record<GameOptions, string> = {
@@ -5517,6 +5595,7 @@ export const ENGLISH_TERMS: Record<TranslationKeys, string> = {
   ...goldTooth,
   ...greenhouse,
   ...guideCompost,
+  ...guideFactionPet,
   ...guideTerms,
   ...harvestBeeHive,
   ...harvestflower,

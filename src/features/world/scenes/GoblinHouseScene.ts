@@ -38,6 +38,10 @@ export class GoblinHouseScene extends FactionHouseScene {
 
   preload() {
     super.preload();
+
+    this.load.image("pet_sleeping", "world/goblins_pet_sleeping.webp");
+    this.load.image("pet_happy", "world/goblins_pet_happy.webp");
+    this.load.image("pet_hungry", "world/goblins_pet_hungry.webp");
   }
 
   create() {
@@ -49,5 +53,8 @@ export class GoblinHouseScene extends FactionHouseScene {
     this.initialiseNPCs(GOBLIN_HOUSE_NPCS);
 
     this.setupPrize({ x: 240, y: 416 });
+    this.setUpPet();
+
+    this.setupNotice({ x: 296, y: 385 });
   }
 }

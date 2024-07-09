@@ -104,6 +104,11 @@ export const Codex: React.FC<Props> = ({ show, onHide }) => {
     (chore) => !chore.completedAt,
   ).length;
 
+  const inCompleteKingdomChores =
+    state.kingdomChores?.chores.filter(
+      (chore) => chore.startedAt && !chore.completedAt && !chore.skippedAt,
+    ).length ?? 0;
+
   const categories: CodexCategory[] = [
     {
       name: "Deliveries",
@@ -113,7 +118,7 @@ export const Codex: React.FC<Props> = ({ show, onHide }) => {
     {
       name: "Chores",
       icon: chores,
-      count: incompleteChores,
+      count: incompleteChores + inCompleteKingdomChores,
     },
     {
       name: "Fish",
@@ -233,7 +238,7 @@ export const Codex: React.FC<Props> = ({ show, onHide }) => {
               >
                 <TicketsLeaderboard
                   id={id}
-                  isLoading={data === undefined}
+                  isLoading={data?.tickets === undefined}
                   data={data?.tickets ?? null}
                 />
               </InnerPanel>
@@ -247,13 +252,21 @@ export const Codex: React.FC<Props> = ({ show, onHide }) => {
                 <FactionsLeaderboard
                   id={id}
                   faction={state.faction.name}
-                  isLoading={data === undefined}
-                  data={data?.kingdom.emblems ?? null}
-                  lastUpdated={data?.kingdom.lastUpdated ?? null}
+                  isLoading={data?.emblems === undefined}
+                  data={data?.emblems?.emblems ?? null}
+                  lastUpdated={data?.kingdom?.lastUpdated ?? null}
                 />
               </InnerPanel>
             )}
-            {currentTab === 6 && state.faction && <MarksLeaderboard />}
+            {currentTab === 6 && state.faction && (
+              <MarksLeaderboard
+                emblemLeaderboard={data?.emblems ?? null}
+                marksLeaderboard={data?.kingdom ?? null}
+                isLoading={data?.kingdom === undefined}
+                playerId={id}
+                faction={state.faction.name}
+              />
+            )}
           </div>
         </OuterPanel>
         {showMilestoneReached && (

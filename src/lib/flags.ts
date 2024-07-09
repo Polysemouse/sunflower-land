@@ -13,6 +13,11 @@ const clashOfFactionsFeatureFlag = () => {
 const timeBasedFeatureFlag = (date: Date) => () => {
   return testnetFeatureFlag() || Date.now() > date.getTime();
 };
+
+const betaTimeBasedFeatureFlag = (date: Date) => (game: GameState) => {
+  return defaultFeatureFlag(game) || Date.now() > date.getTime();
+};
+
 /*
  * How to Use:
  * Add the feature name to this list when working on a new feature.
@@ -32,7 +37,10 @@ export type FeatureName =
   | "FACTION_HOUSE"
   | "CROP_QUICK_SELECT"
   | "MARKS_LEADERBOARD"
-  | "FESTIVAL_OF_COLORS";
+  | "FESTIVAL_OF_COLORS"
+  | "FACTION_KITCHEN"
+  | "FACTION_CHORES"
+  | "CHAMPIONS";
 
 // Used for testing production features
 export const ADMIN_IDS = [1, 2, 3, 39488];
@@ -45,12 +53,13 @@ const featureFlags: Record<FeatureName, FeatureFlag> = {
 
     return Date.now() > new Date("2024-06-25T00:00:00Z").getTime();
   },
+  CHAMPIONS: defaultFeatureFlag,
   CROP_QUICK_SELECT: defaultFeatureFlag,
   CHICKEN_RESCUE: defaultFeatureFlag,
   PORTALS: testnetFeatureFlag,
   JEST_TEST: defaultFeatureFlag,
   DESERT_RECIPES: defaultFeatureFlag,
-  FACTION_HOUSE: defaultFeatureFlag,
+  FACTION_HOUSE: betaTimeBasedFeatureFlag(new Date("2024-07-08T00:00:00Z")),
   EASTER: (game) => {
     return false;
   },
@@ -58,7 +67,9 @@ const featureFlags: Record<FeatureName, FeatureFlag> = {
   BANNER_SALES: clashOfFactionsFeatureFlag,
   // Just in case we need to disable the crop machine, leave the flag in temporarily
   CROP_MACHINE: () => true,
-  MARKS_LEADERBOARD: defaultFeatureFlag,
+  MARKS_LEADERBOARD: betaTimeBasedFeatureFlag(new Date("2022-07-08T00:00:00Z")),
+  FACTION_KITCHEN: betaTimeBasedFeatureFlag(new Date("2022-07-08T00:00:00Z")),
+  FACTION_CHORES: betaTimeBasedFeatureFlag(new Date("2022-07-08T00:00:00Z")),
 };
 
 export const hasFeatureAccess = (game: GameState, featureName: FeatureName) => {
