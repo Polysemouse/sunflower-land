@@ -27,6 +27,7 @@ import { getDarkModeSetting } from "lib/utils/hooks/useIsDarkMode";
 import { StorageAreaContainer } from "./containers/StorageAreaContainer";
 import { DepositIndicatorContainer } from "./containers/DepositIndicatorContainer";
 import { CropContainer } from "./containers/CropContainer";
+import { EventObject } from "xstate";
 
 export class CropsAndChickensScene extends BaseScene {
   sceneId: SceneId = "crops_and_chickens";
@@ -201,13 +202,6 @@ export class CropsAndChickensScene extends BaseScene {
     this.load.audio("player_killed", "world/player_killed.mp3");
     this.load.audio("time_ticking", "world/time_ticking.mp3");
     this.load.audio("game_over", "world/game_over.mp3");
-
-    // shut down the sound when the scene changes
-    this.events.once("shutdown", () => {
-      this.sound.getAllPlaying().forEach((sound) => {
-        sound.destroy();
-      });
-    });
   }
 
   /**
@@ -247,17 +241,26 @@ export class CropsAndChickensScene extends BaseScene {
     });
 
     // reload scene when player hit retry
-    this.portalService?.onEvent((event) => {
+    const onRetry = (event: EventObject) => {
       if (event.type === "RETRY") {
         this.changeScene(this.sceneId);
       }
-    });
+    };
+    this.portalService?.onEvent(onRetry);
 
     // resume player speed after player read the rules
     this.portalService?.onEvent((event) => {
       if (event.type === "CONTINUE") {
         this.walkingSpeed = PLAYER_WALKING_SPEED;
       }
+    });
+
+    // cleanup event listeners when scene is shut down
+    this.events.on("shutdown", () => {
+      this.portalService?.off(onRetry);
+      this.sound.getAllPlaying().forEach((sound) => {
+        sound.destroy();
+      });
     });
   }
 
