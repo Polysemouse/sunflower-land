@@ -36,7 +36,6 @@ export type FeatureName =
   | "DESERT_RECIPES"
   | "FACTION_HOUSE"
   | "CROP_QUICK_SELECT"
-  | "MARKS_LEADERBOARD"
   | "FESTIVAL_OF_COLORS"
   | "FACTION_KITCHEN"
   | "FACTION_CHORES"
@@ -53,7 +52,7 @@ const featureFlags: Record<FeatureName, FeatureFlag> = {
 
     return Date.now() > new Date("2024-06-25T00:00:00Z").getTime();
   },
-  CHAMPIONS: defaultFeatureFlag,
+  CHAMPIONS: betaTimeBasedFeatureFlag(new Date("2024-07-15T00:00:00Z")),
   CROP_QUICK_SELECT: defaultFeatureFlag,
   CHICKEN_RESCUE: defaultFeatureFlag,
   PORTALS: testnetFeatureFlag,
@@ -67,7 +66,6 @@ const featureFlags: Record<FeatureName, FeatureFlag> = {
   BANNER_SALES: clashOfFactionsFeatureFlag,
   // Just in case we need to disable the crop machine, leave the flag in temporarily
   CROP_MACHINE: () => true,
-  MARKS_LEADERBOARD: betaTimeBasedFeatureFlag(new Date("2022-07-08T00:00:00Z")),
   FACTION_KITCHEN: betaTimeBasedFeatureFlag(new Date("2022-07-08T00:00:00Z")),
   FACTION_CHORES: betaTimeBasedFeatureFlag(new Date("2022-07-08T00:00:00Z")),
 };

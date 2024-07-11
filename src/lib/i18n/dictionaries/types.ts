@@ -185,6 +185,8 @@ export type GeneralTerms =
   | "sell.all"
   | "sell.one"
   | "sell.ten"
+  | "sell.amount"
+  | "sell.inBulk"
   | "sell"
   | "session.expired"
   | "sfl/coins"
@@ -899,7 +901,8 @@ export type ChumDetails =
   | "chumDetails.fatChicken"
   | "chumDetails.speedChicken"
   | "chumDetails.horseMackerel"
-  | "chumDetails.sunfish";
+  | "chumDetails.sunfish"
+  | "chumDetails.zebraFish";
 
 export type Community = "community.toast" | "community.url" | "comunity.Travel";
 
@@ -918,7 +921,8 @@ export type ConfirmSkill = "confirm.skillClaim";
 
 export type ConfirmationTerms =
   | "confirmation.sellCrops"
-  | "confirmation.buyCrops";
+  | "confirmation.buyCrops"
+  | "confirmation.enterAmount";
 
 export type Conversations =
   | "hank-intro.headline"
@@ -1614,6 +1618,8 @@ export type Factions =
   | "faction.shop.welcome"
   | "faction.noPrizeFound"
   | "faction.goodLuck"
+  | "faction.boostsApplied"
+  | "faction.no.boostsApplied"
 
   // Faction Pet
   | "faction.pet.weeklyGoal"
@@ -2588,15 +2594,6 @@ export type NPC_MESSAGE =
   | "npcMessages.corale.msg5"
   | "npcMessages.corale.msg6"
   | "npcMessages.corale.msg7"
-  //helly
-  | "npcMessages.shelly.msg1"
-  | "npcMessages.shelly.msg2"
-  | "npcMessages.shelly.msg3"
-  | "npcMessages.shelly.msg4"
-  | "npcMessages.shelly.msg5"
-  | "npcMessages.shelly.msg6"
-  | "npcMessages.shelly.msg7"
-  | "npcMessages.shelly.msg8"
   | "npcMessages.gambit.msg1"
   | "npcMessages.gambit.msg2"
   | "npcMessages.gambit.msg3"
@@ -3135,7 +3132,9 @@ export type Restock =
   | "restock.one.buck"
   | "restock.sure"
   | "restock.tooManySeeds"
-  | "seeds.reachingInventoryLimit";
+  | "seeds.reachingInventoryLimit"
+  | "crops.noCropsToSell"
+  | "seeds.plantingSpot.needed";
 
 export type RetreatTerms =
   | "retreatTerms.lookingForRareItems"
@@ -3238,26 +3237,6 @@ export type Share =
 export type SharkBumpkinDialogues =
   | "sharkBumpkin.dialogue.shhhh"
   | "sharkBumpkin.dialogue.scareGoblins";
-
-export type Shelly =
-  | "shelly.Dialogue.one"
-  | "shelly.Dialogue.two"
-  | "shelly.Dialogue.three"
-  | "shelly.Dialogue.four"
-  | "shelly.Dialogue.five"
-  | "shelly.Dialogue.letsgo";
-
-export type ShellyDialogue =
-  | "shellyPanelContent.tasksFrozen"
-  | "shellyPanelContent.canTrade"
-  | "shellyPanelContent.cannotTrade"
-  | "shellyPanelContent.swap"
-  | "krakenIntro.congrats"
-  | "krakenIntro.noMoreTentacles"
-  | "krakenIntro.gotIt"
-  | "krakenIntro.appetiteChanges"
-  | "krakenIntro.currentHunger"
-  | "krakenIntro.catchInstruction";
 
 export type ShopItems =
   | "betty.post.sale.one"
@@ -3666,6 +3645,7 @@ export type Leaderboard =
   | "leaderboard.champions"
   | "leaderboard.congratulations"
   | "leaderboard.position"
+  | "leaderboard.weeklyScore"
   | "leaderboard.player"
   | "leaderboard.score"
   | "leaderboard.prizes"
@@ -3896,8 +3876,6 @@ export type TranslationKeys =
   | SeasonTerms
   | Share
   | SharkBumpkinDialogues
-  | Shelly
-  | ShellyDialogue
   | ShopItems
   | ShowingFarm
   | SnorklerDialogues

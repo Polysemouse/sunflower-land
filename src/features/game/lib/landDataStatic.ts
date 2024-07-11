@@ -459,7 +459,6 @@ export const STATIC_OFFLINE_FARM: GameState = {
     "Mashed Potato": new Decimal(1),
     "Treasure Key": new Decimal(1),
     "Hungry Hare": new Decimal(1),
-    "Farmhand Coupon": new Decimal(1),
     "White Festive Fox": new Decimal(3),
     "Red Pansy": new Decimal(3),
     "White Pansy": new Decimal(3),
@@ -774,10 +773,10 @@ export const STATIC_OFFLINE_FARM: GameState = {
     },
   },
   buildings: {
-    "Town Center": [
+    Manor: [
       {
         coordinates: {
-          x: -2,
+          x: 2,
           y: -2,
         },
         createdAt: 0,
@@ -914,10 +913,6 @@ export const STATIC_OFFLINE_FARM: GameState = {
   },
   milestones: {
     "Advanced Angler": 1,
-  },
-  catchTheKraken: {
-    hunger: "Iron",
-    weeklyCatches: {},
   },
   megastore: {
     available: makeMegaStoreAvailableDates(),
@@ -1346,7 +1341,7 @@ export const STATIC_OFFLINE_FARM: GameState = {
     amount: new Decimal(1000),
   },
   faction: {
-    name: "nightshades",
+    name: "sunflorians",
     pledgedAt: 0,
     points: 100,
     pet: {
@@ -1384,8 +1379,8 @@ export const STATIC_OFFLINE_FARM: GameState = {
           },
         },
         collectivePet: {
-          totalXP: 1000,
-          goalReached: false,
+          totalXP: 3000,
+          goalReached: true,
           goalXP: 2000,
           streak: 0,
         },

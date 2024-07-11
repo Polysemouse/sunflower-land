@@ -83,6 +83,7 @@ const DEQUIPPER_CONTRACT = import.meta.env.VITE_DEQUIPPER_CONTRACT as string;
 const SEQUENCE_ACCESS_KEY = import.meta.env.VITE_SEQUENCE_ACCESS_KEY as string;
 
 const PORTAL_URL = import.meta.env.VITE_ROOM_URL;
+const ANIMATION_URL = import.meta.env.VITE_ANIMATION_URL as string;
 
 export const CONFIG = {
   DEQUIPPER_CONTRACT,
@@ -148,4 +149,5 @@ export const CONFIG = {
   PORTAL_GAME_URL,
   SEQUENCE_ACCESS_KEY,
   PORTAL_URL,
+  ANIMATION_URL,
 };

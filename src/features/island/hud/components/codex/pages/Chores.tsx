@@ -52,13 +52,13 @@ export const Chores: React.FC<Props> = ({ farmId }) => {
       {!ticketTasksAreFrozen && (
         <InnerPanel className="mb-1 w-full">
           <div className="p-1 text-xs">
-            <div className="flex justify-between items-center">
+            <div className="flex justify-between items-center gap-1">
               <Label type="default">{t("chores.hank")}</Label>
               <Label type="info" icon={SUNNYSIDE.icons.stopwatch}>
                 {`${t("hayseedHankv2.newChoresAvailable")} ${secondsToString(
                   secondsTillReset(),
                   {
-                    length: "short",
+                    length: "medium",
                   },
                 )}`}
               </Label>
@@ -74,7 +74,7 @@ export const Chores: React.FC<Props> = ({ farmId }) => {
         <div className="mt-3">
           <InnerPanel className="mb-1 w-full">
             <div className="p-1 text-xs">
-              <div className="flex justify-between items-center">
+              <div className="flex justify-between items-center gap-1">
                 <Label type="default">{t("chores.kingdom")}</Label>
                 <KingdomChoresTimer
                   resetsAt={kingdomChores.resetsAt}
@@ -122,7 +122,10 @@ const KingdomChoreRow: React.FC<KingdomChoreRowProps> = ({
   const progress =
     (bumpkin?.activity?.[chore.activity] ?? 0) - (chore.startCount ?? 0);
 
-  const boost = getKingdomChoreBoost(gameService.state.context.state, chore);
+  const boost = getKingdomChoreBoost(
+    gameService.state.context.state,
+    chore.marks,
+  )[0];
   const boostedMarks = setPrecision(
     new Decimal(chore.marks + boost),
     2,
