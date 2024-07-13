@@ -439,6 +439,7 @@ const generalTerms: Record<GeneralTerms, string> = {
   expired: "已过期",
   "sell.amount": "出售 {{amount}}",
   "sell.inBulk": "批量销售",
+  inventory: "存货",
 };
 
 const timeUnits: Record<TimeUnits, string> = {
