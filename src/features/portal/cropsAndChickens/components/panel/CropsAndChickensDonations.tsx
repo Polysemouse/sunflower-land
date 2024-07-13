@@ -2,7 +2,7 @@ import React, { useState } from "react";
 
 import { donationMachine } from "features/community/merchant/lib/donationMachine";
 import { useMachine } from "@xstate/react";
-import { Loading, roundToOneDecimal } from "features/auth/components";
+import { Loading } from "features/auth/components";
 import { CONFIG } from "lib/config";
 import { Button } from "components/ui/Button";
 import { Label } from "components/ui/Label";
@@ -10,6 +10,8 @@ import { GameWallet } from "features/wallet/Wallet";
 import { useAppTranslation } from "lib/i18n/useAppTranslations";
 
 import { ITEM_DETAILS } from "features/game/types/images";
+import { NumberInput } from "components/ui/NumberInput";
+import Decimal from "decimal.js-light";
 
 const CONTRIBUTORS = ["Polysemouse"];
 
@@ -17,20 +19,19 @@ export const CropsAndChickensDonations: React.FC = () => {
   const { t } = useAppTranslation();
 
   const [state, send] = useMachine(donationMachine);
-  const [donation, setDonation] = useState(1);
-  const onDonationChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    // If keyboard input "" convert to 0
-    // Typed input validation will happen in onBlur
-    setDonation(roundToOneDecimal(Number(e.target.value)));
+  const [donation, setDonation] = useState(new Decimal(1));
+  const onDonationChange = (value: Decimal) => {
+    setDonation(value);
   };
   const incrementDonation = () => {
-    setDonation((prevState) => roundToOneDecimal(prevState + 0.1));
+    setDonation((value) => value.add(0.1));
   };
 
   const decrementDonation = () => {
-    if (donation <= 0.1) {
-      setDonation(0.1);
-    } else setDonation((prevState) => roundToOneDecimal(prevState - 0.1));
+    setDonation((value) => {
+      if (value.lessThanOrEqualTo(0.1)) return new Decimal(0.1);
+      return value.minus(0.1);
+    });
   };
 
   const donate = () => {
@@ -67,18 +68,14 @@ export const CropsAndChickensDonations: React.FC = () => {
               <Button className="w-12" onClick={decrementDonation}>
                 {"-"}
               </Button>
-              <input
-                type="number"
-                className="text-shadow shadow-inner shadow-black bg-brown-200 w-24 mx-2 text-center"
-                step="0.1"
-                min={0.1}
-                value={donation}
-                required
-                onChange={onDonationChange}
-                onBlur={() => {
-                  if (donation < 0.1) setDonation(0.1);
-                }}
-              />
+              <div className="flex items-center w-24 mx-2 mt-1">
+                <NumberInput
+                  value={donation}
+                  maxDecimalPlaces={1}
+                  isOutOfRange={donation.lessThan(0.1)}
+                  onValueChange={onDonationChange}
+                />
+              </div>
               <Button className="w-12" onClick={incrementDonation}>
                 {"+"}
               </Button>
@@ -97,7 +94,7 @@ export const CropsAndChickensDonations: React.FC = () => {
           <Button
             className="w-full ml-1"
             onClick={donate}
-            disabled={isComingSoon || donation < 0.1}
+            disabled={isComingSoon || donation.lessThan(0.1)}
           >
             <span className="whitespace-nowrap">{t("donate")}</span>
           </Button>
