@@ -628,7 +628,7 @@ export abstract class BaseScene extends Phaser.Scene {
 
           // Change scenes
           const warpTo = (obj2 as any).data?.list?.warp;
-          if (warpTo) {
+          if (warpTo && this.currentPlayer?.isWalking) {
             this.changeScene(warpTo);
           }
 
@@ -1107,16 +1107,20 @@ export abstract class BaseScene extends Phaser.Scene {
 
   /**
    * Changes the scene to the desired scene.
-   * @param {SceneId} scene The desired scene
+   * @param {SceneId} scene The desired scene.
    */
   protected changeScene = (scene: SceneId) => {
+    const originalWalkingSpeed = this.walkingSpeed;
+    this.walkingSpeed = 0;
+
     this.currentPlayer?.stopSpeaking();
-    this.cameras.main.fadeOut();
+    this.cameras.main.fadeOut(1000);
 
     this.cameras.main.on(
       "camerafadeoutcomplete",
       () => {
         this.switchToScene = scene;
+        this.walkingSpeed = originalWalkingSpeed;
       },
       this,
     );

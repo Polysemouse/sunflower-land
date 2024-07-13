@@ -2300,6 +2300,13 @@ const factions: Record<Factions, string> = {
   "faction.greeting.nightshades": ENGLISH_TERMS["faction.greeting.nightshades"],
   "faction.greeting.sunflorians": ENGLISH_TERMS["faction.greeting.sunflorians"],
 
+  "faction.leave": ENGLISH_TERMS["faction.leave"],
+  "faction.leave.hasEmblems": ENGLISH_TERMS["faction.leave.hasEmblems"],
+  "faction.leave.areYouSure": ENGLISH_TERMS["faction.leave.areYouSure"],
+  "faction.leave.marks": ENGLISH_TERMS["faction.leave.marks"],
+  "faction.leave.sellEmblems": ENGLISH_TERMS["faction.leave.sellEmblems"],
+  "faction.leave.isNew": ENGLISH_TERMS["faction.leave.isNew"],
+
   "faction.claimEmblems.alreadyClaimed":
     ENGLISH_TERMS["faction.claimEmblems.alreadyClaimed"],
   "faction.claimEmblems.emblemsEarned":
@@ -2988,7 +2995,7 @@ const gameTerms: Record<GameTerms, string> = {
   "farm.banned": "Cette ferme est interdite",
   gobSwarm: "Nuée de Gobelins!",
   "granting.wish": "Exaucement de votre souhait",
-  "new.delivery.in": "Nouvelles livraisons disponibles dans",
+  "new.delivery.in": ENGLISH_TERMS["new.delivery.in"],
   "new.delivery.levelup": "Montez de niveau pour débloquer plus de livraisons.",
   "no.sfl": "Aucun jeton SFL trouvé",
   opensea: "OpenSea",
@@ -3201,7 +3208,8 @@ const hayseedHankV2: Record<HayseedHankV2, string> = {
   "hayseedHankv2.dialog2": ENGLISH_TERMS["hayseedHankv2.dialog2"],
   "hayseedHankv2.action": "Allons-y",
   "hayseedHankv2.title": "Les corvées quotidiennes de Hank",
-  "hayseedHankv2.newChoresAvailable": "De nouvelles corvées disponibles dans ",
+  "hayseedHankv2.newChoresAvailable":
+    ENGLISH_TERMS["hayseedHankv2.newChoresAvailable"],
   "hayseedHankv2.skipChores":
     "Vous pouvez sauter des corvées chaque nouveau jour.",
   "hayseedHankv2.greeting":
