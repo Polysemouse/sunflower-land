@@ -1,12 +1,12 @@
-## Crops And Chickens
+## Crops & Chickens
 
-Crops And Chickens is a mini-game where players must gather crops in a dangerous field of wandering chickens.
+Crops & Chickens is a mini-game where players must gather crops in a dangerous field of wandering chickens.
 
 Those who deposit enough crops are rewarded with various rewards!
 
 ## Setup
 
-To play Crops And Chickens locally, run `cp .env.local .env` first then `yarn` then `yarn dev`
+To play Crops & Chickens locally, run `cp .env.local .env` first then `yarn` then `yarn dev`
 
 ## Architecture
 
