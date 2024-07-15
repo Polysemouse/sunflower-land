@@ -528,7 +528,7 @@ export class CropsAndChickensScene extends BaseScene {
                 cropSprite.setDepth(cropSprite.y);
               },
               onComplete: () => {
-                cropSprite.destroy();
+                if (cropSprite.active) cropSprite.destroy();
                 const sound = this.sound.add("crop_deposit_pop");
                 sound.play({
                   volume: 0.1,
@@ -552,7 +552,9 @@ export class CropsAndChickensScene extends BaseScene {
     cropIndex: number,
   ) => {
     // destroy planted crop sprites
-    crops.forEach((crop) => crop.destroy());
+    crops.forEach((crop) => {
+      if (crop.active) crop.destroy();
+    });
 
     // play sound
     const sound = this.sound.add("harvest");
@@ -623,7 +625,7 @@ export class CropsAndChickensScene extends BaseScene {
               delay: 500,
               duration: 500, // fade out duration
               onComplete: () => {
-                cropSprite.destroy(); // destroy sprite after fading out
+                if (cropSprite.active) cropSprite.destroy(); // destroy sprite after fading out
               },
             });
           });
@@ -699,7 +701,7 @@ export class CropsAndChickensScene extends BaseScene {
         this.currentPlayer.setVisible(true);
       }
 
-      playerDeath.destroy();
+      if (playerDeath.active) playerDeath.destroy();
       this.hunterChicken?.respawn();
     });
   };

@@ -104,7 +104,7 @@ export class BumpkinContainer extends Phaser.GameObjects.Container {
           if (p.downElement.nodeName === "CANVAS") {
             onClick();
 
-            if (name) {
+            if (name && this.alert?.active) {
               this.alert?.destroy();
             }
           }
@@ -143,7 +143,9 @@ export class BumpkinContainer extends Phaser.GameObjects.Container {
 
       this.sprite.play(this.idleAnimationKey, true);
 
-      this.silhouette?.destroy();
+      if (this.silhouette?.active) {
+        this.silhouette?.destroy();
+      }
 
       this.ready = true;
     } else {
@@ -178,7 +180,9 @@ export class BumpkinContainer extends Phaser.GameObjects.Container {
         this.sprite.play(this.idleAnimationKey as string, true);
 
         this.ready = true;
-        this.silhouette?.destroy();
+        if (this.silhouette?.active) {
+          this.silhouette?.destroy();
+        }
 
         idleLoader.removeAllListeners();
       });
@@ -247,7 +251,9 @@ export class BumpkinContainer extends Phaser.GameObjects.Container {
     if (tokenUriBuilder(clothing) === tokenUriBuilder(this.clothing)) return;
 
     this.ready = false;
-    this.sprite?.destroy();
+    if (this.sprite?.active) {
+      this.sprite?.destroy();
+    }
 
     this.clothing = clothing;
     this.loadSprites(this.scene);
@@ -293,13 +299,17 @@ export class BumpkinContainer extends Phaser.GameObjects.Container {
   }, 5000);
 
   public stopReaction() {
-    this.reaction?.destroy();
+    if (this.reaction?.active) {
+      this.reaction?.destroy();
+    }
     this.reaction = undefined;
 
     this.destroyReaction.cancel();
   }
   public stopSpeaking() {
-    this.speech?.destroy();
+    if (this.speech?.active) {
+      this.speech?.destroy();
+    }
     this.speech = undefined;
 
     this.destroySpeechBubble.cancel();
@@ -308,7 +318,7 @@ export class BumpkinContainer extends Phaser.GameObjects.Container {
   public speak(text: string) {
     this.stopReaction();
 
-    if (this.speech) {
+    if (this.speech?.active) {
       this.speech.destroy();
     }
 
@@ -325,7 +335,7 @@ export class BumpkinContainer extends Phaser.GameObjects.Container {
   public react(react: ReactionName) {
     this.stopSpeaking();
 
-    if (this.reaction) {
+    if (this.reaction?.active) {
       this.reaction.destroy();
     }
 
@@ -397,14 +407,18 @@ export class BumpkinContainer extends Phaser.GameObjects.Container {
     // eslint-disable-next-line @typescript-eslint/no-this-alias
     const container = this;
 
-    if (container.destroyed || !container.scene) {
+    if (container.destroyed || !container.scene || !container.active) {
       return;
     }
 
     this.destroyed = true;
 
-    this.sprite?.destroy();
-    this.shadow?.destroy();
+    if (this.sprite?.active) {
+      this.sprite?.destroy();
+    }
+    if (this.shadow?.active) {
+      this.shadow?.destroy();
+    }
 
     const poof = this.scene.add.sprite(0, 4, "poof").setOrigin(0.5);
     this.add(poof);
@@ -423,7 +437,7 @@ export class BumpkinContainer extends Phaser.GameObjects.Container {
 
     // Listen for the animation complete event
     poof.on("animationcomplete", function (animation: { key: string }) {
-      if (animation.key === "poof_anim") {
+      if (animation.key === "poof_anim" && container.active) {
         container.destroy();
       }
     });
@@ -455,7 +469,7 @@ export class BumpkinContainer extends Phaser.GameObjects.Container {
 
       // Listen for the animation complete loop event
       poof.on("animationrepeat", function (animation: { key: string }) {
-        if (animation.key === "smoke_anim" && container.ready) {
+        if (animation.key === "smoke_anim" && container.ready && poof.active) {
           // This block will execute every time the animation loop completes
           poof.destroy();
         }
