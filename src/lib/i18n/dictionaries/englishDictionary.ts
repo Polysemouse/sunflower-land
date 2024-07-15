@@ -1559,6 +1559,27 @@ const cropsAndChickens: Record<CropsAndChickensMessages, string> = {
   "crops-and-chickens.endGameConfirmation":
     "Are you sure you want to end the game early?",
   "crops-and-chickens.endGame": "End game",
+  "crops-and-chickens.achievement.dcol.title": "Dcol",
+  "crops-and-chickens.achievement.dcol.description":
+    "Deposit a Kale and do not harvest any other crops in a game",
+  "crops-and-chickens.achievement.dont-go-up.title": "Don't Go Up",
+  "crops-and-chickens.achievement.dont-go-up.description":
+    "Score 2000 points without moving upwards",
+  "crops-and-chickens.achievement.grand-master.title": "Grand Master",
+  "crops-and-chickens.achievement.grand-master.description":
+    "Score 25000 points in a game",
+  "crops-and-chickens.achievement.the-elite.title": "The Elite",
+  "crops-and-chickens.achievement.the-elite.description":
+    "Score exactly 1337 points",
+  "crops-and-chickens.achievement.ultimate-straight.title": "Ultimate Straight",
+  "crops-and-chickens.achievement.ultimate-straight.description":
+    "Collect one crop of each type in ascending order of points, then deposit them all at once",
+  "crops-and-chickens.achievement.wheat-king.title": "Wheat King",
+  "crops-and-chickens.achievement.wheat-king.description":
+    "Harvest all (4) Wheat and deposit them in a game",
+  "crops-and-chickens.achievement.white-death.title": "White Death",
+  "crops-and-chickens.achievement.white-death.description":
+    "Harvest all (36) Cauliflower at once, and die without carrying any other crops",
 };
 
 const decorationDescriptions: Record<DecorationDescriptions, string> = {

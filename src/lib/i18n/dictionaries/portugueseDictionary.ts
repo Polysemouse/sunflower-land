@@ -1611,6 +1611,36 @@ const cropsAndChickens: Record<CropsAndChickensMessages, string> = {
   "crops-and-chickens.endGameConfirmation":
     ENGLISH_TERMS["crops-and-chickens.endGameConfirmation"],
   "crops-and-chickens.endGame": ENGLISH_TERMS["crops-and-chickens.endGame"],
+  "crops-and-chickens.achievement.dcol.title":
+    ENGLISH_TERMS["crops-and-chickens.achievement.dcol.title"],
+  "crops-and-chickens.achievement.dcol.description":
+    ENGLISH_TERMS["crops-and-chickens.achievement.dcol.description"],
+  "crops-and-chickens.achievement.dont-go-up.title":
+    ENGLISH_TERMS["crops-and-chickens.achievement.dont-go-up.title"],
+  "crops-and-chickens.achievement.dont-go-up.description":
+    ENGLISH_TERMS["crops-and-chickens.achievement.dont-go-up.description"],
+  "crops-and-chickens.achievement.grand-master.title":
+    ENGLISH_TERMS["crops-and-chickens.achievement.grand-master.title"],
+  "crops-and-chickens.achievement.grand-master.description":
+    ENGLISH_TERMS["crops-and-chickens.achievement.grand-master.description"],
+  "crops-and-chickens.achievement.the-elite.title":
+    ENGLISH_TERMS["crops-and-chickens.achievement.the-elite.title"],
+  "crops-and-chickens.achievement.the-elite.description":
+    ENGLISH_TERMS["crops-and-chickens.achievement.the-elite.description"],
+  "crops-and-chickens.achievement.ultimate-straight.title":
+    ENGLISH_TERMS["crops-and-chickens.achievement.ultimate-straight.title"],
+  "crops-and-chickens.achievement.ultimate-straight.description":
+    ENGLISH_TERMS[
+      "crops-and-chickens.achievement.ultimate-straight.description"
+    ],
+  "crops-and-chickens.achievement.wheat-king.title":
+    ENGLISH_TERMS["crops-and-chickens.achievement.wheat-king.title"],
+  "crops-and-chickens.achievement.wheat-king.description":
+    ENGLISH_TERMS["crops-and-chickens.achievement.wheat-king.description"],
+  "crops-and-chickens.achievement.white-death.title":
+    ENGLISH_TERMS["crops-and-chickens.achievement.white-death.title"],
+  "crops-and-chickens.achievement.white-death.description":
+    ENGLISH_TERMS["crops-and-chickens.achievement.white-death.description"],
 };
 
 const deliveryitem: Record<DeliveryItem, string> = {

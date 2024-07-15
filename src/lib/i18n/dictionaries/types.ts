@@ -1118,7 +1118,21 @@ export type CropsAndChickensMessages =
   | "crops-and-chickens.highscore"
   | "crops-and-chickens.inventory"
   | "crops-and-chickens.endGameConfirmation"
-  | "crops-and-chickens.endGame";
+  | "crops-and-chickens.endGame"
+  | "crops-and-chickens.achievement.dcol.title"
+  | "crops-and-chickens.achievement.dcol.description"
+  | "crops-and-chickens.achievement.dont-go-up.title"
+  | "crops-and-chickens.achievement.dont-go-up.description"
+  | "crops-and-chickens.achievement.grand-master.title"
+  | "crops-and-chickens.achievement.grand-master.description"
+  | "crops-and-chickens.achievement.the-elite.title"
+  | "crops-and-chickens.achievement.the-elite.description"
+  | "crops-and-chickens.achievement.ultimate-straight.title"
+  | "crops-and-chickens.achievement.ultimate-straight.description"
+  | "crops-and-chickens.achievement.wheat-king.title"
+  | "crops-and-chickens.achievement.wheat-king.description"
+  | "crops-and-chickens.achievement.white-death.title"
+  | "crops-and-chickens.achievement.white-death.description";
 
 export type DeliveryItem =
   | "deliveryitem.inventory"
