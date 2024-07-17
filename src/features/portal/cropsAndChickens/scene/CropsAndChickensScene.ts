@@ -214,6 +214,9 @@ export class CropsAndChickensScene extends BaseScene {
 
     super.create();
 
+    // remove camera bounds so that the camera does not stop at the edge of the map when player wraps around
+    this.cameras.main.removeBounds();
+
     this.initializeStates();
     this.initializeShaders();
 

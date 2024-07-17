@@ -2,10 +2,10 @@ import { translate } from "lib/i18n/translate";
 
 export type CropsAndChickensAchievementName =
   | "Dcol"
-  | "Don't Go Up"
   | "Grand Master"
+  | "Never Goes Up"
   | "The Elite"
-  | "Ultimate Straight"
+  | "Ultimate Chain"
   | "Wheat King"
   | "White Death";
 
@@ -17,16 +17,16 @@ export const AVAILABLE_ACHIEVEMENTS: Record<
     title: translate("crops-and-chickens.achievement.dcol.title"),
     description: "Deposit a Kale and do not harvest any other crops in a game",
   },
-  "Don't Go Up": {
-    title: translate("crops-and-chickens.achievement.dont-go-up.title"),
-    description: translate(
-      "crops-and-chickens.achievement.dont-go-up.description",
-    ),
-  },
   "Grand Master": {
     title: translate("crops-and-chickens.achievement.grand-master.title"),
     description: translate(
       "crops-and-chickens.achievement.grand-master.description",
+    ),
+  },
+  "Never Goes Up": {
+    title: translate("crops-and-chickens.achievement.never-goes-up.title"),
+    description: translate(
+      "crops-and-chickens.achievement.never-goes-up.description",
     ),
   },
   "The Elite": {
@@ -35,10 +35,10 @@ export const AVAILABLE_ACHIEVEMENTS: Record<
       "crops-and-chickens.achievement.the-elite.description",
     ),
   },
-  "Ultimate Straight": {
-    title: translate("crops-and-chickens.achievement.ultimate-straight.title"),
+  "Ultimate Chain": {
+    title: translate("crops-and-chickens.achievement.ultimate-chain.title"),
     description: translate(
-      "crops-and-chickens.achievement.ultimate-straight.description",
+      "crops-and-chickens.achievement.ultimate-chain.description",
     ),
   },
   "Wheat King": {

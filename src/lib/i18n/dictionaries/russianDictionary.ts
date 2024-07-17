@@ -1573,24 +1573,22 @@ const cropsAndChickens: Record<CropsAndChickensMessages, string> = {
     ENGLISH_TERMS["crops-and-chickens.achievement.dcol.title"],
   "crops-and-chickens.achievement.dcol.description":
     ENGLISH_TERMS["crops-and-chickens.achievement.dcol.description"],
-  "crops-and-chickens.achievement.dont-go-up.title":
-    ENGLISH_TERMS["crops-and-chickens.achievement.dont-go-up.title"],
-  "crops-and-chickens.achievement.dont-go-up.description":
-    ENGLISH_TERMS["crops-and-chickens.achievement.dont-go-up.description"],
   "crops-and-chickens.achievement.grand-master.title":
     ENGLISH_TERMS["crops-and-chickens.achievement.grand-master.title"],
   "crops-and-chickens.achievement.grand-master.description":
     ENGLISH_TERMS["crops-and-chickens.achievement.grand-master.description"],
+  "crops-and-chickens.achievement.never-goes-up.title":
+    ENGLISH_TERMS["crops-and-chickens.achievement.never-goes-up.title"],
+  "crops-and-chickens.achievement.never-goes-up.description":
+    ENGLISH_TERMS["crops-and-chickens.achievement.never-goes-up.description"],
   "crops-and-chickens.achievement.the-elite.title":
     ENGLISH_TERMS["crops-and-chickens.achievement.the-elite.title"],
   "crops-and-chickens.achievement.the-elite.description":
     ENGLISH_TERMS["crops-and-chickens.achievement.the-elite.description"],
-  "crops-and-chickens.achievement.ultimate-straight.title":
-    ENGLISH_TERMS["crops-and-chickens.achievement.ultimate-straight.title"],
-  "crops-and-chickens.achievement.ultimate-straight.description":
-    ENGLISH_TERMS[
-      "crops-and-chickens.achievement.ultimate-straight.description"
-    ],
+  "crops-and-chickens.achievement.ultimate-chain.title":
+    ENGLISH_TERMS["crops-and-chickens.achievement.ultimate-chain.title"],
+  "crops-and-chickens.achievement.ultimate-chain.description":
+    ENGLISH_TERMS["crops-and-chickens.achievement.ultimate-chain.description"],
   "crops-and-chickens.achievement.wheat-king.title":
     ENGLISH_TERMS["crops-and-chickens.achievement.wheat-king.title"],
   "crops-and-chickens.achievement.wheat-king.description":
