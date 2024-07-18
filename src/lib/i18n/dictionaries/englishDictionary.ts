@@ -1564,8 +1564,8 @@ const cropsAndChickens: Record<CropsAndChickensMessages, string> = {
   "crops-and-chickens.achievement.dcol.title": "Dcol",
   "crops-and-chickens.achievement.dcol.description":
     "Deposit a Kale and do not harvest any other crops in a game",
-  "crops-and-chickens.achievement.grand-master.title": "Grand Master",
-  "crops-and-chickens.achievement.grand-master.description":
+  "crops-and-chickens.achievement.grandmaster.title": "Grandmaster",
+  "crops-and-chickens.achievement.grandmaster.description":
     "Score 25000 points in a game",
   "crops-and-chickens.achievement.never-goes-up.title": "Never Goes Up",
   "crops-and-chickens.achievement.never-goes-up.description":

@@ -15,12 +15,12 @@ export const AVAILABLE_ACHIEVEMENTS: Record<
 > = {
   Dcol: {
     title: translate("crops-and-chickens.achievement.dcol.title"),
-    description: "Deposit a Kale and do not harvest any other crops in a game",
+    description: "crops-and-chickens.achievement.dcol.description",
   },
   "Grand Master": {
-    title: translate("crops-and-chickens.achievement.grand-master.title"),
+    title: translate("crops-and-chickens.achievement.grandmaster.title"),
     description: translate(
-      "crops-and-chickens.achievement.grand-master.description",
+      "crops-and-chickens.achievement.grandmaster.description",
     ),
   },
   "Never Goes Up": {

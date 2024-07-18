@@ -1618,10 +1618,10 @@ const cropsAndChickens: Record<CropsAndChickensMessages, string> = {
     ENGLISH_TERMS["crops-and-chickens.achievement.dcol.title"],
   "crops-and-chickens.achievement.dcol.description":
     ENGLISH_TERMS["crops-and-chickens.achievement.dcol.description"],
-  "crops-and-chickens.achievement.grand-master.title":
-    ENGLISH_TERMS["crops-and-chickens.achievement.grand-master.title"],
-  "crops-and-chickens.achievement.grand-master.description":
-    ENGLISH_TERMS["crops-and-chickens.achievement.grand-master.description"],
+  "crops-and-chickens.achievement.grandmaster.title":
+    ENGLISH_TERMS["crops-and-chickens.achievement.grandmaster.title"],
+  "crops-and-chickens.achievement.grandmaster.description":
+    ENGLISH_TERMS["crops-and-chickens.achievement.grandmaster.description"],
   "crops-and-chickens.achievement.never-goes-up.title":
     ENGLISH_TERMS["crops-and-chickens.achievement.never-goes-up.title"],
   "crops-and-chickens.achievement.never-goes-up.description":
