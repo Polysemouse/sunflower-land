@@ -2,6 +2,7 @@ import { translate } from "lib/i18n/translate";
 
 export type CropsAndChickensAchievementName =
   | "Dcol"
+  | "Get to the Other Side"
   | "Grand Master"
   | "Never Goes Up"
   | "The Elite"
@@ -15,7 +16,15 @@ export const AVAILABLE_ACHIEVEMENTS: Record<
 > = {
   Dcol: {
     title: translate("crops-and-chickens.achievement.dcol.title"),
-    description: "crops-and-chickens.achievement.dcol.description",
+    description: translate("crops-and-chickens.achievement.dcol.description"),
+  },
+  "Get to the Other Side": {
+    title: translate(
+      "crops-and-chickens.achievement.get-to-the-other-side.title",
+    ),
+    description: translate(
+      "crops-and-chickens.achievement.get-to-the-other-side.description",
+    ),
   },
   "Grand Master": {
     title: translate("crops-and-chickens.achievement.grandmaster.title"),

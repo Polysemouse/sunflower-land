@@ -1564,6 +1564,10 @@ const cropsAndChickens: Record<CropsAndChickensMessages, string> = {
   "crops-and-chickens.achievement.dcol.title": "Dcol",
   "crops-and-chickens.achievement.dcol.description":
     "Deposit all (1) Kale and do not harvest any other crops in a game",
+  "crops-and-chickens.achievement.get-to-the-other-side.title":
+    "Get to the Other Side",
+  "crops-and-chickens.achievement.get-to-the-other-side.description":
+    "Navigate back to the deposit area by going around the map safely, without dying and harvesting any crops",
   "crops-and-chickens.achievement.grandmaster.title": "Grandmaster",
   "crops-and-chickens.achievement.grandmaster.description":
     "Score 25000 points in a game",

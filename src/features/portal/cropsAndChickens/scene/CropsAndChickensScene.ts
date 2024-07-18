@@ -40,7 +40,10 @@ export class CropsAndChickensScene extends BaseScene {
   depositedCropIndexes!: number[];
   harvestedCropIndexes!: number[];
   inventoryCropIndexes!: number[];
+  chunk!: { x: number; y: number };
+  deaths!: number;
   hasGoneUp!: boolean;
+  hasGotToTheOtherSide!: boolean;
 
   chickens: NormalChickenContainer[] = [];
   hunterChicken?: HunterChickenContainer;
@@ -66,7 +69,10 @@ export class CropsAndChickensScene extends BaseScene {
     this.depositedCropIndexes = [];
     this.harvestedCropIndexes = [];
     this.inventoryCropIndexes = [];
+    this.chunk = { x: 0, y: 0 };
+    this.deaths = 0;
     this.hasGoneUp = false;
+    this.hasGotToTheOtherSide = false;
   }
 
   /**
@@ -343,6 +349,18 @@ export class CropsAndChickensScene extends BaseScene {
 
     // warp entities
     if (this.currentPlayer) {
+      // calculate which chunk the player is in
+      if (this.currentPlayer.x < PLAYER_MIN_XY) {
+        this.chunk.x -= 1;
+      } else if (this.currentPlayer.x > PLAYER_MAX_XY) {
+        this.chunk.x += 1;
+      }
+      if (this.currentPlayer.y < PLAYER_MIN_XY) {
+        this.chunk.y -= 1;
+      } else if (this.currentPlayer.y > PLAYER_MAX_XY) {
+        this.chunk.y += 1;
+      }
+
       // warp player
       const playerX = Phaser.Math.Wrap(
         this.currentPlayer.x,
@@ -616,6 +634,18 @@ export class CropsAndChickensScene extends BaseScene {
    * Deposits crops.
    */
   private depositCrops = () => {
+    // achievements
+
+    if (
+      this.harvestedCropIndexes.length === 0 &&
+      !this.hasGotToTheOtherSide &&
+      this.deaths === 0 &&
+      Math.max(Math.abs(this.chunk.x), Math.abs(this.chunk.y)) >= 1
+    ) {
+      //console.log("Achievement: Get to the Other Side");
+      this.hasGotToTheOtherSide = true;
+    }
+
     // skip function if there are nothing to deposit
     if (this.inventoryCropIndexes.length === 0) return;
 
@@ -704,6 +734,7 @@ export class CropsAndChickensScene extends BaseScene {
     // freeze player
     this.walkingSpeed = 0;
     this.isPlayerDead = true;
+    this.deaths += 1;
     this.currentPlayer.setVisible(false);
 
     // play sound

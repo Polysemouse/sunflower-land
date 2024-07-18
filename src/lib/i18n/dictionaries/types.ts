@@ -1123,6 +1123,8 @@ export type CropsAndChickensMessages =
   | "crops-and-chickens.endGame"
   | "crops-and-chickens.achievement.dcol.title"
   | "crops-and-chickens.achievement.dcol.description"
+  | "crops-and-chickens.achievement.get-to-the-other-side.title"
+  | "crops-and-chickens.achievement.get-to-the-other-side.description"
   | "crops-and-chickens.achievement.grandmaster.title"
   | "crops-and-chickens.achievement.grandmaster.description"
   | "crops-and-chickens.achievement.never-goes-up.title"
