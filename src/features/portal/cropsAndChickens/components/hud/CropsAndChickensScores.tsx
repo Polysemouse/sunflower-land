@@ -76,7 +76,7 @@ export const CropsAndChickensScores: React.FC = () => {
         <div
           className="flex items-center space-x-2 text-xs text-white text-shadow"
           style={{
-            width: "200px",
+            width: "250px",
             paddingTop: "7px",
             paddingLeft: "3px",
           }}
@@ -94,7 +94,7 @@ export const CropsAndChickensScores: React.FC = () => {
         <div
           className="flex items-center space-x-2 text-xs text-white text-shadow"
           style={{
-            width: "200px",
+            width: "250px",
             paddingTop: "7px",
             paddingLeft: "3px",
           }}

@@ -1,5 +1,5 @@
 import { SQUARE_WIDTH } from "features/game/lib/constants";
-import { InventoryItemName } from "features/game/types/game";
+import { CropName } from "features/game/types/crops";
 
 export const UNLIMITED_ATTEMPTS_SFL = 3;
 export const RESTOCK_ATTEMPTS_SFL = 1;
@@ -53,9 +53,23 @@ export const CHICKEN_SPEEDS = {
 export const HUNTER_CHICKEN_INITIAL_DISTANCE = 100;
 export const HUNTER_CHICKEN_SPEED_MULTIPLIER = 0.8;
 
+export const CROP_TO_INDEX: { [key in CropName]?: number } = {
+  Sunflower: 0,
+  Potato: 1,
+  Pumpkin: 2,
+  Carrot: 3,
+  Cabbage: 4,
+  Beetroot: 5,
+  Cauliflower: 6,
+  Parsnip: 7,
+  Radish: 8,
+  Wheat: 9,
+  Kale: 10,
+};
+
 export const SCORE_TABLE: {
   [key: number]: {
-    item: InventoryItemName;
+    item: CropName;
     points: number;
   };
 } = {

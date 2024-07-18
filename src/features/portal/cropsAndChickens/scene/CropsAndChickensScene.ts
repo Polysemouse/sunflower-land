@@ -19,6 +19,8 @@ import {
   SCORE_TABLE,
   SPRITE_FRAME_RATE,
   TIME_TICKING_SECONDS,
+  CROP_TO_INDEX,
+  TOTAL_CROP_TYPES,
 } from "../CropsAndChickensConstants";
 import { NormalChickenContainer } from "./containers/NormalChickenContainer";
 import { HunterChickenContainer } from "./containers/HunterChickenContainer";
@@ -28,12 +30,17 @@ import { StorageAreaContainer } from "./containers/StorageAreaContainer";
 import { DepositIndicatorContainer } from "./containers/DepositIndicatorContainer";
 import { CropContainer } from "./containers/CropContainer";
 import { EventObject } from "xstate";
+import { CropName } from "features/game/types/crops";
 
 export class CropsAndChickensScene extends BaseScene {
   sceneId: SceneId = "crops_and_chickens";
 
-  isPlayerDead = false;
-  collectedCropIndexes: number[] = [];
+  // player states
+  isPlayerDead!: boolean;
+  depositedCropIndexes!: number[];
+  harvestedCropIndexes!: number[];
+  inventoryCropIndexes!: number[];
+  hasGoneUp!: boolean;
 
   chickens: NormalChickenContainer[] = [];
   hunterChicken?: HunterChickenContainer;
@@ -51,6 +58,15 @@ export class CropsAndChickensScene extends BaseScene {
       map: { json: mapJson },
       audio: { fx: { walk_key: "dirt_footstep" } },
     });
+    this.setDefaultStates();
+  }
+
+  private setDefaultStates() {
+    this.isPlayerDead = false;
+    this.depositedCropIndexes = [];
+    this.harvestedCropIndexes = [];
+    this.inventoryCropIndexes = [];
+    this.hasGoneUp = false;
   }
 
   /**
@@ -61,10 +77,24 @@ export class CropsAndChickensScene extends BaseScene {
   }
 
   /**
+   * The portal service context.
+   */
+  private get portalServiceContext() {
+    return this.portalService?.state.context;
+  }
+
+  /**
+   * The score.
+   */
+  private get score() {
+    return this.portalServiceContext?.score ?? 0;
+  }
+
+  /**
    * The number of seconds left for the game.
    */
   private get secondsLeft() {
-    const endAt = this.portalService?.state.context.endAt;
+    const endAt = this.portalServiceContext?.endAt;
     const secondsLeft = !endAt
       ? GAME_SECONDS
       : Math.max(endAt - Date.now(), 0) / 1000;
@@ -217,7 +247,8 @@ export class CropsAndChickensScene extends BaseScene {
     // remove camera bounds so that the camera does not stop at the edge of the map when player wraps around
     this.cameras.main.removeBounds();
 
-    this.initializeStates();
+    this.setDefaultStates();
+    this.freezePlayerIfRulesNotRead();
     this.initializeShaders();
 
     this.createAllCrops();
@@ -240,7 +271,7 @@ export class CropsAndChickensScene extends BaseScene {
     this.depositIndicator = new DepositIndicatorContainer({
       scene: this,
       player: this.currentPlayer,
-      hasCropsInInventory: () => this.collectedCropIndexes.length > 0,
+      hasCropsInInventory: () => this.inventoryCropIndexes.length > 0,
     });
 
     // reload scene when player hit retry
@@ -278,6 +309,14 @@ export class CropsAndChickensScene extends BaseScene {
     this.portalService?.send("SET_JOYSTICK_ACTIVE", {
       isJoystickActive: !!this.joystick?.force,
     });
+
+    // check if player has gone up
+    if (
+      this.currentPlayer?.body &&
+      this.currentPlayer.body.velocity.y < -1e-8
+    ) {
+      this.hasGoneUp = true;
+    }
 
     // play ticking sound if time is going to run out
     if (
@@ -356,22 +395,25 @@ export class CropsAndChickensScene extends BaseScene {
   }
 
   /**
-   * Initializes the game state.
+   * Gets the total number of crops in the map for a given crop.
    */
-  private initializeStates = () => {
-    this.isPlayerDead = false;
-    this.chickens = [];
-    this.collectedCropIndexes = [];
+  private getTotalCrops = (crop: CropName) => {
+    return CROP_SPAWN_CONFIGURATIONS.filter(
+      (config) => config.cropIndex === CROP_TO_INDEX[crop],
+    ).length;
+  };
 
+  /**
+   * Freezes the player if the rules are not read.
+   */
+  private freezePlayerIfRulesNotRead = () => {
     this.walkingSpeed = 0;
     this.currentPlayer?.setVisible(true);
 
     this.time.addEvent({
       delay: 500,
       callback: () => {
-        if (this.isRulesRead) {
-          this.walkingSpeed = PLAYER_WALKING_SPEED;
-        }
+        if (this.isRulesRead) this.walkingSpeed = PLAYER_WALKING_SPEED;
       },
       callbackScope: this,
     });
@@ -493,7 +535,7 @@ export class CropsAndChickensScene extends BaseScene {
     const player = this.currentPlayer;
 
     // animate for each crop in inventory
-    this.collectedCropIndexes.forEach(async (cropIndex, index) => {
+    this.inventoryCropIndexes.forEach(async (cropIndex, index) => {
       const cropSprite = this.add.sprite(
         player.x,
         player.y,
@@ -564,7 +606,8 @@ export class CropsAndChickensScene extends BaseScene {
     sound.play({ volume: 0.1 });
 
     // add crop to inventory
-    this.collectedCropIndexes = [...this.collectedCropIndexes, cropIndex];
+    this.harvestedCropIndexes = [...this.harvestedCropIndexes, cropIndex];
+    this.inventoryCropIndexes = [...this.inventoryCropIndexes, cropIndex];
     const cropPoint = SCORE_TABLE[cropIndex].points;
     this.portalService?.send("CROP_HARVESTED", { points: cropPoint });
   };
@@ -574,15 +617,28 @@ export class CropsAndChickensScene extends BaseScene {
    */
   private depositCrops = () => {
     // skip function if there are nothing to deposit
-    if (this.collectedCropIndexes.length === 0) return;
+    if (this.inventoryCropIndexes.length === 0) return;
 
     // play sound
     const sound = this.sound.add("crop_deposit");
     sound.play({ volume: 0.1 });
 
+    // achievements
+
+    if (
+      JSON.stringify(this.inventoryCropIndexes) ===
+      JSON.stringify(Array.from({ length: TOTAL_CROP_TYPES }, (_, i) => i))
+    ) {
+      //console.log("Achievement: Ultimate Chain");
+    }
+
     // score and remove all crops from inventory
     this.animateDepositingCrops();
-    this.collectedCropIndexes = [];
+    this.depositedCropIndexes = [
+      ...this.depositedCropIndexes,
+      ...this.inventoryCropIndexes,
+    ];
+    this.inventoryCropIndexes = [];
     this.portalService?.send("CROP_DEPOSITED");
   };
 
@@ -595,7 +651,7 @@ export class CropsAndChickensScene extends BaseScene {
     const player = this.currentPlayer;
 
     // animate for each crop in inventory
-    this.collectedCropIndexes.forEach((cropIndex) => {
+    this.inventoryCropIndexes.forEach((cropIndex) => {
       const cropSprite = this.add.sprite(
         player.x,
         player.y,
@@ -654,9 +710,20 @@ export class CropsAndChickensScene extends BaseScene {
     const sound = this.sound.add("player_killed");
     sound.play({ volume: 0.25 });
 
+    // achievements
+
+    if (
+      this.inventoryCropIndexes.every(
+        (cropIndex) => cropIndex === CROP_TO_INDEX["Cauliflower"],
+      ) &&
+      this.inventoryCropIndexes.length === this.getTotalCrops("Cauliflower")
+    ) {
+      //console.log("Achievement: White Death");
+    }
+
     // throw all crops out of the inventory
     this.animateDroppingCrops();
-    this.collectedCropIndexes = [];
+    this.inventoryCropIndexes = [];
     this.portalService?.send("KILL_PLAYER");
 
     const spriteName = "player_death";
@@ -714,7 +781,6 @@ export class CropsAndChickensScene extends BaseScene {
    */
   private endGame = () => {
     this.portalService?.send("GAME_OVER");
-    this.collectedCropIndexes = [];
 
     // play sound
     const sound = this.sound.add("game_over");
@@ -723,5 +789,40 @@ export class CropsAndChickensScene extends BaseScene {
     // freeze player
     this.walkingSpeed = 0;
     this.currentPlayer?.setVisible(false);
+
+    // achievements
+
+    if (
+      this.depositedCropIndexes.every(
+        (cropIndex) => cropIndex === CROP_TO_INDEX["Kale"],
+      ) &&
+      this.depositedCropIndexes.length === this.getTotalCrops("Kale") &&
+      this.harvestedCropIndexes.every(
+        (cropIndex) => cropIndex === CROP_TO_INDEX["Kale"],
+      ) &&
+      this.harvestedCropIndexes.length === this.getTotalCrops("Kale")
+    ) {
+      //console.log("Achievement: Dcol");
+    }
+
+    if (this.score >= 25000) {
+      //console.log("Achievement: Grandmaster");
+    }
+
+    if (!this.hasGoneUp && this.score >= 2000) {
+      //console.log("Achievement: Never Goes Up");
+    }
+
+    if (this.score === 1337) {
+      //console.log("The Elite");
+    }
+
+    if (
+      this.depositedCropIndexes.filter(
+        (cropIndex) => cropIndex === CROP_TO_INDEX["Wheat"],
+      ).length === this.getTotalCrops("Wheat")
+    ) {
+      //console.log("Achievement: Wheat King");
+    }
   };
 }
