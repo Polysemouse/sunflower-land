@@ -2,10 +2,11 @@ import { translate } from "lib/i18n/translate";
 
 export type CropsAndChickensAchievementName =
   | "Dcol"
-  | "Grand Master"
-  | "Never Goes Up"
+  | "Elite Gamer"
+  | "Grandmaster"
+  | "Never Gonna Move You Up"
+  | "Relentless"
   | "Rush to the Other Side"
-  | "The Elite"
   | "Ultimate Chain"
   | "Wheat King"
   | "White Death";
@@ -18,16 +19,30 @@ export const AVAILABLE_ACHIEVEMENTS: Record<
     title: translate("crops-and-chickens.achievement.dcol.title"),
     description: translate("crops-and-chickens.achievement.dcol.description"),
   },
-  "Grand Master": {
+  "Elite Gamer": {
+    title: translate("crops-and-chickens.achievement.elite-gamer.title"),
+    description: translate(
+      "crops-and-chickens.achievement.elite-gamer.description",
+    ),
+  },
+  Grandmaster: {
     title: translate("crops-and-chickens.achievement.grandmaster.title"),
     description: translate(
       "crops-and-chickens.achievement.grandmaster.description",
     ),
   },
-  "Never Goes Up": {
-    title: translate("crops-and-chickens.achievement.never-goes-up.title"),
+  "Never Gonna Move You Up": {
+    title: translate(
+      "crops-and-chickens.achievement.never-gonna-move-you-up.title",
+    ),
     description: translate(
-      "crops-and-chickens.achievement.never-goes-up.description",
+      "crops-and-chickens.achievement.never-gonna-move-you-up.description",
+    ),
+  },
+  Relentless: {
+    title: translate("crops-and-chickens.achievement.relentless.title"),
+    description: translate(
+      "crops-and-chickens.achievement.relentless.description",
     ),
   },
   "Rush to the Other Side": {
@@ -36,12 +51,6 @@ export const AVAILABLE_ACHIEVEMENTS: Record<
     ),
     description: translate(
       "crops-and-chickens.achievement.rush-to-the-other-side.description",
-    ),
-  },
-  "The Elite": {
-    title: translate("crops-and-chickens.achievement.the-elite.title"),
-    description: translate(
-      "crops-and-chickens.achievement.the-elite.description",
     ),
   },
   "Ultimate Chain": {

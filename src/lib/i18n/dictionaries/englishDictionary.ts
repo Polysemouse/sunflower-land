@@ -1564,19 +1564,23 @@ const cropsAndChickens: Record<CropsAndChickensMessages, string> = {
   "crops-and-chickens.achievement.dcol.title": "Dcol",
   "crops-and-chickens.achievement.dcol.description":
     "Deposit all (1) Kale and do not harvest any other crops in a game",
+  "crops-and-chickens.achievement.elite-gamer.title": "Elite Gamer",
+  "crops-and-chickens.achievement.elite-gamer.description":
+    "Score exactly 1337 points",
   "crops-and-chickens.achievement.grandmaster.title": "Grandmaster",
   "crops-and-chickens.achievement.grandmaster.description":
     "Score 25000 points in a game",
-  "crops-and-chickens.achievement.never-goes-up.title": "Never Goes Up",
-  "crops-and-chickens.achievement.never-goes-up.description":
+  "crops-and-chickens.achievement.never-gonna-move-you-up.title":
+    "Never Gonna Move You Up",
+  "crops-and-chickens.achievement.never-gonna-move-you-up.description":
     "Score 2000 points without moving upwards",
+  "crops-and-chickens.achievement.relentless.title": "Relentless",
+  "crops-and-chickens.achievement.relentless.description":
+    "Score 10000 points in a game without stopping",
   "crops-and-chickens.achievement.rush-to-the-other-side.title":
     "Rush to the Other Side",
   "crops-and-chickens.achievement.rush-to-the-other-side.description":
-    "Navigate back to the deposit area by going around the map safely, without dying, stopping, moving upwards and harvesting any crops",
-  "crops-and-chickens.achievement.the-elite.title": "The Elite",
-  "crops-and-chickens.achievement.the-elite.description":
-    "Score exactly 1337 points",
+    "Navigate back to the deposit area by going around the map safely, without dying, stopping, moving upwards or harvesting any crops",
   "crops-and-chickens.achievement.ultimate-chain.title": "Ultimate Chain",
   "crops-and-chickens.achievement.ultimate-chain.description":
     "Collect one crop of each type in ascending order of points, then deposit them all at once",

@@ -337,11 +337,6 @@ export class CropsAndChickensScene extends BaseScene {
       this.timeTickingSound.play({ volume: 0.2 });
     }
 
-    // start game if player decides to move
-    if (!this.isGamePlaying && this.isMoving) {
-      this.portalService?.send("START");
-    }
-
     // end game when time is up
     if (this.isGamePlaying && this.secondsLeft <= 0) {
       this.endGame();
@@ -419,6 +414,12 @@ export class CropsAndChickensScene extends BaseScene {
 
     // update deposit indicator position
     this.depositIndicator?.update();
+
+    // start game if player decides to moves
+    // must be called after setting hasStopped
+    if (!this.isGamePlaying && this.isMoving) {
+      this.portalService?.send("START");
+    }
 
     super.update();
   }
@@ -849,16 +850,20 @@ export class CropsAndChickensScene extends BaseScene {
       //console.log("Achievement: Dcol");
     }
 
+    if (this.score === 1337) {
+      //console.log("Elite Gamer");
+    }
+
     if (this.score >= 25000) {
       //console.log("Achievement: Grandmaster");
     }
 
     if (!this.hasGoneUp && this.score >= 2000) {
-      //console.log("Achievement: Never Goes Up");
+      //console.log("Achievement: Never Gonna Move You Up");
     }
 
-    if (this.score === 1337) {
-      //console.log("The Elite");
+    if (!this.hasStopped && this.score >= 10000) {
+      //console.log("Achievement: Relentless");
     }
 
     if (

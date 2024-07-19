@@ -1483,14 +1483,26 @@ const cropsAndChickens: Record<CropsAndChickensMessages, string> = {
     ENGLISH_TERMS["crops-and-chickens.achievement.dcol.title"],
   "crops-and-chickens.achievement.dcol.description":
     ENGLISH_TERMS["crops-and-chickens.achievement.dcol.description"],
+  "crops-and-chickens.achievement.elite-gamer.title":
+    ENGLISH_TERMS["crops-and-chickens.achievement.elite-gamer.title"],
+  "crops-and-chickens.achievement.elite-gamer.description":
+    ENGLISH_TERMS["crops-and-chickens.achievement.elite-gamer.description"],
   "crops-and-chickens.achievement.grandmaster.title":
     ENGLISH_TERMS["crops-and-chickens.achievement.grandmaster.title"],
   "crops-and-chickens.achievement.grandmaster.description":
     ENGLISH_TERMS["crops-and-chickens.achievement.grandmaster.description"],
-  "crops-and-chickens.achievement.never-goes-up.title":
-    ENGLISH_TERMS["crops-and-chickens.achievement.never-goes-up.title"],
-  "crops-and-chickens.achievement.never-goes-up.description":
-    ENGLISH_TERMS["crops-and-chickens.achievement.never-goes-up.description"],
+  "crops-and-chickens.achievement.never-gonna-move-you-up.title":
+    ENGLISH_TERMS[
+      "crops-and-chickens.achievement.never-gonna-move-you-up.title"
+    ],
+  "crops-and-chickens.achievement.never-gonna-move-you-up.description":
+    ENGLISH_TERMS[
+      "crops-and-chickens.achievement.never-gonna-move-you-up.description"
+    ],
+  "crops-and-chickens.achievement.relentless.title":
+    ENGLISH_TERMS["crops-and-chickens.achievement.relentless.title"],
+  "crops-and-chickens.achievement.relentless.description":
+    ENGLISH_TERMS["crops-and-chickens.achievement.relentless.description"],
   "crops-and-chickens.achievement.rush-to-the-other-side.title":
     ENGLISH_TERMS[
       "crops-and-chickens.achievement.rush-to-the-other-side.title"
@@ -1499,10 +1511,6 @@ const cropsAndChickens: Record<CropsAndChickensMessages, string> = {
     ENGLISH_TERMS[
       "crops-and-chickens.achievement.rush-to-the-other-side.description"
     ],
-  "crops-and-chickens.achievement.the-elite.title":
-    ENGLISH_TERMS["crops-and-chickens.achievement.the-elite.title"],
-  "crops-and-chickens.achievement.the-elite.description":
-    ENGLISH_TERMS["crops-and-chickens.achievement.the-elite.description"],
   "crops-and-chickens.achievement.ultimate-chain.title":
     ENGLISH_TERMS["crops-and-chickens.achievement.ultimate-chain.title"],
   "crops-and-chickens.achievement.ultimate-chain.description":
