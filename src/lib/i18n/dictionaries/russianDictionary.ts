@@ -1576,12 +1576,6 @@ const cropsAndChickens: Record<CropsAndChickensMessages, string> = {
     ENGLISH_TERMS["crops-and-chickens.achievement.dcol.title"],
   "crops-and-chickens.achievement.dcol.description":
     ENGLISH_TERMS["crops-and-chickens.achievement.dcol.description"],
-  "crops-and-chickens.achievement.get-to-the-other-side.title":
-    ENGLISH_TERMS["crops-and-chickens.achievement.get-to-the-other-side.title"],
-  "crops-and-chickens.achievement.get-to-the-other-side.description":
-    ENGLISH_TERMS[
-      "crops-and-chickens.achievement.get-to-the-other-side.description"
-    ],
   "crops-and-chickens.achievement.grandmaster.title":
     ENGLISH_TERMS["crops-and-chickens.achievement.grandmaster.title"],
   "crops-and-chickens.achievement.grandmaster.description":
@@ -1590,6 +1584,14 @@ const cropsAndChickens: Record<CropsAndChickensMessages, string> = {
     ENGLISH_TERMS["crops-and-chickens.achievement.never-goes-up.title"],
   "crops-and-chickens.achievement.never-goes-up.description":
     ENGLISH_TERMS["crops-and-chickens.achievement.never-goes-up.description"],
+  "crops-and-chickens.achievement.rush-to-the-other-side.title":
+    ENGLISH_TERMS[
+      "crops-and-chickens.achievement.rush-to-the-other-side.title"
+    ],
+  "crops-and-chickens.achievement.rush-to-the-other-side.description":
+    ENGLISH_TERMS[
+      "crops-and-chickens.achievement.rush-to-the-other-side.description"
+    ],
   "crops-and-chickens.achievement.the-elite.title":
     ENGLISH_TERMS["crops-and-chickens.achievement.the-elite.title"],
   "crops-and-chickens.achievement.the-elite.description":

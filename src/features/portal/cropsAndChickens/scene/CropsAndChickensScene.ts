@@ -44,6 +44,7 @@ export class CropsAndChickensScene extends BaseScene {
   deaths!: number;
   hasGoneUp!: boolean;
   hasGotToTheOtherSide!: boolean;
+  hasStopped!: boolean;
 
   chickens: NormalChickenContainer[] = [];
   hunterChicken?: HunterChickenContainer;
@@ -73,6 +74,7 @@ export class CropsAndChickensScene extends BaseScene {
     this.deaths = 0;
     this.hasGoneUp = false;
     this.hasGotToTheOtherSide = false;
+    this.hasStopped = false;
   }
 
   /**
@@ -348,7 +350,7 @@ export class CropsAndChickensScene extends BaseScene {
     }
 
     // warp entities
-    if (this.currentPlayer) {
+    if (this.currentPlayer?.body) {
       // calculate which chunk the player is in
       if (this.currentPlayer.x < PLAYER_MIN_XY) {
         this.chunk.x -= 1;
@@ -359,6 +361,15 @@ export class CropsAndChickensScene extends BaseScene {
         this.chunk.y -= 1;
       } else if (this.currentPlayer.y > PLAYER_MAX_XY) {
         this.chunk.y += 1;
+      }
+
+      // check if player has stopped moving
+      if (
+        this.isGamePlaying &&
+        this.currentPlayer.body.velocity.x === 0 &&
+        this.currentPlayer.body.velocity.y === 0
+      ) {
+        this.hasStopped = true;
       }
 
       // warp player
@@ -640,9 +651,11 @@ export class CropsAndChickensScene extends BaseScene {
       this.harvestedCropIndexes.length === 0 &&
       !this.hasGotToTheOtherSide &&
       this.deaths === 0 &&
+      !this.hasStopped &&
+      !this.hasGoneUp &&
       Math.max(Math.abs(this.chunk.x), Math.abs(this.chunk.y)) >= 1
     ) {
-      //console.log("Achievement: Get to the Other Side");
+      // console.log("Achievement: Rush to the Other Side");
       this.hasGotToTheOtherSide = true;
     }
 
