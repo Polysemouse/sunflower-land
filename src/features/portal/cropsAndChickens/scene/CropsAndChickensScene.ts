@@ -19,8 +19,8 @@ import {
   SCORE_TABLE,
   SPRITE_FRAME_RATE,
   TIME_TICKING_SECONDS,
-  CROP_TO_INDEX,
   TOTAL_CROP_TYPES,
+  CROP_TO_INDEX,
 } from "../CropsAndChickensConstants";
 import { NormalChickenContainer } from "./containers/NormalChickenContainer";
 import { HunterChickenContainer } from "./containers/HunterChickenContainer";
@@ -31,12 +31,19 @@ import { DepositIndicatorContainer } from "./containers/DepositIndicatorContaine
 import { CropContainer } from "./containers/CropContainer";
 import { EventObject } from "xstate";
 import { CropName } from "features/game/types/crops";
+import { CropsAndChickensAchievementName } from "../CropsAndChickensAchievements";
+
+type AchievementTrigger =
+  | "deposit"
+  | "empty deposit"
+  | "game over"
+  | "kill player";
 
 export class CropsAndChickensScene extends BaseScene {
   sceneId: SceneId = "crops_and_chickens";
 
   // player states
-  isPlayerDead!: boolean;
+  isDead!: boolean;
   depositedCropIndexes!: number[];
   harvestedCropIndexes!: number[];
   inventoryCropIndexes!: number[];
@@ -51,6 +58,10 @@ export class CropsAndChickensScene extends BaseScene {
   storageArea?: StorageAreaContainer;
   depositIndicator?: DepositIndicatorContainer;
 
+  achievementGetSound?:
+    | Phaser.Sound.NoAudioSound
+    | Phaser.Sound.HTML5AudioSound
+    | Phaser.Sound.WebAudioSound;
   timeTickingSound?:
     | Phaser.Sound.NoAudioSound
     | Phaser.Sound.HTML5AudioSound
@@ -65,8 +76,8 @@ export class CropsAndChickensScene extends BaseScene {
     this.setDefaultStates();
   }
 
-  private setDefaultStates() {
-    this.isPlayerDead = false;
+  private setDefaultStates = () => {
+    this.isDead = false;
     this.depositedCropIndexes = [];
     this.harvestedCropIndexes = [];
     this.inventoryCropIndexes = [];
@@ -75,7 +86,7 @@ export class CropsAndChickensScene extends BaseScene {
     this.hasGoneUp = false;
     this.hasGotToTheOtherSide = false;
     this.hasStopped = false;
-  }
+  };
 
   /**
    * The portal service.
@@ -133,6 +144,15 @@ export class CropsAndChickensScene extends BaseScene {
     if (!this.currentPlayer || !this.storageArea) return false;
     return this.physics.overlap(this.storageArea, this.currentPlayer);
   }
+
+  /**
+   * Gets the total number of crops in the map for a given crop.
+   */
+  private getTotalCrops = (crop: CropName) => {
+    return CROP_SPAWN_CONFIGURATIONS.filter(
+      (config) => config.cropIndex === CROP_TO_INDEX[crop],
+    ).length;
+  };
 
   /**
    * Called when the scene is preloaded.
@@ -234,12 +254,13 @@ export class CropsAndChickensScene extends BaseScene {
     }
 
     // sound effects
+    this.load.audio("achievement_get", "world/achievement_get.mp3");
     this.load.audio("crop_deposit", "world/crop_deposit.mp3");
     this.load.audio("crop_deposit_pop", "world/crop_deposit_pop.mp3");
+    this.load.audio("game_over", "world/game_over.mp3");
     this.load.audio("harvest", "world/harvest.mp3");
     this.load.audio("player_killed", "world/player_killed.mp3");
     this.load.audio("time_ticking", "world/time_ticking.mp3");
-    this.load.audio("game_over", "world/game_over.mp3");
   }
 
   /**
@@ -255,6 +276,8 @@ export class CropsAndChickensScene extends BaseScene {
     // remove camera bounds so that the camera does not stop at the edge of the map when player wraps around
     this.cameras.main.removeBounds();
 
+    this.achievementGetSound = this.sound.add("achievement_get");
+
     this.setDefaultStates();
     this.freezePlayerIfRulesNotRead();
     this.initializeShaders();
@@ -266,7 +289,7 @@ export class CropsAndChickensScene extends BaseScene {
       scene: this,
       player: this.currentPlayer,
       isChickenFrozen: () =>
-        this.isPlayerDead || this.isPlayerInDepositArea || !this.isGamePlaying,
+        this.isDead || this.isPlayerInDepositArea || !this.isGamePlaying,
       killPlayer: () => this.killPlayer(),
     });
 
@@ -423,15 +446,6 @@ export class CropsAndChickensScene extends BaseScene {
 
     super.update();
   }
-
-  /**
-   * Gets the total number of crops in the map for a given crop.
-   */
-  private getTotalCrops = (crop: CropName) => {
-    return CROP_SPAWN_CONFIGURATIONS.filter(
-      (config) => config.cropIndex === CROP_TO_INDEX[crop],
-    ).length;
-  };
 
   /**
    * Freezes the player if the rules are not read.
@@ -647,18 +661,7 @@ export class CropsAndChickensScene extends BaseScene {
    */
   private depositCrops = () => {
     // achievements
-
-    if (
-      this.harvestedCropIndexes.length === 0 &&
-      !this.hasGotToTheOtherSide &&
-      this.deaths === 0 &&
-      !this.hasStopped &&
-      !this.hasGoneUp &&
-      Math.max(Math.abs(this.chunk.x), Math.abs(this.chunk.y)) >= 1
-    ) {
-      // console.log("Achievement: Rush to the Other Side");
-      this.hasGotToTheOtherSide = true;
-    }
+    this.checkAchievement("empty deposit");
 
     // skip function if there are nothing to deposit
     if (this.inventoryCropIndexes.length === 0) return;
@@ -668,13 +671,7 @@ export class CropsAndChickensScene extends BaseScene {
     sound.play({ volume: 0.1 });
 
     // achievements
-
-    if (
-      JSON.stringify(this.inventoryCropIndexes) ===
-      JSON.stringify(Array.from({ length: TOTAL_CROP_TYPES }, (_, i) => i))
-    ) {
-      //console.log("Achievement: Ultimate Chain");
-    }
+    this.checkAchievement("deposit");
 
     // score and remove all crops from inventory
     this.animateDepositingCrops();
@@ -741,13 +738,13 @@ export class CropsAndChickensScene extends BaseScene {
    * Kills the player then respawns the player.
    */
   private killPlayer = () => {
-    if (!this.currentPlayer?.body || this.isPlayerDead || !this.isGamePlaying) {
+    if (!this.currentPlayer?.body || this.isDead || !this.isGamePlaying) {
       return;
     }
 
     // freeze player
     this.walkingSpeed = 0;
-    this.isPlayerDead = true;
+    this.isDead = true;
     this.deaths += 1;
     this.currentPlayer.setVisible(false);
 
@@ -756,15 +753,7 @@ export class CropsAndChickensScene extends BaseScene {
     sound.play({ volume: 0.25 });
 
     // achievements
-
-    if (
-      this.inventoryCropIndexes.every(
-        (cropIndex) => cropIndex === CROP_TO_INDEX["Cauliflower"],
-      ) &&
-      this.inventoryCropIndexes.length === this.getTotalCrops("Cauliflower")
-    ) {
-      //console.log("Achievement: White Death");
-    }
+    this.checkAchievement("kill player");
 
     // throw all crops out of the inventory
     this.animateDroppingCrops();
@@ -808,7 +797,7 @@ export class CropsAndChickensScene extends BaseScene {
       this.currentPlayer.x = SPAWNS().crops_and_chickens.default.x;
       this.currentPlayer.y = SPAWNS().crops_and_chickens.default.y;
 
-      this.isPlayerDead = false;
+      this.isDead = false;
 
       // does not allow player from walking around if player respawns after time is out
       if (this.isGamePlaying) {
@@ -836,42 +825,92 @@ export class CropsAndChickensScene extends BaseScene {
     this.currentPlayer?.setVisible(false);
 
     // achievements
+    this.checkAchievement("game over");
+  };
 
-    if (
-      this.depositedCropIndexes.every(
-        (cropIndex) => cropIndex === CROP_TO_INDEX["Kale"],
-      ) &&
-      this.depositedCropIndexes.length === this.getTotalCrops("Kale") &&
-      this.harvestedCropIndexes.every(
-        (cropIndex) => cropIndex === CROP_TO_INDEX["Kale"],
-      ) &&
-      this.harvestedCropIndexes.length === this.getTotalCrops("Kale")
-    ) {
-      //console.log("Achievement: Dcol");
-    }
+  private checkAchievement = (trigger: AchievementTrigger) => {
+    switch (trigger) {
+      case "deposit":
+        if (
+          JSON.stringify(this.inventoryCropIndexes) ===
+          JSON.stringify(Array.from({ length: TOTAL_CROP_TYPES }, (_, i) => i))
+        ) {
+          this.getAchievement("Ultimate Chain");
+        }
 
-    if (this.score === 1337) {
-      //console.log("Elite Gamer");
-    }
+        break;
+      case "empty deposit":
+        if (
+          !this.hasGotToTheOtherSide &&
+          this.harvestedCropIndexes.length === 0 &&
+          this.deaths === 0 &&
+          !this.hasStopped &&
+          !this.hasGoneUp &&
+          Math.max(Math.abs(this.chunk.x), Math.abs(this.chunk.y)) >= 1
+        ) {
+          this.hasGotToTheOtherSide = true;
+          this.getAchievement("Rush to the Other Side");
+        }
 
-    if (this.score >= 25000) {
-      //console.log("Achievement: Grandmaster");
-    }
+        break;
+      case "game over":
+        if (
+          this.depositedCropIndexes.every(
+            (cropIndex) => cropIndex === CROP_TO_INDEX["Kale"],
+          ) &&
+          this.depositedCropIndexes.length === this.getTotalCrops("Kale") &&
+          this.harvestedCropIndexes.every(
+            (cropIndex) => cropIndex === CROP_TO_INDEX["Kale"],
+          ) &&
+          this.harvestedCropIndexes.length === this.getTotalCrops("Kale")
+        ) {
+          this.getAchievement("Dcol");
+        }
 
-    if (!this.hasGoneUp && this.score >= 2000) {
-      //console.log("Achievement: Never Gonna Move You Up");
-    }
+        if (this.score === 1337) {
+          this.getAchievement("Elite Gamer");
+        }
 
-    if (!this.hasStopped && this.score >= 10000) {
-      //console.log("Achievement: Relentless");
-    }
+        if (this.score >= 25000) {
+          this.getAchievement("Grandmaster");
+        }
 
-    if (
-      this.depositedCropIndexes.filter(
-        (cropIndex) => cropIndex === CROP_TO_INDEX["Wheat"],
-      ).length === this.getTotalCrops("Wheat")
-    ) {
-      //console.log("Achievement: Wheat King");
+        if (!this.hasGoneUp && this.score >= 2000) {
+          this.getAchievement("Never Gonna Move You Up");
+        }
+
+        if (!this.hasStopped && this.score >= 10000) {
+          this.getAchievement("Relentless");
+        }
+
+        if (
+          this.depositedCropIndexes.filter(
+            (cropIndex) => cropIndex === CROP_TO_INDEX["Wheat"],
+          ).length === this.getTotalCrops("Wheat")
+        ) {
+          this.getAchievement("Wheat King");
+        }
+
+        break;
+      case "kill player":
+        if (
+          this.inventoryCropIndexes.every(
+            (cropIndex) => cropIndex === CROP_TO_INDEX["Cauliflower"],
+          ) &&
+          this.inventoryCropIndexes.length === this.getTotalCrops("Cauliflower")
+        ) {
+          this.getAchievement("White Death");
+        }
+
+        break;
     }
+  };
+
+  private getAchievement = (
+    achievementName: CropsAndChickensAchievementName,
+  ) => {
+    if (!this.achievementGetSound?.isPlaying)
+      this.achievementGetSound?.play({ volume: 0.3 });
+    alert(`Achievement: ${achievementName}`);
   };
 }
