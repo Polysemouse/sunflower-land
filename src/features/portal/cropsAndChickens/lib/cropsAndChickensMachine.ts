@@ -59,7 +59,6 @@ export type PortalState = {
   value:
     | "initialising"
     | "error"
-    | "idle"
     | "ready"
     | "unauthorised"
     | "loading"

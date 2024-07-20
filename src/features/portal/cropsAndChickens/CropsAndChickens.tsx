@@ -13,27 +13,15 @@ import { useAppTranslation } from "lib/i18n/useAppTranslations";
 import { PortalMachineState } from "./lib/cropsAndChickensMachine";
 import { Loading } from "features/auth/components";
 import { CONFIG } from "lib/config";
-import lock from "assets/skills/lock.png";
-import sfl from "assets/icons/sfl.webp";
-import {
-  RESTOCK_ATTEMPTS_SFL,
-  UNLIMITED_ATTEMPTS_SFL,
-  DAILY_ATTEMPTS,
-} from "./CropsAndChickensConstants";
-import {
-  authorisePortal,
-  claimPrize,
-  goHome,
-  purchase,
-} from "../lib/portalUtil";
+import { authorisePortal, claimPrize } from "../lib/portalUtil";
 import { CropsAndChickensRulesPanel } from "./components/panel/CropsAndChickensRulesPanel";
+import { CropsAndChickensNoAttemptsPanel } from "./components/panel/CropsAndChickensNoAttemptsPanel";
 
 const _sflBalance = (state: PortalMachineState) => state.context.state?.balance;
 const _isError = (state: PortalMachineState) => state.matches("error");
 const _isUnauthorised = (state: PortalMachineState) =>
   state.matches("unauthorised");
 const _isLoading = (state: PortalMachineState) => state.matches("loading");
-const _isIdle = (state: PortalMachineState) => state.matches("idle");
 const _isNoAttempts = (state: PortalMachineState) =>
   state.matches("noAttempts");
 const _isIntroduction = (state: PortalMachineState) =>
@@ -50,7 +38,6 @@ export const CropsAndChickens: React.FC = () => {
   const isError = useSelector(portalService, _isError);
   const isUnauthorised = useSelector(portalService, _isUnauthorised);
   const isLoading = useSelector(portalService, _isLoading);
-  const isIdle = useSelector(portalService, _isIdle);
   const isNoAttempts = useSelector(portalService, _isNoAttempts);
   const isIntroduction = useSelector(portalService, _isIntroduction);
   const isWinner = useSelector(portalService, _isWinner);
@@ -116,72 +103,9 @@ export const CropsAndChickens: React.FC = () => {
 
   return (
     <div>
-      {isIdle && (
-        <Modal show>
-          <Panel>
-            <Button onClick={() => portalService.send("START")}>
-              {t("start")}
-            </Button>
-          </Panel>
-        </Modal>
-      )}
-
       {isNoAttempts && (
         <Modal show>
-          <Panel>
-            <div className="p-1">
-              <div className="flex gap-1 justify-between items-center mb-2">
-                <Label icon={lock} type="danger">
-                  {t("crops-and-chickens.noAttemptsRemaining")}
-                </Label>
-                <Label
-                  icon={sfl}
-                  type={
-                    sflBalance?.lt(RESTOCK_ATTEMPTS_SFL) ? "danger" : "default"
-                  }
-                >
-                  {t("crops-and-chickens.sflRequired")}
-                </Label>
-              </div>
-
-              <p className="text-sm mb-2">
-                {t("crops-and-chickens.youHaveRunOutOfAttempts")}
-              </p>
-              <p className="text-sm mb-2">
-                {t("crops-and-chickens.wouldYouLikeToUnlock")}
-              </p>
-            </div>
-            <div className="flex flex-col gap-1">
-              <Button onClick={goHome}>{t("exit")}</Button>
-              <Button
-                disabled={sflBalance?.lt(RESTOCK_ATTEMPTS_SFL)}
-                onClick={() =>
-                  purchase({
-                    sfl: RESTOCK_ATTEMPTS_SFL,
-                    items: {},
-                  })
-                }
-              >
-                {t("crops-and-chickens.buyAttempts", {
-                  attempts: DAILY_ATTEMPTS,
-                  sfl: RESTOCK_ATTEMPTS_SFL,
-                })}
-              </Button>
-              <Button
-                disabled={sflBalance?.lt(UNLIMITED_ATTEMPTS_SFL)}
-                onClick={() =>
-                  purchase({
-                    sfl: UNLIMITED_ATTEMPTS_SFL,
-                    items: {},
-                  })
-                }
-              >
-                {t("crops-and-chickens.unlockAttempts", {
-                  sfl: UNLIMITED_ATTEMPTS_SFL,
-                })}
-              </Button>
-            </div>
-          </Panel>
+          <CropsAndChickensNoAttemptsPanel />
         </Modal>
       )}
 
