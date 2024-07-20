@@ -1121,6 +1121,7 @@ export type CropsAndChickensMessages =
   | "crops-and-chickens.inventory"
   | "crops-and-chickens.endGameConfirmation"
   | "crops-and-chickens.endGame"
+  | "crops-and-chickens.achievementUnlocked"
   | "crops-and-chickens.achievement.dcol.title"
   | "crops-and-chickens.achievement.dcol.description"
   | "crops-and-chickens.achievement.elite-gamer.title"

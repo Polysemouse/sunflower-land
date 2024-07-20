@@ -32,47 +32,52 @@ export const CropsAndChickensHud: React.FC = () => {
   const sflBalance = useSelector(portalService, _sflBalance);
 
   return (
-    <HudContainer>
-      <div
-        className={classNames({
-          "pointer-events-none": isJoystickActive,
-        })}
-      >
+    <>
+      <HudContainer>
         <div
-          className="absolute"
-          style={{
-            top: `${PIXEL_SCALE * 4}px`,
-            left: `${PIXEL_SCALE * 6}px`,
-          }}
+          className={classNames({
+            "pointer-events-none": isJoystickActive,
+          })}
         >
-          <Label icon={SUNNYSIDE.resource.pirate_bounty} type="vibrant">
-            {t("crops-and-chickens.targetScore", {
-              target: target,
-            })}
-          </Label>
-          <CropsAndChickensScores />
-        </div>
-
-        <div className="flex flex-col absolute space-y-1 items-end z-50 right-3 top-3 !text-[28px] text-stroke">
-          <div className="flex items-center space-x-1 relative">
-            <div className="h-9 w-full bg-black opacity-25 absolute sfl-hud-backdrop -z-10" />
-            <span className="balance-text">
-              {setPrecision(sflBalance).toString()}
-            </span>
-            <img
-              src={sflIcon}
-              alt="SFL"
-              style={{
-                width: 26,
-              }}
-            />
+          <div
+            className="absolute"
+            style={{
+              top: `${PIXEL_SCALE * 4}px`,
+              left: `${PIXEL_SCALE * 6}px`,
+            }}
+          >
+            <Label icon={SUNNYSIDE.resource.pirate_bounty} type="vibrant">
+              {t("crops-and-chickens.targetScore", {
+                target: target,
+              })}
+            </Label>
+            <CropsAndChickensScores />
           </div>
-        </div>
 
-        <CropsAndChickensTimer />
-        <CropsAndChickensTravel />
-        <CropsAndChickensSettings />
-      </div>
-    </HudContainer>
+          <div className="flex flex-col absolute space-y-1 items-end z-50 right-3 top-3 !text-[28px] text-stroke">
+            <div className="flex items-center space-x-1 relative">
+              <div className="h-9 w-full bg-black opacity-25 absolute sfl-hud-backdrop -z-10" />
+              <span className="balance-text">
+                {setPrecision(sflBalance).toString()}
+              </span>
+              <img
+                src={sflIcon}
+                alt="SFL"
+                style={{
+                  width: 26,
+                }}
+              />
+            </div>
+          </div>
+
+          <CropsAndChickensTimer />
+          <CropsAndChickensTravel />
+          <CropsAndChickensSettings />
+        </div>
+      </HudContainer>
+      {/* <HudContainer zIndex={99999}>
+        <CropsAndChickensAchievementToast achievementName="Never Gonna Move You Up" />
+      </HudContainer> */}
+    </>
   );
 };

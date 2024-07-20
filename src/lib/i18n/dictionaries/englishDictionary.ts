@@ -1561,6 +1561,7 @@ const cropsAndChickens: Record<CropsAndChickensMessages, string> = {
   "crops-and-chickens.endGameConfirmation":
     "Are you sure you want to end the game early?",
   "crops-and-chickens.endGame": "End game",
+  "crops-and-chickens.achievementUnlocked": "Achievement Unlocked!",
   "crops-and-chickens.achievement.dcol.title": "Dcol",
   "crops-and-chickens.achievement.dcol.description":
     "Deposit all (1) Kale and do not harvest any other crops in a game",
@@ -1580,7 +1581,7 @@ const cropsAndChickens: Record<CropsAndChickensMessages, string> = {
   "crops-and-chickens.achievement.rush-to-the-other-side.title":
     "Rush to the Other Side",
   "crops-and-chickens.achievement.rush-to-the-other-side.description":
-    "Navigate back to the deposit area by going around the map safely, without dying, stopping, moving upwards or harvesting any crops",
+    "Navigate back to the deposit area by going around the map without dying, stopping, moving upwards or harvesting any crops",
   "crops-and-chickens.achievement.ultimate-chain.title": "Ultimate Chain",
   "crops-and-chickens.achievement.ultimate-chain.description":
     "Collect one crop of each type in ascending order of points, then deposit them all at once",
