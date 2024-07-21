@@ -110,6 +110,17 @@ export class CropsAndChickensScene extends BaseScene {
   }
 
   /**
+   * The existing achievement names.
+   */
+  private get existingAchievementNames() {
+    const achievements =
+      this.portalServiceContext?.state?.minigames.games["crops-and-chickens"]
+        ?.achievements ?? {};
+
+    return Object.keys(achievements);
+  }
+
+  /**
    * The number of seconds left for the game.
    */
   private get secondsLeft() {
@@ -829,13 +840,15 @@ export class CropsAndChickensScene extends BaseScene {
   };
 
   private checkAchievement = (trigger: AchievementTrigger) => {
+    const achievementNames: CropsAndChickensAchievementName[] = [];
+
     switch (trigger) {
       case "deposit":
         if (
           JSON.stringify(this.inventoryCropIndexes) ===
           JSON.stringify(Array.from({ length: TOTAL_CROP_TYPES }, (_, i) => i))
         ) {
-          this.getAchievement("Ultimate Chain");
+          achievementNames.push("Ultimate Chain");
         }
 
         break;
@@ -849,7 +862,7 @@ export class CropsAndChickensScene extends BaseScene {
           Math.max(Math.abs(this.chunk.x), Math.abs(this.chunk.y)) >= 1
         ) {
           this.hasGotToTheOtherSide = true;
-          this.getAchievement("Rush to the Other Side");
+          achievementNames.push("Rush to the Other Side");
         }
 
         break;
@@ -864,23 +877,23 @@ export class CropsAndChickensScene extends BaseScene {
           ) &&
           this.harvestedCropIndexes.length === this.getTotalCrops("Kale")
         ) {
-          this.getAchievement("Dcol");
+          achievementNames.push("Dcol");
         }
 
         if (this.score === 1337) {
-          this.getAchievement("Elite Gamer");
+          achievementNames.push("Elite Gamer");
         }
 
         if (this.score >= 25000) {
-          this.getAchievement("Grandmaster");
+          achievementNames.push("Grandmaster");
         }
 
         if (!this.hasGoneUp && this.score >= 2000) {
-          this.getAchievement("Never Gonna Move You Up");
+          achievementNames.push("Never Gonna Move You Up");
         }
 
         if (!this.hasStopped && this.score >= 10000) {
-          this.getAchievement("Relentless");
+          achievementNames.push("Relentless");
         }
 
         if (
@@ -888,7 +901,7 @@ export class CropsAndChickensScene extends BaseScene {
             (cropIndex) => cropIndex === CROP_TO_INDEX["Wheat"],
           ).length === this.getTotalCrops("Wheat")
         ) {
-          this.getAchievement("Wheat King");
+          achievementNames.push("Wheat King");
         }
 
         break;
@@ -899,18 +912,31 @@ export class CropsAndChickensScene extends BaseScene {
           ) &&
           this.inventoryCropIndexes.length === this.getTotalCrops("Cauliflower")
         ) {
-          this.getAchievement("White Death");
+          achievementNames.push("White Death");
         }
 
         break;
     }
+
+    if (achievementNames.length > 0) this.getAchievements(achievementNames);
   };
 
-  private getAchievement = (
-    achievementName: CropsAndChickensAchievementName,
+  private getAchievements = (
+    achievementNames: CropsAndChickensAchievementName[],
   ) => {
+    // if no new achievements, return
+    if (
+      achievementNames.every((name) =>
+        this.existingAchievementNames?.includes(name),
+      )
+    ) {
+      return;
+    }
+
     if (!this.achievementGetSound?.isPlaying)
       this.achievementGetSound?.play({ volume: 0.3 });
-    alert(`Achievement: ${achievementName}`);
+    this.portalService?.send("UNLOCKED_ACHIEVEMENTS", {
+      achievementNames: achievementNames,
+    });
   };
 }

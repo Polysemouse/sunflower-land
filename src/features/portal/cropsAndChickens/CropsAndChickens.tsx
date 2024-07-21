@@ -16,6 +16,7 @@ import { CONFIG } from "lib/config";
 import { authorisePortal, claimPrize } from "../lib/portalUtil";
 import { CropsAndChickensRulesPanel } from "./components/panel/CropsAndChickensRulesPanel";
 import { CropsAndChickensNoAttemptsPanel } from "./components/panel/CropsAndChickensNoAttemptsPanel";
+import AchievementToastProvider from "./providers/AchievementToastProvider";
 
 const _sflBalance = (state: PortalMachineState) => state.context.state?.balance;
 const _isError = (state: PortalMachineState) => state.matches("error");
@@ -158,10 +159,10 @@ export const CropsAndChickens: React.FC = () => {
       )}
 
       {sflBalance && (
-        <>
+        <AchievementToastProvider>
           <CropsAndChickensHud />
           <CropsAndChickensPhaser />
-        </>
+        </AchievementToastProvider>
       )}
     </div>
   );

@@ -11,9 +11,11 @@ import {
 import { GameState } from "features/game/types/game";
 import { purchaseMinigameItem } from "features/game/events/minigames/purchaseMinigameItem";
 import { playMinigame } from "features/game/events/minigames/playMinigame";
-import { played } from "features/portal/lib/portalUtil";
+import { achievementsUnlocked, played } from "features/portal/lib/portalUtil";
 import { getUrl, loadPortal } from "features/portal/actions/loadPortal";
 import { getAttemptsLeft } from "./cropsAndChickensUtils";
+import { unlockMinigameAchievements } from "features/game/events/minigames/unlockMinigameAchievements";
+import { CropsAndChickensAchievementName } from "../CropsAndChickensAchievements";
 
 const getJWT = () => {
   const code = new URLSearchParams(window.location.search).get("jwt");
@@ -36,6 +38,11 @@ type CropHarvestedEvent = {
   points: number;
 };
 
+type UnlockAchievementsEvent = {
+  type: "UNLOCKED_ACHIEVEMENTS";
+  achievementNames: CropsAndChickensAchievementName[];
+};
+
 type SetJoystickActiveEvent = {
   type: "SET_JOYSTICK_ACTIVE";
   isJoystickActive: boolean;
@@ -53,7 +60,8 @@ export type PortalEvent =
   | { type: "GAME_OVER" }
   | CropHarvestedEvent
   | { type: "CROP_DEPOSITED" }
-  | { type: "KILL_PLAYER" };
+  | { type: "KILL_PLAYER" }
+  | UnlockAchievementsEvent;
 
 export type PortalState = {
   value:
@@ -105,6 +113,21 @@ export const portalMachine = createMachine<Context, PortalEvent, PortalState>({
           return event.isJoystickActive;
         },
       }),
+    },
+    UNLOCKED_ACHIEVEMENTS: {
+      actions: assign<Context, any>({
+        state: (context: Context, event: UnlockAchievementsEvent) => {
+          achievementsUnlocked({ achievementNames: event.achievementNames });
+          return unlockMinigameAchievements({
+            state: context.state!,
+            action: {
+              type: "minigame.achievementsUnlocked",
+              id: "crops-and-chickens",
+              achievementNames: event.achievementNames,
+            },
+          });
+        },
+      }) as any,
     },
   },
   states: {
