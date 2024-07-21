@@ -1,4 +1,5 @@
 import { translate } from "lib/i18n/translate";
+import { getTotalCropsInGame } from "./lib/cropsAndChickensUtils";
 
 export type CropsAndChickensAchievementName =
   | "Dcol"
@@ -17,7 +18,9 @@ export const AVAILABLE_ACHIEVEMENTS: Record<
 > = {
   Dcol: {
     title: translate("crops-and-chickens.achievement.dcol.title"),
-    description: translate("crops-and-chickens.achievement.dcol.description"),
+    description: translate("crops-and-chickens.achievement.dcol.description", {
+      amount: getTotalCropsInGame("Kale"),
+    }),
     icon: "public/world/achievement_dcol.png",
   },
   "Elite Gamer": {
@@ -70,6 +73,9 @@ export const AVAILABLE_ACHIEVEMENTS: Record<
     title: translate("crops-and-chickens.achievement.wheat-king.title"),
     description: translate(
       "crops-and-chickens.achievement.wheat-king.description",
+      {
+        amount: getTotalCropsInGame("Wheat"),
+      },
     ),
     icon: "public/world/achievement_wheat_king.png",
   },
@@ -77,6 +83,9 @@ export const AVAILABLE_ACHIEVEMENTS: Record<
     title: translate("crops-and-chickens.achievement.white-death.title"),
     description: translate(
       "crops-and-chickens.achievement.white-death.description",
+      {
+        amount: getTotalCropsInGame("Cauliflower"),
+      },
     ),
     icon: "public/world/achievement_white_death.png",
   },

@@ -30,8 +30,8 @@ import { StorageAreaContainer } from "./containers/StorageAreaContainer";
 import { DepositIndicatorContainer } from "./containers/DepositIndicatorContainer";
 import { CropContainer } from "./containers/CropContainer";
 import { EventObject } from "xstate";
-import { CropName } from "features/game/types/crops";
 import { CropsAndChickensAchievementName } from "../CropsAndChickensAchievements";
+import { getTotalCropsInGame } from "../lib/cropsAndChickensUtils";
 
 type AchievementTrigger =
   | "deposit"
@@ -155,15 +155,6 @@ export class CropsAndChickensScene extends BaseScene {
     if (!this.currentPlayer || !this.storageArea) return false;
     return this.physics.overlap(this.storageArea, this.currentPlayer);
   }
-
-  /**
-   * Gets the total number of crops in the map for a given crop.
-   */
-  private getTotalCrops = (crop: CropName) => {
-    return CROP_SPAWN_CONFIGURATIONS.filter(
-      (config) => config.cropIndex === CROP_TO_INDEX[crop],
-    ).length;
-  };
 
   /**
    * Called when the scene is preloaded.
@@ -871,11 +862,11 @@ export class CropsAndChickensScene extends BaseScene {
           this.depositedCropIndexes.every(
             (cropIndex) => cropIndex === CROP_TO_INDEX["Kale"],
           ) &&
-          this.depositedCropIndexes.length === this.getTotalCrops("Kale") &&
+          this.depositedCropIndexes.length === getTotalCropsInGame("Kale") &&
           this.harvestedCropIndexes.every(
             (cropIndex) => cropIndex === CROP_TO_INDEX["Kale"],
           ) &&
-          this.harvestedCropIndexes.length === this.getTotalCrops("Kale")
+          this.harvestedCropIndexes.length === getTotalCropsInGame("Kale")
         ) {
           achievementNames.push("Dcol");
         }
@@ -899,7 +890,7 @@ export class CropsAndChickensScene extends BaseScene {
         if (
           this.depositedCropIndexes.filter(
             (cropIndex) => cropIndex === CROP_TO_INDEX["Wheat"],
-          ).length === this.getTotalCrops("Wheat")
+          ).length === getTotalCropsInGame("Wheat")
         ) {
           achievementNames.push("Wheat King");
         }
@@ -910,7 +901,8 @@ export class CropsAndChickensScene extends BaseScene {
           this.inventoryCropIndexes.every(
             (cropIndex) => cropIndex === CROP_TO_INDEX["Cauliflower"],
           ) &&
-          this.inventoryCropIndexes.length === this.getTotalCrops("Cauliflower")
+          this.inventoryCropIndexes.length ===
+            getTotalCropsInGame("Cauliflower")
         ) {
           achievementNames.push("White Death");
         }

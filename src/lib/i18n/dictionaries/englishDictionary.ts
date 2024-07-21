@@ -1564,7 +1564,7 @@ const cropsAndChickens: Record<CropsAndChickensMessages, string> = {
   "crops-and-chickens.achievementUnlocked": "Achievement Unlocked!",
   "crops-and-chickens.achievement.dcol.title": "Dcol",
   "crops-and-chickens.achievement.dcol.description":
-    "Deposit all (1) Kale and do not harvest any other crops in a game",
+    "Deposit all ({{amount}}) Kale and do not harvest any other crops in a game",
   "crops-and-chickens.achievement.elite-gamer.title": "Elite Gamer",
   "crops-and-chickens.achievement.elite-gamer.description":
     "Score exactly 1337 points",
@@ -1587,10 +1587,10 @@ const cropsAndChickens: Record<CropsAndChickensMessages, string> = {
     "Collect one crop of each type in ascending order of points, then deposit them all at once",
   "crops-and-chickens.achievement.wheat-king.title": "Wheat King",
   "crops-and-chickens.achievement.wheat-king.description":
-    "Harvest all (4) Wheat and deposit them in a game",
+    "Harvest all ({{amount}}) Wheat and deposit them in a game",
   "crops-and-chickens.achievement.white-death.title": "White Death",
   "crops-and-chickens.achievement.white-death.description":
-    "Harvest all (36) Cauliflower at once, and die without carrying any other crops",
+    "Harvest all ({{amount}}) Cauliflower at once, and die without carrying any other crops",
 };
 
 const decorationDescriptions: Record<DecorationDescriptions, string> = {
