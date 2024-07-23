@@ -236,7 +236,7 @@ export const portalMachine = createMachine<Context, PortalEvent, PortalState>({
     introduction: {
       on: {
         CONTINUE: {
-          target: "ready",
+          target: "starting",
         },
       },
     },
