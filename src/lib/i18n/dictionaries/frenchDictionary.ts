@@ -1649,6 +1649,8 @@ const cropsAndChickens: Record<CropsAndChickensMessages, string> = {
   "crops-and-chickens.endGame": ENGLISH_TERMS["crops-and-chickens.endGame"],
   "crops-and-chickens.achievementUnlocked":
     ENGLISH_TERMS["crops-and-chickens.achievementUnlocked"],
+  "crops-and-chickens.achievementUnlockedAt":
+    ENGLISH_TERMS["crops-and-chickens.achievementUnlockedAt"],
   "crops-and-chickens.achievement.dcol.title":
     ENGLISH_TERMS["crops-and-chickens.achievement.dcol.title"],
   "crops-and-chickens.achievement.dcol.description":

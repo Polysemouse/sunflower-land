@@ -8,7 +8,7 @@ import {
   CropsAndChickensAchievementName,
 } from "../../CropsAndChickensAchievements";
 import { SquareIcon } from "components/ui/SquareIcon";
-import { ButtonPanel, OuterPanel } from "components/ui/Panel";
+import { InnerPanel, OuterPanel } from "components/ui/Panel";
 import { SUNNYSIDE } from "assets/sunnyside";
 import { PIXEL_SCALE } from "features/game/lib/constants";
 import { useAppTranslation } from "lib/i18n/useAppTranslations";
@@ -102,10 +102,10 @@ export const CropsAndChickensAchievementsList: React.FC<Props> = ({
           <div className="flex flex-col gap-1">
             {completedAchievementNames.map((achievementName, index) => {
               const achievement = AVAILABLE_ACHIEVEMENTS[achievementName];
-              // const obtainedAchievement = achievements[achievementName];
+              const unlockedAt = achievements[achievementName].unlockedAt;
 
               return (
-                <ButtonPanel key={index}>
+                <InnerPanel key={index}>
                   <div className="flex flex-row p-1 items-center">
                     <SquareIcon
                       className="ml-2 mr-4"
@@ -117,7 +117,12 @@ export const CropsAndChickensAchievementsList: React.FC<Props> = ({
                       <div className="text-xs">{achievement.description}</div>
                     </div>
                   </div>
-                </ButtonPanel>
+                  <Label type="success" className="text-xs">
+                    {t("crops-and-chickens.achievementUnlockedAt", {
+                      time: new Date(unlockedAt).toLocaleString(),
+                    })}
+                  </Label>
+                </InnerPanel>
               );
             })}
           </div>

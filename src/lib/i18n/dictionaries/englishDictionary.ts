@@ -1565,6 +1565,7 @@ const cropsAndChickens: Record<CropsAndChickensMessages, string> = {
     "Are you sure you want to end the game early?",
   "crops-and-chickens.endGame": "End game",
   "crops-and-chickens.achievementUnlocked": "Achievement Unlocked!",
+  "crops-and-chickens.achievementUnlockedAt": "Unlocked at {{time}}",
   "crops-and-chickens.achievement.dcol.title": "Dcol",
   "crops-and-chickens.achievement.dcol.description":
     "Deposit all ({{amount}}) Kale and do not harvest any other crops in a game",
