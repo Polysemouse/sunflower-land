@@ -69,6 +69,12 @@ export const CropsAndChickensAchievementsList: React.FC<Props> = ({
         </div>
       </div>
 
+      <Label type="danger">
+        {
+          "Note: The achievement system is still a work in progress. Completing achievements will not unlock them and will crash the game. However, you are still encouraged to try them out for fun!"
+        }
+      </Label>
+
       {/* in progress */}
       <div className="flex flex-col gap-1">
         <Label type="default">{t("in.progress")}</Label>
