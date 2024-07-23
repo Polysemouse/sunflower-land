@@ -1,4 +1,4 @@
-const MAX_LIGHT_SOURCES = 1000;
+const MAX_LIGHT_SOURCES = 1;
 
 const fragShader = `
 #define SHADER_NAME DARK_MODE_SHADER
