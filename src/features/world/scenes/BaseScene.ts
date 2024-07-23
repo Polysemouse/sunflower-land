@@ -96,6 +96,7 @@ export abstract class BaseScene extends Phaser.Scene {
   public joystick?: VirtualJoystick;
   private sceneTransitionData?: SceneTransitionData;
   private switchToScene?: SceneId;
+  public isCameraFading = false;
   private options: Required<BaseSceneOptions>;
 
   public map: Phaser.Tilemaps.Tilemap = {} as Phaser.Tilemaps.Tilemap;
@@ -385,6 +386,14 @@ export abstract class BaseScene extends Phaser.Scene {
     camera.setPosition(Math.max(offsetX, 0), Math.max(offsetY, 0));
 
     camera.fadeIn();
+
+    camera.on(
+      "camerafadeincomplete",
+      () => {
+        this.isCameraFading = false;
+      },
+      this,
+    );
   }
 
   public initialiseMMO() {
@@ -1115,6 +1124,7 @@ export abstract class BaseScene extends Phaser.Scene {
   protected changeScene = (scene: SceneId) => {
     const originalWalkingSpeed = this.walkingSpeed;
     this.walkingSpeed = 0;
+    this.isCameraFading = true;
 
     this.currentPlayer?.stopSpeaking();
     this.cameras.main.fadeOut(1000);

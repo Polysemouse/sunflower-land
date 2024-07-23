@@ -52,6 +52,7 @@ export type PortalEvent =
   | SetJoystickActiveEvent
   | { type: "START" }
   | { type: "CLAIM" }
+  | { type: "CANCEL_PURCHASE" }
   | { type: "PURCHASED_RESTOCK" }
   | { type: "PURCHASED_UNLIMITED" }
   | { type: "RETRY" }
@@ -182,6 +183,9 @@ export const portalMachine = createMachine<Context, PortalEvent, PortalState>({
 
     noAttempts: {
       on: {
+        CANCEL_PURCHASE: {
+          target: "introduction",
+        },
         PURCHASED_RESTOCK: {
           target: "introduction",
           actions: assign<Context>({

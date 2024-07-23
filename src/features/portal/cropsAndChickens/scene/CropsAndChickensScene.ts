@@ -281,7 +281,6 @@ export class CropsAndChickensScene extends BaseScene {
     this.achievementGetSound = this.sound.add("achievement_get");
 
     this.setDefaultStates();
-    this.freezePlayerIfRulesNotRead();
     this.initializeShaders();
 
     this.createAllCrops();
@@ -315,13 +314,6 @@ export class CropsAndChickensScene extends BaseScene {
     };
     this.portalService?.onEvent(onRetry);
 
-    // resume player speed after player read the rules
-    this.portalService?.onEvent((event) => {
-      if (event.type === "CONTINUE") {
-        this.walkingSpeed = PLAYER_WALKING_SPEED;
-      }
-    });
-
     // cleanup event listeners when scene is shut down
     this.events.on("shutdown", () => {
       this.portalService?.off(onRetry);
@@ -342,6 +334,12 @@ export class CropsAndChickensScene extends BaseScene {
     this.portalService?.send("SET_JOYSTICK_ACTIVE", {
       isJoystickActive: !!this.joystick?.force,
     });
+
+    // set player speed
+    this.walkingSpeed =
+      this.isRulesRead && !this.isDead && !this.isCameraFading
+        ? PLAYER_WALKING_SPEED
+        : 0;
 
     // check if player has gone up
     if (
@@ -448,22 +446,6 @@ export class CropsAndChickensScene extends BaseScene {
 
     super.update();
   }
-
-  /**
-   * Freezes the player if the rules are not read.
-   */
-  private freezePlayerIfRulesNotRead = () => {
-    this.walkingSpeed = 0;
-    this.currentPlayer?.setVisible(true);
-
-    this.time.addEvent({
-      delay: 500,
-      callback: () => {
-        if (this.isRulesRead) this.walkingSpeed = PLAYER_WALKING_SPEED;
-      },
-      callbackScope: this,
-    });
-  };
 
   /**
    * Initializes the camera shader.
@@ -745,7 +727,6 @@ export class CropsAndChickensScene extends BaseScene {
     }
 
     // freeze player
-    this.walkingSpeed = 0;
     this.isDead = true;
     this.deaths += 1;
     this.currentPlayer.setVisible(false);
@@ -790,9 +771,7 @@ export class CropsAndChickensScene extends BaseScene {
     }
 
     playerDeath.on("animationcomplete", async () => {
-      if (!this.currentPlayer) {
-        return;
-      }
+      if (!this.currentPlayer) return;
 
       await new Promise((res) => setTimeout(res, 1000));
 
@@ -801,11 +780,8 @@ export class CropsAndChickensScene extends BaseScene {
 
       this.isDead = false;
 
-      // does not allow player from walking around if player respawns after time is out
-      if (this.isGamePlaying) {
-        this.walkingSpeed = PLAYER_WALKING_SPEED;
-        this.currentPlayer.setVisible(true);
-      }
+      // show player if player is still playing
+      if (this.isGamePlaying) this.currentPlayer.setVisible(true);
 
       if (playerDeath.active) playerDeath.destroy();
       this.hunterChicken?.respawn();
@@ -822,8 +798,7 @@ export class CropsAndChickensScene extends BaseScene {
     const sound = this.sound.add("game_over");
     sound.play({ volume: 0.5 });
 
-    // freeze player
-    this.walkingSpeed = 0;
+    // hide player
     this.currentPlayer?.setVisible(false);
 
     // achievements

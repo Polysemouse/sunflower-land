@@ -16,7 +16,7 @@ import {
   RESTOCK_ATTEMPTS_SFL,
   UNLIMITED_ATTEMPTS_SFL,
 } from "../../CropsAndChickensConstants";
-import { goHome, purchase } from "features/portal/lib/portalUtil";
+import { purchase } from "features/portal/lib/portalUtil";
 
 const _sflBalance = (state: PortalMachineState) => state.context.state?.balance;
 
@@ -49,7 +49,9 @@ export const CropsAndChickensNoAttemptsPanel: React.FC = () => {
         </p>
       </div>
       <div className="flex flex-col gap-1">
-        <Button onClick={goHome}>{t("exit")}</Button>
+        <Button onClick={() => portalService.send("CANCEL_PURCHASE")}>
+          {t("back")}
+        </Button>
         <Button
           disabled={sflBalance?.lt(RESTOCK_ATTEMPTS_SFL)}
           onClick={() =>
