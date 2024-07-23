@@ -177,6 +177,7 @@ import {
   ChangeLanguage,
   FactionShopDescription,
   GuideFactionPet,
+  DesertKeys,
 } from "./types";
 
 const generalTerms: Record<GeneralTerms, string> = {
@@ -5542,6 +5543,12 @@ export const easterEggTerms: Record<EasterEggKeys, string> = {
     "To be king, I must be extra cruel. Once I ascend the throne, all Goblins will suffer. Their rebellion ends with me, and our kingdom will be stronger for it.",
 };
 
+export const desertTerms: Record<DesertKeys, string> = {
+  "digby.puzzle": "Digging puzzle",
+  "digby.today":
+    "Howdy explorer, today the following items have been spotted in the desert puzzle.",
+};
+
 export const ENGLISH_TERMS: Record<TranslationKeys, string> = {
   ...achievementTerms,
   ...addSFL,
@@ -5581,6 +5588,7 @@ export const ENGLISH_TERMS: Record<TranslationKeys, string> = {
   ...decorationDescriptions,
   ...defaultDialogue,
   ...delivery,
+  ...desertTerms,
   ...deliveryHelp,
   ...deliveryitem,
   ...depositWallet,

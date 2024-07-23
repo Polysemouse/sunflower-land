@@ -3777,6 +3777,7 @@ export type ChangeLanguage =
   | "changeLanguage.contribute.message"
   | "changeLanguage.currentLanguage";
 
+export type DesertKeys = "digby.today" | "digby.puzzle";
 export type TranslationKeys =
   | AchievementsTerms
   | Auction
@@ -3820,6 +3821,7 @@ export type TranslationKeys =
   | DeliveryHelp
   | DepositWallet
   | Detail
+  | DesertKeys
   | DiscordBonus
   | Donation
   | DraftBid

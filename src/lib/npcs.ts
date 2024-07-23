@@ -2,6 +2,7 @@ import { Equipped } from "features/game/types/bumpkin";
 
 export type NPCName =
   | "chicken farmer"
+  | "digby"
   | "portaller"
   | "gambit"
   | "victoria"
@@ -110,6 +111,16 @@ export const NPC_WEARABLES: Record<NPCName, Equipped> = {
     pants: "Farmer Overalls",
     shirt: "Chic Gala Blouse",
     hat: "Chicken Hat",
+  },
+  digby: {
+    body: "Light Brown Farmer Potion",
+    hair: "Wise Hair",
+    hat: "Explorer Hat",
+    shirt: "Seaside Tank Top",
+    pants: "Farmer Pants",
+    tool: "Grave Diggers Shovel",
+    background: "Farm Background",
+    shoes: "Black Farmer Boots",
   },
   "chef tuck": {
     body: "Goblin Potion",
