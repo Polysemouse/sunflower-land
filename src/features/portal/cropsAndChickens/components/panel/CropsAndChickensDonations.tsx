@@ -12,6 +12,7 @@ import { useAppTranslation } from "lib/i18n/useAppTranslations";
 import { ITEM_DETAILS } from "features/game/types/images";
 import { NumberInput } from "components/ui/NumberInput";
 import Decimal from "decimal.js-light";
+import { donate } from "features/portal/lib/portalUtil";
 
 const CONTRIBUTORS = ["Polysemouse"];
 
@@ -34,10 +35,10 @@ export const CropsAndChickensDonations: React.FC = () => {
     });
   };
 
-  const donate = () => {
-    send("DONATE", {
-      donation,
-      to: CONFIG.PORTAL_DONATION_ADDRESS,
+  const handleDonate = () => {
+    donate({
+      matic: donation.toNumber(),
+      address: CONFIG.PORTAL_DONATION_ADDRESS,
     });
   };
 
@@ -93,7 +94,7 @@ export const CropsAndChickensDonations: React.FC = () => {
 
           <Button
             className="w-full ml-1"
-            onClick={donate}
+            onClick={handleDonate}
             disabled={isComingSoon || donation.lessThan(0.1)}
           >
             <span className="whitespace-nowrap">{t("donate")}</span>
@@ -118,7 +119,7 @@ export const CropsAndChickensDonations: React.FC = () => {
       {state.matches("confirming") && (
         <GameWallet action="donate">
           <p className="m-2">{`${donation} (MATIC)`}</p>
-          <Button className="w-full ml-1" onClick={donate}>
+          <Button className="w-full ml-1" onClick={handleDonate}>
             <span className="text-xs whitespace-nowrap">{t("confirm")}</span>
           </Button>
         </GameWallet>
