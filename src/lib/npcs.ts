@@ -56,7 +56,7 @@ export type NPCName =
   | "finley"
   | "tango"
   | "corale"
-  | "goldtooth"
+  | "goldtooth" // To remove on release
   | "daphne"
   | "miranda"
   | "damien"
@@ -96,6 +96,7 @@ export type NPCName =
   | "shadow"
   | "flora"
   | "eldric"
+  | "jafar" // desert merchant
   | "pet"; // faction pet
 
 export const NPC_WEARABLES: Record<NPCName, Equipped> = {
@@ -772,6 +773,7 @@ export const NPC_WEARABLES: Record<NPCName, Equipped> = {
     shoes: "Black Farmer Boots",
     tool: "Trident",
   },
+  // To remove on digging release
   goldtooth: {
     body: "Goblin Potion",
     hair: "Sun Spots",
@@ -1047,6 +1049,15 @@ export const NPC_WEARABLES: Record<NPCName, Equipped> = {
     shoes: "Sunflorian Sabatons",
     tool: "Goblin Axe",
     coat: "Royal Robe",
+  },
+  jafar: {
+    background: "Desert Camel Background",
+    body: "Light Brown Farmer Potion",
+    hair: "Buzz Cut",
+    dress: "Desert Merchant Suit",
+    hat: "Desert Merchant Turban",
+    shoes: "Desert Merchant Shoes",
+    tool: "Water Gourd",
   },
   // Placeholder values. Pets are an image.
   pet: {

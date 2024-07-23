@@ -337,6 +337,7 @@ const generalTerms: Record<GeneralTerms, string> = {
   ok: "OK",
   on: "Allumer",
   open: "Ouvrir",
+  opened: ENGLISH_TERMS.opened,
   opensea: "Opensea",
   "open.gift": "Ouvrir un Cadeau",
   optional: ENGLISH_TERMS["optional"],
@@ -962,6 +963,8 @@ const boostEffectDescriptions: Record<BoostEffectDescriptions, string> = {
     ENGLISH_TERMS["description.hourglass.expired"],
   "description.hourglass.running":
     ENGLISH_TERMS["description.hourglass.running"],
+  "description.desert.rose.boost":
+    ENGLISH_TERMS["description.desert.rose.boost"],
 };
 
 const bountyDescription: Record<BountyDescription, string> = {
@@ -2759,6 +2762,9 @@ const flowerBed: Record<FlowerBed, string> = {
     "Les essaims d'abeilles donnent un bonus de +0,2 aux cultures plantées.",
   "flowerBed.newSpecies.discovered":
     "Parbleu, vous avez découvert une nouvelle espèce de fleur!",
+  "flowerBed.newSpecies.superLucky":
+    ENGLISH_TERMS["flowerBed.newSpecies.superLucky"],
+  "flowerBed.newSpecies.mutant": ENGLISH_TERMS["flowerBed.newSpecies.mutant"],
   "flowerBedContent.select.combination": "Sélectionnez votre combinaison",
   "flowerBedContent.select.seed": "Sélectionnez une graine",
   "flowerBedContent.select.crossbreed": "Sélectionnez un croisement",
