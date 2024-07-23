@@ -2,6 +2,8 @@ const NETWORK = import.meta.env.VITE_NETWORK as "mainnet" | "amoy";
 const DONATION_ADDRESS = import.meta.env.VITE_DONATION_ADDRESS;
 const TREASURY_ADDRESS = import.meta.env.VITE_TREASURY_ADDRESS as string;
 
+const PORTAL_DONATION_ADDRESS = import.meta.env.VITE_PORTAL_DONATION_ADDRESS;
+
 const POLYGON_CHAIN_ID = NETWORK === "mainnet" ? 137 : 80002;
 
 const API_URL = import.meta.env.VITE_API_URL;
@@ -69,9 +71,6 @@ const GREEDY_GOBLIN_DONATION = import.meta.env
 const CHICKEN_FIGHT_DONATION = import.meta.env
   .VITE_CHICKEN_FIGHT_DONATION as string;
 
-const CROPS_AND_CHICKENS_DONATION = import.meta.env
-  .CROPS_AND_CHICKENS_DONATION as string;
-
 const GAME_ANALYTICS_APP_ID = import.meta.env
   .VITE_GAME_ANALYTICS_APP_ID as string;
 const GAME_ANALYTICS_PUB_KEY = import.meta.env
@@ -91,6 +90,9 @@ export const CONFIG = {
   NETWORK,
   POLYGON_CHAIN_ID,
   DONATION_ADDRESS,
+
+  PORTAL_DONATION_ADDRESS,
+
   TREASURY_ADDRESS,
   API_URL,
   DISCORD_REDIRECT,
@@ -134,8 +136,6 @@ export const CONFIG = {
 
   GREEDY_GOBLIN_DONATION,
   CHICKEN_FIGHT_DONATION,
-
-  CROPS_AND_CHICKENS_DONATION,
 
   PROTECTED_IMAGE_URL,
   ROOM_URL,

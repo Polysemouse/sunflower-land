@@ -37,12 +37,12 @@ export const CropsAndChickensDonations: React.FC = () => {
   const donate = () => {
     send("DONATE", {
       donation,
-      to: CONFIG.CROPS_AND_CHICKENS_DONATION,
+      to: CONFIG.PORTAL_DONATION_ADDRESS,
     });
   };
 
   // waiting confirmation for address
-  const isComingSoon = true;
+  const isComingSoon = false;
 
   return (
     <>
