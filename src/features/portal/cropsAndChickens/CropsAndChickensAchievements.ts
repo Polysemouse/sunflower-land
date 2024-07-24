@@ -4,6 +4,7 @@ import { getTotalCropsInGame } from "./lib/cropsAndChickensUtils";
 export type CropsAndChickensAchievementName =
   | "Dcol"
   | "Elite Gamer"
+  | "Grain Offering"
   | "Grandmaster"
   | "Never Gonna Move You Up"
   | "Relentless"
@@ -29,6 +30,16 @@ export const AVAILABLE_ACHIEVEMENTS: Record<
       "crops-and-chickens.achievement.elite-gamer.description",
     ),
     icon: "world/achievement.elite-gamer.png",
+  },
+  "Grain Offering": {
+    title: translate("crops-and-chickens.achievement.grain-offering.title"),
+    description: translate(
+      "crops-and-chickens.achievement.grain-offering.description",
+      {
+        amount: getTotalCropsInGame("Wheat"),
+      },
+    ),
+    icon: "world/achievement.grain-offering.png",
   },
   Grandmaster: {
     title: translate("crops-and-chickens.achievement.grandmaster.title"),

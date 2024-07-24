@@ -1659,6 +1659,10 @@ const cropsAndChickens: Record<CropsAndChickensMessages, string> = {
     ENGLISH_TERMS["crops-and-chickens.achievement.elite-gamer.title"],
   "crops-and-chickens.achievement.elite-gamer.description":
     ENGLISH_TERMS["crops-and-chickens.achievement.elite-gamer.description"],
+  "crops-and-chickens.achievement.grain-offering.title":
+    ENGLISH_TERMS["crops-and-chickens.achievement.grain-offering.title"],
+  "crops-and-chickens.achievement.grain-offering.description":
+    ENGLISH_TERMS["crops-and-chickens.achievement.grain-offering.description"],
   "crops-and-chickens.achievement.grandmaster.title":
     ENGLISH_TERMS["crops-and-chickens.achievement.grandmaster.title"],
   "crops-and-chickens.achievement.grandmaster.description":

@@ -1129,6 +1129,8 @@ export type CropsAndChickensMessages =
   | "crops-and-chickens.achievement.dcol.description"
   | "crops-and-chickens.achievement.elite-gamer.title"
   | "crops-and-chickens.achievement.elite-gamer.description"
+  | "crops-and-chickens.achievement.grain-offering.title"
+  | "crops-and-chickens.achievement.grain-offering.description"
   | "crops-and-chickens.achievement.grandmaster.title"
   | "crops-and-chickens.achievement.grandmaster.description"
   | "crops-and-chickens.achievement.never-gonna-move-you-up.title"

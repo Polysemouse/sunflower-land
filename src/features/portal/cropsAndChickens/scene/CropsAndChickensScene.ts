@@ -37,7 +37,10 @@ type AchievementTrigger =
   | "deposit"
   | "empty deposit"
   | "game over"
-  | "kill player";
+  | "player killed by normal chicken"
+  | "player killed by hunter chicken";
+
+type chickenType = "normal" | "hunter";
 
 export class CropsAndChickensScene extends BaseScene {
   sceneId: SceneId = "crops_and_chickens";
@@ -291,7 +294,7 @@ export class CropsAndChickensScene extends BaseScene {
       player: this.currentPlayer,
       isChickenFrozen: () =>
         this.isDead || this.isPlayerInDepositArea || !this.isGamePlaying,
-      killPlayer: () => this.killPlayer(),
+      killPlayer: () => this.killPlayer("hunter"),
     });
 
     this.storageArea = new StorageAreaContainer({
@@ -502,7 +505,7 @@ export class CropsAndChickensScene extends BaseScene {
             direction: direction,
             scene: this,
             player: this.currentPlayer,
-            killPlayer: () => this.killPlayer(),
+            killPlayer: () => this.killPlayer("normal"),
           }),
       ),
     );
@@ -721,7 +724,7 @@ export class CropsAndChickensScene extends BaseScene {
   /**
    * Kills the player then respawns the player.
    */
-  private killPlayer = () => {
+  private killPlayer = (chickenType: chickenType) => {
     if (!this.currentPlayer?.body || this.isDead || !this.isGamePlaying) {
       return;
     }
@@ -736,7 +739,11 @@ export class CropsAndChickensScene extends BaseScene {
     sound.play({ volume: 0.25 });
 
     // achievements
-    this.checkAchievement("kill player");
+    this.checkAchievement(
+      chickenType === "normal"
+        ? "player killed by normal chicken"
+        : "player killed by hunter chicken",
+    );
 
     // throw all crops out of the inventory
     this.animateDroppingCrops();
@@ -871,7 +878,8 @@ export class CropsAndChickensScene extends BaseScene {
         }
 
         break;
-      case "kill player":
+      case "player killed by normal chicken":
+      case "player killed by hunter chicken":
         if (
           this.inventoryCropIndexes.every(
             (cropIndex) => cropIndex === CROP_TO_INDEX["Cauliflower"],
@@ -880,6 +888,19 @@ export class CropsAndChickensScene extends BaseScene {
             getTotalCropsInGame("Cauliflower")
         ) {
           achievementNames.push("White Death");
+        }
+
+        switch (trigger) {
+          case "player killed by hunter chicken":
+            if (
+              this.inventoryCropIndexes.filter(
+                (cropIndex) => cropIndex === CROP_TO_INDEX["Wheat"],
+              ).length === getTotalCropsInGame("Wheat")
+            ) {
+              achievementNames.push("Grain Offering");
+            }
+
+            break;
         }
 
         break;

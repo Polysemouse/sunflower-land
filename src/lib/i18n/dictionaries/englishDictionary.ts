@@ -1572,6 +1572,9 @@ const cropsAndChickens: Record<CropsAndChickensMessages, string> = {
   "crops-and-chickens.achievement.elite-gamer.title": "Elite Gamer",
   "crops-and-chickens.achievement.elite-gamer.description":
     "Score exactly 1337 points",
+  "crops-and-chickens.achievement.grain-offering.title": "Grain Offering",
+  "crops-and-chickens.achievement.grain-offering.description":
+    "Sacrifice all ({{amount}}) Wheat to the black chicken at once",
   "crops-and-chickens.achievement.grandmaster.title": "Grandmaster",
   "crops-and-chickens.achievement.grandmaster.description":
     "Score 25000 points in a game",
