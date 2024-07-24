@@ -1559,7 +1559,8 @@ const cropsAndChickens: Record<CropsAndChickensMessages, string> = {
     "Are you ready to take on the daily challenges?",
   "crops-and-chickens.targetScore": "Target Score: {{target}}",
   "crops-and-chickens.score": "Score: {{score}}",
-  "crops-and-chickens.highscore": "Highscore: {{allTimeHighscore}}",
+  "crops-and-chickens.bestToday": "Best (today): {{score}}",
+  "crops-and-chickens.bestAllTime": "Best (all-time): {{score}}",
   "crops-and-chickens.inventory": "Inventory: {{inventory}}",
   "crops-and-chickens.endGameConfirmation":
     "Are you sure you want to end the game early?",

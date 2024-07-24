@@ -1642,7 +1642,9 @@ const cropsAndChickens: Record<CropsAndChickensMessages, string> = {
   "crops-and-chickens.targetScore":
     ENGLISH_TERMS["crops-and-chickens.targetScore"],
   "crops-and-chickens.score": ENGLISH_TERMS["crops-and-chickens.score"],
-  "crops-and-chickens.highscore": ENGLISH_TERMS["crops-and-chickens.highscore"],
+  "crops-and-chickens.bestToday": ENGLISH_TERMS["crops-and-chickens.bestToday"],
+  "crops-and-chickens.bestAllTime":
+    ENGLISH_TERMS["crops-and-chickens.bestAllTime"],
   "crops-and-chickens.inventory": ENGLISH_TERMS["crops-and-chickens.inventory"],
   "crops-and-chickens.endGameConfirmation":
     ENGLISH_TERMS["crops-and-chickens.endGameConfirmation"],

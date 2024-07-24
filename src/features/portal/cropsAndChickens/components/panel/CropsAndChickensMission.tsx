@@ -45,6 +45,8 @@ export const CropsAndChickensMission: React.FC<Props> = ({
   const attemptsLeft = getAttemptsLeft(minigame);
   const score = useSelector(portalService, _score);
 
+  const dateKey = new Date().toISOString().slice(0, 10);
+
   const [page, setPage] = React.useState<"main" | "achievements" | "guide">(
     "main",
   );
@@ -88,8 +90,16 @@ export const CropsAndChickensMission: React.FC<Props> = ({
                   </span>
                 )}
                 <span>
-                  {t("crops-and-chickens.highscore", {
-                    allTimeHighscore: minigame?.highscore ?? 0,
+                  {t("crops-and-chickens.bestToday", {
+                    score: minigame?.history[dateKey]?.highscore ?? 0,
+                  })}
+                </span>
+                <span>
+                  {t("crops-and-chickens.bestAllTime", {
+                    score: Object.values(minigame?.history ?? {}).reduce(
+                      (acc, { highscore }) => Math.max(acc, highscore),
+                      0,
+                    ),
                   })}
                 </span>
               </div>
