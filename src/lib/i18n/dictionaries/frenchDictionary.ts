@@ -375,6 +375,7 @@ const generalTerms: Record<GeneralTerms, string> = {
   reward: "Récompense",
   "reward.discovered": "Récompense découverte",
   "reward.whatsNew": ENGLISH_TERMS["reward.whatsNew"],
+  sale: ENGLISH_TERMS["sale"],
   save: "Sauvegarder",
   saving: "Enregistrement",
   searching: "Recherche",
@@ -1029,7 +1030,9 @@ const bumpkinDelivery: Record<BumpkinDelivery, string> = {
   "bumpkin.delivery.waiting":
     "J'attendais ça. Merci beaucoup ! Reviens bientôt pour plus de livraisons.",
   "bumpkin.delivery.proveYourself":
-    "Prouve que tu es digne. Agrandis ton île {{missingExpansions}} fois de plus.",
+    "Prouve que tu es digne. Agrandis ton île {{missingLevels}} fois de plus.",
+  "bumpkin.delivery.earnScrolls": ENGLISH_TERMS["bumpkin.delivery.earnScrolls"],
+  "bumpkin.delivery.earnSFL": ENGLISH_TERMS["bumpkin.delivery.earnSFL"],
 };
 
 const bumpkinItemBuff: Record<BumpkinItemBuff, string> = {
@@ -1107,6 +1110,7 @@ const bumpkinItemBuff: Record<BumpkinItemBuff, string> = {
     ENGLISH_TERMS["bumpkinItemBuff.bumpkin.pants"],
   "bumpkinItemBuff.bumpkin.sabatons":
     ENGLISH_TERMS["bumpkinItemBuff.bumpkin.sabatons"],
+  "bumpkinItemBuff.crab.trap": ENGLISH_TERMS["bumpkinItemBuff.crab.trap"],
 };
 
 const bumpkinPart: Record<BumpkinPart, string> = {
@@ -1126,6 +1130,7 @@ const bumpkinPart: Record<BumpkinPart, string> = {
   "equip.wings": ENGLISH_TERMS["equip.wings"],
   "equip.dress": ENGLISH_TERMS["equip.dress"],
   "equip.beard": ENGLISH_TERMS["equip.beard"],
+  "equip.aura": ENGLISH_TERMS["equip.aura"],
 };
 
 const bumpkinPartRequirements: Record<BumpkinPartRequirements, string> = {
@@ -4006,11 +4011,26 @@ const npc_message: Record<NPC_MESSAGE, string> = {
   "npcMessages.jester.msg7": ENGLISH_TERMS["npcMessages.jester.msg7"],
   "npcMessages.jester.msg8": ENGLISH_TERMS["npcMessages.jester.msg8"],
   "npcMessages.jester.msg9": ENGLISH_TERMS["npcMessages.jester.msg9"],
+  "npcMessages.oldSalty.msg1": ENGLISH_TERMS["npcMessages.oldSalty.msg1"],
+  "npcMessages.oldSalty.msg2": ENGLISH_TERMS["npcMessages.oldSalty.msg2"],
+  "npcMessages.oldSalty.msg3": ENGLISH_TERMS["npcMessages.oldSalty.msg3"],
+  "npcMessages.oldSalty.msg4": ENGLISH_TERMS["npcMessages.oldSalty.msg4"],
+  "npcMessages.oldSalty.msg5": ENGLISH_TERMS["npcMessages.oldSalty.msg5"],
+  "npcMessages.oldSalty.msg6": ENGLISH_TERMS["npcMessages.oldSalty.msg6"],
+  "npcMessages.oldSalty.msg7": ENGLISH_TERMS["npcMessages.oldSalty.msg7"],
+  "npcMessages.pharaoh.msg1": ENGLISH_TERMS["npcMessages.pharaoh.msg1"],
+  "npcMessages.pharaoh.msg2": ENGLISH_TERMS["npcMessages.pharaoh.msg2"],
+  "npcMessages.pharaoh.msg3": ENGLISH_TERMS["npcMessages.pharaoh.msg3"],
+  "npcMessages.pharaoh.msg4": ENGLISH_TERMS["npcMessages.pharaoh.msg4"],
+  "npcMessages.pharaoh.msg5": ENGLISH_TERMS["npcMessages.pharaoh.msg5"],
+  "npcMessages.pharaoh.msg6": ENGLISH_TERMS["npcMessages.pharaoh.msg6"],
+  "npcMessages.pharaoh.msg7": ENGLISH_TERMS["npcMessages.pharaoh.msg7"],
 };
 
 const npc: Record<Npc, string> = {
   "npc.Modal.Hammer":
     "Rassemblez-vous, Bumpkins, une vente aux enchères va bientôt commencer.",
+  "npc.Modal.Petro": ENGLISH_TERMS["npc.Modal.Petro"],
   "npc.Modal.Marcus":
     "Hé ! Vous n'avez pas le droit d'entrer chez moi. Ne touchez surtout pas à mes affaires!",
   "npc.Modal.Billy": "Salut à tous ! Je m'appelle Billy.",
@@ -4511,6 +4531,34 @@ const npcDialogues: Record<NpcDialogues, string> = {
   "npcDialogues.pumpkinPete.noOrder2":
     "Oh, pas de commande active pour toi aujourd'hui, mon ami. Mais ne t'inquiète pas ! N'hésite pas à explorer la place, et si tu as besoin d'aide, je suis ton fidèle Bumpkin.",
 
+  "npcDialogues.peggy.intro1": ENGLISH_TERMS["npcDialogues.peggy.intro1"],
+  "npcDialogues.peggy.intro2": ENGLISH_TERMS["npcDialogues.peggy.intro2"],
+  "npcDialogues.peggy.intro3": ENGLISH_TERMS["npcDialogues.peggy.intro3"],
+  "npcDialogues.peggy.intro4": ENGLISH_TERMS["npcDialogues.peggy.intro4"],
+  "npcDialogues.peggy.intro5": ENGLISH_TERMS["npcDialogues.peggy.intro5"],
+  "npcDialogues.peggy.positiveDelivery1":
+    ENGLISH_TERMS["npcDialogues.peggy.positiveDelivery1"],
+  "npcDialogues.peggy.positiveDelivery2":
+    ENGLISH_TERMS["npcDialogues.peggy.positiveDelivery2"],
+  "npcDialogues.peggy.positiveDelivery3":
+    ENGLISH_TERMS["npcDialogues.peggy.positiveDelivery3"],
+  "npcDialogues.peggy.positiveDelivery4":
+    ENGLISH_TERMS["npcDialogues.peggy.positiveDelivery4"],
+  "npcDialogues.peggy.positiveDelivery5":
+    ENGLISH_TERMS["npcDialogues.peggy.positiveDelivery5"],
+  "npcDialogues.peggy.negativeDelivery1":
+    ENGLISH_TERMS["npcDialogues.peggy.negativeDelivery1"],
+  "npcDialogues.peggy.negativeDelivery2":
+    ENGLISH_TERMS["npcDialogues.peggy.negativeDelivery2"],
+  "npcDialogues.peggy.negativeDelivery3":
+    ENGLISH_TERMS["npcDialogues.peggy.negativeDelivery3"],
+  "npcDialogues.peggy.negativeDelivery4":
+    ENGLISH_TERMS["npcDialogues.peggy.negativeDelivery4"],
+  "npcDialogues.peggy.negativeDelivery5":
+    ENGLISH_TERMS["npcDialogues.peggy.negativeDelivery5"],
+  "npcDialogues.peggy.noOrder1": ENGLISH_TERMS["npcDialogues.peggy.noOrder1"],
+  "npcDialogues.peggy.noOrder2": ENGLISH_TERMS["npcDialogues.peggy.noOrder2"],
+
   // NPC gift dialogues
   "npcDialogues.pumpkinPete.reward":
     "Merci beaucoup pour tes livraisons. Voici un petit geste d'appréciation pour toi.",
@@ -4600,6 +4648,15 @@ const npcDialogues: Record<NpcDialogues, string> = {
   "npcDialogues.raven.goodFlower":
     "This Purple flower is perfect! Thank you for bringing it to me.",
 
+  "npcDialogues.salty.reward": ENGLISH_TERMS["npcDialogues.salty.reward"],
+  "npcDialogues.salty.flowerIntro":
+    ENGLISH_TERMS["npcDialogues.salty.flowerIntro"],
+  "npcDialogues.salty.averageFlower":
+    ENGLISH_TERMS["npcDialogues.salty.averageFlower"],
+  "npcDialogues.salty.badFlower": ENGLISH_TERMS["npcDialogues.salty.badFlower"],
+  "npcDialogues.salty.goodFlower":
+    ENGLISH_TERMS["npcDialogues.salty.goodFlower"],
+
   "npcDialogues.miranda.reward":
     "Merci pour vos efforts. Voici un petit geste d'appréciation pour vos livraisons.",
   "npcDialogues.miranda.flowerIntro":
@@ -4643,6 +4700,26 @@ const npcDialogues: Record<NpcDialogues, string> = {
   "npcDialogues.default.reward":
     "Wow, merci Bumpkin. Voici un petit cadeau pour ton aide!",
   "npcDialogues.default.locked": "Veuillez revenir demain.",
+
+  "npcDialogues.pharaoh.intro1": ENGLISH_TERMS["npcDialogues.pharaoh.intro1"],
+  "npcDialogues.pharaoh.intro2": ENGLISH_TERMS["npcDialogues.pharaoh.intro2"],
+  "npcDialogues.pharaoh.intro3": ENGLISH_TERMS["npcDialogues.pharaoh.intro3"],
+  "npcDialogues.pharaoh.positiveDelivery1":
+    ENGLISH_TERMS["npcDialogues.pharaoh.positiveDelivery1"],
+  "npcDialogues.pharaoh.positiveDelivery2":
+    ENGLISH_TERMS["npcDialogues.pharaoh.positiveDelivery2"],
+  "npcDialogues.pharaoh.positiveDelivery3":
+    ENGLISH_TERMS["npcDialogues.pharaoh.positiveDelivery3"],
+  "npcDialogues.pharaoh.negativeDelivery1":
+    ENGLISH_TERMS["npcDialogues.pharaoh.negativeDelivery1"],
+  "npcDialogues.pharaoh.negativeDelivery2":
+    ENGLISH_TERMS["npcDialogues.pharaoh.negativeDelivery2"],
+  "npcDialogues.pharaoh.negativeDelivery3":
+    ENGLISH_TERMS["npcDialogues.pharaoh.negativeDelivery3"],
+  "npcDialogues.pharaoh.noOrder1":
+    ENGLISH_TERMS["npcDialogues.pharaoh.noOrder1"],
+  "npcDialogues.pharaoh.noOrder2":
+    ENGLISH_TERMS["npcDialogues.pharaoh.noOrder2"],
 };
 
 const nyeButton: Record<NyeButton, string> = {
@@ -5743,6 +5820,9 @@ export const desertTerms: Record<DesertKeys, string> = {
   "desert.notice.two": ENGLISH_TERMS["desert.notice.two"],
   "desert.notice.three": ENGLISH_TERMS["desert.notice.three"],
   "desert.notice.four": ENGLISH_TERMS["desert.notice.four"],
+  "digby.noDigsLeft": ENGLISH_TERMS["digby.noDigsLeft"],
+  "digby.noDrills": ENGLISH_TERMS["digby.noDrills"],
+  "digby.noShovels": ENGLISH_TERMS["digby.noShovels"],
 };
 
 export const FRENCH_TERMS: Record<TranslationKeys, string> = {
