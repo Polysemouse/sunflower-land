@@ -20,7 +20,15 @@ export const HudContainer: React.FC<Props> = ({ zIndex = 10, children }) => {
             zIndex: zIndex,
           }}
         >
-          <div className="pointer-events-auto">{children}</div>
+          <div // Prevent click through to Phaser
+            onMouseDown={(e) => e.stopPropagation()}
+            onMouseUp={(e) => e.stopPropagation()}
+            onTouchStart={(e) => e.stopPropagation()}
+            onTouchEnd={(e) => e.stopPropagation()}
+            className="pointer-events-auto"
+          >
+            {children}
+          </div>
         </div>,
         document.body,
       )}
