@@ -83,7 +83,7 @@ export const CropsAndChickensTravel: React.FC = () => {
         </div>
       </div>
       <ConfirmationModal
-        bumpkinParts={NPC_WEARABLES["chicken farmer"]}
+        bumpkinParts={NPC_WEARABLES["cluck e cheese"]}
         show={showExitConfirmation}
         onHide={() => setShowExitConfirmation(false)}
         messages={[t("crops-and-chickens.endGameConfirmation")]}

@@ -27,7 +27,7 @@ export const CropsAndChickensNoAttemptsPanel: React.FC = () => {
   const sflBalance = useSelector(portalService, _sflBalance);
 
   return (
-    <CloseButtonPanel bumpkinParts={NPC_WEARABLES["chicken farmer"]}>
+    <CloseButtonPanel bumpkinParts={NPC_WEARABLES["cluck e cheese"]}>
       <div className="p-1">
         <div className="flex gap-1 justify-between items-center mb-2">
           <Label icon={lock} type="danger">

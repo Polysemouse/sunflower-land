@@ -26,7 +26,7 @@ export const CropsAndChickensRulesPanel: React.FC<Props> = ({
 
   return (
     <CloseButtonPanel
-      bumpkinParts={NPC_WEARABLES["chicken farmer"]}
+      bumpkinParts={NPC_WEARABLES["cluck e cheese"]}
       currentTab={tab}
       setCurrentTab={setTab}
       tabs={[
