@@ -288,7 +288,11 @@ export class BeachScene extends BaseScene {
       .setCollideWorldBounds(true);
     this.add.sprite(464, 174, "shop_icon");
     treasureShop.setInteractive({ cursor: "pointer" }).on("pointerdown", () => {
-      npcModalManager.open("jafar");
+      if (this.checkDistanceToSprite(treasureShop, 75)) {
+        npcModalManager.open("jafar");
+      } else {
+        this.currentPlayer?.speak(translate("base.iam.far.away"));
+      }
     });
 
     const beachBud2 = this.add.sprite(348, 397, "beach_bud_2");
@@ -1235,7 +1239,9 @@ export class BeachScene extends BaseScene {
     // change player direction if angle is changed from left to right or vise versa
     if (
       this.movementAngle !== undefined &&
-      Math.abs(this.movementAngle) !== 90
+      Math.abs(this.movementAngle) !== 90 &&
+      !this.isPlayerTweening &&
+      !this.isRevealing
     ) {
       this.isFacingLeft = Math.abs(this.movementAngle) > 90;
       this.isFacingLeft
@@ -1254,6 +1260,8 @@ export class BeachScene extends BaseScene {
     } else {
       currentPlayerBody.setVelocity(0, 0);
     }
+
+    this.sendPositionToServer();
 
     const isMoving =
       this.movementAngle !== undefined && this.walkingSpeed !== 0;
@@ -1282,6 +1290,9 @@ export class BeachScene extends BaseScene {
     if (isMoving || this.isPlayerTweening) {
       this.currentPlayer.walk();
     } else if (this.gameService.state.matches("revealed")) {
+      // Only run this code once
+      if (!this.isRevealing) return;
+
       this.coordsToDig = undefined;
       this.enableControls();
       this.currentPlayer.sprite?.anims?.stopAfterRepeat(0);
@@ -1296,8 +1307,13 @@ export class BeachScene extends BaseScene {
         this.recordDigAnalytics();
       }
 
-      // Move out of revealed state
-      this.gameService.send("CONTINUE");
+      const onComplete = () => {
+        // Move out of revealed state
+        this.gameService.send("CONTINUE");
+        this.currentPlayer?.sprite?.off("animationstop", onComplete);
+      };
+
+      this.currentPlayer?.sprite?.on("animationstop", onComplete);
     } else if (this.isRevealing) {
       const currentAnimation = this.currentPlayer.sprite?.anims?.currentAnim;
 
