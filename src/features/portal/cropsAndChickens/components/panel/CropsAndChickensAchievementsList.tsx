@@ -37,7 +37,7 @@ export const CropsAndChickensAchievementsList: React.FC<Props> = ({
   ).filter((achievementName) => achievements[achievementName]);
 
   return (
-    <div className="flex flex-col gap-1">
+    <div className="flex flex-col gap-1 max-h-[80vh]">
       {/* title */}
       <div className="flex flex-col gap-1">
         <div className="flex text-center">
@@ -71,47 +71,21 @@ export const CropsAndChickensAchievementsList: React.FC<Props> = ({
 
       <Label type="danger">
         {
-          "Note: The achievement system is still a work in progress. Completing achievements will not unlock them and will crash the game. However, you are still encouraged to try them out for fun!"
+          "NOTE: The achievement system is still a work in progress. Completing achievements will NOT unlock them. However, you are still encouraged to try them out for fun!"
         }
       </Label>
 
-      {/* in progress */}
-      <div className="flex flex-col gap-1">
-        <Label type="default">{t("in.progress")}</Label>
+      {/* achievements */}
+      <div className="flex flex-col gap-1 overflow-y-auto scrollable pr-1">
+        {/* in progress */}
         <div className="flex flex-col gap-1">
-          {inProgressAchievementNames.map((achievementName, index) => {
-            const achievement = AVAILABLE_ACHIEVEMENTS[achievementName];
-
-            return (
-              <OuterPanel key={index}>
-                <div className="flex flex-row p-1 items-center">
-                  <SquareIcon
-                    className="ml-2 mr-4"
-                    icon={achievement.icon}
-                    width={16}
-                  />
-                  <div className="flex flex-col gap-1 w-full">
-                    <div>{achievement.title}</div>
-                    <div className="text-xs">{achievement.description}</div>
-                  </div>
-                </div>
-              </OuterPanel>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* completed */}
-      {completedAchievementNames.length > 0 && (
-        <div className="flex flex-col gap-1 mt-2">
-          <Label type="default">{t("completed")}</Label>
+          <Label type="default">{t("in.progress")}</Label>
           <div className="flex flex-col gap-1">
-            {completedAchievementNames.map((achievementName, index) => {
+            {inProgressAchievementNames.map((achievementName, index) => {
               const achievement = AVAILABLE_ACHIEVEMENTS[achievementName];
-              const unlockedAt = achievements[achievementName].unlockedAt;
 
               return (
-                <InnerPanel key={index}>
+                <OuterPanel key={index}>
                   <div className="flex flex-row p-1 items-center">
                     <SquareIcon
                       className="ml-2 mr-4"
@@ -123,17 +97,46 @@ export const CropsAndChickensAchievementsList: React.FC<Props> = ({
                       <div className="text-xs">{achievement.description}</div>
                     </div>
                   </div>
-                  <Label type="success" className="text-xs">
-                    {t("crops-and-chickens.achievementUnlockedAt", {
-                      time: new Date(unlockedAt).toLocaleString(),
-                    })}
-                  </Label>
-                </InnerPanel>
+                </OuterPanel>
               );
             })}
           </div>
         </div>
-      )}
+
+        {/* completed */}
+        {completedAchievementNames.length > 0 && (
+          <div className="flex flex-col gap-1 mt-2">
+            <Label type="default">{t("completed")}</Label>
+            <div className="flex flex-col gap-1">
+              {completedAchievementNames.map((achievementName, index) => {
+                const achievement = AVAILABLE_ACHIEVEMENTS[achievementName];
+                const unlockedAt = achievements[achievementName].unlockedAt;
+
+                return (
+                  <InnerPanel key={index}>
+                    <div className="flex flex-row p-1 items-center">
+                      <SquareIcon
+                        className="ml-2 mr-4"
+                        icon={achievement.icon}
+                        width={16}
+                      />
+                      <div className="flex flex-col gap-1 w-full">
+                        <div>{achievement.title}</div>
+                        <div className="text-xs">{achievement.description}</div>
+                      </div>
+                    </div>
+                    <Label type="success" className="text-xs">
+                      {t("crops-and-chickens.achievementUnlockedAt", {
+                        time: new Date(unlockedAt).toLocaleString(),
+                      })}
+                    </Label>
+                  </InnerPanel>
+                );
+              })}
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 };

@@ -815,8 +815,28 @@ export class CropsAndChickensScene extends BaseScene {
   private checkAchievement = (trigger: AchievementTrigger) => {
     const achievementNames: CropsAndChickensAchievementName[] = [];
 
+    const inventoryAndDepositedCropIndexes = [
+      ...this.inventoryCropIndexes,
+      ...this.depositedCropIndexes,
+    ];
+
     switch (trigger) {
       case "deposit":
+        if (
+          inventoryAndDepositedCropIndexes.every(
+            (cropIndex) => cropIndex === CROP_TO_INDEX["Potato"],
+          ) &&
+          inventoryAndDepositedCropIndexes.length ===
+            getTotalCropsInGame("Potato") &&
+          this.harvestedCropIndexes.every(
+            (cropIndex) => cropIndex === CROP_TO_INDEX["Potato"],
+          ) &&
+          this.harvestedCropIndexes.length === getTotalCropsInGame("Potato") &&
+          this.secondsLeft >= GAME_SECONDS - 30
+        ) {
+          achievementNames.push("But It's Honest Work");
+        }
+
         if (
           JSON.stringify(this.inventoryCropIndexes) ===
           JSON.stringify(Array.from({ length: TOTAL_CROP_TYPES }, (_, i) => i))
@@ -867,6 +887,14 @@ export class CropsAndChickensScene extends BaseScene {
 
         if (!this.hasStopped && this.score >= 10000) {
           achievementNames.push("Relentless");
+        }
+
+        if (
+          this.harvestedCropIndexes.filter(
+            (cropIndex) => cropIndex === CROP_TO_INDEX["Radish"],
+          ).length === getTotalCropsInGame("Radish")
+        ) {
+          achievementNames.push("Ring of Fire");
         }
 
         if (

@@ -26,6 +26,7 @@ export const CropsAndChickensRulesPanel: React.FC<Props> = ({
 
   return (
     <CloseButtonPanel
+      className="overflow-y-hidden"
       bumpkinParts={NPC_WEARABLES["cluck e cheese"]}
       currentTab={tab}
       setCurrentTab={setTab}

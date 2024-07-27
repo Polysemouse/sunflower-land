@@ -1591,6 +1591,12 @@ const cropsAndChickens: Record<CropsAndChickensMessages, string> = {
     ENGLISH_TERMS["crops-and-chickens.achievementUnlocked"],
   "crops-and-chickens.achievementUnlockedAt":
     ENGLISH_TERMS["crops-and-chickens.achievementUnlockedAt"],
+  "crops-and-chickens.achievement.but-its-honest-work.title":
+    ENGLISH_TERMS["crops-and-chickens.achievement.but-its-honest-work.title"],
+  "crops-and-chickens.achievement.but-its-honest-work.description":
+    ENGLISH_TERMS[
+      "crops-and-chickens.achievement.but-its-honest-work.description"
+    ],
   "crops-and-chickens.achievement.dcol.title":
     ENGLISH_TERMS["crops-and-chickens.achievement.dcol.title"],
   "crops-and-chickens.achievement.dcol.description":
@@ -1619,6 +1625,10 @@ const cropsAndChickens: Record<CropsAndChickensMessages, string> = {
     ENGLISH_TERMS["crops-and-chickens.achievement.relentless.title"],
   "crops-and-chickens.achievement.relentless.description":
     ENGLISH_TERMS["crops-and-chickens.achievement.relentless.description"],
+  "crops-and-chickens.achievement.ring-of-fire.title":
+    ENGLISH_TERMS["crops-and-chickens.achievement.ring-of-fire.title"],
+  "crops-and-chickens.achievement.ring-of-fire.description":
+    ENGLISH_TERMS["crops-and-chickens.achievement.ring-of-fire.description"],
   "crops-and-chickens.achievement.rush-to-the-other-side.title":
     ENGLISH_TERMS[
       "crops-and-chickens.achievement.rush-to-the-other-side.title"

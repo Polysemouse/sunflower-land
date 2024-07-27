@@ -2,12 +2,14 @@ import { translate } from "lib/i18n/translate";
 import { getTotalCropsInGame } from "./lib/cropsAndChickensUtils";
 
 export type CropsAndChickensAchievementName =
+  | "But It's Honest Work"
   | "Dcol"
   | "Elite Gamer"
   | "Grain Offering"
   | "Grandmaster"
   | "Never Gonna Move You Up"
   | "Relentless"
+  | "Ring of Fire"
   | "Rush to the Other Side"
   | "Ultimate Chain"
   | "Wheat King"
@@ -17,6 +19,18 @@ export const AVAILABLE_ACHIEVEMENTS: Record<
   CropsAndChickensAchievementName,
   { title: string; description: string; icon: string }
 > = {
+  "But It's Honest Work": {
+    title: translate(
+      "crops-and-chickens.achievement.but-its-honest-work.title",
+    ),
+    description: translate(
+      "crops-and-chickens.achievement.but-its-honest-work.description",
+      {
+        amount: getTotalCropsInGame("Potato"),
+      },
+    ),
+    icon: "world/achievement.but-its-honest-work.png",
+  },
   Dcol: {
     title: translate("crops-and-chickens.achievement.dcol.title"),
     description: translate("crops-and-chickens.achievement.dcol.description", {
@@ -63,6 +77,16 @@ export const AVAILABLE_ACHIEVEMENTS: Record<
       "crops-and-chickens.achievement.relentless.description",
     ),
     icon: "world/achievement.relentless.png",
+  },
+  "Ring of Fire": {
+    title: translate("crops-and-chickens.achievement.ring-of-fire.title"),
+    description: translate(
+      "crops-and-chickens.achievement.ring-of-fire.description",
+      {
+        amount: getTotalCropsInGame("Radish"),
+      },
+    ),
+    icon: "world/achievement.ring-of-fire.png",
   },
   "Rush to the Other Side": {
     title: translate(

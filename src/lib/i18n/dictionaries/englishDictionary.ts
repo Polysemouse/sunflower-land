@@ -1574,6 +1574,10 @@ const cropsAndChickens: Record<CropsAndChickensMessages, string> = {
   "crops-and-chickens.endGame": "End game",
   "crops-and-chickens.achievementUnlocked": "Achievement Unlocked!",
   "crops-and-chickens.achievementUnlockedAt": "Unlocked at {{time}}",
+  "crops-and-chickens.achievement.but-its-honest-work.title":
+    "But It's Honest Work",
+  "crops-and-chickens.achievement.but-its-honest-work.description":
+    "Deposit all ({{amount}}) Potato within the first 30 seconds and do not harvest any other crops",
   "crops-and-chickens.achievement.dcol.title": "Dcol",
   "crops-and-chickens.achievement.dcol.description":
     "Deposit all ({{amount}}) Kale and do not harvest any other crops in a game",
@@ -1593,6 +1597,9 @@ const cropsAndChickens: Record<CropsAndChickensMessages, string> = {
   "crops-and-chickens.achievement.relentless.title": "Relentless",
   "crops-and-chickens.achievement.relentless.description":
     "Score 10000 points in a game without stopping",
+  "crops-and-chickens.achievement.ring-of-fire.title": "Ring of Fire",
+  "crops-and-chickens.achievement.ring-of-fire.description":
+    "Harvest all ({{amount}}) Radish in a game",
   "crops-and-chickens.achievement.rush-to-the-other-side.title":
     "Rush to the Other Side",
   "crops-and-chickens.achievement.rush-to-the-other-side.description":
