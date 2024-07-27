@@ -1577,7 +1577,7 @@ const cropsAndChickens: Record<CropsAndChickensMessages, string> = {
   "crops-and-chickens.achievement.but-its-honest-work.title":
     "But It's Honest Work",
   "crops-and-chickens.achievement.but-its-honest-work.description":
-    "Deposit all ({{amount}}) Potato within the first 30 seconds and do not harvest any other crops",
+    "Within the first 30 seconds, deposit all ({{amount}}) Potato without harvesting any other crops",
   "crops-and-chickens.achievement.dcol.title": "Dcol",
   "crops-and-chickens.achievement.dcol.description":
     "Deposit all ({{amount}}) Kale and do not harvest any other crops in a game",
