@@ -153,6 +153,7 @@ export abstract class BaseScene extends Phaser.Scene {
     string,
     Phaser.Types.Physics.Arcade.ArcadePhysicsCallback
   > = {};
+  otherDiggers: Map<string, { x: number; y: number }> = new Map();
 
   constructor(options: BaseSceneOptions) {
     if (!options.name) {
@@ -1006,6 +1007,8 @@ export abstract class BaseScene extends Phaser.Scene {
     // Render current players
     server.state.players.forEach((player, sessionId) => {
       if (sessionId === server.sessionId) return;
+
+      if (this.otherDiggers.has(sessionId)) return;
 
       const entity = this.playerEntities[sessionId];
 

@@ -1261,6 +1261,7 @@ export const COLLECTIBLES_DIMENSIONS: Record<CollectibleName, Dimensions> = {
   "Gilded Swordfish": { width: 2, height: 1 },
   "Crimson Carp": { width: 2, height: 1 },
   "Battle Fish": { width: 2, height: 1 },
+  "Lemon Shark": { width: 2, height: 1 },
 
   "Kraken Tentacle": { width: 1, height: 1 },
 
@@ -1500,52 +1501,6 @@ export const COLLECTIBLES_DIMENSIONS: Record<CollectibleName, Dimensions> = {
     width: 1,
     height: 2,
   },
-  Sarcophagus: {
-    width: 1,
-    height: 2,
-  },
-
-  // To update dimensions
-  "Tomato Core": {
-    width: 0,
-    height: 0,
-  },
-  "Clay Tablet": {
-    width: 0,
-    height: 0,
-  },
-  "Snake in Jar": {
-    width: 0,
-    height: 0,
-  },
-  "Reveling Lemon": {
-    width: 0,
-    height: 0,
-  },
-  "Anubis Jackal": {
-    width: 0,
-    height: 0,
-  },
-  Sundial: {
-    width: 0,
-    height: 0,
-  },
-  "Sand Golem": {
-    width: 0,
-    height: 0,
-  },
-  "Cactus King": {
-    width: 0,
-    height: 0,
-  },
-  "Lemon Frog": {
-    width: 0,
-    height: 0,
-  },
-  "Scarab Beetle": {
-    width: 0,
-    height: 0,
-  },
   "Adrift Ark": {
     width: 2,
     height: 2,
@@ -1557,6 +1512,72 @@ export const COLLECTIBLES_DIMENSIONS: Record<CollectibleName, Dimensions> = {
   "Sunlit Citadel": {
     width: 2,
     height: 2,
+  },
+  "Pharaoh Gnome": {
+    width: 1,
+    height: 1,
+  },
+
+  // To update dimensions
+  Sarcophagus: {
+    width: 1,
+    height: 2,
+  },
+  "Tomato Core": {
+    width: 1,
+    height: 1,
+  },
+  "Clay Tablet": {
+    width: 1,
+    height: 1,
+  },
+  "Snake in Jar": {
+    width: 1,
+    height: 1,
+  },
+  "Reveling Lemon": {
+    width: 1,
+    height: 1,
+  },
+  "Anubis Jackal": {
+    width: 1,
+    height: 1,
+  },
+  Sundial: {
+    width: 1,
+    height: 1,
+  },
+  "Sand Golem": {
+    width: 1,
+    height: 1,
+  },
+  "Cactus King": {
+    width: 1,
+    height: 1,
+  },
+  "Lemon Frog": {
+    width: 1,
+    height: 1,
+  },
+  "Scarab Beetle": {
+    width: 1,
+    height: 1,
+  },
+  "Lemon Tea Bath": {
+    width: 3,
+    height: 2,
+  },
+  "Tomato Clown": {
+    width: 1,
+    height: 1,
+  },
+  Pyramid: {
+    width: 2,
+    height: 2,
+  },
+  Oasis: {
+    width: 1,
+    height: 1,
   },
 };
 

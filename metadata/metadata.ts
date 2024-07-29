@@ -6163,6 +6163,23 @@ export const OPEN_SEA_COLLECTIBLES: Record<InventoryItemName, Metadata> = {
       },
     ],
   },
+  "Lemon Shark": {
+    description:
+      "A zesty, zippy swimmer of the Summer seas. Only available during Pharaoh's Treasure season.",
+    decimals: 0,
+    external_url: "https://docs.sunflower-land.com/getting-started/about",
+    image: "../public/erc1155/images/1539.png",
+    attributes: [
+      { trait_type: "Purpose", value: "Fish" },
+      { trait_type: "Tradable", value: "No" },
+      { trait_type: "Boost", value: "Resource" },
+      {
+        display_type: "boost_number",
+        trait_type: "Increase Lemon Yield",
+        value: 0.2,
+      },
+    ],
+  },
   Chowder: {
     description:
       "Sailor's delight in a bowl! Dive in, there's treasure inside!",
@@ -6413,7 +6430,7 @@ export const OPEN_SEA_COLLECTIBLES: Record<InventoryItemName, Metadata> = {
     ],
   },
   "Pharaoh Chicken": {
-    description: "A strong and noble chicken boosting your oil yield.",
+    description: "A ruling chicken, +1 Dig.",
     decimals: 0,
     external_url: "https://docs.sunflower-land.com/getting-started/about",
     image: "../public/erc1155/images/2116.gif",
@@ -6422,7 +6439,7 @@ export const OPEN_SEA_COLLECTIBLES: Record<InventoryItemName, Metadata> = {
       {
         display_type: "boost_number",
         trait_type: "Increase daily digs",
-        value: 20,
+        value: 1,
       },
       { trait_type: "Tradable", value: "Yes" },
     ],
@@ -8700,7 +8717,7 @@ export const OPEN_SEA_COLLECTIBLES: Record<InventoryItemName, Metadata> = {
       {
         display_type: "boost_percentage",
         trait_type: "Lemon Growth Time",
-        value: -0.25,
+        value: -25,
       },
       { trait_type: "Tradable", value: "Yes" },
     ],
@@ -8753,6 +8770,76 @@ export const OPEN_SEA_COLLECTIBLES: Record<InventoryItemName, Metadata> = {
     external_url: "https://docs.sunflower-land.com/getting-started/about",
     image: "../public/erc1155/images/question_mark.png",
     name: "Sunlit Citadel",
+  },
+  "Pharaoh Gnome": {
+    description: "",
+    decimals: 0,
+    attributes: [
+      { trait_type: "Boost", value: "Fruit" },
+      {
+        display_type: "boost_number",
+        trait_type: "Increase Greenhouse Crop Yield",
+        value: 2,
+      },
+      { trait_type: "Tradable", value: "Yes" },
+    ],
+    external_url: "https://docs.sunflower-land.com/getting-started/about",
+    image: "../public/erc1155/images/question_mark.png",
+    name: "Pharaoh Gnome",
+  },
+  "Lemon Tea Bath": {
+    description: "",
+    decimals: 0,
+    attributes: [
+      { trait_type: "Boost", value: "Fruit" },
+      {
+        display_type: "boost_percentage",
+        trait_type: "Lemon Growth Time",
+        value: -50,
+      },
+      { trait_type: "Tradable", value: "Yes" },
+    ],
+    external_url: "https://docs.sunflower-land.com/getting-started/about",
+    image: "../public/erc1155/images/question_mark.png",
+    name: "Lemon Tea Bath",
+  },
+  "Tomato Clown": {
+    description: "",
+    decimals: 0,
+    attributes: [
+      { trait_type: "Boost", value: "Fruit" },
+      {
+        display_type: "boost_percentage",
+        trait_type: "Tomato Growth Time",
+        value: -50,
+      },
+      { trait_type: "Tradable", value: "Yes" },
+    ],
+    external_url: "https://docs.sunflower-land.com/getting-started/about",
+    image: "../public/erc1155/images/question_mark.png",
+    name: "Tomato Clown",
+  },
+  Pyramid: {
+    description: "",
+    decimals: 0,
+    attributes: [
+      { trait_type: "Purpose", value: "Decoration" },
+      { trait_type: "Tradable", value: "Yes" },
+    ],
+    external_url: "https://docs.sunflower-land.com/getting-started/about",
+    image: "../public/erc1155/images/question_mark.png",
+    name: "Pyramid",
+  },
+  Oasis: {
+    description: "",
+    decimals: 0,
+    attributes: [
+      { trait_type: "Purpose", value: "Decoration" },
+      { trait_type: "Tradable", value: "Yes" },
+    ],
+    external_url: "https://docs.sunflower-land.com/getting-started/about",
+    image: "../public/erc1155/images/question_mark.png",
+    name: "Oasis",
   },
 };
 
@@ -13212,7 +13299,73 @@ export const OPEN_SEA_WEARABLES: Record<BumpkinItem, Metadata> = {
       { trait_type: "Tradable", value: "Yes" },
     ],
     external_url: "https://bumpkins.io",
-    image: "../public/erc1155/images/question_mark.png",
+    image: "../public/wearables/images/368.png",
     name: "Ankh Shirt",
+  },
+  "Ancient Shovel": {
+    description:
+      "Ancient Shovel is a mystical tool that allows holders of this shovel to dig for treasure without needing a traditional sand shovel.",
+    decimals: 0,
+    attributes: [
+      { trait_type: "Part", value: "Tool" },
+      { trait_type: "Tradable", value: "Yes" },
+      { trait_type: "Boost", value: "Other" },
+      {
+        display_type: "boost_number",
+        trait_type: "Dig treasure without Sand Shovel",
+        value: 1,
+      },
+    ],
+    external_url: "https://bumpkins.io",
+    image: "../public/wearables/images/369.png",
+    name: "Ancient Shovel",
+  },
+  "Infernal Drill": {
+    description:
+      "Infernal Drill is a potent device that enables holders of drill to extract oil directly without the need for a traditional oil drill.",
+    decimals: 0,
+    attributes: [
+      { trait_type: "Part", value: "SecondaryTool" },
+      { trait_type: "Tradable", value: "Yes" },
+      { trait_type: "Boost", value: "Resource" },
+      {
+        display_type: "boost_number",
+        trait_type: "Drill Oil without Oil Drill",
+        value: 1,
+      },
+    ],
+    external_url: "https://bumpkins.io",
+    image: "../public/wearables/images/370.png",
+    name: "Infernal Drill",
+  },
+  "Lemon Shield": {
+    description:
+      "Lemon Shield is a boost that enhances lemon production by increasing the yield of each harvest by 1.",
+    decimals: 0,
+    attributes: [
+      { trait_type: "Part", value: "SecondaryTool" },
+      { trait_type: "Tradable", value: "Yes" },
+      { trait_type: "Boost", value: "Fruit" },
+      {
+        display_type: "boost_number",
+        trait_type: "Increase Lemon Yield",
+        value: 1,
+      },
+    ],
+    external_url: "https://bumpkins.io",
+    image: "../public/wearables/images/371.png",
+    name: "Lemon Shield",
+  },
+  "Scarab Wings": {
+    description:
+      "Scarab Wings is a vibrant and decorative accessory featuring intricate, winged designs that evoke ancient mysticism and elegance.",
+    decimals: 0,
+    attributes: [
+      { trait_type: "Part", value: "Wings" },
+      { trait_type: "Tradable", value: "Yes" },
+    ],
+    external_url: "https://bumpkins.io",
+    image: "../public/wearables/images/372.png",
+    name: "Scarab Wings",
   },
 };
