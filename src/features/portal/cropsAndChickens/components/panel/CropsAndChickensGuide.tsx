@@ -8,6 +8,7 @@ import chickenHunter from "public/world/chicken_hunter.png";
 import { Label } from "components/ui/Label";
 import { SCORE_TABLE } from "../../CropsAndChickensConstants";
 import { PIXEL_SCALE } from "features/game/lib/constants";
+import { useSound } from "lib/utils/hooks/useSound";
 
 type Props = {
   onBack: () => void;
@@ -15,6 +16,8 @@ type Props = {
 
 export const CropsAndChickensGuide: React.FC<Props> = ({ onBack }) => {
   const { t } = useAppTranslation();
+
+  const button = useSound("button");
 
   return (
     <div className="flex flex-col gap-1 max-h-[80vh]">
@@ -31,7 +34,10 @@ export const CropsAndChickensGuide: React.FC<Props> = ({ onBack }) => {
             <img
               src={SUNNYSIDE.icons.arrow_left}
               className="cursor-pointer"
-              onClick={onBack}
+              onClick={() => {
+                button.play();
+                onBack();
+              }}
               style={{
                 width: `${PIXEL_SCALE * 11}px`,
               }}

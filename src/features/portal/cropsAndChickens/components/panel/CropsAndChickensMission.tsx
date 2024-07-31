@@ -14,7 +14,7 @@ import { PortalMachineState } from "../../lib/cropsAndChickensMachine";
 import { SUNNYSIDE } from "assets/sunnyside";
 import { CropsAndChickensAchievementsList } from "./CropsAndChickensAchievementsList";
 import { CropsAndChickensGuide } from "./CropsAndChickensGuide";
-import trophy from "assets/icons/trophy.png";
+//import trophy from "assets/icons/trophy.png";
 import { SquareIcon } from "components/ui/SquareIcon";
 import { PIXEL_SCALE } from "features/game/lib/constants";
 
@@ -104,14 +104,15 @@ export const CropsAndChickensMission: React.FC<Props> = ({
                 </span>
               </div>
               <div className="flex mt-1 space-x-1">
-                <Button
+                {/* TODO: enable when achievements are ready */}
+                {/* <Button
                   className="whitespace-nowrap capitalize w-12"
                   onClick={() => setPage("achievements")}
                 >
                   <div className="flex flex-row items-center gap-1">
                     <SquareIcon icon={trophy} width={9} />
                   </div>
-                </Button>
+                </Button> */}
                 <Button
                   className="whitespace-nowrap capitalize w-12"
                   onClick={() => setPage("guide")}

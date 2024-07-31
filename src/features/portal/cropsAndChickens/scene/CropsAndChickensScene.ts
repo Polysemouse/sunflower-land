@@ -948,7 +948,8 @@ export class CropsAndChickensScene extends BaseScene {
         break;
     }
 
-    if (achievementNames.length > 0) this.getAchievements(achievementNames);
+    // TODO: enable when achievements are ready
+    //if (achievementNames.length > 0) this.getAchievements(achievementNames);
   };
 
   private getAchievements = (

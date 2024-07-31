@@ -13,6 +13,7 @@ import { SUNNYSIDE } from "assets/sunnyside";
 import { PIXEL_SCALE } from "features/game/lib/constants";
 import { useAppTranslation } from "lib/i18n/useAppTranslations";
 import { Label } from "components/ui/Label";
+import { useSound } from "lib/utils/hooks/useSound";
 
 const _achievements = (state: PortalMachineState) =>
   state.context.state?.minigames.games["crops-and-chickens"]?.achievements ??
@@ -27,6 +28,8 @@ export const CropsAndChickensAchievementsList: React.FC<Props> = ({
 }) => {
   const { t } = useAppTranslation();
   const { portalService } = useContext(PortalContext);
+
+  const button = useSound("button");
 
   const achievements = useSelector(portalService, _achievements);
   const inProgressAchievementNames = (
@@ -51,7 +54,10 @@ export const CropsAndChickensAchievementsList: React.FC<Props> = ({
             <img
               src={SUNNYSIDE.icons.arrow_left}
               className="cursor-pointer"
-              onClick={onBack}
+              onClick={() => {
+                button.play();
+                onBack();
+              }}
               style={{
                 width: `${PIXEL_SCALE * 11}px`,
               }}
