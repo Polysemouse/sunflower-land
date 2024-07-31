@@ -36,6 +36,7 @@ import {
   AudioLocalStorageKeys,
   getCachedAudioSetting,
 } from "features/game/lib/audio";
+import { hasFeatureAccess } from "lib/flags";
 
 type AchievementTrigger =
   | "deposit"
@@ -99,6 +100,15 @@ export class CropsAndChickensScene extends BaseScene {
     return getCachedAudioSetting<boolean>(
       AudioLocalStorageKeys.audioMuted,
       false,
+    );
+  }
+
+  private get hasBetaAccess() {
+    if (!this.portalServiceContext?.state) return false;
+
+    return hasFeatureAccess(
+      this.portalServiceContext.state,
+      "CROPS_AND_CHICKENS",
     );
   }
 
@@ -827,6 +837,8 @@ export class CropsAndChickensScene extends BaseScene {
   };
 
   private checkAchievement = (trigger: AchievementTrigger) => {
+    if (!this.hasBetaAccess) return;
+
     const achievementNames: CropsAndChickensAchievementName[] = [];
 
     const inventoryAndDepositedCropIndexes = [
@@ -948,8 +960,7 @@ export class CropsAndChickensScene extends BaseScene {
         break;
     }
 
-    // TODO: enable when achievements are ready
-    //if (achievementNames.length > 0) this.getAchievements(achievementNames);
+    if (achievementNames.length > 0) this.getAchievements(achievementNames);
   };
 
   private getAchievements = (

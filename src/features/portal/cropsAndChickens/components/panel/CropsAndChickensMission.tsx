@@ -14,9 +14,10 @@ import { PortalMachineState } from "../../lib/cropsAndChickensMachine";
 import { SUNNYSIDE } from "assets/sunnyside";
 import { CropsAndChickensAchievementsList } from "./CropsAndChickensAchievementsList";
 import { CropsAndChickensGuide } from "./CropsAndChickensGuide";
-//import trophy from "assets/icons/trophy.png";
+import trophy from "assets/icons/trophy.png";
 import { SquareIcon } from "components/ui/SquareIcon";
 import { PIXEL_SCALE } from "features/game/lib/constants";
+import { hasFeatureAccess } from "lib/flags";
 
 interface Props {
   mode: "introduction" | "success" | "failed";
@@ -29,6 +30,7 @@ interface Props {
 const _minigame = (state: PortalMachineState) =>
   state.context.state?.minigames.games["crops-and-chickens"];
 const _score = (state: PortalMachineState) => state.context.score;
+const _state = (state: PortalMachineState) => state.context.state;
 
 export const CropsAndChickensMission: React.FC<Props> = ({
   mode,
@@ -44,6 +46,11 @@ export const CropsAndChickensMission: React.FC<Props> = ({
   const minigame = useSelector(portalService, _minigame);
   const attemptsLeft = getAttemptsLeft(minigame);
   const score = useSelector(portalService, _score);
+  const state = useSelector(portalService, _state);
+
+  const hasBetaAccess = state
+    ? hasFeatureAccess(state, "CROPS_AND_CHICKENS")
+    : false;
 
   const dateKey = new Date().toISOString().slice(0, 10);
 
@@ -104,15 +111,16 @@ export const CropsAndChickensMission: React.FC<Props> = ({
                 </span>
               </div>
               <div className="flex mt-1 space-x-1">
-                {/* TODO: enable when achievements are ready */}
-                {/* <Button
-                  className="whitespace-nowrap capitalize w-12"
-                  onClick={() => setPage("achievements")}
-                >
-                  <div className="flex flex-row items-center gap-1">
-                    <SquareIcon icon={trophy} width={9} />
-                  </div>
-                </Button> */}
+                {hasBetaAccess && (
+                  <Button
+                    className="whitespace-nowrap capitalize w-12"
+                    onClick={() => setPage("achievements")}
+                  >
+                    <div className="flex flex-row items-center gap-1">
+                      <SquareIcon icon={trophy} width={9} />
+                    </div>
+                  </Button>
+                )}
                 <Button
                   className="whitespace-nowrap capitalize w-12"
                   onClick={() => setPage("guide")}
