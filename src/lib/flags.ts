@@ -42,7 +42,8 @@ export type FeatureName =
   | "CHAMPIONS"
   | "TEST_DIGGING"
   | "NEW_FRUITS"
-  | "DESERT_PLAZA";
+  | "DESERT_PLAZA"
+  | "ENABLE_CROPS_AND_CHICKENS_FOR_EVERYONE";
 
 // Used for testing production features
 export const ADMIN_IDS = [1, 2, 3, 39488];
@@ -74,6 +75,9 @@ const featureFlags: Record<FeatureName, FeatureFlag> = {
   TEST_DIGGING: betaTimeBasedFeatureFlag(new Date("2024-08-01T00:00:00Z")),
   NEW_FRUITS: betaTimeBasedFeatureFlag(new Date("2024-08-01T00:00:00Z")),
   DESERT_PLAZA: betaTimeBasedFeatureFlag(new Date("2024-08-01T00:00:00Z")),
+  ENABLE_CROPS_AND_CHICKENS_FOR_EVERYONE: betaTimeBasedFeatureFlag(
+    new Date("2024-08-07T00:00:00Z"),
+  ),
 };
 
 export const hasFeatureAccess = (game: GameState, featureName: FeatureName) => {
