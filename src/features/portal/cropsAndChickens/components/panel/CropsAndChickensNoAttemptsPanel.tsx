@@ -7,7 +7,6 @@ import { PortalContext } from "../../lib/PortalProvider";
 import { Label } from "components/ui/Label";
 import { useAppTranslation } from "lib/i18n/useAppTranslations";
 import { PortalMachineState } from "../../lib/cropsAndChickensMachine";
-import lock from "assets/skills/lock.png";
 import sfl from "assets/icons/sfl.webp";
 import { CloseButtonPanel } from "features/game/components/CloseablePanel";
 import { NPC_WEARABLES } from "lib/npcs";
@@ -17,6 +16,7 @@ import {
   UNLIMITED_ATTEMPTS_SFL,
 } from "../../CropsAndChickensConstants";
 import { purchase } from "features/portal/lib/portalUtil";
+import { SUNNYSIDE } from "assets/sunnyside";
 
 const _sflBalance = (state: PortalMachineState) => state.context.state?.balance;
 
@@ -30,7 +30,7 @@ export const CropsAndChickensNoAttemptsPanel: React.FC = () => {
     <CloseButtonPanel bumpkinParts={NPC_WEARABLES["cluck e cheese"]}>
       <div className="p-1">
         <div className="flex gap-1 justify-between items-center mb-2">
-          <Label icon={lock} type="danger">
+          <Label icon={SUNNYSIDE.icons.lock} type="danger">
             {t("crops-and-chickens.noAttemptsRemaining")}
           </Label>
           <Label
