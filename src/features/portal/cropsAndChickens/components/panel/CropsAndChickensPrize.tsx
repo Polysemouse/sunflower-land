@@ -51,7 +51,7 @@ export const CropsAndChickensPrize: React.FC = () => {
     <OuterPanel>
       <div className="px-1">
         <span className="text-xs mb-2">
-          {t("crops-and-chickens.missionObjectives", {
+          {t("crops-and-chickens.portal.missionObjectives", {
             targetScore: prize.score,
           })}
         </span>

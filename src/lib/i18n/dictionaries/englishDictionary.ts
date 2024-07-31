@@ -1,5 +1,4 @@
 import {
-  CropsAndChickensMessages,
   AchievementsTerms,
   Auction,
   AddSFL,
@@ -33,6 +32,7 @@ import {
   CropBoomMessages,
   CropMachine,
   CropFruitDescriptions,
+  CropsAndChickensMessages,
   DeliveryItem,
   DefaultDialogue,
   DecorationDescriptions,
@@ -1070,6 +1070,7 @@ const bumpkinItemBuff: Record<BumpkinItemBuff, string> = {
   "bumpkinItemBuff.dev.wrench.boost": "-50% Oil Regeneration Time",
   "bumpkinItemBuff.oil.overalls.boost": "+10 Oil",
   "bumpkinItemBuff.ancient.shovel.boost": "Dig treasure without Sand Shovel",
+  "bumpkinItemBuff.grape.pants": "+0.2 Grapes",
 };
 
 const bumpkinPart: Record<BumpkinPart, string> = {
@@ -1532,6 +1533,12 @@ const cropMachine: Record<CropMachine, string> = {
 };
 
 const cropsAndChickens: Record<CropsAndChickensMessages, string> = {
+  "crops-and-chickens.portal.title": "Minigame - Crops & Chickens",
+  "crops-and-chickens.portal.description": "Can you help me collect the crops?",
+  "crops-and-chickens.portal.missionObjectives":
+    "Mission: Deposit {{targetScore}} points worth of crops",
+  "crops-and-chickens.portal.rewardMessage":
+    "Congratulations, you completed the mission! Here is your reward.",
   "crops-and-chickens.mission": "Mission",
   "crops-and-chickens.guide": "Guide",
   "crops-and-chickens.instructions": "Instructions",
@@ -1543,15 +1550,11 @@ const cropsAndChickens: Record<CropsAndChickensMessages, string> = {
   "crops-and-chickens.normalChickenDescription": "Kills you upon contact",
   "crops-and-chickens.hunterChickenDescription":
     "Follows you and kills you upon contact",
-  "crops-and-chickens.minigame": "Minigame - Crops & Chickens",
-  "crops-and-chickens.missionObjectives":
-    "Mission: Deposit {{targetScore}} points worth of crops",
   "crops-and-chickens.completed": "Completed",
   "crops-and-chickens.confirm": "Are you sure you want to spend {{sfl}} SFL",
   "crops-and-chickens.noPrizesAvailable": "No prizes available",
   "crops-and-chickens.playNow": "Play now",
   "crops-and-chickens.purchase": "Purchase",
-  "crops-and-chickens.chickenRescueHelp": "Can you help me collect the crops?",
   "crops-and-chickens.noAttemptsRemaining": "No attempts remaining",
   "crops-and-chickens.unlimitedAttempts": "Unlimited attempts",
   "crops-and-chickens.sflRequired": "SFL required",
@@ -2086,6 +2089,8 @@ const donation: Record<Donation, string> = {
   "donation.minimum": "Minimum 1 MATIC",
   "donation.airdrop": "Decorations will be airdropped after donations close.",
   "donation.specialEvent": "Special Donation Event",
+  "donation.toPortal":
+    "Would you like to donate {{amount}} MATIC to {{portalName}}?",
 };
 
 const draftBid: Record<DraftBid, string> = {
@@ -5686,6 +5691,10 @@ export const easterEggTerms: Record<EasterEggKeys, string> = {
 };
 
 export const desertTerms: Record<DesertKeys, string> = {
+  "digby.streakReward": "Discover all the items for a bonus prize.",
+  "digby.streak": "Digging Streak",
+  "digby.claimPrize":
+    "Well done Bumpkin! Don't forget to claim your bonus prize!",
   "digby.noShovels":
     "Hey, you need a sand shovel to dig here! Speak to Jafar..",
   "digby.noDrills":

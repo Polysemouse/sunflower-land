@@ -59,7 +59,7 @@ export const CropsAndChickensMission: React.FC<Props> = ({
             <div className="w-full relative flex justify-between gap-1 items-center mb-1 py-1 pl-2">
               {mode === "introduction" && (
                 <Label type="default" icon={factions}>
-                  {t("crops-and-chickens.minigame")}
+                  {t("crops-and-chickens.portal.title")}
                 </Label>
               )}
               {mode === "success" && (

@@ -261,6 +261,8 @@ const treasureCollectible: Record<TreasureCollectibleItem, () => boolean> = {
   "Adrift Ark": () => false,
   Castellan: () => false,
   "Sunlit Citadel": () => false,
+  "Baobab Tree": () => hasSeasonEnded("Pharaoh's Treasure"),
+  Camel: () => hasSeasonEnded("Pharaoh's Treasure"),
 };
 
 const commodities: Record<CommodityName, () => boolean> = {
@@ -624,6 +626,8 @@ const seasonalDecorations: Record<SeasonalDecorationName, () => boolean> = {
   "Tiki Torch": () => true,
   Surfboard: () => true,
   "Gaucho Rug": () => true,
+
+  "Paper Reed": () => hasSeasonEnded("Pharaoh's Treasure"),
 };
 
 const mutantCrop: Record<MutantCropName, () => boolean> = {
@@ -1531,7 +1535,7 @@ export const BUMPKIN_WITHDRAWABLES: Record<
   Motley: () => false,
   "Royal Braids": () => false,
 
-  //Pharaoh's Treasure
+  // Pharaoh's Treasure
   "Pharaoh Headdress": () => canWithdrawTimebasedItem(new Date("2024-09-01")),
   "Camel Onesie": (state) =>
     canWithdrawTimebasedItem(new Date("2024-10-01")) &&
@@ -1558,6 +1562,8 @@ export const BUMPKIN_WITHDRAWABLES: Record<
   "Ancient Shovel": () => canWithdrawTimebasedItem(new Date("2024-10-24")), // Last Auction 23rd October
   "Infernal Drill": () => canWithdrawTimebasedItem(new Date("2024-10-21")), // Last Auction 20th October
   "Lemon Shield": () => canWithdrawTimebasedItem(new Date("2024-10-12")), // Last Auction 11th October
-  "Scarab Wings": () => canWithdrawTimebasedItem(new Date("2024-10-03")), // Last Auction 2nd October
+  "Scarab Wings": () => hasSeasonEnded("Pharaoh's Treasure"),
   "Bionic Drill": (state) => canWithdrawBoostedWearable("Bionic Drill", state),
+  "Grape Pants": () => hasSeasonEnded("Pharaoh's Treasure"),
+  "Fossil Head": () => canWithdrawTimebasedItem(new Date("2024-10-03")), // Last Auction 2nd October
 };

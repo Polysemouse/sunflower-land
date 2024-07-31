@@ -752,7 +752,8 @@ export type BumpkinItemBuff =
   | "bumpkinItemBuff.lemon.shield.boost"
   | "bumpkinItemBuff.dev.wrench.boost"
   | "bumpkinItemBuff.oil.overalls.boost"
-  | "bumpkinItemBuff.ancient.shovel.boost";
+  | "bumpkinItemBuff.ancient.shovel.boost"
+  | "bumpkinItemBuff.grape.pants";
 
 export type BumpkinPart =
   | "equip.background"
@@ -1102,6 +1103,10 @@ export type CropMachine =
   | "cropMachine.name";
 
 export type CropsAndChickensMessages =
+  | "crops-and-chickens.portal.title"
+  | "crops-and-chickens.portal.description"
+  | "crops-and-chickens.portal.missionObjectives"
+  | "crops-and-chickens.portal.rewardMessage"
   | "crops-and-chickens.mission"
   | "crops-and-chickens.guide"
   | "crops-and-chickens.instructions"
@@ -1111,14 +1116,11 @@ export type CropsAndChickensMessages =
   | "crops-and-chickens.depositAreaDescription"
   | "crops-and-chickens.normalChickenDescription"
   | "crops-and-chickens.hunterChickenDescription"
-  | "crops-and-chickens.minigame"
-  | "crops-and-chickens.missionObjectives"
   | "crops-and-chickens.completed"
   | "crops-and-chickens.confirm"
   | "crops-and-chickens.noPrizesAvailable"
   | "crops-and-chickens.playNow"
   | "crops-and-chickens.purchase"
-  | "crops-and-chickens.chickenRescueHelp"
   | "crops-and-chickens.noAttemptsRemaining"
   | "crops-and-chickens.unlimitedAttempts"
   | "crops-and-chickens.sflRequired"
@@ -1511,7 +1513,8 @@ export type Donation =
   | "donation.rioGrandeDoSul.two"
   | "donation.matic"
   | "donation.minimum"
-  | "donation.airdrop";
+  | "donation.airdrop"
+  | "donation.toPortal";
 
 export type ErrorAndAccess =
   | "errorAndAccess.blocked.betaTestersOnly"
@@ -3876,6 +3879,9 @@ export type DesertKeys =
   | "digby.noDigsLeft"
   | "digby.moreDigsIntro"
   | "digby.buyMoreDigs"
+  | "digby.streak"
+  | "digby.streakReward"
+  | "digby.claimPrize"
   | "desert.hud.digsLeft"
   | "desert.hud.noDigsLeft"
   | "desert.hud.newSite"

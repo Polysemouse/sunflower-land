@@ -1,6 +1,5 @@
 import { ENGLISH_TERMS } from "./englishDictionary";
 import {
-  CropsAndChickensMessages,
   AchievementsTerms,
   Auction,
   AddSFL,
@@ -34,6 +33,7 @@ import {
   CropBoomMessages,
   CropFruitDescriptions,
   CropMachine,
+  CropsAndChickensMessages,
   DeliveryItem,
   DefaultDialogue,
   DecorationDescriptions,
@@ -1094,6 +1094,7 @@ const bumpkinItemBuff: Record<BumpkinItemBuff, string> = {
     ENGLISH_TERMS["bumpkinItemBuff.oil.overalls.boost"],
   "bumpkinItemBuff.ancient.shovel.boost":
     ENGLISH_TERMS["bumpkinItemBuff.ancient.shovel.boost"],
+  "bumpkinItemBuff.grape.pants": ENGLISH_TERMS["bumpkinItemBuff.grape.pants"],
 };
 
 const bumpkinPart: Record<BumpkinPart, string> = {
@@ -1519,27 +1520,15 @@ const cropFruitDescriptions: Record<CropFruitDescriptions, string> = {
   "description.lily.seed": "Семя lily",
 };
 
-const deliveryitem: Record<DeliveryItem, string> = {
-  "deliveryitem.inventory": "Инвентарь: ",
-  "deliveryitem.itemsToDeliver": "Предметы для отправки: ",
-  "deliveryitem.deliverToWallet": "Отправить на твой кошелек",
-  "deliveryitem.viewOnOpenSea":
-    "После получения ты увидишь свои товары на OpenSea.",
-  "deliveryitem.deliver": "Доставить",
-};
-
-const defaultDialogue: Record<DefaultDialogue, string> = {
-  "defaultDialogue.intro":
-    "Привет, друг! Я здесь для того, чтобы узнать, нет ли у тебя нужной мне вещи!",
-  "defaultDialogue.positiveDelivery":
-    "О, замечательно! Ты принес именно то, что мне нужно. Спасибо!",
-  "defaultDialogue.negativeDelivery":
-    "О нет! Похоже, у тебя нет того, что мне нужно. Впрочем, не переживай. Продолжай поиски и мы найдем другую возможность.",
-  "defaultDialogue.noOrder":
-    "Сейчас нет активного заказа, который я мог бы выполнить.",
-};
-
 const cropsAndChickens: Record<CropsAndChickensMessages, string> = {
+  "crops-and-chickens.portal.title":
+    ENGLISH_TERMS["crops-and-chickens.portal.title"],
+  "crops-and-chickens.portal.description":
+    ENGLISH_TERMS["crops-and-chickens.portal.description"],
+  "crops-and-chickens.portal.missionObjectives":
+    ENGLISH_TERMS["crops-and-chickens.portal.missionObjectives"],
+  "crops-and-chickens.portal.rewardMessage":
+    ENGLISH_TERMS["crops-and-chickens.portal.rewardMessage"],
   "crops-and-chickens.mission": ENGLISH_TERMS["crops-and-chickens.mission"],
   "crops-and-chickens.guide": ENGLISH_TERMS["crops-and-chickens.guide"],
   "crops-and-chickens.instructions":
@@ -1555,17 +1544,12 @@ const cropsAndChickens: Record<CropsAndChickensMessages, string> = {
     ENGLISH_TERMS["crops-and-chickens.normalChickenDescription"],
   "crops-and-chickens.hunterChickenDescription":
     ENGLISH_TERMS["crops-and-chickens.hunterChickenDescription"],
-  "crops-and-chickens.minigame": ENGLISH_TERMS["crops-and-chickens.minigame"],
-  "crops-and-chickens.missionObjectives":
-    ENGLISH_TERMS["crops-and-chickens.missionObjectives"],
   "crops-and-chickens.completed": ENGLISH_TERMS["crops-and-chickens.completed"],
   "crops-and-chickens.confirm": ENGLISH_TERMS["crops-and-chickens.confirm"],
   "crops-and-chickens.noPrizesAvailable":
     ENGLISH_TERMS["crops-and-chickens.noPrizesAvailable"],
   "crops-and-chickens.playNow": ENGLISH_TERMS["crops-and-chickens.playNow"],
   "crops-and-chickens.purchase": ENGLISH_TERMS["crops-and-chickens.purchase"],
-  "crops-and-chickens.chickenRescueHelp":
-    ENGLISH_TERMS["crops-and-chickens.chickenRescueHelp"],
   "crops-and-chickens.noAttemptsRemaining":
     ENGLISH_TERMS["crops-and-chickens.noAttemptsRemaining"],
   "crops-and-chickens.unlimitedAttempts":
@@ -1668,6 +1652,26 @@ const cropsAndChickens: Record<CropsAndChickensMessages, string> = {
     ENGLISH_TERMS["crops-and-chickens.achievement.white-death.title"],
   "crops-and-chickens.achievement.white-death.description":
     ENGLISH_TERMS["crops-and-chickens.achievement.white-death.description"],
+};
+
+const deliveryitem: Record<DeliveryItem, string> = {
+  "deliveryitem.inventory": "Инвентарь: ",
+  "deliveryitem.itemsToDeliver": "Предметы для отправки: ",
+  "deliveryitem.deliverToWallet": "Отправить на твой кошелек",
+  "deliveryitem.viewOnOpenSea":
+    "После получения ты увидишь свои товары на OpenSea.",
+  "deliveryitem.deliver": "Доставить",
+};
+
+const defaultDialogue: Record<DefaultDialogue, string> = {
+  "defaultDialogue.intro":
+    "Привет, друг! Я здесь для того, чтобы узнать, нет ли у тебя нужной мне вещи!",
+  "defaultDialogue.positiveDelivery":
+    "О, замечательно! Ты принес именно то, что мне нужно. Спасибо!",
+  "defaultDialogue.negativeDelivery":
+    "О нет! Похоже, у тебя нет того, что мне нужно. Впрочем, не переживай. Продолжай поиски и мы найдем другую возможность.",
+  "defaultDialogue.noOrder":
+    "Сейчас нет активного заказа, который я мог бы выполнить.",
 };
 
 const decorationDescriptions: Record<DecorationDescriptions, string> = {
@@ -2109,6 +2113,9 @@ const discordBonus: Record<DiscordBonus, string> = {
 export const desertTerms: Record<DesertKeys, string> = {
   "digby.noDigsLeft": ENGLISH_TERMS["digby.noDigsLeft"],
   "digby.noDrills": ENGLISH_TERMS["digby.noDrills"],
+  "digby.streak": ENGLISH_TERMS["digby.streak"],
+  "digby.streakReward": ENGLISH_TERMS["digby.streakReward"],
+  "digby.claimPrize": ENGLISH_TERMS["digby.claimPrize"],
   "digby.noShovels": ENGLISH_TERMS["digby.noShovels"],
   "digby.puzzle": ENGLISH_TERMS["digby.puzzle"],
   "digby.today": ENGLISH_TERMS["digby.today"],
@@ -2142,6 +2149,7 @@ const donation: Record<Donation, string> = {
   "donation.minimum": "Minimum 1 MATIC",
   "donation.airdrop": "Decorations will be airdropped after donations close.",
   "donation.specialEvent": "Special Donation Event",
+  "donation.toPortal": ENGLISH_TERMS["donation.toPortal"],
 };
 
 const draftBid: Record<DraftBid, string> = {
