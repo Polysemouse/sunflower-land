@@ -14,6 +14,13 @@ import { PortalMachineState } from "../../lib/cropsAndChickensMachine";
 import { useSelector } from "@xstate/react";
 import classNames from "classnames";
 import { isTouchDevice } from "features/world/lib/device";
+import sound_on from "assets/icons/sound_on.png";
+import sound_off from "assets/icons/sound_off.png";
+import {
+  AudioLocalStorageKeys,
+  cacheAudioSetting,
+  getCachedAudioSetting,
+} from "features/game/lib/audio";
 
 const buttonWidth = PIXEL_SCALE * 22;
 const buttonHeight = PIXEL_SCALE * 23;
@@ -24,6 +31,16 @@ const _isJoystickActive = (state: PortalMachineState) =>
 export const CropsAndChickensSettings: React.FC = () => {
   const { portalService } = useContext(PortalContext);
   const { isDarkMode, toggleDarkMode } = useIsDarkMode();
+
+  const [audioMuted, setAudioMuted] = useState<boolean>(
+    getCachedAudioSetting<boolean>(AudioLocalStorageKeys.audioMuted, false),
+  );
+
+  useEffect(() => {
+    Howler.mute(audioMuted);
+    cacheAudioSetting(AudioLocalStorageKeys.audioMuted, audioMuted);
+  }, [audioMuted]);
+
   const [showMoreButtons, setShowMoreButtons] = useState(false);
 
   const isJoystickActive = useSelector(portalService, _isJoystickActive);
@@ -88,6 +105,24 @@ export const CropsAndChickensSettings: React.FC = () => {
     );
   };
 
+  const audioButton = (index: number) =>
+    settingButton(
+      index,
+      () => {
+        button.play();
+        setAudioMuted((audioMuted) => !audioMuted);
+      },
+      <img
+        src={audioMuted ? sound_off : sound_on}
+        className="absolute"
+        style={{
+          top: `${PIXEL_SCALE * 4}px`,
+          left: `${PIXEL_SCALE * 5}px`,
+          width: `${PIXEL_SCALE * 13}px`,
+        }}
+      />,
+    );
+
   const darkModeButton = (index: number) =>
     settingButton(
       index,
@@ -125,7 +160,7 @@ export const CropsAndChickensSettings: React.FC = () => {
     );
 
   // list of buttons to show in the HUD from right to left in order
-  const buttons = [gearButton, darkModeButton];
+  const buttons = [gearButton, darkModeButton, audioButton];
 
   return (
     <div

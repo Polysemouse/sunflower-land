@@ -32,6 +32,10 @@ import { CropContainer } from "./containers/CropContainer";
 import { EventObject } from "xstate";
 import { CropsAndChickensAchievementName } from "../CropsAndChickensAchievements";
 import { getTotalCropsInGame } from "../lib/cropsAndChickensUtils";
+import {
+  AudioLocalStorageKeys,
+  getCachedAudioSetting,
+} from "features/game/lib/audio";
 
 type AchievementTrigger =
   | "deposit"
@@ -90,6 +94,13 @@ export class CropsAndChickensScene extends BaseScene {
     this.hasGotToTheOtherSide = false;
     this.hasStopped = false;
   };
+
+  private get isAudioMuted() {
+    return getCachedAudioSetting<boolean>(
+      AudioLocalStorageKeys.audioMuted,
+      false,
+    );
+  }
 
   /**
    * The portal service.
@@ -330,6 +341,9 @@ export class CropsAndChickensScene extends BaseScene {
    * Called every time there is a frame update.
    */
   update() {
+    // mute audio if audio is muted
+    this.sound.mute = this.isAudioMuted;
+
     // update shader rendering
     this.updateShaders();
 
