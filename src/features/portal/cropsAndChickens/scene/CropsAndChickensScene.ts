@@ -32,10 +32,6 @@ import { CropContainer } from "./containers/CropContainer";
 import { EventObject } from "xstate";
 import { CropsAndChickensAchievementName } from "../CropsAndChickensAchievements";
 import { getTotalCropsInGame } from "../lib/cropsAndChickensUtils";
-import {
-  AudioLocalStorageKeys,
-  getCachedAudioSetting,
-} from "features/game/lib/audio";
 import { hasFeatureAccess } from "lib/flags";
 
 type AchievementTrigger =
@@ -95,13 +91,6 @@ export class CropsAndChickensScene extends BaseScene {
     this.hasGotToTheOtherSide = false;
     this.hasStopped = false;
   };
-
-  private get isAudioMuted() {
-    return getCachedAudioSetting<boolean>(
-      AudioLocalStorageKeys.audioMuted,
-      false,
-    );
-  }
 
   private get hasBetaAccess() {
     if (!this.portalServiceContext?.state) return false;
@@ -351,9 +340,6 @@ export class CropsAndChickensScene extends BaseScene {
    * Called every time there is a frame update.
    */
   update() {
-    // mute audio if audio is muted
-    this.sound.mute = this.isAudioMuted;
-
     // update shader rendering
     this.updateShaders();
 

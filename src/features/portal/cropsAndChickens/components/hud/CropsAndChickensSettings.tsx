@@ -16,11 +16,7 @@ import classNames from "classnames";
 import { isTouchDevice } from "features/world/lib/device";
 import sound_on from "assets/icons/sound_on.png";
 import sound_off from "assets/icons/sound_off.png";
-import {
-  AudioLocalStorageKeys,
-  cacheAudioSetting,
-  getCachedAudioSetting,
-} from "features/game/lib/audio";
+import { useIsAudioMuted } from "lib/utils/hooks/useIsAudioMuted";
 
 const buttonWidth = PIXEL_SCALE * 22;
 const buttonHeight = PIXEL_SCALE * 23;
@@ -32,14 +28,11 @@ export const CropsAndChickensSettings: React.FC = () => {
   const { portalService } = useContext(PortalContext);
   const { isDarkMode, toggleDarkMode } = useIsDarkMode();
 
-  const [audioMuted, setAudioMuted] = useState<boolean>(
-    getCachedAudioSetting<boolean>(AudioLocalStorageKeys.audioMuted, false),
-  );
+  const { isAudioMuted, toggleAudioMuted } = useIsAudioMuted();
 
   useEffect(() => {
-    Howler.mute(audioMuted);
-    cacheAudioSetting(AudioLocalStorageKeys.audioMuted, audioMuted);
-  }, [audioMuted]);
+    Howler.mute(isAudioMuted);
+  }, [isAudioMuted]);
 
   const [showMoreButtons, setShowMoreButtons] = useState(false);
 
@@ -110,10 +103,10 @@ export const CropsAndChickensSettings: React.FC = () => {
       index,
       () => {
         button.play();
-        setAudioMuted((audioMuted) => !audioMuted);
+        toggleAudioMuted();
       },
       <img
-        src={audioMuted ? sound_off : sound_on}
+        src={isAudioMuted ? sound_off : sound_on}
         className="absolute"
         style={{
           top: `${PIXEL_SCALE * 4}px`,
