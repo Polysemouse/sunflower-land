@@ -1543,6 +1543,7 @@ export type ErrorTerms =
   | "error.toManyRequest.two"
   | "error.betaTestersOnly"
   | "error.wentWrong"
+  | "error.tooManyFarms"
   | "error.polygonRPC"
   | "error.connection.one"
   | "error.connection.two"

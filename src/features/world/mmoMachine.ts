@@ -122,6 +122,7 @@ export interface MMOContext {
   server?: Room<PlazaRoomState> | undefined;
   serverId: ServerId;
   sceneId: SceneId;
+  previousSceneId: SceneId | null;
   experience: number;
   isCommunity?: boolean;
   moderation: Moderation;
@@ -156,6 +157,11 @@ export type SwitchScene = {
   sceneId: SceneId;
 };
 
+export type UpdatePreviousScene = {
+  type: "UPDATE_PREVIOUS_SCENE";
+  previousSceneId: SceneId;
+};
+
 export type MMOEvent =
   | PickServer
   | { type: "CONTINUE" }
@@ -163,7 +169,8 @@ export type MMOEvent =
   | { type: "RETRY" }
   | { type: "CHANGE_SERVER" }
   | ConnectEvent
-  | SwitchScene;
+  | SwitchScene
+  | UpdatePreviousScene;
 
 export type MachineState = State<MMOContext, MMOEvent, MMOState>;
 
@@ -184,6 +191,7 @@ export const mmoMachine = createMachine<MMOContext, MMOEvent, MMOState>({
     availableServers: SERVERS,
     serverId: "sunflorea_bliss",
     sceneId: "plaza",
+    previousSceneId: null,
     experience: 0,
     isCommunity: false,
     moderation: {
@@ -405,6 +413,11 @@ export const mmoMachine = createMachine<MMOContext, MMOEvent, MMOState>({
         }),
         (context, event) => context.server?.send(0, { sceneId: event.sceneId }),
       ],
+    },
+    UPDATE_PREVIOUS_SCENE: {
+      actions: assign({
+        previousSceneId: (_, event) => event.previousSceneId,
+      }),
     },
   },
 });

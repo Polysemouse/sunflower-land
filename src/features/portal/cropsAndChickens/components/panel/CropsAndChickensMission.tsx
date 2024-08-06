@@ -49,11 +49,11 @@ export const CropsAndChickensMission: React.FC<Props> = ({
   const state = useSelector(portalService, _state);
 
   const hasBetaAccess = state
-    ? hasFeatureAccess(state, "CROPS_AND_CHICKENS")
+    ? hasFeatureAccess(state, "CROPS_AND_CHICKENS_BETA_TESTING")
     : false;
 
   const hasTimeBasedBetaAccess = state
-    ? hasFeatureAccess(state, "ENABLE_CROPS_AND_CHICKENS_FOR_EVERYONE")
+    ? hasFeatureAccess(state, "CROPS_AND_CHICKENS")
     : false;
 
   const dateKey = new Date().toISOString().slice(0, 10);

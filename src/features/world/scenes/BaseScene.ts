@@ -32,11 +32,7 @@ import {
 } from "../../game/lib/audio";
 import { MachineInterpreter } from "features/game/lib/gameMachine";
 import { MachineInterpreter as AuthMachineInterpreter } from "features/auth/lib/authMachine";
-import { capitalize } from "lib/utils/capitalize";
-
-type SceneTransitionData = {
-  previousSceneId: SceneId;
-};
+import { PhaserNavMesh } from "phaser-navmesh";
 
 export type NPCBumpkin = {
   x: number;
@@ -94,7 +90,6 @@ export abstract class BaseScene extends Phaser.Scene {
   eventListener?: (event: EventObject) => void;
 
   public joystick?: VirtualJoystick;
-  private sceneTransitionData?: SceneTransitionData;
   private switchToScene?: SceneId;
   public isCameraFading = false;
   private options: Required<BaseSceneOptions>;
@@ -154,6 +149,12 @@ export abstract class BaseScene extends Phaser.Scene {
     Phaser.Types.Physics.Arcade.ArcadePhysicsCallback
   > = {};
   otherDiggers: Map<string, { x: number; y: number }> = new Map();
+  /**
+   * navMesh can be used to find paths between two points. The map will need to have
+   * a layer of "walkable rectangles" that the player can walk on.
+   * ref: https://github.com/mikewesthad/navmesh
+   */
+  navMesh: PhaserNavMesh | undefined;
 
   constructor(options: BaseSceneOptions) {
     if (!options.name) {
@@ -186,10 +187,6 @@ export abstract class BaseScene extends Phaser.Scene {
     }
   }
 
-  init(data: SceneTransitionData) {
-    this.sceneTransitionData = data;
-  }
-
   create() {
     const errorLogger = createErrorLogger("phaser_base_scene", Number(this.id));
 
@@ -205,7 +202,7 @@ export abstract class BaseScene extends Phaser.Scene {
         this.initialiseControls();
       }
 
-      const from = this.sceneTransitionData?.previousSceneId as SceneId;
+      const from = this.mmoService?.state.context.previousSceneId as SceneId;
 
       let spawn = this.options.player.spawn;
 
@@ -245,7 +242,20 @@ export abstract class BaseScene extends Phaser.Scene {
     } catch (error) {
       errorLogger(JSON.stringify(error));
     }
+
+    this.setUpNavMesh();
   }
+
+  public setUpNavMesh = () => {
+    const meshLayer = this.map.getObjectLayer("NavMesh");
+    if (!meshLayer) return;
+
+    this.navMesh = this.navMeshPlugin.buildMeshFromTiled(
+      "NavMesh",
+      meshLayer,
+      16,
+    );
+  };
 
   private roof: Phaser.Tilemaps.TilemapLayer | null = null;
 
@@ -616,6 +626,7 @@ export abstract class BaseScene extends Phaser.Scene {
       y,
       clothing,
       name: npc,
+      faction,
     });
 
     // Is current player
@@ -726,8 +737,6 @@ export abstract class BaseScene extends Phaser.Scene {
     this.switchScene();
     this.updatePlayer();
     this.updateOtherPlayers();
-    this.updateUsernames();
-    this.updateFactions();
   }
 
   keysToAngle(
@@ -754,11 +763,10 @@ export abstract class BaseScene extends Phaser.Scene {
       return;
     }
 
-    // joystick is active if force is greater than JOYSTICK_FORCE_MIN
-    this.movementAngle =
-      this.joystick && this.joystick.force > JOYSTICK_FORCE_MIN
-        ? this.joystick.angle
-        : undefined;
+    // joystick is active if force is greater than zero
+    this.movementAngle = this.joystick?.force
+      ? this.joystick?.angle
+      : undefined;
 
     // use keyboard control if joystick is not active
     if (this.movementAngle === undefined) {
@@ -936,65 +944,6 @@ export abstract class BaseScene extends Phaser.Scene {
     });
   }
 
-  updateUsernames() {
-    const server = this.mmoServer;
-    if (!server) return;
-
-    server.state.players.forEach((player, sessionId) => {
-      if (this.playerEntities[sessionId]) {
-        const nameTag = this.playerEntities[sessionId].getByName("nameTag") as
-          | Phaser.GameObjects.Text
-          | undefined;
-
-        if (nameTag && player.username && nameTag.text !== player.username) {
-          nameTag.setText(player.username);
-        }
-      } else if (sessionId === server.sessionId) {
-        const nameTag = this.currentPlayer?.getByName("nameTag") as
-          | Phaser.GameObjects.Text
-          | undefined;
-
-        if (nameTag && player.username && nameTag.text !== player.username) {
-          nameTag.setText(player.username);
-        }
-      }
-    });
-  }
-
-  updateFactions() {
-    const server = this.mmoServer;
-    if (!server) return;
-
-    server.state.players.forEach((player, sessionId) => {
-      if (!player.faction) return;
-
-      if (this.playerEntities[sessionId]) {
-        const nameTag = this.playerEntities[sessionId].getByName("nameTag") as
-          | Phaser.GameObjects.Text
-          | undefined;
-        let factionTag = this.playerEntities[sessionId].getByName(
-          "factionTag",
-        ) as Phaser.GameObjects.Text | undefined;
-
-        if (nameTag && factionTag?.text !== `<${capitalize(player.faction)}>`) {
-          const color = FACTION_NAME_COLORS[player.faction as FactionName];
-          factionTag = this.createPlayerText({
-            x: 0,
-            y: 0,
-            text: `<${capitalize(player.faction)}>`,
-            color,
-          });
-
-          // Move name tag down
-          nameTag.setPosition(0, 16);
-
-          factionTag.name = "factionTag";
-          this.playerEntities[sessionId].add(factionTag);
-        }
-      }
-    });
-  }
-
   renderPlayers() {
     const server = this.mmoServer;
     if (!server) return;
@@ -1056,7 +1005,6 @@ export abstract class BaseScene extends Phaser.Scene {
 
       // this.mmoService?.state.context.server?.send(0, { sceneId: warpTo });
       this.mmoService?.send("SWITCH_SCENE", { sceneId: warpTo });
-      this.scene.start(warpTo, { previousSceneId: this.sceneId });
     }
   }
   updateOtherPlayers() {
