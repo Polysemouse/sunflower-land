@@ -25,7 +25,10 @@ import {
 import { NormalChickenContainer } from "./containers/NormalChickenContainer";
 import { HunterChickenContainer } from "./containers/HunterChickenContainer";
 import { DarkModePipeline } from "../shaders/darkModeShader";
-import { getDarkModeSetting } from "lib/utils/hooks/useIsDarkMode";
+import {
+  DARK_MODE_EVENT,
+  getDarkModeSetting,
+} from "lib/utils/hooks/useIsDarkMode";
 import { StorageAreaContainer } from "./containers/StorageAreaContainer";
 import { DepositIndicatorContainer } from "./containers/DepositIndicatorContainer";
 import { CropContainer } from "./containers/CropContainer";
@@ -333,6 +336,8 @@ export class CropsAndChickensScene extends BaseScene {
       this.sound.getAllPlaying().forEach((sound) => {
         sound.destroy();
       });
+
+      window.removeEventListener(DARK_MODE_EVENT as any, this.onSetDarkMode);
     });
   }
 
@@ -340,9 +345,6 @@ export class CropsAndChickensScene extends BaseScene {
    * Called every time there is a frame update.
    */
   update() {
-    // update shader rendering
-    this.updateShaders();
-
     // set joystick state in machine
     this.portalService?.send("SET_JOYSTICK_ACTIVE", {
       isJoystickActive: !!this.joystick?.force,
@@ -461,13 +463,38 @@ export class CropsAndChickensScene extends BaseScene {
   }
 
   /**
+   * Changes the dark mode setting when the event is triggered.
+   * @param event The event.
+   */
+  private onSetDarkMode = (event: CustomEvent) => {
+    // get pipeline
+    const darkModePipeline = this.cameras.main.getPostPipeline(
+      "DarkModePipeline",
+    ) as DarkModePipeline;
+
+    // set dark mode
+    darkModePipeline.isDarkMode = event.detail;
+  };
+
+  /**
    * Initializes the camera shader.
    */
   private initializeShaders = () => {
+    // add dark mode shader
     (
       this.renderer as Phaser.Renderer.WebGL.WebGLRenderer
     ).pipelines.addPostPipeline("DarkModePipeline", DarkModePipeline);
     this.cameras.main.setPostPipeline(DarkModePipeline);
+
+    // get pipeline
+    const darkModePipeline = this.cameras.main.getPostPipeline(
+      "DarkModePipeline",
+    ) as DarkModePipeline;
+
+    // set light sources and toggle dark mode
+    darkModePipeline.lightSources = [{ x: 0.5, y: 0.5 }];
+    darkModePipeline.isDarkMode = getDarkModeSetting();
+    window.addEventListener(DARK_MODE_EVENT as any, this.onSetDarkMode);
   };
 
   /**
@@ -537,34 +564,6 @@ export class CropsAndChickensScene extends BaseScene {
       ...chickensFacingUp,
       ...chickensFacingDown,
     ];
-  };
-
-  /**
-   * Updates the camera shader.
-   */
-  private updateShaders = () => {
-    // get pipeline
-    const darkModePipeline = this.cameras.main.getPostPipeline(
-      "DarkModePipeline",
-    ) as DarkModePipeline;
-
-    // toggle dark mode
-    darkModePipeline.isDarkMode = getDarkModeSetting();
-
-    if (this.currentPlayer) {
-      // calculate the player's position relative to the camera
-      const relativeX =
-        ((this.currentPlayer.x - this.cameras.main.worldView.x) /
-          this.cameras.main.width) *
-        this.cameras.main.zoom;
-      const relativeY =
-        ((this.currentPlayer.y - this.cameras.main.worldView.y) /
-          this.cameras.main.height) *
-        this.cameras.main.zoom;
-
-      // set the light sources
-      darkModePipeline.lightSources = [{ x: relativeX, y: relativeY }];
-    }
   };
 
   /**
