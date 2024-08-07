@@ -471,6 +471,7 @@ export class CropsAndChickensScene extends BaseScene {
     const darkModePipeline = this.cameras.main.getPostPipeline(
       "DarkModePipeline",
     ) as DarkModePipeline;
+    if (!darkModePipeline) return;
 
     // set dark mode
     darkModePipeline.isDarkMode = event.detail;
@@ -483,18 +484,21 @@ export class CropsAndChickensScene extends BaseScene {
     // add dark mode shader
     (
       this.renderer as Phaser.Renderer.WebGL.WebGLRenderer
-    ).pipelines.addPostPipeline("DarkModePipeline", DarkModePipeline);
+    ).pipelines?.addPostPipeline("DarkModePipeline", DarkModePipeline);
     this.cameras.main.setPostPipeline(DarkModePipeline);
+
+    // add event listener for dark mode
+    window.addEventListener(DARK_MODE_EVENT as any, this.onSetDarkMode);
 
     // get pipeline
     const darkModePipeline = this.cameras.main.getPostPipeline(
       "DarkModePipeline",
     ) as DarkModePipeline;
+    if (!darkModePipeline) return;
 
     // set light sources and toggle dark mode
     darkModePipeline.lightSources = [{ x: 0.5, y: 0.5 }];
     darkModePipeline.isDarkMode = getDarkModeSetting();
-    window.addEventListener(DARK_MODE_EVENT as any, this.onSetDarkMode);
   };
 
   /**
