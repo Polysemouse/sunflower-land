@@ -100,7 +100,7 @@ export class CropsAndChickensScene extends BaseScene {
 
     return hasFeatureAccess(
       this.portalServiceContext.state,
-      "CROPS_AND_CHICKENS",
+      "CROPS_AND_CHICKENS_BETA_TESTING",
     );
   }
 

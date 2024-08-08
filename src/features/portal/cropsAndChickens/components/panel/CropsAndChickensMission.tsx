@@ -52,10 +52,6 @@ export const CropsAndChickensMission: React.FC<Props> = ({
     ? hasFeatureAccess(state, "CROPS_AND_CHICKENS_BETA_TESTING")
     : false;
 
-  const hasTimeBasedBetaAccess = state
-    ? hasFeatureAccess(state, "CROPS_AND_CHICKENS")
-    : false;
-
   const dateKey = new Date().toISOString().slice(0, 10);
 
   const [page, setPage] = React.useState<"main" | "achievements" | "guide">(
@@ -125,19 +121,17 @@ export const CropsAndChickensMission: React.FC<Props> = ({
                     </div>
                   </Button>
                 )}
-                {hasTimeBasedBetaAccess && (
-                  <Button
-                    className="whitespace-nowrap capitalize w-12"
-                    onClick={() => setPage("guide")}
-                  >
-                    <div className="flex flex-row items-center gap-1">
-                      <SquareIcon
-                        icon={SUNNYSIDE.icons.expression_confused}
-                        width={7}
-                      />
-                    </div>
-                  </Button>
-                )}
+                <Button
+                  className="whitespace-nowrap capitalize w-12"
+                  onClick={() => setPage("guide")}
+                >
+                  <div className="flex flex-row items-center gap-1">
+                    <SquareIcon
+                      icon={SUNNYSIDE.icons.expression_confused}
+                      width={7}
+                    />
+                  </div>
+                </Button>
               </div>
             </div>
 
@@ -150,18 +144,12 @@ export const CropsAndChickensMission: React.FC<Props> = ({
                 {t("exit")}
               </Button>
             )}
-            {hasTimeBasedBetaAccess ? (
-              <Button
-                className="whitespace-nowrap capitalize"
-                onClick={onConfirm}
-              >
-                {confirmButtonText}
-              </Button>
-            ) : (
-              <Button className="whitespace-nowrap capitalize" disabled={true}>
-                {"Coming Soon"}
-              </Button>
-            )}
+            <Button
+              className="whitespace-nowrap capitalize"
+              onClick={onConfirm}
+            >
+              {confirmButtonText}
+            </Button>
           </div>
         </>
       )}
