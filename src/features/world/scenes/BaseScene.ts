@@ -768,9 +768,10 @@ export abstract class BaseScene extends Phaser.Scene {
     }
 
     // joystick is active if force is greater than zero
-    this.movementAngle = this.joystick?.force
-      ? this.joystick?.angle
-      : undefined;
+    this.movementAngle =
+      this.joystick?.force && this.joystick.force >= JOYSTICK_FORCE_MIN
+        ? this.joystick?.angle
+        : undefined;
 
     // use keyboard control if joystick is not active
     if (this.movementAngle === undefined) {
