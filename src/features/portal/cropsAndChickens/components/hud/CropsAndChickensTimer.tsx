@@ -5,7 +5,10 @@ import { PIXEL_SCALE } from "features/game/lib/constants";
 import { SUNNYSIDE } from "assets/sunnyside";
 import { secondsToString } from "lib/utils/time";
 import useUiRefresher from "lib/utils/hooks/useUiRefresher";
-import { GAME_SECONDS } from "../../CropsAndChickensConstants";
+import {
+  GAME_SECONDS,
+  TIME_TICKING_PREPARATION_SECONDS,
+} from "../../CropsAndChickensConstants";
 import { Label } from "components/ui/Label";
 import { PortalMachineState } from "../../lib/cropsAndChickensMachine";
 
@@ -27,7 +30,11 @@ export const CropsAndChickensTimer: React.FC = () => {
       className="absolute"
       icon={SUNNYSIDE.icons.stopwatch}
       type={
-        secondsLeft <= 0 ? "danger" : secondsLeft <= 10 ? "warning" : "info"
+        secondsLeft <= 0
+          ? "danger"
+          : secondsLeft <= TIME_TICKING_PREPARATION_SECONDS
+            ? "warning"
+            : "info"
       }
       style={{
         top: `${PIXEL_SCALE * 3}px`,

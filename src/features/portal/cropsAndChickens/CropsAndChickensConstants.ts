@@ -11,6 +11,7 @@ export const PLAYER_WALKING_SPEED = 50;
 
 export const SPRITE_FRAME_RATE = 10;
 
+export const TIME_TICKING_PREPARATION_SECONDS = 30;
 export const TIME_TICKING_SECONDS = 10;
 
 export const BOARD_OFFSET = SQUARE_WIDTH * 2;

@@ -21,6 +21,7 @@ import {
   TIME_TICKING_SECONDS,
   TOTAL_CROP_TYPES,
   CROP_TO_INDEX,
+  TIME_TICKING_PREPARATION_SECONDS,
 } from "../CropsAndChickensConstants";
 import { NormalChickenContainer } from "./containers/NormalChickenContainer";
 import { HunterChickenContainer } from "./containers/HunterChickenContainer";
@@ -70,6 +71,10 @@ export class CropsAndChickensScene extends BaseScene {
     | Phaser.Sound.HTML5AudioSound
     | Phaser.Sound.WebAudioSound;
   timeTickingSound?:
+    | Phaser.Sound.NoAudioSound
+    | Phaser.Sound.HTML5AudioSound
+    | Phaser.Sound.WebAudioSound;
+  timeTickingPreparationSound?:
     | Phaser.Sound.NoAudioSound
     | Phaser.Sound.HTML5AudioSound
     | Phaser.Sound.WebAudioSound;
@@ -279,6 +284,10 @@ export class CropsAndChickensScene extends BaseScene {
     this.load.audio("harvest", "world/harvest.mp3");
     this.load.audio("player_killed", "world/player_killed.mp3");
     this.load.audio("time_ticking", "world/time_ticking.mp3");
+    this.load.audio(
+      "time_ticking_preparation",
+      "world/time_ticking_preparation.mp3",
+    );
   }
 
   /**
@@ -364,6 +373,19 @@ export class CropsAndChickensScene extends BaseScene {
       this.hasGoneUp = true;
     }
 
+    // play ticking preparation sound
+    if (
+      this.isGamePlaying &&
+      !this.timeTickingPreparationSound &&
+      this.secondsLeft <= TIME_TICKING_PREPARATION_SECONDS &&
+      this.secondsLeft > 0
+    ) {
+      this.timeTickingPreparationSound = this.sound.add(
+        "time_ticking_preparation",
+      );
+      this.timeTickingPreparationSound.play({ volume: 0.4 });
+    }
+
     // play ticking sound if time is going to run out
     if (
       this.isGamePlaying &&
@@ -372,7 +394,7 @@ export class CropsAndChickensScene extends BaseScene {
       this.secondsLeft > 0
     ) {
       this.timeTickingSound = this.sound.add("time_ticking");
-      this.timeTickingSound.play({ volume: 0.2 });
+      this.timeTickingSound.play({ volume: 0.5 });
     }
 
     // end game when time is up
