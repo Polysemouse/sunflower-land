@@ -20,7 +20,7 @@ export const CropsAndChickensGuide: React.FC<Props> = ({ onBack }) => {
   const button = useSound("button");
 
   return (
-    <div className="flex flex-col gap-1 max-h-[80vh]">
+    <div className="flex flex-col gap-1 max-h-[75vh]">
       {/* title */}
       <div className="flex flex-col gap-1">
         <div className="flex text-center">

@@ -30,8 +30,8 @@ export const CropsAndChickensTimer: React.FC = () => {
         secondsLeft <= 0 ? "danger" : secondsLeft <= 10 ? "warning" : "info"
       }
       style={{
-        top: `${PIXEL_SCALE * 16}px`,
-        right: `${PIXEL_SCALE * 6}px`,
+        top: `${PIXEL_SCALE * 3}px`,
+        right: `${PIXEL_SCALE * 3}px`,
       }}
     >
       {secondsToString(secondsLeft, {

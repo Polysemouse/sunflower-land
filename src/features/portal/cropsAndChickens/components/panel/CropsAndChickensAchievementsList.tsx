@@ -40,7 +40,7 @@ export const CropsAndChickensAchievementsList: React.FC<Props> = ({
   ).filter((achievementName) => achievements[achievementName]);
 
   return (
-    <div className="flex flex-col gap-1 max-h-[80vh]">
+    <div className="flex flex-col gap-1 max-h-[75vh]">
       {/* title */}
       <div className="flex flex-col gap-1">
         <div className="flex text-center">

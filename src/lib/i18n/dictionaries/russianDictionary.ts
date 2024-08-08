@@ -1559,7 +1559,6 @@ const cropsAndChickens: Record<CropsAndChickensMessages, string> = {
   "crops-and-chickens.hunterChickenDescription":
     ENGLISH_TERMS["crops-and-chickens.hunterChickenDescription"],
   "crops-and-chickens.completed": ENGLISH_TERMS["crops-and-chickens.completed"],
-  "crops-and-chickens.confirm": ENGLISH_TERMS["crops-and-chickens.confirm"],
   "crops-and-chickens.noPrizesAvailable":
     ENGLISH_TERMS["crops-and-chickens.noPrizesAvailable"],
   "crops-and-chickens.playNow": ENGLISH_TERMS["crops-and-chickens.playNow"],

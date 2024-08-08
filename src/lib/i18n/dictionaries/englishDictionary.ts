@@ -1556,7 +1556,6 @@ const cropsAndChickens: Record<CropsAndChickensMessages, string> = {
   "crops-and-chickens.hunterChickenDescription":
     "Follows you and kills you upon contact",
   "crops-and-chickens.completed": "Completed",
-  "crops-and-chickens.confirm": "Are you sure you want to spend {{sfl}} SFL",
   "crops-and-chickens.noPrizesAvailable": "No prizes available",
   "crops-and-chickens.playNow": "Play now",
   "crops-and-chickens.purchase": "Purchase",

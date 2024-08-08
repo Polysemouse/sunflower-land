@@ -17,8 +17,13 @@ import {
 } from "../../CropsAndChickensConstants";
 import { purchase } from "features/portal/lib/portalUtil";
 import { SUNNYSIDE } from "assets/sunnyside";
+import { setPrecision } from "lib/utils/formatNumber";
+import sflIcon from "assets/icons/sfl.webp";
+import Decimal from "decimal.js-light";
+import { PIXEL_SCALE } from "features/game/lib/constants";
 
-const _sflBalance = (state: PortalMachineState) => state.context.state?.balance;
+const _sflBalance = (state: PortalMachineState) =>
+  state.context.state?.balance ?? new Decimal(0);
 
 export const CropsAndChickensNoAttemptsPanel: React.FC = () => {
   const { portalService } = useContext(PortalContext);
@@ -28,14 +33,14 @@ export const CropsAndChickensNoAttemptsPanel: React.FC = () => {
 
   return (
     <CloseButtonPanel bumpkinParts={NPC_WEARABLES["cluck e cheese"]}>
-      <div className="p-1">
+      <div className="p-2">
         <div className="flex gap-1 justify-between items-center mb-2">
           <Label icon={SUNNYSIDE.icons.lock} type="danger">
             {t("crops-and-chickens.noAttemptsRemaining")}
           </Label>
           <Label
             icon={sfl}
-            type={sflBalance?.lt(RESTOCK_ATTEMPTS_SFL) ? "danger" : "default"}
+            type={sflBalance.lt(RESTOCK_ATTEMPTS_SFL) ? "danger" : "default"}
           >
             {t("crops-and-chickens.sflRequired")}
           </Label>
@@ -47,13 +52,24 @@ export const CropsAndChickensNoAttemptsPanel: React.FC = () => {
         <p className="text-sm mb-2">
           {t("crops-and-chickens.wouldYouLikeToUnlock")}
         </p>
+
+        <div className="flex items-center space-x-1 relative">
+          <p className="balance-text">{setPrecision(sflBalance).toString()}</p>
+          <img
+            src={sflIcon}
+            alt="SFL"
+            style={{
+              width: `${PIXEL_SCALE * 11}px`,
+            }}
+          />
+        </div>
       </div>
       <div className="flex flex-col gap-1">
         <Button onClick={() => portalService.send("CANCEL_PURCHASE")}>
           {t("back")}
         </Button>
         <Button
-          disabled={sflBalance?.lt(RESTOCK_ATTEMPTS_SFL)}
+          disabled={sflBalance.lt(RESTOCK_ATTEMPTS_SFL)}
           onClick={() =>
             purchase({
               sfl: RESTOCK_ATTEMPTS_SFL,
@@ -67,7 +83,7 @@ export const CropsAndChickensNoAttemptsPanel: React.FC = () => {
           })}
         </Button>
         <Button
-          disabled={sflBalance?.lt(UNLIMITED_ATTEMPTS_SFL)}
+          disabled={sflBalance.lt(UNLIMITED_ATTEMPTS_SFL)}
           onClick={() =>
             purchase({
               sfl: UNLIMITED_ATTEMPTS_SFL,

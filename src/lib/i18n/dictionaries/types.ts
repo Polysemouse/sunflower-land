@@ -1124,7 +1124,6 @@ export type CropsAndChickensMessages =
   | "crops-and-chickens.normalChickenDescription"
   | "crops-and-chickens.hunterChickenDescription"
   | "crops-and-chickens.completed"
-  | "crops-and-chickens.confirm"
   | "crops-and-chickens.noPrizesAvailable"
   | "crops-and-chickens.playNow"
   | "crops-and-chickens.purchase"
