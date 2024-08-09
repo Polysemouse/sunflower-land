@@ -2176,8 +2176,8 @@ const deliveryHelp: Record<DeliveryHelp, string> = {
 };
 
 const deliveryitem: Record<DeliveryItem, string> = {
-  "deliveryitem.inventory": "Inventaire:",
-  "deliveryitem.itemsToDeliver": "Articles à livrer: ",
+  "deliveryitem.inventory": "Inventaire",
+  "deliveryitem.itemsToDeliver": "Articles à livrer",
   "deliveryitem.deliverToWallet": "Livrer à votre portefeuille",
   "deliveryitem.viewOnOpenSea":
     "Une fois livré, vous pourrez voir vos articles sur OpenSea.",
@@ -2258,16 +2258,18 @@ const errorAndAccess: Record<ErrorAndAccess, string> = {
 };
 
 const errorTerms: Record<ErrorTerms, string> = {
+  "error.askOnDiscord": ENGLISH_TERMS["error.askOnDiscord"],
+  "error.contactSupport": ENGLISH_TERMS["error.contactSupport"],
+  "error.file": ENGLISH_TERMS["error.file"],
+  "error.getHelp": ENGLISH_TERMS["error.getHelp"],
   "error.betaTestersOnly": "Réservé aux bêta-testeurs uniquement!",
   "error.congestion.one":
     "Nous faisons de notre mieux, mais il semble que Polygon soit très fréquenté ou que vous ayez perdu votre connexion.",
   "error.congestion.two":
     "Si cette erreur persiste, veuillez essayer de changer votre RPC Metamask.",
-  "error.connection.one":
-    "Il semble que nous n'ayons pas pu compléter cette demande.",
-  "error.connection.two": "Cela peut être un simple problème de connexion.",
-  "error.connection.three":
-    "Vous pouvez cliquer sur Actualiser pour réessayer.",
+  "error.connection.one": ENGLISH_TERMS["error.connection.one"],
+  "error.connection.two": ENGLISH_TERMS["error.connection.two"],
+  "error.connection.three": ENGLISH_TERMS["error.connection.three"],
   "error.connection.four":
     "Si le problème persiste, vous pouvez demander de l'aide en contactant notre équipe de support ou en rejoignant notre Discord et en demandant à notre communauté.",
   "error.diagnostic.info": "Informations de diagnostic",
@@ -2286,7 +2288,7 @@ const errorTerms: Record<ErrorTerms, string> = {
     "On dirait que vous avez été occupé ! Veuillez réessayer plus tard.",
   "error.tooManyFarms": ENGLISH_TERMS["error.tooManyFarms"],
   "error.Web3NotFound": "Web3 non trouvé",
-  "error.wentWrong": "Quelque chose s'est mal passé!",
+  "error.wentWrong": ENGLISH_TERMS["error.wentWrong"],
   "error.clock.not.synced": "Horloge non synchronisée",
   "error.polygon.cant.connect": "Impossible de se connecter à Polygon",
   "error.composterNotExist": "Le composteur n'existe pas",
@@ -5566,7 +5568,7 @@ const withdraw: Record<Withdraw, string> = {
   "withdraw.sfl.available": "SFL est disponible sur la chaîne",
   "withdraw.send.wallet": "Envoyé à votre portefeuille",
   "withdraw.choose": "Choisissez le montant à retirer",
-  "withdraw.receive": "Vous recevrez: {{sflReceived}}",
+  "withdraw.receive": "Vous recevrez: {{sflReceived}} SFL",
   "withdraw.select.item": "Sélectionnez les objets à retirer",
   "withdraw.opensea":
     "Une fois retirés, vous pourrez voir vos objets sur OpenSea.",

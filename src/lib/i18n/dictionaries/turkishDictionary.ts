@@ -2108,8 +2108,8 @@ const deliveryHelp: Record<DeliveryHelp, string> = {
 };
 
 const deliveryitem: Record<DeliveryItem, string> = {
-  "deliveryitem.inventory": "Envanter: ",
-  "deliveryitem.itemsToDeliver": "Teslim edilecek öğeler: ",
+  "deliveryitem.inventory": "Envanter",
+  "deliveryitem.itemsToDeliver": "Teslim edilecek öğeler",
   "deliveryitem.deliverToWallet": "Cüzdanınıza teslim edin",
   "deliveryitem.viewOnOpenSea":
     "Teslim edildikten sonra öğelerinizi OpenSea'de görebileceksiniz.",
@@ -2188,14 +2188,18 @@ const errorAndAccess: Record<ErrorAndAccess, string> = {
 };
 
 const errorTerms: Record<ErrorTerms, string> = {
+  "error.askOnDiscord": ENGLISH_TERMS["error.askOnDiscord"],
+  "error.contactSupport": ENGLISH_TERMS["error.contactSupport"],
+  "error.file": ENGLISH_TERMS["error.file"],
+  "error.getHelp": ENGLISH_TERMS["error.getHelp"],
   "error.betaTestersOnly": "Yalnızca beta test kullanıcıları!",
   "error.congestion.one":
     "Elimizden gelenin en iyisini yapmaya çalışıyoruz ancak görünüşe göre Polygon çok fazla trafik alıyor veya bağlantınızı kaybetmişsiniz.",
   "error.congestion.two":
     "Bu hata devam ederse lütfen Metamask RPC'nizi değiştirmeyi deneyin.",
-  "error.connection.one": "Görünüşe göre bu isteği yerine getiremedik.",
-  "error.connection.two": "Basit bir bağlantı sorunu olabilir.",
-  "error.connection.three": "Tekrar denemek için yenile'yi tıklayabilirsiniz.",
+  "error.connection.one": ENGLISH_TERMS["error.connection.one"],
+  "error.connection.two": ENGLISH_TERMS["error.connection.two"],
+  "error.connection.three": ENGLISH_TERMS["error.connection.three"],
   "error.connection.four":
     "Sorun devam ederse destek ekibimizle iletişime geçerek veya discord'a geçip topluluğumuza sorarak yardıma ulaşabilirsiniz.",
   "error.diagnostic.info": "Teşhis Bilgileri",
@@ -5406,7 +5410,7 @@ const withdraw: Record<Withdraw, string> = {
   "withdraw.sfl.available": "SFL zincir üzerinde mevcuttur",
   "withdraw.send.wallet": "Cüzdanınıza gönderildi",
   "withdraw.choose": "Çekilecek tutarı seçin",
-  "withdraw.receive": "Alacaksın: {{sflReceived}}",
+  "withdraw.receive": "Alacaksın: {{sflReceived}} SFL",
   "withdraw.select.item": "Geri çekilecek öğeleri seçin",
   "withdraw.opensea":
     "Geri çekildikten sonra öğelerinizi OpenSea'de görebileceksiniz.",

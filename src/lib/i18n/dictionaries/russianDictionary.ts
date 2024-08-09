@@ -1515,8 +1515,8 @@ const cropFruitDescriptions: Record<CropFruitDescriptions, string> = {
 };
 
 const deliveryitem: Record<DeliveryItem, string> = {
-  "deliveryitem.inventory": "Инвентарь: ",
-  "deliveryitem.itemsToDeliver": "Предметы для отправки: ",
+  "deliveryitem.inventory": "Инвентарь",
+  "deliveryitem.itemsToDeliver": "Предметы для отправки",
   "deliveryitem.deliverToWallet": "Отправить на твой кошелек",
   "deliveryitem.viewOnOpenSea":
     "После получения ты увидишь свои товары на OpenSea.",
@@ -2140,14 +2140,18 @@ const errorAndAccess: Record<ErrorAndAccess, string> = {
 };
 
 const errorTerms: Record<ErrorTerms, string> = {
+  "error.askOnDiscord": ENGLISH_TERMS["error.askOnDiscord"],
+  "error.contactSupport": ENGLISH_TERMS["error.contactSupport"],
+  "error.file": ENGLISH_TERMS["error.file"],
+  "error.getHelp": ENGLISH_TERMS["error.getHelp"],
   "error.betaTestersOnly": "Только для бета-тестеров!",
   "error.congestion.one":
     "Мы стараемся изо всех сил, но, похоже, у Polygon большой трафик или вы потеряли соединение.",
   "error.congestion.two":
     "Если эта ошибка повторяется, пожалуйста, попробуйте изменить свой Metamask RPC",
-  "error.connection.one": "Похоже, нам не удалось выполнить этот запрос.",
-  "error.connection.two": "Возможно, это просто проблема с соединением.",
-  "error.connection.three": "Вы можете нажать обновить и попробовать снова.",
+  "error.connection.one": ENGLISH_TERMS["error.connection.one"],
+  "error.connection.two": ENGLISH_TERMS["error.connection.two"],
+  "error.connection.three": ENGLISH_TERMS["error.connection.three"],
   "error.connection.four":
     "Если проблема не устранена, вы можете обратиться за помощью в нашу службу поддержки, либо перейти в наш discord и спросить у нашего сообщества",
   "error.diagnostic.info": "Диагностическая информация",
@@ -5402,7 +5406,7 @@ const withdraw: Record<Withdraw, string> = {
   "withdraw.sfl.available": "SFL is available on-chain",
   "withdraw.send.wallet": "Sent to your wallet",
   "withdraw.choose": "Choose amount to withdraw",
-  "withdraw.receive": "You will receive: {{sflReceived}}",
+  "withdraw.receive": "You will receive: {{sflReceived}} SFL",
   "withdraw.select.item": "Select items to withdraw",
   "withdraw.opensea":
     "Once withdrawn, you will be able to view your items on OpenSea.",
