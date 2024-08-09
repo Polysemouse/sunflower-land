@@ -17,7 +17,7 @@ export class HarvestPopupContainer extends Phaser.GameObjects.Container {
   cropSprite?: Phaser.GameObjects.Sprite;
   label?: Phaser.GameObjects.BitmapText;
   cropIndex?: number;
-  cropIndexTimeoutId?: NodeJS.Timeout;
+  preFadeTween?: Phaser.Tweens.Tween;
   fadeTween?: Phaser.Tweens.Tween;
 
   constructor({ scene, player, harvestedCropIndexes }: Props) {
@@ -52,40 +52,45 @@ export class HarvestPopupContainer extends Phaser.GameObjects.Container {
       `${this.harvestedCropIndexes().filter((i) => i === cropIndex).length}/${getTotalCropsInGame(INDEX_TO_CROP[cropIndex])}`,
     );
 
-    // clear the previous timeout
-    if (this.cropIndexTimeoutId) {
-      clearTimeout(this.cropIndexTimeoutId);
-      this.cropIndexTimeoutId = undefined;
+    // clear the previous pre fade tweens
+    if (this.preFadeTween) {
+      this.preFadeTween.stop();
+      this.preFadeTween = undefined;
     }
 
-    // clear the previous fade tween
+    // clear the previous fade tweens
     if (this.fadeTween) {
       this.fadeTween.stop();
       this.fadeTween = undefined;
     }
 
-    this.cropIndexTimeoutId = setTimeout(() => {
-      // fade out the popup
-      this.fadeTween = this.scene.tweens.add({
-        targets: [this.cropSprite, this.label],
-        alpha: 0,
-        duration: 500,
-        onComplete: () => {
-          this.cropIndex = undefined;
-        },
-      });
-    }, 1000);
+    // fade out the popup
+    this.preFadeTween = this.scene.tweens.add({
+      targets: [this.cropSprite, this.label],
+      alpha: 1,
+      duration: 1000,
+      onComplete: () => {
+        this.fadeTween = this.scene.tweens.add({
+          targets: [this.cropSprite, this.label],
+          alpha: 0,
+          duration: 500,
+          onComplete: () => {
+            this.cropIndex = undefined;
+          },
+        });
+      },
+    });
   }
 
   /**
    * Should be called in the game update loop.
    */
   update(): void {
-    // show indicator if off screen
+    // show the popup if crop is harvested
     if (this.player?.body?.position && this.cropIndex !== undefined) {
       this.movePopup(this.player.body.position.x, this.player.body.position.y);
     } else {
-      // hide the indicator if the object is on the screen
+      // hide the popup if the object is on the screen
       this.setVisible(false);
     }
   }
