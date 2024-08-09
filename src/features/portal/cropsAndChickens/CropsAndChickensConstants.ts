@@ -68,6 +68,20 @@ export const CROP_TO_INDEX: { [key in CropName]?: number } = {
   Kale: 10,
 };
 
+export const INDEX_TO_CROP: { [key: number]: CropName } = {
+  0: "Sunflower",
+  1: "Potato",
+  2: "Pumpkin",
+  3: "Carrot",
+  4: "Cabbage",
+  5: "Beetroot",
+  6: "Cauliflower",
+  7: "Parsnip",
+  8: "Radish",
+  9: "Wheat",
+  10: "Kale",
+};
+
 export const SCORE_TABLE: {
   [key: number]: {
     item: CropName;

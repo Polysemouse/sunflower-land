@@ -37,6 +37,7 @@ import { EventObject } from "xstate";
 import { CropsAndChickensAchievementName } from "../CropsAndChickensAchievements";
 import { getTotalCropsInGame } from "../lib/cropsAndChickensUtils";
 import { hasFeatureAccess } from "lib/flags";
+import { HarvestPopupContainer } from "./containers/HarvestPopupContainer";
 
 type AchievementTrigger =
   | "deposit"
@@ -65,6 +66,7 @@ export class CropsAndChickensScene extends BaseScene {
   hunterChicken?: HunterChickenContainer;
   storageArea?: StorageAreaContainer;
   depositIndicator?: DepositIndicatorContainer;
+  harvestPopup?: HarvestPopupContainer;
 
   achievementGetSound?:
     | Phaser.Sound.NoAudioSound
@@ -331,6 +333,12 @@ export class CropsAndChickensScene extends BaseScene {
       hasCropsInInventory: () => this.inventoryCropIndexes.length > 0,
     });
 
+    this.harvestPopup = new HarvestPopupContainer({
+      scene: this,
+      player: this.currentPlayer,
+      harvestedCropIndexes: () => this.harvestedCropIndexes,
+    });
+
     // reload scene when player hit retry
     const onRetry = (event: EventObject) => {
       if (event.type === "RETRY") {
@@ -474,6 +482,9 @@ export class CropsAndChickensScene extends BaseScene {
 
     // update deposit indicator position
     this.depositIndicator?.update();
+
+    // update harvest popup position
+    this.harvestPopup?.update();
 
     // start game if player decides to moves
     // must be called after setting hasStopped
@@ -676,6 +687,9 @@ export class CropsAndChickensScene extends BaseScene {
     this.inventoryCropIndexes = [...this.inventoryCropIndexes, cropIndex];
     const cropPoint = SCORE_TABLE[cropIndex].points;
     this.portalService?.send("CROP_HARVESTED", { points: cropPoint });
+
+    // show harvest popup
+    this.harvestPopup?.showPopup(cropIndex);
   };
 
   /**
