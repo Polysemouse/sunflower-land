@@ -133,6 +133,23 @@ export class CropsAndChickensScene extends BaseScene {
   }
 
   /**
+   * The inventory score.
+   */
+  private get inventory() {
+    return this.portalServiceContext?.inventory ?? 0;
+  }
+
+  /**
+   * The target score.
+   */
+  private get target() {
+    return (
+      this.portalServiceContext?.state?.minigames.prizes["crops-and-chickens"]
+        ?.score ?? 0
+    );
+  }
+
+  /**
    * The existing achievement names.
    */
   private get existingAchievementNames() {
@@ -284,6 +301,7 @@ export class CropsAndChickensScene extends BaseScene {
     this.load.audio("crop_deposit_pop", "world/crop_deposit_pop.mp3");
     this.load.audio("game_over", "world/game_over.mp3");
     this.load.audio("harvest", "world/harvest.mp3");
+    this.load.audio("target_reached", "world/target_reached.mp3");
     this.load.audio("player_killed", "world/player_killed.mp3");
     this.load.audio("time_ticking", "world/time_ticking.mp3");
     this.load.audio(
@@ -333,11 +351,12 @@ export class CropsAndChickensScene extends BaseScene {
       hasCropsInInventory: () => this.inventoryCropIndexes.length > 0,
     });
 
-    this.harvestPopup = new HarvestPopupContainer({
-      scene: this,
-      player: this.currentPlayer,
-      harvestedCropIndexes: () => this.harvestedCropIndexes,
-    });
+    // TODO: implement harvest popup with a less intrusive way
+    // this.harvestPopup = new HarvestPopupContainer({
+    //   scene: this,
+    //   player: this.currentPlayer,
+    //   harvestedCropIndexes: () => this.harvestedCropIndexes,
+    // });
 
     // reload scene when player hit retry
     const onRetry = (event: EventObject) => {
@@ -703,8 +722,18 @@ export class CropsAndChickensScene extends BaseScene {
     if (this.inventoryCropIndexes.length === 0) return;
 
     // play sound
-    const sound = this.sound.add("crop_deposit");
-    sound.play({ volume: 0.1 });
+    const cropDepositSound = this.sound.add("crop_deposit");
+    cropDepositSound.play({ volume: 0.1 });
+
+    // play target reached sound if target is reached
+    if (
+      this.target >= 0 &&
+      this.score < this.target &&
+      this.score + this.inventory >= this.target
+    ) {
+      const targetReachedSound = this.sound.add("target_reached");
+      targetReachedSound.play({ volume: 1.0 });
+    }
 
     // achievements
     this.checkAchievement("deposit");

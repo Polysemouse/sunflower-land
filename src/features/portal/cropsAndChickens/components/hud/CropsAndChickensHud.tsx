@@ -2,9 +2,7 @@ import React, { useContext, useEffect } from "react";
 import { useSelector } from "@xstate/react";
 import { PortalContext } from "../../lib/PortalProvider";
 import { PIXEL_SCALE } from "features/game/lib/constants";
-import { SUNNYSIDE } from "assets/sunnyside";
 import { HudContainer } from "components/ui/HudContainer";
-import { Label } from "components/ui/Label";
 import { useAppTranslation } from "lib/i18n/useAppTranslations";
 import { PortalMachineState } from "../../lib/cropsAndChickensMachine";
 import { CropsAndChickensTimer } from "./CropsAndChickensTimer";
@@ -13,6 +11,7 @@ import { CropsAndChickensTravel } from "./CropsAndChickensTravel";
 import { CropsAndChickensScores } from "./CropsAndChickensScores";
 import classNames from "classnames";
 import { useAchievementToast } from "../../providers/AchievementToastProvider";
+import { CropsAndChickensTarget } from "./CropsAndChickensTarget";
 
 const _isJoystickActive = (state: PortalMachineState) =>
   state.context.isJoystickActive;
@@ -63,11 +62,7 @@ export const CropsAndChickensHud: React.FC = () => {
             left: `${PIXEL_SCALE * 6}px`,
           }}
         >
-          <Label icon={SUNNYSIDE.resource.pirate_bounty} type="vibrant">
-            {t("crops-and-chickens.targetScore", {
-              target: target,
-            })}
-          </Label>
+          <CropsAndChickensTarget />
           <CropsAndChickensScores />
         </div>
 
