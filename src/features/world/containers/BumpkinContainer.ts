@@ -135,7 +135,7 @@ export class BumpkinContainer extends Phaser.GameObjects.Container {
     }
 
     if (clothing.shirt === "Gift Giver") {
-      this.showGift();
+      //this.showGift();
     }
     this.showAura();
   }
