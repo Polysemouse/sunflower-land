@@ -26,6 +26,7 @@ const betaTimeBasedFeatureFlag = (date: Date) => (game: GameState) => {
  * Do not delete JEST_TEST.
  */
 export type FeatureName =
+  | "CROPS_AND_CHICKENS_BETA_TESTING"
   | "JEST_TEST"
   | "PORTALS"
   | "EASTER"
@@ -43,14 +44,22 @@ export type FeatureName =
   | "TEST_DIGGING"
   | "NEW_FRUITS"
   | "DESERT_PLAZA"
-  | "CROPS_AND_CHICKENS_BETA_TESTING";
+  | "PIRATE_CHEST";
 
 // Used for testing production features
-export const ADMIN_IDS = [1, 2, 3, 39488];
+export const ADMIN_IDS = [1, 3, 51, 39488, 128727];
+/**
+ * Adam: 1
+ * Spencer: 3
+ * Sacul: 51
+ * Craig: 39488
+ * Elias: 128727
+ */
 
 type FeatureFlag = (game: GameState) => boolean;
 
 const featureFlags: Record<FeatureName, FeatureFlag> = {
+  CROPS_AND_CHICKENS_BETA_TESTING: defaultFeatureFlag,
   FESTIVAL_OF_COLORS: (game) => {
     if (defaultFeatureFlag(game)) return true;
 
@@ -77,7 +86,7 @@ const featureFlags: Record<FeatureName, FeatureFlag> = {
   TEST_DIGGING: betaTimeBasedFeatureFlag(new Date("2024-08-01T00:00:00Z")),
   NEW_FRUITS: betaTimeBasedFeatureFlag(new Date("2024-08-01T00:00:00Z")),
   DESERT_PLAZA: betaTimeBasedFeatureFlag(new Date("2024-08-01T00:00:00Z")),
-  CROPS_AND_CHICKENS_BETA_TESTING: defaultFeatureFlag,
+  PIRATE_CHEST: defaultFeatureFlag,
 };
 
 export const hasFeatureAccess = (game: GameState, featureName: FeatureName) => {
