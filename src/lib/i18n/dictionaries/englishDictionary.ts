@@ -420,8 +420,11 @@ const generalTerms: Record<GeneralTerms, string> = {
   chill: "Chill",
   full: "Full",
   collectibles: "Collectibles",
+  collectible: "Collectible",
+  cosmetic: "Cosmetic",
   buds: "Buds",
   wearables: "Wearables",
+  wearable: "Wearable",
   skip: "Skip",
   docs: "Docs",
   exit: "Exit",
@@ -434,6 +437,7 @@ const generalTerms: Record<GeneralTerms, string> = {
   buildings: "Buildings",
   boosts: "Boosts",
   decorations: "Decorations",
+  decoration: "Decoration",
   "sfl/coins": "SFL/Coins",
   vipAccess: "VIP Access",
   bought: "Bought",
@@ -2241,7 +2245,7 @@ const factions: Record<Factions, string> = {
   "faction.donation.bulk.resources.unlimited.per.day":
     "{{donatedToday}}/unlimited per day",
   "faction.donation.confirm":
-    "Are you sure you want to donate the following for a total of {{factionPoints}} {{reward}}?",
+    "Are you sure you want to donate the following for a total of {{factionPoints}} marks?",
   "faction.seasonal.delivery.start.at": "Seasonal Deliveries begin in {{days}}",
   "faction.points.with.number": "Faction points: {{points}}",
   "faction.points.title": "Faction Points",
@@ -3495,6 +3499,7 @@ const lostSunflorian: Record<LostSunflorian, string> = {
 };
 
 const megaStore: Record<MegaStore, string> = {
+  "megaStore.visit": "Visit the Megastore in the plaza before time runs out!",
   "megaStore.message":
     "Welcome to the Mega Store! Check out this month's limited items. If you like something, be sure to grab it before it vanishes into the realms of time.",
   "megaStore.month.sale": "This month's sales",
@@ -5004,6 +5009,24 @@ const seasonTerms: Record<SeasonTerms, string> = {
   "season.free.with.lifetime": "Free with Lifetime Farmer",
   "season.pharaohs.gift": "5 Extra Desert Digs",
   "season.ticket.bonus": "+2 {{item}}s (deliveries & chores)",
+  "season.codex.intro":
+    "Earn {{ticket}}s to craft exclusive collectibles & wearables for your farm in this limited season...Hurry before time runs out!",
+  "season.codex.howToEarn": "How to earn {{ticket}}s?",
+  "season.codex.howToEarn.one":
+    "Visit the plaza & deliver resources to Bumpkins.",
+  "season.codex.howToEarn.two": "Complete Hank's chores.",
+  "season.codex.howToEarn.three": "Compete in the faction competition.",
+  "season.codex.nextDrop": "Next Drop",
+  "season.codex.seasonalDrops": "Seasonal Drops",
+  "season.codex.seasonalDrops.description":
+    "Compete with others for the rarest items! Visit the Auctioneer in the plaza for more details.",
+  "season.codex.soldOut": "Sold out",
+  "season.codex.mutants": "Mutants",
+  "season.codex.mutants.discover": "Discover the seasonal mutants!",
+  "season.codex.mutants.one": "Collect eggs to discover the {{item}}.",
+  "season.codex.mutants.two": "Fish in the depths for the {{item}}.",
+  "season.codex.mutants.three":
+    "Experiment with flowers to discover the {{item}}.",
 };
 
 const share: Record<Share, string> = {

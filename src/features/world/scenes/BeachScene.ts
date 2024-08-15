@@ -112,7 +112,7 @@ export class BeachScene extends BaseScene {
     this.load.image("sand_hole", SUNNYSIDE.soil.sand_dug);
 
     this.load.image("wooden_chest", "world/wooden_chest.png");
-    this.load.image("rare_chest", "world/rare_chest.png");
+    this.load.image("pirate_chest", "world/pirate_chest.webp");
     this.load.image("locked_disc", "world/locked_disc.png");
     this.load.image("rare_key_disc", "world/rare_key_disc.png");
 
@@ -347,39 +347,36 @@ export class BeachScene extends BaseScene {
       }
     });
 
-    if (hasFeatureAccess(this.gameState, "PIRATE_CHEST")) {
-      this.updatePirateChest();
-      const listener = (e: EventObject) => {
-        if (e.type === "bumpkin.equipped") {
-          this.updatePirateChest(); // Some function you would put the render logic in
-        }
-      };
+    // Pirate Chest
+    this.updatePirateChest();
+    const listener = (e: EventObject) => {
+      if (e.type === "bumpkin.equipped") {
+        this.updatePirateChest(); // Some function you would put the render logic in
+      }
+    };
 
-      this.gameService.onEvent(listener);
+    this.gameService.onEvent(listener);
 
-      this.events.on("shutdown", () => {
-        this.gameService.off(listener);
-      });
+    this.events.on("shutdown", () => {
+      this.gameService.off(listener);
+    });
 
-      const pirateChest = this.add.sprite(105, 255, "rare_chest"); // Placeholder, will insert pirate chest sprite when it's ready
-      this.physics.world.enable(pirateChest);
-      this.colliders?.add(pirateChest);
-      this.triggerColliders?.add(pirateChest);
-      (pirateChest.body as Phaser.Physics.Arcade.Body)
-        .setSize(17, 20)
-        .setOffset(0, 0)
-        .setImmovable(true)
-        .setCollideWorldBounds(true);
-      pirateChest
-        .setInteractive({ cursor: "pointer" })
-        .on("pointerdown", () => {
-          if (this.checkDistanceToSprite(pirateChest, 75)) {
-            interactableModalManager.open("pirate_chest");
-          } else {
-            this.currentPlayer?.speak(translate("base.iam.far.away"));
-          }
-        });
-    }
+    const pirateChest = this.add.sprite(105, 255, "pirate_chest"); // Placeholder, will insert pirate chest sprite when it's ready
+    this.physics.world.enable(pirateChest);
+    this.colliders?.add(pirateChest);
+    this.triggerColliders?.add(pirateChest);
+    (pirateChest.body as Phaser.Physics.Arcade.Body)
+      .setSize(13, 16)
+      .setOffset(0, 0)
+      .setImmovable(true)
+      .setCollideWorldBounds(true);
+    pirateChest.setInteractive({ cursor: "pointer" }).on("pointerdown", () => {
+      if (this.checkDistanceToSprite(pirateChest, 75)) {
+        interactableModalManager.open("pirate_chest");
+      } else {
+        this.currentPlayer?.speak(translate("base.iam.far.away"));
+      }
+    });
 
     this.sound.add("drill");
     this.sound.add("dig");

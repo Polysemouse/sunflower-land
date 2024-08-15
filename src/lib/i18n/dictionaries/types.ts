@@ -245,8 +245,11 @@ export type GeneralTerms =
   | "chill"
   | "full"
   | "collectibles"
+  | "collectible"
+  | "cosmetic"
   | "buds"
   | "wearables"
+  | "wearable"
   | "skip"
   | "docs"
   | "exit"
@@ -259,6 +262,7 @@ export type GeneralTerms =
   | "buildings"
   | "boosts"
   | "decorations"
+  | "decoration"
   | "vipAccess";
 
 export type TimeUnits =
@@ -2473,6 +2477,7 @@ export type LostSunflorian =
 
 export type MegaStore =
   | "megaStore.message"
+  | "megaStore.visit"
   | "megaStore.month.sale"
   | "megaStore.wearable"
   | "megaStore.collectible"
@@ -3341,7 +3346,21 @@ export type SeasonTerms =
   | "season.xp.boost"
   | "season.free.season.passes.description"
   | "season.lifetime.farmer"
-  | "season.free.with.lifetime";
+  | "season.free.with.lifetime"
+  | "season.codex.intro"
+  | "season.codex.howToEarn"
+  | "season.codex.howToEarn.one"
+  | "season.codex.howToEarn.two"
+  | "season.codex.howToEarn.three"
+  | "season.codex.nextDrop"
+  | "season.codex.seasonalDrops"
+  | "season.codex.seasonalDrops.description"
+  | "season.codex.soldOut"
+  | "season.codex.mutants"
+  | "season.codex.mutants.discover"
+  | "season.codex.mutants.one"
+  | "season.codex.mutants.two"
+  | "season.codex.mutants.three";
 
 export type Share =
   | "share.TweetText"

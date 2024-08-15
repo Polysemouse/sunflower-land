@@ -439,6 +439,10 @@ const generalTerms: Record<GeneralTerms, string> = {
   "sell.amount": "出售 {{amount}}",
   "sell.inBulk": "批量销售",
   inventory: "存货",
+  collectible: ENGLISH_TERMS.collectible,
+  wearable: ENGLISH_TERMS.wearable,
+  cosmetic: ENGLISH_TERMS.cosmetic,
+  decoration: ENGLISH_TERMS.decoration,
 };
 
 const timeUnits: Record<TimeUnits, string> = {
@@ -3157,6 +3161,7 @@ const lostSunflorian: Record<LostSunflorian, string> = {
 };
 
 const megaStore: Record<MegaStore, string> = {
+  "megaStore.visit": ENGLISH_TERMS["megaStore.visit"],
   "megaStore.message": ENGLISH_TERMS["megaStore.message"],
   "megaStore.month.sale": ENGLISH_TERMS["megaStore.month.sale"],
   "megaStore.wearable": ENGLISH_TERMS["megaStore.wearable"],
@@ -4413,6 +4418,22 @@ const seasonTerms: Record<SeasonTerms, string> = {
   "season.vip.claim": ENGLISH_TERMS["season.vip.claim"],
   "season.pharaohs.gift": ENGLISH_TERMS["season.pharaohs.gift"],
   "season.ticket.bonus": ENGLISH_TERMS["season.ticket.bonus"],
+  "season.codex.intro": ENGLISH_TERMS["season.codex.intro"],
+  "season.codex.howToEarn": ENGLISH_TERMS["season.codex.howToEarn"],
+  "season.codex.howToEarn.one": ENGLISH_TERMS["season.codex.howToEarn.one"],
+  "season.codex.howToEarn.two": ENGLISH_TERMS["season.codex.howToEarn.two"],
+  "season.codex.howToEarn.three": ENGLISH_TERMS["season.codex.howToEarn.three"],
+  "season.codex.nextDrop": ENGLISH_TERMS["season.codex.nextDrop"],
+  "season.codex.seasonalDrops": ENGLISH_TERMS["season.codex.seasonalDrops"],
+  "season.codex.seasonalDrops.description":
+    ENGLISH_TERMS["season.codex.seasonalDrops.description"],
+  "season.codex.soldOut": ENGLISH_TERMS["season.codex.soldOut"],
+  "season.codex.mutants": ENGLISH_TERMS["season.codex.mutants"],
+  "season.codex.mutants.discover":
+    ENGLISH_TERMS["season.codex.mutants.discover"],
+  "season.codex.mutants.one": ENGLISH_TERMS["season.codex.mutants.one"],
+  "season.codex.mutants.two": ENGLISH_TERMS["season.codex.mutants.two"],
+  "season.codex.mutants.three": ENGLISH_TERMS["season.codex.mutants.three"],
 };
 
 const share: Record<Share, string> = {
