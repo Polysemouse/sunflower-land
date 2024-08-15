@@ -16,9 +16,11 @@ export const CropsAndChickensDonations: React.FC = () => {
   const { t } = useAppTranslation();
 
   const [donation, setDonation] = useState(new Decimal(1));
+
   const onDonationChange = (value: Decimal) => {
     setDonation(value);
   };
+
   const incrementDonation = () => {
     setDonation((value) => value.add(0.1));
   };
