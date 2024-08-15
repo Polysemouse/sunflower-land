@@ -43,46 +43,48 @@ export const CropsAndChickensDonations: React.FC = () => {
   const isComingSoon = false;
 
   return (
-    <div className="flex flex-col mb-1 p-2 text-sm">
-      <p className="mb-2 text-center">
-        {t("crops-and-chickens.donationDescription")}
-      </p>
+    <div className="flex flex-col">
+      <div className="flex flex-col mb-1 p-2">
+        <p className="mb-2 text-center">
+          {t("crops-and-chickens.donationDescription")}
+        </p>
 
-      <div className="flex flex-wrap mt-1 mb-4 gap-x-3 gap-y-1 justify-center">
-        {CONTRIBUTORS.map((name) => (
-          <Label key={name} type="chill" icon={ITEM_DETAILS["Chicken"].image}>
-            <span className="pl-1">{name}</span>
-          </Label>
-        ))}
-      </div>
-      <div className="flex flex-col items-center">
-        <div className="flex">
-          <Button className="w-12" onClick={decrementDonation}>
-            {"-"}
-          </Button>
-          <div className="flex items-center w-24 mx-2 mt-1">
-            <NumberInput
-              value={donation}
-              maxDecimalPlaces={1}
-              isOutOfRange={donation.lessThan(0.1)}
-              onValueChange={onDonationChange}
-            />
-          </div>
-          <Button className="w-12" onClick={incrementDonation}>
-            {"+"}
-          </Button>
+        <div className="flex flex-wrap mt-1 mb-4 gap-x-3 gap-y-1 justify-center">
+          {CONTRIBUTORS.map((name) => (
+            <Label key={name} type="chill" icon={ITEM_DETAILS["Chicken"].image}>
+              <span className="pl-1">{name}</span>
+            </Label>
+          ))}
         </div>
-        <span className="text-xs font-secondary my-2">{t("amount.matic")}</span>
+        <div className="flex flex-col items-center">
+          <div className="flex">
+            <Button className="w-12" onClick={decrementDonation}>
+              {"-"}
+            </Button>
+            <div className="flex items-center w-24 mx-2">
+              <NumberInput
+                value={donation}
+                maxDecimalPlaces={1}
+                isOutOfRange={donation.lessThan(0.1)}
+                onValueChange={onDonationChange}
+              />
+            </div>
+            <Button className="w-12" onClick={incrementDonation}>
+              {"+"}
+            </Button>
+          </div>
+          <span className="text-xs font-secondary my-2">
+            {t("amount.matic")}
+          </span>
+        </div>
+
+        {isComingSoon && (
+          <Label type="default" className="mb-2">
+            {t("coming.soon")}
+          </Label>
+        )}
       </div>
-
-      {isComingSoon && (
-        <Label type="default" className="mb-2">
-          {t("coming.soon")}
-        </Label>
-      )}
-
       <Button
-        className="w-full ml-1"
         onClick={handleDonate}
         disabled={isComingSoon || donation.lessThan(0.1)}
       >
