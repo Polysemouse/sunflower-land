@@ -764,7 +764,23 @@ export type BumpkinItemBuff =
   | "bumpkinItemBuff.oil.overalls.boost"
   | "bumpkinItemBuff.ancient.shovel.boost"
   | "bumpkinItemBuff.grape.pants"
-  | "bumpkinItemBuff.pirate.potion";
+  | "bumpkinItemBuff.pirate.potion"
+  | "bumpkinItemBuff.bumpkin.crown.boost"
+  | "bumpkinItemBuff.goblin.crown.boost"
+  | "bumpkinItemBuff.nightshade.crown.boost"
+  | "bumpkinItemBuff.sunflorian.crown.boost"
+  | "bumpkinItemBuff.bumpkin.shield.boost"
+  | "bumpkinItemBuff.goblin.shield.boost"
+  | "bumpkinItemBuff.nightshade.shield.boost"
+  | "bumpkinItemBuff.sunflorian.shield.boost"
+  | "bumpkinItemBuff.bumpkin.quiver.boost"
+  | "bumpkinItemBuff.goblin.quiver.boost"
+  | "bumpkinItemBuff.nightshade.quiver.boost"
+  | "bumpkinItemBuff.sunflorian.quiver.boost"
+  | "bumpkinItemBuff.bumpkin.medallion.boost"
+  | "bumpkinItemBuff.goblin.medallion.boost"
+  | "bumpkinItemBuff.nightshade.medallion.boost"
+  | "bumpkinItemBuff.sunflorian.medallion.boost";
 
 export type BumpkinPart =
   | "equip.background"
@@ -1006,6 +1022,14 @@ export type Conversations =
   | "pete.help.zero"
   | "pete.pumpkinPlaza.one"
   | "pete.pumpkinPlaza.two"
+  | "richie.challenge"
+  | "richie.rewarded"
+  | "richie.completed"
+  | "richie.completed.description"
+  | "richie.rewards"
+  | "richie.onboarding"
+  | "richie.dailyChallenges"
+  | "richie.final"
   | "sunflowerLand.islandDescription"
   | "sunflowerLand.opportunitiesDescription"
   | "sunflowerLand.returnHomeInstruction"
@@ -1015,6 +1039,9 @@ export type Conversations =
   | "luna.portals"
   | "luna.rewards"
   | "luna.travel"
+  | "richie.intro.one"
+  | "richie.intro.two"
+  | "richie.intro.three"
   | "pete.intro.one"
   | "pete.intro.two"
   | "pete.intro.three"
@@ -3909,6 +3936,24 @@ export type DesertKeys =
   | "desert.digs"
   | "desert.buyDigs.confirmation";
 
+export type MarketplaceTerms =
+  | "marketplace.collectibles"
+  | "marketplace.walletRequired"
+  | "marketplace.listForSale"
+  | "marketplace.description"
+  | "marketplace.buyNow"
+  | "marketplace.listings"
+  | "marketplace.noListings"
+  | "marketplace.offers"
+  | "marketplace.noOffers"
+  | "marketplace.topOffer"
+  | "marketplace.acceptOffer"
+  | "marketplace.makeOffer"
+  | "marketplace.sfl"
+  | "marketplace.expiry"
+  | "marketplace.priceHistory"
+  | "marketplace.from";
+
 export type TranslationKeys =
   | AchievementsTerms
   | Auction
@@ -4003,6 +4048,7 @@ export type TranslationKeys =
   | LevelUpMessages
   | Loser
   | LostSunflorian
+  | MarketplaceTerms
   | MegaStore
   | MilestoneMessages
   | Minigame
