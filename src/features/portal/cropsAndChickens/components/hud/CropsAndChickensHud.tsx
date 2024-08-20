@@ -49,27 +49,37 @@ export const CropsAndChickensHud: React.FC = () => {
   }, [achievements]);
 
   return (
-    <HudContainer>
-      <div
-        className={classNames({
-          "pointer-events-none": isJoystickActive,
-        })}
-      >
+    <>
+      <HudContainer>
         <div
-          className="absolute"
-          style={{
-            top: `${PIXEL_SCALE * 4}px`,
-            left: `${PIXEL_SCALE * 6}px`,
-          }}
+          className={classNames({
+            "pointer-events-none": isJoystickActive,
+          })}
         >
-          <CropsAndChickensTarget />
-          <CropsAndChickensScores />
-        </div>
+          <div
+            className="absolute"
+            style={{
+              top: `${PIXEL_SCALE * 4}px`,
+              left: `${PIXEL_SCALE * 6}px`,
+            }}
+          >
+            <CropsAndChickensTarget />
+            <CropsAndChickensScores />
+          </div>
 
-        <CropsAndChickensTimer />
-        <CropsAndChickensTravel />
-        <CropsAndChickensSettings />
-      </div>
-    </HudContainer>
+          <CropsAndChickensTimer />
+          <CropsAndChickensTravel />
+        </div>
+      </HudContainer>
+      <HudContainer zIndex={99999}>
+        <div
+          className={classNames({
+            "pointer-events-none": isJoystickActive,
+          })}
+        >
+          <CropsAndChickensSettings />
+        </div>
+      </HudContainer>
+    </>
   );
 };
