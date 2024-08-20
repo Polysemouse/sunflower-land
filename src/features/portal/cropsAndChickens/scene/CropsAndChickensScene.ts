@@ -1,4 +1,7 @@
 import mapJson from "assets/map/crops_and_chickens.json";
+
+import VirtualJoystick from "phaser3-rex-plugins/plugins/virtualjoystick.js";
+
 import { SQUARE_WIDTH } from "features/game/lib/constants";
 import { SPAWNS } from "features/world/lib/spawn";
 import { SceneId } from "features/world/mmoMachine";
@@ -19,9 +22,10 @@ import {
   SCORE_TABLE,
   SPRITE_FRAME_RATE,
   TIME_TICKING_SECONDS,
-  TOTAL_CROP_TYPES,
-  CROP_TO_INDEX,
   TIME_TICKING_PREPARATION_SECONDS,
+  ZOOM_OUT_SCALE,
+  JOYSTICK_RADIUS,
+  JOYSTICK_FORCE_MIN,
 } from "../CropsAndChickensConstants";
 import { NormalChickenContainer } from "./containers/NormalChickenContainer";
 import { HunterChickenContainer } from "./containers/HunterChickenContainer";
@@ -35,21 +39,23 @@ import { DepositIndicatorContainer } from "./containers/DepositIndicatorContaine
 import { CropContainer } from "./containers/CropContainer";
 import { EventObject } from "xstate";
 import { CropsAndChickensAchievementName } from "../CropsAndChickensAchievements";
-import { getTotalCropsInGame } from "../lib/cropsAndChickensUtils";
 import { hasFeatureAccess } from "lib/flags";
 import { HarvestPopupContainer } from "./containers/HarvestPopupContainer";
-
-type AchievementTrigger =
-  | "deposit"
-  | "empty deposit"
-  | "game over"
-  | "player killed by normal chicken"
-  | "player killed by hunter chicken";
+import { getZoomOutSetting, ZOOM_OUT_EVENT } from "../hooks/useIsZoomOut";
+import { preloadAssets } from "./lib/preloadAssets";
+import {
+  AchievementTrigger,
+  getEligibleAchievements,
+} from "./lib/getEligibleAchievements";
+import { isTouchDevice } from "features/world/lib/device";
 
 type chickenType = "normal" | "hunter";
 
 export class CropsAndChickensScene extends BaseScene {
   sceneId: SceneId = "crops_and_chickens";
+
+  joystickIndicatorBase: Phaser.GameObjects.Arc | undefined;
+  joystickIndicatorDot: Phaser.GameObjects.Sprite | undefined;
 
   // player states
   isDead!: boolean;
@@ -90,6 +96,9 @@ export class CropsAndChickensScene extends BaseScene {
     this.setDefaultStates();
   }
 
+  /**
+   * Sets the default states.
+   */
   private setDefaultStates = () => {
     this.isDead = false;
     this.depositedCropIndexes = [];
@@ -102,6 +111,35 @@ export class CropsAndChickensScene extends BaseScene {
     this.hasStopped = false;
   };
 
+  /**
+   * Gets the joystick default position.
+   */
+  private get joystickDefaultPosition() {
+    return {
+      x: this.cameras.main.centerX,
+      y:
+        this.cameras.main.centerY +
+        (this.cameras.main.height * 0.3) / this.cameras.main.zoom,
+    };
+  }
+
+  /**
+   * Gets the joystick scale.
+   */
+  private get joystickScale() {
+    return 1 / this.cameras.main.zoom;
+  }
+
+  /**
+   * Whether the player is moving.
+   */
+  private get isMoving() {
+    return this.movementAngle !== undefined && this.walkingSpeed !== 0;
+  }
+
+  /**
+   * Whether the player has beta access.
+   */
   private get hasBetaAccess() {
     if (!this.portalServiceContext?.state) return false;
 
@@ -128,7 +166,7 @@ export class CropsAndChickensScene extends BaseScene {
   /**
    * The score.
    */
-  private get score() {
+  public get score() {
     return this.portalServiceContext?.score ?? 0;
   }
 
@@ -163,7 +201,7 @@ export class CropsAndChickensScene extends BaseScene {
   /**
    * The number of seconds left for the game.
    */
-  private get secondsLeft() {
+  public get secondsLeft() {
     const endAt = this.portalServiceContext?.endAt;
     const secondsLeft = !endAt
       ? GAME_SECONDS
@@ -202,112 +240,7 @@ export class CropsAndChickensScene extends BaseScene {
   preload() {
     super.preload();
 
-    // player death spritesheets
-    this.load.spritesheet("player_death", "world/player_death.png", {
-      frameWidth: PLAYER_DEATH_SPRITE_PROPERTIES.frameWidth,
-      frameHeight: PLAYER_DEATH_SPRITE_PROPERTIES.frameHeight,
-    });
-
-    // normal chicken spritesheets
-    this.load.spritesheet(
-      "chicken_normal_left",
-      "world/chicken_normal_left_movements.png",
-      {
-        frameWidth: CHICKEN_SPRITE_PROPERTIES.frameWidth,
-        frameHeight: CHICKEN_SPRITE_PROPERTIES.frameHeight,
-      },
-    );
-    this.load.spritesheet(
-      "chicken_normal_right",
-      "world/chicken_normal_right_movements.png",
-      {
-        frameWidth: CHICKEN_SPRITE_PROPERTIES.frameWidth,
-        frameHeight: CHICKEN_SPRITE_PROPERTIES.frameHeight,
-      },
-    );
-    this.load.spritesheet(
-      "chicken_normal_up",
-      "world/chicken_normal_up_movements.png",
-      {
-        frameWidth: CHICKEN_SPRITE_PROPERTIES.frameWidth,
-        frameHeight: CHICKEN_SPRITE_PROPERTIES.frameHeight,
-      },
-    );
-    this.load.spritesheet(
-      "chicken_normal_down",
-      "world/chicken_normal_down_movements.png",
-      {
-        frameWidth: CHICKEN_SPRITE_PROPERTIES.frameWidth,
-        frameHeight: CHICKEN_SPRITE_PROPERTIES.frameHeight,
-      },
-    );
-
-    // hunter chicken spritesheets
-    this.load.spritesheet(
-      "chicken_hunter_left",
-      "world/chicken_hunter_left_movements.png",
-      {
-        frameWidth: CHICKEN_SPRITE_PROPERTIES.frameWidth,
-        frameHeight: CHICKEN_SPRITE_PROPERTIES.frameHeight,
-      },
-    );
-    this.load.spritesheet(
-      "chicken_hunter_right",
-      "world/chicken_hunter_right_movements.png",
-      {
-        frameWidth: CHICKEN_SPRITE_PROPERTIES.frameWidth,
-        frameHeight: CHICKEN_SPRITE_PROPERTIES.frameHeight,
-      },
-    );
-    this.load.spritesheet(
-      "chicken_hunter_up",
-      "world/chicken_hunter_up_movements.png",
-      {
-        frameWidth: CHICKEN_SPRITE_PROPERTIES.frameWidth,
-        frameHeight: CHICKEN_SPRITE_PROPERTIES.frameHeight,
-      },
-    );
-    this.load.spritesheet(
-      "chicken_hunter_down",
-      "world/chicken_hunter_down_movements.png",
-      {
-        frameWidth: CHICKEN_SPRITE_PROPERTIES.frameWidth,
-        frameHeight: CHICKEN_SPRITE_PROPERTIES.frameHeight,
-      },
-    );
-
-    // crops spritesheets
-    this.load.spritesheet("crop_planted", "world/crops_planted.png", {
-      frameWidth: 16,
-      frameHeight: 20,
-    });
-    this.load.spritesheet("crop_harvested", "world/crops_harvested.png", {
-      frameWidth: 16,
-      frameHeight: 16,
-    });
-
-    // deposit indicator
-    this.load.image("crop_deposit_arrow", "world/crop_deposit_arrow.png");
-
-    // ambience SFX
-    if (!this.sound.get("nature_1")) {
-      const nature1 = this.sound.add("nature_1");
-      nature1.play({ loop: true, volume: 0.01 });
-    }
-
-    // sound effects
-    this.load.audio("achievement_get", "world/achievement_get.mp3");
-    this.load.audio("crop_deposit", "world/crop_deposit.mp3");
-    this.load.audio("crop_deposit_pop", "world/crop_deposit_pop.mp3");
-    this.load.audio("game_over", "world/game_over.mp3");
-    this.load.audio("harvest", "world/harvest.mp3");
-    this.load.audio("target_reached", "world/target_reached.mp3");
-    this.load.audio("player_killed", "world/player_killed.mp3");
-    this.load.audio("time_ticking", "world/time_ticking.mp3");
-    this.load.audio(
-      "time_ticking_preparation",
-      "world/time_ticking_preparation.mp3",
-    );
+    preloadAssets(this);
   }
 
   /**
@@ -318,7 +251,21 @@ export class CropsAndChickensScene extends BaseScene {
       key: "main-map",
     });
 
+    this.portalService?.send("SET_IS_SMALL_SCREEN", {
+      isSmallScreen: this.isSmallScreen,
+    });
+
     super.create();
+    this.initialiseCropsAndChickensControls();
+
+    // add joystick indicator on top of the player
+    this.joystickIndicatorBase = this.add
+      .circle(0, 0, 10, 0x000000, 0.1)
+      .setVisible(false);
+    this.joystickIndicatorDot = this.add
+      .sprite(0, 0, "joystick_indicator_dot")
+      .setVisible(false)
+      .setDepth(1000000);
 
     // remove camera bounds so that the camera does not stop at the edge of the map when player wraps around
     this.cameras.main.removeBounds();
@@ -326,7 +273,7 @@ export class CropsAndChickensScene extends BaseScene {
     this.achievementGetSound = this.sound.add("achievement_get");
 
     this.setDefaultStates();
-    this.initializeShaders();
+    this.initializeListeners();
 
     this.createAllCrops();
     this.createAllNormalChickens();
@@ -373,7 +320,9 @@ export class CropsAndChickensScene extends BaseScene {
         sound.destroy();
       });
 
+      // cleanup event listeners for settings
       window.removeEventListener(DARK_MODE_EVENT as any, this.onSetDarkMode);
+      window.removeEventListener(ZOOM_OUT_EVENT as any, this.onSetZoomOut);
     });
   }
 
@@ -382,7 +331,7 @@ export class CropsAndChickensScene extends BaseScene {
    */
   update() {
     // set joystick state in machine
-    this.portalService?.send("SET_JOYSTICK_ACTIVE", {
+    this.portalService?.send("SET_IS_JOYSTICK_ACTIVE", {
       isJoystickActive: !!this.joystick?.force,
     });
 
@@ -511,7 +460,184 @@ export class CropsAndChickensScene extends BaseScene {
       this.portalService?.send("START");
     }
 
+    this.updatePlayer();
     super.update();
+  }
+
+  /**
+   * Initialises the controls.
+   */
+  public initialiseCropsAndChickensControls() {
+    if (isTouchDevice()) {
+      // Initialise joystick
+      const { centerX, centerY } = this.cameras.main;
+
+      const idleOpacity = 0.4;
+      const joystickBase = this.add
+        .circle(0, 0, JOYSTICK_RADIUS, 0x000000, 0.2)
+        .setDepth(1000000000)
+        .setAlpha(idleOpacity);
+      const joystickThumb = this.add
+        .circle(0, 0, JOYSTICK_RADIUS / 2, 0xffffff, 0.2)
+        .setDepth(1000000000)
+        .setAlpha(idleOpacity);
+
+      const joystick = new VirtualJoystick(this, {
+        x: 0,
+        y: 0,
+        base: joystickBase,
+        thumb: joystickThumb,
+        forceMin: 0,
+      });
+
+      this.joystick = joystick;
+
+      // swipe for pointer input
+      this.input.on("pointerdown", (pointer: Phaser.Input.Pointer) => {
+        const setPositionX =
+          centerX + (pointer.x - centerX) / this.cameras.main.zoom;
+        const setPositionY =
+          centerY + (pointer.y - centerY) / this.cameras.main.zoom;
+
+        // set opacity and set joystick base to starting position
+        joystickBase.setAlpha(1.0);
+        joystickThumb.setAlpha(1.0);
+        joystick.setPosition(setPositionX, setPositionY);
+      });
+      this.input.on("pointerup", () => {
+        // reset joystick position and opacity when swipe is done
+        joystickBase.setAlpha(idleOpacity);
+        joystickThumb.setAlpha(idleOpacity);
+
+        const defaultPosition = this.joystickDefaultPosition;
+        joystick.setPosition(defaultPosition.x, defaultPosition.y);
+      });
+    }
+
+    // Initialise Keyboard
+    this.cursorKeys = this.input.keyboard?.createCursorKeys();
+    if (this.cursorKeys) {
+      const mmoLocalSettings = JSON.parse(
+        localStorage.getItem("mmo_settings") ?? "{}",
+      );
+      const layout = mmoLocalSettings.layout ?? "QWERTY";
+
+      // add WASD keys
+      this.cursorKeys.w = this.input.keyboard?.addKey(
+        layout === "QWERTY" ? "W" : "Z",
+        false,
+      );
+      this.cursorKeys.a = this.input.keyboard?.addKey(
+        layout === "QWERTY" ? "A" : "Q",
+        false,
+      );
+      this.cursorKeys.s = this.input.keyboard?.addKey("S", false);
+      this.cursorKeys.d = this.input.keyboard?.addKey("D", false);
+
+      this.input.keyboard?.removeCapture("SPACE");
+    }
+
+    this.input.setTopOnly(true);
+  }
+
+  /**
+   * Updates the player.
+   */
+  updatePlayer() {
+    if (!this.currentPlayer?.body) return;
+
+    // joystick is active if force is greater than zero
+    this.movementAngle =
+      this.joystick?.force &&
+      this.joystick.force >= JOYSTICK_FORCE_MIN * this.joystickScale
+        ? this.joystick?.angle
+        : undefined;
+
+    // use keyboard control if joystick is not active
+    if (this.movementAngle === undefined) {
+      if (document.activeElement?.tagName === "INPUT") return;
+
+      const left =
+        (this.cursorKeys?.left.isDown || this.cursorKeys?.a?.isDown) ?? false;
+      const right =
+        (this.cursorKeys?.right.isDown || this.cursorKeys?.d?.isDown) ?? false;
+      const up =
+        (this.cursorKeys?.up.isDown || this.cursorKeys?.w?.isDown) ?? false;
+      const down =
+        (this.cursorKeys?.down.isDown || this.cursorKeys?.s?.isDown) ?? false;
+
+      this.movementAngle = this.keysToAngle(left, right, up, down);
+    }
+
+    // change player direction if angle is changed from left to right or vise versa
+    if (
+      this.movementAngle !== undefined &&
+      Math.abs(this.movementAngle) !== 90
+    ) {
+      this.isFacingLeft = Math.abs(this.movementAngle) > 90;
+      this.isFacingLeft
+        ? this.currentPlayer.faceLeft()
+        : this.currentPlayer.faceRight();
+    }
+
+    // set player velocity
+    const currentPlayerBody = this.currentPlayer
+      .body as Phaser.Physics.Arcade.Body;
+    if (this.movementAngle !== undefined) {
+      currentPlayerBody.setVelocity(
+        this.walkingSpeed * Math.cos((this.movementAngle * Math.PI) / 180),
+        this.walkingSpeed * Math.sin((this.movementAngle * Math.PI) / 180),
+      );
+    } else {
+      currentPlayerBody.setVelocity(0, 0);
+    }
+
+    // set joystick indicator dot if joystick is active
+    if (this.joystick && this.joystick.force) {
+      const angle = (this.joystick.angle / 180.0) * Math.PI;
+      const distance = Math.min(
+        this.joystick.force,
+        JOYSTICK_RADIUS * this.joystickScale,
+      );
+      const offset = { x: 5, y: 1 };
+      const scale = 0.22 / this.joystickScale;
+
+      this.joystickIndicatorBase
+        ?.setVisible(true)
+        .setPosition(
+          currentPlayerBody.x + offset.x,
+          currentPlayerBody.y + offset.y,
+        );
+      this.joystickIndicatorDot
+        ?.setVisible(true)
+        .setPosition(
+          currentPlayerBody.x + offset.x + distance * Math.cos(angle) * scale,
+          currentPlayerBody.y + offset.y + distance * Math.sin(angle) * scale,
+        );
+    } else {
+      this.joystickIndicatorBase?.setVisible(false);
+      this.joystickIndicatorDot?.setVisible(false);
+    }
+
+    this.sendPositionToServer();
+
+    this.soundEffects?.forEach((audio) =>
+      audio.setVolumeAndPan(
+        this.currentPlayer?.x ?? 0,
+        this.currentPlayer?.y ?? 0,
+      ),
+    );
+
+    this.walkAudioController?.handleWalkSound(this.isMoving);
+
+    if (this.isMoving) {
+      this.currentPlayer.walk();
+    } else {
+      this.currentPlayer.idle();
+    }
+
+    this.joystickIndicatorBase?.setDepth(this.currentPlayer.y - 0.0001);
+    this.currentPlayer.setDepth(this.currentPlayer.y);
   }
 
   /**
@@ -530,17 +656,44 @@ export class CropsAndChickensScene extends BaseScene {
   };
 
   /**
-   * Initializes the camera shader.
+   * Changes the zoom out setting when the event is triggered.
+   * @param event The event.
    */
-  private initializeShaders = () => {
+  private onSetZoomOut = (event: CustomEvent) => {
+    // ignore if not on small screen
+    if (!this.isSmallScreen) return;
+
+    // set zoom out
+    this.cameras.main.zoom = event.detail ? ZOOM_OUT_SCALE : this.initialZoom;
+
+    // update joystick position and size
+    (this.joystick as any).radius = JOYSTICK_RADIUS * this.joystickScale;
+    (this.joystick?.base as Phaser.GameObjects.Arc)?.setScale(
+      this.joystickScale,
+    );
+    (this.joystick?.thumb as Phaser.GameObjects.Arc)?.setScale(
+      this.joystickScale,
+    );
+
+    const defaultPosition = this.joystickDefaultPosition;
+    this.joystick?.setPosition(defaultPosition.x, defaultPosition.y);
+  };
+
+  /**
+   * Initializes the listeners.
+   */
+  private initializeListeners = () => {
     // add dark mode shader
     (
       this.renderer as Phaser.Renderer.WebGL.WebGLRenderer
     ).pipelines?.addPostPipeline("DarkModePipeline", DarkModePipeline);
     this.cameras.main.setPostPipeline(DarkModePipeline);
 
-    // add event listener for dark mode
+    // add event listener for settings
     window.addEventListener(DARK_MODE_EVENT as any, this.onSetDarkMode);
+    this.onSetDarkMode({ detail: getDarkModeSetting() } as CustomEvent);
+    window.addEventListener(ZOOM_OUT_EVENT as any, this.onSetZoomOut);
+    this.onSetZoomOut({ detail: getZoomOutSetting() } as CustomEvent);
 
     // get pipeline
     const darkModePipeline = this.cameras.main.getPostPipeline(
@@ -548,9 +701,8 @@ export class CropsAndChickensScene extends BaseScene {
     ) as DarkModePipeline;
     if (!darkModePipeline) return;
 
-    // set light sources and toggle dark mode
+    // set light sources
     darkModePipeline.lightSources = [{ x: 0.5, y: 0.5 }];
-    darkModePipeline.isDarkMode = getDarkModeSetting();
   };
 
   /**
@@ -716,7 +868,7 @@ export class CropsAndChickensScene extends BaseScene {
    */
   private depositCrops = () => {
     // achievements
-    this.checkAchievement("empty deposit");
+    this.checkAchievements("empty deposit");
 
     // skip function if there are nothing to deposit
     if (this.inventoryCropIndexes.length === 0) return;
@@ -736,7 +888,7 @@ export class CropsAndChickensScene extends BaseScene {
     }
 
     // achievements
-    this.checkAchievement("deposit");
+    this.checkAchievements("deposit");
 
     // score and remove all crops from inventory
     this.animateDepositingCrops();
@@ -817,7 +969,7 @@ export class CropsAndChickensScene extends BaseScene {
     sound.play({ volume: 0.25 });
 
     // achievements
-    this.checkAchievement(
+    this.checkAchievements(
       chickenType === "normal"
         ? "player killed by normal chicken"
         : "player killed by hunter chicken",
@@ -887,137 +1039,18 @@ export class CropsAndChickensScene extends BaseScene {
     this.currentPlayer?.setVisible(false);
 
     // achievements
-    this.checkAchievement("game over");
+    this.checkAchievements("game over");
   };
 
-  private checkAchievement = (trigger: AchievementTrigger) => {
+  private checkAchievements = (trigger: AchievementTrigger) => {
     if (!this.hasBetaAccess) return;
 
-    const achievementNames: CropsAndChickensAchievementName[] = [];
+    const achievementNames = getEligibleAchievements(this, trigger);
 
-    const inventoryAndDepositedCropIndexes = [
-      ...this.inventoryCropIndexes,
-      ...this.depositedCropIndexes,
-    ];
-
-    switch (trigger) {
-      case "deposit":
-        if (
-          inventoryAndDepositedCropIndexes.every(
-            (cropIndex) => cropIndex === CROP_TO_INDEX["Potato"],
-          ) &&
-          inventoryAndDepositedCropIndexes.length ===
-            getTotalCropsInGame("Potato") &&
-          this.harvestedCropIndexes.every(
-            (cropIndex) => cropIndex === CROP_TO_INDEX["Potato"],
-          ) &&
-          this.harvestedCropIndexes.length === getTotalCropsInGame("Potato") &&
-          this.secondsLeft >= GAME_SECONDS - 30
-        ) {
-          achievementNames.push("But It's Honest Work");
-        }
-
-        if (
-          JSON.stringify(this.inventoryCropIndexes) ===
-          JSON.stringify(Array.from({ length: TOTAL_CROP_TYPES }, (_, i) => i))
-        ) {
-          achievementNames.push("Ultimate Chain");
-        }
-
-        break;
-      case "empty deposit":
-        if (
-          !this.hasGotToTheOtherSide &&
-          this.harvestedCropIndexes.length === 0 &&
-          this.deaths === 0 &&
-          !this.hasStopped &&
-          !this.hasGoneUp &&
-          Math.max(Math.abs(this.chunk.x), Math.abs(this.chunk.y)) >= 1
-        ) {
-          this.hasGotToTheOtherSide = true;
-          achievementNames.push("Rush to the Other Side");
-        }
-
-        break;
-      case "game over":
-        if (
-          this.depositedCropIndexes.every(
-            (cropIndex) => cropIndex === CROP_TO_INDEX["Kale"],
-          ) &&
-          this.depositedCropIndexes.length === getTotalCropsInGame("Kale") &&
-          this.harvestedCropIndexes.every(
-            (cropIndex) => cropIndex === CROP_TO_INDEX["Kale"],
-          ) &&
-          this.harvestedCropIndexes.length === getTotalCropsInGame("Kale")
-        ) {
-          achievementNames.push("Dcol");
-        }
-
-        if (this.score === 1337) {
-          achievementNames.push("Elite Gamer");
-        }
-
-        if (this.score >= 25000) {
-          achievementNames.push("Grandmaster");
-        }
-
-        if (!this.hasGoneUp && this.score >= 2000) {
-          achievementNames.push("Never Gonna Move You Up");
-        }
-
-        if (!this.hasStopped && this.score >= 10000) {
-          achievementNames.push("Relentless");
-        }
-
-        if (
-          this.harvestedCropIndexes.filter(
-            (cropIndex) => cropIndex === CROP_TO_INDEX["Radish"],
-          ).length === getTotalCropsInGame("Radish")
-        ) {
-          achievementNames.push("Ring of Fire");
-        }
-
-        if (
-          this.depositedCropIndexes.filter(
-            (cropIndex) => cropIndex === CROP_TO_INDEX["Wheat"],
-          ).length === getTotalCropsInGame("Wheat")
-        ) {
-          achievementNames.push("Wheat King");
-        }
-
-        break;
-      case "player killed by normal chicken":
-      case "player killed by hunter chicken":
-        if (
-          this.inventoryCropIndexes.every(
-            (cropIndex) => cropIndex === CROP_TO_INDEX["Cauliflower"],
-          ) &&
-          this.inventoryCropIndexes.length ===
-            getTotalCropsInGame("Cauliflower")
-        ) {
-          achievementNames.push("White Death");
-        }
-
-        switch (trigger) {
-          case "player killed by hunter chicken":
-            if (
-              this.inventoryCropIndexes.filter(
-                (cropIndex) => cropIndex === CROP_TO_INDEX["Wheat"],
-              ).length === getTotalCropsInGame("Wheat")
-            ) {
-              achievementNames.push("Grain Offering");
-            }
-
-            break;
-        }
-
-        break;
-    }
-
-    if (achievementNames.length > 0) this.getAchievements(achievementNames);
+    if (achievementNames.length > 0) this.unlockAchievements(achievementNames);
   };
 
-  private getAchievements = (
+  private unlockAchievements = (
     achievementNames: CropsAndChickensAchievementName[],
   ) => {
     // if no new achievements, return

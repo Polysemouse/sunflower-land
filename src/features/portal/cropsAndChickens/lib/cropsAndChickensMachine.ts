@@ -26,6 +26,7 @@ export interface Context {
   id: number;
   jwt: string | null;
   isJoystickActive: boolean;
+  isSmallScreen: boolean;
   state: GameState | undefined;
   score: number;
   inventory: number;
@@ -43,13 +44,19 @@ type UnlockAchievementsEvent = {
   achievementNames: CropsAndChickensAchievementName[];
 };
 
-type SetJoystickActiveEvent = {
-  type: "SET_JOYSTICK_ACTIVE";
+type SetIsJoystickActiveEvent = {
+  type: "SET_IS_JOYSTICK_ACTIVE";
   isJoystickActive: boolean;
 };
 
+type SetIsSmallScreenEvent = {
+  type: "SET_IS_SMALL_SCREEN";
+  isSmallScreen: boolean;
+};
+
 export type PortalEvent =
-  | SetJoystickActiveEvent
+  | SetIsJoystickActiveEvent
+  | SetIsSmallScreenEvent
   | { type: "START" }
   | { type: "CLAIM" }
   | { type: "CANCEL_PURCHASE" }
@@ -99,6 +106,7 @@ export const portalMachine = createMachine<Context, PortalEvent, PortalState>({
     jwt: getJWT(),
 
     isJoystickActive: false,
+    isSmallScreen: false,
 
     state: CONFIG.API_URL ? undefined : OFFLINE_FARM,
 
@@ -108,10 +116,17 @@ export const portalMachine = createMachine<Context, PortalEvent, PortalState>({
     endAt: 0,
   },
   on: {
-    SET_JOYSTICK_ACTIVE: {
+    SET_IS_JOYSTICK_ACTIVE: {
       actions: assign<Context, any>({
-        isJoystickActive: (_: Context, event: SetJoystickActiveEvent) => {
+        isJoystickActive: (_: Context, event: SetIsJoystickActiveEvent) => {
           return event.isJoystickActive;
+        },
+      }),
+    },
+    SET_IS_SMALL_SCREEN: {
+      actions: assign<Context, any>({
+        isSmallScreen: (_: Context, event: SetIsSmallScreenEvent) => {
+          return event.isSmallScreen;
         },
       }),
     },

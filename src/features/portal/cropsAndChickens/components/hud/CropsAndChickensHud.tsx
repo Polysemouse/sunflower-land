@@ -6,7 +6,7 @@ import { HudContainer } from "components/ui/HudContainer";
 import { useAppTranslation } from "lib/i18n/useAppTranslations";
 import { PortalMachineState } from "../../lib/cropsAndChickensMachine";
 import { CropsAndChickensTimer } from "./CropsAndChickensTimer";
-import { CropsAndChickensSettings } from "./CropsAndChickensSettings";
+import { CropsAndChickensSettings } from "./settings/CropsAndChickensSettings";
 import { CropsAndChickensTravel } from "./CropsAndChickensTravel";
 import { CropsAndChickensScores } from "./CropsAndChickensScores";
 import classNames from "classnames";

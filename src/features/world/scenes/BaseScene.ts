@@ -20,6 +20,7 @@ import {
   SceneId,
 } from "../mmoMachine";
 import { Player, PlazaRoomState } from "../types/Room";
+import { playerModalManager } from "../ui/PlayerModals";
 import { FactionName, GameState } from "features/game/types/game";
 import { translate } from "lib/i18n/translate";
 import { Room } from "colyseus.js";
@@ -82,9 +83,6 @@ export const FACTION_NAME_COLORS: Record<FactionName, string> = {
   nightshades: "#a878ac",
 };
 
-const JOYSTICK_RADIUS = 15;
-const JOYSTICK_FORCE_MIN = 2;
-
 export abstract class BaseScene extends Phaser.Scene {
   abstract sceneId: SceneId;
   eventListener?: (event: EventObject) => void;
@@ -99,16 +97,10 @@ export abstract class BaseScene extends Phaser.Scene {
   npcs: Partial<Record<NPCName, BumpkinContainer>> = {};
 
   currentPlayer: BumpkinContainer | undefined;
-  joystickIndicatorBase: Phaser.GameObjects.Arc | undefined;
-  joystickIndicatorDot: Phaser.GameObjects.Sprite | undefined;
   isFacingLeft = false;
   movementAngle: number | undefined;
   serverPosition: { x: number; y: number } = { x: 0, y: 0 };
   packetSentAt = 0;
-
-  get isMoving() {
-    return this.movementAngle !== undefined && this.walkingSpeed !== 0;
-  }
 
   playerEntities: {
     [sessionId: string]: BumpkinContainer;
@@ -140,7 +132,8 @@ export abstract class BaseScene extends Phaser.Scene {
 
   currentTick = 0;
 
-  zoom = window.innerWidth < 500 ? 3 : 4;
+  isSmallScreen = window.innerWidth < 500;
+  initialZoom = this.isSmallScreen ? 3 : 4;
 
   layers: Record<string, Phaser.Tilemaps.TilemapLayer> = {};
 
@@ -207,7 +200,7 @@ export abstract class BaseScene extends Phaser.Scene {
       }
 
       if (this.options.controls.enabled) {
-        this.initialiseControls();
+        //this.initialiseControls();
       }
 
       const from = this.mmoService?.state.context.previousSceneId as SceneId;
@@ -234,14 +227,6 @@ export abstract class BaseScene extends Phaser.Scene {
         experience: 0,
         sessionId: this.mmoServer?.sessionId ?? "",
       });
-
-      this.joystickIndicatorBase = this.add
-        .circle(0, 0, 10, 0x000000, 0.1)
-        .setVisible(false);
-      this.joystickIndicatorDot = this.add
-        .sprite(spawn.x ?? 0, spawn.y ?? 0, "joystick_indicator_dot")
-        .setVisible(false)
-        .setDepth(1000000);
 
       this.initialiseCamera();
 
@@ -398,7 +383,7 @@ export abstract class BaseScene extends Phaser.Scene {
       this.map.height * SQUARE_WIDTH,
     );
 
-    camera.setZoom(this.zoom);
+    camera.setZoom(this.initialZoom);
 
     // Center it on canvas
     const offsetX = (window.innerWidth - this.map.width * 4 * SQUARE_WIDTH) / 2;
@@ -490,51 +475,17 @@ export abstract class BaseScene extends Phaser.Scene {
     );
   }
 
-  public initialiseControls() {
+  public initialiseCropsAndChickensControls() {
     if (isTouchDevice()) {
       // Initialise joystick
       const { centerX, centerY, height } = this.cameras.main;
-
-      const idleOpacity = 0.4;
-      const joystickBase = this.add
-        .circle(0, 0, 15, 0x000000, 0.2)
-        .setDepth(1000000000)
-        .setAlpha(idleOpacity);
-      const joystickThumb = this.add
-        .circle(0, 0, 7, 0xffffff, 0.2)
-        .setDepth(1000000000)
-        .setAlpha(idleOpacity);
-      const defaultPosition = {
+      this.joystick = new VirtualJoystick(this, {
         x: centerX,
-        y: centerY + (height * 0.3) / this.zoom,
-      };
-
-      const joystick = new VirtualJoystick(this, {
-        x: defaultPosition.x,
-        y: defaultPosition.y,
-        radius: JOYSTICK_RADIUS,
-        base: joystickBase,
-        thumb: joystickThumb,
-        forceMin: 0,
-      });
-
-      this.joystick = joystick;
-
-      // swipe for pointer input
-      this.input.on("pointerdown", (pointer: Phaser.Input.Pointer) => {
-        const setPositionX = centerX + (pointer.x - centerX) / this.zoom;
-        const setPositionY = centerY + (pointer.y - centerY) / this.zoom;
-
-        // set opacity and set joystick base to starting position
-        joystickBase.setAlpha(1.0);
-        joystickThumb.setAlpha(1.0);
-        joystick.setPosition(setPositionX, setPositionY);
-      });
-      this.input.on("pointerup", () => {
-        // reset joystick position and opacity when swipe is done
-        joystickBase.setAlpha(idleOpacity);
-        joystickThumb.setAlpha(idleOpacity);
-        joystick.setPosition(defaultPosition.x, defaultPosition.y);
+        y: centerY - 35 + height / this.initialZoom / 2,
+        radius: 15,
+        base: this.add.circle(0, 0, 15, 0x000000, 0.2).setDepth(1000000000),
+        thumb: this.add.circle(0, 0, 7, 0xffffff, 0.2).setDepth(1000000000),
+        forceMin: 2,
       });
     }
 
@@ -624,6 +575,33 @@ export abstract class BaseScene extends Phaser.Scene {
     experience?: number;
     sessionId: string;
   }): BumpkinContainer {
+    const defaultClick = () => {
+      const distance = Phaser.Math.Distance.BetweenPoints(
+        entity,
+        this.currentPlayer as BumpkinContainer,
+      );
+
+      if (distance > 50) {
+        entity.speak(translate("base.far.away"));
+        return;
+      }
+
+      if (npc) {
+        npcModalManager.open(npc);
+      } else {
+        if (farmId !== this.id) {
+          playerModalManager.open({
+            id: farmId,
+            // Always get the latest clothing
+            clothing: this.playerEntities[sessionId]?.clothing ?? clothing,
+            experience,
+          });
+        }
+      }
+
+      // TODO - open player modals
+    };
+
     const entity = new BumpkinContainer({
       scene: this,
       x,
@@ -631,7 +609,24 @@ export abstract class BaseScene extends Phaser.Scene {
       clothing,
       name: npc,
       faction,
+      //onClick: defaultClick,
     });
+
+    // if (!npc) {
+    //   const color = faction
+    //     ? FACTION_NAME_COLORS[faction as FactionName]
+    //     : "#fff";
+
+    //   const nameTag = this.createPlayerText({
+    //     x: 0,
+    //     y: 0,
+    //     text: username ? username : `#${farmId}`,
+    //     color,
+    //   });
+    //   nameTag.setShadow(1, 1, "#161424", 0, false, true);
+    //   nameTag.name = "nameTag";
+    //   entity.add(nameTag);
+    // }
 
     // Is current player
     if (isCurrentPlayer) {
@@ -739,8 +734,10 @@ export abstract class BaseScene extends Phaser.Scene {
     this.currentTick++;
 
     this.switchScene();
-    this.updatePlayer();
+    //this.updatePlayer();
     this.updateOtherPlayers();
+    //this.updateUsernames();
+    //this.updateFactions();
   }
 
   keysToAngle(
@@ -767,11 +764,22 @@ export abstract class BaseScene extends Phaser.Scene {
       return;
     }
 
+    // Update faction
+    const faction = this.gameState.faction?.name;
+
+    if (this.currentPlayer.faction !== faction) {
+      this.currentPlayer.faction = faction;
+      this.mmoServer?.send(0, { faction });
+      this.checkAndUpdateNameColor(
+        this.currentPlayer,
+        faction ? FACTION_NAME_COLORS[faction] : "white",
+      );
+    }
+
     // joystick is active if force is greater than zero
-    this.movementAngle =
-      this.joystick?.force && this.joystick.force >= JOYSTICK_FORCE_MIN
-        ? this.joystick?.angle
-        : undefined;
+    this.movementAngle = this.joystick?.force
+      ? this.joystick?.angle
+      : undefined;
 
     // use keyboard control if joystick is not active
     if (this.movementAngle === undefined) {
@@ -812,31 +820,10 @@ export abstract class BaseScene extends Phaser.Scene {
       currentPlayerBody.setVelocity(0, 0);
     }
 
-    // set joystick indicator dot if joystick is active
-    if (this.joystick && this.joystick.force) {
-      const angle = (this.joystick.angle / 180.0) * Math.PI;
-      const distance = Math.min(this.joystick.force, JOYSTICK_RADIUS);
-      const offset = { x: 5, y: 1 };
-      const scale = 0.7;
-
-      this.joystickIndicatorBase
-        ?.setVisible(true)
-        .setPosition(
-          currentPlayerBody.x + offset.x,
-          currentPlayerBody.y + offset.y,
-        );
-      this.joystickIndicatorDot
-        ?.setVisible(true)
-        .setPosition(
-          currentPlayerBody.x + offset.x + distance * Math.cos(angle) * scale,
-          currentPlayerBody.y + offset.y + distance * Math.sin(angle) * scale,
-        );
-    } else {
-      this.joystickIndicatorBase?.setVisible(false);
-      this.joystickIndicatorDot?.setVisible(false);
-    }
-
     this.sendPositionToServer();
+
+    const isMoving =
+      this.movementAngle !== undefined && this.walkingSpeed !== 0;
 
     if (this.soundEffects) {
       this.soundEffects.forEach((audio) =>
@@ -851,20 +838,19 @@ export abstract class BaseScene extends Phaser.Scene {
     }
 
     if (this.walkAudioController) {
-      this.walkAudioController.handleWalkSound(this.isMoving);
+      this.walkAudioController.handleWalkSound(isMoving);
     } else {
       // eslint-disable-next-line no-console
       console.error("walkAudioController is undefined");
     }
 
-    if (this.isMoving) {
+    if (isMoving) {
       this.currentPlayer.walk();
     } else {
       this.currentPlayer.idle();
     }
 
-    this.joystickIndicatorBase?.setDepth(this.currentPlayer.y - 0.0001);
-    this.currentPlayer.setDepth(this.currentPlayer.y);
+    this.currentPlayer.setDepth(Math.floor(this.currentPlayer.y));
 
     // this.cameras.main.setScroll(this.currentPlayer.x, this.currentPlayer.y);
   }
@@ -949,6 +935,59 @@ export abstract class BaseScene extends Phaser.Scene {
     });
   }
 
+  updateUsernames() {
+    const server = this.mmoServer;
+    if (!server) return;
+
+    server.state.players.forEach((player, sessionId) => {
+      if (this.playerEntities[sessionId]) {
+        const nameTag = this.playerEntities[sessionId].getByName("nameTag") as
+          | Phaser.GameObjects.Text
+          | undefined;
+
+        if (nameTag && player.username && nameTag.text !== player.username) {
+          nameTag.setText(player.username);
+        }
+      } else if (sessionId === server.sessionId) {
+        const nameTag = this.currentPlayer?.getByName("nameTag") as
+          | Phaser.GameObjects.Text
+          | undefined;
+
+        if (nameTag && player.username && nameTag.text !== player.username) {
+          nameTag.setText(player.username);
+        }
+      }
+    });
+  }
+
+  checkAndUpdateNameColor(entity: BumpkinContainer, color: string) {
+    const nameTag = entity.getByName("nameTag") as
+      | Phaser.GameObjects.Text
+      | undefined;
+
+    if (nameTag && nameTag.style.color !== color) {
+      nameTag.setColor(color);
+    }
+  }
+
+  updateFactions() {
+    const server = this.mmoServer;
+    if (!server) return;
+
+    server.state.players.forEach((player, sessionId) => {
+      if (!player.faction) return;
+
+      if (this.playerEntities[sessionId]) {
+        const faction = player.faction;
+        const color = faction
+          ? FACTION_NAME_COLORS[faction as FactionName]
+          : "#fff";
+
+        this.checkAndUpdateNameColor(this.playerEntities[sessionId], color);
+      }
+    });
+  }
+
   renderPlayers() {
     const server = this.mmoServer;
     if (!server) return;
@@ -1007,6 +1046,9 @@ export abstract class BaseScene extends Phaser.Scene {
     if (this.switchToScene) {
       const warpTo = this.switchToScene;
       this.switchToScene = undefined;
+
+      // This will cause a loop
+      // this.registry.get("navigate")(`/world/${warpTo}`);
 
       // this.mmoService?.state.context.server?.send(0, { sceneId: warpTo });
       this.mmoService?.send("SWITCH_SCENE", { sceneId: warpTo });

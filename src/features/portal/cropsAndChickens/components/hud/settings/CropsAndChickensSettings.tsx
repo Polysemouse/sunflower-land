@@ -9,25 +9,29 @@ import { useSound } from "lib/utils/hooks/useSound";
 import { useIsDarkMode } from "lib/utils/hooks/useIsDarkMode";
 import darkModeIcon from "assets/icons/dark_mode.png";
 import lightModeIcon from "assets/icons/light_mode.png";
-import { PortalContext } from "../../lib/PortalProvider";
-import { PortalMachineState } from "../../lib/cropsAndChickensMachine";
+import { PortalContext } from "../../../lib/PortalProvider";
+import { PortalMachineState } from "../../../lib/cropsAndChickensMachine";
 import { useSelector } from "@xstate/react";
 import classNames from "classnames";
 import { isTouchDevice } from "features/world/lib/device";
 import sound_on from "assets/icons/sound_on.png";
 import sound_off from "assets/icons/sound_off.png";
 import { useIsAudioMuted } from "lib/utils/hooks/useIsAudioMuted";
+import { useIsZoomOut } from "features/portal/cropsAndChickens/hooks/useIsZoomOut";
 
 const buttonWidth = PIXEL_SCALE * 22;
 const buttonHeight = PIXEL_SCALE * 23;
 
 const _isJoystickActive = (state: PortalMachineState) =>
   state.context.isJoystickActive;
+const _isSmallScreen = (state: PortalMachineState) =>
+  state.context.isSmallScreen;
 
 export const CropsAndChickensSettings: React.FC = () => {
   const { portalService } = useContext(PortalContext);
-  const { isDarkMode, toggleDarkMode } = useIsDarkMode();
 
+  const { isDarkMode, toggleDarkMode } = useIsDarkMode();
+  const { isZoomOut, toggleZoomOut } = useIsZoomOut();
   const { isAudioMuted, toggleAudioMuted } = useIsAudioMuted();
 
   useEffect(() => {
@@ -37,6 +41,7 @@ export const CropsAndChickensSettings: React.FC = () => {
   const [showMoreButtons, setShowMoreButtons] = useState(false);
 
   const isJoystickActive = useSelector(portalService, _isJoystickActive);
+  const isSmallScreen = useSelector(portalService, _isSmallScreen);
 
   const button = useSound("button");
 
@@ -116,6 +121,24 @@ export const CropsAndChickensSettings: React.FC = () => {
       />,
     );
 
+  const zoomOutButton = (index: number) =>
+    settingButton(
+      index,
+      () => {
+        button.play();
+        toggleZoomOut();
+      },
+      <img
+        src={isZoomOut ? SUNNYSIDE.icons.minus : SUNNYSIDE.icons.plus}
+        className="absolute"
+        style={{
+          top: `${PIXEL_SCALE * (isZoomOut ? 8 : 6)}px`,
+          left: `${PIXEL_SCALE * 6}px`,
+          width: `${PIXEL_SCALE * 10}px`,
+        }}
+      />,
+    );
+
   const darkModeButton = (index: number) =>
     settingButton(
       index,
@@ -153,7 +176,12 @@ export const CropsAndChickensSettings: React.FC = () => {
     );
 
   // list of buttons to show in the HUD from right to left in order
-  const buttons = [gearButton, darkModeButton, audioButton];
+  const buttons = [
+    gearButton,
+    darkModeButton,
+    ...(isSmallScreen ? [zoomOutButton] : []),
+    audioButton,
+  ];
 
   return (
     <div
