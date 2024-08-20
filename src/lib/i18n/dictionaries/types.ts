@@ -700,7 +700,7 @@ export type BumpkinDelivery =
   | "bumpkin.delivery.thanks"
   | "bumpkin.delivery.waiting"
   | "bumpkin.delivery.proveYourself"
-  | "bumpkin.delivery.earnScrolls"
+  | "bumpkin.delivery.earnTickets"
   | "bumpkin.delivery.earnSFL";
 
 export type BumpkinItemBuff =
@@ -970,7 +970,7 @@ export type ComposterDescription =
 export type ConfirmSkill = "confirm.skillClaim";
 
 export type ConfirmationTerms =
-  | "confirmation.sellCrops"
+  | "confirmation.sell"
   | "confirmation.buyCrops"
   | "confirmation.enterAmount"
   | "confirmation.sellSeasonalArtefact"
@@ -2277,13 +2277,6 @@ export type HarvestBeeHive =
   | "harvestBeeHive.notPlaced"
   | "harvestBeeHive.noHoney";
 
-export type HayseedHankPlaza =
-  | "hayseedHankPlaza.cannotCompleteChore"
-  | "hayseedHankPlaza.skipChore"
-  | "hayseedHankPlaza.canSkipIn"
-  | "hayseedHankPlaza.wellDone"
-  | "hayseedHankPlaza.lendAHand";
-
 export type HayseedHankV2 =
   | "hayseedHankv2.dialog1"
   | "hayseedHankv2.dialog2"
@@ -2291,7 +2284,8 @@ export type HayseedHankV2 =
   | "hayseedHankv2.title"
   | "hayseedHankv2.newChoresAvailable"
   | "hayseedHankv2.skipChores"
-  | "hayseedHankv2.greeting";
+  | "hayseedHankv2.greeting"
+  | "hayseedHankv2.confirmSkipChore";
 
 export type Helper =
   | "helper.highScore1"
@@ -3934,7 +3928,8 @@ export type DesertKeys =
   | "desert.hud.newSite"
   | "desert.extraDigs"
   | "desert.digs"
-  | "desert.buyDigs.confirmation";
+  | "desert.buyDigs.confirmation"
+  | "desert.noTreasureToSell";
 
 export type MarketplaceTerms =
   | "marketplace.collectibles"
@@ -4034,7 +4029,6 @@ export type TranslationKeys =
   | Factions
   | Harvestflower
   | HarvestBeeHive
-  | HayseedHankPlaza
   | HayseedHankV2
   | Helper
   | HeliosSunflower

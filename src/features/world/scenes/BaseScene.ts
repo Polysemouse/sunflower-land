@@ -1036,7 +1036,7 @@ export abstract class BaseScene extends Phaser.Scene {
   }
 
   initialiseNPCs(npcs: NPCBumpkin[]) {
-    npcs.forEach((bumpkin, index) => {
+    npcs.forEach((bumpkin) => {
       const defaultClick = () => {
         const distance = Phaser.Math.Distance.BetweenPoints(
           container,
@@ -1044,7 +1044,7 @@ export abstract class BaseScene extends Phaser.Scene {
         );
 
         if (distance > 50) {
-          container.speak("You are too far away");
+          container.speak(translate("base.far.away"));
           return;
         }
         npcModalManager.open(bumpkin.npc);

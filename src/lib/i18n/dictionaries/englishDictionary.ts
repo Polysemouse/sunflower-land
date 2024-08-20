@@ -71,7 +71,6 @@ import {
   GuideTerms,
   Harvestflower,
   HarvestBeeHive,
-  HayseedHankPlaza,
   HayseedHankV2,
   Helper,
   HeliosSunflower,
@@ -1012,7 +1011,7 @@ const bumpkinDelivery: Record<BumpkinDelivery, string> = {
     "I've been waiting for this. Thanks a bunch! Come back soon for more deliveries.",
   "bumpkin.delivery.proveYourself":
     "Prove yourself worthy. Level up {{missingLevels}} more times.",
-  "bumpkin.delivery.earnScrolls": "Earn scrolls to craft exclusive items.",
+  "bumpkin.delivery.earnTickets": "Earn {{ticket}}s to craft exclusive items.",
   "bumpkin.delivery.earnSFL": "Earn SFL to trade & build your empire.",
 };
 
@@ -1334,8 +1333,8 @@ const composterDescription: Record<ComposterDescription, string> = {
 };
 
 const confirmationTerms: Record<ConfirmationTerms, string> = {
-  "confirmation.sellCrops":
-    "Are you sure you want to sell {{cropAmount}} {{cropName}} for {{coinAmount}} Coins?",
+  "confirmation.sell":
+    "Are you sure you want to sell {{amount}} {{name}} for {{coinAmount}} Coins?",
   "confirmation.buyCrops":
     "Are you sure you want to spend {{coinAmount}} Coins to buy {{seedNo}} {{seedName}}s?",
   "confirmation.enterAmount": "Enter Amount to Sell:",
@@ -3206,14 +3205,6 @@ const harvestflower: Record<Harvestflower, string> = {
   "harvestflower.alr.plant": "Flower is already planted",
 };
 
-const hayseedHankPlaza: Record<HayseedHankPlaza, string> = {
-  "hayseedHankPlaza.cannotCompleteChore": "Cannot complete this chore?",
-  "hayseedHankPlaza.skipChore": "Skip chore",
-  "hayseedHankPlaza.canSkipIn": "You can skip this chore in",
-  "hayseedHankPlaza.wellDone": "Well done",
-  "hayseedHankPlaza.lendAHand": "Lend a hand?",
-};
-
 const hayseedHankV2: Record<HayseedHankV2, string> = {
   "hayseedHankv2.dialog1":
     "Well, howdy there, young whippersnappers! I'm Hayseed Hank, a seasoned ol' Bumpkin farmer, tending to the land like in the good ol' days.",
@@ -3225,6 +3216,7 @@ const hayseedHankV2: Record<HayseedHankV2, string> = {
   "hayseedHankv2.skipChores": "You can skip chores each new day",
   "hayseedHankv2.greeting":
     "Well, howdy there, young whippersnappers! I'm Hayseed Hank...",
+  "hayseedHankv2.confirmSkipChore": "Are you sure you want to skip this chore?",
 };
 
 const heliosSunflower: Record<HeliosSunflower, string> = {
@@ -4952,7 +4944,7 @@ const restock: Record<Restock, string> = {
   "restock.sure": "Are you sure you want to Restock?",
   "restock.tooManySeeds": "You have too many seeds in your basket!",
   "seeds.reachingInventoryLimit": "You are reaching your seed basket limit!",
-  "crops.noCropsToSell": "You have no {{cropName}} to Sell!",
+  "crops.noCropsToSell": "You have no {{cropName}} to sell!",
   "seeds.plantingSpot.needed": "{{plantingSpot}} Needed",
 };
 
@@ -5790,6 +5782,7 @@ export const desertTerms: Record<DesertKeys, string> = {
   "desert.digs": "{{amount}} digs",
   "desert.buyDigs.confirmation":
     "Are you sure you want to buy 5 digs for 1 Block Buck?",
+  "desert.noTreasureToSell": "You have no {{treasure}} to sell!",
 };
 
 export const marketplaceTerms: Record<MarketplaceTerms, string> = {
@@ -5892,7 +5885,6 @@ export const ENGLISH_TERMS: Record<TranslationKeys, string> = {
   ...guideTerms,
   ...harvestBeeHive,
   ...harvestflower,
-  ...hayseedHankPlaza,
   ...hayseedHankV2,
   ...heliosSunflower,
   ...helper,
