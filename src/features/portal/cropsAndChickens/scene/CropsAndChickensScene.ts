@@ -619,7 +619,7 @@ export class CropsAndChickensScene extends BaseScene {
       this.joystickIndicatorDot?.setVisible(false);
     }
 
-    this.sendPositionToServer();
+    //this.sendPositionToServer();
 
     this.soundEffects?.forEach((audio) =>
       audio.setVolumeAndPan(

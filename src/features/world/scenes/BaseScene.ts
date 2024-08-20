@@ -735,7 +735,7 @@ export abstract class BaseScene extends Phaser.Scene {
 
     this.switchScene();
     //this.updatePlayer();
-    this.updateOtherPlayers();
+    //this.updateOtherPlayers();
     //this.updateUsernames();
     //this.updateFactions();
   }
