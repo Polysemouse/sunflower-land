@@ -58,7 +58,7 @@ export const CropsAndChickensGuide: React.FC<Props> = ({ onBack }) => {
       </div>
 
       {/* content */}
-      <div className="flex flex-col gap-1 overflow-y-auto scrollable pr-1">
+      <div className="flex flex-col gap-1 overflow-y-auto scrollable px-1">
         {/* instructions */}
         <Label type="default">{t("crops-and-chickens.instructions")}</Label>
         <div>

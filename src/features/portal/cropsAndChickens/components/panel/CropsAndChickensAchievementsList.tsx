@@ -82,7 +82,7 @@ export const CropsAndChickensAchievementsList: React.FC<Props> = ({
       </Label>
 
       {/* achievements */}
-      <div className="flex flex-col gap-1 overflow-y-auto scrollable pr-1">
+      <div className="flex flex-col gap-1 overflow-y-auto scrollable px-1">
         {/* in progress */}
         <div className="flex flex-col gap-1">
           <Label type="default">{t("in.progress")}</Label>
