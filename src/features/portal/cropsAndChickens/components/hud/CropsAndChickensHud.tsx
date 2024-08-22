@@ -63,7 +63,7 @@ export const CropsAndChickensHud: React.FC = () => {
           <div
             className="absolute"
             style={{
-              top: `${PIXEL_SCALE * 4}px`,
+              top: `${PIXEL_SCALE * 3}px`,
               left: `${PIXEL_SCALE * 6}px`,
             }}
           >

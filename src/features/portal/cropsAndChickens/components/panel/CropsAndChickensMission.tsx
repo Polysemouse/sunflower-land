@@ -61,9 +61,9 @@ export const CropsAndChickensMission: React.FC<Props> = ({
   return (
     <>
       {page === "main" && (
-        <>
-          <div>
-            <div className="w-full relative flex justify-between gap-1 items-center mb-1 py-1 pl-2">
+        <div className="flex flex-col gap-1 max-h-[75vh]">
+          <div className="overflow-y-auto scrollable pr-1">
+            <div className="flex justify-between gap-1 items-center mb-1 py-1 pl-2">
               {mode === "introduction" && (
                 <Label type="default" icon={factions}>
                   {t("crops-and-chickens.portal.title")}
@@ -151,7 +151,7 @@ export const CropsAndChickensMission: React.FC<Props> = ({
               {confirmButtonText}
             </Button>
           </div>
-        </>
+        </div>
       )}
       {page === "achievements" && (
         <CropsAndChickensAchievementsList onBack={() => setPage("main")} />

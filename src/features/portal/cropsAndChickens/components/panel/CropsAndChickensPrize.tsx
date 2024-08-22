@@ -9,6 +9,9 @@ import { Label } from "components/ui/Label";
 import { PortalMachineState } from "../../lib/cropsAndChickensMachine";
 import { useSelector } from "@xstate/react";
 import { PortalContext } from "../../lib/PortalProvider";
+import { ITEM_DETAILS } from "features/game/types/images";
+import { getKeys } from "features/game/types/craftables";
+import giftIcon from "assets/icons/gift.png";
 
 const _dailyHighscore = (state: PortalMachineState) => {
   const dateKey = new Date().toISOString().slice(0, 10);
@@ -55,7 +58,7 @@ export const CropsAndChickensPrize: React.FC = () => {
             targetScore: prize.score,
           })}
         </span>
-        <div className="flex justify-between mt-2 flex-wrap">
+        <div className="flex justify-between mt-2 flex-wrap gap-2">
           {isComplete ? (
             <Label type="success" icon={SUNNYSIDE.icons.confirm}>
               {t("crops-and-chickens.completed")}
@@ -65,9 +68,19 @@ export const CropsAndChickensPrize: React.FC = () => {
               {secondsToString(secondsLeft, { length: "medium" })}
             </Label>
           )}
-          <div className="flex items-center space-x-2">
+          <div className="flex flex-wrap justify-between items-center gap-2">
+            {getKeys(prize.items).map((item) => (
+              <Label key={item} type="warning" icon={ITEM_DETAILS[item].image}>
+                {`${prize.items[item]} x ${item}`}
+              </Label>
+            ))}
+            {getKeys(prize.wearables).map((item) => (
+              <Label key={item} type="warning" icon={giftIcon}>
+                {`${prize.wearables[item]} x ${item}`}
+              </Label>
+            ))}
             {!!prize.coins && (
-              <Label icon={coins} type="warning">
+              <Label type="warning" icon={coins}>
                 {prize.coins}
               </Label>
             )}
