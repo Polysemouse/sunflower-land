@@ -668,6 +668,8 @@ export class CropsAndChickensScene extends BaseScene {
     // set zoom out
     this.cameras.main.zoom = event.detail ? zoomOutScale : this.initialZoom;
 
+    if (!this.joystick) return;
+
     // update joystick position and size
     (this.joystick as any).radius = JOYSTICK_RADIUS * this.joystickScale;
     (this.joystick?.base as Phaser.GameObjects.Arc)?.setScale(

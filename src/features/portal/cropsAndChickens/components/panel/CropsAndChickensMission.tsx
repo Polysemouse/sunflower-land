@@ -62,7 +62,7 @@ export const CropsAndChickensMission: React.FC<Props> = ({
     <>
       {page === "main" && (
         <div className="flex flex-col gap-1 max-h-[75vh]">
-          <div className="overflow-y-auto scrollable pr-1">
+          <div className="overflow-y-auto scrollable">
             <div className="flex justify-between gap-1 items-center mb-1 py-1 pl-2">
               {mode === "introduction" && (
                 <Label type="default" icon={factions}>
