@@ -662,11 +662,11 @@ export class CropsAndChickensScene extends BaseScene {
    * @param event The event.
    */
   private onSetZoomOut = (event: CustomEvent) => {
-    // ignore if not on small screen
-    if (!this.isSmallScreen) return;
+    // does not zoom out if not on small screen
+    const zoomOutScale = this.isSmallScreen ? ZOOM_OUT_SCALE : this.initialZoom;
 
     // set zoom out
-    this.cameras.main.zoom = event.detail ? ZOOM_OUT_SCALE : this.initialZoom;
+    this.cameras.main.zoom = event.detail ? zoomOutScale : this.initialZoom;
 
     // update joystick position and size
     (this.joystick as any).radius = JOYSTICK_RADIUS * this.joystickScale;

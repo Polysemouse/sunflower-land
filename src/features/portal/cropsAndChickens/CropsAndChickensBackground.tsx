@@ -3,9 +3,18 @@ import { useIsDarkMode } from "lib/utils/hooks/useIsDarkMode";
 
 import backgroundLight from "public/world/crops_and_chickens_background_light.png";
 import backgroundDark from "public/world/crops_and_chickens_background_dark.png";
+import { useIsZoomOut } from "./hooks/useIsZoomOut";
+import { ZOOM_OUT_SCALE } from "./CropsAndChickensConstants";
 
 export const CropsAndChickensBackground: React.FC = ({ children }) => {
   const { isDarkMode } = useIsDarkMode();
+  const { isZoomOut } = useIsZoomOut();
+
+  const zoomScale = isZoomOut
+    ? ZOOM_OUT_SCALE
+    : window.innerWidth < 500
+      ? 3
+      : 4;
 
   return (
     <div
@@ -15,7 +24,7 @@ export const CropsAndChickensBackground: React.FC = ({ children }) => {
         backgroundImage: `url(${
           isDarkMode ? backgroundDark : backgroundLight
         })`,
-        backgroundSize: `${192 * (window.innerWidth < 500 ? 3 : 4)}px`, // zoom level is not PIXEL_SCALE for base scene
+        backgroundSize: `${192 * zoomScale}px`, // zoom level is not PIXEL_SCALE for base scene
         imageRendering: "pixelated",
       }}
     >

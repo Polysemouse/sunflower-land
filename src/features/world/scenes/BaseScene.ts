@@ -475,7 +475,7 @@ export abstract class BaseScene extends Phaser.Scene {
     );
   }
 
-  public initialiseCropsAndChickensControls() {
+  public initialiseControls() {
     if (isTouchDevice()) {
       // Initialise joystick
       const { centerX, centerY, height } = this.cameras.main;
