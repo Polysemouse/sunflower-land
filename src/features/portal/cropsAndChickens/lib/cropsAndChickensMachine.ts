@@ -7,6 +7,7 @@ import {
   RESTOCK_ATTEMPTS_SFL,
   UNLIMITED_ATTEMPTS_SFL,
   DAILY_ATTEMPTS,
+  SCORE_TABLE,
 } from "../CropsAndChickensConstants";
 import { GameState } from "features/game/types/game";
 import { purchaseMinigameItem } from "features/game/events/minigames/purchaseMinigameItem";
@@ -30,13 +31,16 @@ export interface Context {
   state: GameState | undefined;
   score: number;
   inventory: number;
+  depositedCropIndexes: number[];
+  harvestedCropIndexes: number[];
+  inventoryCropIndexes: number[];
   endAt: number;
   attemptsLeft: number;
 }
 
 type CropHarvestedEvent = {
   type: "CROP_HARVESTED";
-  points: number;
+  cropIndex: number;
 };
 
 type UnlockAchievementsEvent = {
@@ -68,7 +72,7 @@ export type PortalEvent =
   | { type: "GAME_OVER" }
   | CropHarvestedEvent
   | { type: "CROP_DEPOSITED" }
-  | { type: "KILL_PLAYER" }
+  | { type: "PLAYER_KILLED" }
   | UnlockAchievementsEvent;
 
 export type PortalState = {
@@ -98,6 +102,20 @@ export type MachineInterpreter = Interpreter<
 
 export type PortalMachineState = State<Context, PortalEvent, PortalState>;
 
+const resetGameTransition = {
+  RETRY: {
+    target: "starting",
+    actions: assign<Context, any>({
+      score: () => 0,
+      inventory: () => 0,
+      depositedCropIndexes: () => [],
+      harvestedCropIndexes: () => [],
+      inventoryCropIndexes: () => [],
+      endAt: () => 0,
+    }),
+  },
+};
+
 export const portalMachine = createMachine<Context, PortalEvent, PortalState>({
   id: "portalMachine",
   initial: "initialising",
@@ -112,6 +130,11 @@ export const portalMachine = createMachine<Context, PortalEvent, PortalState>({
 
     score: 0,
     inventory: 0,
+
+    depositedCropIndexes: [],
+    harvestedCropIndexes: [],
+    inventoryCropIndexes: [],
+
     attemptsLeft: 0,
     endAt: 0,
   },
@@ -277,7 +300,20 @@ export const portalMachine = createMachine<Context, PortalEvent, PortalState>({
         CROP_HARVESTED: {
           actions: assign<Context, any>({
             inventory: (context: Context, event: CropHarvestedEvent) => {
-              return context.inventory + event.points;
+              const cropPoint = SCORE_TABLE[event.cropIndex].points;
+              return context.inventory + cropPoint;
+            },
+            harvestedCropIndexes: (
+              context: Context,
+              event: CropHarvestedEvent,
+            ) => {
+              return [...context.harvestedCropIndexes, event.cropIndex];
+            },
+            inventoryCropIndexes: (
+              context: Context,
+              event: CropHarvestedEvent,
+            ) => {
+              return [...context.inventoryCropIndexes, event.cropIndex];
             },
           }),
         },
@@ -287,11 +323,19 @@ export const portalMachine = createMachine<Context, PortalEvent, PortalState>({
               return context.score + context.inventory;
             },
             inventory: () => 0,
+            depositedCropIndexes: (context: Context) => {
+              return [
+                ...context.depositedCropIndexes,
+                ...context.inventoryCropIndexes,
+              ];
+            },
+            inventoryCropIndexes: () => [],
           }),
         },
-        KILL_PLAYER: {
+        PLAYER_KILLED: {
           actions: assign<Context, any>({
             inventory: () => 0,
+            inventoryCropIndexes: () => [],
           }),
         },
         END_GAME_EARLY: {
@@ -353,42 +397,15 @@ export const portalMachine = createMachine<Context, PortalEvent, PortalState>({
     },
 
     winner: {
-      on: {
-        RETRY: {
-          target: "starting",
-          actions: assign({
-            score: () => 0,
-            inventory: () => 0,
-            endAt: () => 0,
-          }) as any,
-        },
-      },
+      on: resetGameTransition,
     },
 
     loser: {
-      on: {
-        RETRY: {
-          target: "starting",
-          actions: assign({
-            score: () => 0,
-            inventory: () => 0,
-            endAt: () => 0,
-          }) as any,
-        },
-      },
+      on: resetGameTransition,
     },
 
     complete: {
-      on: {
-        RETRY: {
-          target: "starting",
-          actions: assign({
-            score: () => 0,
-            inventory: () => 0,
-            endAt: () => 0,
-          }) as any,
-        },
-      },
+      on: resetGameTransition,
     },
 
     error: {

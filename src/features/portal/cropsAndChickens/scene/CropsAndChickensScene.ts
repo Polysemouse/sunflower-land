@@ -19,7 +19,6 @@ import {
   PLAYER_MAX_XY,
   PLAYER_MIN_XY,
   PLAYER_WALKING_SPEED,
-  SCORE_TABLE,
   SPRITE_FRAME_RATE,
   TIME_TICKING_SECONDS,
   TIME_TICKING_PREPARATION_SECONDS,
@@ -40,7 +39,6 @@ import { CropContainer } from "./containers/CropContainer";
 import { EventObject } from "xstate";
 import { CropsAndChickensAchievementName } from "../CropsAndChickensAchievements";
 import { hasFeatureAccess } from "lib/flags";
-import { HarvestPopupContainer } from "./containers/HarvestPopupContainer";
 import { getZoomOutSetting, ZOOM_OUT_EVENT } from "../hooks/useIsZoomOut";
 import { preloadAssets } from "./lib/preloadAssets";
 import {
@@ -59,9 +57,6 @@ export class CropsAndChickensScene extends BaseScene {
 
   // player states
   isDead!: boolean;
-  depositedCropIndexes!: number[];
-  harvestedCropIndexes!: number[];
-  inventoryCropIndexes!: number[];
   chunk!: { x: number; y: number };
   deaths!: number;
   hasGoneUp!: boolean;
@@ -72,7 +67,6 @@ export class CropsAndChickensScene extends BaseScene {
   hunterChicken?: HunterChickenContainer;
   storageArea?: StorageAreaContainer;
   depositIndicator?: DepositIndicatorContainer;
-  harvestPopup?: HarvestPopupContainer;
 
   achievementGetSound?:
     | Phaser.Sound.NoAudioSound
@@ -101,9 +95,6 @@ export class CropsAndChickensScene extends BaseScene {
    */
   private setDefaultStates = () => {
     this.isDead = false;
-    this.depositedCropIndexes = [];
-    this.harvestedCropIndexes = [];
-    this.inventoryCropIndexes = [];
     this.chunk = { x: 0, y: 0 };
     this.deaths = 0;
     this.hasGoneUp = false;
@@ -161,6 +152,27 @@ export class CropsAndChickensScene extends BaseScene {
    */
   private get portalServiceContext() {
     return this.portalService?.state.context;
+  }
+
+  /**
+   * The deposited crop indexes.
+   */
+  public get depositedCropIndexes() {
+    return this.portalServiceContext?.depositedCropIndexes ?? [];
+  }
+
+  /**
+   * The harvested crop indexes.
+   */
+  public get harvestedCropIndexes() {
+    return this.portalServiceContext?.harvestedCropIndexes ?? [];
+  }
+
+  /**
+   * The inventory crop indexes.
+   */
+  public get inventoryCropIndexes() {
+    return this.portalServiceContext?.inventoryCropIndexes ?? [];
   }
 
   /**
@@ -297,13 +309,6 @@ export class CropsAndChickensScene extends BaseScene {
       player: this.currentPlayer,
       hasCropsInInventory: () => this.inventoryCropIndexes.length > 0,
     });
-
-    // TODO: implement harvest popup with a less intrusive way
-    // this.harvestPopup = new HarvestPopupContainer({
-    //   scene: this,
-    //   player: this.currentPlayer,
-    //   harvestedCropIndexes: () => this.harvestedCropIndexes,
-    // });
 
     // reload scene when player hit retry
     const onRetry = (event: EventObject) => {
@@ -450,9 +455,6 @@ export class CropsAndChickensScene extends BaseScene {
 
     // update deposit indicator position
     this.depositIndicator?.update();
-
-    // update harvest popup position
-    this.harvestPopup?.update();
 
     // start game if player decides to moves
     // must be called after setting hasStopped
@@ -854,13 +856,7 @@ export class CropsAndChickensScene extends BaseScene {
     sound.play({ volume: 0.1 });
 
     // add crop to inventory
-    this.harvestedCropIndexes = [...this.harvestedCropIndexes, cropIndex];
-    this.inventoryCropIndexes = [...this.inventoryCropIndexes, cropIndex];
-    const cropPoint = SCORE_TABLE[cropIndex].points;
-    this.portalService?.send("CROP_HARVESTED", { points: cropPoint });
-
-    // show harvest popup
-    this.harvestPopup?.showPopup(cropIndex);
+    this.portalService?.send("CROP_HARVESTED", { cropIndex: cropIndex });
   };
 
   /**
@@ -892,11 +888,6 @@ export class CropsAndChickensScene extends BaseScene {
 
     // score and remove all crops from inventory
     this.animateDepositingCrops();
-    this.depositedCropIndexes = [
-      ...this.depositedCropIndexes,
-      ...this.inventoryCropIndexes,
-    ];
-    this.inventoryCropIndexes = [];
     this.portalService?.send("CROP_DEPOSITED");
   };
 
@@ -977,8 +968,7 @@ export class CropsAndChickensScene extends BaseScene {
 
     // throw all crops out of the inventory
     this.animateDroppingCrops();
-    this.inventoryCropIndexes = [];
-    this.portalService?.send("KILL_PLAYER");
+    this.portalService?.send("PLAYER_KILLED");
 
     const spriteName = "player_death";
     const spriteKey = "player_death_anim";
