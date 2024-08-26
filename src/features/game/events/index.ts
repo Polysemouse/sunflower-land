@@ -346,6 +346,14 @@ import {
   completeDailyChallenge,
   CompleteDailyChallengeAction,
 } from "./landExpansion/completeDailyChallenge";
+import {
+  startMinigameAttempt,
+  StartMinigameAttemptAction,
+} from "./minigames/startMinigameAttempt";
+import {
+  submitMinigameScore,
+  SubmitMinigameScoreAction,
+} from "./minigames/submitMinigameScore";
 
 export type PlayingEvent =
   | CompleteDailyChallengeAction
@@ -434,6 +442,8 @@ export type PlayingEvent =
   | DrillOilReserveAction
   | ClaimMinigamePrizeAction
   | PurchaseMinigameAction
+  | StartMinigameAttemptAction
+  | SubmitMinigameScoreAction
   | PlayMinigameAction
   | UnlockMinigameAchievementsAction
   | SupplyCropMachineAction
@@ -522,6 +532,8 @@ export const PLAYING_EVENTS: Handlers<PlayingEvent> = {
   "greenhouse.planted": plantGreenhouse,
   "minigame.itemPurchased": purchaseMinigameItem,
   "minigame.prizeClaimed": claimMinigamePrize,
+  "minigame.attemptStarted": startMinigameAttempt,
+  "minigame.scoreSubmitted": submitMinigameScore,
   "minigame.played": playMinigame,
   "minigame.achievementsUnlocked": unlockMinigameAchievements,
   "airdrop.claimed": claimAirdrop,
