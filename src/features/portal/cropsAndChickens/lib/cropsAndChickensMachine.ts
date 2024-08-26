@@ -11,12 +11,17 @@ import {
 } from "../CropsAndChickensConstants";
 import { GameState } from "features/game/types/game";
 import { purchaseMinigameItem } from "features/game/events/minigames/purchaseMinigameItem";
-import { playMinigame } from "features/game/events/minigames/playMinigame";
-import { achievementsUnlocked, played } from "features/portal/lib/portalUtil";
+import {
+  achievementsUnlocked,
+  startAttempt,
+  submitScore,
+} from "features/portal/lib/portalUtil";
 import { getUrl, loadPortal } from "features/portal/actions/loadPortal";
 import { getAttemptsLeft } from "./cropsAndChickensUtils";
 import { unlockMinigameAchievements } from "features/game/events/minigames/unlockMinigameAchievements";
 import { CropsAndChickensAchievementName } from "../CropsAndChickensAchievements";
+import { submitMinigameScore } from "features/game/events/minigames/submitMinigameScore";
+import { startMinigameAttempt } from "features/game/events/minigames/startMinigameAttempt";
 
 const getJWT = () => {
   const code = new URLSearchParams(window.location.search).get("jwt");
@@ -288,6 +293,16 @@ export const portalMachine = createMachine<Context, PortalEvent, PortalState>({
         START: {
           target: "playing",
           actions: assign<Context>({
+            state: (context: any) => {
+              startAttempt();
+              return startMinigameAttempt({
+                state: context.state,
+                action: {
+                  type: "minigame.attemptStarted",
+                  id: "crops-and-chickens",
+                },
+              });
+            },
             endAt: () => Date.now() + GAME_SECONDS * 1000,
             attemptsLeft: (context: Context) => context.attemptsLeft - 1,
           }) as any,
@@ -347,11 +362,11 @@ export const portalMachine = createMachine<Context, PortalEvent, PortalState>({
           target: "gameOver",
           actions: assign({
             state: (context: any) => {
-              played({ score: context.score });
-              return playMinigame({
+              submitScore({ score: context.score });
+              return submitMinigameScore({
                 state: context.state,
                 action: {
-                  type: "minigame.played",
+                  type: "minigame.scoreSubmitted",
                   score: context.score,
                   id: "crops-and-chickens",
                 },
