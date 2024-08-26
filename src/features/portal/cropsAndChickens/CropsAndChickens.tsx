@@ -46,7 +46,7 @@ export const CropsAndChickens: React.FC = () => {
   const isComplete = useSelector(portalService, _isComplete);
 
   useEffect(() => {
-    // If a player tries to quit while playing, mark it as an attempt
+    // If a player tries to quit while playing, attempt to save their progress
     const handleBeforeUnload = () => {
       portalService.send("GAME_OVER");
     };
