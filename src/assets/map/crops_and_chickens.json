@@ -4237,13 +4237,13 @@
   "nextobjectid": 1589,
   "orientation": "orthogonal",
   "renderorder": "right-down",
-  "tiledversion": "1.10.2",
+  "tiledversion": "1.11.0",
   "tileheight": 16,
   "tilesets": [
     {
       "columns": 64,
       "firstgid": 1,
-      "image": "map-extruded.png",
+      "image": "../../../../images/assets/world/map-extruded.png",
       "imageheight": 1152,
       "imagewidth": 1152,
       "margin": 1,
