@@ -4,11 +4,12 @@ import { useAppTranslation } from "lib/i18n/useAppTranslations";
 import { SUNNYSIDE } from "assets/sunnyside";
 import { SquareIcon } from "components/ui/SquareIcon";
 import { ITEM_DETAILS } from "features/game/types/images";
-import chickenHunter from "public/world/chicken_hunter.png";
+import chickenHunter from "public/crops-and-chickens/chicken_hunter.png";
 import { Label } from "components/ui/Label";
 import { SCORE_TABLE } from "../../CropsAndChickensConstants";
 import { PIXEL_SCALE } from "features/game/lib/constants";
 import { useSound } from "lib/utils/hooks/useSound";
+import { getCropImage } from "../../lib/cropsAndChickensUtils";
 
 type Props = {
   onBack: () => void;
@@ -102,7 +103,7 @@ export const CropsAndChickensGuide: React.FC<Props> = ({ onBack }) => {
                   className="p-1.5 w-1/6"
                 >
                   <div className="flex items-center justify-center">
-                    <SquareIcon icon={ITEM_DETAILS[item].image} width={7} />
+                    <SquareIcon icon={getCropImage(item)} width={7} />
                   </div>
                 </td>
                 <td

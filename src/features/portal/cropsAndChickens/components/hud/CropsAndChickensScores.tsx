@@ -3,10 +3,12 @@ import { useSelector } from "@xstate/react";
 import { PortalContext } from "../../lib/PortalProvider";
 import { useAppTranslation } from "lib/i18n/useAppTranslations";
 import { PortalMachineState } from "../../lib/cropsAndChickensMachine";
-import { getTotalCropsInGame } from "../../lib/cropsAndChickensUtils";
+import {
+  getCropImage,
+  getTotalCropsInGame,
+} from "../../lib/cropsAndChickensUtils";
 import { INDEX_TO_CROP } from "../../CropsAndChickensConstants";
 import { SquareIcon } from "components/ui/SquareIcon";
-import { ITEM_DETAILS } from "features/game/types/images";
 
 const _isReady = (state: PortalMachineState) => state.matches("ready");
 const _isPlaying = (state: PortalMachineState) => state.matches("playing");
@@ -158,7 +160,7 @@ export const CropsAndChickensScores: React.FC = () => {
             }}
           >
             <SquareIcon
-              icon={ITEM_DETAILS[INDEX_TO_CROP[cropIndex]].image}
+              icon={getCropImage(INDEX_TO_CROP[cropIndex])}
               width={7}
             />
             <span>{getHarvestedCountDisplay()}</span>

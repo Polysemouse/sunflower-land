@@ -2,9 +2,12 @@ import {
   CHICKEN_SPRITE_PROPERTIES,
   PLAYER_DEATH_SPRITE_PROPERTIES,
 } from "../../CropsAndChickensConstants";
+import { getHolidayEvent } from "../../lib/cropsAndChickensUtils";
 import { CropsAndChickensScene } from "../CropsAndChickensScene";
 
 export const preloadAssets = (scene: CropsAndChickensScene) => {
+  const holidayEvent = getHolidayEvent();
+
   // player death spritesheets
   scene.load.spritesheet(
     "player_death",
@@ -86,7 +89,9 @@ export const preloadAssets = (scene: CropsAndChickensScene) => {
   // crops spritesheets
   scene.load.spritesheet(
     "crop_planted",
-    "crops-and-chickens/crops_planted.png",
+    holidayEvent === "halloween"
+      ? "crops-and-chickens/crops_planted_halloween.png"
+      : "crops-and-chickens/crops_planted.png",
     {
       frameWidth: 16,
       frameHeight: 20,
@@ -94,7 +99,9 @@ export const preloadAssets = (scene: CropsAndChickensScene) => {
   );
   scene.load.spritesheet(
     "crop_harvested",
-    "crops-and-chickens/crops_harvested.png",
+    holidayEvent === "halloween"
+      ? "crops-and-chickens/crops_harvested_halloween.png"
+      : "crops-and-chickens/crops_harvested.png",
     {
       frameWidth: 16,
       frameHeight: 16,
