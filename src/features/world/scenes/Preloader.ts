@@ -75,11 +75,6 @@ export abstract class Preloader extends Phaser.Scene {
       this.load.image("sad", SUNNYSIDE.icons.sad);
       this.load.image("happy", SUNNYSIDE.icons.happy);
 
-      this.load.image(
-        "joystick_indicator_dot",
-        "world/joystick_indicator_dot.png",
-      );
-
       this.load.spritesheet("silhouette", "world/silhouette.webp", {
         frameWidth: 14,
         frameHeight: 18,

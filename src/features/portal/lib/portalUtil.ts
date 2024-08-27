@@ -10,7 +10,8 @@ export function claimPrize() {
   if (isInIframe) {
     window.parent.postMessage({ event: "claimPrize" }, "*");
   } else {
-    alert("You are running in test mode - no prize to claim.");
+    // eslint-disable-next-line no-console
+    console.log("You are running in test mode - no prize to claim.");
   }
 }
 
@@ -21,7 +22,8 @@ export function goHome() {
   if (isInIframe) {
     window.parent.postMessage({ event: "closePortal" }, "*");
   } else {
-    alert("You are running in test mode - no where to go.");
+    // eslint-disable-next-line no-console
+    console.log("You are running in test mode - no where to go.");
   }
 }
 
@@ -76,7 +78,8 @@ export function donate({ matic, address }: { matic: number; address: string }) {
  */
 export function startAttempt() {
   if (!isInIframe) {
-    alert(`Sunflower Land running in test mode - attempt started`);
+    // eslint-disable-next-line no-console
+    console.log(`Sunflower Land running in test mode - attempt started`);
   } else {
     window.parent.postMessage({ event: "attemptStarted" }, "*");
   }
@@ -87,7 +90,8 @@ export function startAttempt() {
  */
 export function submitScore({ score }: { score: number }) {
   if (!isInIframe) {
-    alert(`Sunflower Land running in test mode - score submitted`);
+    // eslint-disable-next-line no-console
+    console.log(`Sunflower Land running in test mode - score submitted`);
   } else {
     window.parent.postMessage({ event: "scoreSubmitted", score }, "*");
   }
@@ -99,7 +103,8 @@ export function submitScore({ score }: { score: number }) {
  */
 export function played({ score }: { score: number }) {
   if (!isInIframe) {
-    alert(`Sunflower Land running in test mode - played`);
+    // eslint-disable-next-line no-console
+    console.log(`Sunflower Land running in test mode - played`);
   } else {
     window.parent.postMessage({ event: "played", score }, "*");
   }
@@ -114,7 +119,8 @@ export function achievementsUnlocked({
   achievementNames: string[];
 }) {
   if (!isInIframe) {
-    alert(`Sunflower Land running in test mode - achievements unlocked`);
+    // eslint-disable-next-line no-console
+    console.log(`Sunflower Land running in test mode - achievements unlocked`);
   } else {
     window.parent.postMessage(
       { event: "achievementsUnlocked", achievementNames },

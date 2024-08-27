@@ -29,21 +29,21 @@ export const AVAILABLE_ACHIEVEMENTS: Record<
         amount: getTotalCropsInGame("Potato"),
       },
     ),
-    icon: "world/achievement.but-its-honest-work.png",
+    icon: "crops-and-chickens/achievement.but-its-honest-work.png",
   },
   Dcol: {
     title: translate("crops-and-chickens.achievement.dcol.title"),
     description: translate("crops-and-chickens.achievement.dcol.description", {
       amount: getTotalCropsInGame("Kale"),
     }),
-    icon: "world/achievement.dcol.png",
+    icon: "crops-and-chickens/achievement.dcol.png",
   },
   "Elite Gamer": {
     title: translate("crops-and-chickens.achievement.elite-gamer.title"),
     description: translate(
       "crops-and-chickens.achievement.elite-gamer.description",
     ),
-    icon: "world/achievement.elite-gamer.png",
+    icon: "crops-and-chickens/achievement.elite-gamer.png",
   },
   "Grain Offering": {
     title: translate("crops-and-chickens.achievement.grain-offering.title"),
@@ -53,14 +53,14 @@ export const AVAILABLE_ACHIEVEMENTS: Record<
         amount: getTotalCropsInGame("Wheat"),
       },
     ),
-    icon: "world/achievement.grain-offering.png",
+    icon: "crops-and-chickens/achievement.grain-offering.png",
   },
   Grandmaster: {
     title: translate("crops-and-chickens.achievement.grandmaster.title"),
     description: translate(
       "crops-and-chickens.achievement.grandmaster.description",
     ),
-    icon: "world/achievement.grandmaster.png",
+    icon: "crops-and-chickens/achievement.grandmaster.png",
   },
   "Never Gonna Move You Up": {
     title: translate(
@@ -69,14 +69,14 @@ export const AVAILABLE_ACHIEVEMENTS: Record<
     description: translate(
       "crops-and-chickens.achievement.never-gonna-move-you-up.description",
     ),
-    icon: "world/achievement.never-gonna-move-you-up.png",
+    icon: "crops-and-chickens/achievement.never-gonna-move-you-up.png",
   },
   Relentless: {
     title: translate("crops-and-chickens.achievement.relentless.title"),
     description: translate(
       "crops-and-chickens.achievement.relentless.description",
     ),
-    icon: "world/achievement.relentless.png",
+    icon: "crops-and-chickens/achievement.relentless.png",
   },
   "Ring of Fire": {
     title: translate("crops-and-chickens.achievement.ring-of-fire.title"),
@@ -86,7 +86,7 @@ export const AVAILABLE_ACHIEVEMENTS: Record<
         amount: getTotalCropsInGame("Radish"),
       },
     ),
-    icon: "world/achievement.ring-of-fire.png",
+    icon: "crops-and-chickens/achievement.ring-of-fire.png",
   },
   "Rush to the Other Side": {
     title: translate(
@@ -95,14 +95,14 @@ export const AVAILABLE_ACHIEVEMENTS: Record<
     description: translate(
       "crops-and-chickens.achievement.rush-to-the-other-side.description",
     ),
-    icon: "world/achievement.rush-to-the-other-side.png",
+    icon: "crops-and-chickens/achievement.rush-to-the-other-side.png",
   },
   "Ultimate Chain": {
     title: translate("crops-and-chickens.achievement.ultimate-chain.title"),
     description: translate(
       "crops-and-chickens.achievement.ultimate-chain.description",
     ),
-    icon: "world/achievement.ultimate-chain.png",
+    icon: "crops-and-chickens/achievement.ultimate-chain.png",
   },
   "Wheat King": {
     title: translate("crops-and-chickens.achievement.wheat-king.title"),
@@ -112,7 +112,7 @@ export const AVAILABLE_ACHIEVEMENTS: Record<
         amount: getTotalCropsInGame("Wheat"),
       },
     ),
-    icon: "world/achievement.wheat-king.png",
+    icon: "crops-and-chickens/achievement.wheat-king.png",
   },
   "White Death": {
     title: translate("crops-and-chickens.achievement.white-death.title"),
@@ -122,6 +122,6 @@ export const AVAILABLE_ACHIEVEMENTS: Record<
         amount: getTotalCropsInGame("Cauliflower"),
       },
     ),
-    icon: "world/achievement.white-death.png",
+    icon: "crops-and-chickens/achievement.white-death.png",
   },
 };

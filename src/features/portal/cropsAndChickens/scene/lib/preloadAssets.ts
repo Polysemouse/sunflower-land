@@ -6,15 +6,19 @@ import { CropsAndChickensScene } from "../CropsAndChickensScene";
 
 export const preloadAssets = (scene: CropsAndChickensScene) => {
   // player death spritesheets
-  scene.load.spritesheet("player_death", "world/player_death.png", {
-    frameWidth: PLAYER_DEATH_SPRITE_PROPERTIES.frameWidth,
-    frameHeight: PLAYER_DEATH_SPRITE_PROPERTIES.frameHeight,
-  });
+  scene.load.spritesheet(
+    "player_death",
+    "crops-and-chickens/player_death.png",
+    {
+      frameWidth: PLAYER_DEATH_SPRITE_PROPERTIES.frameWidth,
+      frameHeight: PLAYER_DEATH_SPRITE_PROPERTIES.frameHeight,
+    },
+  );
 
   // normal chicken spritesheets
   scene.load.spritesheet(
     "chicken_normal_left",
-    "world/chicken_normal_left_movements.png",
+    "crops-and-chickens/chicken_normal_left_movements.png",
     {
       frameWidth: CHICKEN_SPRITE_PROPERTIES.frameWidth,
       frameHeight: CHICKEN_SPRITE_PROPERTIES.frameHeight,
@@ -22,7 +26,7 @@ export const preloadAssets = (scene: CropsAndChickensScene) => {
   );
   scene.load.spritesheet(
     "chicken_normal_right",
-    "world/chicken_normal_right_movements.png",
+    "crops-and-chickens/chicken_normal_right_movements.png",
     {
       frameWidth: CHICKEN_SPRITE_PROPERTIES.frameWidth,
       frameHeight: CHICKEN_SPRITE_PROPERTIES.frameHeight,
@@ -30,7 +34,7 @@ export const preloadAssets = (scene: CropsAndChickensScene) => {
   );
   scene.load.spritesheet(
     "chicken_normal_up",
-    "world/chicken_normal_up_movements.png",
+    "crops-and-chickens/chicken_normal_up_movements.png",
     {
       frameWidth: CHICKEN_SPRITE_PROPERTIES.frameWidth,
       frameHeight: CHICKEN_SPRITE_PROPERTIES.frameHeight,
@@ -38,7 +42,7 @@ export const preloadAssets = (scene: CropsAndChickensScene) => {
   );
   scene.load.spritesheet(
     "chicken_normal_down",
-    "world/chicken_normal_down_movements.png",
+    "crops-and-chickens/chicken_normal_down_movements.png",
     {
       frameWidth: CHICKEN_SPRITE_PROPERTIES.frameWidth,
       frameHeight: CHICKEN_SPRITE_PROPERTIES.frameHeight,
@@ -48,7 +52,7 @@ export const preloadAssets = (scene: CropsAndChickensScene) => {
   // hunter chicken spritesheets
   scene.load.spritesheet(
     "chicken_hunter_left",
-    "world/chicken_hunter_left_movements.png",
+    "crops-and-chickens/chicken_hunter_left_movements.png",
     {
       frameWidth: CHICKEN_SPRITE_PROPERTIES.frameWidth,
       frameHeight: CHICKEN_SPRITE_PROPERTIES.frameHeight,
@@ -56,7 +60,7 @@ export const preloadAssets = (scene: CropsAndChickensScene) => {
   );
   scene.load.spritesheet(
     "chicken_hunter_right",
-    "world/chicken_hunter_right_movements.png",
+    "crops-and-chickens/chicken_hunter_right_movements.png",
     {
       frameWidth: CHICKEN_SPRITE_PROPERTIES.frameWidth,
       frameHeight: CHICKEN_SPRITE_PROPERTIES.frameHeight,
@@ -64,7 +68,7 @@ export const preloadAssets = (scene: CropsAndChickensScene) => {
   );
   scene.load.spritesheet(
     "chicken_hunter_up",
-    "world/chicken_hunter_up_movements.png",
+    "crops-and-chickens/chicken_hunter_up_movements.png",
     {
       frameWidth: CHICKEN_SPRITE_PROPERTIES.frameWidth,
       frameHeight: CHICKEN_SPRITE_PROPERTIES.frameHeight,
@@ -72,7 +76,7 @@ export const preloadAssets = (scene: CropsAndChickensScene) => {
   );
   scene.load.spritesheet(
     "chicken_hunter_down",
-    "world/chicken_hunter_down_movements.png",
+    "crops-and-chickens/chicken_hunter_down_movements.png",
     {
       frameWidth: CHICKEN_SPRITE_PROPERTIES.frameWidth,
       frameHeight: CHICKEN_SPRITE_PROPERTIES.frameHeight,
@@ -80,17 +84,34 @@ export const preloadAssets = (scene: CropsAndChickensScene) => {
   );
 
   // crops spritesheets
-  scene.load.spritesheet("crop_planted", "world/crops_planted.png", {
-    frameWidth: 16,
-    frameHeight: 20,
-  });
-  scene.load.spritesheet("crop_harvested", "world/crops_harvested.png", {
-    frameWidth: 16,
-    frameHeight: 16,
-  });
+  scene.load.spritesheet(
+    "crop_planted",
+    "crops-and-chickens/crops_planted.png",
+    {
+      frameWidth: 16,
+      frameHeight: 20,
+    },
+  );
+  scene.load.spritesheet(
+    "crop_harvested",
+    "crops-and-chickens/crops_harvested.png",
+    {
+      frameWidth: 16,
+      frameHeight: 16,
+    },
+  );
 
   // deposit indicator
-  scene.load.image("crop_deposit_arrow", "world/crop_deposit_arrow.png");
+  scene.load.image(
+    "crop_deposit_arrow",
+    "crops-and-chickens/crop_deposit_arrow.png",
+  );
+
+  // joystick indicator
+  scene.load.image(
+    "joystick_indicator_dot",
+    "crops-and-chickens/joystick_indicator_dot.png",
+  );
 
   // ambience SFX
   if (!scene.sound.get("nature_1")) {
@@ -99,16 +120,19 @@ export const preloadAssets = (scene: CropsAndChickensScene) => {
   }
 
   // sound effects
-  scene.load.audio("achievement_get", "world/achievement_get.mp3");
-  scene.load.audio("crop_deposit", "world/crop_deposit.mp3");
-  scene.load.audio("crop_deposit_pop", "world/crop_deposit_pop.mp3");
-  scene.load.audio("game_over", "world/game_over.mp3");
-  scene.load.audio("harvest", "world/harvest.mp3");
-  scene.load.audio("target_reached", "world/target_reached.mp3");
-  scene.load.audio("player_killed", "world/player_killed.mp3");
-  scene.load.audio("time_ticking", "world/time_ticking.mp3");
+  scene.load.audio("achievement_get", "crops-and-chickens/achievement_get.mp3");
+  scene.load.audio("crop_deposit", "crops-and-chickens/crop_deposit.mp3");
+  scene.load.audio(
+    "crop_deposit_pop",
+    "crops-and-chickens/crop_deposit_pop.mp3",
+  );
+  scene.load.audio("game_over", "crops-and-chickens/game_over.mp3");
+  scene.load.audio("harvest", "crops-and-chickens/harvest.mp3");
+  scene.load.audio("target_reached", "crops-and-chickens/target_reached.mp3");
+  scene.load.audio("player_killed", "crops-and-chickens/player_killed.mp3");
+  scene.load.audio("time_ticking", "crops-and-chickens/time_ticking.mp3");
   scene.load.audio(
     "time_ticking_preparation",
-    "world/time_ticking_preparation.mp3",
+    "crops-and-chickens/time_ticking_preparation.mp3",
   );
 };
