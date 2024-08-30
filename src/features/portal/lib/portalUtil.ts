@@ -98,19 +98,6 @@ export function submitScore({ score }: { score: number }) {
 }
 
 /**
- * @deprecated Use `attemptStarted` and `scoreSubmitted` instead
- * When to want to store the score
- */
-export function played({ score }: { score: number }) {
-  if (!isInIframe) {
-    // eslint-disable-next-line no-console
-    console.log(`Sunflower Land running in test mode - played`);
-  } else {
-    window.parent.postMessage({ event: "played", score }, "*");
-  }
-}
-
-/**
  * When a player unlocks achievements
  */
 export function achievementsUnlocked({

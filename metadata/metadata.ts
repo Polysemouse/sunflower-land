@@ -1773,7 +1773,7 @@ export const OPEN_SEA_COLLECTIBLES: Record<InventoryItemName, Metadata> = {
       { trait_type: "Tradable", value: "No" },
       {
         display_type: "boost_percentage",
-        trait_type: "Tools discount",
+        trait_type: "Seeds and Tools discount",
         value: 10,
       },
     ],
@@ -4976,7 +4976,6 @@ export const OPEN_SEA_COLLECTIBLES: Record<InventoryItemName, Metadata> = {
         trait_type: "Increase Mushroom Yield",
         value: 0.2,
       },
-      { trait_type: "Purpose", value: "Decoration" },
       { trait_type: "Tradable", value: "Yes" },
     ],
   },
@@ -5780,7 +5779,7 @@ export const OPEN_SEA_COLLECTIBLES: Record<InventoryItemName, Metadata> = {
     ],
   },
   "Sprout Mix": {
-    description: "Sprout Mix increases your crop yield by +0.2",
+    description: "Sprout Mix increases your crop yield from plots by +0.2",
     decimals: 0,
     external_url: "https://docs.sunflower-land.com/getting-started/about",
     image: "../public/erc1155/images/629.png",
@@ -5797,7 +5796,8 @@ export const OPEN_SEA_COLLECTIBLES: Record<InventoryItemName, Metadata> = {
   },
 
   "Fruitful Blend": {
-    description: "This compost boosts each fruit yield by +0.1",
+    description:
+      "Fruitful Blend boosts the yield of each fruit growing on fruit patches by +0.1",
     decimals: 0,
     external_url: "https://docs.sunflower-land.com/getting-started/about",
     image: "../public/erc1155/images/630.png",
@@ -5814,7 +5814,7 @@ export const OPEN_SEA_COLLECTIBLES: Record<InventoryItemName, Metadata> = {
   },
 
   "Rapid Root": {
-    description: "Rapid Root reduces crop growth time by 50%",
+    description: "Rapid Root reduces crop growth time from plots by 50%",
     decimals: 0,
     external_url: "https://docs.sunflower-land.com/getting-started/about",
     image: "../public/erc1155/images/631.png",
@@ -5831,7 +5831,7 @@ export const OPEN_SEA_COLLECTIBLES: Record<InventoryItemName, Metadata> = {
   },
 
   Anchovy: {
-    description: "?",
+    description: "The ocean's pocket-sized darting acrobat, always in a hurry!",
     decimals: 0,
     external_url: "https://docs.sunflower-land.com/getting-started/about",
     image: "../public/erc1155/images/1501.png",
@@ -5841,7 +5841,8 @@ export const OPEN_SEA_COLLECTIBLES: Record<InventoryItemName, Metadata> = {
     ],
   },
   Butterflyfish: {
-    description: "?",
+    description:
+      "A fish with a fashion-forward sense, flaunting its vivid, stylish stripes.",
     decimals: 0,
     external_url: "https://docs.sunflower-land.com/getting-started/about",
     image: "../public/erc1155/images/1502.png",
@@ -5851,7 +5852,8 @@ export const OPEN_SEA_COLLECTIBLES: Record<InventoryItemName, Metadata> = {
     ],
   },
   Blowfish: {
-    description: "?",
+    description:
+      "The round, inflated comedian of the sea, guaranteed to bring a smile.",
     decimals: 0,
     external_url: "https://docs.sunflower-land.com/getting-started/about",
     image: "../public/erc1155/images/1503.png",
@@ -5861,7 +5863,8 @@ export const OPEN_SEA_COLLECTIBLES: Record<InventoryItemName, Metadata> = {
     ],
   },
   Clownfish: {
-    description: "?",
+    description:
+      "The underwater jester, sporting a tangerine tuxedo and a clownish charm.",
     decimals: 0,
     external_url: "https://docs.sunflower-land.com/getting-started/about",
     image: "../public/erc1155/images/1504.png",
@@ -5871,7 +5874,8 @@ export const OPEN_SEA_COLLECTIBLES: Record<InventoryItemName, Metadata> = {
     ],
   },
   "Sea Bass": {
-    description: "?",
+    description:
+      "Your 'not-so-exciting' friend with silver scales – a bassic catch!",
     decimals: 0,
     external_url: "https://docs.sunflower-land.com/getting-started/about",
     image: "../public/erc1155/images/1505.png",
@@ -5881,7 +5885,8 @@ export const OPEN_SEA_COLLECTIBLES: Record<InventoryItemName, Metadata> = {
     ],
   },
   "Sea Horse": {
-    description: "?",
+    description:
+      "The ocean's slow-motion dancer, swaying gracefully in the aquatic ballet.",
     decimals: 0,
     external_url: "https://docs.sunflower-land.com/getting-started/about",
     image: "../public/erc1155/images/1506.png",
@@ -5891,7 +5896,8 @@ export const OPEN_SEA_COLLECTIBLES: Record<InventoryItemName, Metadata> = {
     ],
   },
   "Horse Mackerel": {
-    description: "?",
+    description:
+      "A speedster with a shiny coat, always racing through the waves.",
     decimals: 0,
     external_url: "https://docs.sunflower-land.com/getting-started/about",
     image: "../public/erc1155/images/1507.png",
@@ -5901,7 +5907,7 @@ export const OPEN_SEA_COLLECTIBLES: Record<InventoryItemName, Metadata> = {
     ],
   },
   Squid: {
-    description: "?",
+    description: "The deep-sea enigma with tentacles to tickle your curiosity.",
     decimals: 0,
     external_url: "https://docs.sunflower-land.com/getting-started/about",
     image: "../public/erc1155/images/1508.png",
@@ -5911,7 +5917,7 @@ export const OPEN_SEA_COLLECTIBLES: Record<InventoryItemName, Metadata> = {
     ],
   },
   "Red Snapper": {
-    description: "?",
+    description: "A catch worth its weight in gold, dressed in fiery crimson.",
     decimals: 0,
     external_url: "https://docs.sunflower-land.com/getting-started/about",
     image: "../public/erc1155/images/1509.png",
@@ -5921,7 +5927,7 @@ export const OPEN_SEA_COLLECTIBLES: Record<InventoryItemName, Metadata> = {
     ],
   },
   "Moray Eel": {
-    description: "?",
+    description: "A slinky, sinister lurker in the ocean's shadowy corners.",
     decimals: 0,
     external_url: "https://docs.sunflower-land.com/getting-started/about",
     image: "../public/erc1155/images/1510.png",
@@ -5931,7 +5937,8 @@ export const OPEN_SEA_COLLECTIBLES: Record<InventoryItemName, Metadata> = {
     ],
   },
   "Olive Flounder": {
-    description: "?",
+    description:
+      "The seabed's master of disguise, always blending in with the crowd.",
     decimals: 0,
     external_url: "https://docs.sunflower-land.com/getting-started/about",
     image: "../public/erc1155/images/1511.png",
@@ -5941,7 +5948,7 @@ export const OPEN_SEA_COLLECTIBLES: Record<InventoryItemName, Metadata> = {
     ],
   },
   Napoleanfish: {
-    description: "?",
+    description: "Meet the fish with the Napoleon complex – short, but regal!",
     decimals: 0,
     external_url: "https://docs.sunflower-land.com/getting-started/about",
     image: "../public/erc1155/images/1512.png",
@@ -5951,7 +5958,7 @@ export const OPEN_SEA_COLLECTIBLES: Record<InventoryItemName, Metadata> = {
     ],
   },
   Surgeonfish: {
-    description: "?",
+    description: "The ocean's neon warrior, armed with a spine-sharp attitude.",
     decimals: 0,
     external_url: "https://docs.sunflower-land.com/getting-started/about",
     image: "../public/erc1155/images/1513.png",
@@ -5961,7 +5968,8 @@ export const OPEN_SEA_COLLECTIBLES: Record<InventoryItemName, Metadata> = {
     ],
   },
   "Zebra Turkeyfish": {
-    description: "?",
+    description:
+      "Stripes, spines, and a zesty disposition, this fish is a true showstopper!",
     decimals: 0,
     external_url: "https://docs.sunflower-land.com/getting-started/about",
     image: "../public/erc1155/images/1514.png",
@@ -5971,7 +5979,8 @@ export const OPEN_SEA_COLLECTIBLES: Record<InventoryItemName, Metadata> = {
     ],
   },
   Ray: {
-    description: "?",
+    description:
+      "The underwater glider, a serene winged beauty through the waves.",
     decimals: 0,
     external_url: "https://docs.sunflower-land.com/getting-started/about",
     image: "../public/erc1155/images/1515.png",
@@ -5981,7 +5990,8 @@ export const OPEN_SEA_COLLECTIBLES: Record<InventoryItemName, Metadata> = {
     ],
   },
   "Hammerhead shark": {
-    description: "?",
+    description:
+      "Meet the shark with a head for business, and a body for adventure!",
     decimals: 0,
     external_url: "https://docs.sunflower-land.com/getting-started/about",
     image: "../public/erc1155/images/1516.png",
@@ -5991,7 +6001,8 @@ export const OPEN_SEA_COLLECTIBLES: Record<InventoryItemName, Metadata> = {
     ],
   },
   Tuna: {
-    description: "?",
+    description:
+      "The ocean's muscle-bound sprinter, ready for a fin-tastic race!",
     decimals: 0,
     external_url: "https://docs.sunflower-land.com/getting-started/about",
     image: "../public/erc1155/images/1517.png",
@@ -6001,7 +6012,8 @@ export const OPEN_SEA_COLLECTIBLES: Record<InventoryItemName, Metadata> = {
     ],
   },
   "Mahi Mahi": {
-    description: "?",
+    description:
+      "A fish that believes in living life colorfully with fins of gold.",
     decimals: 0,
     external_url: "https://docs.sunflower-land.com/getting-started/about",
     image: "../public/erc1155/images/1518.png",
@@ -6011,7 +6023,8 @@ export const OPEN_SEA_COLLECTIBLES: Record<InventoryItemName, Metadata> = {
     ],
   },
   "Blue Marlin": {
-    description: "?",
+    description:
+      "An oceanic legend, the marlin with an attitude as deep as the sea.",
     decimals: 0,
     external_url: "https://docs.sunflower-land.com/getting-started/about",
     image: "../public/erc1155/images/1519.png",
@@ -6021,7 +6034,7 @@ export const OPEN_SEA_COLLECTIBLES: Record<InventoryItemName, Metadata> = {
     ],
   },
   Oarfish: {
-    description: "?",
+    description: "The long and the long of it – an enigmatic ocean wanderer.",
     decimals: 0,
     external_url: "https://docs.sunflower-land.com/getting-started/about",
     image: "../public/erc1155/images/1520.png",
@@ -6031,7 +6044,8 @@ export const OPEN_SEA_COLLECTIBLES: Record<InventoryItemName, Metadata> = {
     ],
   },
   "Football fish": {
-    description: "?",
+    description:
+      "The MVP of the deep, a bioluminescent star that's ready to play!",
     decimals: 0,
     external_url: "https://docs.sunflower-land.com/getting-started/about",
     image: "../public/erc1155/images/1521.png",
@@ -6041,7 +6055,8 @@ export const OPEN_SEA_COLLECTIBLES: Record<InventoryItemName, Metadata> = {
     ],
   },
   Sunfish: {
-    description: "?",
+    description:
+      "The ocean's sunbather, basking in the spotlight with fins held high.",
     decimals: 0,
     external_url: "https://docs.sunflower-land.com/getting-started/about",
     image: "../public/erc1155/images/1522.png",
@@ -6051,7 +6066,8 @@ export const OPEN_SEA_COLLECTIBLES: Record<InventoryItemName, Metadata> = {
     ],
   },
   Coelacanth: {
-    description: "?",
+    description:
+      "A prehistoric relic, with a taste for the past and the present.",
     decimals: 0,
     external_url: "https://docs.sunflower-land.com/getting-started/about",
     image: "../public/erc1155/images/1523.png",
@@ -6061,7 +6077,8 @@ export const OPEN_SEA_COLLECTIBLES: Record<InventoryItemName, Metadata> = {
     ],
   },
   "Whale Shark": {
-    description: "?",
+    description:
+      "The gentle giant of the deep, sifting treasures from the ocean's buffet.",
     decimals: 0,
     external_url: "https://docs.sunflower-land.com/getting-started/about",
     image: "../public/erc1155/images/1524.png",
@@ -6071,7 +6088,8 @@ export const OPEN_SEA_COLLECTIBLES: Record<InventoryItemName, Metadata> = {
     ],
   },
   "Barred Knifejaw": {
-    description: "?",
+    description:
+      "An oceanic outlaw with black-and-white stripes and a heart of gold.",
     decimals: 0,
     external_url: "https://docs.sunflower-land.com/getting-started/about",
     image: "../public/erc1155/images/1525.png",
@@ -6081,7 +6099,8 @@ export const OPEN_SEA_COLLECTIBLES: Record<InventoryItemName, Metadata> = {
     ],
   },
   "Saw Shark": {
-    description: "?",
+    description:
+      "With a saw-like snout, it's the ocean's carpenter, always cutting edge!",
     decimals: 0,
     external_url: "https://docs.sunflower-land.com/getting-started/about",
     image: "../public/erc1155/images/1526.png",
@@ -6091,7 +6110,8 @@ export const OPEN_SEA_COLLECTIBLES: Record<InventoryItemName, Metadata> = {
     ],
   },
   "White Shark": {
-    description: "?",
+    description:
+      "The shark with a killer smile, ruling the seas with fin-tensity!",
     decimals: 0,
     external_url: "https://docs.sunflower-land.com/getting-started/about",
     image: "../public/erc1155/images/1527.png",
@@ -6101,7 +6121,8 @@ export const OPEN_SEA_COLLECTIBLES: Record<InventoryItemName, Metadata> = {
     ],
   },
   "Twilight Anglerfish": {
-    description: "?",
+    description:
+      "A deep-sea angler with a built-in nightlight, guiding its way through darkness.",
     decimals: 0,
     external_url: "https://docs.sunflower-land.com/getting-started/about",
     image: "../public/erc1155/images/1528.png",
@@ -6111,7 +6132,8 @@ export const OPEN_SEA_COLLECTIBLES: Record<InventoryItemName, Metadata> = {
     ],
   },
   "Starlight Tuna": {
-    description: "?",
+    description:
+      "A tuna that outshines the stars, ready to light up your collection.",
     decimals: 0,
     external_url: "https://docs.sunflower-land.com/getting-started/about",
     image: "../public/erc1155/images/1529.png",
@@ -6121,7 +6143,8 @@ export const OPEN_SEA_COLLECTIBLES: Record<InventoryItemName, Metadata> = {
     ],
   },
   "Radiant Ray": {
-    description: "?",
+    description:
+      "A ray that prefers to glow in the dark, with a shimmering secret to share.",
     decimals: 0,
     external_url: "https://docs.sunflower-land.com/getting-started/about",
     image: "../public/erc1155/images/1530.png",
@@ -6137,7 +6160,8 @@ export const OPEN_SEA_COLLECTIBLES: Record<InventoryItemName, Metadata> = {
     ],
   },
   "Phantom Barracuda": {
-    description: "?",
+    description:
+      "An elusive and ghostly fish of the deep, hiding in the shadows.",
     decimals: 0,
     external_url: "https://docs.sunflower-land.com/getting-started/about",
     image: "../public/erc1155/images/1531.png",
@@ -6147,7 +6171,8 @@ export const OPEN_SEA_COLLECTIBLES: Record<InventoryItemName, Metadata> = {
     ],
   },
   "Gilded Swordfish": {
-    description: "?",
+    description:
+      "A swordfish with scales that sparkle like gold, the ultimate catch!",
     decimals: 0,
     external_url: "https://docs.sunflower-land.com/getting-started/about",
     image: "../public/erc1155/images/1532.png",
@@ -6373,7 +6398,7 @@ export const OPEN_SEA_COLLECTIBLES: Record<InventoryItemName, Metadata> = {
   },
   Anchor: {
     description:
-      "Drop anchor' with this nautical gem, making every spot seaworthy and splash-tastically stylish!",
+      "Drop anchor with this nautical gem, making every spot seaworthy and splash-tastically stylish!",
     decimals: 0,
     external_url: "https://docs.sunflower-land.com/getting-started/about",
     image: "../public/erc1155/images/481.png",
@@ -6465,7 +6490,7 @@ export const OPEN_SEA_COLLECTIBLES: Record<InventoryItemName, Metadata> = {
     description: "A ruling chicken, +1 Dig.",
     decimals: 0,
     external_url: "https://docs.sunflower-land.com/getting-started/about",
-    image: "../public/erc1155/images/2116.gif",
+    image: "../public/erc1155/images/2116.png",
     attributes: [
       { trait_type: "Boost", value: "Treasure" },
       {
@@ -6541,7 +6566,7 @@ export const OPEN_SEA_COLLECTIBLES: Record<InventoryItemName, Metadata> = {
 
   "Time Warp Totem": {
     description:
-      "The Time Warp Totem temporarily boosts your cooking, crops, trees & mineral time. Make the most of it!",
+      "The Time Warp Totem temporarily boosts your cooking, crops, fruits, trees & mineral time. Make the most of it!",
     decimals: 0,
     external_url: "https://docs.sunflower-land.com/getting-started/about",
     image: "../public/erc1155/images/1297.png",
@@ -6562,7 +6587,7 @@ export const OPEN_SEA_COLLECTIBLES: Record<InventoryItemName, Metadata> = {
     ],
   },
   "Community Coin": {
-    description: "?",
+    description: "A valued coin that can be exchanged for rewards",
     decimals: 0,
     external_url: "https://docs.sunflower-land.com/getting-started/about",
     image: "../public/erc1155/images/732.png",
@@ -6583,7 +6608,7 @@ export const OPEN_SEA_COLLECTIBLES: Record<InventoryItemName, Metadata> = {
   },
 
   "Bumpkin Nutcracker": {
-    description: "?",
+    description: "A festive decoration from 2023.",
     decimals: 0,
     external_url: "https://docs.sunflower-land.com/getting-started/about",
     image: "../public/erc1155/images/1298.png",
@@ -6599,7 +6624,7 @@ export const OPEN_SEA_COLLECTIBLES: Record<InventoryItemName, Metadata> = {
     external_url: "https://docs.sunflower-land.com/getting-started/about",
     image: "../public/erc1155/images/1299.png",
     attributes: [
-      { trait_type: "Tradable", value: "Yes" },
+      { trait_type: "Tradable", value: "No" },
       { trait_type: "Purpose", value: "Decoration" },
     ],
   },
@@ -6621,7 +6646,8 @@ export const OPEN_SEA_COLLECTIBLES: Record<InventoryItemName, Metadata> = {
     ],
   },
   Angelfish: {
-    description: "?",
+    description:
+      "The aquatic celestial beauty, adorned in a palette of vibrant hues.",
     decimals: 0,
     external_url: "https://docs.sunflower-land.com/getting-started/about",
     image: "../public/erc1155/images/1534.png",
@@ -6632,7 +6658,8 @@ export const OPEN_SEA_COLLECTIBLES: Record<InventoryItemName, Metadata> = {
   },
 
   Parrotfish: {
-    description: "?",
+    description:
+      "A kaleidoscope of colors beneath the waves, this fish is nature's living artwork.",
     decimals: 0,
     external_url: "https://docs.sunflower-land.com/getting-started/about",
     image: "../public/erc1155/images/1536.png",
@@ -6642,7 +6669,8 @@ export const OPEN_SEA_COLLECTIBLES: Record<InventoryItemName, Metadata> = {
     ],
   },
   Halibut: {
-    description: "?",
+    description:
+      "The flat ocean floor dweller, a master of disguise in sandy camouflage.",
     decimals: 0,
     external_url: "https://docs.sunflower-land.com/getting-started/about",
     image: "../public/erc1155/images/1535.png",
@@ -6720,7 +6748,7 @@ export const OPEN_SEA_COLLECTIBLES: Record<InventoryItemName, Metadata> = {
     ],
   },
   "Farmhand Coupon": {
-    description: "?",
+    description: "A coupon to exchange for a farm hand of your choice.",
     decimals: 0,
     external_url: "https://docs.sunflower-land.com/getting-started/about",
     image: "../public/erc1155/images/728.png",
@@ -7229,8 +7257,7 @@ export const OPEN_SEA_COLLECTIBLES: Record<InventoryItemName, Metadata> = {
   },
 
   "Desert Gnome": {
-    description:
-      "The Blossombeard Gnome is a powerful companion for your farming adventures.",
+    description: "A gnome that can survive the harshest of conditions.",
     decimals: 0,
     external_url: "https://docs.sunflower-land.com/getting-started/about",
     image: "../public/erc1155/images/2017.png",
@@ -7391,7 +7418,7 @@ export const OPEN_SEA_COLLECTIBLES: Record<InventoryItemName, Metadata> = {
 
   "Rare Key": {
     name: "Rare Key",
-    description: "A magic key that can unlock rewards in the plaza",
+    description: "A magic key that can unlock rewards in the beach",
     decimals: 0,
     external_url: "https://docs.sunflower-land.com/getting-started/about",
     image: "../public/erc1155/images/933.png",
@@ -7403,7 +7430,8 @@ export const OPEN_SEA_COLLECTIBLES: Record<InventoryItemName, Metadata> = {
 
   "Prize Ticket": {
     name: "Prize Ticket",
-    description: "A free entry into the end of season giveaway",
+    description:
+      "A prized ticket. You can use it to enter the monthly goblin raffle.",
     decimals: 0,
     external_url: "https://docs.sunflower-land.com/getting-started/about",
     image: "../public/erc1155/images/934.png",
@@ -7513,16 +7541,17 @@ export const OPEN_SEA_COLLECTIBLES: Record<InventoryItemName, Metadata> = {
 
   "Turbo Sprout": {
     name: "Turbo Sprout",
-    description: "An engine that boosts the Green House's growth speed by 50%.",
+    description: "An engine that reduces the Greenhouse's growth time by 50%.",
     decimals: 0,
     external_url: "https://docs.sunflower-land.com/getting-started/about",
     image: "../public/erc1155/images/495.png",
     attributes: [
       { trait_type: "Tradable", value: "Yes" },
       { trait_type: "Boost", value: "Crop" },
+      { trait_type: "Boost", value: "Fruit" },
       {
         display_type: "boost_percentage",
-        trait_type: "Crop Growth Time in Greenhouse",
+        trait_type: "Growth Time in Greenhouse",
         value: -50,
       },
     ],
@@ -7553,7 +7582,7 @@ export const OPEN_SEA_COLLECTIBLES: Record<InventoryItemName, Metadata> = {
     image: "../public/erc1155/images/497.png",
     attributes: [
       { trait_type: "Tradable", value: "Yes" },
-      { trait_type: "Boost", value: "Crop" },
+      { trait_type: "Boost", value: "Fruit" },
       {
         display_type: "boost_number",
         trait_type: "Increase Grape Yield",
@@ -7628,7 +7657,7 @@ export const OPEN_SEA_COLLECTIBLES: Record<InventoryItemName, Metadata> = {
     external_url: "https://docs.sunflower-land.com/getting-started/about",
     image: "../public/erc1155/images/2016.png",
     attributes: [
-      { trait_type: "Boost", value: "Crop" },
+      { trait_type: "Boost", value: "Fruit" },
       { trait_type: "Tradable", value: "Yes" },
       {
         display_type: "boost_number",
@@ -7683,7 +7712,7 @@ export const OPEN_SEA_COLLECTIBLES: Record<InventoryItemName, Metadata> = {
   },
   "Bullseye Board": {
     name: "Bullseye Board",
-    description: "Hit the mark every time.!",
+    description: "Hit the mark every time!",
 
     decimals: 0,
     external_url: "https://docs.sunflower-land.com/getting-started/about",
@@ -7932,7 +7961,7 @@ export const OPEN_SEA_COLLECTIBLES: Record<InventoryItemName, Metadata> = {
     external_url: "https://docs.sunflower-land.com/getting-started/about",
     image: `../public/erc1155/images/254.png`,
     attributes: [
-      { trait_type: "Purpose", value: "Seed" },
+      { trait_type: "Purpose", value: "Crop" },
       { trait_type: "Tradable", value: "No" },
     ],
   },
@@ -8159,7 +8188,7 @@ export const OPEN_SEA_COLLECTIBLES: Record<InventoryItemName, Metadata> = {
     external_url: "https://docs.sunflower-land.com/getting-started/about",
     image: "../public/erc1155/images/742.png",
     attributes: [
-      { trait_type: "Purpose", value: "Decoration" },
+      { trait_type: "Purpose", value: "Coupon" },
       { trait_type: "Tradable", value: "No" },
     ],
   },
@@ -8172,7 +8201,7 @@ export const OPEN_SEA_COLLECTIBLES: Record<InventoryItemName, Metadata> = {
     external_url: "https://docs.sunflower-land.com/getting-started/about",
     image: "../public/erc1155/images/741.png",
     attributes: [
-      { trait_type: "Purpose", value: "Decoration" },
+      { trait_type: "Purpose", value: "Coupon" },
       { trait_type: "Tradable", value: "No" },
     ],
   },
@@ -8185,7 +8214,7 @@ export const OPEN_SEA_COLLECTIBLES: Record<InventoryItemName, Metadata> = {
     external_url: "https://docs.sunflower-land.com/getting-started/about",
     image: "../public/erc1155/images/744.png",
     attributes: [
-      { trait_type: "Purpose", value: "Decoration" },
+      { trait_type: "Purpose", value: "Coupon" },
       { trait_type: "Tradable", value: "No" },
     ],
   },
@@ -8198,7 +8227,7 @@ export const OPEN_SEA_COLLECTIBLES: Record<InventoryItemName, Metadata> = {
     external_url: "https://docs.sunflower-land.com/getting-started/about",
     image: "../public/erc1155/images/743.png",
     attributes: [
-      { trait_type: "Purpose", value: "Decoration" },
+      { trait_type: "Purpose", value: "Coupon" },
       { trait_type: "Tradable", value: "No" },
     ],
   },
@@ -8209,7 +8238,7 @@ export const OPEN_SEA_COLLECTIBLES: Record<InventoryItemName, Metadata> = {
     external_url: "https://docs.sunflower-land.com/getting-started/about",
     image: "../public/erc1155/images/745.png",
     attributes: [
-      { trait_type: "Purpose", value: "Decoration" },
+      { trait_type: "Purpose", value: "Coupon" },
       { trait_type: "Tradable", value: "No" },
     ],
   },
@@ -8297,7 +8326,7 @@ export const OPEN_SEA_COLLECTIBLES: Record<InventoryItemName, Metadata> = {
   },
   "Nightshade Throne": {
     name: "Nightshade Throne",
-    description: "A throne fit for a Sunflorian.",
+    description: "A throne fit for a Nightshade.",
     decimals: 0,
     external_url: "https://docs.sunflower-land.com/getting-started/about",
     image: "../public/erc1155/images/2042.png",
@@ -8308,7 +8337,7 @@ export const OPEN_SEA_COLLECTIBLES: Record<InventoryItemName, Metadata> = {
   },
   "Goblin Throne": {
     name: "Goblin Throne",
-    description: "A throne fit for a Sunflorian.",
+    description: "A throne fit for a Goblin.",
     decimals: 0,
     external_url: "https://docs.sunflower-land.com/getting-started/about",
     image: "../public/erc1155/images/2043.png",
@@ -8319,7 +8348,7 @@ export const OPEN_SEA_COLLECTIBLES: Record<InventoryItemName, Metadata> = {
   },
   "Bumpkin Throne": {
     name: "Bumpkin Throne",
-    description: "A throne fit for a Sunflorian.",
+    description: "A throne fit for a Bumpkin.",
     decimals: 0,
     external_url: "https://docs.sunflower-land.com/getting-started/about",
     image: "../public/erc1155/images/2044.png",
@@ -8407,7 +8436,7 @@ export const OPEN_SEA_COLLECTIBLES: Record<InventoryItemName, Metadata> = {
   },
   "Amethyst Nightshade Goblet": {
     name: "Amethyst Nightshade Goblet",
-    description: "An amethyst encrusted goblet",
+    description: "An amethyst encrusted goblet.",
     decimals: 0,
     external_url: "https://docs.sunflower-land.com/getting-started/about",
     image: "../public/erc1155/images/2052.png",
@@ -8451,7 +8480,7 @@ export const OPEN_SEA_COLLECTIBLES: Record<InventoryItemName, Metadata> = {
   },
   "Nightshade Bunting": {
     name: "Nightshade Bunting",
-    description: "Colorful flags celebrating the Nightshade faction.",
+    description: "Colorful flags celebrating the Nightshade Faction.",
     decimals: 0,
     external_url: "https://docs.sunflower-land.com/getting-started/about",
     image: "../public/erc1155/images/2056.png",
@@ -8462,7 +8491,7 @@ export const OPEN_SEA_COLLECTIBLES: Record<InventoryItemName, Metadata> = {
   },
   "Goblin Bunting": {
     name: "Goblin Bunting",
-    description: "Colorful flags celebrating the Goblin faction.",
+    description: "Colorful flags celebrating the Goblin Faction.",
     decimals: 0,
     external_url: "https://docs.sunflower-land.com/getting-started/about",
     image: "../public/erc1155/images/2057.png",
@@ -8473,7 +8502,7 @@ export const OPEN_SEA_COLLECTIBLES: Record<InventoryItemName, Metadata> = {
   },
   "Bumpkin Bunting": {
     name: "Bumpkin Bunting",
-    description: "Colorful flags celebrating the Bumpkin faction.",
+    description: "Colorful flags celebrating the Bumpkin Faction.",
     decimals: 0,
     external_url: "https://docs.sunflower-land.com/getting-started/about",
     image: "../public/erc1155/images/2058.png",
@@ -8780,7 +8809,7 @@ export const OPEN_SEA_COLLECTIBLES: Record<InventoryItemName, Metadata> = {
   "Sunflorian Faction Rug": {
     name: "Sunflorian Faction Rug",
     description:
-      "A magnificent rug made by the talented Sunflorian faction artisans.",
+      "A magnificent rug made by the talented Sunflorian Faction artisans.",
     decimals: 0,
     external_url: "https://docs.sunflower-land.com/getting-started/about",
     image: "../public/erc1155/images/2078.png",
@@ -8792,7 +8821,7 @@ export const OPEN_SEA_COLLECTIBLES: Record<InventoryItemName, Metadata> = {
   "Nightshade Faction Rug": {
     name: "Nightshade Faction Rug",
     description:
-      "A magnificent rug made by the talented Nightshade faction artisans.",
+      "A magnificent rug made by the talented Nightshade Faction artisans.",
     decimals: 0,
     external_url: "https://docs.sunflower-land.com/getting-started/about",
     image: "../public/erc1155/images/2079.png",
@@ -8804,7 +8833,7 @@ export const OPEN_SEA_COLLECTIBLES: Record<InventoryItemName, Metadata> = {
   "Goblin Faction Rug": {
     name: "Goblin Faction Rug",
     description:
-      "A magnificent rug made by the talented Goblin faction artisans.",
+      "A magnificent rug made by the talented Goblin Faction artisans.",
     decimals: 0,
     external_url: "https://docs.sunflower-land.com/getting-started/about",
     image: "../public/erc1155/images/2080.png",
@@ -8816,7 +8845,7 @@ export const OPEN_SEA_COLLECTIBLES: Record<InventoryItemName, Metadata> = {
   "Bumpkin Faction Rug": {
     name: "Bumpkin Faction Rug",
     description:
-      "A magnificent rug made by the talented Bumpkin faction artisans.",
+      "A magnificent rug made by the talented Bumpkin Faction artisans.",
     decimals: 0,
     external_url: "https://docs.sunflower-land.com/getting-started/about",
     image: "../public/erc1155/images/2081.png",
@@ -8885,6 +8914,7 @@ export const OPEN_SEA_COLLECTIBLES: Record<InventoryItemName, Metadata> = {
     external_url: "https://docs.sunflower-land.com/getting-started/about",
     image: "../public/erc1155/images/2100.png",
     attributes: [
+      { trait_type: "Boost", value: "Flower" },
       {
         display_type: "boost_percentage",
         trait_type: "Flower Critical Hit Chance",
@@ -8910,7 +8940,7 @@ export const OPEN_SEA_COLLECTIBLES: Record<InventoryItemName, Metadata> = {
     ],
   },
   "Cockle Shell": {
-    description: "Bones of an ancient camel, rumoured to transport artefacts",
+    description: "A beautiful shell.",
     decimals: 0,
     external_url: "https://docs.sunflower-land.com/getting-started/about",
     image: "../public/erc1155/images/1409.png",
@@ -9039,7 +9069,7 @@ export const OPEN_SEA_COLLECTIBLES: Record<InventoryItemName, Metadata> = {
       { trait_type: "Tradable", value: "Yes" },
     ],
     external_url: "https://docs.sunflower-land.com/getting-started/about",
-    image: "../public/erc1155/images/question_mark.png",
+    image: "../public/erc1155/images/2107.png",
     name: "Clay Tablet",
   },
   "Snake in Jar": {
@@ -9169,7 +9199,7 @@ export const OPEN_SEA_COLLECTIBLES: Record<InventoryItemName, Metadata> = {
     decimals: 0,
     attributes: [
       { trait_type: "Purpose", value: "Decoration" },
-      { trait_type: "Tradable", value: "No" },
+      { trait_type: "Tradable", value: "Yes" },
     ],
     external_url: "https://docs.sunflower-land.com/getting-started/about",
     image: "../public/erc1155/images/2119.png",
@@ -9179,6 +9209,7 @@ export const OPEN_SEA_COLLECTIBLES: Record<InventoryItemName, Metadata> = {
     description: "",
     decimals: 0,
     attributes: [
+      { trait_type: "Boost", value: "Crop" },
       { trait_type: "Boost", value: "Fruit" },
       {
         display_type: "boost_number",
@@ -10302,13 +10333,13 @@ export const OPEN_SEA_WEARABLES: Record<BumpkinItem, Metadata> = {
   },
   "Fruit Picker Apron": {
     description:
-      "Whether you're a professional fruit picker or just enjoy picking fruit as a hobby, this apron is a must-have accessory",
+      "Whether you're a professional fruit picker or just enjoy picking fruit as a hobby, this apron is a must-have accessory.",
     decimals: 0,
     attributes: [
       { trait_type: "Part", value: "Coat" },
       {
         display_type: "boost_number",
-        trait_type: "Increase Fruit Yield",
+        trait_type: "Increase Apple, Blueberry, Orange and Banana Yield",
         value: 0.1,
       },
       { trait_type: "Boost", value: "Fruit" },
@@ -10479,7 +10510,7 @@ export const OPEN_SEA_WEARABLES: Record<BumpkinItem, Metadata> = {
   },
   "Love Quiver": {
     description:
-      "A unique item that holds all of Cupid's arrows. The Love Quiver is a symbol of Cupid's power and is a must-have for any character who wants to embody the spirit of the Roman god of love. ",
+      "A unique item that holds all of Cupid's arrows. The Love Quiver is a symbol of Cupid's power and is a must-have for any character who wants to embody the spirit of the Roman god of love.",
     decimals: 0,
     attributes: [
       { trait_type: "Part", value: "Wings" },
@@ -10901,7 +10932,7 @@ export const OPEN_SEA_WEARABLES: Record<BumpkinItem, Metadata> = {
     decimals: 0,
     attributes: [
       { trait_type: "Part", value: "Shirt" },
-      { trait_type: "Tradable", value: "No" },
+      { trait_type: "Tradable", value: "Yes" },
     ],
     external_url: "https://docs.sunflower-land.com/getting-started/about",
     image: "../public/wearables/images/134.png",
@@ -11553,7 +11584,7 @@ export const OPEN_SEA_WEARABLES: Record<BumpkinItem, Metadata> = {
     decimals: 0,
     attributes: [
       { trait_type: "Part", value: "Body" },
-      { trait_type: "Tradable", value: "No" },
+      { trait_type: "Tradable", value: "Yes" },
     ],
     external_url: "https://docs.sunflower-land.com/getting-started/about",
     image: "../public/wearables/images/193.png",
@@ -12048,8 +12079,8 @@ export const OPEN_SEA_WEARABLES: Record<BumpkinItem, Metadata> = {
     decimals: 0,
     attributes: [
       { trait_type: "Part", value: "SecondaryTool" },
-      { trait_type: "Tradable", value: "No" },
-      { trait_type: "Boost", value: "Crab" },
+      { trait_type: "Tradable", value: "Yes" },
+      { trait_type: "Boost", value: "Treasure" },
       {
         display_type: "boost_number",
         value: 1,
@@ -12531,7 +12562,7 @@ export const OPEN_SEA_WEARABLES: Record<BumpkinItem, Metadata> = {
     decimals: 0,
     attributes: [
       { trait_type: "Part", value: "Wings" },
-      { trait_type: "Tradable", value: "No" },
+      { trait_type: "Tradable", value: "Yes" },
     ],
     external_url: "https://docs.sunflower-land.com/getting-started/about",
     image: "../public/wearables/images/268.png",
@@ -12690,7 +12721,7 @@ export const OPEN_SEA_WEARABLES: Record<BumpkinItem, Metadata> = {
     decimals: 0,
     attributes: [
       { trait_type: "Part", value: "Pants" },
-      { trait_type: "Tradable", value: "No" },
+      { trait_type: "Tradable", value: "Yes" },
     ],
     external_url: "https://docs.sunflower-land.com/getting-started/about",
     image: "../public/wearables/images/281.png",
@@ -12748,7 +12779,7 @@ export const OPEN_SEA_WEARABLES: Record<BumpkinItem, Metadata> = {
       { trait_type: "Part", value: "Necklace" },
       { trait_type: "Boost", value: "Resource" },
       {
-        display_type: "boost_number",
+        display_type: "boost_percentage",
         trait_type: "Crimstone Cooldown Time",
         value: -20,
       },
@@ -12907,7 +12938,7 @@ export const OPEN_SEA_WEARABLES: Record<BumpkinItem, Metadata> = {
     decimals: 0,
     attributes: [
       { trait_type: "Part", value: "Shirt" },
-      { trait_type: "Tradable", value: "No" },
+      { trait_type: "Tradable", value: "Yes" },
     ],
     external_url: "https://docs.sunflower-land.com/getting-started/about",
     image: "../public/wearables/images/297.png",
@@ -12974,7 +13005,7 @@ export const OPEN_SEA_WEARABLES: Record<BumpkinItem, Metadata> = {
     decimals: 0,
     attributes: [
       { trait_type: "Part", value: "Hat" },
-      { trait_type: "Tradable", value: "No" },
+      { trait_type: "Tradable", value: "Yes" },
     ],
     external_url: "https://docs.sunflower-land.com/getting-started/about",
     image: "../public/wearables/images/303.png",
@@ -13142,7 +13173,7 @@ export const OPEN_SEA_WEARABLES: Record<BumpkinItem, Metadata> = {
     decimals: 0,
     attributes: [
       { trait_type: "Part", value: "Shirt" },
-      { trait_type: "Tradable", value: "Yes" },
+      { trait_type: "Tradable", value: "No" },
     ],
     external_url: "https://docs.sunflower-land.com/getting-started/about",
     image: "../public/wearables/images/316.png",
@@ -13168,7 +13199,7 @@ export const OPEN_SEA_WEARABLES: Record<BumpkinItem, Metadata> = {
       { trait_type: "Boost", value: "Crop" },
       {
         display_type: "boost_number",
-        trait_type: "Increase Oilve Yield",
+        trait_type: "Increase Olive Yield",
         value: 0.25,
       },
     ],
@@ -13209,7 +13240,7 @@ export const OPEN_SEA_WEARABLES: Record<BumpkinItem, Metadata> = {
     decimals: 0,
     attributes: [
       { trait_type: "Part", value: "Hat" },
-      { trait_type: "Tradable", value: "Yes" },
+      { trait_type: "Tradable", value: "No" },
     ],
     external_url: "https://docs.sunflower-land.com/getting-started/about",
     image: "../public/wearables/images/340.png",
@@ -13220,7 +13251,7 @@ export const OPEN_SEA_WEARABLES: Record<BumpkinItem, Metadata> = {
     decimals: 0,
     attributes: [
       { trait_type: "Part", value: "Shirt" },
-      { trait_type: "Tradable", value: "Yes" },
+      { trait_type: "Tradable", value: "No" },
     ],
     external_url: "https://docs.sunflower-land.com/getting-started/about",
     image: "../public/wearables/images/342.png",
@@ -13231,7 +13262,7 @@ export const OPEN_SEA_WEARABLES: Record<BumpkinItem, Metadata> = {
     decimals: 0,
     attributes: [
       { trait_type: "Part", value: "Hat" },
-      { trait_type: "Tradable", value: "Yes" },
+      { trait_type: "Tradable", value: "No" },
     ],
     external_url: "https://docs.sunflower-land.com/getting-started/about",
     image: "../public/wearables/images/343.png",
@@ -13242,7 +13273,7 @@ export const OPEN_SEA_WEARABLES: Record<BumpkinItem, Metadata> = {
     decimals: 0,
     attributes: [
       { trait_type: "Part", value: "Dress" },
-      { trait_type: "Tradable", value: "Yes" },
+      { trait_type: "Tradable", value: "No" },
     ],
     external_url: "https://docs.sunflower-land.com/getting-started/about",
     image: "../public/wearables/images/344.png",
@@ -13253,7 +13284,7 @@ export const OPEN_SEA_WEARABLES: Record<BumpkinItem, Metadata> = {
     decimals: 0,
     attributes: [
       { trait_type: "Part", value: "Suit" },
-      { trait_type: "Tradable", value: "Yes" },
+      { trait_type: "Tradable", value: "No" },
     ],
     external_url: "https://docs.sunflower-land.com/getting-started/about",
     image: "../public/wearables/images/345.png",
@@ -14019,7 +14050,7 @@ export const OPEN_SEA_WEARABLES: Record<BumpkinItem, Metadata> = {
   },
   "Bumpkin Crown": {
     description:
-      "A magestic crown with intricate design and eerie glowing games, fit for a Bumpkin Leader. Earn 25% more in SFL and Coin deliveries. Earn 25% more in SFL and Coin deliveries, and Earn +10% marks when pledged to this faction. Multiples of this item do not stack.",
+      "A magestic crown with intricate design and eerie glowing games, fit for a Bumpkin Leader. Earn 25% more in SFL and Coin deliveries, and Earn +10% marks when pledged to this faction. Multiples of this item do not stack.",
     decimals: 0,
     attributes: [
       { trait_type: "Part", value: "Hat" },
@@ -14047,7 +14078,7 @@ export const OPEN_SEA_WEARABLES: Record<BumpkinItem, Metadata> = {
   },
   "Goblin Crown": {
     description:
-      "A dark, jagged crown with glowing gems, ideal for the Goblin King. Earn 25% more in SFL and Coin deliveries. Earn 25% more in SFL and Coin deliveries, and Earn +10% marks when pledged to this faction. Multiples of this item do not stack.",
+      "A dark, jagged crown with glowing gems, ideal for the Goblin King. Earn 25% more in SFL and Coin deliveries, and Earn +10% marks when pledged to this faction. Multiples of this item do not stack.",
     decimals: 0,
     attributes: [
       { trait_type: "Part", value: "Hat" },
@@ -14384,5 +14415,41 @@ export const OPEN_SEA_WEARABLES: Record<BumpkinItem, Metadata> = {
     external_url: "https://docs.sunflower-land.com/getting-started/about",
     image: "../public/wearables/images/391.png",
     name: "Sunflorian Medallion",
+  },
+  "Pumpkin Plaza Background": {
+    description:
+      " A place where the air is filled with the scent of fresh pumpkins and the sound of a creaking windmill. The place is alive with unique Bumpkins, each with their own stories and quirks. Whether you're tending to the vibrant plaza or chatting with the locals, Pumpkin Plaza offers a warm, welcoming atmosphere that feels like home.",
+    decimals: 0,
+    attributes: [
+      { trait_type: "Part", value: "Background" },
+      { trait_type: "Tradable", value: "No" },
+    ],
+    external_url: "https://docs.sunflower-land.com/getting-started/about",
+    image: "../public/wearables/images/392.png",
+    name: "Pumpkin Plaza Background",
+  },
+  "Goblin Retreat Background": {
+    description:
+      "This lively enclave is where Goblins gather to trade rare resources and share tales of adventure. The Retreat is a bustling hub of activity, where Bumpkins can meet friends, engage in bartering, and uncover the secrets of the Goblin's mischievous ways.",
+    decimals: 0,
+    attributes: [
+      { trait_type: "Part", value: "Background" },
+      { trait_type: "Tradable", value: "No" },
+    ],
+    external_url: "https://docs.sunflower-land.com/getting-started/about",
+    image: "../public/wearables/images/393.png",
+    name: "Goblin Retreat Background",
+  },
+  "Kingdom Background": {
+    description:
+      "The majestic heart of the realm, where the queen presides over the land. The Kingdom is divided among four powerful factions — Bumpkins, Goblins, Nightshades, and Sunflorians — each vying for influence and favor.",
+    decimals: 0,
+    attributes: [
+      { trait_type: "Part", value: "Background" },
+      { trait_type: "Tradable", value: "No" },
+    ],
+    external_url: "https://docs.sunflower-land.com/getting-started/about",
+    image: "../public/wearables/images/394.png",
+    name: "Kingdom Background",
   },
 };
