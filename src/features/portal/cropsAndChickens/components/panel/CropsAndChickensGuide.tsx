@@ -4,12 +4,15 @@ import { useAppTranslation } from "lib/i18n/useAppTranslations";
 import { SUNNYSIDE } from "assets/sunnyside";
 import { SquareIcon } from "components/ui/SquareIcon";
 import { ITEM_DETAILS } from "features/game/types/images";
+import chickenNormal from "public/crops-and-chickens/chicken_normal.png";
+import chickenNormalHalloween from "public/crops-and-chickens/chicken_normal_halloween.png";
 import chickenHunter from "public/crops-and-chickens/chicken_hunter.png";
+import chickenHunterHalloween from "public/crops-and-chickens/chicken_hunter_halloween.png";
 import { Label } from "components/ui/Label";
 import { SCORE_TABLE } from "../../CropsAndChickensConstants";
 import { PIXEL_SCALE } from "features/game/lib/constants";
 import { useSound } from "lib/utils/hooks/useSound";
-import { getCropImage } from "../../lib/cropsAndChickensUtils";
+import { getCropImage, getHolidayEvent } from "../../lib/cropsAndChickensUtils";
 
 type Props = {
   onBack: () => void;
@@ -19,6 +22,8 @@ export const CropsAndChickensGuide: React.FC<Props> = ({ onBack }) => {
   const { t } = useAppTranslation();
 
   const button = useSound("button");
+
+  const holidayEvent = getHolidayEvent();
 
   return (
     <div className="flex flex-col gap-1 max-h-[75vh]">
@@ -127,7 +132,14 @@ export const CropsAndChickensGuide: React.FC<Props> = ({ onBack }) => {
             <tr>
               <td style={{ border: "1px solid #b96f50" }} className="p-1.5">
                 <div className="flex items-center justify-center">
-                  <SquareIcon icon={ITEM_DETAILS["Chicken"].image} width={7} />
+                  <SquareIcon
+                    icon={
+                      holidayEvent === "halloween"
+                        ? chickenNormalHalloween
+                        : chickenNormal
+                    }
+                    width={7}
+                  />
                 </div>
               </td>
               <td style={{ border: "1px solid #b96f50" }} className="p-1.5">
@@ -137,7 +149,14 @@ export const CropsAndChickensGuide: React.FC<Props> = ({ onBack }) => {
             <tr>
               <td style={{ border: "1px solid #b96f50" }} className="p-1.5">
                 <div className="flex items-center justify-center">
-                  <SquareIcon icon={chickenHunter} width={7} />
+                  <SquareIcon
+                    icon={
+                      holidayEvent === "halloween"
+                        ? chickenHunterHalloween
+                        : chickenHunter
+                    }
+                    width={7}
+                  />
                 </div>
               </td>
               <td style={{ border: "1px solid #b96f50" }} className="p-1.5">

@@ -30,6 +30,8 @@ export const DEPOSIT_INDICATOR_PLAYER_DISTANCE = 50;
 
 export const TOTAL_CROP_TYPES = 11;
 
+export const HALLOWEEN_PLAYER_OPACITY = 0.7;
+
 export const CROP_DEPOSIT_AREA_DIMENSIONS = {
   x: 51 * SQUARE_WIDTH,
   y: 51 * SQUARE_WIDTH,
@@ -46,7 +48,7 @@ export const PLAYER_DEATH_SPRITE_PROPERTIES = {
 export const CHICKEN_SPRITE_PROPERTIES = {
   frames: 6,
   frameWidth: 13,
-  frameHeight: 14,
+  frameHeight: 19,
 };
 
 export const CHICKEN_SPEEDS = {

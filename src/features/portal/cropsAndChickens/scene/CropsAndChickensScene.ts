@@ -25,6 +25,7 @@ import {
   ZOOM_OUT_SCALE,
   JOYSTICK_RADIUS,
   JOYSTICK_FORCE_MIN,
+  HALLOWEEN_PLAYER_OPACITY,
 } from "../CropsAndChickensConstants";
 import { NormalChickenContainer } from "./containers/NormalChickenContainer";
 import { HunterChickenContainer } from "./containers/HunterChickenContainer";
@@ -46,6 +47,7 @@ import {
   getEligibleAchievements,
 } from "./lib/getEligibleAchievements";
 import { isTouchDevice } from "features/world/lib/device";
+import { getHolidayEvent } from "../lib/cropsAndChickensUtils";
 
 type chickenType = "normal" | "hunter";
 
@@ -289,6 +291,10 @@ export class CropsAndChickensScene extends BaseScene {
 
     this.createAllCrops();
     this.createAllNormalChickens();
+
+    if (this.currentPlayer && getHolidayEvent() === "halloween") {
+      this.currentPlayer.setAlpha(HALLOWEEN_PLAYER_OPACITY);
+    }
 
     this.hunterChicken = new HunterChickenContainer({
       scene: this,
@@ -981,6 +987,9 @@ export class CropsAndChickensScene extends BaseScene {
       spriteName,
     );
     playerDeath.setDepth(this.currentPlayer.body.position.y);
+    if (getHolidayEvent() === "halloween") {
+      playerDeath.setAlpha(HALLOWEEN_PLAYER_OPACITY);
+    }
 
     if (!this.anims.exists(spriteKey as string)) {
       this.anims.create({
