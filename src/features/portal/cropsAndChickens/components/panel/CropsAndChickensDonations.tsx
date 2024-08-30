@@ -73,9 +73,7 @@ export const CropsAndChickensDonations: React.FC = () => {
               {"+"}
             </Button>
           </div>
-          <span className="text-xs font-secondary my-2">
-            {t("amount.matic")}
-          </span>
+          <span className="text-xs font-secondary my-2">{t("amount.pol")}</span>
         </div>
 
         {isComingSoon && (

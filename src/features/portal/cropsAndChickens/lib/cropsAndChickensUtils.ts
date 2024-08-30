@@ -67,12 +67,12 @@ export const getHolidayEvent = (): CropsAndChickensHolidayEvent => {
 
 /**
  * Gets the total number of crops of a specific type that are available in the game.
- * @param crop The crop.
+ * @param cropName The crop name.
  * @returns The total number of crops of the specified type that are available.
  */
-export const getTotalCropsInGame = (crop: CropName) => {
+export const getTotalCropsInGame = (cropName: CropName) => {
   return CROP_SPAWN_CONFIGURATIONS.filter(
-    (config) => config.cropIndex === CROP_TO_INDEX[crop],
+    (config) => config.cropIndex === CROP_TO_INDEX[cropName],
   ).length;
 };
 
