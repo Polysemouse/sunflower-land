@@ -70,7 +70,7 @@ export class HunterChickenContainer extends Phaser.GameObjects.Container {
     );
 
     // add chicken sprite with offset
-    const chicken = scene.add.sprite(5.5, 2.5, spriteName);
+    const chicken = scene.add.sprite(5.5, 3, spriteName);
 
     const hunterChickenForwardMin =
       CHICKEN_SPEEDS.forwardMin * HUNTER_CHICKEN_SPEED_MULTIPLIER;

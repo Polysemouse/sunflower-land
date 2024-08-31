@@ -36,7 +36,7 @@ export class NormalChickenContainer extends Phaser.GameObjects.Container {
     }
 
     // add chicken sprite with offset
-    const chicken = scene.add.sprite(5.5, 2.5, spriteName);
+    const chicken = scene.add.sprite(5.5, 3, spriteName);
 
     const startFrame = Phaser.Math.RND.integerInRange(
       0,

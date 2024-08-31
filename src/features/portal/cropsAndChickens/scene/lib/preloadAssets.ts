@@ -23,7 +23,9 @@ export const preloadAssets = (scene: CropsAndChickensScene) => {
     "chicken_normal_left",
     holidayEvent === "halloween"
       ? "crops-and-chickens/chicken_normal_left_movements_halloween.png"
-      : "crops-and-chickens/chicken_normal_left_movements.png",
+      : holidayEvent === "christmas"
+        ? "crops-and-chickens/chicken_normal_left_movements_christmas.png"
+        : "crops-and-chickens/chicken_normal_left_movements.png",
     {
       frameWidth: CHICKEN_SPRITE_PROPERTIES.frameWidth,
       frameHeight: CHICKEN_SPRITE_PROPERTIES.frameHeight,
@@ -33,7 +35,9 @@ export const preloadAssets = (scene: CropsAndChickensScene) => {
     "chicken_normal_right",
     holidayEvent === "halloween"
       ? "crops-and-chickens/chicken_normal_right_movements_halloween.png"
-      : "crops-and-chickens/chicken_normal_right_movements.png",
+      : holidayEvent === "christmas"
+        ? "crops-and-chickens/chicken_normal_right_movements_christmas.png"
+        : "crops-and-chickens/chicken_normal_right_movements.png",
     {
       frameWidth: CHICKEN_SPRITE_PROPERTIES.frameWidth,
       frameHeight: CHICKEN_SPRITE_PROPERTIES.frameHeight,
@@ -43,7 +47,9 @@ export const preloadAssets = (scene: CropsAndChickensScene) => {
     "chicken_normal_up",
     holidayEvent === "halloween"
       ? "crops-and-chickens/chicken_normal_up_movements_halloween.png"
-      : "crops-and-chickens/chicken_normal_up_movements.png",
+      : holidayEvent === "christmas"
+        ? "crops-and-chickens/chicken_normal_up_movements_christmas.png"
+        : "crops-and-chickens/chicken_normal_up_movements.png",
     {
       frameWidth: CHICKEN_SPRITE_PROPERTIES.frameWidth,
       frameHeight: CHICKEN_SPRITE_PROPERTIES.frameHeight,
@@ -53,7 +59,9 @@ export const preloadAssets = (scene: CropsAndChickensScene) => {
     "chicken_normal_down",
     holidayEvent === "halloween"
       ? "crops-and-chickens/chicken_normal_down_movements_halloween.png"
-      : "crops-and-chickens/chicken_normal_down_movements.png",
+      : holidayEvent === "christmas"
+        ? "crops-and-chickens/chicken_normal_down_movements_christmas.png"
+        : "crops-and-chickens/chicken_normal_down_movements.png",
     {
       frameWidth: CHICKEN_SPRITE_PROPERTIES.frameWidth,
       frameHeight: CHICKEN_SPRITE_PROPERTIES.frameHeight,
@@ -65,7 +73,9 @@ export const preloadAssets = (scene: CropsAndChickensScene) => {
     "chicken_hunter_left",
     holidayEvent === "halloween"
       ? "crops-and-chickens/chicken_hunter_left_movements_halloween.png"
-      : "crops-and-chickens/chicken_hunter_left_movements.png",
+      : holidayEvent === "christmas"
+        ? "crops-and-chickens/chicken_hunter_left_movements_christmas.png"
+        : "crops-and-chickens/chicken_hunter_left_movements.png",
     {
       frameWidth: CHICKEN_SPRITE_PROPERTIES.frameWidth,
       frameHeight: CHICKEN_SPRITE_PROPERTIES.frameHeight,
@@ -75,7 +85,9 @@ export const preloadAssets = (scene: CropsAndChickensScene) => {
     "chicken_hunter_right",
     holidayEvent === "halloween"
       ? "crops-and-chickens/chicken_hunter_right_movements_halloween.png"
-      : "crops-and-chickens/chicken_hunter_right_movements.png",
+      : holidayEvent === "christmas"
+        ? "crops-and-chickens/chicken_hunter_right_movements_christmas.png"
+        : "crops-and-chickens/chicken_hunter_right_movements.png",
     {
       frameWidth: CHICKEN_SPRITE_PROPERTIES.frameWidth,
       frameHeight: CHICKEN_SPRITE_PROPERTIES.frameHeight,
@@ -85,7 +97,9 @@ export const preloadAssets = (scene: CropsAndChickensScene) => {
     "chicken_hunter_up",
     holidayEvent === "halloween"
       ? "crops-and-chickens/chicken_hunter_up_movements_halloween.png"
-      : "crops-and-chickens/chicken_hunter_up_movements.png",
+      : holidayEvent === "christmas"
+        ? "crops-and-chickens/chicken_hunter_up_movements_christmas.png"
+        : "crops-and-chickens/chicken_hunter_up_movements.png",
     {
       frameWidth: CHICKEN_SPRITE_PROPERTIES.frameWidth,
       frameHeight: CHICKEN_SPRITE_PROPERTIES.frameHeight,
@@ -95,7 +109,9 @@ export const preloadAssets = (scene: CropsAndChickensScene) => {
     "chicken_hunter_down",
     holidayEvent === "halloween"
       ? "crops-and-chickens/chicken_hunter_down_movements_halloween.png"
-      : "crops-and-chickens/chicken_hunter_down_movements.png",
+      : holidayEvent === "christmas"
+        ? "crops-and-chickens/chicken_hunter_down_movements_christmas.png"
+        : "crops-and-chickens/chicken_hunter_down_movements.png",
     {
       frameWidth: CHICKEN_SPRITE_PROPERTIES.frameWidth,
       frameHeight: CHICKEN_SPRITE_PROPERTIES.frameHeight,

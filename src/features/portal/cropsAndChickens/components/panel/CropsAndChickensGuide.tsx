@@ -6,8 +6,10 @@ import { SquareIcon } from "components/ui/SquareIcon";
 import { ITEM_DETAILS } from "features/game/types/images";
 import chickenNormal from "public/crops-and-chickens/chicken_normal.png";
 import chickenNormalHalloween from "public/crops-and-chickens/chicken_normal_halloween.png";
+import chickenNormalChristmas from "public/crops-and-chickens/chicken_normal_christmas.png";
 import chickenHunter from "public/crops-and-chickens/chicken_hunter.png";
 import chickenHunterHalloween from "public/crops-and-chickens/chicken_hunter_halloween.png";
+import chickenHunterChristmas from "public/crops-and-chickens/chicken_hunter_christmas.png";
 import { Label } from "components/ui/Label";
 import { SCORE_TABLE } from "../../CropsAndChickensConstants";
 import { PIXEL_SCALE } from "features/game/lib/constants";
@@ -136,7 +138,9 @@ export const CropsAndChickensGuide: React.FC<Props> = ({ onBack }) => {
                     icon={
                       holidayEvent === "halloween"
                         ? chickenNormalHalloween
-                        : chickenNormal
+                        : holidayEvent === "christmas"
+                          ? chickenNormalChristmas
+                          : chickenNormal
                     }
                     width={7}
                   />
@@ -153,7 +157,9 @@ export const CropsAndChickensGuide: React.FC<Props> = ({ onBack }) => {
                     icon={
                       holidayEvent === "halloween"
                         ? chickenHunterHalloween
-                        : chickenHunter
+                        : holidayEvent === "christmas"
+                          ? chickenHunterChristmas
+                          : chickenHunter
                     }
                     width={7}
                   />
