@@ -77,7 +77,7 @@ export const CropsAndChickensAchievementsList: React.FC<Props> = ({
 
       <Label type="danger">
         {
-          "NOTE: The achievements system is still a work in progress. Completing achievements will NOT unlock them. However, you are still encouraged to try them out for fun!"
+          "NOTE: The achievements system is currently open to beta testers only and is still a work in progress. Completing achievements will NOT unlock them. However, you are still encouraged to try them out for fun!"
         }
       </Label>
 

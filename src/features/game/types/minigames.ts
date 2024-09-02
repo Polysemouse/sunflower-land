@@ -1,5 +1,4 @@
 export type MinigameName =
-  | "crops-and-chickens"
   | "crop-boom"
   | "bumpkin-fight-club"
   | "bumpkin-board-game"
@@ -13,7 +12,6 @@ export type MinigameName =
   | "fruit-dash";
 
 export const SUPPORTED_MINIGAMES: MinigameName[] = [
-  "crops-and-chickens",
   "crop-boom",
   "bumpkin-fight-club",
   "bumpkin-board-game",
