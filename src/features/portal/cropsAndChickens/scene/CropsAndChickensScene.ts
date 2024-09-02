@@ -127,7 +127,7 @@ export class CropsAndChickensScene extends BaseScene {
    * Whether the player is moving.
    */
   private get isMoving() {
-    return this.movementAngle !== undefined && this.walkingSpeed !== 0;
+    return this.movementAngle !== undefined && this.playerWalkingSpeed !== 0;
   }
 
   /**
@@ -249,6 +249,15 @@ export class CropsAndChickensScene extends BaseScene {
   }
 
   /**
+   * The player walking speed.
+   */
+  private get playerWalkingSpeed() {
+    if (!this.isRulesRead || this.isDead || this.isCameraFading) return 0;
+
+    return PLAYER_WALKING_SPEED;
+  }
+
+  /**
    * Called when the scene is preloaded.
    */
   preload() {
@@ -345,12 +354,6 @@ export class CropsAndChickensScene extends BaseScene {
     this.portalService?.send("SET_IS_JOYSTICK_ACTIVE", {
       isJoystickActive: !!this.joystick?.force,
     });
-
-    // set player speed
-    this.walkingSpeed =
-      this.isRulesRead && !this.isDead && !this.isCameraFading
-        ? PLAYER_WALKING_SPEED
-        : 0;
 
     // check if player has gone up
     if (
@@ -593,8 +596,10 @@ export class CropsAndChickensScene extends BaseScene {
       .body as Phaser.Physics.Arcade.Body;
     if (this.movementAngle !== undefined) {
       currentPlayerBody.setVelocity(
-        this.walkingSpeed * Math.cos((this.movementAngle * Math.PI) / 180),
-        this.walkingSpeed * Math.sin((this.movementAngle * Math.PI) / 180),
+        this.playerWalkingSpeed *
+          Math.cos((this.movementAngle * Math.PI) / 180),
+        this.playerWalkingSpeed *
+          Math.sin((this.movementAngle * Math.PI) / 180),
       );
     } else {
       currentPlayerBody.setVelocity(0, 0);
