@@ -17,6 +17,9 @@ import { authorisePortal, claimPrize } from "../lib/portalUtil";
 import { CropsAndChickensRulesPanel } from "./components/panel/CropsAndChickensRulesPanel";
 import { CropsAndChickensNoAttemptsPanel } from "./components/panel/CropsAndChickensNoAttemptsPanel";
 import AchievementToastProvider from "./providers/AchievementToastProvider";
+import { getFont, getLanguage } from "../actions/loadPortal";
+import i18n from "lib/i18n";
+import { changeFont } from "lib/utils/fonts";
 
 const _sflBalance = (state: PortalMachineState) => state.context.state?.balance;
 const _isError = (state: PortalMachineState) => state.matches("error");
@@ -46,6 +49,19 @@ export const CropsAndChickens: React.FC = () => {
   const isComplete = useSelector(portalService, _isComplete);
 
   useEffect(() => {
+    // load language from query params
+    const parentLanguage = getLanguage();
+    const appLanguage = localStorage.getItem("language") || "en";
+
+    if (appLanguage !== parentLanguage) {
+      localStorage.setItem("language", parentLanguage);
+      i18n.changeLanguage(parentLanguage);
+    }
+
+    // load font from query params
+    const font = getFont();
+    changeFont(font);
+
     // If a player tries to quit while playing, attempt to save their progress
     const handleBeforeUnload = () => {
       portalService.send("GAME_OVER");

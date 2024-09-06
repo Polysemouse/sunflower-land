@@ -16,21 +16,16 @@ import {
   startAttempt,
   submitScore,
 } from "features/portal/lib/portalUtil";
-import { getUrl, loadPortal } from "features/portal/actions/loadPortal";
+import { getJwt, getUrl, loadPortal } from "features/portal/actions/loadPortal";
 import { getAttemptsLeft } from "./cropsAndChickensUtils";
 import { unlockMinigameAchievements } from "features/game/events/minigames/unlockMinigameAchievements";
 import { CropsAndChickensAchievementName } from "../CropsAndChickensAchievements";
 import { submitMinigameScore } from "features/game/events/minigames/submitMinigameScore";
 import { startMinigameAttempt } from "features/game/events/minigames/startMinigameAttempt";
 
-const getJWT = () => {
-  const code = new URLSearchParams(window.location.search).get("jwt");
-  return code;
-};
-
 export interface Context {
   id: number;
-  jwt: string | null;
+  jwt: string;
   isJoystickActive: boolean;
   isSmallScreen: boolean;
   state: GameState | undefined;
@@ -126,7 +121,7 @@ export const portalMachine = createMachine<Context, PortalEvent, PortalState>({
   initial: "initialising",
   context: {
     id: 0,
-    jwt: getJWT(),
+    jwt: getJwt(),
 
     isJoystickActive: false,
     isSmallScreen: false,
@@ -195,12 +190,12 @@ export const portalMachine = createMachine<Context, PortalEvent, PortalState>({
             return { game: OFFLINE_FARM, attemptsLeft: DAILY_ATTEMPTS };
           }
 
-          const { farmId } = decodeToken(context.jwt as string);
+          const { farmId } = decodeToken(context.jwt);
 
           // Load the game data
           const { game } = await loadPortal({
             portalId: CONFIG.PORTAL_APP,
-            token: context.jwt as string,
+            token: context.jwt,
           });
 
           const minigame = game.minigames.games["crops-and-chickens"];
