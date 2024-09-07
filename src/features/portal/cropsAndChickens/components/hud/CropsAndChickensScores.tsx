@@ -121,7 +121,7 @@ export const CropsAndChickensScores: React.FC = () => {
           }}
         >
           <span>
-            {t("crops-and-chickens.score", {
+            {t("crops-and-chickens.scoreColon", {
               score: previousScore,
             })}
           </span>
