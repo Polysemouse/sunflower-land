@@ -18,6 +18,7 @@ import trophy from "assets/icons/trophy.png";
 import { SquareIcon } from "components/ui/SquareIcon";
 import { PIXEL_SCALE } from "features/game/lib/constants";
 import { hasFeatureAccess } from "lib/flags";
+import { formatNumber } from "lib/utils/formatNumber";
 
 interface Props {
   mode: "introduction" | "success" | "failed";
@@ -62,7 +63,7 @@ export const CropsAndChickensMission: React.FC<Props> = ({
     <>
       {page === "main" && (
         <div className="flex flex-col gap-1 max-h-[75vh]">
-          <div className="overflow-y-auto scrollable px-1">
+          <div className="flex flex-col gap-1 overflow-x-hidden overflow-y-auto scrollable px-1">
             <div className="flex justify-between gap-1 items-center mb-1 py-1 pl-2">
               {mode === "introduction" && (
                 <Label type="default" icon={factions}>
@@ -70,70 +71,85 @@ export const CropsAndChickensMission: React.FC<Props> = ({
                 </Label>
               )}
               {mode === "success" && (
-                <Label type="success" icon={SUNNYSIDE.icons.confirm}>
+                <Label
+                  type="success"
+                  className="text-center"
+                  icon={SUNNYSIDE.icons.confirm}
+                >
                   {t("crops-and-chickens.missionComplete")}
                 </Label>
               )}
               {mode === "failed" && (
-                <Label type="danger" icon={SUNNYSIDE.icons.death}>
+                <Label
+                  type="danger"
+                  className="text-center"
+                  icon={SUNNYSIDE.icons.death}
+                >
                   {t("crops-and-chickens.missionFailed")}
                 </Label>
               )}
               <CropsAndChickensAttempts attemptsLeft={attemptsLeft} />
             </div>
 
-            <div
-              className="flex flex-row"
+            <div className="flex flex-wrap gap-1 justify-center">
+              {hasBetaAccess && (
+                <Button
+                  className="whitespace-nowrap capitalize w-12"
+                  onClick={() => setPage("achievements")}
+                >
+                  <SquareIcon icon={trophy} width={9} />
+                </Button>
+              )}
+              <Button
+                className="whitespace-nowrap capitalize w-12"
+                onClick={() => setPage("guide")}
+              >
+                <SquareIcon
+                  icon={SUNNYSIDE.icons.expression_confused}
+                  width={8}
+                />
+              </Button>
+            </div>
+
+            <Label
+              type="chill"
+              className="flex flex-col gap-1 items-center p-1 !w-full"
               style={{
                 marginBottom: `${PIXEL_SCALE * 1}px`,
               }}
             >
-              <div className="flex justify-between flex-col space-y-1 px-1 mb-3 text-sm flex-grow">
-                {showScore && (
-                  <span>
-                    {t("crops-and-chickens.score", {
-                      score: score,
-                    })}
+              {showScore && (
+                <div className="flex flex-col items-center w-1/2">
+                  <span className="text-sm">
+                    {t("crops-and-chickens.score")}
                   </span>
-                )}
-                <span>
-                  {t("crops-and-chickens.bestToday", {
-                    score: minigame?.history[dateKey]?.highscore ?? 0,
-                  })}
-                </span>
-                <span>
-                  {t("crops-and-chickens.bestAllTime", {
-                    score: Object.values(minigame?.history ?? {}).reduce(
-                      (acc, { highscore }) => Math.max(acc, highscore),
-                      0,
-                    ),
-                  })}
-                </span>
+                  <span className="text-lg">{formatNumber(score)}</span>
+                </div>
+              )}
+              <div className="flex justify-between gap-2 w-full">
+                <div className="flex flex-col items-center w-1/2">
+                  <span className="text-xs text-center">
+                    {t("crops-and-chickens.todaysBest")}
+                  </span>
+                  <span className="text-sm text-center">
+                    {formatNumber(minigame?.history[dateKey]?.highscore ?? 0)}
+                  </span>
+                </div>
+                <div className="flex flex-col items-center w-1/2">
+                  <span className="text-xs text-center">
+                    {t("crops-and-chickens.personalBest")}
+                  </span>
+                  <span className="text-sm text-center">
+                    {formatNumber(
+                      Object.values(minigame?.history ?? {}).reduce(
+                        (acc, { highscore }) => Math.max(acc, highscore),
+                        0,
+                      ),
+                    )}
+                  </span>
+                </div>
               </div>
-              <div className="flex mt-1 space-x-1">
-                {hasBetaAccess && (
-                  <Button
-                    className="whitespace-nowrap capitalize w-12"
-                    onClick={() => setPage("achievements")}
-                  >
-                    <div className="flex flex-row items-center gap-1">
-                      <SquareIcon icon={trophy} width={9} />
-                    </div>
-                  </Button>
-                )}
-                <Button
-                  className="whitespace-nowrap capitalize w-12"
-                  onClick={() => setPage("guide")}
-                >
-                  <div className="flex flex-row items-center gap-1">
-                    <SquareIcon
-                      icon={SUNNYSIDE.icons.expression_confused}
-                      width={7}
-                    />
-                  </div>
-                </Button>
-              </div>
-            </div>
+            </Label>
 
             <CropsAndChickensPrize />
           </div>

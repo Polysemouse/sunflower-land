@@ -12,13 +12,15 @@ export const CropsAndChickensAttempts: React.FC<Props> = ({ attemptsLeft }) => {
 
   if (attemptsLeft === Infinity) {
     return (
-      <Label type="success">{t("crops-and-chickens.unlimitedAttempts")}</Label>
+      <Label type="success" className="text-center">
+        {t("crops-and-chickens.unlimitedAttempts")}
+      </Label>
     );
   }
 
   if (attemptsLeft > 0 && attemptsLeft !== 1) {
     return (
-      <Label type="vibrant">
+      <Label type="vibrant" className="text-center">
         {t("crops-and-chickens.attemptsRemainingPlural", {
           attempts: attemptsLeft,
         })}
@@ -28,7 +30,7 @@ export const CropsAndChickensAttempts: React.FC<Props> = ({ attemptsLeft }) => {
 
   if (attemptsLeft === 1) {
     return (
-      <Label type="vibrant">
+      <Label type="vibrant" className="text-center">
         {t("crops-and-chickens.attemptsRemainingSingular", {
           attempts: attemptsLeft,
         })}
@@ -37,6 +39,8 @@ export const CropsAndChickensAttempts: React.FC<Props> = ({ attemptsLeft }) => {
   }
 
   return (
-    <Label type="danger">{t("crops-and-chickens.noAttemptsRemaining")}</Label>
+    <Label type="danger" className="text-center">
+      {t("crops-and-chickens.noAttemptsRemaining")}
+    </Label>
   );
 };
