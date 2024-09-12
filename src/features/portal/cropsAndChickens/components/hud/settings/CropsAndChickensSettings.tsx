@@ -16,6 +16,8 @@ import classNames from "classnames";
 import { isTouchDevice } from "features/world/lib/device";
 import sound_on from "assets/icons/sound_on.png";
 import sound_off from "assets/icons/sound_off.png";
+import zoomIn from "assets/icons/zoom_in.png";
+import zoomOut from "assets/icons/zoom_out.png";
 import { useIsAudioMuted } from "lib/utils/hooks/useIsAudioMuted";
 import { useIsZoomOut } from "features/portal/cropsAndChickens/hooks/useIsZoomOut";
 
@@ -129,12 +131,12 @@ export const CropsAndChickensSettings: React.FC = () => {
         toggleZoomOut();
       },
       <img
-        src={isZoomOut ? SUNNYSIDE.icons.minus : SUNNYSIDE.icons.plus}
+        src={isZoomOut ? zoomOut : zoomIn}
         className="absolute"
         style={{
-          top: `${PIXEL_SCALE * (isZoomOut ? 8 : 6)}px`,
-          left: `${PIXEL_SCALE * 6}px`,
-          width: `${PIXEL_SCALE * 10}px`,
+          top: `${PIXEL_SCALE * 4}px`,
+          left: `${PIXEL_SCALE * 4}px`,
+          width: `${PIXEL_SCALE * 13}px`,
         }}
       />,
     );
@@ -150,7 +152,7 @@ export const CropsAndChickensSettings: React.FC = () => {
         src={isDarkMode ? darkModeIcon : lightModeIcon}
         className="absolute"
         style={{
-          top: `${PIXEL_SCALE * 6}px`,
+          top: `${PIXEL_SCALE * 5.5}px`,
           left: `${PIXEL_SCALE * 6}px`,
           width: `${PIXEL_SCALE * 10}px`,
         }}
