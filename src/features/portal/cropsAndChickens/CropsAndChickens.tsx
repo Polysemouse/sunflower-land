@@ -111,7 +111,7 @@ export const CropsAndChickens: React.FC = () => {
         <Panel>
           <Loading />
           <span className="text-xs">
-            {`${t("last.updated")}:${CONFIG.CLIENT_VERSION}`}
+            {`${t("last.updated")} ${CONFIG.CLIENT_VERSION}`}
           </span>
         </Panel>
       </Modal>

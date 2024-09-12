@@ -19,6 +19,8 @@ import { SquareIcon } from "components/ui/SquareIcon";
 import { PIXEL_SCALE } from "features/game/lib/constants";
 import { hasFeatureAccess } from "lib/flags";
 import { formatNumber } from "lib/utils/formatNumber";
+import letter from "assets/icons/letter.png";
+import { CropsAndChickensMailbox } from "./CropsAndChickensMailbox";
 
 interface Props {
   mode: "introduction" | "success" | "failed";
@@ -55,9 +57,9 @@ export const CropsAndChickensMission: React.FC<Props> = ({
 
   const dateKey = new Date().toISOString().slice(0, 10);
 
-  const [page, setPage] = React.useState<"main" | "achievements" | "guide">(
-    "main",
-  );
+  const [page, setPage] = React.useState<
+    "main" | "mailbox" | "achievements" | "guide"
+  >("main");
 
   return (
     <>
@@ -91,7 +93,15 @@ export const CropsAndChickensMission: React.FC<Props> = ({
               <CropsAndChickensAttempts attemptsLeft={attemptsLeft} />
             </div>
 
+            {/* Navigation buttons */}
+
             <div className="flex flex-wrap gap-1 justify-center">
+              <Button
+                className="whitespace-nowrap capitalize w-12"
+                onClick={() => setPage("mailbox")}
+              >
+                <SquareIcon icon={letter} width={9} />
+              </Button>
               {hasBetaAccess && (
                 <Button
                   className="whitespace-nowrap capitalize w-12"
@@ -168,6 +178,9 @@ export const CropsAndChickensMission: React.FC<Props> = ({
             </Button>
           </div>
         </div>
+      )}
+      {page === "mailbox" && (
+        <CropsAndChickensMailbox onBack={() => setPage("main")} />
       )}
       {page === "achievements" && (
         <CropsAndChickensAchievementsList onBack={() => setPage("main")} />
