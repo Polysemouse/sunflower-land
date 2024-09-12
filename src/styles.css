@@ -167,11 +167,6 @@
 }
 
 @font-face {
-  font-family: "Hint";
-  src: url("https://sunflower-land.com/testnet-assets/fonts/Hint.ttf");
-}
-
-@font-face {
   font-family: "Secondary";
   src: url("https://sunflower-land.com/testnet-assets/fonts/Secondary.ttf");
 }
@@ -1351,8 +1346,6 @@ img {
 }
 
 a {
-  font-family: Hint;
-  font-size: 24px !important;
   color: #3e2731;
 }
 
@@ -1369,6 +1362,7 @@ a {
 .font-Ark {
   font-family: "Ark", sans-serif;
   font-size: 14px;
+  font-weight: 900;
   -webkit-font-smoothing: antialiased;
 }
 
