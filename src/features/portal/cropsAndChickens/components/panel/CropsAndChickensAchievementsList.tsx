@@ -93,11 +93,9 @@ export const CropsAndChickensAchievementsList: React.FC<Props> = ({
               return (
                 <OuterPanel key={index}>
                   <div className="flex flex-row p-1 items-center">
-                    <SquareIcon
-                      className="ml-2 mr-4"
-                      icon={achievement.icon}
-                      width={16}
-                    />
+                    <div className="ml-2 mr-3">
+                      <SquareIcon icon={achievement.icon} width={16} />
+                    </div>
                     <div className="flex flex-col gap-1 w-full">
                       <div>{achievement.title}</div>
                       <div className="text-xs">{achievement.description}</div>
@@ -121,17 +119,19 @@ export const CropsAndChickensAchievementsList: React.FC<Props> = ({
                 return (
                   <InnerPanel key={index}>
                     <div className="flex flex-row p-1 items-center">
-                      <SquareIcon
-                        className="ml-2 mr-4"
-                        icon={achievement.icon}
-                        width={16}
-                      />
+                      <div className="ml-2 mr-3">
+                        <SquareIcon icon={achievement.icon} width={16} />
+                      </div>
                       <div className="flex flex-col gap-1 w-full">
                         <div>{achievement.title}</div>
                         <div className="text-xs">{achievement.description}</div>
                       </div>
                     </div>
-                    <Label type="success" className="text-xs">
+                    <Label
+                      type="success"
+                      icon={SUNNYSIDE.icons.confirm}
+                      className="text-xs ml-1"
+                    >
                       {t("crops-and-chickens.achievementUnlockedAt", {
                         time: new Date(unlockedAt).toLocaleString(),
                       })}
