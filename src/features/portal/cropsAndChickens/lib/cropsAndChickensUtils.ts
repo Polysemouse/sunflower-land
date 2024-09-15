@@ -5,6 +5,8 @@ import {
   DAILY_ATTEMPTS,
   CROP_SPAWN_CONFIGURATIONS,
   CROP_TO_INDEX,
+  WEEKLY_MISSION_EXTRA_ATTEMPTS_GOAL,
+  WEEKLY_MISSION_EXTRA_ATTEMPTS,
 } from "../CropsAndChickensConstants";
 import { CropName } from "features/game/types/crops";
 import pumpkinHalloween from "public/crops-and-chickens/pumpkin_halloween.png";
@@ -106,9 +108,18 @@ export const getAttemptsLeft = (minigame?: Minigame) => {
       purchase.purchasedAt < endOfTodayUTC,
   ).length;
 
+  const weeklyHighscore = getWeeklyHighscore(minigame);
+  const bonusAttempts =
+    weeklyHighscore >= WEEKLY_MISSION_EXTRA_ATTEMPTS_GOAL
+      ? WEEKLY_MISSION_EXTRA_ATTEMPTS
+      : 0;
+
   const attemptsToday = history[dateKey]?.attempts ?? 0;
   const attemptsLeft =
-    DAILY_ATTEMPTS - attemptsToday + DAILY_ATTEMPTS * restockedCount;
+    DAILY_ATTEMPTS +
+    bonusAttempts -
+    attemptsToday +
+    DAILY_ATTEMPTS * restockedCount;
 
   return attemptsLeft;
 };
@@ -125,6 +136,25 @@ const getStartOfUTCDay = (date: Date) => {
 };
 
 /**
+ * Gets the start of the UTC week for a given date.  A week starts on Monday.
+ * @param date The date.
+ * @returns The start of the UTC week for the given date.
+ */
+const getStartOfUTCWeek = (date: Date) => {
+  const startOfTodayUTC = getStartOfUTCDay(date);
+  const dayOfWeek = date.getUTCDay();
+  const startOfThisWeekUTC =
+    startOfTodayUTC - ((dayOfWeek + 6) % 7) * 24 * 60 * 60 * 1000;
+
+  return startOfThisWeekUTC;
+};
+
+export const getEndOfUTCWeek = (date: Date) => {
+  const startOfThisWeekUTC = getStartOfUTCWeek(date);
+  return startOfThisWeekUTC + 7 * 24 * 60 * 60 * 1000;
+};
+
+/**
  * Gets the image for a crop.
  * @param cropName The crop name.
  * @returns The image for the crop.
@@ -136,4 +166,49 @@ export const getCropImage = (cropName: CropName) => {
   }
 
   return ITEM_DETAILS[cropName].image;
+};
+
+/**
+ * Gets the daily highscore for the minigame.
+ * @param minigame The minigame.
+ * @returns The daily highscore.
+ */
+export const getDailyHighscore = (minigame?: Minigame) => {
+  const dateKey = new Date().toISOString().slice(0, 10);
+  const history = minigame?.history ?? {};
+
+  return history[dateKey]?.highscore ?? 0;
+};
+
+/**
+ * Gets the weekly highscore for the minigame.
+ * @param minigame The minigame.
+ * @returns The weekly highscore.
+ */
+export const getWeeklyHighscore = (minigame?: Minigame) => {
+  const startOfThisWeekUTC = getStartOfUTCWeek(new Date());
+
+  const history = minigame?.history ?? {};
+
+  const dateKeys = Array.from({ length: 7 }, (_, i) => {
+    const date = new Date(startOfThisWeekUTC + i * 24 * 60 * 60 * 1000);
+    return date.toISOString().slice(0, 10);
+  });
+
+  const highscores = dateKeys.map(
+    (dateKey) => history[dateKey]?.highscore ?? 0,
+  );
+  return Math.max(...highscores);
+};
+
+/**
+ * Gets the personal highscore for the minigame.
+ * @param minigame The minigame.
+ * @returns The personal highscore.
+ */
+export const getPersonalHighscore = (minigame?: Minigame) => {
+  return Object.values(minigame?.history ?? {}).reduce(
+    (acc, { highscore }) => Math.max(acc, highscore),
+    0,
+  );
 };

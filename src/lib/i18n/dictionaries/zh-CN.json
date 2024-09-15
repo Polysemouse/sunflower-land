@@ -738,6 +738,7 @@
   "crops-and-chickens.missions": "任务",
   "crops-and-chickens.objectives": "存入价值 {{targetScore}} 点的庄稼",
   "crops-and-chickens.nextMission": "下一个任务：{{time}}",
+  "crops-and-chickens.weeklyAttemptsReward": "本周剩余时间每天+{{attempts}}次尝试",
   "crops-and-chickens.guide": "指南",
   "crops-and-chickens.instructions": "指令",
   "crops-and-chickens.legend": "传奇",

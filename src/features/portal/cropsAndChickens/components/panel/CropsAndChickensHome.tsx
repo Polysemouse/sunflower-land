@@ -7,7 +7,11 @@ import { PortalContext } from "../../lib/PortalProvider";
 import { Label } from "components/ui/Label";
 import { CropsAndChickensAttempts } from "./CropsAndChickensAttempts";
 import factions from "assets/icons/factions.webp";
-import { getAttemptsLeft } from "../../lib/cropsAndChickensUtils";
+import {
+  getAttemptsLeft,
+  getDailyHighscore,
+  getPersonalHighscore,
+} from "../../lib/cropsAndChickensUtils";
 import { goHome } from "features/portal/lib/portalUtil";
 import { PortalMachineState } from "../../lib/cropsAndChickensMachine";
 import { SUNNYSIDE } from "assets/sunnyside";
@@ -56,7 +60,8 @@ export const CropsAndChickensHome: React.FC<Props> = ({
     ? hasFeatureAccess(state, "CROPS_AND_CHICKENS_BETA_TESTING")
     : false;
 
-  const dateKey = new Date().toISOString().slice(0, 10);
+  const dailyHighscore = getDailyHighscore(minigame);
+  const personalHighscore = getPersonalHighscore(minigame);
 
   const [page, setPage] = React.useState<
     "main" | "mailbox" | "missions" | "achievements" | "guide"
@@ -155,7 +160,7 @@ export const CropsAndChickensHome: React.FC<Props> = ({
                     {t("crops-and-chickens.todaysBest")}
                   </span>
                   <span className="text-sm text-center">
-                    {formatNumber(minigame?.history[dateKey]?.highscore ?? 0)}
+                    {formatNumber(dailyHighscore)}
                   </span>
                 </div>
                 <div className="flex flex-col items-center w-1/2">
@@ -163,12 +168,7 @@ export const CropsAndChickensHome: React.FC<Props> = ({
                     {t("crops-and-chickens.personalBest")}
                   </span>
                   <span className="text-sm text-center">
-                    {formatNumber(
-                      Object.values(minigame?.history ?? {}).reduce(
-                        (acc, { highscore }) => Math.max(acc, highscore),
-                        0,
-                      ),
-                    )}
+                    {formatNumber(personalHighscore)}
                   </span>
                 </div>
               </div>

@@ -2653,6 +2653,7 @@
   "crops-and-chickens.missions": "Görevler",
   "crops-and-chickens.objectives": "{{targetScore}} puan değerinde mahsul yatırın",
   "crops-and-chickens.nextMission": "Sonraki görev: {{time}}",
+  "crops-and-chickens.weeklyAttemptsReward": "Haftanın geri kalanında günde +{{attempts}} deneme",
   "crops-and-chickens.guide": "Rehber",
   "crops-and-chickens.instructions": "Talimatlar",
   "crops-and-chickens.legend": "Efsane",

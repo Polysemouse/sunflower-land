@@ -9,8 +9,18 @@ import { ButtonPanel } from "components/ui/Panel";
 import { CONFIG } from "lib/config";
 import letter from "assets/icons/letter.png";
 import { CropsAndChickensMail } from "./CropsAndChickensMail";
+import factions from "assets/icons/factions.webp";
 
 const mails = [
+  {
+    title: "New Weekly Mission",
+    content: [
+      "A new weekly mission is available! Complete it to earn extra attempts per day for the rest of the week.",
+      "Missions have now been moved to their own tab.",
+    ],
+    icon: factions,
+    id: 1,
+  },
   {
     title: "Mailbox is here!",
     content: [
@@ -31,6 +41,11 @@ export const CropsAndChickensMailbox: React.FC<Props> = ({ onBack }) => {
   const button = useSound("button");
 
   const [mailId, setMailId] = React.useState<number>();
+
+  const selectedMail = mails.find((mail) => mail.id === mailId);
+  const selectedMailTitle = selectedMail ? selectedMail.title : "";
+  const selectedMailIcon = selectedMail ? selectedMail.icon : "";
+  const selectedMailContent = selectedMail ? selectedMail.content : [];
 
   return (
     <>
@@ -98,7 +113,9 @@ export const CropsAndChickensMailbox: React.FC<Props> = ({ onBack }) => {
       )}
       {mailId !== undefined && (
         <CropsAndChickensMail
-          {...mails[mailId]}
+          title={selectedMailTitle}
+          icon={selectedMailIcon}
+          content={selectedMailContent}
           onBack={() => setMailId(undefined)}
         />
       )}

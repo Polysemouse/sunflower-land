@@ -2625,6 +2625,7 @@
   "crops-and-chickens.missions": "Missões",
   "crops-and-chickens.objectives": "Depositar {{targetScore}} pontos em colheitas",
   "crops-and-chickens.nextMission": "Próxima missão: {{time}}",
+  "crops-and-chickens.weeklyAttemptsReward": "+{{attempts}} tentativas por dia pelo resto da semana",
   "crops-and-chickens.guide": "Guia",
   "crops-and-chickens.instructions": "Instruções",
   "crops-and-chickens.legend": "Lenda",

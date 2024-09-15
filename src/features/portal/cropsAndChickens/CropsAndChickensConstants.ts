@@ -5,6 +5,9 @@ export const UNLIMITED_ATTEMPTS_SFL = 3;
 export const RESTOCK_ATTEMPTS_SFL = 1;
 export const DAILY_ATTEMPTS = 5;
 
+export const WEEKLY_MISSION_EXTRA_ATTEMPTS_GOAL = 10000;
+export const WEEKLY_MISSION_EXTRA_ATTEMPTS = 2;
+
 export const ZOOM_OUT_SCALE = 2;
 export const JOYSTICK_RADIUS = 45;
 export const JOYSTICK_FORCE_MIN = 6;

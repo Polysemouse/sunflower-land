@@ -77,7 +77,7 @@ export const CropsAndChickensMission: React.FC<Props> = ({
         {/* rewards */}
         <div
           className={classNames(
-            "flex flex-wrap justify-between items-center gap-2",
+            "flex flex-wrap justify-between items-center gap-1",
             {
               "px-1": isCompleted,
             },
@@ -126,7 +126,11 @@ export const CropsAndChickensMission: React.FC<Props> = ({
             </Label>
           )}
           {customPrizes?.map((prize, index) => (
-            <Label key={index} type="warning">
+            <Label
+              key={index}
+              type="warning"
+              secondaryIcon={isCompleted ? SUNNYSIDE.icons.confirm : undefined}
+            >
               {prize}
             </Label>
           ))}

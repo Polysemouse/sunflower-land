@@ -3,15 +3,19 @@ import React from "react";
 import { useAppTranslation } from "lib/i18n/useAppTranslations";
 import { useSound } from "lib/utils/hooks/useSound";
 import { Button } from "components/ui/Button";
+import { SquareIcon } from "components/ui/SquareIcon";
+import { PIXEL_SCALE } from "features/game/lib/constants";
 
 type Props = {
   title: string;
+  icon: string;
   content: string[];
   onBack: () => void;
 };
 
 export const CropsAndChickensMail: React.FC<Props> = ({
   title,
+  icon,
   content,
   onBack,
 }) => {
@@ -27,8 +31,17 @@ export const CropsAndChickensMail: React.FC<Props> = ({
       </div>
 
       {/* content */}
-      <div className="flex flex-col gap-5 overflow-y-auto scrollable p-1">
-        {/* mails */}
+      <div className="flex flex-col items-center gap-5 overflow-y-auto scrollable p-1">
+        {/* icon */}
+        <div
+          style={{
+            height: `${PIXEL_SCALE * 16}px`,
+          }}
+        >
+          <SquareIcon icon={icon} width={16} />
+        </div>
+
+        {/* messages */}
         {content.map((line) => (
           <span key={line} className="text-sm">
             {line}
@@ -36,6 +49,7 @@ export const CropsAndChickensMail: React.FC<Props> = ({
         ))}
       </div>
 
+      {/* back button */}
       <Button
         onClick={() => {
           button.play();

@@ -2659,6 +2659,7 @@
   "crops-and-chickens.missions": "Missions",
   "crops-and-chickens.objectives": "Déposer des cultures d'une valeur de {{targetScore}}",
   "crops-and-chickens.nextMission": "Prochaine mission : {{time}}",
+  "crops-and-chickens.weeklyAttemptsReward": "+{{attempts}} tentatives par jour pour le reste de la semaine",
   "crops-and-chickens.guide": "Guide",
   "crops-and-chickens.instructions": "Instructions",
   "crops-and-chickens.legend": "Légende",

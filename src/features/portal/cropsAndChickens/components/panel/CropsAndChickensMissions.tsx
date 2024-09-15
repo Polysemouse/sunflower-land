@@ -8,15 +8,25 @@ import { PortalMachineState } from "../../lib/cropsAndChickensMachine";
 import { PortalContext } from "../../lib/PortalProvider";
 import { useSelector } from "@xstate/react";
 import { CropsAndChickensMission } from "./CropsAndChickensMission";
+import {
+  getDailyHighscore,
+  getEndOfUTCWeek,
+  getWeeklyHighscore,
+} from "../../lib/cropsAndChickensUtils";
+import {
+  WEEKLY_MISSION_EXTRA_ATTEMPTS,
+  WEEKLY_MISSION_EXTRA_ATTEMPTS_GOAL,
+} from "../../CropsAndChickensConstants";
 
 const _dailyHighscore = (state: PortalMachineState) => {
-  const dateKey = new Date().toISOString().slice(0, 10);
   const minigame = state.context.state?.minigames.games["crops-and-chickens"];
-  const history = minigame?.history ?? {};
-
-  return history[dateKey]?.highscore ?? 0;
+  return getDailyHighscore(minigame);
 };
-const _prize = (state: PortalMachineState) => {
+const _weeklyHighscore = (state: PortalMachineState) => {
+  const minigame = state.context.state?.minigames.games["crops-and-chickens"];
+  return getWeeklyHighscore(minigame);
+};
+const _dailyPrize = (state: PortalMachineState) => {
   return state.context.state?.minigames.prizes["crops-and-chickens"];
 };
 
@@ -30,14 +40,19 @@ export const CropsAndChickensMissions: React.FC<Props> = ({ onBack }) => {
 
   const dailyPrize = useSelector(
     portalService,
-    _prize,
+    _dailyPrize,
     (prev, next) => JSON.stringify(prev) === JSON.stringify(next),
   );
-  const dailyHighscore = useSelector(portalService, _dailyHighscore);
 
+  const dailyHighscore = useSelector(portalService, _dailyHighscore);
   const isDailyMissionCompleted = dailyPrize
-    ? dailyHighscore > dailyPrize.score
+    ? dailyHighscore >= dailyPrize.score
     : false;
+
+  const endOfUTCWeek = getEndOfUTCWeek(new Date());
+  const weeklyHighscore = useSelector(portalService, _weeklyHighscore);
+  const isWeeklyMissionCompleted =
+    weeklyHighscore >= WEEKLY_MISSION_EXTRA_ATTEMPTS_GOAL;
 
   const button = useSound("button");
 
@@ -93,6 +108,16 @@ export const CropsAndChickensMissions: React.FC<Props> = ({ onBack }) => {
             endAt={dailyPrize?.endAt}
           />
         )}
+        <CropsAndChickensMission
+          customPrizes={[
+            t("crops-and-chickens.weeklyAttemptsReward", {
+              attempts: WEEKLY_MISSION_EXTRA_ATTEMPTS,
+            }),
+          ]}
+          isCompleted={isWeeklyMissionCompleted}
+          targetScore={WEEKLY_MISSION_EXTRA_ATTEMPTS_GOAL}
+          endAt={endOfUTCWeek}
+        />
       </div>
     </div>
   );

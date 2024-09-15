@@ -685,6 +685,7 @@
   "crops-and-chickens.missions": "Миссии",
   "crops-and-chickens.objectives": "Набрать {{targetScore}} очков собирая урожай",
   "crops-and-chickens.nextMission": "следующая миссия: {{time}}",
+  "crops-and-chickens.weeklyAttemptsReward": "+{{attempts}} попыток в день до конца недели",
   "crops-and-chickens.guide": "путеводитель",
   "crops-and-chickens.instructions": "инструкции",
   "crops-and-chickens.legend": "Легенда",
