@@ -4,7 +4,7 @@ import { SUNNYSIDE } from "assets/sunnyside";
 import { useAppTranslation } from "lib/i18n/useAppTranslations";
 import { CloseButtonPanel } from "features/game/components/CloseablePanel";
 import { NPC_WEARABLES } from "lib/npcs";
-import { CropsAndChickensMission } from "./CropsAndChickensMission";
+import { CropsAndChickensHome } from "./CropsAndChickensHome";
 import { CropsAndChickensDonations } from "./CropsAndChickensDonations";
 
 interface Props {
@@ -33,7 +33,7 @@ export const CropsAndChickensRulesPanel: React.FC<Props> = ({
       tabs={[
         {
           icon: SUNNYSIDE.icons.plant,
-          name: t("crops-and-chickens.mission"),
+          name: t("crops-and-chickens.minigame"),
         },
         {
           icon: SUNNYSIDE.icons.heart,
@@ -43,7 +43,7 @@ export const CropsAndChickensRulesPanel: React.FC<Props> = ({
     >
       <>
         {tab === 0 && (
-          <CropsAndChickensMission
+          <CropsAndChickensHome
             mode={mode}
             showScore={showScore}
             showExitButton={showExitButton}

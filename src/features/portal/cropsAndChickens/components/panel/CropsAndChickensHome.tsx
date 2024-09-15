@@ -5,7 +5,6 @@ import { useAppTranslation } from "lib/i18n/useAppTranslations";
 import { useSelector } from "@xstate/react";
 import { PortalContext } from "../../lib/PortalProvider";
 import { Label } from "components/ui/Label";
-import { CropsAndChickensPrize } from "./CropsAndChickensPrize";
 import { CropsAndChickensAttempts } from "./CropsAndChickensAttempts";
 import factions from "assets/icons/factions.webp";
 import { getAttemptsLeft } from "../../lib/cropsAndChickensUtils";
@@ -21,6 +20,8 @@ import { hasFeatureAccess } from "lib/flags";
 import { formatNumber } from "lib/utils/formatNumber";
 import letter from "assets/icons/letter.png";
 import { CropsAndChickensMailbox } from "./CropsAndChickensMailbox";
+import { ITEM_DETAILS } from "features/game/types/images";
+import { CropsAndChickensMissions } from "./CropsAndChickensMissions";
 
 interface Props {
   mode: "introduction" | "success" | "failed";
@@ -35,7 +36,7 @@ const _minigame = (state: PortalMachineState) =>
 const _score = (state: PortalMachineState) => state.context.score;
 const _state = (state: PortalMachineState) => state.context.state;
 
-export const CropsAndChickensMission: React.FC<Props> = ({
+export const CropsAndChickensHome: React.FC<Props> = ({
   mode,
   showScore,
   showExitButton,
@@ -58,7 +59,7 @@ export const CropsAndChickensMission: React.FC<Props> = ({
   const dateKey = new Date().toISOString().slice(0, 10);
 
   const [page, setPage] = React.useState<
-    "main" | "mailbox" | "achievements" | "guide"
+    "main" | "mailbox" | "missions" | "achievements" | "guide"
   >("main");
 
   return (
@@ -66,10 +67,16 @@ export const CropsAndChickensMission: React.FC<Props> = ({
       {page === "main" && (
         <div className="flex flex-col gap-1 max-h-[75vh]">
           <div className="flex flex-col gap-1 overflow-x-hidden overflow-y-auto scrollable px-1">
-            <div className="flex justify-between gap-1 items-center mb-1 py-1 pl-2">
+            {/* header */}
+            <div className="flex justify-between gap-2 items-center mb-1 py-1 pl-1">
               {mode === "introduction" && (
-                <Label type="default" icon={factions}>
-                  {t("crops-and-chickens.portal.title")}
+                <Label
+                  type="default"
+                  className="text-center"
+                  icon={ITEM_DETAILS["Kale"].image}
+                  secondaryIcon={SUNNYSIDE.resource.chicken}
+                >
+                  {t("crops-and-chickens.homeTitle")}
                 </Label>
               )}
               {mode === "success" && (
@@ -93,14 +100,19 @@ export const CropsAndChickensMission: React.FC<Props> = ({
               <CropsAndChickensAttempts attemptsLeft={attemptsLeft} />
             </div>
 
-            {/* Navigation buttons */}
-
+            {/* navigation buttons */}
             <div className="flex flex-wrap gap-1 justify-center">
               <Button
                 className="whitespace-nowrap capitalize w-12"
                 onClick={() => setPage("mailbox")}
               >
                 <SquareIcon icon={letter} width={9} />
+              </Button>
+              <Button
+                className="whitespace-nowrap capitalize w-12"
+                onClick={() => setPage("missions")}
+              >
+                <SquareIcon icon={factions} width={8} />
               </Button>
               {hasBetaAccess && (
                 <Button
@@ -116,11 +128,12 @@ export const CropsAndChickensMission: React.FC<Props> = ({
               >
                 <SquareIcon
                   icon={SUNNYSIDE.icons.expression_confused}
-                  width={8}
+                  width={7.5}
                 />
               </Button>
             </div>
 
+            {/* Scores */}
             <Label
               type="chill"
               className="flex flex-col gap-1 items-center p-1 !w-full"
@@ -160,27 +173,20 @@ export const CropsAndChickensMission: React.FC<Props> = ({
                 </div>
               </div>
             </Label>
-
-            <CropsAndChickensPrize />
           </div>
 
-          <div className="flex mt-1 space-x-1">
-            {showExitButton && (
-              <Button className="whitespace-nowrap capitalize" onClick={goHome}>
-                {t("exit")}
-              </Button>
-            )}
-            <Button
-              className="whitespace-nowrap capitalize"
-              onClick={onConfirm}
-            >
-              {confirmButtonText}
-            </Button>
+          {/* play and exit buttons */}
+          <div className="flex gap-1">
+            {showExitButton && <Button onClick={goHome}>{t("exit")}</Button>}
+            <Button onClick={onConfirm}>{confirmButtonText}</Button>
           </div>
         </div>
       )}
       {page === "mailbox" && (
         <CropsAndChickensMailbox onBack={() => setPage("main")} />
+      )}
+      {page === "missions" && (
+        <CropsAndChickensMissions onBack={() => setPage("main")} />
       )}
       {page === "achievements" && (
         <CropsAndChickensAchievementsList onBack={() => setPage("main")} />
