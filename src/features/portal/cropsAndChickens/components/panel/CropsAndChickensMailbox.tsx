@@ -49,7 +49,7 @@ export const CropsAndChickensMailbox: React.FC<Props> = ({ onBack }) => {
 
   return (
     <>
-      {mailId === undefined && (
+      {!selectedMail && (
         <div className="flex flex-col gap-1 max-h-[75vh]">
           {/* title */}
           <div className="flex flex-col gap-1">
@@ -111,7 +111,7 @@ export const CropsAndChickensMailbox: React.FC<Props> = ({ onBack }) => {
           </span>
         </div>
       )}
-      {mailId !== undefined && (
+      {selectedMail && (
         <CropsAndChickensMail
           title={selectedMailTitle}
           icon={selectedMailIcon}
