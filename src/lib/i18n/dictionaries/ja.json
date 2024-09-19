@@ -763,6 +763,7 @@
   "crops-and-chickens.portal.rewardMessage": "おめでとうございます。ミッションを完了しました！報酬はこちらです。",
   "crops-and-chickens.minigame": "ミニゲーム",
   "crops-and-chickens.homeTitle": "作物と鶏",
+  "crops-and-chickens.homeTitleReversed": "鶏と作物",
   "crops-and-chickens.missions": "ミッション",
   "crops-and-chickens.objectives": "{{targetScore}}ポイント分の作物を預ける",
   "crops-and-chickens.nextMission": "次のミッション: {{time}}",

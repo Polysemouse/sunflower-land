@@ -1,8 +1,8 @@
 import React from "react";
 import { useIsDarkMode } from "lib/utils/hooks/useIsDarkMode";
 
-import backgroundLight from "public/crops-and-chickens/crops_and_chickens_background_light.png";
-import backgroundDark from "public/crops-and-chickens/crops_and_chickens_background_dark.png";
+import backgroundLight from "public/crops-and-chickens/background/crops_and_chickens_background_light.png";
+import backgroundDark from "public/crops-and-chickens/background/crops_and_chickens_background_dark.png";
 import { useIsZoomOut } from "./hooks/useIsZoomOut";
 import { ZOOM_OUT_SCALE } from "./CropsAndChickensConstants";
 

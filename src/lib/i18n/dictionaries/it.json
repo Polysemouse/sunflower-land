@@ -759,6 +759,7 @@
   "crops-and-chickens.portal.rewardMessage": "Congratulazioni, hai completato la missione! Ecco la tua ricompensa.",
   "crops-and-chickens.minigame": "Minigioco",
   "crops-and-chickens.homeTitle": "Colture e polli",
+  "crops-and-chickens.homeTitleReversed": "Polli e colture",
   "crops-and-chickens.missions": "Missioni",
   "crops-and-chickens.objectives": "Deposita {{targetScore}} punti in raccolti",
   "crops-and-chickens.nextMission": "Prossima missione: {{time}}",

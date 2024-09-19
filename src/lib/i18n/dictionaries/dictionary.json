@@ -763,6 +763,7 @@
   "crops-and-chickens.portal.rewardMessage": "Congratulations, you completed the mission! Here is your reward.",
   "crops-and-chickens.minigame": "Minigame",
   "crops-and-chickens.homeTitle": "Crops & Chickens",
+  "crops-and-chickens.homeTitleReversed": "Chickens & Crops",
   "crops-and-chickens.missions": "Missions",
   "crops-and-chickens.objectives": "Deposit {{targetScore}} points worth of crops",
   "crops-and-chickens.nextMission": "Next mission: {{time}}",

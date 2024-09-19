@@ -760,6 +760,7 @@
   "crops-and-chickens.portal.rewardMessage": "Enhorabuena, has completado la misión! Aquí tienes tu recompensa.",
   "crops-and-chickens.minigame": "Minijuego",
   "crops-and-chickens.homeTitle": "Crops & Chickens",
+  "crops-and-chickens.homeTitleReversed": "Crops & Chickens",
   "crops-and-chickens.missions": "Misiones",
   "crops-and-chickens.objectives": "Depositar cosechas por valor de {{targetScore}} puntos",
   "crops-and-chickens.nextMission": "Próxima misión: {{time}}",

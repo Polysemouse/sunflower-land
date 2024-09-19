@@ -2656,6 +2656,7 @@
   "crops-and-chickens.portal.rewardMessage": "Félicitations, vous avez terminé la mission ! Voici ta récompense.",
   "crops-and-chickens.minigame": "Mini-jeu",
   "crops-and-chickens.homeTitle": "Crops & Chickens",
+  "crops-and-chickens.homeTitleReversed": "Crops & Chickens",
   "crops-and-chickens.missions": "Missions",
   "crops-and-chickens.objectives": "Déposer des cultures d'une valeur de {{targetScore}}",
   "crops-and-chickens.nextMission": "Prochaine mission : {{time}}",

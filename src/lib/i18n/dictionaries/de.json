@@ -763,6 +763,7 @@
   "crops-and-chickens.portal.rewardMessage": "Herzlichen Glückwunsch, du hast die Mission abgeschlossen! Hier ist deine Belohnung.",
   "crops-and-chickens.minigame": "Minispiel",
   "crops-and-chickens.homeTitle": "Felder & Hühner",
+  "crops-and-chickens.homeTitleReversed": "Hühner & Felder",
   "crops-and-chickens.missions": "Missionen",
   "crops-and-chickens.objectives": "Lege {{targetScore}} Punkte an Feldfrüchten ab",
   "crops-and-chickens.nextMission": "Nächste Mission: {{time}}",

@@ -735,6 +735,7 @@
   "crops-and-chickens.portal.rewardMessage": "恭喜，您已经完成了任务！这里是您的奖赏。",
   "crops-and-chickens.minigame": "小游戏",
   "crops-and-chickens.homeTitle": "庄稼与鸡",
+  "crops-and-chickens.homeTitleReversed": "鸡与庄稼",
   "crops-and-chickens.missions": "任务",
   "crops-and-chickens.objectives": "存入价值 {{targetScore}} 点的庄稼",
   "crops-and-chickens.nextMission": "下一个任务：{{time}}",

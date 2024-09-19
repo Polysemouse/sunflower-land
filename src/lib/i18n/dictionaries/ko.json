@@ -763,6 +763,7 @@
   "crops-and-chickens.portal.rewardMessage": "축하합니다. 임무를 완수했습니다!보상은 다음과 같습니다.",
   "crops-and-chickens.minigame": "미니게임",
   "crops-and-chickens.homeTitle": "작물 & 닭",
+  "crops-and-chickens.homeTitleReversed": "닭 & 작물",
   "crops-and-chickens.missions": "미션",
   "crops-and-chickens.objectives": "작물 {{targetScore}} 포인트를 예치하세요",
   "crops-and-chickens.nextMission": "다음 미션: {{time}}",

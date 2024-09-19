@@ -763,6 +763,7 @@
   "crops-and-chickens.portal.rewardMessage": "Tahniah, anda menyelesaikan misi! Inilah ganjaran anda.",
   "crops-and-chickens.minigame": "Permainan Mini",
   "crops-and-chickens.homeTitle": "Tanaman & Ayam",
+  "crops-and-chickens.homeTitleReversed": "Ayam & Tanaman",
   "crops-and-chickens.missions": "Misi",
   "crops-and-chickens.objectives": "Deposit {{targetScore}} mata bernilai tanaman",
   "crops-and-chickens.nextMission": "Misi seterusnya: {{time}}",

@@ -10,6 +10,7 @@ import factions from "assets/icons/factions.webp";
 import {
   getAttemptsLeft,
   getDailyHighscore,
+  getHolidayEvent,
   getPersonalHighscore,
 } from "../../lib/cropsAndChickensUtils";
 import { goHome } from "features/portal/lib/portalUtil";
@@ -24,8 +25,8 @@ import { hasFeatureAccess } from "lib/flags";
 import { formatNumber } from "lib/utils/formatNumber";
 import letter from "assets/icons/letter.png";
 import { CropsAndChickensMailbox } from "./CropsAndChickensMailbox";
-import { ITEM_DETAILS } from "features/game/types/images";
 import { CropsAndChickensMissions } from "./CropsAndChickensMissions";
+import { getHolidayAsset } from "../../lib/CropsAndChickensSeasonalAsset";
 
 interface Props {
   mode: "introduction" | "success" | "failed";
@@ -56,6 +57,8 @@ export const CropsAndChickensHome: React.FC<Props> = ({
   const score = useSelector(portalService, _score);
   const state = useSelector(portalService, _state);
 
+  const holidayEvent = getHolidayEvent();
+
   const hasBetaAccess = state
     ? hasFeatureAccess(state, "CROPS_AND_CHICKENS_BETA_TESTING")
     : false;
@@ -78,10 +81,15 @@ export const CropsAndChickensHome: React.FC<Props> = ({
                 <Label
                   type="default"
                   className="text-center"
-                  icon={ITEM_DETAILS["Kale"].image}
-                  secondaryIcon={SUNNYSIDE.resource.chicken}
+                  icon={getHolidayAsset("game_title_icon", holidayEvent)}
+                  secondaryIcon={getHolidayAsset(
+                    "game_title_secondary_icon",
+                    holidayEvent,
+                  )}
                 >
-                  {t("crops-and-chickens.homeTitle")}
+                  <div className="px-0.5">
+                    {getHolidayAsset("game_title", holidayEvent)}
+                  </div>
                 </Label>
               )}
               {mode === "success" && (

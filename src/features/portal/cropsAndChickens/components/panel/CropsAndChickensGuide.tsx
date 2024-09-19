@@ -4,17 +4,12 @@ import { useAppTranslation } from "lib/i18n/useAppTranslations";
 import { SUNNYSIDE } from "assets/sunnyside";
 import { SquareIcon } from "components/ui/SquareIcon";
 import { ITEM_DETAILS } from "features/game/types/images";
-import chickenNormal from "public/crops-and-chickens/chicken_normal.png";
-import chickenNormalHalloween from "public/crops-and-chickens/chicken_normal_halloween.png";
-import chickenNormalChristmas from "public/crops-and-chickens/chicken_normal_christmas.png";
-import chickenHunter from "public/crops-and-chickens/chicken_hunter.png";
-import chickenHunterHalloween from "public/crops-and-chickens/chicken_hunter_halloween.png";
-import chickenHunterChristmas from "public/crops-and-chickens/chicken_hunter_christmas.png";
 import { Label } from "components/ui/Label";
 import { SCORE_TABLE } from "../../CropsAndChickensConstants";
 import { PIXEL_SCALE } from "features/game/lib/constants";
 import { useSound } from "lib/utils/hooks/useSound";
 import { getCropImage, getHolidayEvent } from "../../lib/cropsAndChickensUtils";
+import { getHolidayAsset } from "../../lib/CropsAndChickensSeasonalAsset";
 
 type Props = {
   onBack: () => void;
@@ -71,28 +66,28 @@ export const CropsAndChickensGuide: React.FC<Props> = ({ onBack }) => {
         <Label type="default">{t("crops-and-chickens.instructions")}</Label>
         <div>
           <div className="flex items-center mb-3 mx-2">
-            <SquareIcon icon={ITEM_DETAILS["Sunflower"].image} width={7} />
+            <SquareIcon icon={ITEM_DETAILS["Sunflower"].image} width={8} />
             <p className="text-xs ml-3 flex-1">
               {t("crops-and-chickens.instructions1")}
             </p>
           </div>
 
           <div className="flex items-center mb-3 mx-2">
-            <SquareIcon icon={SUNNYSIDE.icons.basket} width={7} />
+            <SquareIcon icon={SUNNYSIDE.icons.basket} width={8} />
             <p className="text-xs ml-3 flex-1">
               {t("crops-and-chickens.instructions2")}
             </p>
           </div>
 
           <div className="flex items-center mb-3 mx-2">
-            <SquareIcon icon={ITEM_DETAILS["Chicken"].image} width={7} />
+            <SquareIcon icon={ITEM_DETAILS["Chicken"].image} width={8} />
             <p className="text-xs ml-3 flex-1">
               {t("crops-and-chickens.instructions3")}
             </p>
           </div>
 
           <div className="flex items-center mb-3 mx-2">
-            <SquareIcon icon={SUNNYSIDE.icons.stopwatch} width={7} />
+            <SquareIcon icon={SUNNYSIDE.icons.stopwatch} width={8} />
             <p className="text-xs ml-3 flex-1">
               {t("crops-and-chickens.instructions4")}
             </p>
@@ -110,7 +105,7 @@ export const CropsAndChickensGuide: React.FC<Props> = ({ onBack }) => {
                   className="p-1.5 w-1/6"
                 >
                   <div className="flex items-center justify-center">
-                    <SquareIcon icon={getCropImage(item)} width={7} />
+                    <SquareIcon icon={getCropImage(item)} width={8} />
                   </div>
                 </td>
                 <td
@@ -124,7 +119,7 @@ export const CropsAndChickensGuide: React.FC<Props> = ({ onBack }) => {
             <tr>
               <td style={{ border: "1px solid #b96f50" }} className="p-1.5">
                 <div className="flex items-center justify-center">
-                  <SquareIcon icon={SUNNYSIDE.icons.treasure} width={7} />
+                  <SquareIcon icon={SUNNYSIDE.icons.treasure} width={8} />
                 </div>
               </td>
               <td style={{ border: "1px solid #b96f50" }} className="p-1.5">
@@ -135,14 +130,8 @@ export const CropsAndChickensGuide: React.FC<Props> = ({ onBack }) => {
               <td style={{ border: "1px solid #b96f50" }} className="p-1.5">
                 <div className="flex items-center justify-center">
                   <SquareIcon
-                    icon={
-                      holidayEvent === "halloween"
-                        ? chickenNormalHalloween
-                        : holidayEvent === "christmas"
-                          ? chickenNormalChristmas
-                          : chickenNormal
-                    }
-                    width={7}
+                    icon={getHolidayAsset("chicken_normal", holidayEvent)}
+                    width={8}
                   />
                 </div>
               </td>
@@ -154,14 +143,8 @@ export const CropsAndChickensGuide: React.FC<Props> = ({ onBack }) => {
               <td style={{ border: "1px solid #b96f50" }} className="p-1.5">
                 <div className="flex items-center justify-center">
                   <SquareIcon
-                    icon={
-                      holidayEvent === "halloween"
-                        ? chickenHunterHalloween
-                        : holidayEvent === "christmas"
-                          ? chickenHunterChristmas
-                          : chickenHunter
-                    }
-                    width={7}
+                    icon={getHolidayAsset("chicken_hunter", holidayEvent)}
+                    width={8}
                   />
                 </div>
               </td>

@@ -802,7 +802,7 @@ export class CropsAndChickensScene extends BaseScene {
       const cropSprite = this.add.sprite(
         player.x,
         player.y,
-        "crop_harvested",
+        "crops_harvested",
         cropIndex,
       );
 
@@ -917,7 +917,7 @@ export class CropsAndChickensScene extends BaseScene {
       const cropSprite = this.add.sprite(
         player.x,
         player.y,
-        "crop_harvested",
+        "crops_harvested",
         cropIndex,
       );
 

@@ -21,7 +21,7 @@ export class CropContainer extends Phaser.GameObjects.Container {
     y = Phaser.Math.Wrap(y + 1, BOARD_OFFSET, BOARD_OFFSET + BOARD_WIDTH);
 
     // create crop sprites
-    const spriteName = "crop_planted";
+    const spriteName = "crops_planted";
     const crops = [
       this.scene.add.sprite(x, y, spriteName, cropIndex),
       this.scene.add.sprite(x + BOARD_WIDTH, y, spriteName, cropIndex),

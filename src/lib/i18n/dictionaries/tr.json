@@ -2650,6 +2650,7 @@
   "crops-and-chickens.portal.rewardMessage": "Tebrikler, görevi tamamladınız! İşte ödülünüz.",
   "crops-and-chickens.minigame": "Mini Oyun",
   "crops-and-chickens.homeTitle": "Mahsuller ve Tavuklar",
+  "crops-and-chickens.homeTitleReversed": "Tavuklar ve Mahsuller",
   "crops-and-chickens.missions": "Görevler",
   "crops-and-chickens.objectives": "{{targetScore}} puan değerinde mahsul yatırın",
   "crops-and-chickens.nextMission": "Sonraki görev: {{time}}",

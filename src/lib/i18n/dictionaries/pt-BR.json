@@ -2622,6 +2622,7 @@
   "crops-and-chickens.portal.rewardMessage": "Parabéns, você completou a missão! Aqui está sua recompensa.",
   "crops-and-chickens.minigame": "Minigame",
   "crops-and-chickens.homeTitle": "Culturas e galinhas",
+  "crops-and-chickens.homeTitleReversed": "Galinhas e culturas",
   "crops-and-chickens.missions": "Missões",
   "crops-and-chickens.objectives": "Depositar {{targetScore}} pontos em colheitas",
   "crops-and-chickens.nextMission": "Próxima missão: {{time}}",

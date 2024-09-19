@@ -1,5 +1,4 @@
 import { SQUARE_WIDTH } from "features/game/lib/constants";
-import { CropName } from "features/game/types/crops";
 
 export const UNLIMITED_ATTEMPTS_SFL = 3;
 export const RESTOCK_ATTEMPTS_SFL = 1;
@@ -63,7 +62,20 @@ export const CHICKEN_SPEEDS = {
 export const HUNTER_CHICKEN_INITIAL_DISTANCE = 100;
 export const HUNTER_CHICKEN_SPEED_MULTIPLIER = 0.8;
 
-export const CROP_TO_INDEX: { [key in CropName]?: number } = {
+export type CropsAndChickensCropName =
+  | "Sunflower"
+  | "Potato"
+  | "Pumpkin"
+  | "Carrot"
+  | "Cabbage"
+  | "Beetroot"
+  | "Cauliflower"
+  | "Parsnip"
+  | "Radish"
+  | "Wheat"
+  | "Kale";
+
+export const CROP_TO_INDEX: { [key in CropsAndChickensCropName]?: number } = {
   Sunflower: 0,
   Potato: 1,
   Pumpkin: 2,
@@ -77,7 +89,7 @@ export const CROP_TO_INDEX: { [key in CropName]?: number } = {
   Kale: 10,
 };
 
-export const INDEX_TO_CROP: { [key: number]: CropName } = {
+export const INDEX_TO_CROP: { [key: number]: CropsAndChickensCropName } = {
   0: "Sunflower",
   1: "Potato",
   2: "Pumpkin",
@@ -93,7 +105,7 @@ export const INDEX_TO_CROP: { [key: number]: CropName } = {
 
 export const SCORE_TABLE: {
   [key: number]: {
-    item: CropName;
+    item: CropsAndChickensCropName;
     points: number;
   };
 } = {

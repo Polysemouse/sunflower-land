@@ -7,12 +7,11 @@ import {
   CROP_TO_INDEX,
   WEEKLY_MISSION_EXTRA_ATTEMPTS_GOAL,
   WEEKLY_MISSION_EXTRA_ATTEMPTS,
+  CropsAndChickensCropName,
 } from "../CropsAndChickensConstants";
-import { CropName } from "features/game/types/crops";
-import pumpkinHalloween from "public/crops-and-chickens/pumpkin_halloween.png";
-import { ITEM_DETAILS } from "features/game/types/images";
+import { getHolidayAsset } from "./CropsAndChickensSeasonalAsset";
 
-type CropsAndChickensHolidayEvent =
+export type CropsAndChickensHolidayEvent =
   | "none"
   | "april_fools"
   | "easter"
@@ -78,7 +77,7 @@ export const getHolidayEvent = (): CropsAndChickensHolidayEvent => {
  * @param cropName The crop name.
  * @returns The total number of crops of the specified type that are available.
  */
-export const getTotalCropsInGame = (cropName: CropName) => {
+export const getTotalCropsInGame = (cropName: CropsAndChickensCropName) => {
   return CROP_SPAWN_CONFIGURATIONS.filter(
     (config) => config.cropIndex === CROP_TO_INDEX[cropName],
   ).length;
@@ -165,13 +164,9 @@ export const getEndOfUTCWeek = (date: Date) => {
  * @param cropName The crop name.
  * @returns The image for the crop.
  */
-export const getCropImage = (cropName: CropName) => {
+export const getCropImage = (cropName: CropsAndChickensCropName) => {
   const holidayEvent = getHolidayEvent();
-  if (holidayEvent === "halloween" && cropName === "Pumpkin") {
-    return pumpkinHalloween;
-  }
-
-  return ITEM_DETAILS[cropName].image;
+  return getHolidayAsset(cropName, holidayEvent);
 };
 
 /**
