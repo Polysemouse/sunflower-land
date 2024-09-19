@@ -9,7 +9,7 @@ import { SCORE_TABLE } from "../../CropsAndChickensConstants";
 import { PIXEL_SCALE } from "features/game/lib/constants";
 import { useSound } from "lib/utils/hooks/useSound";
 import { getCropImage, getHolidayEvent } from "../../lib/cropsAndChickensUtils";
-import { getHolidayAsset } from "../../lib/CropsAndChickensSeasonalAsset";
+import { getHolidayAsset } from "../../lib/CropsAndChickensHolidayAsset";
 
 type Props = {
   onBack: () => void;

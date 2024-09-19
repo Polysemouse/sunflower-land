@@ -2,34 +2,12 @@ import React from "react";
 
 import { useAppTranslation } from "lib/i18n/useAppTranslations";
 import { SUNNYSIDE } from "assets/sunnyside";
-import { SquareIcon } from "components/ui/SquareIcon";
 import { PIXEL_SCALE } from "features/game/lib/constants";
 import { useSound } from "lib/utils/hooks/useSound";
-import { ButtonPanel } from "components/ui/Panel";
 import { CONFIG } from "lib/config";
-import letter from "assets/icons/letter.png";
 import { CropsAndChickensMail } from "./CropsAndChickensMail";
-import factions from "assets/icons/factions.webp";
-
-const mails = [
-  {
-    title: "New Weekly Mission",
-    content: [
-      "A new weekly mission is available! Complete it to earn extra attempts per day for the rest of the week.",
-      "Missions have now been moved to their own tab.",
-    ],
-    icon: factions,
-    id: 1,
-  },
-  {
-    title: "Mailbox is here!",
-    content: [
-      "The mailbox has arrived! You can check the mail for the latest minigame updates.",
-    ],
-    icon: letter,
-    id: 0,
-  },
-];
+import { CROPS_AND_CHICKEN_MAILS } from "../../hooks/useMailRead";
+import { CropsAndChickensMailList } from "./CropsAndChickensMailList";
 
 type Props = {
   onBack: () => void;
@@ -42,10 +20,13 @@ export const CropsAndChickensMailbox: React.FC<Props> = ({ onBack }) => {
 
   const [mailId, setMailId] = React.useState<number>();
 
-  const selectedMail = mails.find((mail) => mail.id === mailId);
+  const selectedMail = CROPS_AND_CHICKEN_MAILS.find(
+    (mail) => mail.id === mailId,
+  );
   const selectedMailTitle = selectedMail ? selectedMail.title : "";
   const selectedMailIcon = selectedMail ? selectedMail.icon : "";
   const selectedMailContent = selectedMail ? selectedMail.content : [];
+  const selectedMailId = selectedMail ? selectedMail.id : 0;
 
   return (
     <>
@@ -86,25 +67,7 @@ export const CropsAndChickensMailbox: React.FC<Props> = ({ onBack }) => {
           </div>
 
           {/* content */}
-          <div className="flex flex-col gap-1 overflow-y-auto scrollable px-1">
-            {/* mails */}
-            {mails.map((mail, index) => (
-              <ButtonPanel
-                key={index}
-                onClick={() => {
-                  button.play();
-                  setMailId(mail.id);
-                }}
-              >
-                <div className="flex items-center justify-start gap-1 w-full">
-                  <div className="mr-1">
-                    <SquareIcon icon={mail.icon} width={16} />
-                  </div>
-                  <span className="text-sm">{mail.title}</span>
-                </div>
-              </ButtonPanel>
-            ))}
-          </div>
+          <CropsAndChickensMailList setMailId={setMailId} />
 
           <span className="text-xs">
             {`${t("last.updated")} ${CONFIG.CLIENT_VERSION}`}
@@ -116,6 +79,7 @@ export const CropsAndChickensMailbox: React.FC<Props> = ({ onBack }) => {
           title={selectedMailTitle}
           icon={selectedMailIcon}
           content={selectedMailContent}
+          id={selectedMailId}
           onBack={() => setMailId(undefined)}
         />
       )}

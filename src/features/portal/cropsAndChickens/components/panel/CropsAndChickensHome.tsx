@@ -6,7 +6,6 @@ import { useSelector } from "@xstate/react";
 import { PortalContext } from "../../lib/PortalProvider";
 import { Label } from "components/ui/Label";
 import { CropsAndChickensAttempts } from "./CropsAndChickensAttempts";
-import factions from "assets/icons/factions.webp";
 import {
   getAttemptsLeft,
   getDailyHighscore,
@@ -18,15 +17,23 @@ import { PortalMachineState } from "../../lib/cropsAndChickensMachine";
 import { SUNNYSIDE } from "assets/sunnyside";
 import { CropsAndChickensAchievementsList } from "./CropsAndChickensAchievementsList";
 import { CropsAndChickensGuide } from "./CropsAndChickensGuide";
-import trophy from "assets/icons/trophy.png";
-import { SquareIcon } from "components/ui/SquareIcon";
 import { PIXEL_SCALE } from "features/game/lib/constants";
-import { hasFeatureAccess } from "lib/flags";
 import { formatNumber } from "lib/utils/formatNumber";
-import letter from "assets/icons/letter.png";
 import { CropsAndChickensMailbox } from "./CropsAndChickensMailbox";
 import { CropsAndChickensMissions } from "./CropsAndChickensMissions";
-import { getHolidayAsset } from "../../lib/CropsAndChickensSeasonalAsset";
+import { getHolidayAsset } from "../../lib/CropsAndChickensHolidayAsset";
+import { CropsAndChickensHomeNavigationButtons } from "./CropsAndChickensHomeNavigationButtons";
+
+export type CropsAndChickensPage =
+  | "main"
+  | "mailbox"
+  | "missions"
+  | "achievements"
+  | "guide";
+
+const _minigame = (state: PortalMachineState) =>
+  state.context.state?.minigames.games["crops-and-chickens"];
+const _score = (state: PortalMachineState) => state.context.score;
 
 interface Props {
   mode: "introduction" | "success" | "failed";
@@ -35,11 +42,6 @@ interface Props {
   confirmButtonText: string;
   onConfirm: () => void;
 }
-
-const _minigame = (state: PortalMachineState) =>
-  state.context.state?.minigames.games["crops-and-chickens"];
-const _score = (state: PortalMachineState) => state.context.score;
-const _state = (state: PortalMachineState) => state.context.state;
 
 export const CropsAndChickensHome: React.FC<Props> = ({
   mode,
@@ -55,20 +57,13 @@ export const CropsAndChickensHome: React.FC<Props> = ({
   const minigame = useSelector(portalService, _minigame);
   const attemptsLeft = getAttemptsLeft(minigame);
   const score = useSelector(portalService, _score);
-  const state = useSelector(portalService, _state);
 
   const holidayEvent = getHolidayEvent();
-
-  const hasBetaAccess = state
-    ? hasFeatureAccess(state, "CROPS_AND_CHICKENS_BETA_TESTING")
-    : false;
 
   const dailyHighscore = getDailyHighscore(minigame);
   const personalHighscore = getPersonalHighscore(minigame);
 
-  const [page, setPage] = React.useState<
-    "main" | "mailbox" | "missions" | "achievements" | "guide"
-  >("main");
+  const [page, setPage] = React.useState<CropsAndChickensPage>("main");
 
   return (
     <>
@@ -114,37 +109,7 @@ export const CropsAndChickensHome: React.FC<Props> = ({
             </div>
 
             {/* navigation buttons */}
-            <div className="flex flex-wrap gap-1 justify-center">
-              <Button
-                className="whitespace-nowrap capitalize w-12"
-                onClick={() => setPage("mailbox")}
-              >
-                <SquareIcon icon={letter} width={9} />
-              </Button>
-              <Button
-                className="whitespace-nowrap capitalize w-12"
-                onClick={() => setPage("missions")}
-              >
-                <SquareIcon icon={factions} width={8} />
-              </Button>
-              {hasBetaAccess && (
-                <Button
-                  className="whitespace-nowrap capitalize w-12"
-                  onClick={() => setPage("achievements")}
-                >
-                  <SquareIcon icon={trophy} width={9} />
-                </Button>
-              )}
-              <Button
-                className="whitespace-nowrap capitalize w-12"
-                onClick={() => setPage("guide")}
-              >
-                <SquareIcon
-                  icon={SUNNYSIDE.icons.expression_confused}
-                  width={7.5}
-                />
-              </Button>
-            </div>
+            <CropsAndChickensHomeNavigationButtons setPage={setPage} />
 
             {/* Scores */}
             <Label

@@ -9,7 +9,7 @@ import {
   WEEKLY_MISSION_EXTRA_ATTEMPTS,
   CropsAndChickensCropName,
 } from "../CropsAndChickensConstants";
-import { getHolidayAsset } from "./CropsAndChickensSeasonalAsset";
+import { getHolidayAsset } from "./CropsAndChickensHolidayAsset";
 
 export type CropsAndChickensHolidayEvent =
   | "none"

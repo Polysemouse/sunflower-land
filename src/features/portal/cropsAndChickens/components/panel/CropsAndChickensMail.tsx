@@ -5,11 +5,13 @@ import { useSound } from "lib/utils/hooks/useSound";
 import { Button } from "components/ui/Button";
 import { SquareIcon } from "components/ui/SquareIcon";
 import { PIXEL_SCALE } from "features/game/lib/constants";
+import { useMailRead } from "../../hooks/useMailRead";
 
 type Props = {
   title: string;
   icon: string;
   content: string[];
+  id: number;
   onBack: () => void;
 };
 
@@ -17,11 +19,14 @@ export const CropsAndChickensMail: React.FC<Props> = ({
   title,
   icon,
   content,
+  id,
   onBack,
 }) => {
   const { t } = useAppTranslation();
 
   const button = useSound("button");
+
+  const { setMailRead } = useMailRead();
 
   return (
     <div className="flex flex-col gap-2 max-h-[75vh]">
@@ -53,6 +58,7 @@ export const CropsAndChickensMail: React.FC<Props> = ({
       <Button
         onClick={() => {
           button.play();
+          setMailRead(id);
           onBack();
         }}
       >

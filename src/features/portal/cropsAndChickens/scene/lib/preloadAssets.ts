@@ -2,7 +2,7 @@ import {
   CHICKEN_SPRITE_PROPERTIES,
   PLAYER_DEATH_SPRITE_PROPERTIES,
 } from "../../CropsAndChickensConstants";
-import { getHolidayAsset } from "../../lib/CropsAndChickensSeasonalAsset";
+import { getHolidayAsset } from "../../lib/CropsAndChickensHolidayAsset";
 import { getHolidayEvent } from "../../lib/cropsAndChickensUtils";
 import { CropsAndChickensScene } from "../CropsAndChickensScene";
 
@@ -30,7 +30,7 @@ export const preloadAssets = (scene: CropsAndChickensScene) => {
   );
   scene.load.spritesheet(
     "chicken_normal_right",
-    getHolidayAsset("chicken_hunter_right_movements", holidayEvent),
+    getHolidayAsset("chicken_normal_right_movements", holidayEvent),
     {
       frameWidth: CHICKEN_SPRITE_PROPERTIES.frameWidth,
       frameHeight: CHICKEN_SPRITE_PROPERTIES.frameHeight,
