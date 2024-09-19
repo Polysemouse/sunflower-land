@@ -25,7 +25,9 @@ export const preloadAssets = (scene: CropsAndChickensScene) => {
       ? "crops-and-chickens/chicken_normal_left_movements_halloween.png"
       : holidayEvent === "christmas"
         ? "crops-and-chickens/chicken_normal_left_movements_christmas.png"
-        : "crops-and-chickens/chicken_normal_left_movements.png",
+        : holidayEvent === "april_fools"
+          ? "crops-and-chickens/chicken_normal_left_movements_april_fools.png"
+          : "crops-and-chickens/chicken_normal_left_movements.png",
     {
       frameWidth: CHICKEN_SPRITE_PROPERTIES.frameWidth,
       frameHeight: CHICKEN_SPRITE_PROPERTIES.frameHeight,
@@ -37,7 +39,9 @@ export const preloadAssets = (scene: CropsAndChickensScene) => {
       ? "crops-and-chickens/chicken_normal_right_movements_halloween.png"
       : holidayEvent === "christmas"
         ? "crops-and-chickens/chicken_normal_right_movements_christmas.png"
-        : "crops-and-chickens/chicken_normal_right_movements.png",
+        : holidayEvent === "april_fools"
+          ? "crops-and-chickens/chicken_normal_right_movements_april_fools.png"
+          : "crops-and-chickens/chicken_normal_right_movements.png",
     {
       frameWidth: CHICKEN_SPRITE_PROPERTIES.frameWidth,
       frameHeight: CHICKEN_SPRITE_PROPERTIES.frameHeight,
@@ -49,7 +53,9 @@ export const preloadAssets = (scene: CropsAndChickensScene) => {
       ? "crops-and-chickens/chicken_normal_up_movements_halloween.png"
       : holidayEvent === "christmas"
         ? "crops-and-chickens/chicken_normal_up_movements_christmas.png"
-        : "crops-and-chickens/chicken_normal_up_movements.png",
+        : holidayEvent === "april_fools"
+          ? "crops-and-chickens/chicken_normal_up_movements_april_fools.png"
+          : "crops-and-chickens/chicken_normal_up_movements.png",
     {
       frameWidth: CHICKEN_SPRITE_PROPERTIES.frameWidth,
       frameHeight: CHICKEN_SPRITE_PROPERTIES.frameHeight,
@@ -61,7 +67,9 @@ export const preloadAssets = (scene: CropsAndChickensScene) => {
       ? "crops-and-chickens/chicken_normal_down_movements_halloween.png"
       : holidayEvent === "christmas"
         ? "crops-and-chickens/chicken_normal_down_movements_christmas.png"
-        : "crops-and-chickens/chicken_normal_down_movements.png",
+        : holidayEvent === "april_fools"
+          ? "crops-and-chickens/chicken_normal_down_movements_april_fools.png"
+          : "crops-and-chickens/chicken_normal_down_movements.png",
     {
       frameWidth: CHICKEN_SPRITE_PROPERTIES.frameWidth,
       frameHeight: CHICKEN_SPRITE_PROPERTIES.frameHeight,
@@ -75,7 +83,9 @@ export const preloadAssets = (scene: CropsAndChickensScene) => {
       ? "crops-and-chickens/chicken_hunter_left_movements_halloween.png"
       : holidayEvent === "christmas"
         ? "crops-and-chickens/chicken_hunter_left_movements_christmas.png"
-        : "crops-and-chickens/chicken_hunter_left_movements.png",
+        : holidayEvent === "april_fools"
+          ? "crops-and-chickens/chicken_hunter_left_movements_april_fools.png"
+          : "crops-and-chickens/chicken_hunter_left_movements.png",
     {
       frameWidth: CHICKEN_SPRITE_PROPERTIES.frameWidth,
       frameHeight: CHICKEN_SPRITE_PROPERTIES.frameHeight,
@@ -87,7 +97,9 @@ export const preloadAssets = (scene: CropsAndChickensScene) => {
       ? "crops-and-chickens/chicken_hunter_right_movements_halloween.png"
       : holidayEvent === "christmas"
         ? "crops-and-chickens/chicken_hunter_right_movements_christmas.png"
-        : "crops-and-chickens/chicken_hunter_right_movements.png",
+        : holidayEvent === "april_fools"
+          ? "crops-and-chickens/chicken_hunter_right_movements_april_fools.png"
+          : "crops-and-chickens/chicken_hunter_right_movements.png",
     {
       frameWidth: CHICKEN_SPRITE_PROPERTIES.frameWidth,
       frameHeight: CHICKEN_SPRITE_PROPERTIES.frameHeight,
@@ -99,7 +111,9 @@ export const preloadAssets = (scene: CropsAndChickensScene) => {
       ? "crops-and-chickens/chicken_hunter_up_movements_halloween.png"
       : holidayEvent === "christmas"
         ? "crops-and-chickens/chicken_hunter_up_movements_christmas.png"
-        : "crops-and-chickens/chicken_hunter_up_movements.png",
+        : holidayEvent === "april_fools"
+          ? "crops-and-chickens/chicken_hunter_up_movements_april_fools.png"
+          : "crops-and-chickens/chicken_hunter_up_movements.png",
     {
       frameWidth: CHICKEN_SPRITE_PROPERTIES.frameWidth,
       frameHeight: CHICKEN_SPRITE_PROPERTIES.frameHeight,
@@ -111,7 +125,9 @@ export const preloadAssets = (scene: CropsAndChickensScene) => {
       ? "crops-and-chickens/chicken_hunter_down_movements_halloween.png"
       : holidayEvent === "christmas"
         ? "crops-and-chickens/chicken_hunter_down_movements_christmas.png"
-        : "crops-and-chickens/chicken_hunter_down_movements.png",
+        : holidayEvent === "april_fools"
+          ? "crops-and-chickens/chicken_hunter_down_movements_april_fools.png"
+          : "crops-and-chickens/chicken_hunter_down_movements.png",
     {
       frameWidth: CHICKEN_SPRITE_PROPERTIES.frameWidth,
       frameHeight: CHICKEN_SPRITE_PROPERTIES.frameHeight,
