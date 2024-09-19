@@ -14,6 +14,7 @@ import { ITEM_DETAILS } from "features/game/types/images";
 
 type CropsAndChickensHolidayEvent =
   | "none"
+  | "april_fools"
   | "easter"
   | "halloween"
   | "christmas";
@@ -48,6 +49,11 @@ export const getHolidayEvent = (): CropsAndChickensHolidayEvent => {
   const now = Date.now();
   const year = new Date().getUTCFullYear();
   const ONE_DAY = 24 * 60 * 60 * 1000;
+
+  const aprilFoolsStartDate = Date.UTC(year, 3, 1);
+  const aprilFoolsEndDate = Date.UTC(year, 3, 2);
+  if (now >= aprilFoolsStartDate && now < aprilFoolsEndDate)
+    return "april_fools";
 
   const easterDate = getEasterDate(year);
   const easterStartDate = easterDate - 6 * ONE_DAY;

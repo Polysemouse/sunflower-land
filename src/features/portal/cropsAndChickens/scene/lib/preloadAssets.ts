@@ -121,9 +121,11 @@ export const preloadAssets = (scene: CropsAndChickensScene) => {
   // crops spritesheets
   scene.load.spritesheet(
     "crop_planted",
-    holidayEvent === "halloween"
-      ? "crops-and-chickens/crops_planted_halloween.png"
-      : "crops-and-chickens/crops_planted.png",
+    holidayEvent === "april_fools"
+      ? "crops-and-chickens/crops_planted_april_fools.png"
+      : holidayEvent === "halloween"
+        ? "crops-and-chickens/crops_planted_halloween.png"
+        : "crops-and-chickens/crops_planted.png",
     {
       frameWidth: 16,
       frameHeight: 20,
@@ -131,9 +133,11 @@ export const preloadAssets = (scene: CropsAndChickensScene) => {
   );
   scene.load.spritesheet(
     "crop_harvested",
-    holidayEvent === "halloween"
-      ? "crops-and-chickens/crops_harvested_halloween.png"
-      : "crops-and-chickens/crops_harvested.png",
+    holidayEvent === "april_fools"
+      ? "crops-and-chickens/crops_harvested_april_fools.png"
+      : holidayEvent === "halloween"
+        ? "crops-and-chickens/crops_harvested_halloween.png"
+        : "crops-and-chickens/crops_harvested.png",
     {
       frameWidth: 16,
       frameHeight: 16,
@@ -166,9 +170,19 @@ export const preloadAssets = (scene: CropsAndChickensScene) => {
     "crops-and-chickens/crop_deposit_pop.mp3",
   );
   scene.load.audio("game_over", "crops-and-chickens/game_over.mp3");
-  scene.load.audio("harvest", "crops-and-chickens/harvest.mp3");
+  scene.load.audio(
+    "harvest",
+    holidayEvent === "april_fools"
+      ? "crops-and-chickens/harvest_april_fools.mp3"
+      : "crops-and-chickens/harvest.mp3",
+  );
   scene.load.audio("target_reached", "crops-and-chickens/target_reached.mp3");
-  scene.load.audio("player_killed", "crops-and-chickens/player_killed.mp3");
+  scene.load.audio(
+    "player_killed",
+    holidayEvent === "april_fools"
+      ? "crops-and-chickens/player_killed_april_fools.mp3"
+      : "crops-and-chickens/player_killed.mp3",
+  );
   scene.load.audio("time_ticking", "crops-and-chickens/time_ticking.mp3");
   scene.load.audio(
     "time_ticking_preparation",

@@ -866,7 +866,7 @@ export class CropsAndChickensScene extends BaseScene {
 
     // play sound
     const sound = this.sound.add("harvest");
-    sound.play({ volume: 0.1 });
+    sound.play({ volume: 0.4 });
 
     // add crop to inventory
     this.portalService?.send("CROP_HARVESTED", { cropIndex: cropIndex });
@@ -970,7 +970,7 @@ export class CropsAndChickensScene extends BaseScene {
 
     // play sound
     const sound = this.sound.add("player_killed");
-    sound.play({ volume: 0.25 });
+    sound.play({ volume: 0.4 });
 
     // achievements
     this.checkAchievements(
