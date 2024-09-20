@@ -17,7 +17,7 @@ interface Props {
 
 export class NormalChickenContainer extends Phaser.GameObjects.Container {
   constructor({ x, y, direction, scene, player, killPlayer }: Props) {
-    super(scene, x - 4.5, y - 5); // with position offset
+    super(scene, x - 6.5, y - 5); // with position offset
     this.scene = scene;
 
     const spriteName = `chicken_normal_${direction}`;

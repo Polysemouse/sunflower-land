@@ -49,7 +49,7 @@ export class HunterChickenContainer extends Phaser.GameObjects.Container {
 
     // offset when calculating angles and distances to player
     const playerCoordinatesOffset = {
-      x: -5,
+      x: -5.5,
       y: 0,
     };
 

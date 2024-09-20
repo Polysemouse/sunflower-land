@@ -49,7 +49,7 @@ export const PLAYER_DEATH_SPRITE_PROPERTIES = {
 
 export const CHICKEN_SPRITE_PROPERTIES = {
   frames: 6,
-  frameWidth: 13,
+  frameWidth: 15,
   frameHeight: 18,
 };
 

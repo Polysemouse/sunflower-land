@@ -3,7 +3,6 @@ import React from "react";
 import { useAppTranslation } from "lib/i18n/useAppTranslations";
 import { SUNNYSIDE } from "assets/sunnyside";
 import { SquareIcon } from "components/ui/SquareIcon";
-import { ITEM_DETAILS } from "features/game/types/images";
 import { Label } from "components/ui/Label";
 import { SCORE_TABLE } from "../../CropsAndChickensConstants";
 import { PIXEL_SCALE } from "features/game/lib/constants";
@@ -66,7 +65,10 @@ export const CropsAndChickensGuide: React.FC<Props> = ({ onBack }) => {
         <Label type="default">{t("crops-and-chickens.instructions")}</Label>
         <div>
           <div className="flex items-center mb-3 mx-2">
-            <SquareIcon icon={ITEM_DETAILS["Sunflower"].image} width={8} />
+            <SquareIcon
+              icon={getHolidayAsset("Sunflower", holidayEvent)}
+              width={8}
+            />
             <p className="text-xs ml-3 flex-1">
               {t("crops-and-chickens.instructions1")}
             </p>
@@ -80,7 +82,10 @@ export const CropsAndChickensGuide: React.FC<Props> = ({ onBack }) => {
           </div>
 
           <div className="flex items-center mb-3 mx-2">
-            <SquareIcon icon={ITEM_DETAILS["Chicken"].image} width={8} />
+            <SquareIcon
+              icon={getHolidayAsset("chicken_normal", holidayEvent)}
+              width={8}
+            />
             <p className="text-xs ml-3 flex-1">
               {t("crops-and-chickens.instructions3")}
             </p>
@@ -119,7 +124,10 @@ export const CropsAndChickensGuide: React.FC<Props> = ({ onBack }) => {
             <tr>
               <td style={{ border: "1px solid #b96f50" }} className="p-1.5">
                 <div className="flex items-center justify-center">
-                  <SquareIcon icon={SUNNYSIDE.icons.treasure} width={8} />
+                  <SquareIcon
+                    icon={getHolidayAsset("deposit_chest", holidayEvent)}
+                    width={8}
+                  />
                 </div>
               </td>
               <td style={{ border: "1px solid #b96f50" }} className="p-1.5">
