@@ -10,6 +10,7 @@ import {
   CropsAndChickensCropName,
 } from "../CropsAndChickensConstants";
 import { getHolidayAsset } from "./CropsAndChickensHolidayAsset";
+import { CONFIG } from "lib/config";
 
 export type CropsAndChickensHolidayEvent =
   | "none"
@@ -45,6 +46,13 @@ const getEasterDate = (year: number) => {
  * @returns The current holiday event.
  */
 export const getHolidayEvent = (): CropsAndChickensHolidayEvent => {
+  if (CONFIG.NETWORK === "amoy") {
+    const customHolidayEvent = localStorage.getItem(
+      "settings.holiday-event",
+    ) as CropsAndChickensHolidayEvent;
+    if (customHolidayEvent) return customHolidayEvent;
+  }
+
   const now = Date.now();
   const year = new Date().getUTCFullYear();
   const ONE_DAY = 24 * 60 * 60 * 1000;
