@@ -2,8 +2,11 @@ import { ITEM_DETAILS } from "features/game/types/images";
 import { CropsAndChickensHolidayEvent } from "./cropsAndChickensUtils";
 import { CropsAndChickensCropName } from "../CropsAndChickensConstants";
 import { t } from "i18next";
+import mapJson from "assets/map/crops_and_chickens.json";
+import mapJson_halloween from "assets/map/crops_and_chickens_halloween.json";
 
 type CropsAndChickensAssetName =
+  | "map"
   | "chicken_hunter_down_movements"
   | "chicken_hunter_left_movements"
   | "chicken_hunter_right_movements"
@@ -25,8 +28,12 @@ type CropsAndChickensAssetName =
 
 const CROPS_AND_CHICKENS_ASSETS: Record<
   CropsAndChickensAssetName,
-  Partial<Record<CropsAndChickensHolidayEvent, string>> & { none: string }
+  Partial<Record<CropsAndChickensHolidayEvent, any>> & { none: any }
 > = {
+  map: {
+    none: mapJson,
+    halloween: mapJson_halloween,
+  },
   chicken_hunter_down_movements: {
     none: "crops-and-chickens/chicken_hunter_down_movements.png",
     halloween: "crops-and-chickens/chicken_hunter_down_movements_halloween.png",

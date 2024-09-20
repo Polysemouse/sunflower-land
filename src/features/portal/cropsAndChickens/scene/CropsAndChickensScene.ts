@@ -1,5 +1,3 @@
-import mapJson from "assets/map/crops_and_chickens.json";
-
 import VirtualJoystick from "phaser3-rex-plugins/plugins/virtualjoystick.js";
 
 import { SQUARE_WIDTH } from "features/game/lib/constants";
@@ -48,6 +46,7 @@ import {
 } from "./lib/getEligibleAchievements";
 import { isTouchDevice } from "features/world/lib/device";
 import { getHolidayEvent } from "../lib/cropsAndChickensUtils";
+import { getHolidayAsset } from "../lib/CropsAndChickensHolidayAsset";
 
 type chickenType = "normal" | "hunter";
 
@@ -86,7 +85,7 @@ export class CropsAndChickensScene extends BaseScene {
   constructor() {
     super({
       name: "crops_and_chickens",
-      map: { json: mapJson },
+      map: { json: getHolidayAsset("map", getHolidayEvent()) },
       audio: { fx: { walk_key: "dirt_footstep" } },
     });
     this.setDefaultStates();
