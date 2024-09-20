@@ -10,7 +10,8 @@ import {
   CropsAndChickensCropName,
 } from "../CropsAndChickensConstants";
 import { getHolidayAsset } from "./CropsAndChickensHolidayAsset";
-import { CONFIG } from "lib/config";
+
+const isInIframe = window.self !== window.top;
 
 export type CropsAndChickensHolidayEvent =
   | "none"
@@ -46,7 +47,7 @@ const getEasterDate = (year: number) => {
  * @returns The current holiday event.
  */
 export const getHolidayEvent = (): CropsAndChickensHolidayEvent => {
-  if (CONFIG.NETWORK === "amoy") {
+  if (!isInIframe) {
     const customHolidayEvent = localStorage.getItem(
       "settings.holiday-event",
     ) as CropsAndChickensHolidayEvent;
