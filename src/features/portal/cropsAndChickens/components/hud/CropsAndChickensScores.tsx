@@ -99,7 +99,7 @@ export const CropsAndChickensScores: React.FC = () => {
   const getDifferenceDisplay = (difference: number) => {
     if (!difference) return "";
 
-    return `(${difference > 0 ? "+" : ""}${difference})`;
+    return `${difference > 0 ? "+" : ""}${difference}`;
   };
 
   const getHarvestedCountDisplay = () => {
@@ -109,64 +109,41 @@ export const CropsAndChickensScores: React.FC = () => {
   };
 
   return (
-    <>
-      <div className="relative">
-        <div className="h-12 w-full bg-black opacity-50 absolute coins-bb-hud-backdrop-reverse" />
-        <div
-          className="flex items-center space-x-2 text-xs text-white text-shadow"
-          style={{
-            width: "250px",
-            paddingTop: "7px",
-            paddingLeft: "3px",
-          }}
-        >
-          <span>
-            {t("crops-and-chickens.scoreColon", {
-              score: previousScore,
-            })}
-          </span>
-          <span>{getDifferenceDisplay(scoreDifference)}</span>
+    <div className="relative flex flex-col gap-1 mt-1 w-fit">
+      <div className="relative flex sm:flex-col items-start justify-between gap-5 sm:gap-0 text-xs text-white text-shadow bg-[#0000007f] px-2 py-1 rounded">
+        <span>{t("crops-and-chickens.scoreColon")}</span>
+        <div className="flex flex-row items-center justify-between sm:w-full gap-2 sm:gap-5">
+          <span className="sm:text-2xl">{previousScore}</span>
+          {!!scoreDifference && (
+            <div className="absolute sm:static h-full right-0 sm:mt-1">
+              <span className="absolute sm:static h-full left-2 bg-[#0000007f] sm:bg-transparent px-2 py-1 sm:px-0 sm:py-0 rounded">
+                {getDifferenceDisplay(scoreDifference)}
+              </span>
+            </div>
+          )}
         </div>
       </div>
 
-      <div className="relative">
-        <div className="h-12 w-full bg-black opacity-50 absolute coins-bb-hud-backdrop-reverse" />
-        <div
-          className="flex items-center space-x-2 text-xs text-white text-shadow"
-          style={{
-            width: "250px",
-            paddingTop: "7px",
-            paddingLeft: "3px",
-          }}
-        >
-          <span>
-            {t("crops-and-chickens.inventory", {
-              inventory: previousInventory,
-            })}
-          </span>
-          <span>{getDifferenceDisplay(inventoryDifference)}</span>
+      <div className="relative flex sm:flex-col items-start justify-between gap-5 sm:gap-0 text-xs text-white text-shadow bg-[#0000007f] px-2 py-1 rounded">
+        <span>{t("crops-and-chickens.inventoryColon")}</span>
+        <div className="flex flex-row items-center justify-between sm:w-full gap-2 sm:gap-5">
+          <span className="sm:text-2xl">{previousInventory}</span>
+          {!!inventoryDifference && (
+            <div className="absolute sm:static h-full right-0 sm:mt-1">
+              <span className="absolute sm:static h-full left-2 bg-[#0000007f] sm:bg-transparent px-2 py-1 sm:px-0 sm:py-0 rounded">
+                {getDifferenceDisplay(inventoryDifference)}
+              </span>
+            </div>
+          )}
         </div>
       </div>
 
       {cropIndex !== undefined && (
-        <div className="relative">
-          <div className="h-12 w-full bg-black opacity-50 absolute coins-bb-hud-backdrop-reverse" />
-          <div
-            className="flex items-center space-x-2 text-xs text-white text-shadow"
-            style={{
-              width: "250px",
-              paddingTop: "7px",
-              paddingLeft: "3px",
-            }}
-          >
-            <SquareIcon
-              icon={getCropImage(INDEX_TO_CROP[cropIndex])}
-              width={7}
-            />
-            <span>{getHarvestedCountDisplay()}</span>
-          </div>
+        <div className="flex flex-row items-center gap-2 text-xs text-white text-shadow bg-[#0000007f] px-2 py-1 rounded">
+          <SquareIcon icon={getCropImage(INDEX_TO_CROP[cropIndex])} width={7} />
+          <span>{getHarvestedCountDisplay()}</span>
         </div>
       )}
-    </>
+    </div>
   );
 };

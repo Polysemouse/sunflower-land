@@ -114,7 +114,7 @@ export const CropsAndChickensHome: React.FC<Props> = ({
             {/* Scores */}
             <Label
               type="chill"
-              className="flex flex-col gap-1 items-center p-1 !w-full"
+              className="flex flex-col gap-4 items-center p-1 !w-full"
               style={{
                 marginBottom: `${PIXEL_SCALE * 1}px`,
               }}
@@ -124,7 +124,7 @@ export const CropsAndChickensHome: React.FC<Props> = ({
                   <span className="text-sm">
                     {t("crops-and-chickens.score")}
                   </span>
-                  <span className="text-lg">{formatNumber(score)}</span>
+                  <span className="text-2xl">{formatNumber(score)}</span>
                 </div>
               )}
               <div className="flex justify-between gap-2 w-full">

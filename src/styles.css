@@ -122,13 +122,19 @@
   --text-xs-line-height: 14px;
 
   --text-sm-size: 30px;
-  --text-sm-line-height: 20px;
+  --text-sm-line-height: 18px;
 
   --text-base-size: 36px;
-  --text-base-line-height: 26px;
+  --text-base-line-height: 22px;
 
   --text-lg-size: 42px;
-  /* Assuming line-height for lg is the default line-height */
+  --text-lg-line-height: 26px;
+
+  --text-xl-size: 48px;
+  --text-xl-line-height: 32px;
+
+  --text-2xl-size: 54px;
+  --text-2xl-line-height: 36px;
 }
 
 .text-xxs {
@@ -154,6 +160,16 @@
 .text-lg {
   font-size: var(--text-lg-size);
   line-height: var(--text-lg-line-height);
+}
+
+.text-xl {
+  font-size: var(--text-xl-size);
+  line-height: var(--text-xl-line-height);
+}
+
+.text-2xl {
+  font-size: var(--text-2xl-size);
+  line-height: var(--text-2xl-line-height);
 }
 
 @font-face {
@@ -441,24 +457,6 @@ img {
     rgba(0, 0, 0, 1) 22%
   );
   mask-image: linear-gradient(90deg, rgba(0, 0, 0, 0) 0%, rgba(0, 0, 0, 1) 22%);
-  z-index: -1;
-}
-
-.coins-bb-hud-backdrop-reverse {
-  height: 19px;
-  width: 88%;
-  left: -1px;
-  top: 6px;
-  -webkit-mask-image: linear-gradient(
-    -90deg,
-    rgba(0, 0, 0, 0) 0%,
-    rgba(0, 0, 0, 1) 22%
-  );
-  mask-image: linear-gradient(
-    -90deg,
-    rgba(0, 0, 0, 0) 0%,
-    rgba(0, 0, 0, 1) 22%
-  );
   z-index: -1;
 }
 

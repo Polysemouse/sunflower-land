@@ -42,6 +42,18 @@ module.exports = {
           lineHeight: "var(--text-lg-line-height)",
         },
       ],
+      xl: [
+        "var(--text-xl-size)",
+        {
+          lineHeight: "var(--text-xl-line-height)",
+        },
+      ],
+      "2xl": [
+        "var(--text-2xl-size)",
+        {
+          lineHeight: "var(--text-2xl-line-height)",
+        },
+      ],
     },
     // fontWeight: {
     //   thin: "100",
