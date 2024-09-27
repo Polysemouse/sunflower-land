@@ -75,6 +75,7 @@ import { Rewards } from "./rewards";
 import { ExperimentName } from "lib/flags";
 import { CollectionName, MarketplaceTradeableName } from "./marketplace";
 import { GameTransaction } from "./transactions";
+import { CompetitionName, CompetitionProgress } from "./competitions";
 
 export type Reward = {
   coins?: number;
@@ -328,14 +329,16 @@ export type FactionBanner =
 
 export type GoldenCropEventItem = "Golden Crop";
 
+export type Skills = Partial<
+  Record<BumpkinSkillName, number> & Record<BumpkinRevampSkillName, number>
+>;
+
 export type Bumpkin = {
   id: number;
   equipped: BumpkinParts;
   tokenUri: string;
   experience: number;
-  skills: Partial<
-    Record<BumpkinSkillName, number> & Record<BumpkinRevampSkillName, number>
-  >;
+  skills: Skills;
   achievements?: Partial<Record<AchievementName, number>>;
   activity: Partial<Record<BumpkinActivityName, number>>;
   previousSkillsResetAt?: number;
@@ -1138,6 +1141,10 @@ export interface GameState {
   home: Home;
 
   rewards: Rewards;
+
+  competitions: {
+    progress: Partial<Record<CompetitionName, CompetitionProgress>>;
+  };
 
   // There are more fields but unused
   transaction?: GameTransaction;

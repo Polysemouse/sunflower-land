@@ -27,11 +27,6 @@ import {
 } from "../CropsAndChickensConstants";
 import { NormalChickenContainer } from "./containers/NormalChickenContainer";
 import { HunterChickenContainer } from "./containers/HunterChickenContainer";
-import { DarkModePipeline } from "../shaders/darkModeShader";
-import {
-  DARK_MODE_EVENT,
-  getDarkModeSetting,
-} from "lib/utils/hooks/useIsDarkMode";
 import { StorageAreaContainer } from "./containers/StorageAreaContainer";
 import { DepositIndicatorContainer } from "./containers/DepositIndicatorContainer";
 import { CropContainer } from "./containers/CropContainer";
@@ -340,7 +335,6 @@ export class CropsAndChickensScene extends BaseScene {
       });
 
       // cleanup event listeners for settings
-      window.removeEventListener(DARK_MODE_EVENT as any, this.onSetDarkMode);
       window.removeEventListener(ZOOM_OUT_EVENT as any, this.onSetZoomOut);
     });
   }
@@ -653,21 +647,6 @@ export class CropsAndChickensScene extends BaseScene {
   }
 
   /**
-   * Changes the dark mode setting when the event is triggered.
-   * @param event The event.
-   */
-  private onSetDarkMode = (event: CustomEvent) => {
-    // get pipeline
-    const darkModePipeline = this.cameras.main.getPostPipeline(
-      "DarkModePipeline",
-    ) as DarkModePipeline;
-    if (!darkModePipeline) return;
-
-    // set dark mode
-    darkModePipeline.isDarkMode = event.detail;
-  };
-
-  /**
    * Changes the zoom out setting when the event is triggered.
    * @param event The event.
    */
@@ -697,26 +676,9 @@ export class CropsAndChickensScene extends BaseScene {
    * Initializes the listeners.
    */
   private initializeListeners = () => {
-    // add dark mode shader
-    (
-      this.renderer as Phaser.Renderer.WebGL.WebGLRenderer
-    ).pipelines?.addPostPipeline("DarkModePipeline", DarkModePipeline);
-    this.cameras.main.setPostPipeline(DarkModePipeline);
-
     // add event listener for settings
-    window.addEventListener(DARK_MODE_EVENT as any, this.onSetDarkMode);
-    this.onSetDarkMode({ detail: getDarkModeSetting() } as CustomEvent);
     window.addEventListener(ZOOM_OUT_EVENT as any, this.onSetZoomOut);
     this.onSetZoomOut({ detail: getZoomOutSetting() } as CustomEvent);
-
-    // get pipeline
-    const darkModePipeline = this.cameras.main.getPostPipeline(
-      "DarkModePipeline",
-    ) as DarkModePipeline;
-    if (!darkModePipeline) return;
-
-    // set light sources
-    darkModePipeline.lightSources = [{ x: 0.5, y: 0.5 }];
   };
 
   /**

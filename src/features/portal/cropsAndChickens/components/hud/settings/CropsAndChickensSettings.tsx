@@ -6,7 +6,6 @@ import { PIXEL_SCALE } from "features/game/lib/constants";
 
 import { SUNNYSIDE } from "assets/sunnyside";
 import { useSound } from "lib/utils/hooks/useSound";
-import { useIsDarkMode } from "lib/utils/hooks/useIsDarkMode";
 import darkModeIcon from "assets/icons/dark_mode.png";
 import lightModeIcon from "assets/icons/light_mode.png";
 import { PortalContext } from "../../../lib/PortalProvider";
@@ -20,6 +19,7 @@ import zoomIn from "assets/icons/zoom_in.png";
 import zoomOut from "assets/icons/zoom_out.png";
 import { useIsAudioMuted } from "lib/utils/hooks/useIsAudioMuted";
 import { useIsZoomOut } from "features/portal/cropsAndChickens/hooks/useIsZoomOut";
+import { usePlazaShader } from "lib/utils/hooks/usePlazaShader";
 
 const buttonWidth = PIXEL_SCALE * 22;
 const buttonHeight = PIXEL_SCALE * 23;
@@ -32,7 +32,7 @@ const _isSmallScreen = (state: PortalMachineState) =>
 export const CropsAndChickensSettings: React.FC = () => {
   const { portalService } = useContext(PortalContext);
 
-  const { isDarkMode, toggleDarkMode } = useIsDarkMode();
+  const { plazaShader, togglePlazaShader } = usePlazaShader();
   const { isZoomOut, toggleZoomOut } = useIsZoomOut();
   const { isAudioMuted, toggleAudioMuted } = useIsAudioMuted();
 
@@ -141,15 +141,15 @@ export const CropsAndChickensSettings: React.FC = () => {
       />,
     );
 
-  const darkModeButton = (index: number) =>
+  const plazaShaderButton = (index: number) =>
     settingButton(
       index,
       () => {
         button.play();
-        toggleDarkMode();
+        togglePlazaShader(plazaShader !== "night" ? "night" : "none");
       },
       <img
-        src={isDarkMode ? darkModeIcon : lightModeIcon}
+        src={plazaShader === "night" ? darkModeIcon : lightModeIcon}
         className="absolute"
         style={{
           top: `${PIXEL_SCALE * 5.5}px`,
@@ -180,7 +180,7 @@ export const CropsAndChickensSettings: React.FC = () => {
   // list of buttons to show in the HUD from right to left in order
   const buttons = [
     gearButton,
-    darkModeButton,
+    plazaShaderButton,
     ...(isSmallScreen ? [zoomOutButton] : []),
     audioButton,
   ];
