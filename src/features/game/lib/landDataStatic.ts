@@ -564,7 +564,7 @@ export const STATIC_OFFLINE_FARM: GameState = {
     Beehive: new Decimal(1),
     Banana: new Decimal(12),
     Crimstone: new Decimal(20),
-    "Block Buck": new Decimal(200),
+    Gem: new Decimal(200),
     Gold: new Decimal("400"),
     Iron: new Decimal("800"),
     Stone: new Decimal("1600"),
@@ -1000,7 +1000,7 @@ export const STATIC_OFFLINE_FARM: GameState = {
             reward: {
               sfl: 0,
               items: {
-                "Block Buck": 3,
+                Gem: 3,
               },
               wearables: {},
             },
@@ -1124,7 +1124,7 @@ export const STATIC_OFFLINE_FARM: GameState = {
             reward: {
               sfl: 0,
               items: {
-                "Block Buck": 1,
+                Gem: 1,
               },
               wearables: {},
             },
@@ -1222,7 +1222,7 @@ export const STATIC_OFFLINE_FARM: GameState = {
             reward: {
               sfl: 0,
               items: {
-                "Block Buck": 1,
+                Gem: 1,
               },
               wearables: {},
             },
@@ -1320,7 +1320,7 @@ export const STATIC_OFFLINE_FARM: GameState = {
             reward: {
               sfl: 0,
               items: {
-                "Block Buck": 1,
+                Gem: 1,
               },
               wearables: {},
             },
