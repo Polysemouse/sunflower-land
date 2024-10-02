@@ -1014,7 +1014,8 @@ export class CropsAndChickensScene extends BaseScene {
 
     const achievementNames = getEligibleAchievements(this, trigger);
 
-    if (achievementNames.length > 0) this.unlockAchievements(achievementNames);
+    //TODO: enable achievements
+    //if (achievementNames.length > 0) this.unlockAchievements(achievementNames);
   };
 
   private unlockAchievements = (
