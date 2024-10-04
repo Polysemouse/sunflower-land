@@ -440,6 +440,7 @@ const buildings: Record<BuildingName, () => boolean> = {
   Bakery: () => false,
   Greenhouse: () => false,
   "Hen House": () => false,
+  Barn: () => false,
   Deli: () => false,
   "Smoothie Shack": () => false,
   Toolshed: () => false,
@@ -1614,4 +1615,7 @@ export const BUMPKIN_WITHDRAWABLES: Record<
   "Pumpkin Plaza Background": () => false,
   "Goblin Retreat Background": () => false,
   "Kingdom Background": () => false,
+
+  //Gam3s Cap
+  "Gam3s Cap": () => false,
 };
