@@ -255,22 +255,22 @@ export abstract class BaseScene extends Phaser.Scene {
     if (!nightShaderPipeline || !this.currentPlayer) return;
 
     // calculate the player's position relative to the camera
-    const mapWidth = this.map.widthInPixels;
-    const mapHeight = this.map.heightInPixels;
-    const screenWidth = this.cameras.main.worldView.width;
-    const screenHeight = this.cameras.main.worldView.height;
-    const worldViewX = this.cameras.main.worldView.x;
-    const worldViewY = this.cameras.main.worldView.y;
-    const offsetX = Math.max(0, (screenWidth - mapWidth) / 2);
-    const offsetY = Math.max(0, (screenHeight - mapHeight) / 2);
+    // const mapWidth = this.map.widthInPixels;
+    // const mapHeight = this.map.heightInPixels;
+    // const screenWidth = this.cameras.main.worldView.width;
+    // const screenHeight = this.cameras.main.worldView.height;
+    // const worldViewX = this.cameras.main.worldView.x;
+    // const worldViewY = this.cameras.main.worldView.y;
+    // const offsetX = Math.max(0, (screenWidth - mapWidth) / 2);
+    // const offsetY = Math.max(0, (screenHeight - mapHeight) / 2);
 
-    const relativeX =
-      (this.currentPlayer.x - worldViewX + offsetX) / screenWidth;
-    const relativeY =
-      (this.currentPlayer.y - worldViewY + offsetY) / screenHeight;
+    // const relativeX =
+    //   (this.currentPlayer.x - worldViewX + offsetX) / screenWidth;
+    // const relativeY =
+    //   (this.currentPlayer.y - worldViewY + offsetY) / screenHeight;
 
     // set light sources
-    nightShaderPipeline.lightSources = [{ x: relativeX, y: relativeY }];
+    nightShaderPipeline.lightSources = [{ x: 0.5, y: 0.5 }];
   };
 
   preload() {
