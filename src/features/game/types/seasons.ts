@@ -46,7 +46,7 @@ export const SEASONS: Record<SeasonName, SeasonDates> = {
   },
   "Pharaoh's Treasure": {
     startDate: new Date("2024-08-01T00:00:00.000Z"),
-    endDate: new Date("2024-11-01T00:00:00.000Z"),
+    endDate: new Date("9024-11-01T00:00:00.000Z"),
   },
 };
 
