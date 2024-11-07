@@ -20,6 +20,7 @@ import gem from "assets/icons/gem.webp";
 
 import communityEgg from "assets/sfts/easter_donation_egg.webp";
 import hungryHare from "assets/sfts/hungryHare.png";
+import cropCircle from "assets/sfts/crop_circle.webp";
 
 // NFTs
 import marty from "assets/sfts/morchi_marty.webp";
@@ -133,10 +134,6 @@ import bananaChicken from "assets/animals/chickens/banana_chicken.png";
 import crimPeckster from "assets/animals/chickens/crim_peckster.png";
 import knightChicken from "assets/animals/chickens/knight_chicken.webp";
 import pharaohChicken from "assets/animals/chickens/pharaoh_chicken.webp";
-
-// Foods
-import roastedCauliflower from "assets/food/roasted_cauliflower.png";
-import radishPie from "assets/food/radish_pie.png";
 
 // Flags
 import australiaFlag from "assets/sfts/flags/australia_flag.gif";
@@ -271,6 +268,16 @@ import sunflowerCake from "src/assets/food/cakes/sunflower_cake.png";
 import wheatCake from "src/assets/food/cakes/wheat_cake.png";
 
 // Food
+import roastedCauliflower from "assets/food/roasted_cauliflower.png";
+import radishPie from "assets/food/radish_pie.png";
+import cheese from "assets/food/cheese.webp";
+import pizzaMargherita from "assets/food/pizza_marguerita.webp";
+import blueCheese from "assets/food/blue_cheese.webp";
+import honeyCheddar from "assets/food/honey_chedder.webp";
+import capreseSalad from "assets/food/caprese_salad.webp";
+import sourShake from "assets/food/sour_shake.webp";
+import spaghettiAlLimone from "assets/food/spaghetti_al_limone2.webp";
+import lemonCheesecake from "assets/food/lemon_cheesecake.webp";
 import mashedPotato from "assets/food/mashed_potato.png";
 import pumpkinSoup from "assets/food/pumpkin_soup.png";
 import bumpkinBroth from "assets/food/bumpkin_broth.png";
@@ -367,6 +374,10 @@ import victoriaSisters from "src/assets/sfts/victoria_sisters.gif";
 import snowglobe from "src/assets/decorations/snowglobe.gif";
 import shrub from "assets/decorations/shrub.png";
 import basicBear from "src/assets/sfts/bears/basic_bear.png";
+import kingOfBears from "src/assets/sfts/bears/king_of_bears.png";
+import halloweenScarecrow from "src/assets/sfts/halloween_scarecrow.webp";
+import vampireBear from "src/assets/sfts/bears/vampire_bear.webp";
+import superTotem from "src/assets/sfts/super_totem.webp";
 import chefBear from "src/assets/sfts/bears/chef_bear.png";
 import constructionBear from "src/assets/sfts/bears/construction_bear.png";
 import angelBear from "src/assets/sfts/bears/angel_bear.png";
@@ -408,10 +419,10 @@ import hideawayHerman from "src/assets/decorations/hideaway_herman.webp";
 import shiftySheldon from "src/assets/decorations/shifty_sheldon.webp";
 import tikiTorch from "src/assets/decorations/tiki_torch.webp";
 import beachUmbrella from "src/assets/decorations/beach_umbrella.webp";
-
 import fieldMaple from "src/assets/decorations/field_maple.webp";
 import redMaple from "src/assets/decorations/red_maple.webp";
 import goldenMaple from "src/assets/decorations/golden_maple.webp";
+import Wagon from "src/assets/decorations/wagon.webp";
 
 // Treasure
 import abandonedBear from "assets/sfts/bears/abandoned_bear.png";
@@ -541,6 +552,7 @@ import angelFish from "assets/fish/angel_fish.png";
 import parrotFish from "assets/fish/parrot_fish.png";
 import battleFish from "assets/fish/battle_fish.webp";
 import lemonShark from "assets/fish/lemon_shark.webp";
+import longhornCowfish from "assets/fish/cow_fish.webp";
 
 import festiveTree from "assets/sfts/festive_tree.png";
 import nutcracker from "assets/sfts/bumpkin_nutcracker.png";
@@ -697,6 +709,40 @@ import macaw from "assets/sfts/macaw.webp";
 import butterfly from "assets/sfts/butterfly.webp";
 import squirrel from "assets/sfts/squirrel.webp";
 
+import pettingHand from "assets/animals/petting_hand.webp";
+import brush from "assets/animals/brush.webp";
+import musicBox from "assets/animals/music_box.webp";
+
+import craftingBox from "assets/buildings/crafting_table.webp";
+
+import sturdyBed from "assets/bumpkins/sturdy_bed.webp";
+import desertBed from "assets/bumpkins/desert_bed.webp";
+import fisherBed from "assets/bumpkins/fisher_bed.webp";
+import floralBed from "assets/bumpkins/flower_bed.webp";
+import pirateBed from "assets/bumpkins/pirate_bed.webp";
+import royalBed from "assets/bumpkins/royal_bed.webp";
+import cowBed from "assets/bumpkins/cow_bed.webp";
+
+import horseshoe from "assets/icons/horseshoe.webp";
+import cowSkull from "assets/resources/cow_skull.png";
+import bullsRunBanner from "assets/decorations/banners/bull_run_banner.webp";
+
+import cowScratcher from "assets/sfts/cow_scratcher.webp";
+import spinningWheel from "assets/sfts/spinning_wheel.webp";
+import sleepyRug from "assets/sfts/sleepy_rug.webp";
+import meteorite from "assets/sfts/meteorite.webp";
+import sheafOfPlenty from "assets/sfts/sheaf_of_plenty.webp";
+import mechanicalBull from "assets/sfts/mecha_bull.webp";
+import mooVer from "assets/sfts/moo_ver.webp";
+import swissWhisker from "assets/sfts/swiss_whiskers.webp";
+import cluckulator from "assets/sfts/cluckulator.webp";
+import ufo from "assets/sfts/ufo.webp";
+import chicory from "assets/sfts/chicory.webp";
+import blackSheep from "assets/sfts/black_sheep.webp";
+import alienChicken from "assets/sfts/alien_chicken.webp";
+import toxicTuft from "assets/sfts/toxic_tuft.webp";
+import mootant from "assets/sfts/mootant.webp";
+
 import { COUPONS, EASTER_EGG, FERTILISERS, InventoryItemName } from "./game";
 
 import { CROPS, CROP_SEEDS, GREENHOUSE_CROPS, GREENHOUSE_SEEDS } from "./crops";
@@ -707,10 +753,10 @@ import { AchievementName, ACHIEVEMENTS } from "./achievements";
 import { SUNNYSIDE } from "assets/sunnyside";
 import { CROP_LIFECYCLE } from "features/island/plots/lib/plant";
 import {
-  FRUIT,
-  FRUIT_SEEDS,
   GREENHOUSE_FRUIT,
   GREENHOUSE_FRUIT_SEEDS,
+  PATCH_FRUIT,
+  PATCH_FRUIT_SEEDS,
 } from "./fruits";
 import { FLOWER_SEEDS, FLOWERS } from "./flowers";
 import { CONSUMABLES, COOKABLES } from "./consumables";
@@ -723,7 +769,6 @@ import {
   FOODS,
   MARKET_ITEMS,
   MOM_EVENT_ITEMS,
-  MUTANT_CHICKENS,
   QUEST_ITEMS,
   SALESMAN_ITEMS,
   SHOVELS,
@@ -731,11 +776,13 @@ import {
   WAR_BANNERS,
   WAR_TENT_ITEMS,
 } from "./craftables";
-import { TREASURE_TOOLS } from "./tools";
+import { LOVE_ANIMAL_TOOLS, TREASURE_TOOLS } from "./tools";
 import { translate } from "lib/i18n/translate";
 import { BASIC_DECORATIONS } from "./decorations";
 import { SELLABLE_TREASURE } from "./treasure";
 import { TREASURE_COLLECTIBLE_ITEM } from "./collectibles";
+import { ANIMAL_FOODS } from "./animals";
+import { hasSeasonEnded } from "./seasons";
 
 export interface ItemDetails {
   description: string;
@@ -745,6 +792,7 @@ export interface ItemDetails {
   howToGetItem?: string[];
   // TODO: Extend this as the codex grows eg. Resource etc
   itemType?: "collectible";
+  availability?: string;
 }
 
 type Items = Record<InventoryItemName | AchievementName, ItemDetails>;
@@ -792,7 +840,7 @@ export const ITEM_DETAILS: Items = {
   },
   Radish: {
     image: CROP_LIFECYCLE.Radish.crop,
-    description: CROPS.Corn.description,
+    description: CROPS.Radish.description,
   },
   Wheat: {
     image: CROP_LIFECYCLE.Wheat.crop,
@@ -888,27 +936,27 @@ export const ITEM_DETAILS: Items = {
   },
   "Apple Seed": {
     image: appleSeed,
-    description: FRUIT_SEEDS()["Apple Seed"].description,
+    description: PATCH_FRUIT_SEEDS()["Apple Seed"].description,
   },
   "Blueberry Seed": {
     image: blueberrySeed,
-    description: FRUIT_SEEDS()["Blueberry Seed"].description,
+    description: PATCH_FRUIT_SEEDS()["Blueberry Seed"].description,
   },
   "Orange Seed": {
     image: orangeSeed,
-    description: FRUIT_SEEDS()["Orange Seed"].description,
+    description: PATCH_FRUIT_SEEDS()["Orange Seed"].description,
   },
   "Banana Plant": {
     image: bananaPlant,
-    description: FRUIT_SEEDS()["Banana Plant"].description,
+    description: PATCH_FRUIT_SEEDS()["Banana Plant"].description,
   },
   "Tomato Seed": {
     image: tomatoSeed,
-    description: FRUIT_SEEDS()["Tomato Seed"].description,
+    description: PATCH_FRUIT_SEEDS()["Tomato Seed"].description,
   },
   "Lemon Seed": {
     image: lemonSeed,
-    description: FRUIT_SEEDS()["Lemon Seed"].description,
+    description: PATCH_FRUIT_SEEDS()["Lemon Seed"].description,
   },
   "Sunpetal Seed": {
     image: sunpetalSeed,
@@ -968,27 +1016,27 @@ export const ITEM_DETAILS: Items = {
   },
   Apple: {
     image: apple,
-    description: FRUIT().Apple.description,
+    description: PATCH_FRUIT().Apple.description,
   },
   Blueberry: {
     image: blueberry,
-    description: FRUIT().Blueberry.description,
+    description: PATCH_FRUIT().Blueberry.description,
   },
   Orange: {
     image: orange,
-    description: FRUIT().Orange.description,
+    description: PATCH_FRUIT().Orange.description,
   },
   Banana: {
     image: banana,
-    description: FRUIT().Orange.description,
+    description: PATCH_FRUIT().Banana.description,
   },
   Tomato: {
     image: tomato,
-    description: FRUIT().Tomato.description,
+    description: PATCH_FRUIT().Tomato.description,
   },
   Lemon: {
     image: lemon,
-    description: FRUIT().Lemon.description,
+    description: PATCH_FRUIT().Lemon.description,
   },
   Honey: {
     image: honey,
@@ -1083,11 +1131,11 @@ export const ITEM_DETAILS: Items = {
     description: ANIMALS.Chicken.description,
   },
   Cow: {
-    image: SUNNYSIDE.animals.cow,
+    image: SUNNYSIDE.animals.cowIdle,
     description: ANIMALS.Cow.description,
   },
   Sheep: {
-    image: SUNNYSIDE.animals.sheep,
+    image: SUNNYSIDE.animals.sheepIdle,
     description: ANIMALS.Sheep.description,
   },
   Pig: {
@@ -1141,6 +1189,18 @@ export const ITEM_DETAILS: Items = {
   "Oil Drill": {
     image: oilDrill,
     description: TOOLS["Oil Drill"].description,
+  },
+  "Petting Hand": {
+    image: pettingHand,
+    description: LOVE_ANIMAL_TOOLS["Petting Hand"].description,
+  },
+  Brush: {
+    image: brush,
+    description: LOVE_ANIMAL_TOOLS["Brush"].description,
+  },
+  "Music Box": {
+    image: musicBox,
+    description: LOVE_ANIMAL_TOOLS["Music Box"].description,
   },
   "Block Buck": {
     image: blockBuck,
@@ -1656,15 +1716,15 @@ export const ITEM_DETAILS: Items = {
   },
   "Speed Chicken": {
     image: speedChicken,
-    description: MUTANT_CHICKENS["Speed Chicken"].description,
+    description: translate("description.speed.chicken.two"),
   },
   "Fat Chicken": {
     image: fatChicken,
-    description: MUTANT_CHICKENS["Fat Chicken"].description,
+    description: translate("description.fat.chicken.two"),
   },
   "Rich Chicken": {
     image: richChicken,
-    description: MUTANT_CHICKENS["Rich Chicken"].description,
+    description: translate("description.rich.chicken.two"),
   },
   "Chef Apron": {
     image: SUNNYSIDE.icons.expression_confused,
@@ -2768,7 +2828,7 @@ export const ITEM_DETAILS: Items = {
   },
   "El Pollo Veloz": {
     image: elPolloVeloz,
-    description: MUTANT_CHICKENS["El Pollo Veloz"].description,
+    description: translate("description.el.pollo.veloz.two"),
   },
   "Grain Grinder": {
     image: grainGrinder,
@@ -3048,48 +3108,67 @@ export const ITEM_DETAILS: Items = {
     howToGetItem: [translate("ocean.fishing"), translate("beach.fishing")],
     itemType: "collectible",
     description: translate("description.twilight.anglerfish"),
+    availability: translate("permanent"),
   },
   "Starlight Tuna": {
     image: startlightTuna,
     howToGetItem: [translate("ocean.fishing"), translate("beach.fishing")],
     itemType: "collectible",
     description: translate("description.starlight.tuna"),
+    availability: translate("permanent"),
   },
   "Radiant Ray": {
     image: radiantRay,
     howToGetItem: [translate("ocean.fishing"), translate("beach.fishing")],
     itemType: "collectible",
     description: translate("description.radiant.ray"),
+    availability: translate("permanent"),
   },
   "Phantom Barracuda": {
     image: phantomBarracuda,
     howToGetItem: [translate("ocean.fishing"), translate("beach.fishing")],
     itemType: "collectible",
     description: translate("description.phantom.barracuda"),
+    availability: translate("permanent"),
   },
   "Gilded Swordfish": {
     image: gildedSwordfish,
     howToGetItem: [translate("ocean.fishing"), translate("beach.fishing")],
     itemType: "collectible",
     description: translate("description.gilded.swordfish"),
+    availability: translate("permanent"),
   },
   "Crimson Carp": {
     image: crimsonCarp,
-    howToGetItem: [translate("ocean.fishing"), translate("beach.fishing")],
+    howToGetItem: [translate("howToGetThisItem.crimsonCarp")],
     itemType: "collectible",
     description: translate("description.crimson.carp"),
+    availability: translate("seasonal"),
   },
   "Battle Fish": {
     image: battleFish,
-    howToGetItem: [translate("ocean.fishing"), translate("beach.fishing")],
+    howToGetItem: [translate("howToGetThisItem.battleFish")],
     itemType: "collectible",
     description: translate("description.battle.fish"),
+    availability: translate("seasonal"),
   },
   "Lemon Shark": {
     image: lemonShark,
-    howToGetItem: [translate("ocean.fishing"), translate("beach.fishing")],
+    howToGetItem: hasSeasonEnded("Pharaoh's Treasure")
+      ? [translate("howToGetThisItem.lemonShark")]
+      : [translate("ocean.fishing"), translate("beach.fishing")],
     itemType: "collectible",
-    description: translate("description.lemon.shark.boost"),
+    description: translate("description.lemon.shark"),
+    availability: translate("seasonal"),
+  },
+  "Longhorn Cowfish": {
+    image: longhornCowfish,
+    howToGetItem: hasSeasonEnded("Bull Run")
+      ? [translate("howToGetThisItem.longhornCowfish")]
+      : [translate("ocean.fishing"), translate("beach.fishing")],
+    itemType: "collectible",
+    description: translate("description.longhorn.cowfish"),
+    availability: translate("seasonal"),
   },
   "Kraken Tentacle": {
     image: krakenTentacle,
@@ -4122,5 +4201,238 @@ export const ITEM_DETAILS: Items = {
   Milk: {
     image: SUNNYSIDE.resource.milk,
     description: "Resource you can collect from cows",
+  },
+  Hay: {
+    image: SUNNYSIDE.animalFoods.hay,
+    description: ANIMAL_FOODS.Hay.description,
+  },
+  "Kernel Blend": {
+    image: SUNNYSIDE.animalFoods.kernel_blend,
+    description: ANIMAL_FOODS["Kernel Blend"].description,
+  },
+  NutriBarley: {
+    image: SUNNYSIDE.animalFoods.nutribarley,
+    description: ANIMAL_FOODS.NutriBarley.description,
+  },
+  "Mixed Grain": {
+    image: SUNNYSIDE.animalFoods.mixed_grain,
+    description: ANIMAL_FOODS["Mixed Grain"].description,
+  },
+  Omnifeed: {
+    image: SUNNYSIDE.animalFoods.omnifeed,
+    description: ANIMAL_FOODS.Omnifeed.description,
+  },
+  "Crafting Box": {
+    image: craftingBox,
+    description: translate("description.craftingBox"),
+  },
+
+  "Basic Bed": {
+    image: SUNNYSIDE.decorations.bed,
+    description: translate("description.basicBed"),
+  },
+  "Fisher Bed": {
+    image: fisherBed,
+    description: translate("description.fisherBed"),
+  },
+  "Floral Bed": {
+    image: floralBed,
+    description: translate("description.floralBed"),
+  },
+  "Sturdy Bed": {
+    image: sturdyBed,
+    description: translate("description.sturdyBed"),
+  },
+  "Desert Bed": {
+    image: desertBed,
+    description: translate("description.desertBed"),
+  },
+  "Cow Bed": {
+    image: cowBed,
+    description: translate("description.cowBed"),
+  },
+  "Pirate Bed": {
+    image: pirateBed,
+    description: translate("description.pirateBed"),
+  },
+  "Royal Bed": {
+    image: royalBed,
+    description: translate("description.royalBed"),
+  },
+  "Barn Delight": {
+    image: SUNNYSIDE.animalFoods.barn_delight,
+    description: "A magical elixir that cures animal sickness.",
+  },
+  "Bull Run Banner": {
+    image: bullsRunBanner,
+    description: translate("description.bullRunBanner"),
+  },
+  "Cow Skull": {
+    image: cowSkull,
+    description: translate("description.cowSkull"),
+  },
+  Horseshoe: {
+    image: horseshoe,
+    description: translate("description.horseshoe"),
+  },
+  Cushion: {
+    image: SUNNYSIDE.crafting.cushion,
+    description: translate("craftingBox.craftThisItem"),
+  },
+  Timber: {
+    image: SUNNYSIDE.crafting.timber,
+    description: translate("craftingBox.craftThisItem"),
+  },
+  "Bee Box": {
+    image: SUNNYSIDE.crafting.beeBox,
+    description: translate("craftingBox.craftThisItem"),
+  },
+  Crimsteel: {
+    image: SUNNYSIDE.crafting.crimsteel,
+    description: translate("craftingBox.craftThisItem"),
+  },
+  "Merino Cushion": {
+    image: SUNNYSIDE.crafting.merinoCushion,
+    description: translate("craftingBox.craftThisItem"),
+  },
+  "Ocean's Treasure": {
+    image: SUNNYSIDE.crafting.oceansTreasure,
+    description: translate("craftingBox.craftThisItem"),
+  },
+  "Royal Bedding": {
+    image: SUNNYSIDE.crafting.royalBedding,
+    description: translate("craftingBox.craftThisItem"),
+  },
+  "Royal Ornament": {
+    image: SUNNYSIDE.crafting.royalOrnament,
+    description: translate("craftingBox.craftThisItem"),
+  },
+  "Kelp Fibre": {
+    image: SUNNYSIDE.crafting.kelpFibre,
+    description: translate("craftingBox.craftThisItem"),
+  },
+  "Hardened Leather": {
+    image: SUNNYSIDE.crafting.hardenedLeather,
+    description: translate("craftingBox.craftThisItem"),
+  },
+  "Synthetic Fabric": {
+    image: SUNNYSIDE.crafting.syntheticFabric,
+    description: translate("craftingBox.craftThisItem"),
+  },
+  "Cow Scratcher": {
+    image: cowScratcher,
+    description: translate("description.cowScratcher"),
+  },
+  "Spinning Wheel": {
+    image: spinningWheel,
+    description: translate("description.spinningWheel"),
+  },
+  "Sleepy Rug": {
+    image: sleepyRug,
+    description: translate("description.sleepyRug"),
+  },
+  Meteorite: {
+    image: meteorite,
+    description: translate("description.meteorite"),
+  },
+  "Sheaf of Plenty": {
+    image: sheafOfPlenty,
+    description: translate("description.sheafOfPlenty"),
+  },
+  "Mechanical Bull": {
+    image: mechanicalBull,
+    description: translate("description.mechanicalBull"),
+  },
+  "King of Bears": {
+    image: kingOfBears,
+    description: translate("description.kingOfBears"),
+  },
+  "Moo-ver": {
+    image: mooVer,
+    description: translate("description.mooVer"),
+  },
+  "Swiss Whiskers": {
+    image: swissWhisker,
+    description: translate("description.swissWhiskers"),
+  },
+  Cluckulator: {
+    image: cluckulator,
+    description: translate("description.cluckulator"),
+  },
+  UFO: {
+    image: ufo,
+    description: translate("description.ufo"),
+  },
+  Chicory: {
+    image: chicory,
+    description: translate("description.chicory"),
+  },
+  Wagon: {
+    image: Wagon,
+    description: "A perfect wagon for your bears to rest and relax.",
+  },
+  "Black Sheep": {
+    image: blackSheep,
+    description: translate("description.blackSheep"),
+  },
+  "Alien Chicken": {
+    image: alienChicken,
+    description: translate("description.alien.chicken"),
+  },
+  "Toxic Tuft": {
+    image: toxicTuft,
+    description: translate("description.toxic.tuft"),
+  },
+  Mootant: {
+    image: mootant,
+    description: translate("description.mootant"),
+  },
+  "Crop Circle": {
+    image: cropCircle,
+    description: translate("description.cropCircle"),
+  },
+  Cheese: {
+    description: translate("description.cheese"),
+    image: cheese,
+  },
+  "Pizza Margherita": {
+    description: translate("description.pizzaMargherita"),
+    image: pizzaMargherita,
+  },
+  "Blue Cheese": {
+    description: translate("description.blueCheese"),
+    image: blueCheese,
+  },
+  "Honey Cheddar": {
+    description: translate("description.honeyCheddar"),
+    image: honeyCheddar,
+  },
+  "Caprese Salad": {
+    description: translate("description.capreseSalad"),
+    image: capreseSalad,
+  },
+  "Sour Shake": {
+    description: translate("description.sourShake"),
+    image: sourShake,
+  },
+  "Spaghetti al Limone": {
+    description: translate("description.spaghettiLimone"),
+    image: spaghettiAlLimone,
+  },
+  "Lemon Cheesecake": {
+    description: translate("description.lemonCheesecake"),
+    image: lemonCheesecake,
+  },
+  "Halloween Scarecrow": {
+    description: translate("description.halloweenScarecrow"),
+    image: halloweenScarecrow,
+  },
+  "Vampire Bear": {
+    description: translate("description.vampireBear"),
+    image: vampireBear,
+  },
+  "Super Totem": {
+    description: translate("description.superTotem"),
+    image: superTotem,
   },
 };

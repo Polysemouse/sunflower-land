@@ -235,7 +235,7 @@ describe("detectCollisions", () => {
     const state: GameState = {
       ...TEST_FARM,
       henHouse: {
-        level: 0,
+        level: 1,
         animals: {
           "123": {
             id: "123",
@@ -246,6 +246,11 @@ describe("detectCollisions", () => {
               y: -1,
             },
             createdAt: 0,
+            experience: 0,
+            asleepAt: 0,
+            awakeAt: 0,
+            lovedAt: 0,
+            item: "Petting Hand",
           },
           "124": {
             id: "124",
@@ -256,6 +261,11 @@ describe("detectCollisions", () => {
               y: 2,
             },
             createdAt: 0,
+            experience: 0,
+            asleepAt: 0,
+            awakeAt: 0,
+            lovedAt: 0,
+            item: "Petting Hand",
           },
         },
       },
