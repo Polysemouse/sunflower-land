@@ -34,6 +34,7 @@ import {
   MegaStoreCollectibleName,
   PotionHouseItemName,
   PurchasableItems,
+  SeasonalCollectibleName,
   SoldOutCollectibleName,
   TreasureCollectibleItem,
 } from "./collectibles";
@@ -77,6 +78,13 @@ import { CollectionName, MarketplaceTradeableName } from "./marketplace";
 import { GameTransaction } from "./transactions";
 import { CompetitionName, CompetitionProgress } from "./competitions";
 import { AnimalType } from "./animals";
+import { ChoreBoard } from "./choreBoard";
+import {
+  RecipeCollectibleName,
+  Recipes,
+  RecipeWearableName,
+} from "../lib/crafting";
+import { AnimalBuildingLevel } from "../events/landExpansion/upgradeBuilding";
 
 export type Reward = {
   coins?: number;
@@ -181,7 +189,14 @@ export type MutantChicken =
   | "Banana Chicken"
   | "Crim Peckster"
   | "Knight Chicken"
-  | "Pharaoh Chicken";
+  | "Pharaoh Chicken"
+  | "Alien Chicken";
+
+export type MutantCow = "Mootant";
+
+export type MutantSheep = "Toxic Tuft";
+
+export type MutantAnimal = MutantChicken | MutantCow | MutantSheep;
 
 export const BB_TO_GEM_RATIO = 20;
 
@@ -315,6 +330,9 @@ export const COUPONS: Record<Coupons, { description: string }> = {
   Mark: {
     description: translate("description.faction.mark"),
   },
+  Horseshoe: {
+    description: translate("description.horseshoe"),
+  },
 };
 
 export type Purchase = {
@@ -360,6 +378,31 @@ export type WarItems =
   | "Warrior Helmet"
   | "Warrior Pants";
 
+export type LoveAnimalItem = "Petting Hand" | "Brush" | "Music Box";
+
+type Bounty = {
+  id: string;
+  name: InventoryItemName;
+  coins?: number;
+  items?: Partial<Record<InventoryItemName, number>>;
+};
+
+export type AnimalBounty = Bounty & {
+  name: AnimalType;
+  level: number;
+};
+
+export type FlowerBounty = Bounty & {
+  name: FlowerName;
+};
+
+export type BountyRequest = AnimalBounty | FlowerBounty;
+
+export type Bounties = {
+  requests: BountyRequest[];
+  completed: { id: string; soldAt: number }[];
+};
+
 export type InventoryItemName =
   | AnimalResource
   | CropName
@@ -381,7 +424,7 @@ export type InventoryItemName =
   | EasterEventItemName
   | Food
   | MOMEventItem
-  | MutantChicken
+  | MutantAnimal
   | Coupons
   | Points
   | WarItems
@@ -415,7 +458,13 @@ export type InventoryItemName =
   | WorkbenchToolName
   | FactionShopCollectibleName
   | FactionShopFoodName
-  | MutantFlowerName;
+  | MutantFlowerName
+  | AnimalFoodName
+  | AnimalMedicineName
+  | LoveAnimalItem
+  | BedName
+  | RecipeCraftableName
+  | SeasonalCollectibleName;
 
 export type Inventory = Partial<Record<InventoryItemName, Decimal>>;
 
@@ -540,6 +589,7 @@ export type Mine = Position;
 export type BuildingProduct = {
   name: CookableName;
   readyAt: number;
+  amount?: number;
   boost?: Partial<Record<InventoryItemName, number>>;
 };
 
@@ -728,6 +778,38 @@ export type LanternName =
   | "Betty Lantern"
   | "Bumpkin Lantern";
 
+export type AnimalFoodName =
+  | "Hay"
+  | "Kernel Blend"
+  | "NutriBarley"
+  | "Mixed Grain"
+  | "Omnifeed";
+
+export type AnimalMedicineName = "Barn Delight";
+
+export type BedName =
+  | "Basic Bed"
+  | "Fisher Bed"
+  | "Floral Bed"
+  | "Sturdy Bed"
+  | "Desert Bed"
+  | "Cow Bed"
+  | "Pirate Bed"
+  | "Royal Bed";
+
+export type RecipeCraftableName =
+  | "Cushion"
+  | "Timber"
+  | "Bee Box"
+  | "Crimsteel"
+  | "Merino Cushion"
+  | "Kelp Fibre"
+  | "Hardened Leather"
+  | "Synthetic Fabric"
+  | "Ocean's Treasure"
+  | "Royal Bedding"
+  | "Royal Ornament";
+
 export type Party = {
   fulfilledAt?: number;
   fulfilledCount?: number;
@@ -771,6 +853,7 @@ export type Delivery = {
     total: number;
     claimedAt?: number;
   };
+  doubleDelivery?: string;
 };
 
 export type DailyRewards = {
@@ -816,6 +899,7 @@ export type NPCS = Partial<Record<NPCName, NPCData>>;
 
 export type NPCData = {
   deliveryCount: number;
+  deliveryCompletedAt?: number;
   questCompletedAt?: number;
   friendship?: {
     updatedAt: number;
@@ -1153,7 +1237,7 @@ export type AnimalResource =
   | "Merino Wool"
   | "Feather"
   | "Milk";
-export type AnimalState = "idle";
+export type AnimalState = "idle" | "happy" | "sad" | "ready" | "sick";
 
 export type Animal = {
   id: string;
@@ -1161,10 +1245,16 @@ export type Animal = {
   state: AnimalState;
   createdAt: number;
   coordinates: Coordinates;
+  experience: number;
+  asleepAt: number;
+  awakeAt: number;
+  lovedAt: number;
+  item: LoveAnimalItem;
+  multiplier?: number;
 };
 
 export type AnimalBuilding = {
-  level: number;
+  level: AnimalBuildingLevel;
   animals: Record<string, Animal>;
 };
 
@@ -1173,12 +1263,18 @@ export interface GameState {
 
   rewards: Rewards;
 
+  choreBoard: ChoreBoard;
+
   competitions: {
     progress: Partial<Record<CompetitionName, CompetitionProgress>>;
   };
 
   shipments: {
     restockedAt?: number;
+  };
+
+  gems: {
+    history?: Record<string, { spent: number }>;
   };
 
   // There are more fields but unused
@@ -1306,6 +1402,8 @@ export interface GameState {
   mushrooms: Mushrooms;
   potionHouse?: PotionHouse;
 
+  bounties: Bounties;
+
   trades: {
     listings?: Record<string, TradeListing>;
     offers?: Record<string, TradeOffer>;
@@ -1339,6 +1437,22 @@ export interface GameState {
   experiments: ExperimentName[];
   henHouse: AnimalBuilding;
   barn: AnimalBuilding;
+
+  craftingBox: {
+    status: "pending" | "idle" | "crafting";
+    item?:
+      | {
+          collectible: RecipeCollectibleName;
+          wearable?: never;
+        }
+      | {
+          collectible?: never;
+          wearable: RecipeWearableName;
+        };
+    startedAt: number;
+    readyAt: number;
+    recipes: Partial<Recipes>;
+  };
 }
 
 export interface Context {

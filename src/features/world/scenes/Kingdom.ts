@@ -16,7 +16,6 @@ import { FactionName } from "features/game/types/game";
 import { Coordinates } from "features/game/expansion/components/MapPlacement";
 import { getKeys } from "features/game/types/decorations";
 import { JoinFactionAction } from "features/game/events/landExpansion/joinFaction";
-import { hasFeatureAccess } from "lib/flags";
 import {
   getFactionScores,
   getPreviousWeek,
@@ -25,6 +24,8 @@ import {
 import { hasReadKingdomNotice } from "../ui/kingdom/KingdomNoticeboard";
 import { EventObject } from "xstate";
 import { hasReadCropsAndChickensNotice } from "../ui/portals/CropsAndChickens";
+
+import { EVENT_BUMPKINS, sheepPlace } from "../ui/npcs/Sheep"; // Remove after released
 
 export const KINGDOM_NPCS: NPCBumpkin[] = [
   {
@@ -174,6 +175,10 @@ export class KingdomScene extends BaseScene {
     super.create();
 
     this.initialiseNPCs(KINGDOM_NPCS);
+    // Remove after release
+    if (sheepPlace() === this.sceneId) {
+      this.initialiseNPCs(EVENT_BUMPKINS);
+    }
     this.addShopDisplayItems();
 
     const chickenRescuePortal = this.add.sprite(285, 515, "portal");
@@ -245,27 +250,25 @@ export class KingdomScene extends BaseScene {
       .setImmovable(true)
       .setCollideWorldBounds(true);
 
-    if (hasFeatureAccess(this.gameState, "FRUIT_DASH")) {
-      const fruitDashPortal = this.add.sprite(40, 510, "portal");
-      fruitDashPortal.play("portal_anim", true);
-      fruitDashPortal
-        .setInteractive({ cursor: "pointer" })
-        .on("pointerdown", () => {
-          if (this.checkDistanceToSprite(fruitDashPortal, 40)) {
-            interactableModalManager.open("fruit_dash");
-          } else {
-            this.currentPlayer?.speak(translate("base.iam.far.away"));
-          }
-        });
+    const fruitDashPortal = this.add.sprite(40, 510, "portal");
+    fruitDashPortal.play("portal_anim", true);
+    fruitDashPortal
+      .setInteractive({ cursor: "pointer" })
+      .on("pointerdown", () => {
+        if (this.checkDistanceToSprite(fruitDashPortal, 40)) {
+          interactableModalManager.open("fruit_dash");
+        } else {
+          this.currentPlayer?.speak(translate("base.iam.far.away"));
+        }
+      });
 
-      this.physics.world.enable(fruitDashPortal);
-      this.colliders?.add(fruitDashPortal);
-      (fruitDashPortal.body as Phaser.Physics.Arcade.Body)
-        .setSize(32, 32)
-        .setOffset(0, 0)
-        .setImmovable(true)
-        .setCollideWorldBounds(true);
-    }
+    this.physics.world.enable(fruitDashPortal);
+    this.colliders?.add(fruitDashPortal);
+    (fruitDashPortal.body as Phaser.Physics.Arcade.Body)
+      .setSize(32, 32)
+      .setOffset(0, 0)
+      .setImmovable(true)
+      .setCollideWorldBounds(true);
 
     const board1 = this.add.sprite(328, 620, "sunflorian_board");
 

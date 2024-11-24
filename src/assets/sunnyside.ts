@@ -59,7 +59,9 @@ export const SUNNYSIDE = {
     desert_digging: `${CONFIG.PROTECTED_IMAGE_URL}/announcements/desert.webp`,
     factions: `${CONFIG.PROTECTED_IMAGE_URL}/announcements/factions.png`,
     desertSeason: `${CONFIG.PROTECTED_IMAGE_URL}/announcements/desert_season.png`,
+    bullRunSeason: `${CONFIG.PROTECTED_IMAGE_URL}/announcements/bull_run_season.png`,
     pharaohSeasonRares: `${CONFIG.PROTECTED_IMAGE_URL}/announcements/pharaoh_seasonal_rares.png`,
+    bullRunSeasonRares: `${CONFIG.PROTECTED_IMAGE_URL}/announcements/bull_run_seasonal_rares.webp`,
   },
   //Badges(Pre-LandExpansion Skills)
   badges: {
@@ -251,6 +253,13 @@ export const SUNNYSIDE = {
     tent_inside: `${CONFIG.PROTECTED_IMAGE_URL}/land/tent_inside.png`,
     house_inside: `${CONFIG.PROTECTED_IMAGE_URL}/land/house_inside.png`,
     manor_inside: `${CONFIG.PROTECTED_IMAGE_URL}/land/manor_inside.png`,
+    animal_house_inside_one: `${CONFIG.PROTECTED_IMAGE_URL}/land/animal_house_one.png`,
+    animal_house_inside_two: `${CONFIG.PROTECTED_IMAGE_URL}/land/animal_house_two.png`,
+    animal_house_inside_three: `${CONFIG.PROTECTED_IMAGE_URL}/land/animal_house_three.png`,
+
+    basic_building_bg: `${CONFIG.PROTECTED_IMAGE_URL}/land/basic_building_bg.png`,
+    spring_building_bg: `${CONFIG.PROTECTED_IMAGE_URL}/land/spring_building_bg.png`,
+    desert_building_bg: `${CONFIG.PROTECTED_IMAGE_URL}/land/desert_building_bg.png`,
   },
   //Soil
   soil: {
@@ -265,23 +274,52 @@ export const SUNNYSIDE = {
     boxChicken: `${CONFIG.PROTECTED_IMAGE_URL}/animals/chickens/box_chicken.png`,
     hungryChicken: `${CONFIG.PROTECTED_IMAGE_URL}/animals/chickens/hungry_2.gif`,
     happyChicken: `${CONFIG.PROTECTED_IMAGE_URL}/animals/chickens/happy_2.gif`,
+    sadChicken: `${CONFIG.PROTECTED_IMAGE_URL}/animals/chickens/sad_2.gif`,
     walkingChickenSheet: `${CONFIG.PROTECTED_IMAGE_URL}/animals/chickens/walking_sheet_2.png`,
     sleepingChicken: `${CONFIG.PROTECTED_IMAGE_URL}/animals/chickens/sleeping_2.gif`,
     chickenShadow: `${CONFIG.PROTECTED_IMAGE_URL}/animals/chickens/chicken_shadow.png`,
     layingEggSheet: `${CONFIG.PROTECTED_IMAGE_URL}/animals/chickens/laying-egg-sheet_2.png`,
     wheatOnGround: `${CONFIG.PROTECTED_IMAGE_URL}/animals/chickens/wheat_2.png`,
 
-    cow: `${CONFIG.PROTECTED_IMAGE_URL}/animals/cows/cow_md.webp`,
-    hungryCow: `${CONFIG.PROTECTED_IMAGE_URL}/animals/cows/hungry_cow.webp`,
-    happyCow: `${CONFIG.PROTECTED_IMAGE_URL}/animals/cows/happy_cow.webp`,
-    sickCow: `${CONFIG.PROTECTED_IMAGE_URL}/animals/cows/sick_cow.webp`,
-
-    sheep: `${CONFIG.PROTECTED_IMAGE_URL}/animals/sheep/sheep_md.webp`,
-    hungrySheep: `${CONFIG.PROTECTED_IMAGE_URL}/animals/sheep/hungry_sheep.webp`,
-    happySheep: `${CONFIG.PROTECTED_IMAGE_URL}/animals/sheep/happy_sheep.webp`,
-    sickSheep: `${CONFIG.PROTECTED_IMAGE_URL}/animals/sheep/sick_sheep.webp`,
+    // New Animals
+    chickenIdle: `${CONFIG.PROTECTED_IMAGE_URL}/animals/chickens/idle_chicken.gif`,
+    chickenAsleep: `${CONFIG.PROTECTED_IMAGE_URL}/animals/chickens/sleeping_chicken.gif`,
+    chickenReady: `${CONFIG.PROTECTED_IMAGE_URL}/animals/chickens/ready.webp`,
+    chickenSick: `${CONFIG.PROTECTED_IMAGE_URL}/animals/chickens/sick.webp`,
+    cowIdle: `${CONFIG.PROTECTED_IMAGE_URL}/animals/cows/idle.webp`,
+    cowReady: `${CONFIG.PROTECTED_IMAGE_URL}/animals/cows/ready.webp`,
+    cowSleeping: `${CONFIG.PROTECTED_IMAGE_URL}/animals/cows/sleeping.webp`,
+    cowFed: `${CONFIG.PROTECTED_IMAGE_URL}/animals/cows/fed.webp`,
+    cowSick: `${CONFIG.PROTECTED_IMAGE_URL}/animals/cows/sick.webp`,
+    sheepIdle: `${CONFIG.PROTECTED_IMAGE_URL}/animals/sheep/idle.webp`,
+    sheepReady: `${CONFIG.PROTECTED_IMAGE_URL}/animals/sheep/ready.webp`,
+    sheepSleeping: `${CONFIG.PROTECTED_IMAGE_URL}/animals/sheep/sleeping.webp`,
+    sheepFed: `${CONFIG.PROTECTED_IMAGE_URL}/animals/sheep/fed.webp`,
+    sheepSick: `${CONFIG.PROTECTED_IMAGE_URL}/animals/sheep/sick.webp`,
 
     bird: `${CONFIG.PROTECTED_IMAGE_URL}/animals/bird_sheet.png`,
+  },
+  animalFoods: {
+    hay: `${CONFIG.PROTECTED_IMAGE_URL}/animals/foods/hay.webp`,
+    kernel_blend: `${CONFIG.PROTECTED_IMAGE_URL}/animals/foods/kernel_blend.webp`,
+    nutribarley: `${CONFIG.PROTECTED_IMAGE_URL}/animals/foods/nutribarley.webp`,
+    mixed_grain: `${CONFIG.PROTECTED_IMAGE_URL}/animals/foods/mixed_grain.webp`,
+    fish_oil: `${CONFIG.PROTECTED_IMAGE_URL}/animals/foods/fish_oil.webp`,
+    barn_delight: `${CONFIG.PROTECTED_IMAGE_URL}/animals/foods/barn_delight.webp`,
+    omnifeed: `${CONFIG.PROTECTED_IMAGE_URL}/animals/foods/omnifeed.webp`,
+  },
+  crafting: {
+    cushion: `${CONFIG.PROTECTED_IMAGE_URL}/crafting/cushion.webp`,
+    timber: `${CONFIG.PROTECTED_IMAGE_URL}/crafting/timber.webp`,
+    beeBox: `${CONFIG.PROTECTED_IMAGE_URL}/crafting/bee_box.webp`,
+    crimsteel: `${CONFIG.PROTECTED_IMAGE_URL}/crafting/crimsteel.webp`,
+    merinoCushion: `${CONFIG.PROTECTED_IMAGE_URL}/crafting/merino_cushion.webp`,
+    kelpFibre: `${CONFIG.PROTECTED_IMAGE_URL}/crafting/kelp_fibre.webp`,
+    hardenedLeather: `${CONFIG.PROTECTED_IMAGE_URL}/crafting/hardened_leather.webp`,
+    syntheticFabric: `${CONFIG.PROTECTED_IMAGE_URL}/crafting/synthetic_fabric.webp`,
+    oceansTreasure: `${CONFIG.PROTECTED_IMAGE_URL}/crafting/oceans_treasure_2.webp`,
+    royalBedding: `${CONFIG.PROTECTED_IMAGE_URL}/crafting/royal_bedding.webp`,
+    royalOrnament: `${CONFIG.PROTECTED_IMAGE_URL}/crafting/royal_ornament.webp`,
   },
   //VFXs
   vfx: {
@@ -313,6 +351,7 @@ export const SUNNYSIDE = {
   building: {
     smoke: `${CONFIG.PROTECTED_IMAGE_URL}/buildings/smoke.gif`,
     wishingwell: `${CONFIG.PROTECTED_IMAGE_URL}/buildings/wishing_well.png`,
+    bountyBoard: `${CONFIG.PROTECTED_IMAGE_URL}/buildings/bounty_board.png`,
     //BASIC
     firePit: `${CONFIG.PROTECTED_IMAGE_URL}/buildings/fire_pit.png`,
     kitchen: `${CONFIG.PROTECTED_IMAGE_URL}/buildings/kitchen.png`,
@@ -331,6 +370,7 @@ export const SUNNYSIDE = {
     warehouse: `${CONFIG.PROTECTED_IMAGE_URL}/buildings/warehouse.png`,
     fruitPatchDirt: `${CONFIG.PROTECTED_IMAGE_URL}/fruit/fruit_patch.png`,
     barn: `${CONFIG.PROTECTED_IMAGE_URL}/buildings/barn_sm.webp`,
+    feederMachine: `${CONFIG.PROTECTED_IMAGE_URL}/buildings/feeder_machine.webp`,
 
     //DESERT
     desertFirePit: `${CONFIG.PROTECTED_IMAGE_URL}/desert/buildings/fire_pit.webp`,
@@ -374,12 +414,21 @@ export const SUNNYSIDE = {
     cropMachine: `${CONFIG.PROTECTED_IMAGE_URL}/buildings/crop_machine.wep.webp`,
     shadowCropMachine: `${CONFIG.PROTECTED_IMAGE_URL}/cropMachine/shadow.webp`,
 
+    // Animal Houses
+    henHouseLevel1: `${CONFIG.PROTECTED_IMAGE_URL}/buildings/hen_house_1.webp`,
+    henHouseLevel2: `${CONFIG.PROTECTED_IMAGE_URL}/buildings/hen_house_2.webp`,
+    henHouseLevel3: `${CONFIG.PROTECTED_IMAGE_URL}/buildings/hen_house_3.webp`,
+    barnLevel1: `${CONFIG.PROTECTED_IMAGE_URL}/buildings/barn_1.webp`,
+    barnLevel2: `${CONFIG.PROTECTED_IMAGE_URL}/buildings/barn_2.webp`,
+    barnLevel3: `${CONFIG.PROTECTED_IMAGE_URL}/buildings/barn_3.webp`,
+
     //Bumpkin Houses
     house: `${CONFIG.PROTECTED_IMAGE_URL}/buildings/house.png`,
     manor: `${CONFIG.PROTECTED_IMAGE_URL}/buildings/manor.png`,
   },
   //Icons
   icons: {
+    upgrade_disc: `${CONFIG.PROTECTED_IMAGE_URL}/icons/upgrade_disc.webp`,
     angry: `${CONFIG.PROTECTED_IMAGE_URL}/icons/angry.png`,
     arrow_down: `${CONFIG.PROTECTED_IMAGE_URL}/icons/arrow_down.png`,
     arrow_left: `${CONFIG.PROTECTED_IMAGE_URL}/icons/arrow_left.png`,
@@ -394,9 +443,11 @@ export const SUNNYSIDE = {
     drag: `${CONFIG.PROTECTED_IMAGE_URL}/icons/drag.png`,
     dragging: `${CONFIG.PROTECTED_IMAGE_URL}/icons/dragging.png`,
     expand: `${CONFIG.PROTECTED_IMAGE_URL}/icons/expand.png`,
+    expression_stress: `${CONFIG.PROTECTED_IMAGE_URL}/icons/expression_stress.png`,
     expression_alerted: `${CONFIG.PROTECTED_IMAGE_URL}/icons/expression_alerted.png`,
     expression_chat: `${CONFIG.PROTECTED_IMAGE_URL}/icons/expression_chat.png`,
     expression_confused: `${CONFIG.PROTECTED_IMAGE_URL}/icons/expression_confused.png`,
+    expression_ready: `${CONFIG.PROTECTED_IMAGE_URL}/icons/expression_confused-1.png`,
     fish: `${CONFIG.PROTECTED_IMAGE_URL}/icons/fish.png`,
     hammer: `${CONFIG.PROTECTED_IMAGE_URL}/icons/hammer.png`,
     heart: `${CONFIG.PROTECTED_IMAGE_URL}/icons/heart.png`,
@@ -410,6 +461,7 @@ export const SUNNYSIDE = {
     seedling: `${CONFIG.PROTECTED_IMAGE_URL}/icons/seedling.png`,
     seeds: `${CONFIG.PROTECTED_IMAGE_URL}/icons/seeds.png`,
     shop: `${CONFIG.PROTECTED_IMAGE_URL}/icons/shop.png`,
+    sleeping: `${CONFIG.PROTECTED_IMAGE_URL}/icons/sleeping.webp`,
     stopwatch: `${CONFIG.PROTECTED_IMAGE_URL}/icons/stopwatch.png`,
     sunflorea: `${CONFIG.PROTECTED_IMAGE_URL}/icons/sunflorea.png`,
     sword: `${CONFIG.PROTECTED_IMAGE_URL}/icons/sword.png`,
@@ -468,9 +520,11 @@ export const SUNNYSIDE = {
     toolshedIcon: `${CONFIG.PROTECTED_IMAGE_URL}/buildings/icons/toolshed_icon.png`,
     warehouseIcon: `${CONFIG.PROTECTED_IMAGE_URL}/buildings/icons/warehouse_icon.png`,
     greenhouseIcon: `${CONFIG.PROTECTED_IMAGE_URL}/buildings/icons/greenhouse_icon.webp`,
+    upgradeBuildingIcon: `${CONFIG.PROTECTED_IMAGE_URL}/icons/upgrade_building.webp`,
   },
   //NPCs
   npcs: {
+    hank_swimming: `${CONFIG.PROTECTED_IMAGE_URL}/npcs/hank_swimming.webp`,
     betty: `${CONFIG.PROTECTED_IMAGE_URL}/npcs/betty.gif`,
     bumpkin: `${CONFIG.PROTECTED_IMAGE_URL}/npcs/idle.gif`,
     fisherman: `${CONFIG.PROTECTED_IMAGE_URL}/npcs/fisherman.gif`,
@@ -764,6 +818,7 @@ export const SUNNYSIDE = {
   },
   //Tutorials
   tutorial: {
+    animals: `${CONFIG.PROTECTED_IMAGE_URL}/tutorials/new_animals.png`,
     workbench: `${CONFIG.PROTECTED_IMAGE_URL}/tutorials/workbench.png`,
     harvesting: `${CONFIG.PROTECTED_IMAGE_URL}/tutorials/harvesting.png`,
     cooking: `${CONFIG.PROTECTED_IMAGE_URL}/tutorials/fire_pit.png`,
@@ -775,5 +830,6 @@ export const SUNNYSIDE = {
     farmHandImage: `${CONFIG.PROTECTED_IMAGE_URL}/tutorials/farmHands.png`,
     flowersTutorial: `${CONFIG.PROTECTED_IMAGE_URL}/tutorials/flowers.webp`,
     beeTutorial: `${CONFIG.PROTECTED_IMAGE_URL}/tutorials/bees.webp`,
+    craftingBox: `${CONFIG.PROTECTED_IMAGE_URL}/tutorials/crafting_box.webp`,
   },
 };
