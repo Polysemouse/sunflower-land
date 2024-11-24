@@ -26,7 +26,6 @@ import {
   PATCH_FRUIT_SEEDS,
   PatchFruitSeedName,
 } from "features/game/types/fruits";
-import { Restock } from "features/island/buildings/components/building/market/Restock";
 import { getFruitHarvests } from "features/game/events/landExpansion/utils";
 import { SplitScreenView } from "components/ui/SplitScreenView";
 import { CraftingRequirements } from "components/ui/layouts/CraftingRequirements";
@@ -51,12 +50,9 @@ import {
   isBasicCrop,
   isMediumCrop,
 } from "features/game/events/landExpansion/harvest";
+import { Restock } from "./restock/Restock";
 
-interface Props {
-  onClose: () => void;
-}
-
-export const Seeds: React.FC<Props> = ({ onClose }) => {
+export const Seeds: React.FC = () => {
   const [selectedName, setSelectedName] = useState<SeedName>("Sunflower Seed");
   const [confirmBuyModal, showConfirmBuyModal] = useState(false);
 
@@ -134,7 +130,7 @@ export const Seeds: React.FC<Props> = ({ onClose }) => {
 
     // return delayed sync when no stock
     if (stock.lessThanOrEqualTo(0)) {
-      return <Restock onClose={onClose} />;
+      return <Restock npc={"betty"} />;
     }
 
     // return message if inventory is full

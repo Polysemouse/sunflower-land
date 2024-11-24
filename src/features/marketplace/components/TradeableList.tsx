@@ -3,7 +3,10 @@ import { useActor } from "@xstate/react";
 import { Box } from "components/ui/Box";
 import { Label } from "components/ui/Label";
 import { Context } from "features/game/GameProvider";
-import { TradeableDetails } from "features/game/types/marketplace";
+import {
+  MARKETPLACE_TAX,
+  TradeableDetails,
+} from "features/game/types/marketplace";
 import { useAppTranslation } from "lib/i18n/useAppTranslations";
 import { signTypedData } from "@wagmi/core";
 import { config } from "features/wallet/WalletProvider";
@@ -27,6 +30,8 @@ import { availableWardrobe } from "features/game/events/landExpansion/equip";
 import { InventoryItemName } from "features/game/types/game";
 import { BumpkinItem } from "features/game/types/bumpkin";
 import { TradeableSummary } from "./TradeableSummary";
+import { getTradeType } from "../lib/getTradeType";
+import Decimal from "decimal.js-light";
 
 type TradeableListItemProps = {
   authToken: string;
@@ -56,6 +61,14 @@ export const TradeableListItem: React.FC<TradeableListItemProps> = ({
 
   const { state } = gameState.context;
   const quantity = 1;
+
+  const tradeType = getTradeType({
+    collection: display.type,
+    id,
+    trade: {
+      sfl: price,
+    },
+  });
 
   // Check inventory count
   const getCount = () => {
@@ -96,7 +109,7 @@ export const TradeableListItem: React.FC<TradeableListItemProps> = ({
       return;
     }
 
-    if (tradeable?.type === "onchain") {
+    if (tradeType === "onchain") {
       setIsSigning(true);
       return;
     }
@@ -219,6 +232,8 @@ export const TradeableListItem: React.FC<TradeableListItemProps> = ({
     );
   }
 
+  const isComingSoon = tradeType === "onchain" && CONFIG.NETWORK === "mainnet";
+
   return (
     <div className="flex flex-col">
       <div className="flex justify-between">
@@ -227,7 +242,7 @@ export const TradeableListItem: React.FC<TradeableListItemProps> = ({
             type: `${display.type.slice(0, display.type.length - 1)}`,
           })}
         </Label>
-        {tradeable?.type === "onchain" && (
+        {tradeType === "onchain" && (
           <Label type="formula" icon={walletIcon} className="my-1 mr-0.5">
             {t("marketplace.walletRequired")}
           </Label>
@@ -259,7 +274,7 @@ export const TradeableListItem: React.FC<TradeableListItemProps> = ({
               <NumberInput
                 value={price}
                 onValueChange={(decimal) => setPrice(decimal.toNumber())}
-                maxDecimalPlaces={0}
+                maxDecimalPlaces={2}
                 icon={sflIcon}
               />
             </div>
@@ -299,7 +314,7 @@ export const TradeableListItem: React.FC<TradeableListItemProps> = ({
                 {t("bumpkinTrade.youWillReceive")}
               </span>
               <p className="text-xs font-secondary">{`${formatNumber(
-                price * 0.9,
+                new Decimal(price).mul(1 - MARKETPLACE_TAX),
                 {
                   decimalPlaces: 1,
                   showTrailingZeros: false,
@@ -313,6 +328,15 @@ export const TradeableListItem: React.FC<TradeableListItemProps> = ({
               {t("marketplace.itemSecuredWarning")}
             </div>
           </div>
+
+          {isComingSoon && (
+            <div className="p-2">
+              <Label type="danger" className="-ml-1 mb-2">
+                {t("marketplace.onchainComingSoon")}
+              </Label>
+            </div>
+          )}
+
           <div className="flex space-x-1">
             <Button onClick={onClose}>{t("close")}</Button>
             <Button
@@ -321,7 +345,7 @@ export const TradeableListItem: React.FC<TradeableListItemProps> = ({
               className="relative"
             >
               <span>{t("list")}</span>
-              {tradeable?.type === "onchain" && (
+              {tradeType === "onchain" && (
                 <img
                   src={walletIcon}
                   className="absolute right-1 top-0.5 h-7"

@@ -21,6 +21,17 @@ import { translate } from "lib/i18n/translate";
 import { getImageUrl } from "lib/utils/getImageURLS";
 import { OuterPanel } from "components/ui/Panel";
 
+const host = window.location.host.replace(/^www\./, "");
+const LOCAL_STORAGE_KEY = `bert-read.${host}-${window.location.pathname}`;
+
+function acknowledgeIntroRead() {
+  localStorage.setItem(LOCAL_STORAGE_KEY, new Date().toString());
+}
+
+function hasReadIntro() {
+  return !!localStorage.getItem(LOCAL_STORAGE_KEY);
+}
+
 interface Props {
   onClose: () => void;
 }
@@ -28,39 +39,40 @@ interface Props {
 const obsessionDialogues = (itemName: string) => [
   `${translate("obsessionDialogue.line1", {
     itemName: itemName,
-    seasonalTicket: getSeasonalTicket(),
+    seasonalTicket: getSeasonalTicket().toLowerCase(),
   })}`,
   `${translate("obsessionDialogue.line2", {
     itemName: itemName,
-    seasonalTicket: getSeasonalTicket(),
+    seasonalTicket: getSeasonalTicket().toLowerCase(),
   })}`,
   `${translate("obsessionDialogue.line3", {
     itemName: itemName,
-    seasonalTicket: getSeasonalTicket(),
+    seasonalTicket: getSeasonalTicket().toLowerCase(),
   })}`,
   `${translate("obsessionDialogue.line4", {
     itemName: itemName,
-    seasonalTicket: getSeasonalTicket(),
+    seasonalTicket: getSeasonalTicket().toLowerCase(),
   })}`,
   `${translate("obsessionDialogue.line5", {
     itemName: itemName,
-    seasonalTicket: getSeasonalTicket(),
+    seasonalTicket: getSeasonalTicket().toLowerCase(),
   })}`,
 ];
 
 export const Bert: React.FC<Props> = ({ onClose }) => {
   const { t } = useAppTranslation();
   const [tab, setTab] = useState(0);
-  const [confirmAction, setConfirmAction] = useState(false);
+  const [showIntro, setShowIntro] = useState(!hasReadIntro());
   const dialogue = npcDialogues.bert || defaultDialogue;
   const intro = useRandomItem(dialogue.intro);
 
-  const handleConfirm = (tab: number) => {
-    setConfirmAction(true);
+  const handleIntro = (tab: number) => {
+    setShowIntro(false);
+    acknowledgeIntroRead();
     setTab(tab);
   };
 
-  if (!confirmAction) {
+  if (showIntro) {
     return (
       <SpeakingModal
         onClose={onClose}
@@ -70,12 +82,12 @@ export const Bert: React.FC<Props> = ({ onClose }) => {
             text: intro,
             actions: [
               {
-                text: t("delivery"),
-                cb: () => handleConfirm(0),
+                text: t("obsession"),
+                cb: () => handleIntro(1),
               },
               {
-                text: t("obsession"),
-                cb: () => handleConfirm(1),
+                text: t("delivery"),
+                cb: () => handleIntro(0),
               },
             ],
           },
@@ -102,7 +114,9 @@ export const Bert: React.FC<Props> = ({ onClose }) => {
   );
 };
 
-const BertObsession: React.FC = () => {
+export const BertObsession: React.FC<{ readonly?: boolean }> = ({
+  readonly,
+}) => {
   const { t } = useAppTranslation();
   const { gameService } = useContext(Context);
   const [
@@ -111,6 +125,7 @@ const BertObsession: React.FC = () => {
     },
   ] = useActor(gameService);
   const currentObsession = state.bertObsession;
+  const obsessionCompletedAt = state.npcs?.bert?.questCompletedAt;
 
   const obsessionDialogue = useRandomItem(
     obsessionDialogues(currentObsession?.name as string),
@@ -129,12 +144,83 @@ const BertObsession: React.FC = () => {
 
   const endDate = !currentObsession ? 0 : currentObsession.endDate;
   const resetSeconds = (endDate - new Date().getTime()) / 1000;
+  const reward = state.bertObsession?.reward ?? 0;
+
+  if (!currentObsession) {
+    return (
+      <div className="w-full flex flex-col items-center pt-0.5">
+        <div className="flex flex-row justify-between w-full my-1">
+          <Label type="default">{"Bert's Obsession"}</Label>
+        </div>
+        <p className="text-center text-sm my-3">{t("no.obsessions")}</p>
+      </div>
+    );
+  }
+
+  if (readonly) {
+    return (
+      <>
+        <div className="flex flex-col items-center space-y-2 mb-2">
+          <div className="flex flex-row justify-between w-full my-1">
+            <Label type="default">{"Bert's Obsession"}</Label>
+            <Label type="info" icon={SUNNYSIDE.icons.stopwatch}>
+              {`${t("offer.end")} ${secondsToString(resetSeconds, {
+                length: "medium",
+                removeTrailingZeros: true,
+              })}`}
+            </Label>
+          </div>
+          <div className="w-full mb-1 mx-1">
+            <div className="flex">
+              <div
+                className="w-[40%] relative min-w-[40%] rounded-md overflow-hidden shadow-md mr-2 flex justify-center items-center h-32"
+                style={
+                  isObsessionCollectible
+                    ? {
+                        backgroundImage: `url(${SUNNYSIDE.ui.grey_background})`,
+                        backgroundSize: "cover",
+                        backgroundPosition: "center",
+                      }
+                    : {}
+                }
+              >
+                <img
+                  src={image}
+                  className="absolute w-1/2 z-20 object-cover mb-2 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"
+                />
+              </div>
+              <div className="flex flex-col space-y-2 justify-between">
+                <span className="text-xs leading-none">
+                  {t("obsessionDialogue.codex", {
+                    itemName: obsessionName ?? "",
+                    seasonalTicket: getSeasonalTicket().toLowerCase(),
+                  })}
+                </span>
+                <div className="flex flex-row flex-wrap">
+                  <Label
+                    className="whitespace-nowrap font-secondary relative mr-2"
+                    type="default"
+                  >
+                    {`Reward: ${reward} ${getSeasonalTicket()}s`}
+                  </Label>
+                  {obsessionCompletedAt &&
+                    obsessionCompletedAt >= currentObsession.startDate &&
+                    obsessionCompletedAt <= currentObsession.endDate && (
+                      <Label type="success" icon={SUNNYSIDE.icons.confirm}>
+                        {t("alr.completed")}
+                      </Label>
+                    )}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </>
+    );
+  }
 
   return (
     <div className="w-full flex flex-col items-center pt-0.5">
-      {!currentObsession && (
-        <p className="text-center text-sm my-3">{t("no.obsessions")}</p>
-      )}
       {currentObsession && (
         <div className="w-full flex flex-col items-center mx-auto">
           <p className="text-center text-sm mb-3">{obsessionDialogue}</p>

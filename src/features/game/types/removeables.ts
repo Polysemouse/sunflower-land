@@ -20,7 +20,6 @@ import {
   GreenHouseCropName,
 } from "features/game/types/crops";
 import { canMine } from "../expansion/lib/utils";
-import { areUnsupportedChickensBrewing } from "features/game/events/landExpansion/removeBuilding";
 import { Bud, StemTrait, TypeTrait } from "./buds";
 import {
   isAdvancedCrop,
@@ -38,6 +37,10 @@ import { translate } from "lib/i18n/translate";
 import { canDrillOilReserve } from "../events/landExpansion/drillOilReserve";
 import { getKeys } from "./decorations";
 import { BED_FARMHAND_COUNT } from "./beds";
+import { AnimalType } from "./animals";
+import { getBaseAnimalCapacity } from "../events/landExpansion/buyAnimal";
+import { CookingBuildingName } from "./buildings";
+import { BUILDING_DAILY_OIL_CAPACITY } from "../events/landExpansion/supplyCookingOil";
 
 export type Restriction = [boolean, string];
 type RemoveCondition = (gameState: GameState) => Restriction;
@@ -271,14 +274,20 @@ export function areTreasureHolesDug({
   game: GameState;
   minHoles: number;
 }): Restriction {
-  const holes = game.desert.digging.grid.flat().map((hole) => {
+  const holesDug = game.desert.digging.grid.flat().reduce((sum, hole) => {
     const today = new Date().toISOString().substring(0, 10);
+    const dugAt = new Date(hole.dugAt).toISOString().substring(0, 10);
+    const dugToday = today === dugAt;
 
-    return +(new Date(hole.dugAt).toISOString().substring(0, 10) === today);
-  });
-  const holesDug = holes.reduce((sum, value) => sum + value, 0) > minHoles;
+    if (dugToday) {
+      return sum + 1;
+    }
+    return sum;
+  }, 0);
 
-  return [holesDug, translate("restrictionReason.treasuresDug")];
+  const hasHitMinHoles = holesDug > minHoles;
+
+  return [hasHitMinHoles, translate("restrictionReason.treasuresDug")];
 }
 
 function areAnyComposting(game: GameState): Restriction {
@@ -418,8 +427,38 @@ export function isFarmhandUsingBed(
   return [isLastBed && farmHandInBed, "Farmhand is using bed"];
 }
 
-const newAnimalsStarted =
-  Date.now() > new Date("2024-11-04T00:00:00Z").getTime();
+function hasBonusAnimals(game: GameState, animalType: AnimalType): Restriction {
+  const buildingKey = animalType === "Chicken" ? "henHouse" : "barn";
+  const { animals, level } = game[buildingKey];
+  const animalCount = getKeys(animals).length;
+  const baseCapacity = getBaseAnimalCapacity(level);
+
+  const bonusAnimalCount = animalCount - baseCapacity;
+
+  return [bonusAnimalCount > 0, translate("restrictionReason.hasBonusAnimals")];
+}
+
+export function isCookingBuildingWorking(
+  buildingName: CookingBuildingName,
+  game: GameState,
+): Restriction {
+  const isBuildingCooking = !!game.buildings[buildingName]?.some(
+    (building) => !!building.crafting,
+  );
+
+  return [isBuildingCooking, "Building is in use"];
+}
+
+export function areAnyCookingBuildingWorking(game: GameState): Restriction {
+  const areAnyCookingBuildingWorking = getKeys(
+    BUILDING_DAILY_OIL_CAPACITY,
+  ).some(
+    (building) =>
+      !!game.buildings[building]?.some((building) => !!building.crafting),
+  );
+
+  return [areAnyCookingBuildingWorking, "Building is in use"];
+}
 
 export const REMOVAL_RESTRICTIONS: Partial<
   Record<InventoryItemName, RemoveCondition>
@@ -431,12 +470,12 @@ export const REMOVAL_RESTRICTIONS: Partial<
   "Rich Chicken": (game) => areAnyChickensSleeping(game),
   "Fat Chicken": (game) => areAnyChickensSleeping(game),
   "Speed Chicken": (game) => areAnyChickensSleeping(game),
-  "Chicken Coop": (game) => areAnyChickensSleeping(game),
   "Gold Egg": (game) => areAnyChickensSleeping(game),
   Rooster: (game) => areAnyChickensSleeping(game),
   Bale: (game) => areAnyChickensSleeping(game),
   "Banana Chicken": (game) => areFruitsGrowing(game, "Banana"),
   "Crim Peckster": (game) => areAnyCrimstonesMined(game),
+  "Chicken Coop": (game) => hasBonusAnimals(game, "Chicken"),
 
   // Crop Boosts
   Nancy: (game) => areAnyCropsOrGreenhouseCropsGrowing(game),
@@ -532,7 +571,6 @@ export const REMOVAL_RESTRICTIONS: Partial<
   "Knight Chicken": (game) => areAnyOilReservesDrilled(game),
   "Battle Fish": (game) => areAnyOilReservesDrilled(game),
   "Turbo Sprout": (game) => areAnyGreenhouseCropGrowing(game),
-  Greenhouse: (game) => areAnyGreenhouseCropGrowing(game),
   "Pharaoh Gnome": (game) => areAnyGreenhouseCropGrowing(game),
   Vinny: (game) => greenhouseCropIsGrowing({ crop: "Grape", game }),
   "Grape Granny": (game) => greenhouseCropIsGrowing({ crop: "Grape", game }),
@@ -540,6 +578,12 @@ export const REMOVAL_RESTRICTIONS: Partial<
 
   // Buildings
   "Crop Machine": (game) => hasSeedsCropsInMachine(game),
+  Greenhouse: (game) => areAnyGreenhouseCropGrowing(game),
+  "Fire Pit": (game) => isCookingBuildingWorking("Fire Pit", game),
+  Kitchen: (game) => isCookingBuildingWorking("Kitchen", game),
+  Bakery: (game) => isCookingBuildingWorking("Bakery", game),
+  Deli: (game) => isCookingBuildingWorking("Deli", game),
+  "Smoothie Shack": (game) => isCookingBuildingWorking("Smoothie Shack", game),
 
   // Hourglass
   "Time Warp Totem": (_: GameState) => [
@@ -600,6 +644,7 @@ export const REMOVAL_RESTRICTIONS: Partial<
   Cluckulator: (game) => areAnyChickensSleeping(game),
   "Longhorn Cowfish": (game) => areAnyCowsSleeping(game),
   "Toxic Tuft": (game) => areAnySheepSleeping(game),
+  "Farm Dog": (game) => areAnySheepSleeping(game),
   Mootant: (game) => areAnyCowsSleeping(game),
   "Alien Chicken": (game) => areAnyChickensSleeping(game),
 };
@@ -699,11 +744,6 @@ export const hasRemoveRestriction = (
     if (rubbedCount > 0) {
       return [true, translate("restrictionReason.genieLampRubbed")];
     }
-  }
-
-  if (name === "Chicken Coop") {
-    if (areUnsupportedChickensBrewing(state))
-      return [true, translate("restrictionReason.chickensFed")];
   }
 
   const removeRestriction = REMOVAL_RESTRICTIONS[name];

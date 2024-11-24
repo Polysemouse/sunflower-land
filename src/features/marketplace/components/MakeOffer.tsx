@@ -18,6 +18,7 @@ import walletIcon from "assets/icons/wallet.png";
 import sflIcon from "assets/icons/sfl.webp";
 import lockIcon from "assets/icons/lock.png";
 import { TradeableSummary } from "./TradeableSummary";
+import { getTradeType } from "../lib/getTradeType";
 
 const _balance = (state: MachineState) => state.context.state.balance;
 
@@ -36,6 +37,14 @@ export const MakeOffer: React.FC<{
   const [offer, setOffer] = useState(0);
   const [isSigning, setIsSigning] = useState(false);
   const [showConfirmation, setShowConfirmation] = useState(false);
+
+  const tradeType = getTradeType({
+    collection: display.type,
+    id,
+    trade: {
+      sfl: offer,
+    },
+  });
 
   const sign = async () => {
     const signature = await signTypedData(config, {
@@ -76,7 +85,7 @@ export const MakeOffer: React.FC<{
   };
 
   const submitOffer = () => {
-    if (tradeable?.type === "onchain") {
+    if (tradeType === "onchain") {
       setIsSigning(true);
       return;
     }
@@ -144,6 +153,8 @@ export const MakeOffer: React.FC<{
     );
   }
 
+  const isComingSoon = tradeType === "onchain" && CONFIG.NETWORK === "mainnet";
+
   /* TODO only use game wallet when required */
   return (
     <>
@@ -152,7 +163,7 @@ export const MakeOffer: React.FC<{
           <Label type="default" className="-ml-1">
             {t("marketplace.makeOffer")}
           </Label>
-          {tradeable?.type === "onchain" && (
+          {tradeType === "onchain" && (
             <Label type="formula" icon={walletIcon} className="-mr-1">
               {t("marketplace.walletRequired")}
             </Label>
@@ -175,17 +186,25 @@ export const MakeOffer: React.FC<{
         <p className="text-xs mb-2">{t("marketplace.sflLocked.description")}</p>
       </div>
 
+      {isComingSoon && (
+        <div className="p-2">
+          <Label type="danger" className="-ml-1 mb-2">
+            {t("marketplace.onchainComingSoon")}
+          </Label>
+        </div>
+      )}
+
       <div className="flex">
         <Button className="mr-1" onClick={() => onClose()}>
           {t("cancel")}
         </Button>
         <Button
-          disabled={!offer || balance.lt(offer)}
+          disabled={isComingSoon || !offer || balance.lt(offer)}
           onClick={submitOffer}
           className="relative"
         >
           <span>{t("confirm")}</span>
-          {tradeable?.type === "onchain" && (
+          {tradeType === "onchain" && (
             <img src={walletIcon} className="absolute right-1 top-0.5 h-7" />
           )}
         </Button>

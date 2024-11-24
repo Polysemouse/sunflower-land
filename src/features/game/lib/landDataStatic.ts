@@ -7,6 +7,7 @@ import { BumpkinLevel } from "features/game/lib/level";
 import { getEnabledNodeCount } from "../expansion/lib/expansionNodes";
 import { TEST_BUMPKIN, INITIAL_BUMPKIN_LEVEL } from "./bumpkinData";
 import { EMPTY, makeMegaStoreAvailableDates } from "./constants";
+import { getSeasonalTicket } from "../types/seasons";
 export const INITIAL_RESOURCES: Pick<
   GameState,
   | "crops"
@@ -214,6 +215,14 @@ const OFFLINE_FARM_FRUIT = getEnabledNodeCount(
 
 export const STATIC_OFFLINE_FARM: GameState = {
   ...EMPTY,
+  bertObsession: {
+    type: "collectible",
+    name: "Fairy Circle",
+    startDate: 1732147200000,
+    endDate: 1732406400000,
+    reward: 3,
+  },
+  experiments: ["GEM_BOOSTS"],
   greenhouse: {
     pots: {},
     oil: 50,
@@ -431,6 +440,8 @@ export const STATIC_OFFLINE_FARM: GameState = {
     },
   },
   inventory: {
+    "Fairy Circle": new Decimal(1),
+    "Red Balloon Flower": new Decimal(1),
     Tomato: new Decimal(100),
     Cheese: new Decimal(100),
     "Barn Delight": new Decimal(1),
@@ -862,12 +873,12 @@ export const STATIC_OFFLINE_FARM: GameState = {
       {
         id: "2",
         name: "Red Balloon Flower",
-        coins: 100,
+        items: { [getSeasonalTicket()]: 1 },
       },
       {
         id: "3",
         name: "White Pansy",
-        items: { Scroll: 1 },
+        items: { [getSeasonalTicket()]: 1 },
       },
     ],
   },
@@ -937,16 +948,21 @@ export const STATIC_OFFLINE_FARM: GameState = {
   trades: {
     listings: {
       "1": {
+        collection: "resources",
         createdAt: 0,
         items: { Sunflower: 10 },
         sfl: 10,
         boughtAt: 100,
         buyerId: 1,
       },
+    },
+    offers: {
       "2": {
+        collection: "collectibles",
         createdAt: 0,
-        items: { Sunflower: 10 },
+        items: { "Gold Egg": 10 },
         sfl: 5,
+        fulfilledById: 1,
       },
     },
   },
@@ -1049,7 +1065,16 @@ export const STATIC_OFFLINE_FARM: GameState = {
       },
     ],
   },
-  collectibles: {},
+  collectibles: {
+    "Gold Egg": [
+      {
+        id: "1",
+        coordinates: { x: 0, y: 0 },
+        readyAt: 0,
+        createdAt: 0,
+      },
+    ],
+  },
   pumpkinPlaza: {
     raffle: {
       entries: {
@@ -1136,7 +1161,20 @@ export const STATIC_OFFLINE_FARM: GameState = {
     collectibles: [],
     wearables: [],
   },
-  airdrops: [],
+  airdrops: [
+    {
+      id: "123",
+      createdAt: 1,
+      items: {
+        Sunflower: 1,
+      },
+      wearables: {
+        "Brown Rancher Hair": 1,
+      },
+      sfl: 0,
+      coins: 0,
+    },
+  ],
   username: "Local Hero",
   specialEvents: {
     current: {
@@ -1615,13 +1653,45 @@ export const STATIC_OFFLINE_FARM: GameState = {
       abc: {
         asleepAt: 0,
         awakeAt: 0,
-        experience: 2640,
+        experience: 2720,
         id: "abc",
         type: "Chicken",
         createdAt: 0,
-        coordinates: { x: 0, y: 0 },
         lovedAt: 0,
-        state: "sick",
+        state: "idle",
+        item: "Brush",
+      },
+      c: {
+        asleepAt: 0,
+        awakeAt: 0,
+        experience: 2020,
+        id: "c",
+        type: "Chicken",
+        createdAt: 0,
+        lovedAt: 0,
+        state: "idle",
+        item: "Brush",
+      },
+      blah: {
+        asleepAt: 0,
+        awakeAt: 0,
+        experience: 1120,
+        id: "blah",
+        type: "Chicken",
+        createdAt: 0,
+        lovedAt: 0,
+        state: "idle",
+        item: "Brush",
+      },
+      "123": {
+        asleepAt: 0,
+        awakeAt: 0,
+        experience: 20,
+        id: "123",
+        type: "Chicken",
+        createdAt: 0,
+        lovedAt: 0,
+        state: "idle",
         item: "Brush",
       },
     },
@@ -1632,14 +1702,21 @@ export const STATIC_OFFLINE_FARM: GameState = {
       abc: {
         asleepAt: 0,
         awakeAt: 0,
-        experience: 8100,
+        experience: 8310,
         id: "abc",
         type: "Cow",
         createdAt: 0,
-        coordinates: { x: 0, y: 0 },
         lovedAt: 0,
-        state: "happy",
+        state: "ready",
         item: "Brush",
+        reward: {
+          items: [
+            {
+              name: "Mootant",
+              amount: 1,
+            },
+          ],
+        },
       },
       def: {
         asleepAt: 0,
@@ -1648,7 +1725,6 @@ export const STATIC_OFFLINE_FARM: GameState = {
         id: "def",
         type: "Sheep",
         createdAt: 0,
-        coordinates: { x: 0, y: 0 },
         lovedAt: 0,
         state: "happy",
         item: "Brush",

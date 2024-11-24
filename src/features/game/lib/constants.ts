@@ -95,9 +95,6 @@ export type StockableName = Extract<
   | "Lily Seed"
   | "Sand Shovel"
   | "Sand Drill"
-  | "Chicken"
-  | "Magic Bean"
-  | "Immortal Pear"
 >;
 
 export const INITIAL_STOCK = (
@@ -109,8 +106,8 @@ export const INITIAL_STOCK = (
     "Stone Pickaxe": new Decimal(20),
     "Iron Pickaxe": new Decimal(5),
     "Gold Pickaxe": new Decimal(5),
-    "Oil Drill": new Decimal(5),
     Rod: new Decimal(50),
+    "Oil Drill": new Decimal(5),
   };
 
   // increase in 50% tool stock if you have a toolshed
@@ -121,9 +118,9 @@ export const INITIAL_STOCK = (
     );
   }
 
-  // increase Axe stock by 20% if player has More Axes skill
+  // increase Axe stock by 50 if player has More Axes skill
   if (state?.bumpkin?.skills["More Axes"]) {
-    tools.Axe = new Decimal(Math.ceil(tools.Axe.toNumber() * 1.2));
+    tools.Axe = new Decimal(Math.ceil(tools.Axe.toNumber() + 50));
   }
 
   if (state?.bumpkin?.skills["More Picks"]) {
@@ -179,14 +176,11 @@ export const INITIAL_STOCK = (
   return {
     // Tools
     ...tools,
-    // Seeds
-    ...seeds,
 
     "Sand Shovel": new Decimal(50),
     "Sand Drill": new Decimal(10),
-    Chicken: new Decimal(5),
-    "Magic Bean": new Decimal(5),
-    "Immortal Pear": new Decimal(1),
+    // Seeds
+    ...seeds,
   };
 };
 
@@ -438,6 +432,7 @@ export const INITIAL_FARM: GameState = {
   previousInventory: {},
   wardrobe: {},
   previousWardrobe: {},
+  bank: { taxFreeSFL: 0 },
 
   choreBoard: INITIAL_CHORE_BOARD,
 
@@ -750,6 +745,7 @@ export const TEST_FARM: GameState = {
     choresSkipped: 0,
   },
   stock: INITIAL_STOCK(),
+  bank: { taxFreeSFL: 0 },
   chickens: {},
   experiments: [],
   farmActivity: {},
@@ -1045,6 +1041,7 @@ export const EMPTY: GameState = {
     requests: [],
   },
   rewards: INITIAL_REWARDS,
+  bank: { taxFreeSFL: 0 },
   experiments: [],
   minigames: {
     games: {},

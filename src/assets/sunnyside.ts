@@ -62,6 +62,7 @@ export const SUNNYSIDE = {
     bullRunSeason: `${CONFIG.PROTECTED_IMAGE_URL}/announcements/bull_run_season.png`,
     pharaohSeasonRares: `${CONFIG.PROTECTED_IMAGE_URL}/announcements/pharaoh_seasonal_rares.png`,
     bullRunSeasonRares: `${CONFIG.PROTECTED_IMAGE_URL}/announcements/bull_run_seasonal_rares.webp`,
+    marketplace: `${CONFIG.PROTECTED_IMAGE_URL}/announcements/marketplace_dark.png`,
   },
   //Badges(Pre-LandExpansion Skills)
   badges: {
@@ -307,6 +308,7 @@ export const SUNNYSIDE = {
     fish_oil: `${CONFIG.PROTECTED_IMAGE_URL}/animals/foods/fish_oil.webp`,
     barn_delight: `${CONFIG.PROTECTED_IMAGE_URL}/animals/foods/barn_delight.webp`,
     omnifeed: `${CONFIG.PROTECTED_IMAGE_URL}/animals/foods/omnifeed.webp`,
+    grinder: `${CONFIG.PROTECTED_IMAGE_URL}/animals/foods/grinder_icon.webp`,
   },
   crafting: {
     cushion: `${CONFIG.PROTECTED_IMAGE_URL}/crafting/cushion.webp`,

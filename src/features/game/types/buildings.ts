@@ -14,7 +14,6 @@ export type CookingBuildingName =
 
 export type BuildingName =
   | CookingBuildingName
-  | "Smoothie Shack"
   | "Market"
   | "Town Center"
   | "Workbench"
@@ -228,7 +227,7 @@ export const BUILDINGS: Record<BuildingName, BuildingBluePrint[]> = {
   ],
   Barn: [
     {
-      unlocksAtLevel: 12,
+      unlocksAtLevel: 30,
       coins: 200,
       constructionSeconds: 60 * 60 * 2,
       ingredients: [

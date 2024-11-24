@@ -6,7 +6,6 @@ import { Modal } from "components/ui/Modal";
 import { DeliveryPanel } from "./deliveries/DeliveryPanel";
 import { SceneId } from "../mmoMachine";
 
-import { Sheep } from "./npcs/Sheep";
 import { Birdie } from "./npcs/Birdie";
 import { HayseedHankV2 } from "features/helios/components/hayseedHank/HayseedHankV2";
 import { PotionHouseShopItems } from "features/helios/components/potions/component/PotionHouseShopItems";
@@ -27,7 +26,6 @@ import { KingdomChoresPanel } from "./factions/chores/KingdomChoresPanel";
 import { OuterPanel } from "components/ui/Panel";
 import { FactionKitchenPanel } from "./factions/FactionKitchenPanel";
 import { PortalNPCExample } from "features/portal/example/components/PortalNPCExample";
-import { FlowerShop } from "./flowerShop/FlowerShop";
 import { FactionShop } from "./factionShop/FactionShop";
 import { FactionPetPanel } from "./factions/FactionPetPanel";
 import { TreasureShop } from "./beach/treasure_shop/TreasureShop";
@@ -37,6 +35,7 @@ import { CropsAndChickens } from "./portals/CropsAndChickens";
 import { ExampleDonations } from "./donations/ExampleDonations";
 import { NPCS_WITH_ALERTS } from "../containers/BumpkinContainer";
 import { HalloweenNPC } from "./npcs/HalloweenNPC";
+import { FlowerBounties } from "./flowerShop/FlowerBounties";
 
 class NpcModalManager {
   private listener?: (npc: NPCName, isOpen: boolean) => void;
@@ -106,7 +105,6 @@ export const NPCModals: React.FC<Props> = ({ scene, id }) => {
             ]}
           />
         )}
-        {npc === "sheep" && <Sheep onClose={closeModal} />}
         {npc === "flopsy" && (
           <CloseButtonPanel
             title="Enjoying Easter?"
@@ -118,7 +116,14 @@ export const NPCModals: React.FC<Props> = ({ scene, id }) => {
         )}
         {npc === "luna" && <HalloweenNPC onClose={closeModal} />}
         {npc === "portaller" && <PortalNPCExample onClose={closeModal} />}
-        {npc === "poppy" && <FlowerShop onClose={closeModal} />}
+        {npc === "poppy" && (
+          <CloseButtonPanel
+            bumpkinParts={NPC_WEARABLES.poppy}
+            onClose={closeModal}
+          >
+            <FlowerBounties />
+          </CloseButtonPanel>
+        )}
         {npc === "frankie" && <DecorationShopItems onClose={closeModal} />}
         {npc === "stella" && <Stylist onClose={closeModal} />}
         {npc === "grubnuk" && <DeliveryPanel npc={npc} onClose={closeModal} />}

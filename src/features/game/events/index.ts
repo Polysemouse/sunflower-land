@@ -417,6 +417,9 @@ import {
   sacrificeBear,
   SacrificeBearAction,
 } from "./landExpansion/sacrificeBear";
+import { buyMoreReels, BuyMoreReelsAction } from "./landExpansion/buyMoreReels";
+import { ClaimPurchaseAction, claimPurchase } from "./claimPurchase";
+import { npcRestock, NPCRestockAction } from "./landExpansion/npcRestock";
 
 export type PlayingEvent =
   | SellAnimalAction
@@ -467,6 +470,7 @@ export type PlayingEvent =
   | CraftCollectibleAction
   | SellTreasureAction
   | RestockAction
+  | NPCRestockAction
   | SellGarbageAction
   // Chores
   | CompleteChoreAction
@@ -532,6 +536,7 @@ export type PlayingEvent =
   | FeedFactionPetAction
   | LeaveFactionAction
   | BuyMoreDigsAction
+  | BuyMoreReelsAction
   | BuyAnimalAction
   | FeedAnimalAction
   | LoveAnimalAction
@@ -542,7 +547,8 @@ export type PlayingEvent =
   | ClaimProduceAction
   | BuySeasonalItemAction
   | DiscoverRecipeAction
-  | UnlockFarmhandAction;
+  | UnlockFarmhandAction
+  | ClaimPurchaseAction;
 
 export type PlacementEvent =
   | ConstructBuildingAction
@@ -663,6 +669,7 @@ export const PLAYING_EVENTS: Handlers<PlayingEvent> = {
   "collectible.crafted": craftCollectible,
   "treasure.sold": sellTreasure,
   "shops.restocked": restock,
+  "npc.restocked": npcRestock,
   "garbage.sold": sellGarbage,
   "chore.completed": completeChore,
   "chore.skipped": skipChore,
@@ -733,6 +740,8 @@ export const PLAYING_EVENTS: Handlers<PlayingEvent> = {
   "seasonalItem.bought": buySeasonalItem,
   "recipe.discovered": discoverRecipe,
   "farmHand.unlocked": unlockFarmhand,
+  "fishing.reelsBought": buyMoreReels,
+  "purchase.claimed": claimPurchase,
 };
 
 export const PLACEMENT_EVENTS: Handlers<PlacementEvent> = {
