@@ -1,29 +1,23 @@
 import { Loading } from "features/auth/components";
-import { Marketplace as ICollection } from "features/game/types/marketplace";
-import React, { useContext, useEffect, useState } from "react";
+import React, { useContext } from "react";
 import { loadMarketplace as loadMarketplace } from "../actions/loadMarketplace";
 import * as Auth from "features/auth/lib/Provider";
-import { useActor, useSelector } from "@xstate/react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useActor } from "@xstate/react";
+import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { ListViewCard } from "./ListViewCard";
 import Decimal from "decimal.js-light";
 import { getTradeableDisplay } from "../lib/tradeables";
-import { Context } from "features/game/GameProvider";
-import { MachineState } from "features/game/lib/gameMachine";
 import { InnerPanel } from "components/ui/Panel";
-import debounce from "lodash.debounce";
-
-const _listings = (state: MachineState) => state.context.state.trades.listings;
+import useSWR from "swr";
 
 export const Collection: React.FC<{
   search?: string;
   onNavigated?: () => void;
 }> = ({ search, onNavigated }) => {
   const { authService } = useContext(Auth.Context);
-  const { gameService } = useContext(Context);
   const [authState] = useActor(authService);
 
-  // Get type from query params
+  const isWorldRoute = useLocation().pathname.includes("/world");
 
   // Get query string params
   const [queryParams] = useSearchParams();
@@ -34,42 +28,16 @@ export const Collection: React.FC<{
     filters = "collectibles,wearables,resources";
   }
 
-  const listings = useSelector(gameService, _listings);
-
   const navigate = useNavigate();
 
-  const [isLoading, setIsLoading] = useState(true);
-  const [collection, setCollection] = useState<ICollection>();
-
-  const [removeListingIds, setRemoveListingIds] = useState<string[]>([]);
-
-  const load = async () => {
-    setIsLoading(true);
-
-    const data = await loadMarketplace({
-      filters: filters ?? "",
-      token: authState.context.user.rawToken as string,
-    });
-
-    setCollection(data);
-    setIsLoading(false);
-  };
-
-  useEffect(() => {
-    load();
-  }, [filters]);
-
-  // Debounce search and load
-  useEffect(() => {
-    if (!search) return;
-    const debouncedSearch = debounce(() => {
-      load();
-    }, 500);
-
-    debouncedSearch();
-
-    return () => debouncedSearch.cancel();
-  }, [search]);
+  const { data, error, isLoading } = useSWR(
+    [filters, authState.context.user.rawToken as string],
+    ([filters, token]) =>
+      loadMarketplace({
+        filters,
+        token,
+      }),
+  );
 
   if (isLoading) {
     return (
@@ -80,7 +48,7 @@ export const Collection: React.FC<{
   }
 
   const items =
-    collection?.items.filter((item) => {
+    data?.items.filter((item) => {
       const display = getTradeableDisplay({
         type: item.collection,
         id: item.id,
@@ -106,16 +74,12 @@ export const Collection: React.FC<{
               key={`${item.collection}-${item.id}`}
             >
               <ListViewCard
-                name={display.name}
-                hasBoost={!!display.buff}
+                details={display}
                 price={new Decimal(item.floor)}
-                image={display.image}
-                supply={item.supply}
-                buff={display.buff}
-                type={item.collection}
-                id={item.id}
                 onClick={() => {
-                  navigate(`/marketplace/${item.collection}/${item.id}`);
+                  navigate(
+                    `${isWorldRoute ? "/world" : ""}/marketplace/${item.collection}/${item.id}`,
+                  );
                   onNavigated?.();
                 }}
               />

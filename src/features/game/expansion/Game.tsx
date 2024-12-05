@@ -41,7 +41,6 @@ import { Sniped } from "../components/Sniped";
 import { NewMail } from "./components/NewMail";
 import { Blacklisted } from "../components/Blacklisted";
 import { AirdropPopup } from "./components/Airdrop";
-import { OffersPopup } from "./components/Offers";
 import { MarketplaceSalesPopup } from "./components/MarketplaceSalesPopup";
 import { isBuildingReady, PIXEL_SCALE, TEST_FARM } from "../lib/constants";
 import classNames from "classnames";
@@ -73,6 +72,8 @@ import { TranslationKeys } from "lib/i18n/dictionaries/types";
 import { Button } from "components/ui/Button";
 import { GameState } from "../types/game";
 import { Ocean } from "features/world/ui/Ocean";
+import { OffersAcceptedPopup } from "./components/OffersAcceptedPopup";
+import { Marketplace } from "features/marketplace/Marketplace";
 
 function camelToDotCase(str: string): string {
   return str.replace(/([a-z])([A-Z])/g, "$1.$2").toLowerCase() as string;
@@ -288,8 +289,9 @@ const GameContent: React.FC = () => {
     <>
       <div className="absolute w-full h-full z-10">
         <Routes>
-          <Route path="/" element={<Land />} />
-          <Route path="/marketplace/*" element={<Land />} />
+          <Route path="/" element={<Land />}>
+            <Route path="marketplace/*" element={<Marketplace />} />
+          </Route>
           {/* Legacy route */}
           <Route path="/farm" element={<Land />} />
           <Route path="/home" element={<Home />} />
@@ -551,21 +553,7 @@ export const GameWrapper: React.FC = ({ children }) => {
               </>
             )}
             {effectFailure && (
-              <>
-                <div className="p-1.5">
-                  <Label type="danger" className="mb-2">
-                    {t("error")}
-                  </Label>
-                  <p className="text-sm mb-2">{t(effectTranslationKey)}</p>
-                </div>
-                <Button
-                  onClick={() => {
-                    gameService.send("CONTINUE");
-                  }}
-                >
-                  {t("close")}
-                </Button>
-              </>
+              <ErrorMessage errorCode={errorCode as ErrorCode} />
             )}
 
             {loading && <Loading />}
@@ -590,7 +578,7 @@ export const GameWrapper: React.FC = ({ children }) => {
             {marketPriceChanged && <PriceChange />}
             {promo && <Promo />}
             {airdrop && <AirdropPopup />}
-            {showOffers && <OffersPopup />}
+            {showOffers && <OffersAcceptedPopup />}
             {showSales && <MarketplaceSalesPopup />}
             {specialOffer && <VIPOffer />}
             {hasSomethingArrived && <SomethingArrived />}

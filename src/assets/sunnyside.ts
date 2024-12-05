@@ -63,6 +63,7 @@ export const SUNNYSIDE = {
     pharaohSeasonRares: `${CONFIG.PROTECTED_IMAGE_URL}/announcements/pharaoh_seasonal_rares.png`,
     bullRunSeasonRares: `${CONFIG.PROTECTED_IMAGE_URL}/announcements/bull_run_seasonal_rares.webp`,
     marketplace: `${CONFIG.PROTECTED_IMAGE_URL}/announcements/marketplace_dark.png`,
+    marketplaceLight: `${CONFIG.PROTECTED_IMAGE_URL}/announcements/marketplace.png`,
   },
   //Badges(Pre-LandExpansion Skills)
   badges: {
@@ -302,9 +303,9 @@ export const SUNNYSIDE = {
   },
   animalFoods: {
     hay: `${CONFIG.PROTECTED_IMAGE_URL}/animals/foods/hay.webp`,
-    kernel_blend: `${CONFIG.PROTECTED_IMAGE_URL}/animals/foods/kernel_blend.webp`,
-    nutribarley: `${CONFIG.PROTECTED_IMAGE_URL}/animals/foods/nutribarley.webp`,
-    mixed_grain: `${CONFIG.PROTECTED_IMAGE_URL}/animals/foods/mixed_grain.webp`,
+    kernel_blend: `${CONFIG.PROTECTED_IMAGE_URL}/animals/foods/kernel_blend_v2.webp`,
+    nutribarley: `${CONFIG.PROTECTED_IMAGE_URL}/animals/foods/nutri_barley_v2.webp`,
+    mixed_grain: `${CONFIG.PROTECTED_IMAGE_URL}/animals/foods/mixed_grain_v2.webp`,
     fish_oil: `${CONFIG.PROTECTED_IMAGE_URL}/animals/foods/fish_oil.webp`,
     barn_delight: `${CONFIG.PROTECTED_IMAGE_URL}/animals/foods/barn_delight.webp`,
     omnifeed: `${CONFIG.PROTECTED_IMAGE_URL}/animals/foods/omnifeed.webp`,

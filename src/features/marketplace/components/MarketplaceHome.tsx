@@ -1,26 +1,23 @@
 import { InnerPanel } from "components/ui/Panel";
 import { ITEM_DETAILS } from "features/game/types/images";
 import React, { useState } from "react";
-
 import budIcon from "assets/icons/bud.png";
 import wearableIcon from "assets/icons/wearables.webp";
 import lightning from "assets/icons/lightning.png";
 import filterIcon from "assets/icons/filter_icon.webp";
 import tradeIcon from "assets/icons/trade.png";
-import trade_point from "src/assets/icons/trade_point.webp";
+import trade_point from "src/assets/icons/trade_points_coupon.webp";
 
 import {
   Route,
   Routes,
   useLocation,
   useNavigate,
-  useParams,
   useSearchParams,
 } from "react-router-dom";
 import { Collection } from "./Collection";
 import { SUNNYSIDE } from "assets/sunnyside";
 import { TextInput } from "components/ui/TextInput";
-import { useAppTranslation } from "lib/i18n/useAppTranslations";
 import { SquareIcon } from "components/ui/SquareIcon";
 import { Modal } from "components/ui/Modal";
 import { CloseButtonPanel } from "features/game/components/CloseablePanel";
@@ -30,21 +27,18 @@ import { MarketplaceRewards } from "./MarketplaceRewards";
 import { Tradeable } from "./Tradeable";
 import classNames from "classnames";
 import { MarketplaceHotNow } from "./MarketplaceHotNow";
-import { PIXEL_SCALE } from "features/game/lib/constants";
-import { TransactionCountdown } from "features/island/hud/Transaction";
-import { AuctionCountdown } from "features/retreat/components/auctioneer/AuctionCountdown";
 import { CONFIG } from "lib/config";
+import { MarketplaceUser } from "./MarketplaceUser";
 
 export const MarketplaceNavigation: React.FC = () => {
   const [search, setSearch] = useState("");
-
   const [showFilters, setShowFilters] = useState(false);
 
   return (
     <>
       <Modal show={showFilters} onHide={() => setShowFilters(false)}>
-        <CloseButtonPanel onClose={() => setShowFilters(false)}>
-          <Filters />
+        <CloseButtonPanel>
+          <Filters onClose={() => setShowFilters(false)} />
         </CloseButtonPanel>
       </Modal>
 
@@ -72,7 +66,7 @@ export const MarketplaceNavigation: React.FC = () => {
             />
           </div>
           <div className="flex-1">
-            <Filters />
+            <Filters onClose={() => setShowFilters(false)} />
           </div>
         </InnerPanel>
 
@@ -87,21 +81,11 @@ export const MarketplaceNavigation: React.FC = () => {
               <Route path="/rewards" element={<MarketplaceRewards />} />
               <Route path="/collection/*" element={<Collection />} />
               <Route path="/:collection/:id" element={<Tradeable />} />
+              <Route path="/profile/:id" element={<MarketplaceUser />} />
               {/* default to hot */}
               <Route path="/" element={<MarketplaceHotNow />} />
             </Routes>
           )}
-        </div>
-
-        <div
-          className="absolute z-50 flex flex-col justify-between"
-          style={{
-            bottom: `${PIXEL_SCALE * 2}px`,
-            left: `${PIXEL_SCALE * 2}px`,
-          }}
-        >
-          <TransactionCountdown />
-          <AuctionCountdown />
         </div>
       </div>
     </>
@@ -157,16 +141,13 @@ const Option: React.FC<{
   );
 };
 
-const Filters: React.FC = () => {
-  const { t } = useAppTranslation();
-
+const Filters: React.FC<{ onClose: () => void }> = ({ onClose }) => {
   const navigate = useNavigate();
   const { pathname } = useLocation();
-  const { type } = useParams();
-
-  // Grab query params
   const [queryParams] = useSearchParams();
   const filters = queryParams.get("filters");
+
+  const isWorldRoute = pathname.includes("/world");
 
   return (
     <div className="p-1 h-full">
@@ -175,15 +156,20 @@ const Filters: React.FC = () => {
           <Option
             icon={SUNNYSIDE.icons.expression_alerted}
             label="Hot now"
-            onClick={() => navigate(`/marketplace/hot`)}
-            isActive={pathname === "/marketplace/hot"}
+            onClick={() => {
+              navigate(`${isWorldRoute ? "/world" : ""}/marketplace/hot`);
+              onClose();
+            }}
+            isActive={
+              pathname === `${isWorldRoute ? "/world" : ""}/marketplace/hot`
+            }
           />
           <Option
             icon={lightning}
             label="Power ups"
             onClick={() =>
               navigate(
-                `/marketplace/collection?filters=collectibles,wearables,utility`,
+                `${isWorldRoute ? "/world" : ""}/marketplace/collection?filters=collectibles,wearables,utility`,
               )
             }
             isActive={filters === "collectibles,wearables,utility"}
@@ -194,44 +180,50 @@ const Filters: React.FC = () => {
                       icon: ITEM_DETAILS["Freya Fox"].image,
                       label: "Collectibles",
                       isActive: filters === "utility,collectibles",
-                      onClick: () =>
+                      onClick: () => {
                         navigate(
-                          `/marketplace/collection?filters=utility,collectibles`,
-                        ),
+                          `${isWorldRoute ? "/world" : ""}/marketplace/collection?filters=utility,collectibles`,
+                        );
+                        onClose();
+                      },
                     },
                     {
                       icon: wearableIcon,
                       label: "Wearables",
                       isActive: filters === "utility,wearables",
-                      onClick: () =>
+                      onClick: () => {
                         navigate(
-                          `/marketplace/collection?filters=utility,wearables`,
-                        ),
+                          `${isWorldRoute ? "/world" : ""}/marketplace/collection?filters=utility,wearables`,
+                        );
+                        onClose();
+                      },
                     },
                   ]
                 : undefined
             }
           />
 
-          {CONFIG.NETWORK !== "mainnet" && (
-            <Option
-              icon={ITEM_DETAILS.Eggplant.image}
-              label="Resources"
-              onClick={() =>
-                navigate(`/marketplace/collection?filters=resources`)
-              }
-              isActive={filters === "resources"}
-            />
-          )}
+          <Option
+            icon={ITEM_DETAILS.Eggplant.image}
+            label="Resources"
+            onClick={() => {
+              navigate(
+                `${isWorldRoute ? "/world" : ""}/marketplace/collection?filters=resources`,
+              );
+              onClose();
+            }}
+            isActive={filters === "resources"}
+          />
 
           <Option
             icon={SUNNYSIDE.icons.heart}
             label="Cosmetics"
-            onClick={() =>
+            onClick={() => {
               navigate(
-                `/marketplace/collection?filters=collectibles,wearables,cosmetic`,
-              )
-            }
+                `${isWorldRoute ? "/world" : ""}/marketplace/collection?filters=collectibles,wearables,cosmetic`,
+              );
+              onClose();
+            }}
             isActive={filters === "collectibles,wearables,cosmetic"}
           />
 
@@ -239,7 +231,12 @@ const Filters: React.FC = () => {
             <Option
               icon={budIcon}
               label="Bud NFTs"
-              onClick={() => navigate(`/marketplace/collection?filters=buds`)}
+              onClick={() => {
+                navigate(
+                  `${isWorldRoute ? "/world" : ""}/marketplace/collection?filters=buds`,
+                );
+                onClose();
+              }}
               isActive={filters === "buds"}
             />
           )}
@@ -249,14 +246,24 @@ const Filters: React.FC = () => {
           <Option
             icon={tradeIcon}
             label="My trades"
-            onClick={() => navigate(`/marketplace/trades`)}
-            isActive={pathname === "/marketplace/trades"}
+            onClick={() => {
+              navigate(`${isWorldRoute ? "/world" : ""}/marketplace/trades`);
+              onClose();
+            }}
+            isActive={
+              pathname === `${isWorldRoute ? "/world" : ""}/marketplace/trades`
+            }
           />
           <Option
             icon={trade_point}
             label="My rewards"
-            onClick={() => navigate(`/marketplace/rewards`)}
-            isActive={pathname === "/marketplace/rewards"}
+            onClick={() => {
+              navigate(`${isWorldRoute ? "/world" : ""}/marketplace/rewards`);
+              onClose();
+            }}
+            isActive={
+              pathname === `${isWorldRoute ? "/world" : ""}/marketplace/rewards`
+            }
           />
         </div>
       </div>

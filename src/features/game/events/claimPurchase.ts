@@ -28,7 +28,10 @@ export function claimPurchase({ state, action }: Options) {
 
     if (
       purchaseIds.some(
-        (purchaseId) => !game.trades.listings?.[purchaseId].fulfilledAt,
+        (purchaseId) =>
+          !game.trades.listings?.[purchaseId].fulfilledAt &&
+          // To handle old trade system
+          !game.trades.listings?.[purchaseId].boughtAt,
       )
     ) {
       throw new Error("One or more purchases have not been fulfilled");
@@ -36,10 +39,6 @@ export function claimPurchase({ state, action }: Options) {
 
     const instantPurchases = purchaseIds.filter((purchaseId) => {
       return !game.trades.listings?.[purchaseId].signature;
-    });
-
-    const onchainPurchases = purchaseIds.filter((purchaseIds) => {
-      return !!game.trades.listings?.[purchaseIds].signature;
     });
 
     instantPurchases.forEach((purchaseId) => {
@@ -54,18 +53,9 @@ export function claimPurchase({ state, action }: Options) {
         state: game,
         points: 1,
         sfl: game.trades.listings?.[purchaseId].sfl ?? 0,
+        items: game.trades.listings?.[purchaseId].items,
       });
-    });
 
-    onchainPurchases.forEach((purchaseId) => {
-      game = addTradePoints({
-        state: game,
-        points: 5,
-        sfl: game.trades.listings?.[purchaseId].sfl ?? 0,
-      });
-    });
-
-    purchaseIds.forEach((purchaseId) => {
       delete game.trades.listings?.[purchaseId];
     });
 

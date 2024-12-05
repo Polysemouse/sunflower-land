@@ -437,6 +437,7 @@ const EFFECT_STATES = Object.values(EFFECT_EVENTS).reduce(
     [`${stateName}Failure`]: {
       on: {
         CONTINUE: { target: "playing" },
+        REFRESH: { target: "playing" },
       },
     },
     [stateName]: {
@@ -974,6 +975,9 @@ export function startGame(authContext: AuthContext) {
             "offer.claimed": (GAME_EVENT_HANDLERS as any)["offer.claimed"],
             RESET: {
               target: "refreshing",
+            },
+            CLOSE: {
+              target: "playing",
             },
           },
         },

@@ -329,7 +329,12 @@ export const STATIC_OFFLINE_FARM: GameState = {
     spawnedAt: 0,
   },
   farmHands: { bumpkins: {} },
-  bumpkin: TEST_BUMPKIN,
+  bumpkin: {
+    ...TEST_BUMPKIN,
+    skills: {
+      "Double Nom": 1,
+    },
+  },
   buds: {
     1: {
       aura: "Basic",
@@ -440,6 +445,7 @@ export const STATIC_OFFLINE_FARM: GameState = {
     },
   },
   inventory: {
+    "Trade Point": new Decimal(500),
     "Fairy Circle": new Decimal(1),
     "Red Balloon Flower": new Decimal(1),
     Tomato: new Decimal(100),
@@ -948,7 +954,7 @@ export const STATIC_OFFLINE_FARM: GameState = {
   trades: {
     listings: {
       "1": {
-        collection: "resources",
+        collection: "collectibles",
         createdAt: 0,
         items: { Sunflower: 10 },
         sfl: 10,
@@ -1115,6 +1121,19 @@ export const STATIC_OFFLINE_FARM: GameState = {
           Sunflower: 20,
         },
       },
+      {
+        createdAt: Date.now(),
+        readyAt: Date.now(),
+        from: "cornwell",
+        reward: {
+          items: {},
+          coins: 300,
+        },
+        id: `cornwell-delivery`,
+        items: {
+          "Basic Hair": 1,
+        },
+      },
     ],
 
     milestone: {
@@ -1161,20 +1180,7 @@ export const STATIC_OFFLINE_FARM: GameState = {
     collectibles: [],
     wearables: [],
   },
-  airdrops: [
-    {
-      id: "123",
-      createdAt: 1,
-      items: {
-        Sunflower: 1,
-      },
-      wearables: {
-        "Brown Rancher Hair": 1,
-      },
-      sfl: 0,
-      coins: 0,
-    },
-  ],
+  airdrops: [],
   username: "Local Hero",
   specialEvents: {
     current: {

@@ -4,7 +4,6 @@ import { Button } from "components/ui/Button";
 import { Label } from "components/ui/Label";
 import { NumberInput } from "components/ui/NumberInput";
 import { MachineState } from "features/game/lib/gameMachine";
-import { TradeableDetails } from "features/game/types/marketplace";
 import { GameWallet } from "features/wallet/Wallet";
 import { CONFIG } from "lib/config";
 import { useAppTranslation } from "lib/i18n/useAppTranslations";
@@ -19,28 +18,38 @@ import sflIcon from "assets/icons/sfl.webp";
 import lockIcon from "assets/icons/lock.png";
 import { TradeableSummary } from "./TradeableSummary";
 import { getTradeType } from "../lib/getTradeType";
+import { ResourceOffer } from "./ResourceOffer";
+import { InventoryItemName } from "features/game/types/game";
+import { TRADE_LIMITS } from "features/game/actions/tradeLimits";
+import { getKeys } from "features/game/types/craftables";
+import { KNOWN_ITEMS } from "features/game/types";
 
 const _balance = (state: MachineState) => state.context.state.balance;
 
 export const MakeOffer: React.FC<{
-  tradeable?: TradeableDetails;
   display: TradeableDisplay;
-  id: number;
+  floorPrice: number;
+  itemId: number;
   authToken: string;
   onClose: () => void;
-}> = ({ onClose, tradeable, display, id, authToken }) => {
+}> = ({ onClose, display, itemId, authToken, floorPrice }) => {
   const { t } = useAppTranslation();
   const { gameService } = useContext(Context);
 
   const balance = useSelector(gameService, _balance);
 
   const [offer, setOffer] = useState(0);
+  const [quantity, setQuantity] = useState(1);
   const [isSigning, setIsSigning] = useState(false);
   const [showConfirmation, setShowConfirmation] = useState(false);
 
+  const isResource = getKeys(TRADE_LIMITS).includes(
+    KNOWN_ITEMS[Number(itemId)],
+  );
+
   const tradeType = getTradeType({
     collection: display.type,
-    id,
+    id: itemId,
     trade: {
       sfl: offer,
     },
@@ -65,15 +74,16 @@ export const MakeOffer: React.FC<{
         ],
       },
       domain: {
-        name: "TESTING",
+        name: CONFIG.NETWORK === "mainnet" ? "Sunflower Land" : "TESTING",
         version: "1",
         chainId: BigInt(CONFIG.POLYGON_CHAIN_ID),
-        verifyingContract: CONFIG.MARKETPLACE_CONTRACT as `0x${string}`,
+        verifyingContract:
+          CONFIG.MARKETPLACE_VERIFIER_CONTRACT as `0x${string}`,
       },
       message: {
         item: display.name,
         collection: display.type,
-        id: BigInt(id),
+        id: BigInt(itemId),
         quantity: BigInt(1),
         SFL: BigInt(offer),
       },
@@ -97,10 +107,11 @@ export const MakeOffer: React.FC<{
     gameService.send("marketplace.offerMade", {
       effect: {
         type: "marketplace.offerMade",
-        id,
+        id: itemId,
         collection: display.type,
         signature,
-        contract: CONFIG.MARKETPLACE_CONTRACT,
+        contract: CONFIG.MARKETPLACE_VERIFIER_CONTRACT,
+        quantity,
         sfl: offer,
       },
       authToken,
@@ -117,7 +128,7 @@ export const MakeOffer: React.FC<{
             {t("are.you.sure")}
           </Label>
           <p className="text-xs mb-2">{t("marketplace.confirmDetails")}</p>
-          <TradeableSummary display={display} sfl={offer} />
+          <TradeableSummary display={display} sfl={offer} quantity={quantity} />
         </div>
 
         <div className="flex">
@@ -139,7 +150,11 @@ export const MakeOffer: React.FC<{
               {t("are.you.sure")}
             </Label>
             <p className="text-xs mb-2">{t("marketplace.signOffer")}</p>
-            <TradeableSummary display={display} sfl={offer} />
+            <TradeableSummary
+              display={display}
+              sfl={offer}
+              quantity={quantity}
+            />
           </div>
 
           <div className="flex">
@@ -153,14 +168,28 @@ export const MakeOffer: React.FC<{
     );
   }
 
-  const isComingSoon = tradeType === "onchain" && CONFIG.NETWORK === "mainnet";
+  if (isResource) {
+    return (
+      <ResourceOffer
+        itemName={display.name as InventoryItemName}
+        floorPrice={floorPrice}
+        isSaving={false}
+        onCancel={onClose}
+        onOffer={() => confirm({})}
+        price={offer}
+        quantity={quantity}
+        setPrice={setOffer}
+        setQuantity={setQuantity}
+      />
+    );
+  }
 
   /* TODO only use game wallet when required */
   return (
     <>
       <div className="p-2">
-        <div className="flex justify-between">
-          <Label type="default" className="-ml-1">
+        <div className="flex justify-between mb-2">
+          <Label type="default" className="-ml-1 mb-1">
             {t("marketplace.makeOffer")}
           </Label>
           {tradeType === "onchain" && (
@@ -186,20 +215,12 @@ export const MakeOffer: React.FC<{
         <p className="text-xs mb-2">{t("marketplace.sflLocked.description")}</p>
       </div>
 
-      {isComingSoon && (
-        <div className="p-2">
-          <Label type="danger" className="-ml-1 mb-2">
-            {t("marketplace.onchainComingSoon")}
-          </Label>
-        </div>
-      )}
-
       <div className="flex">
         <Button className="mr-1" onClick={() => onClose()}>
           {t("cancel")}
         </Button>
         <Button
-          disabled={isComingSoon || !offer || balance.lt(offer)}
+          disabled={!offer || balance.lt(offer)}
           onClick={submitOffer}
           className="relative"
         >

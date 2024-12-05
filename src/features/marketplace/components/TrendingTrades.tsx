@@ -1,29 +1,29 @@
-import { KNOWN_IDS } from "features/game/types";
-import { Marketplace } from "features/game/types/marketplace";
+import {
+  getPriceHistory,
+  MarketplaceTrends,
+} from "features/game/types/marketplace";
 import { useAppTranslation } from "lib/i18n/useAppTranslations";
-import React, { useState } from "react";
+import React from "react";
 import { getTradeableDisplay } from "../lib/tradeables";
 import classNames from "classnames";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import sflIcon from "assets/icons/sfl.webp";
 import increaseIcon from "assets/icons/increase_arrow.png";
+import decreaseIcon from "assets/icons/decrease_arrow.png";
 import Decimal from "decimal.js-light";
+import { Loading } from "features/auth/components";
 
-export const TrendingTrades: React.FC = () => {
-  const [collection, setCollection] = useState<Marketplace>({
-    items: [
-      {
-        collection: "collectibles",
-        id: KNOWN_IDS.Kuebiko,
-        floor: 400,
-        supply: 1000,
-      },
-    ],
-  });
-
+export const TrendingTrades: React.FC<{
+  trends?: MarketplaceTrends;
+}> = ({ trends }) => {
   const { t } = useAppTranslation();
+  const isWorldRoute = useLocation().pathname.includes("/world");
 
   const navigate = useNavigate();
+
+  if (!trends) {
+    return <Loading />;
+  }
 
   return (
     <table className="w-full text-xs border-collapse bg-[#ead4aa] ">
@@ -41,11 +41,16 @@ export const TrendingTrades: React.FC = () => {
         </tr>
       </thead>
       <tbody>
-        {collection.items.map((item, index) => {
+        {trends.items.map((item, index) => {
           const itemId = item.id;
           const details = getTradeableDisplay({
             id: itemId,
             type: item.collection,
+          });
+
+          const prices = getPriceHistory({
+            history: item.history,
+            from: new Date(Date.now() - 1000 * 60 * 60 * 24 * 30).getTime(),
           });
 
           return (
@@ -59,11 +64,18 @@ export const TrendingTrades: React.FC = () => {
                 borderBottom: "1px solid #b96f50",
                 borderTop: index === 0 ? "1px solid #b96f50" : "",
               }}
-              onClick={() => navigate(`/marketplace/${details.type}/${itemId}`)}
+              onClick={() =>
+                navigate(
+                  `${isWorldRoute ? "/world" : ""}/marketplace/${details.type}/${itemId}`,
+                )
+              }
             >
               <td className="p-1.5 text-left">
                 <div className="flex items-center">
-                  <img src={details.image} className="h-8 mr-4" />
+                  <img
+                    src={details.image}
+                    className="h-8 mr-4 w-8 object-contain"
+                  />
                   <p className="text-sm">{details.name}</p>
                 </div>
               </td>
@@ -71,14 +83,19 @@ export const TrendingTrades: React.FC = () => {
                 <div className="flex items-center">
                   <img src={sflIcon} className="h-5 mr-1" />
                   <p className="text-sm">
-                    {new Decimal(item.floor).toFixed(2)}
+                    {new Decimal(prices.dates[0].low).toFixed(2)}
                   </p>
                 </div>
               </td>
               <td className="p-1.5 text-right relative">
                 <div className="flex items-center">
-                  <img src={increaseIcon} className="h-5 mr-1" />
-                  <p className="text-sm">{`23%`}</p>
+                  <img
+                    src={
+                      prices.sevenDayChange > 0 ? increaseIcon : decreaseIcon
+                    }
+                    className="h-5 mr-1"
+                  />
+                  <p className="text-sm">{`${prices.sevenDayChange.toFixed(2)}%`}</p>
                 </div>
               </td>
             </tr>

@@ -2,24 +2,27 @@ import { SUNNYSIDE } from "assets/sunnyside";
 import React, { useContext } from "react";
 import sflIcon from "assets/icons/sfl.webp";
 import { MarketplaceNavigation } from "./components/MarketplaceHome";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { PIXEL_SCALE } from "features/game/lib/constants";
 import { OuterPanel } from "components/ui/Panel";
 import { Context } from "features/game/GameProvider";
 import { useAppTranslation } from "lib/i18n/useAppTranslations";
+import { MachineState } from "features/game/lib/gameMachine";
+import { useSelector } from "@xstate/react";
+import { MarketplaceIntroduction } from "./components/MarketplaceIntroduction";
+
+const _balance = (state: MachineState) => state.context.state.balance;
 
 export const Marketplace: React.FC = () => {
-  const { pathname } = useLocation();
+  const { gameService, fromRoute } = useContext(Context);
+  const balance = useSelector(gameService, _balance);
   const navigate = useNavigate();
 
   const { t } = useAppTranslation();
 
-  const { gameService } = useContext(Context);
-
-  const sfl = gameService.getSnapshot().context.state.balance;
-
   return (
     <>
+      <MarketplaceIntroduction />
       <div className="bg-[#181425] w-full h-full">
         <OuterPanel className="h-full">
           <div
@@ -48,13 +51,13 @@ export const Marketplace: React.FC = () => {
 
             <div className="flex items-center z-10">
               <img src={sflIcon} className="w-8 mr-1" />
-              <p className="text-sm text-white">{sfl.toFixed(2)}</p>
+              <p className="text-sm text-white">{balance.toFixed(2)}</p>
             </div>
             <img
               src={SUNNYSIDE.icons.close}
               className="flex-none cursor-pointer absolute right-2"
               onClick={() => {
-                navigate("/");
+                navigate(fromRoute);
               }}
               style={{
                 width: `${PIXEL_SCALE * 11}px`,

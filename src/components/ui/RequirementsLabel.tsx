@@ -13,7 +13,9 @@ import classNames from "classnames";
 import { SUNNYSIDE } from "assets/sunnyside";
 import { formatNumber } from "lib/utils/formatNumber";
 import { useAppTranslation } from "lib/i18n/useAppTranslations";
-import { BumpkinItem } from "features/game/types/bumpkin";
+import { BumpkinItem, ITEM_IDS } from "features/game/types/bumpkin";
+import { getImageUrl } from "lib/utils/getImageURLS";
+import { KNOWN_IDS } from "features/game/types";
 
 /**
  * The props for SFL requirement label. Use this when the item costs SFL.
@@ -91,7 +93,7 @@ interface SellItemProps {
  */
 interface ItemProps {
   type: "item";
-  item: InventoryItemName;
+  item: InventoryItemName | BumpkinItem;
   balance: Decimal;
   requirement: Decimal;
   showLabel?: boolean;
@@ -196,7 +198,14 @@ export const RequirementLabel: React.FC<Props> = (props) => {
       case "sellForSfl":
         return token;
       case "item":
-        return ITEM_DETAILS[props.item].image;
+        if (props.item in KNOWN_IDS) {
+          return ITEM_DETAILS[props.item as InventoryItemName]?.image;
+        } else {
+          return (
+            getImageUrl(ITEM_IDS[props.item as BumpkinItem]) ??
+            SUNNYSIDE.icons.expression_confused
+          );
+        }
       case "time":
         return SUNNYSIDE.icons.stopwatch;
       case "xp":

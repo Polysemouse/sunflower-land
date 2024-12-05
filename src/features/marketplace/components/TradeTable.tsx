@@ -1,6 +1,19 @@
 import classNames from "classnames";
-import { useAppTranslation } from "lib/i18n/useAppTranslations";
+import {
+  CollectionName,
+  Listing,
+  Offer,
+} from "features/game/types/marketplace";
 import React from "react";
+import { TradeableDisplay } from "../lib/tradeables";
+import Decimal from "decimal.js-light";
+import { formatNumber } from "lib/utils/formatNumber";
+import sflIcon from "assets/icons/sfl.webp";
+import { getKeys } from "features/game/types/decorations";
+import { TRADE_LIMITS } from "features/game/actions/tradeLimits";
+import { InventoryItemName } from "features/game/types/game";
+import { NPC } from "features/island/bumpkin/components/NPC";
+import { interpretTokenUri } from "lib/utils/tokenUriBuilder";
 
 type TradeTableItem = {
   price: number;
@@ -9,58 +22,139 @@ type TradeTableItem = {
   icon?: string;
 };
 
-export const TradeTable: React.FC<{ items: TradeTableItem[]; id: number }> = ({
-  items,
-  id,
-}) => {
-  const { t } = useAppTranslation();
+export const OfferTable: React.FC<{
+  offers: Offer[];
+  id: number;
+  details: TradeableDisplay;
+}> = ({ offers, id, details }) => {
+  if (offers.length === 0) {
+    return null;
+  }
+
   return (
-    <table className="w-full text-xs table-fixed border-collapse">
-      <thead>
-        <tr>
-          <th style={{ border: "1px solid #b96f50" }} className="p-1.5 w-1/5">
-            <p>{t("marketplace.sfl")}</p>
-          </th>
-          <th style={{ border: "1px solid #b96f50" }} className="p-1.5">
-            <p>{t("marketplace.expiry")}</p>
-          </th>
-          <th style={{ border: "1px solid #b96f50" }} className="p-1.5">
-            <p>{t("marketplace.from")}</p>
-          </th>
-        </tr>
-      </thead>
-      <tbody>
-        {items.map(({ createdById, price, expiresAt, icon }, index) => (
-          <tr
-            key={index}
-            className={classNames("relative", {
-              "bg-[#ead4aa]": id === createdById,
-            })}
-          >
-            <td
-              style={{ border: "1px solid #b96f50" }}
-              className="p-1.5 text-center"
-            >
-              {price}
-            </td>
-            <td
-              style={{ border: "1px solid #b96f50" }}
-              className="p-1.5 truncate text-center"
-            >
-              {expiresAt}
-            </td>
-            <td
-              style={{ border: "1px solid #b96f50" }}
-              className="p-1.5 truncate text-center relative"
-            >
-              {createdById}
-              {icon && (
-                <img src={icon} className="absolute right-2 top-1 h-4" />
+    <div className="w-full text-xs border-collapse mb-2">
+      <div>
+        {offers.map((offer, index) => {
+          const quantity = 1; // TODO?
+          const price = offer.sfl;
+
+          return (
+            <div
+              key={index}
+              className={classNames(
+                "flex items-center relative transition-all",
+                {
+                  "bg-[#ead4aa]": index % 2 === 0,
+                },
               )}
-            </td>
-          </tr>
-        ))}
-      </tbody>
-    </table>
+              style={{
+                borderBottom: "1px solid #b96f50",
+                borderTop: index === 0 ? "1px solid #b96f50" : "",
+              }}
+            >
+              <div className="p-1.5 mr-2 lg:mr-12 text-left w-auto flex items-center">
+                <img
+                  src={details.image}
+                  className="h-8 mr-4 w-8 object-contain"
+                />
+                <p className="text-sm">{details.name}</p>
+              </div>
+              <div className="flex-1 flex items-center justify-between">
+                <div className="flex items-center flex-1 overflow-hidden">
+                  <div className="relative w-8 h-8">
+                    <NPC
+                      width={20}
+                      parts={
+                        interpretTokenUri(offer.offeredBy.bumpkinUri).equipped
+                      }
+                    />
+                  </div>
+                  <p className="text-xs sm:text-sm flex-1 truncate">
+                    {offer.offeredBy.username}
+                  </p>
+                </div>
+                <div className="p-1.5 text-right relative flex items-center justify-end">
+                  <img src={sflIcon} className="h-5 mr-1" />
+                  <p className="text-sm">{new Decimal(price).toFixed(2)}</p>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
+
+export const ListingTable: React.FC<{
+  listings: Listing[];
+  collection: CollectionName;
+  details: TradeableDisplay;
+}> = ({ listings, collection, details }) => {
+  return (
+    <div className="w-full text-xs  border-collapse  ">
+      <div>
+        {listings.map((listing, index) => {
+          const isResource =
+            collection === "collectibles" &&
+            getKeys(TRADE_LIMITS).includes(details.name as InventoryItemName);
+          const quantity = 1; // TODO?
+          const price = listing.sfl;
+
+          return (
+            <div
+              key={index}
+              className={classNames(
+                "flex items-center relative transition-all",
+                {
+                  "bg-[#ead4aa]": index % 2 === 0,
+                },
+              )}
+              style={{
+                borderBottom: "1px solid #b96f50",
+                borderTop: index === 0 ? "1px solid #b96f50" : "",
+              }}
+            >
+              <div className="p-1.5 mr-2 w-1/2 sm:w-1/3 text-left flex items-center">
+                <img
+                  src={details.image}
+                  className="h-8 mr-4 w-8 object-contain"
+                />
+                <p className="py-0.5 text-xs sm:text-sm truncate">
+                  {`${isResource ? quantity + " x" : ""} ${details.name}`}
+                </p>
+              </div>
+              <div className="flex-1 flex items-center justify-between">
+                <div className="flex items-center flex-1 overflow-hidden">
+                  <div className="relative w-8 h-8">
+                    <NPC
+                      width={20}
+                      parts={
+                        interpretTokenUri(listing.listedBy.bumpkinUri).equipped
+                      }
+                    />
+                  </div>
+                  <p className="text-xs py-0.5 sm:text-sm flex-1 truncate">
+                    {listing.listedBy.username}
+                  </p>
+                </div>
+                <div className="p-1.5 text-right relative flex items-center justify-end">
+                  <img src={sflIcon} className="h-5 mr-1" />
+                  <p className="text-sm">
+                    {new Decimal(
+                      isResource
+                        ? formatNumber(price / Number(quantity), {
+                            decimalPlaces: 4,
+                          })
+                        : price,
+                    ).toFixed(2)}
+                  </p>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
   );
 };

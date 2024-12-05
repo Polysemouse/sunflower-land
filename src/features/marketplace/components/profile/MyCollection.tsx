@@ -1,18 +1,14 @@
 import React, { useContext, useState } from "react";
 import { useActor } from "@xstate/react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 
 import { Context } from "features/game/GameProvider";
 import { CollectionName } from "features/game/types/marketplace";
 import { useAppTranslation } from "lib/i18n/useAppTranslations";
 import { getChestItems } from "features/island/hud/components/inventory/utils/inventory";
-import { TRADE_LIMITS } from "features/game/actions/tradeLimits";
 import { KNOWN_IDS } from "features/game/types";
 import { getKeys } from "features/game/types/craftables";
-import {
-  BUMPKIN_WITHDRAWABLES,
-  WITHDRAWABLES,
-} from "features/game/types/withdrawables";
+import { BUMPKIN_WITHDRAWABLES } from "features/game/types/withdrawables";
 import { availableWardrobe } from "features/game/events/landExpansion/equip";
 import { ITEM_IDS } from "features/game/types/bumpkin";
 import { getTradeableDisplay } from "features/marketplace/lib/tradeables";
@@ -32,6 +28,7 @@ type CollectionItem = {
 
 export const MyCollection: React.FC = () => {
   const { t } = useAppTranslation();
+  const isWorldRoute = useLocation().pathname.includes("/world");
 
   const { gameService } = useContext(Context);
   const [gameState] = useActor(gameService);
@@ -45,21 +42,11 @@ export const MyCollection: React.FC = () => {
 
   const inventory = getChestItems(gameState.context.state);
   getKeys(inventory).forEach((name) => {
-    if (name in TRADE_LIMITS) {
-      items.push({
-        id: KNOWN_IDS[name],
-        collection: "resources",
-        count: inventory[name]?.toNumber() ?? 0,
-      });
-    }
-
-    if (!(name in TRADE_LIMITS) && WITHDRAWABLES[name]()) {
-      items.push({
-        id: KNOWN_IDS[name],
-        collection: "collectibles",
-        count: inventory[name]?.toNumber() ?? 0,
-      });
-    }
+    items.push({
+      id: KNOWN_IDS[name],
+      collection: "collectibles",
+      count: inventory[name]?.toNumber() ?? 0,
+    });
   });
 
   const wardrobe = availableWardrobe(gameState.context.state);
@@ -122,16 +109,13 @@ export const MyCollection: React.FC = () => {
                   key={`${item.id}-${item.collection}`}
                 >
                   <ListViewCard
-                    name={details.name}
-                    hasBoost={!!details.buff}
-                    image={details.image}
-                    supply={0}
-                    type={details.type}
-                    id={item.id}
-                    buff={details.buff}
+                    details={details}
                     onClick={() => {
-                      navigate(`/marketplace/${details.type}/${item.id}`);
+                      navigate(
+                        `${isWorldRoute ? "/world" : ""}/marketplace/${details.type}/${item.id}`,
+                      );
                     }}
+                    count={item.count}
                   />
                 </div>
               );

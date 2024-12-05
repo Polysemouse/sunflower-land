@@ -85,6 +85,7 @@ import {
 } from "../lib/crafting";
 import { AnimalBuildingLevel } from "../events/landExpansion/upgradeBuilding";
 import { SeasonalCollectibleName } from "./megastore";
+import { TradeFood } from "../events/landExpansion/redeemTradeReward";
 
 export type Reward = {
   coins?: number;
@@ -468,7 +469,8 @@ export type InventoryItemName =
   | LoveAnimalItem
   | BedName
   | RecipeCraftableName
-  | SeasonalCollectibleName;
+  | SeasonalCollectibleName
+  | TradeFood;
 
 export type Inventory = Partial<Record<InventoryItemName, Decimal>>;
 
@@ -823,7 +825,9 @@ export type Party = {
 export type Order = {
   id: string;
   from: NPCName;
-  items: Partial<Record<InventoryItemName | "coins" | "sfl", number>>;
+  items: Partial<
+    Record<InventoryItemName | BumpkinItem | "coins" | "sfl", number>
+  >;
   reward: {
     sfl?: number;
     coins?: number;

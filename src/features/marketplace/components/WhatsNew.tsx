@@ -4,7 +4,7 @@ import React, { useContext, useEffect, useState } from "react";
 import { loadMarketplace as loadMarketplace } from "../actions/loadMarketplace";
 import * as Auth from "features/auth/lib/Provider";
 import { useActor } from "@xstate/react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { ListViewCard } from "./ListViewCard";
 import Decimal from "decimal.js-light";
 import { getTradeableDisplay } from "../lib/tradeables";
@@ -19,8 +19,7 @@ export const WhatsNew: React.FC = () => {
 
   const [isLoading, setIsLoading] = useState(true);
   const [collection, setCollection] = useState<ICollection>();
-
-  const [removeListingIds, setRemoveListingIds] = useState<string[]>([]);
+  const isWorldRoute = useLocation().pathname.includes("/world");
 
   const load = async () => {
     setIsLoading(true);
@@ -58,15 +57,12 @@ export const WhatsNew: React.FC = () => {
             key={`${item.collection}-${item.id}`}
           >
             <ListViewCard
-              name={display.name}
-              hasBoost={!!display.buff}
+              details={display}
               price={new Decimal(item.floor)}
-              image={display.image}
-              supply={item.supply}
-              type={item.collection}
-              id={item.id}
               onClick={() => {
-                navigate(`/marketplace/${item.collection}/${item.id}`);
+                navigate(
+                  `${isWorldRoute ? "/world" : ""}/marketplace/${item.collection}/${item.id}`,
+                );
               }}
             />
           </div>

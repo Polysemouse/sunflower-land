@@ -1,43 +1,46 @@
 import React from "react";
 import Decimal from "decimal.js-light";
 import { ButtonPanel } from "components/ui/Panel";
-import { CollectionName } from "features/game/types/marketplace";
-import { CONFIG } from "lib/config";
-
-import buds from "lib/buds/buds";
-import testnetBuds from "lib/buds/testnet-buds";
-
 import sfl from "assets/icons/sfl.webp";
 import lightning from "assets/icons/lightning.png";
-// bud backgrounds
-import { BuffLabel } from "features/game/types";
+import wallet from "assets/icons/wallet.png";
+import { useAppTranslation } from "lib/i18n/useAppTranslations";
+import { formatNumber } from "lib/utils/formatNumber";
+import { getTradeType } from "../lib/getTradeType";
+import { getItemId } from "../lib/offers";
+import { TradeableDisplay } from "../lib/tradeables";
+import { TRADE_LIMITS } from "features/game/actions/tradeLimits";
+import { getKeys } from "features/game/types/craftables";
+import { InventoryItemName } from "features/game/types/game";
+import { Label } from "components/ui/Label";
+import classNames from "classnames";
 
 type Props = {
-  name: string;
-  image: string;
-  type: CollectionName;
-  id: number;
-  hasBoost: boolean;
-  supply: number;
+  details: TradeableDisplay;
+  count?: number;
   price?: Decimal;
   onClick?: () => void;
-  onRemove?: () => void;
-  isSold?: boolean;
-  buff?: BuffLabel;
 };
 
-const data = CONFIG.NETWORK === "mainnet" ? buds : testnetBuds;
-
 export const ListViewCard: React.FC<Props> = ({
-  name,
-  id,
-  buff,
-  image,
-  supply,
-  type,
+  details,
   price,
   onClick,
+  count,
 }) => {
+  const { type, name, image, buff } = details;
+  const { t } = useAppTranslation();
+
+  const itemId = getItemId({ name, collection: type });
+  const tradeType = getTradeType({
+    collection: type,
+    id: itemId,
+    trade: { sfl: price?.toNumber() ?? 0 },
+  });
+  const isResources =
+    getKeys(TRADE_LIMITS).includes(name as InventoryItemName) &&
+    type === "collectibles";
+
   return (
     <div className="relative cursor-pointer h-full">
       <ButtonPanel
@@ -46,7 +49,12 @@ export const ListViewCard: React.FC<Props> = ({
         className="h-full flex flex-col"
       >
         <div className="flex flex-col items-center h-20 p-2 pt-4">
-          <img src={image} className="h-full" />
+          <img
+            src={image}
+            className={classNames("object-contain h-[80%] mt-1", {
+              "h-[55%] mt-3": isResources,
+            })}
+          />
         </div>
 
         <div
@@ -60,9 +68,29 @@ export const ListViewCard: React.FC<Props> = ({
         >
           {price && price.gt(0) && (
             <div className="flex items-center absolute top-0 left-0">
-              <img src={sfl} className="h-5 mr-1" />
-              <p className="text-xs">{`${price} `}</p>
+              <img src={sfl} className="h-4 sm:h-5 mr-1" />
+              <p className="text-xs whitespace-nowrap">
+                {isResources
+                  ? t("marketplace.pricePerUnit", {
+                      price: formatNumber(price, {
+                        decimalPlaces: 4,
+                      }),
+                    })
+                  : `${formatNumber(price, {
+                      decimalPlaces: 4,
+                    })}`}
+              </p>
             </div>
+          )}
+
+          {tradeType === "onchain" && (
+            <img src={wallet} className="h-5 mr-1 absolute top-0 -right-1" />
+          )}
+
+          {count && (
+            <Label type="default" className="absolute top-0 -left-0.5">
+              {`x${count}`}
+            </Label>
           )}
 
           <p className="text-xs mb-0.5 text-[#181425]">{name}</p>
