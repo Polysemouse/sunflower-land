@@ -39,9 +39,12 @@ import { DynamicClouds } from "./components/DynamicClouds";
 import { StaticClouds } from "./components/StaticClouds";
 import { BackgroundIslands } from "./components/BackgroundIslands";
 import { SUNNYSIDE } from "assets/sunnyside";
-import { Outlet, useLocation } from "react-router-dom";
+import { Outlet, useLocation } from "react-router";
 import { createPortal } from "react-dom";
-import { pickEmptyPosition } from "./placeable/lib/collisionDetection";
+import {
+  NON_COLLIDING_OBJECTS,
+  pickEmptyPosition,
+} from "./placeable/lib/collisionDetection";
 import { EXPANSION_ORIGINS, LAND_SIZE } from "./lib/constants";
 
 import Decimal from "decimal.js-light";
@@ -226,6 +229,7 @@ const getIslandElements = ({
               y={y}
               height={height}
               width={width}
+              z={NON_COLLIDING_OBJECTS.includes(name) ? 0 : 1}
             >
               <Collectible
                 location="farm"
