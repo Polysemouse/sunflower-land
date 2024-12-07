@@ -381,6 +381,14 @@ export abstract class BaseScene extends Phaser.Scene {
         0,
         0,
       ) as Phaser.Tilemaps.Tileset,
+      this.map.addTilesetImage(
+        "Christmas Sunnyside V3",
+        this.options.map.imageKey ?? "christmas-tileset",
+        16,
+        16,
+        0,
+        0,
+      ) as Phaser.Tilemaps.Tileset,
     ];
 
     // Set up collider layers

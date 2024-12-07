@@ -4,6 +4,7 @@ import { CropsAndChickensCropName } from "../CropsAndChickensConstants";
 import { t } from "i18next";
 import mapJson from "assets/map/crops_and_chickens.json";
 import mapJson_halloween from "assets/map/crops_and_chickens_halloween.json";
+import mapJson_christmas from "assets/map/crops_and_chickens_christmas.json";
 import mapJson_april_fools from "assets/map/crops_and_chickens_april_fools.json";
 import { SUNNYSIDE } from "assets/sunnyside";
 
@@ -36,11 +37,13 @@ const CROPS_AND_CHICKENS_ASSETS: Record<
   map: {
     none: mapJson,
     halloween: mapJson_halloween,
+    christmas: mapJson_christmas,
     april_fools: mapJson_april_fools,
   },
   deposit_chest: {
     none: SUNNYSIDE.icons.treasure,
     halloween: "crops-and-chickens/deposit_chest_halloween.png",
+    christmas: "crops-and-chickens/deposit_chest_christmas.png",
     april_fools: "crops-and-chickens/deposit_chest_april_fools.png",
   },
   chicken_hunter_down_movements: {

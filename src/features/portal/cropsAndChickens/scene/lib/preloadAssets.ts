@@ -15,6 +15,12 @@ export const preloadAssets = (scene: CropsAndChickensScene) => {
     "crops-and-chickens/tilesets/halloween-tilesheet.png",
   );
 
+  // christmas tileset
+  scene.load.image(
+    "christmas-tileset",
+    "crops-and-chickens/tilesets/christmas-tilesheet.png",
+  );
+
   // player death spritesheets
   scene.load.spritesheet(
     "player_death",
