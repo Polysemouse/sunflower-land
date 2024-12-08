@@ -41,6 +41,7 @@ import {
   PlazaShaders,
   getPlazaShaderSetting,
 } from "lib/utils/hooks/usePlazaShader";
+import { getHolidayEvent } from "features/portal/cropsAndChickens/lib/cropsAndChickensUtils";
 
 export type NPCBumpkin = {
   x: number;
@@ -373,23 +374,31 @@ export abstract class BaseScene extends Phaser.Scene {
         1,
         2,
       ) as Phaser.Tilemaps.Tileset,
-      this.map.addTilesetImage(
-        "Halloween Sunnyside V3",
-        this.options.map.imageKey ?? "halloween-tileset",
-        16,
-        16,
-        0,
-        0,
-      ) as Phaser.Tilemaps.Tileset,
-      this.map.addTilesetImage(
-        "Christmas Sunnyside V3",
-        this.options.map.imageKey ?? "christmas-tileset",
-        16,
-        16,
-        0,
-        0,
-      ) as Phaser.Tilemaps.Tileset,
     ];
+
+    const holidayEvent = getHolidayEvent();
+    if (holidayEvent === "halloween") {
+      const tileset = this.map.addTilesetImage(
+        "Halloween Sunnyside V3",
+        "halloween-tileset",
+        16,
+        16,
+        0,
+        0,
+      ) as Phaser.Tilemaps.Tileset;
+      tilesets.push(tileset);
+    }
+    if (holidayEvent === "christmas") {
+      const tileset = this.map.addTilesetImage(
+        "Christmas Sunnyside V3",
+        "christmas-tileset",
+        16,
+        16,
+        0,
+        0,
+      ) as Phaser.Tilemaps.Tileset;
+      tilesets.push(tileset);
+    }
 
     // Set up collider layers
     this.colliders = this.add.group();
