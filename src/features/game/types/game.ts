@@ -372,6 +372,7 @@ export type Bumpkin = {
   achievements?: Partial<Record<AchievementName, number>>;
   activity: Partial<Record<BumpkinActivityName, number>>;
   previousSkillsResetAt?: number;
+  previousPowerUseAt?: Partial<Record<BumpkinRevampSkillName, number>>;
 };
 
 export type SpecialEvent = "Chef Apron" | "Chef Hat";
@@ -1034,6 +1035,7 @@ export type TradeListing = {
   signature?: string;
   fulfilledAt?: number;
   fulfilledById?: number;
+  initiatedAt?: number;
 };
 
 export type TradeOffer = {
@@ -1044,6 +1046,7 @@ export type TradeOffer = {
   fulfilledAt?: number;
   fulfilledById?: number;
   signature?: string;
+  initiatedAt?: number;
 };
 
 type FishingSpot = {
@@ -1438,7 +1441,7 @@ export interface GameState {
   };
   buds?: Record<number, Bud>;
 
-  christmas?: Christmas;
+  christmas2024?: Christmas;
   flowerShop?: FlowerShop;
   megastore: MegaStore;
   specialEvents: SpecialEvents;

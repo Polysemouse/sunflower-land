@@ -1,4 +1,4 @@
-import React, { useContext } from "react";
+import React, { useContext, useState } from "react";
 import Decimal from "decimal.js-light";
 import { ButtonPanel } from "components/ui/Panel";
 import sfl from "assets/icons/sfl.webp";
@@ -12,32 +12,39 @@ import { TradeableDisplay } from "../lib/tradeables";
 import { TRADE_LIMITS } from "features/game/actions/tradeLimits";
 import { getKeys } from "features/game/types/craftables";
 import { InventoryItemName } from "features/game/types/game";
-import { Label } from "components/ui/Label";
-import classNames from "classnames";
 import { secondsToString } from "lib/utils/time";
 import { SUNNYSIDE } from "assets/sunnyside";
 import { Context } from "features/game/GameProvider";
+import { MachineState } from "features/game/lib/gameMachine";
+import { useSelector } from "@xstate/react";
+import { BumpkinItem } from "features/game/types/bumpkin";
+import { CountLabel } from "components/ui/CountLabel";
+import classNames from "classnames";
+import { ListViewImage } from "./ListViewImage";
 
 type Props = {
   details: TradeableDisplay;
-  count?: number;
   price?: Decimal;
   onClick?: () => void;
   expiresAt?: number;
 };
 
+const _state = (state: MachineState) => state.context.state;
+
 export const ListViewCard: React.FC<Props> = ({
   details,
   price,
   onClick,
-  count,
   expiresAt,
 }) => {
+  const [isHover, setIsHover] = useState(false);
   const { gameService } = useContext(Context);
   const usd = gameService.getSnapshot().context.prices.sfl?.usd ?? 0.0;
 
-  const { type, name, image, buff } = details;
+  const { type, name, image, buffs } = details;
   const { t } = useAppTranslation();
+
+  const state = useSelector(gameService, _state);
 
   const itemId = getItemId({ name, collection: type });
   const tradeType = getTradeType({
@@ -45,28 +52,64 @@ export const ListViewCard: React.FC<Props> = ({
     id: itemId,
     trade: { sfl: price?.toNumber() ?? 0 },
   });
+
   const isResources =
     getKeys(TRADE_LIMITS).includes(name as InventoryItemName) &&
     type === "collectibles";
 
+  // Check inventory count
+  const getTotalCount = () => {
+    switch (details.type) {
+      case "collectibles":
+        return (
+          state.inventory[details.name as InventoryItemName]?.toNumber() || 0
+        );
+      case "buds":
+        return state.buds?.[itemId] ? 1 : 0;
+      case "wearables":
+        return state.wardrobe[name as BumpkinItem] || 0;
+
+      default:
+        return 0;
+    }
+  };
+
+  const count = getTotalCount();
+
   return (
-    <div className="relative cursor-pointer h-full">
+    <div
+      className="relative cursor-pointer h-full"
+      onMouseEnter={() => setIsHover(true)}
+      onMouseLeave={() => setIsHover(false)}
+      style={{ paddingTop: "1px" }}
+    >
       <ButtonPanel
         onClick={onClick}
         variant="card"
         className="h-full flex flex-col"
       >
-        <div className="flex flex-col items-center h-20 p-2 pt-4">
-          <img
-            src={image}
-            className={classNames("object-contain h-[80%] mt-1", {
-              "h-[55%] mt-3": isResources,
-            })}
+        <div
+          className={classNames("flex flex-col items-center relative", {
+            "h-20 p-2 pt-4": details.type !== "buds",
+            "h-32": details.type === "buds",
+          })}
+        >
+          <ListViewImage
+            name={name}
+            image={image}
+            type={type}
+            isResources={isResources}
           />
+          {tradeType === "onchain" && (
+            <img
+              src={wallet}
+              className="h-5 mr-1 absolute bottom-1 -right-1.5"
+            />
+          )}
         </div>
 
         <div
-          className="bg-white px-2 py-2 flex-1"
+          className="bg-white px-2 py-2 flex-1 z-10"
           style={{
             background: "#fff0d4",
             borderTop: "1px solid #e4a672",
@@ -74,7 +117,7 @@ export const ListViewCard: React.FC<Props> = ({
             marginBottom: "-2.6px",
           }}
         >
-          {price && price.gt(0) && (
+          {price?.gt(0) && (
             <div className="absolute top-0 left-0">
               <div className="flex items-center ">
                 <img src={sfl} className="h-4 sm:h-5 mr-1" />
@@ -90,33 +133,35 @@ export const ListViewCard: React.FC<Props> = ({
                       })}`}
                 </p>
               </div>
-              <p className="text-xxs">
-                {`$${new Decimal(usd).mul(price).toFixed(2)}`}
-              </p>
+              {!isResources && (
+                <p className="text-xxs">
+                  {`$${new Decimal(usd).mul(price).toFixed(2)}`}
+                </p>
+              )}
             </div>
           )}
 
-          {tradeType === "onchain" && (
-            <img src={wallet} className="h-5 mr-1 absolute top-0 -right-1" />
-          )}
+          {count > 0 ? (
+            <CountLabel
+              isHover={isHover}
+              count={new Decimal(count)}
+              labelType="default"
+              rightShiftPx={-11}
+              topShiftPx={-12}
+            />
+          ) : null}
 
-          {count && (
-            <Label type="default" className="absolute top-0 -left-0.5">
-              {`x${count}`}
-            </Label>
-          )}
+          <p className="text-xs mb-1 py-0.5 truncate text-[#181425]">{name}</p>
 
-          <p className="text-xs mb-0.5 text-[#181425]">{name}</p>
-
-          {buff && (
-            <div className="flex items-center">
+          {buffs.map((buff) => (
+            <div key={buff.shortDescription} className="flex items-center">
               <img
                 src={buff.boostedItemIcon ?? lightning}
                 className="h-4 mr-1"
               />
               <p className="text-xs truncate pb-0.5">{buff.shortDescription}</p>
             </div>
-          )}
+          ))}
 
           {expiresAt && (
             <div className="flex items-center">

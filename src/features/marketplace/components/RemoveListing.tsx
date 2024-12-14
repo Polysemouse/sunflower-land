@@ -3,88 +3,52 @@ import { Label } from "components/ui/Label";
 import { Panel } from "components/ui/Panel";
 import { Context } from "features/game/GameProvider";
 import { useAppTranslation } from "lib/i18n/useAppTranslations";
-import React, { useContext, useState } from "react";
-import { getTradeableDisplay } from "../lib/tradeables";
-import { TradeableSummary } from "./TradeableSummary";
+import React, { useContext } from "react";
+import { getTradeableDisplay, TradeableDisplay } from "../lib/tradeables";
+import { TradeableItemDetails } from "./TradeableSummary";
 import { getListingCollection, getListingItem } from "../lib/listings";
 import { useSelector } from "@xstate/react";
 import { MachineState } from "features/game/lib/gameMachine";
-import { MarketplaceTradeableName } from "features/game/types/marketplace";
+import {
+  MarketplaceTradeableName,
+  TRADE_INITIATION_MS,
+} from "features/game/types/marketplace";
+import { TimerDisplay } from "features/retreat/components/auctioneer/AuctionDetails";
+import { useCountdown } from "lib/utils/hooks/useCountdown";
 
 const _trades = (state: MachineState) => state.context.state.trades;
 
 interface Props {
-  listingIds: string[];
+  listingId: string;
   authToken: string;
   onClose: () => void;
 }
 
+const _state = (state: MachineState) => state.context.state;
+
 export const RemoveListing: React.FC<Props> = ({
-  listingIds,
+  listingId,
   onClose,
   authToken,
 }) => {
   const { t } = useAppTranslation();
   const { gameService } = useContext(Context);
-
-  const [selectedListingId, setSelectedListingId] = useState<
-    string | undefined
-  >(listingIds.length === 1 ? listingIds[0] : undefined);
+  const state = useSelector(gameService, _state);
 
   const trades = useSelector(gameService, _trades);
   const listings = trades.listings ?? {};
 
-  if (listingIds.length === 0) return null;
+  const listing = listings[listingId];
 
-  if (!selectedListingId) {
-    return (
-      <Panel>
-        <div className="p-2 pr-1">
-          <Label type="danger" className="mb-2">
-            {t("marketplace.cancelListing")}
-          </Label>
-          <p className="text-sm mb-2">
-            {t("marketplace.cancelListing.selectListing")}
-          </p>
-          <div className="flex flex-col gap-2">
-            {listingIds.map((listingId) => {
-              const listing = listings[listingId];
-              const display = getTradeableDisplay({
-                id: getListingItem({ listing }),
-                type: listing.collection,
-              });
-              return (
-                <div className="flex justify-between" key={listingId}>
-                  <TradeableSummary
-                    display={display}
-                    sfl={listing.sfl}
-                    quantity={
-                      listing.items[
-                        display.name as MarketplaceTradeableName
-                      ] as number
-                    }
-                  />
-                  <div>
-                    <Button onClick={() => setSelectedListingId(listingId)}>
-                      {t("marketplace.cancelListing")}
-                    </Button>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </Panel>
-    );
-  }
-
-  const listing = listings[selectedListingId];
+  const initiatedAt = listing.initiatedAt;
+  const isBeingPurchased =
+    !!initiatedAt && Date.now() - initiatedAt < TRADE_INITIATION_MS;
 
   const confirm = async () => {
     gameService.send("marketplace.listingCancelled", {
       effect: {
         type: "marketplace.listingCancelled",
-        id: selectedListingId,
+        id: listingId,
       },
       authToken,
     });
@@ -94,7 +58,20 @@ export const RemoveListing: React.FC<Props> = ({
 
   const itemId = getListingItem({ listing });
   const collection = getListingCollection({ listing });
-  const display = getTradeableDisplay({ id: itemId, type: collection });
+  const display = getTradeableDisplay({ id: itemId, type: collection, state });
+
+  if (isBeingPurchased) {
+    return (
+      <TradeInitiated
+        initiatedAt={initiatedAt}
+        display={display}
+        quantity={
+          listing.items[display.name as MarketplaceTradeableName] as number
+        }
+        sfl={listing.sfl}
+      />
+    );
+  }
 
   return (
     <Panel>
@@ -105,7 +82,7 @@ export const RemoveListing: React.FC<Props> = ({
         <p className="text-sm mb-2">
           {t("marketplace.cancelListing.areYouSure")}
         </p>
-        <TradeableSummary
+        <TradeableItemDetails
           display={display}
           sfl={listing.sfl}
           quantity={
@@ -118,6 +95,30 @@ export const RemoveListing: React.FC<Props> = ({
           {t("no")}
         </Button>
         <Button onClick={confirm}>{t("yes")}</Button>
+      </div>
+    </Panel>
+  );
+};
+
+export const TradeInitiated: React.FC<{
+  initiatedAt: number;
+  display: TradeableDisplay;
+  quantity: number;
+  sfl: number;
+}> = ({ initiatedAt, display, quantity, sfl }) => {
+  const end = useCountdown(initiatedAt + TRADE_INITIATION_MS);
+  const { t } = useAppTranslation();
+  return (
+    <Panel>
+      <div className="p-2">
+        <Label type="danger" className="mb-2">
+          {t("marketplace.cancelListing")}
+        </Label>
+        <TradeableItemDetails display={display} sfl={sfl} quantity={quantity} />
+      </div>
+      <div className="p-2">
+        <p className="text-sm mb-2">{t("marketplace.tradeInitiated")}</p>
+        <TimerDisplay fontSize={24} time={end} />
       </div>
     </Panel>
   );

@@ -380,7 +380,7 @@ export abstract class BaseScene extends Phaser.Scene {
     if (holidayEvent === "halloween") {
       const tileset = this.map.addTilesetImage(
         "Halloween Sunnyside V3",
-        "halloween-tileset",
+        "halloween-tilesheet",
         16,
         16,
         0,
@@ -391,7 +391,7 @@ export abstract class BaseScene extends Phaser.Scene {
     if (holidayEvent === "christmas") {
       const tileset = this.map.addTilesetImage(
         "Christmas Sunnyside V3",
-        "christmas-tileset",
+        "christmas-tilesheet",
         16,
         16,
         0,

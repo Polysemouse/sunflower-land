@@ -37,6 +37,7 @@ import { PirateChestModal } from "./chests/PirateChest";
 import { ExampleDonations } from "./donations/ExampleDonations";
 import { WorldMap } from "features/island/hud/components/deliveries/WorldMap";
 import { Halloween } from "./portals/Halloween";
+import { ChristmasReward } from "./npcs/Santa";
 
 type InteractableName =
   | "desert_noticeboard"
@@ -124,7 +125,8 @@ type InteractableName =
   | "desert_book_3"
   | "desert_book_4"
   | "world_map"
-  | "halloween";
+  | "halloween"
+  | "festive_tree";
 
 class InteractableModalManager {
   private listener?: (name: InteractableName, isOpen: boolean) => void;
@@ -429,6 +431,20 @@ export const InteractableModals: React.FC<Props> = ({ id, scene }) => {
           ]}
         />
       </Modal>
+      <Modal show={interactable === "festive_tree"} onHide={closeModal}>
+        <SpeakingModal
+          onClose={closeModal}
+          message={[
+            {
+              text: t("interactableModals.festiveTree.message1"),
+            },
+            {
+              text: t("interactableModals.festiveTree.message2"),
+            },
+          ]}
+        />
+      </Modal>
+
       <Modal show={interactable === "dawn_book_1"} onHide={closeModal}>
         <SpeakingModal
           onClose={closeModal}
@@ -824,6 +840,9 @@ export const InteractableModals: React.FC<Props> = ({ id, scene }) => {
         onHide={closeModal}
       >
         <GoblinMarket onClose={closeModal} />
+      </Modal>
+      <Modal show={interactable === "christmas_reward"}>
+        <ChristmasReward onClose={closeModal} />
       </Modal>
     </>
   );

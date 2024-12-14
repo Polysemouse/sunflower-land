@@ -37,7 +37,7 @@ import { InfoPopover } from "features/island/common/InfoPopover";
 import Decimal from "decimal.js-light";
 import { REQUIRED_FOOD_QTY } from "features/game/events/landExpansion/feedAnimal";
 import { formatNumber } from "lib/utils/formatNumber";
-import { ITEM_XP } from "features/game/events/landExpansion/loveAnimal";
+import { getAnimalXP } from "features/game/events/landExpansion/loveAnimal";
 import { isCollectibleBuilt } from "features/game/lib/collectibleBuilt";
 import { MutantAnimalModal } from "features/farming/animals/components/MutantAnimalModal";
 
@@ -385,6 +385,8 @@ export const Chicken: React.FC<{ id: string; disabled: boolean }> = ({
       : "#fff";
   const xpIndicatorAmount = getAnimalXPEarned();
 
+  const { animalXP } = getAnimalXP({ state: game, name: showLoveItem! });
+
   return (
     <>
       {mutantName && (
@@ -501,7 +503,7 @@ export const Chicken: React.FC<{ id: string; disabled: boolean }> = ({
         animalState={chickenMachineState}
         experience={chicken.experience}
         animal={chicken}
-        className="absolute bottom-1 left-1/2 transform -translate-x-1/2 ml-0.5"
+        className="absolute bottom-1 left-1/2 transform -translate-x-1/2 ml-0.5 pointer-events-none"
         // Don't block level up UI with wakes in panel if accidentally clicked
         onLevelUp={() => setShowWakesIn(false)}
       />
@@ -542,7 +544,7 @@ export const Chicken: React.FC<{ id: string; disabled: boolean }> = ({
           style={{
             color: "#ffffff",
           }}
-        >{`+${formatNumber(ITEM_XP[showLoveItem!])}`}</span>
+        >{`+${animalXP}`}</span>
       </Transition>
     </>
   );

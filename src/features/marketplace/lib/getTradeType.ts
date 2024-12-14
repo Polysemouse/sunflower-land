@@ -3,7 +3,7 @@ import { BumpkinItem, ITEM_NAMES } from "features/game/types/bumpkin";
 import { InventoryItemName } from "features/game/types/game";
 import { CollectionName } from "features/game/types/marketplace";
 
-type TradeType = "instant" | "onchain";
+export type TradeType = "instant" | "onchain";
 
 export const ITEM_TRADE_TYPES: {
   collectibles: Record<InventoryItemName, TradeType>;
@@ -856,6 +856,10 @@ export const ITEM_TRADE_TYPES: {
     "Cozy Fireplace": "instant",
     "Christmas Rug": "instant",
     "Christmas Candle": "instant",
+    "Santa Penguin": "instant",
+    "Penguin Pool": "instant",
+    Snowman: "instant",
+    "Festive Toy Train": "instant",
   },
   wearables: {
     "Beige Farmer Potion": "instant",

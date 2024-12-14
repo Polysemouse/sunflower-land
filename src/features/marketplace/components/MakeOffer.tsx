@@ -17,7 +17,7 @@ import { signTypedData } from "@wagmi/core";
 import walletIcon from "assets/icons/wallet.png";
 import sflIcon from "assets/icons/sfl.webp";
 import lockIcon from "assets/icons/lock.png";
-import { TradeableSummary } from "./TradeableSummary";
+import { TradeableItemDetails } from "./TradeableSummary";
 import { getTradeType } from "../lib/getTradeType";
 import { ResourceOffer } from "./ResourceOffer";
 import { InventoryItemName } from "features/game/types/game";
@@ -27,10 +27,16 @@ import { KNOWN_ITEMS } from "features/game/types";
 import Decimal from "decimal.js-light";
 import { ModalContext } from "features/game/components/modal/ModalProvider";
 import { hasVipAccess } from "features/game/lib/vipAccess";
+import { calculateTradePoints } from "features/game/events/landExpansion/addTradePoints";
+import { StoreOnChain } from "./StoreOnChain";
 
 const _balance = (state: MachineState) => state.context.state.balance;
+const _previousBalance = (state: MachineState) =>
+  state.context.state.previousBalance;
 const _isVIP = (state: MachineState) =>
   hasVipAccess(state.context.state.inventory);
+const _usd = (state: MachineState) => state.context.prices.sfl?.usd ?? 0.0;
+
 export const MakeOffer: React.FC<{
   display: TradeableDisplay;
   floorPrice: number;
@@ -41,16 +47,18 @@ export const MakeOffer: React.FC<{
   const { t } = useAppTranslation();
   const { gameService } = useContext(Context);
 
-  const usd = gameService.getSnapshot().context.prices.sfl?.usd ?? 0.0;
-
   const balance = useSelector(gameService, _balance);
+  const previousBalance = useSelector(gameService, _previousBalance);
   const isVIP = useSelector(gameService, _isVIP);
+  const usd = useSelector(gameService, _usd);
+
   const { openModal } = useContext(ModalContext);
 
   const [offer, setOffer] = useState(0);
-  const [quantity, setQuantity] = useState(1);
+  const [quantity, setQuantity] = useState(0);
   const [isSigning, setIsSigning] = useState(false);
   const [showConfirmation, setShowConfirmation] = useState(false);
+  const [needsSync, setNeedsSync] = useState(false);
 
   const isResource = getKeys(TRADE_LIMITS).includes(
     KNOWN_ITEMS[Number(itemId)],
@@ -93,7 +101,7 @@ export const MakeOffer: React.FC<{
         item: display.name,
         collection: display.type,
         id: BigInt(itemId),
-        quantity: BigInt(1),
+        quantity: BigInt(Math.max(1, quantity)),
         SFL: BigInt(offer),
       },
     });
@@ -105,6 +113,13 @@ export const MakeOffer: React.FC<{
 
   const submitOffer = () => {
     if (tradeType === "onchain") {
+      const needsToSync = previousBalance.lt(offer);
+
+      if (needsToSync) {
+        setNeedsSync(true);
+        return;
+      }
+
       setIsSigning(true);
       return;
     }
@@ -120,7 +135,7 @@ export const MakeOffer: React.FC<{
         collection: display.type,
         signature,
         contract: CONFIG.MARKETPLACE_VERIFIER_CONTRACT,
-        quantity,
+        quantity: Math.max(1, quantity),
         sfl: offer,
       },
       authToken,
@@ -128,6 +143,18 @@ export const MakeOffer: React.FC<{
 
     onClose();
   };
+
+  const estTradePoints =
+    offer === 0
+      ? 0
+      : calculateTradePoints({
+          sfl: offer,
+          points: tradeType === "instant" ? 2 : 10,
+        }).multipliedPoints;
+
+  if (needsSync) {
+    return <StoreOnChain itemName="SFL" onClose={onClose} actionType="offer" />;
+  }
 
   if (showConfirmation) {
     return (
@@ -137,7 +164,12 @@ export const MakeOffer: React.FC<{
             {t("are.you.sure")}
           </Label>
           <p className="text-xs mb-2">{t("marketplace.confirmDetails")}</p>
-          <TradeableSummary display={display} sfl={offer} quantity={quantity} />
+          <TradeableItemDetails
+            display={display}
+            quantity={Math.max(1, quantity)}
+            sfl={offer}
+            estTradePoints={estTradePoints}
+          />
         </div>
 
         <div className="flex">
@@ -159,10 +191,11 @@ export const MakeOffer: React.FC<{
               {t("are.you.sure")}
             </Label>
             <p className="text-xs mb-2">{t("marketplace.signOffer")}</p>
-            <TradeableSummary
+            <TradeableItemDetails
               display={display}
+              quantity={Math.max(1, quantity)}
               sfl={offer}
-              quantity={quantity}
+              estTradePoints={estTradePoints}
             />
           </div>
 

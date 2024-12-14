@@ -19,6 +19,7 @@ import { TextInput } from "components/ui/TextInput";
 import { ListViewCard } from "../ListViewCard";
 
 import chest from "assets/icons/chest.png";
+import { isNode } from "features/game/expansion/lib/expansionNodes";
 
 type CollectionItem = {
   id: number;
@@ -28,7 +29,8 @@ type CollectionItem = {
 
 export const MyCollection: React.FC = () => {
   const { t } = useAppTranslation();
-  const isWorldRoute = useLocation().pathname.includes("/world");
+  const location = useLocation();
+  const isWorldRoute = location.pathname.includes("/world");
 
   const { gameService } = useContext(Context);
   const [gameState] = useActor(gameService);
@@ -37,17 +39,18 @@ export const MyCollection: React.FC = () => {
   const { buds } = gameState.context.state;
 
   const navigate = useNavigate();
-
   let items: CollectionItem[] = [];
 
   const inventory = getChestItems(gameState.context.state);
-  getKeys(inventory).forEach((name) => {
-    items.push({
-      id: KNOWN_IDS[name],
-      collection: "collectibles",
-      count: inventory[name]?.toNumber() ?? 0,
+  getKeys(inventory)
+    .filter((name) => !isNode(name))
+    .forEach((name) => {
+      items.push({
+        id: KNOWN_IDS[name],
+        collection: "collectibles",
+        count: inventory[name]?.toNumber() ?? 0,
+      });
     });
-  });
 
   const wardrobe = availableWardrobe(gameState.context.state);
   getKeys(wardrobe).forEach((name) => {
@@ -74,53 +77,104 @@ export const MyCollection: React.FC = () => {
     const details = getTradeableDisplay({
       id: item.id,
       type: item.collection,
+      state: gameState.context.state,
     });
 
     return details.name.toLowerCase().includes(search.toLowerCase());
   });
 
+  // Separate items into three categories
+  const budsItems = items.filter((item) => item.collection === "buds");
+  const wearableItems = items.filter((item) => item.collection === "wearables");
+  const collectibleItems = items.filter(
+    (item) => item.collection === "collectibles",
+  );
+
+  const ItemGrid: React.FC<{ items: CollectionItem[] }> = ({ items }) => (
+    <div className="flex flex-wrap">
+      {items.map((item) => {
+        const details = getTradeableDisplay({
+          id: item.id,
+          type: item.collection,
+          state: gameState.context.state,
+        });
+
+        return (
+          <div
+            key={`${item.collection}-${item.id}`}
+            className="w-1/2 sm:w-1/3 md:w-1/4 lg:w-1/5 xl:w-1/7 p-1"
+          >
+            <ListViewCard
+              details={details}
+              onClick={() => {
+                navigate(
+                  `${isWorldRoute ? "/world" : ""}/marketplace/${item.collection}/${item.id}`,
+                  {
+                    state: {
+                      route: `${location.pathname}${location.search}`,
+                    },
+                  },
+                );
+              }}
+            />
+          </div>
+        );
+      })}
+    </div>
+  );
+
   return (
     <>
-      <InnerPanel className="h-auto  w-full mb-1">
+      <InnerPanel
+        className="w-full mb-1"
+        style={{
+          height: "auto",
+          minHeight: "200px",
+        }}
+      >
         <Label className="mb-2 ml-2" type="default" icon={chest}>
           {t("marketplace.myCollection")}
         </Label>
-        <div className="flex items-center">
+        <div className="flex items-center mb-2">
           <TextInput
             icon={SUNNYSIDE.icons.search}
             value={search}
             onValueChange={setSearch}
           />
         </div>
-        <div className="p-2">
-          <div className="flex flex-wrap">
-            {getKeys(items).length === 0 && (
-              <p className="text-sm">{t("marketplace.noCollection")}</p>
-            )}
-            {items.map((item) => {
-              const details = getTradeableDisplay({
-                id: item.id,
-                type: item.collection,
-              });
-
-              return (
-                <div
-                  className="w-1/2 sm:w-1/3 md:w-1/4 lg:w-1/5 xl:w-1/6 pr-1 pb-1"
-                  key={`${item.id}-${item.collection}`}
-                >
-                  <ListViewCard
-                    details={details}
-                    onClick={() => {
-                      navigate(
-                        `${isWorldRoute ? "/world" : ""}/marketplace/${details.type}/${item.id}`,
-                      );
-                    }}
-                    count={item.count}
-                  />
+        <div className="p-2 h-full w-full">
+          {items.length === 0 ? (
+            <p className="text-sm">{t("marketplace.noCollection")}</p>
+          ) : (
+            <div className="space-y-3">
+              {collectibleItems.length > 0 && (
+                <div>
+                  <Label className="mb-2" type="default">
+                    {`${t("collectibles")} (${collectibleItems.length})`}
+                  </Label>
+                  <ItemGrid items={collectibleItems} />
                 </div>
-              );
-            })}
-          </div>
+              )}
+
+              {wearableItems.length > 0 && (
+                <div>
+                  <Label className="mb-2" type="default">
+                    {`${t("wearables")} (${wearableItems.length})`}
+                  </Label>
+                  <ItemGrid items={wearableItems} />
+                </div>
+              )}
+
+              {budsItems.length > 0 && (
+                <div>
+                  <Label className="mb-2" type="default">
+                    {`${t("buds")} (${budsItems.length})`}
+                  </Label>
+                  <ItemGrid items={budsItems} />
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </InnerPanel>
     </>

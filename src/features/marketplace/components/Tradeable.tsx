@@ -1,8 +1,11 @@
-import { CollectionName } from "features/game/types/marketplace";
+import {
+  CollectionName,
+  getMarketPrice,
+} from "features/game/types/marketplace";
 import React, { useContext, useState } from "react";
 import * as Auth from "features/auth/lib/Provider";
 import { useActor } from "@xstate/react";
-import { useNavigate, useParams } from "react-router";
+import { useLocation, useNavigate, useParams } from "react-router";
 import { loadTradeable } from "../actions/loadTradeable";
 import { getTradeableDisplay } from "../lib/tradeables";
 import { isMobile } from "mobile-device-detect";
@@ -37,6 +40,7 @@ export const Tradeable: React.FC = () => {
   const [authState] = useActor(authService);
   const { gameService } = useContext(Context);
   const [gameState] = useActor(gameService);
+  const location = useLocation();
 
   const farmId = gameState.context.farmId;
   const authToken = authState.context.user.rawToken as string;
@@ -53,6 +57,7 @@ export const Tradeable: React.FC = () => {
   const display = getTradeableDisplay({
     id: Number(id),
     type: collection as CollectionName,
+    state: gameState.context.state,
   });
 
   let count = 0;
@@ -108,7 +113,13 @@ export const Tradeable: React.FC = () => {
   }
 
   const onBack = () => {
-    navigate(-1);
+    const { route, scrollPosition } = location.state ?? {};
+
+    if (route) {
+      navigate(route, { state: { scrollPosition } });
+    } else {
+      navigate(-1);
+    }
   };
 
   const trades = gameState.context.state.trades;
@@ -121,11 +132,7 @@ export const Tradeable: React.FC = () => {
     (offer) => tradeToId({ details: trades.offers![offer] }) === Number(id),
   );
 
-  let latestSale = 0;
-  if (tradeable?.history.sales.length) {
-    latestSale =
-      tradeable.history.sales[0].sfl / tradeable.history.sales[0].quantity;
-  }
+  const marketPrice = getMarketPrice({ tradeable });
 
   return (
     <div className="flex sm:flex-row flex-col w-full scrollable overflow-y-auto h-[calc(100vh-112px)] pr-1 pb-8">
@@ -162,7 +169,10 @@ export const Tradeable: React.FC = () => {
         />
 
         {!isMobile && (
-          <TradeableStats history={tradeable?.history} price={latestSale} />
+          <TradeableStats
+            history={tradeable?.history}
+            marketPrice={marketPrice}
+          />
         )}
 
         {hasListings && <MyListings />}

@@ -424,6 +424,8 @@ import {
   redeemTradeReward,
   RedeemTradeRewardsAction,
 } from "./landExpansion/redeemTradeReward";
+import { collectCandy, CollectCandyAction } from "./landExpansion/collectCandy";
+import { skillUse, SkillUseAction } from "./landExpansion/skillUsed";
 
 export type PlayingEvent =
   | SellAnimalAction
@@ -527,6 +529,7 @@ export type PlayingEvent =
   | StartMinigameAttemptAction
   | SubmitMinigameScoreAction
   | UnlockMinigameAchievementsAction
+  | SkillUseAction
   | SupplyCropMachineAction
   | HarvestCropMachineAction
   | SupplyCookingOilAction
@@ -553,7 +556,9 @@ export type PlayingEvent =
   | DiscoverRecipeAction
   | UnlockFarmhandAction
   | ClaimPurchaseAction
-  | RedeemTradeRewardsAction;
+  | RedeemTradeRewardsAction
+  // To remove once December is finished
+  | CollectCandyAction;
 
 export type PlacementEvent =
   | ConstructBuildingAction
@@ -737,6 +742,7 @@ export const PLAYING_EVENTS: Handlers<PlayingEvent> = {
   "animal.fed": feedAnimal,
   "animal.loved": loveAnimal,
   "feed.mixed": feedMixed,
+  "skill.used": skillUse,
   "building.upgraded": upgradeBuilding,
   "crafting.started": startCrafting,
   "crafting.collected": collectCrafting,
@@ -748,6 +754,7 @@ export const PLAYING_EVENTS: Handlers<PlayingEvent> = {
   "fishing.reelsBought": buyMoreReels,
   "purchase.claimed": claimPurchase,
   "reward.redeemed": redeemTradeReward,
+  "candy.collected": collectCandy,
 };
 
 export const PLACEMENT_EVENTS: Handlers<PlacementEvent> = {

@@ -9,15 +9,15 @@ import { CropsAndChickensScene } from "../CropsAndChickensScene";
 export const preloadAssets = (scene: CropsAndChickensScene) => {
   const holidayEvent = getHolidayEvent();
 
-  // halloween tileset
+  // halloween tilesheet
   scene.load.image(
-    "halloween-tileset",
+    "halloween-tilesheet",
     "crops-and-chickens/tilesets/halloween-tilesheet.png",
   );
 
-  // christmas tileset
+  // christmas tilesheet
   scene.load.image(
-    "christmas-tileset",
+    "christmas-tilesheet",
     "crops-and-chickens/tilesets/christmas-tilesheet.png",
   );
 

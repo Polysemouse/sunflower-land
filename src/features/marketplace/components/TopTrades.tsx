@@ -6,18 +6,23 @@ import classNames from "classnames";
 import sflIcon from "assets/icons/sfl.webp";
 import Decimal from "decimal.js-light";
 import { Loading } from "features/auth/components";
-import { NPC } from "features/island/bumpkin/components/NPC";
+import { NPCIcon } from "features/island/bumpkin/components/NPC";
 import { interpretTokenUri } from "lib/utils/tokenUriBuilder";
+import { useLocation, useNavigate } from "react-router";
 import { Context } from "features/game/GameProvider";
-import { useNavigate } from "react-router";
+import { MachineState } from "features/game/lib/gameMachine";
+import { useSelector } from "@xstate/react";
 
+const _state = (state: MachineState) => state.context.state;
 export const TopTrades: React.FC<{
   trends?: MarketplaceTrends;
 }> = ({ trends }) => {
   const { t } = useAppTranslation();
   const navigate = useNavigate();
   const { gameService } = useContext(Context);
+  const state = useSelector(gameService, _state);
   const usd = gameService.getSnapshot().context.prices.sfl?.usd ?? 0.0;
+  const isWorldRoute = useLocation().pathname.includes("/world");
 
   if (!trends) {
     return <Loading />;
@@ -27,12 +32,12 @@ export const TopTrades: React.FC<{
     <div className="w-full text-xs  border-collapse  ">
       <div>
         {trends.topTrades.map((item, index) => {
-          const quantity = item.quantity;
           const price = item.sfl;
 
           const details = getTradeableDisplay({
             type: item.collection,
             id: item.itemId,
+            state,
           });
 
           return (
@@ -47,26 +52,27 @@ export const TopTrades: React.FC<{
               }}
             >
               <div className="flex flex-wrap items-center flex-1">
-                <div className="mr-2  text-left  flex items-center sm:w-1/2 w-full">
+                <div className="mr-2 text-left  flex items-center sm:w-1/2 w-full">
                   <div className="h-8 w-8 mr-2">
                     <img src={details.image} className="h-full object-fit" />
                   </div>
-                  <p className="text-sm">{`${details.name}`}</p>
+                  <p className="text-sm py-0.5">{`${details.name}`}</p>
                 </div>
 
                 <div
                   className="flex items-center flex-1 sm:w-1/2 w-full cursor-pointer"
                   onClick={() => {
-                    navigate(`/marketplace/profile/${item.buyer.id}`);
+                    navigate(
+                      `${isWorldRoute ? "/world" : ""}/marketplace/profile/${item.buyer.id}`,
+                    );
                   }}
                 >
                   <div className="relative w-8 h-8 flex items-center justify-center mr-2">
-                    <NPC
-                      width={20}
+                    <NPCIcon
                       parts={interpretTokenUri(item.buyer.bumpkinUri).equipped}
                     />
                   </div>
-                  <p className="text-xs sm:text-sm flex-1 truncate">
+                  <p className="text-xs py-0.5 sm:text-sm flex-1 truncate">
                     {item.buyer.username}
                   </p>
                 </div>

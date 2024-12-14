@@ -25,8 +25,8 @@ import { getFoodExpBoost } from "../lib/boosts";
 import { MachineState } from "features/game/lib/gameMachine";
 import { useSelector } from "@xstate/react";
 import { BUMPKIN_ITEM_BUFF_LABELS } from "features/game/types/bumpkinItemBuffs";
-import { InventoryItemName } from "features/game/types/game";
 import { ButtonPanel } from "components/ui/Panel";
+import { OPEN_SEA_WEARABLES } from "metadata/metadata";
 
 const _bumpkin = (state: MachineState) => state.context.state.bumpkin;
 const _game = (state: MachineState) => state.context.state;
@@ -114,7 +114,8 @@ export const ClaimReward: React.FC<ClaimRewardProps> = ({
 
           {itemNames.length > 0 &&
             itemNames.map((name) => {
-              const buff = COLLECTIBLE_BUFF_LABELS[name as CollectibleName];
+              const buff =
+                COLLECTIBLE_BUFF_LABELS(game)[name as CollectibleName];
               return (
                 <ButtonPanel
                   variant="card"
@@ -135,13 +136,16 @@ export const ClaimReward: React.FC<ClaimRewardProps> = ({
                           type="success"
                           icon={powerup}
                           className="ml-1 mb-1"
-                        >{`+${new Decimal(
-                          getFoodExpBoost(
-                            CONSUMABLES[name as ConsumableName],
-                            bumpkin as Bumpkin,
-                            game,
-                            buds ?? {},
+                        >{`+${formatNumber(
+                          new Decimal(
+                            getFoodExpBoost(
+                              CONSUMABLES[name as ConsumableName],
+                              bumpkin as Bumpkin,
+                              game,
+                              buds ?? {},
+                            ),
                           ),
+                          { decimalPlaces: 0 },
                         )} XP`}</Label>
                       )}
                     </div>
@@ -195,8 +199,10 @@ export const ClaimReward: React.FC<ClaimRewardProps> = ({
                       </Label>
                     ) : (
                       <p className="text-xs ml-0.5">
-                        {ITEM_DETAILS[name as InventoryItemName]?.description
-                          ? ITEM_DETAILS[name as InventoryItemName].description
+                        {OPEN_SEA_WEARABLES[name as BumpkinItem]?.description ||
+                        OPEN_SEA_WEARABLES[name as BumpkinItem]?.description !==
+                          ""
+                          ? OPEN_SEA_WEARABLES[name as BumpkinItem].description
                           : t("reward.wearable")}
                       </p>
                     )}

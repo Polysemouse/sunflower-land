@@ -75,7 +75,7 @@ export const CropsAndChickensHud: React.FC = () => {
           <CropsAndChickensTravel />
         </div>
       </HudContainer>
-      <HudContainer zIndex={99999}>
+      <HudContainer zIndex="z-[99999]">
         <div
           className={classNames({
             "pointer-events-none": isJoystickActive,
