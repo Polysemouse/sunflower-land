@@ -105,6 +105,26 @@ export const Collection: React.FC<{
       ...(limited?.items || []),
     ],
   };
+
+  if (!filters.includes("resources")) {
+    // Sort by price
+    data.items.sort((a, b) => {
+      // If floor prices are equal, sort by lastSalePrice
+      if (a.floor === b.floor) {
+        // If lastSalePrice is empty, order last
+        if (a.lastSalePrice === 0) return 1;
+        if (b.lastSalePrice === 0) return -1;
+        return a.lastSalePrice - b.lastSalePrice;
+      }
+
+      // If floor price is empty, order last
+      if (a.floor === 0) return 1;
+      if (b.floor === 0) return -1;
+
+      return a.floor - b.floor;
+    });
+  }
+
   const isLoading =
     isWearablesLoading ||
     isCollectiblesLoading ||
@@ -163,7 +183,7 @@ export const Collection: React.FC<{
     if (filters === "resources") return 150;
     if (filters === "buds") return 250;
 
-    return 160;
+    return 180;
   };
 
   return (
@@ -212,6 +232,7 @@ export const Collection: React.FC<{
                   <ListViewCard
                     details={display}
                     price={new Decimal(item.floor)}
+                    lastSalePrice={new Decimal(item.lastSalePrice)}
                     onClick={() => {
                       const scrollPosition =
                         gridRef.current?._outerRef.scrollTop;

@@ -9,6 +9,7 @@ import { INITIAL_BUMPKIN } from "features/game/lib/constants";
 import { SPAWNS } from "./lib/spawn";
 import { Moderation } from "features/game/lib/gameMachine";
 import { MAX_PLAYERS } from "./lib/availableRooms";
+import { NPCName } from "lib/npcs";
 
 export type Scenes = {
   crops_and_chickens: Room<PlazaRoomState> | undefined;
@@ -125,6 +126,7 @@ export interface MMOContext {
   previousSceneId: SceneId | null;
   experience: number;
   isCommunity?: boolean;
+  firstDeliveryNpc?: NPCName;
   moderation: Moderation;
 }
 
@@ -164,7 +166,7 @@ export type UpdatePreviousScene = {
 
 export type MMOEvent =
   | PickServer
-  | { type: "CONTINUE" }
+  | { type: "CONTINUE"; username?: string }
   | { type: "DISCONNECTED" }
   | { type: "RETRY" }
   | { type: "CHANGE_SERVER"; serverId: ServerId }
@@ -188,6 +190,7 @@ export const mmoMachine = createMachine<MMOContext, MMOEvent, MMOState>({
     jwt: "",
     farmId: 0,
     bumpkin: INITIAL_BUMPKIN,
+    username: "",
     availableServers: SERVERS,
     serverId: "sunflorea_bliss",
     sceneId: "plaza",
@@ -217,7 +220,6 @@ export const mmoMachine = createMachine<MMOContext, MMOEvent, MMOState>({
         CONNECT: "exploring",
       },
     },
-
     connecting: {
       invoke: {
         id: "connecting",
@@ -368,12 +370,12 @@ export const mmoMachine = createMachine<MMOContext, MMOEvent, MMOState>({
         },
       },
     },
-
     joined: {
       always: [
         {
           target: "introduction",
-          cond: () => !localStorage.getItem("mmo_introduction.read"),
+          cond: (context) =>
+            !localStorage.getItem("mmo_introduction.read") || !context.username,
         },
       ],
       on: {
@@ -391,15 +393,20 @@ export const mmoMachine = createMachine<MMOContext, MMOEvent, MMOState>({
       on: {
         CONTINUE: {
           target: "joined",
-          actions: () =>
-            localStorage.setItem(
-              "mmo_introduction.read",
-              Date.now().toString(),
-            ),
+          actions: [
+            () => {
+              localStorage.setItem(
+                "mmo_introduction.read",
+                Date.now().toString(),
+              );
+            },
+            assign({
+              username: (_, event) => event.username,
+            }),
+          ],
         },
       },
     },
-
     kicked: {},
     reconnecting: {
       always: [

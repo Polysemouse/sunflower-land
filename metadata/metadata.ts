@@ -7697,7 +7697,8 @@ export const OPEN_SEA_COLLECTIBLES: Record<InventoryItemName, Metadata> = {
   },
   "Treasure Key": {
     name: "Treasure Key",
-    description: "A magic key that can unlock rewards in the plaza",
+    description:
+      "A magic key that can unlock the basic chest located in the plaza near Tywin.",
     decimals: 0,
     external_url: "https://docs.sunflower-land.com/getting-started/about",
     image: "../public/erc1155/images/931.png",
@@ -7708,7 +7709,8 @@ export const OPEN_SEA_COLLECTIBLES: Record<InventoryItemName, Metadata> = {
   },
   "Luxury Key": {
     name: "Luxury Key",
-    description: "A magic key that can unlock rewards in the plaza",
+    description:
+      "A magic key that can unlock the luxury chest located in the plaza near Bert.",
     decimals: 0,
     external_url: "https://docs.sunflower-land.com/getting-started/about",
     image: "../public/erc1155/images/932.png",
@@ -7720,7 +7722,8 @@ export const OPEN_SEA_COLLECTIBLES: Record<InventoryItemName, Metadata> = {
 
   "Rare Key": {
     name: "Rare Key",
-    description: "A magic key that can unlock rewards in the beach",
+    description:
+      "A magic key that can unlock the rare chest located in the south of the beach.",
     decimals: 0,
     external_url: "https://docs.sunflower-land.com/getting-started/about",
     image: "../public/erc1155/images/933.png",
@@ -10363,6 +10366,22 @@ export const OPEN_SEA_COLLECTIBLES: Record<InventoryItemName, Metadata> = {
       { trait_type: "Purpose", value: "Decoration" },
       { trait_type: "Tradable", value: "No" },
     ],
+  },
+  "Golden Cow": {
+    description: "Feed cows for free!",
+    decimals: 0,
+    attributes: [
+      { trait_type: "Tradable", value: "Yes" },
+      { trait_type: "Boost", value: "Animal" },
+      {
+        display_type: "boost_percentage",
+        trait_type: "Feed Reduction",
+        value: 100,
+      },
+    ],
+    external_url: "https://docs.sunflower-land.com/getting-started/about",
+    image: "../public/wearables/images/2178.png",
+    name: "Golden Cow",
   },
 };
 

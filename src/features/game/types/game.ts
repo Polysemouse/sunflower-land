@@ -1285,6 +1285,13 @@ export type Bank = {
   taxFreeSFL: number;
 };
 
+export type TemperateSeasonName = "spring" | "summer" | "autumn" | "winter";
+
+export type Season = {
+  startedAt: number;
+  season: TemperateSeasonName;
+};
+
 export interface GameState {
   home: Home;
   bank: Bank;
@@ -1482,6 +1489,7 @@ export interface GameState {
     readyAt: number;
     recipes: Partial<Recipes>;
   };
+  season: Season;
 }
 
 export interface Context {
