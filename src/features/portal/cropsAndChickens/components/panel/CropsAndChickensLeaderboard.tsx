@@ -78,14 +78,16 @@ export const CropsAndChickensLeaderboard: React.FC<Props> = ({ onBack }) => {
       </Label>
 
       {/* content */}
-      <PortalLeaderboard
-        name="crops-and-chickens"
-        farmId={farmId}
-        jwt={jwt}
-        startDate={startOfUTCWeekDate}
-        endDate={endOfUTCWeekDate}
-        onBack={() => undefined}
-      />
+      <div className="flex flex-col gap-1 overflow-y-auto scrollable p-1">
+        <PortalLeaderboard
+          name="crops-and-chickens"
+          farmId={farmId}
+          jwt={jwt}
+          startDate={startOfUTCWeekDate}
+          endDate={endOfUTCWeekDate}
+          onBack={() => undefined}
+        />
+      </div>
     </div>
   );
 };

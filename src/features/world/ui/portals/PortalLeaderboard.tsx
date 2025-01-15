@@ -77,7 +77,7 @@ export const PortalLeaderboard: React.FC<{
       : miniboard;
   return (
     <>
-      <div className="px-1">
+      <div>
         {/* <div className="flex justify-between  items-center mb-2">
           <Label type="default" className="">
             {`${t("competition.leaderboard")} - ${title}`}
