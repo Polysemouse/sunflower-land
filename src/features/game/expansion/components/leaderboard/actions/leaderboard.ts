@@ -10,6 +10,7 @@ import { getWeekKey } from "features/game/lib/factions";
 import { CompetitionName } from "features/game/types/competitions";
 import { BumpkinParts } from "lib/utils/tokenUriBuilder";
 import { MinigameName } from "features/game/types/minigames";
+import { getUrl } from "features/portal/actions/loadPortal";
 
 const API_URL = CONFIG.API_URL;
 
@@ -300,7 +301,7 @@ export async function getPortalLeaderboard({
     return cache;
   }
 
-  const url = `${API_URL}/leaderboard/portals/${farmId}?name=${name}&from=${from}&to=${to}`;
+  const url = `${getUrl()}/leaderboard/portals/${farmId}?name=${name}&from=${from}&to=${to}`;
 
   const response = await window.fetch(url, {
     method: "GET",
