@@ -85,14 +85,14 @@ export const CropsAndChickensLeaderboard: React.FC<Props> = ({ onBack }) => {
           farmId={farmId}
           jwt={jwt}
           startDate={new Date(startOfUTCWeek)}
-          endDate={new Date(endOfUTCWeek)}
+          endDate={new Date(endOfUTCWeek - 1)}
         />
         <PortalLeaderboard
           name="crops-and-chickens"
           farmId={farmId}
           jwt={jwt}
           startDate={new Date(startOfLastUTCWeek)}
-          endDate={new Date(startOfUTCWeek)}
+          endDate={new Date(startOfUTCWeek - 1)}
         />
       </div>
     </div>
