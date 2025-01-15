@@ -9,6 +9,7 @@ import factions from "assets/icons/factions.webp";
 import { PortalMachineState } from "../../lib/cropsAndChickensMachine";
 import { SUNNYSIDE } from "assets/sunnyside";
 import trophy from "assets/icons/trophy.png";
+import crown from "assets/sfts/goblin_crown.png";
 import { SquareIcon } from "components/ui/SquareIcon";
 import { hasFeatureAccess } from "lib/flags";
 import letter from "assets/icons/letter.png";
@@ -109,6 +110,14 @@ export const CropsAndChickensHomeNavigationButtons: React.FC<Props> = ({
           onClick={() => setPage("achievements")}
         >
           <SquareIcon className="mt-0.5" icon={trophy} width={9} />
+        </Button>
+      )}
+      {hasBetaAccess && (
+        <Button
+          className="whitespace-nowrap capitalize w-[48px] h-[50px]"
+          onClick={() => setPage("leaderboard")}
+        >
+          <SquareIcon className="mt-0.5" icon={crown} width={8} />
         </Button>
       )}
       <Button

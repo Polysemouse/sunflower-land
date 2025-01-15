@@ -23,12 +23,14 @@ import { CropsAndChickensMailbox } from "./CropsAndChickensMailbox";
 import { CropsAndChickensMissions } from "./CropsAndChickensMissions";
 import { getHolidayAsset } from "../../lib/CropsAndChickensHolidayAsset";
 import { CropsAndChickensHomeNavigationButtons } from "./CropsAndChickensHomeNavigationButtons";
+import { CropsAndChickensLeaderboard } from "./CropsAndChickensLeaderboard";
 
 export type CropsAndChickensPage =
   | "main"
   | "mailbox"
   | "missions"
   | "achievements"
+  | "leaderboard"
   | "guide";
 
 const _minigame = (state: PortalMachineState) =>
@@ -163,6 +165,9 @@ export const CropsAndChickensHome: React.FC<Props> = ({
       )}
       {page === "achievements" && (
         <CropsAndChickensAchievementsList onBack={() => setPage("main")} />
+      )}
+      {page === "leaderboard" && (
+        <CropsAndChickensLeaderboard onBack={() => setPage("main")} />
       )}
       {page === "guide" && (
         <CropsAndChickensGuide onBack={() => setPage("main")} />

@@ -155,7 +155,7 @@ const getStartOfUTCDay = (date: Date) => {
  * @param date The date.
  * @returns The start of the UTC week for the given date.
  */
-const getStartOfUTCWeek = (date: Date) => {
+export const getStartOfUTCWeek = (date: Date) => {
   const startOfTodayUTC = getStartOfUTCDay(date);
   const dayOfWeek = date.getUTCDay();
   const startOfThisWeekUTC =
@@ -164,6 +164,11 @@ const getStartOfUTCWeek = (date: Date) => {
   return startOfThisWeekUTC;
 };
 
+/**
+ * Gets the end of the UTC week for a given date.  A week starts on Monday.
+ * @param date The date.
+ * @returns The end of the UTC week for the given date.
+ */
 export const getEndOfUTCWeek = (date: Date) => {
   const startOfThisWeekUTC = getStartOfUTCWeek(date);
   return startOfThisWeekUTC + 7 * 24 * 60 * 60 * 1000;

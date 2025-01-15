@@ -10,17 +10,15 @@ import { MinigameName } from "features/game/types/minigames";
 import { useAppTranslation } from "lib/i18n/useAppTranslations";
 import { getPortalLeaderboard } from "features/game/expansion/components/leaderboard/actions/leaderboard";
 import { Loading } from "features/auth/components/Loading";
-import { Label } from "components/ui/Label";
 import classNames from "classnames";
 import { toOrdinalSuffix } from "features/retreat/components/auctioneer/AuctionLeaderboardTable";
 import { NPCIcon } from "features/island/bumpkin/components/NPC";
-import { Button } from "components/ui/Button";
 
 export const PortalLeaderboard: React.FC<{
   name: MinigameName;
   farmId: number;
   jwt: string;
-  onBack: () => void;
+  onBack?: () => void;
   startDate?: Date;
   endDate?: Date;
   formatPoints?: (value: number) => string;
@@ -29,7 +27,7 @@ export const PortalLeaderboard: React.FC<{
   name,
   farmId,
   jwt,
-  onBack,
+  // onBack,
   startDate,
   endDate,
   formatPoints,
@@ -69,24 +67,24 @@ export const PortalLeaderboard: React.FC<{
   const { leaderboard, accumulators, miniboard, accumulatorMiniboard, player } =
     data;
   const items = (!!isAccumulator && accumulators?.slice(0, 10)) || leaderboard;
-  const title =
-    !!isAccumulator && accumulators?.length
-      ? t("competition.accumulator")
-      : t("competition.highscore");
+  // const title =
+  //   !!isAccumulator && accumulators?.length
+  //     ? t("competition.accumulator")
+  //     : t("competition.highscore");
   const miniboardItems =
     !!isAccumulator && accumulatorMiniboard?.length
       ? accumulatorMiniboard
       : miniboard;
   return (
     <>
-      <div className="p-1">
-        <div className="flex justify-between  items-center mb-2">
+      <div className="px-1">
+        {/* <div className="flex justify-between  items-center mb-2">
           <Label type="default" className="">
             {`${t("competition.leaderboard")} - ${title}`}
           </Label>
-        </div>
+        </div> */}
 
-        <p className="font-secondary text-xs my-2">{`${from} to ${endDate ? endDate.toISOString().substring(0, 10) : to}`}</p>
+        <p className="font-secondary text-xs mb-2">{`${from} - ${endDate ? endDate.toISOString().substring(0, 10) : to}`}</p>
 
         <CompetitionTable items={items} formatPoints={formatPoints} />
 
@@ -102,9 +100,9 @@ export const PortalLeaderboard: React.FC<{
         )}
       </div>
 
-      <Button className="mt-1" onClick={onBack}>
+      {/* <Button className="mt-1" onClick={onBack}>
         {t("back")}
-      </Button>
+      </Button> */}
     </>
   );
 };
