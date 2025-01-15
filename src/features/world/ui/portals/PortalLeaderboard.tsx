@@ -79,6 +79,7 @@ export const PortalLeaderboard: React.FC<{
       ? accumulatorMiniboard
       : miniboard;
 
+  const isCompleted = endDate && endDate.getTime() < Date.now();
   const secondsLeft = ((endDate ?? new Date()).getTime() - Date.now()) / 1000;
   const secondsLeftDisplay = secondsToString(secondsLeft, { length: "medium" });
 
@@ -93,9 +94,11 @@ export const PortalLeaderboard: React.FC<{
 
         <div className="flex flex-wrap justify-between items-center gap-1 mb-2">
           <Label type="default">{`${from} - ${endDate ? endDate.toISOString().substring(0, 10) : to}`}</Label>
-          <Label type="info" icon={SUNNYSIDE.icons.stopwatch}>
-            {secondsLeftDisplay}
-          </Label>
+          {!isCompleted && (
+            <Label type="info" icon={SUNNYSIDE.icons.stopwatch}>
+              {secondsLeftDisplay}
+            </Label>
+          )}
         </div>
 
         <CompetitionTable items={items} formatPoints={formatPoints} />

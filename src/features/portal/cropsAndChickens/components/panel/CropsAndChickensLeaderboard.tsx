@@ -28,8 +28,9 @@ export const CropsAndChickensLeaderboard: React.FC<Props> = ({ onBack }) => {
   const farmId = useSelector(portalService, _farmId);
   const jwt = useSelector(portalService, _jwt);
 
-  const startOfUTCWeekDate = new Date(getStartOfUTCWeek(new Date()));
-  const endOfUTCWeekDate = new Date(getEndOfUTCWeek(new Date()));
+  const startOfUTCWeek = getStartOfUTCWeek(new Date());
+  const endOfUTCWeek = getEndOfUTCWeek(new Date());
+  const startOfLastUTCWeek = startOfUTCWeek - 7 * 24 * 60 * 60 * 1000;
 
   const button = useSound("button");
 
@@ -78,14 +79,20 @@ export const CropsAndChickensLeaderboard: React.FC<Props> = ({ onBack }) => {
       </Label>
 
       {/* content */}
-      <div className="flex flex-col gap-1 overflow-y-auto scrollable p-1">
+      <div className="flex flex-col gap-10 overflow-y-auto scrollable p-1">
         <PortalLeaderboard
           name="crops-and-chickens"
           farmId={farmId}
           jwt={jwt}
-          startDate={startOfUTCWeekDate}
-          endDate={endOfUTCWeekDate}
-          onBack={() => undefined}
+          startDate={new Date(startOfUTCWeek)}
+          endDate={new Date(endOfUTCWeek)}
+        />
+        <PortalLeaderboard
+          name="crops-and-chickens"
+          farmId={farmId}
+          jwt={jwt}
+          startDate={new Date(startOfLastUTCWeek)}
+          endDate={new Date(startOfUTCWeek)}
         />
       </div>
     </div>
