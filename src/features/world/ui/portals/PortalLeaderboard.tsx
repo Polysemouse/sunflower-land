@@ -13,6 +13,9 @@ import { Loading } from "features/auth/components/Loading";
 import classNames from "classnames";
 import { toOrdinalSuffix } from "features/retreat/components/auctioneer/AuctionLeaderboardTable";
 import { NPCIcon } from "features/island/bumpkin/components/NPC";
+import { Label } from "components/ui/Label";
+import { SUNNYSIDE } from "assets/sunnyside";
+import { secondsToString } from "lib/utils/time";
 
 export const PortalLeaderboard: React.FC<{
   name: MinigameName;
@@ -75,6 +78,10 @@ export const PortalLeaderboard: React.FC<{
     !!isAccumulator && accumulatorMiniboard?.length
       ? accumulatorMiniboard
       : miniboard;
+
+  const secondsLeft = ((endDate ?? new Date()).getTime() - Date.now()) / 1000;
+  const secondsLeftDisplay = secondsToString(secondsLeft, { length: "medium" });
+
   return (
     <>
       <div>
@@ -84,7 +91,12 @@ export const PortalLeaderboard: React.FC<{
           </Label>
         </div> */}
 
-        <p className="font-secondary text-xs mb-2">{`${from} - ${endDate ? endDate.toISOString().substring(0, 10) : to}`}</p>
+        <div className="flex flex-wrap justify-between items-center gap-1 mb-2">
+          <Label type="default">{`${from} - ${endDate ? endDate.toISOString().substring(0, 10) : to}`}</Label>
+          <Label type="info" icon={SUNNYSIDE.icons.stopwatch}>
+            {secondsLeftDisplay}
+          </Label>
+        </div>
 
         <CompetitionTable items={items} formatPoints={formatPoints} />
 
