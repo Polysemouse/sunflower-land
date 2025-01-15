@@ -121,17 +121,12 @@ const AcceptOfferContent: React.FC<{
     hasItem = !!getChestBuds(state)[itemId];
   }
 
-  if (display.type === "resources") {
-    const name = KNOWN_ITEMS[itemId];
-    hasItem = !!getBasketItems(state.inventory)[name]?.gte(offer.quantity);
-  }
-
   const estTradePoints =
     offer.sfl === 0
       ? 0
       : calculateTradePoints({
           sfl: offer.sfl,
-          points: offer.type === "instant" ? 1 : 5,
+          points: offer.type === "instant" ? 1 : 3,
         }).multipliedPoints;
 
   if (needsSync) {
@@ -152,6 +147,8 @@ const AcceptOfferContent: React.FC<{
     bertObsession &&
     obsessionCompletedAt >= bertObsession.startDate &&
     obsessionCompletedAt <= bertObsession.endDate;
+
+  const isResource = display.type === "resources";
 
   return (
     <>
@@ -186,7 +183,8 @@ const AcceptOfferContent: React.FC<{
         </Button>
         <Button
           disabled={
-            !hasItem || (isItemBertObsession && isBertsObesessionCompleted)
+            !hasItem ||
+            (isItemBertObsession && isBertsObesessionCompleted && !isResource)
           }
           onClick={() => confirm()}
           className="relative"

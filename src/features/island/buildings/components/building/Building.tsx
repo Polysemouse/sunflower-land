@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useState } from "react";
+import React, { useContext, useEffect, useMemo, useState } from "react";
 
 import { BuildingName } from "features/game/types/buildings";
 import { Bar, ResizableBar } from "components/ui/ProgressBar";
@@ -7,7 +7,7 @@ import { PIXEL_SCALE } from "features/game/lib/constants";
 import { useSelector } from "@xstate/react";
 import { MoveableComponent } from "features/island/collectibles/MovableComponent";
 import { MachineState } from "features/game/lib/gameMachine";
-import { Context } from "features/game/GameProvider";
+import { Context, useGame } from "features/game/GameProvider";
 import { BUILDING_COMPONENTS, READONLY_BUILDINGS } from "./BuildingComponents";
 import { CookableName } from "features/game/types/consumables";
 import { GameState, IslandType } from "features/game/types/game";
@@ -23,6 +23,13 @@ import { Modal } from "components/ui/Modal";
 import confetti from "canvas-confetti";
 import { getInstantGems } from "features/game/events/landExpansion/speedUpRecipe";
 import { gameAnalytics } from "lib/gameAnalytics";
+import tornadoIcon from "assets/icons/tornado.webp";
+import tsunamiIcon from "assets/icons/tsunami.webp";
+import { secondsToString } from "lib/utils/time";
+import {
+  CalendarEventName,
+  getActiveCalenderEvent,
+} from "features/game/types/calendar";
 
 interface Prop {
   name: BuildingName;
@@ -134,6 +141,134 @@ const InProgressBuilding: React.FC<Prop> = ({
   );
 };
 
+const DESTROYED_BUILDING_ICONS: Record<CalendarEventName, string> = {
+  tornado: tornadoIcon,
+  tsunami: tsunamiIcon,
+};
+
+const DestroyedBuilding: React.FC<
+  Prop & { calendarEvent: CalendarEventName }
+> = ({
+  name,
+  id,
+  index,
+  readyAt,
+  createdAt,
+  showTimers,
+  island,
+  calendarEvent,
+}) => {
+  const { gameService, showAnimations } = useContext(Context);
+
+  const BuildingPlaced = BUILDING_COMPONENTS[name];
+
+  const { t } = useAppTranslation();
+
+  const [showModal, setShowModal] = useState(false);
+
+  const totalSeconds = (readyAt - createdAt) / 1000;
+  const secondsLeft = (readyAt - Date.now()) / 1000;
+
+  const game = gameService.getSnapshot().context.state;
+
+  return (
+    <>
+      <Modal show={showModal} onHide={() => setShowModal(false)}>
+        <CloseButtonPanel onClose={() => setShowModal(false)}>
+          <div className="p-2">
+            <Label
+              icon={DESTROYED_BUILDING_ICONS[calendarEvent]}
+              type="danger"
+              className="mb-1 -ml-1"
+            >
+              {t(calendarEvent)}
+            </Label>
+            <p className="text-sm">
+              {t(`${calendarEvent}.building.destroyed.description`)}
+            </p>
+            <Label
+              icon={SUNNYSIDE.icons.stopwatch}
+              type="transparent"
+              className="mt-2 ml-1"
+            >
+              {`Ready in: ${secondsToString(
+                24 * 60 * 60 -
+                  (Date.now() - game.calendar[calendarEvent]!.triggeredAt) /
+                    1000,
+                {
+                  length: "medium",
+                },
+              )}`}
+            </Label>
+          </div>
+        </CloseButtonPanel>
+      </Modal>
+
+      <div
+        className="w-full h-full cursor-pointer"
+        onClick={() => setShowModal(true)}
+      >
+        <div className="w-full h-full pointer-events-none">
+          <BuildingPlaced
+            buildingId={id}
+            buildingIndex={index}
+            island={island}
+          />
+        </div>
+        <img
+          src={DESTROYED_BUILDING_ICONS[calendarEvent]}
+          alt={calendarEvent}
+          className="absolute  right-0 pointer-events-none"
+          style={{
+            width: `${PIXEL_SCALE * 12}px`,
+            top: `${PIXEL_SCALE * -4}px`,
+          }}
+        />
+      </div>
+    </>
+  );
+};
+
+const DESTROYED_BUILDINGS: BuildingName[] = [
+  "Kitchen",
+  "Barn",
+  "Greenhouse",
+  "Crop Machine",
+  "Deli",
+];
+
+function isBuildingDestroyed({
+  name,
+  game,
+}: {
+  name: BuildingName;
+  game: GameState;
+}): CalendarEventName | false {
+  const calendarEvent = getActiveCalenderEvent({ game });
+
+  if (!calendarEvent) {
+    return false;
+  }
+
+  if (calendarEvent === "tornado") {
+    if (game.calendar.tornado?.protected) {
+      return false;
+    }
+  }
+
+  if (calendarEvent === "tsunami") {
+    if (game.calendar.tsunami?.protected) {
+      return false;
+    }
+  }
+
+  if (DESTROYED_BUILDINGS.includes(name)) {
+    return calendarEvent;
+  }
+
+  return false;
+}
+
 const BuildingComponent: React.FC<Prop> = ({
   name,
   id,
@@ -147,11 +282,35 @@ const BuildingComponent: React.FC<Prop> = ({
   y,
   island,
 }) => {
+  const { gameState } = useGame();
   const BuildingPlaced = BUILDING_COMPONENTS[name];
 
   const inProgress = readyAt > Date.now();
 
+  const destroyedBy = useMemo(
+    () => isBuildingDestroyed({ name, game: gameState.context.state }),
+    [gameState.context.state.calendar],
+  );
+
   useUiRefresher({ active: inProgress });
+
+  if (destroyedBy) {
+    return (
+      <DestroyedBuilding
+        key={id}
+        name={name}
+        id={id}
+        index={index}
+        readyAt={readyAt}
+        createdAt={createdAt}
+        showTimers={showTimers}
+        x={x}
+        y={y}
+        island={island}
+        calendarEvent={destroyedBy}
+      />
+    );
+  }
 
   return (
     <>

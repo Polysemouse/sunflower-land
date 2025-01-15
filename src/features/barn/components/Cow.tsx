@@ -15,6 +15,7 @@ import {
   getAnimalLevel,
   getBoostedFoodQuantity,
   isAnimalFood,
+  isAnimalMedicine,
 } from "features/game/lib/animals";
 import { SUNNYSIDE } from "assets/sunnyside";
 import classNames from "classnames";
@@ -108,6 +109,20 @@ export const Cow: React.FC<{ id: string; disabled: boolean }> = ({
   const [showMutantAnimalModal, setShowMutantAnimalModal] = useState(false);
 
   useEffect(() => {
+    if (
+      cow.state === "ready" &&
+      cow.awakeAt < Date.now() &&
+      cowMachineState !== "ready"
+    ) {
+      cowService.send({
+        type: "INSTANT_LEVEL_UP",
+        animal: cow,
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cow.state]);
+
+  useEffect(() => {
     if (cow.state === "sick" && cowMachineState !== "sick") {
       cowService.send({
         type: "SICK",
@@ -126,8 +141,8 @@ export const Cow: React.FC<{ id: string; disabled: boolean }> = ({
   const [showNotEnoughFood, setShowNotEnoughFood] = useState(false);
   const [showNoMedicine, setShowNoMedicine] = useState(false);
   // Sounds
-  const { play: playFeedAnimal } = useSound("feed_animal", true);
-  const { play: playCowCollect } = useSound("cow_collect", true);
+  const { play: playFeedAnimal } = useSound("feed_animal");
+  const { play: playCowCollect } = useSound("cow_collect");
   const { play: playProduceDrop } = useSound("produce_drop");
   const { play: playLevelUp } = useSound("level_up");
   const { play: playCureAnimal } = useSound("cure_animal");
@@ -138,6 +153,7 @@ export const Cow: React.FC<{ id: string; disabled: boolean }> = ({
   const ready = cowMachineState === "ready";
   const idle = cowMachineState === "idle";
   const sick = cowMachineState === "sick";
+  const sickAndSleeping = sleeping && cow.state === "sick";
 
   const requiredFoodQty = getBoostedFoodQuantity({
     animalType: "Cow",
@@ -242,7 +258,6 @@ export const Cow: React.FC<{ id: string; disabled: boolean }> = ({
     const hasEnoughMedicine = medicineCount.gte(1);
 
     if (hasEnoughMedicine) {
-      shortcutItem("Barn Delight");
       playCureAnimal();
       cureCow("Barn Delight");
       return;
@@ -280,7 +295,9 @@ export const Cow: React.FC<{ id: string; disabled: boolean }> = ({
 
     if (needsLove) return onLoveClick();
 
-    if (sick) return onSickClick();
+    const medicineSelected = selectedItem && isAnimalMedicine(selectedItem);
+
+    if (sick || (sickAndSleeping && medicineSelected)) return onSickClick();
 
     if (sleeping) {
       setShowWakesIn((prev) => !prev);
@@ -428,7 +445,7 @@ export const Cow: React.FC<{ id: string; disabled: boolean }> = ({
                 top: ANIMAL_EMOTION_ICONS[cowMachineState].top,
                 right: ANIMAL_EMOTION_ICONS[cowMachineState].right,
               }}
-              className="absolute"
+              className="absolute pointer-events-none"
             />
           )}
           {/* Request */}
@@ -439,6 +456,13 @@ export const Cow: React.FC<{ id: string; disabled: boolean }> = ({
               left={PIXEL_SCALE * 23}
               request={favFood}
               quantity={!hasGoldenCow ? requiredFoodQty : undefined}
+            />
+          )}
+          {sickAndSleeping && (
+            <RequestBubble
+              top={PIXEL_SCALE * 2}
+              left={PIXEL_SCALE * 23}
+              request="Barn Delight"
             />
           )}
           {sick && (

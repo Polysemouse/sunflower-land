@@ -288,6 +288,7 @@ export type BumpkinHat =
   | "Stormy Dumbo"
   | "Gloomy Dumbo"
   | "New Years Tiara"
+  | "New Years Crown"
   | "Beekeeper Hat"
   | "Propeller Hat"
   | "Hornet Mask"
@@ -890,6 +891,7 @@ export const ITEM_IDS: Record<BumpkinItem, number> = {
   "Adventurer's Torch": 418,
   "Pumpkin Head": 419,
   "Gingerbread Onesie": 420,
+  "New Years Crown": 421,
 };
 
 // The reverse of above
@@ -1371,4 +1373,71 @@ export const BUMPKIN_ITEM_PART: Record<BumpkinItem, keyof Wallet> = {
   "Adventurer's Torch": "tool",
   "Pumpkin Head": "hat",
   "Gingerbread Onesie": "onesie",
+  "New Years Crown": "hat",
 };
+
+/**Copied from BE just for hoarding checks */
+// Blonde and orange hair does not match all Bumpkin styles
+const DARK_SKIN_COMPATIBLE_BUMPKIN_HAIR: BumpkinHair[] = [
+  "Basic Hair",
+  "Explorer Hair",
+  "Buzz Cut",
+  "Parlour Hair",
+  "Sun Spots",
+  "Brown Long Hair",
+  "White Long Hair",
+];
+
+const ALLOWED_BUMPKIN_HAIR: BumpkinHair[] = [
+  "Rancher Hair",
+  "Blondie",
+  ...DARK_SKIN_COMPATIBLE_BUMPKIN_HAIR,
+];
+
+const ALLOWED_BUMPKIN_SHIRTS: BumpkinShirt[] = [
+  "Red Farmer Shirt",
+  "Blue Farmer Shirt",
+  "Yellow Farmer Shirt",
+];
+
+const ALLOWED_BUMPKIN_BODIES: BumpkinBody[] = [
+  "Beige Farmer Potion",
+  "Light Brown Farmer Potion",
+  "Dark Brown Farmer Potion",
+];
+
+const ALLOWED_BUMPKIN_PANTS: BumpkinPant[] = [
+  "Farmer Pants",
+  "Farmer Overalls",
+  "Lumberjack Overalls",
+  "Brown Suspenders",
+  "Blue Suspenders",
+];
+
+const ALLOWED_BUMPKIN_BOOTS: BumpkinShoe[] = [
+  "Black Farmer Boots",
+  "Brown Boots",
+  "Yellow Boots",
+];
+
+const ALLOWED_BUMPKIN_TOOLS: BumpkinTool[] = [
+  "Farmer Pitchfork",
+  "Axe",
+  "Sword",
+];
+
+const ALLOWED_BACKGROUNDS: BumpkinBackground[] = [
+  "Farm Background",
+  "Forest Background",
+  "Seashore Background",
+];
+
+export const ALLOWED_BUMPKIN_ITEMS: BumpkinItem[] = [
+  ...ALLOWED_BUMPKIN_HAIR,
+  ...ALLOWED_BUMPKIN_SHIRTS,
+  ...ALLOWED_BUMPKIN_BODIES,
+  ...ALLOWED_BUMPKIN_PANTS,
+  ...ALLOWED_BUMPKIN_BOOTS,
+  ...ALLOWED_BUMPKIN_TOOLS,
+  ...ALLOWED_BACKGROUNDS,
+];

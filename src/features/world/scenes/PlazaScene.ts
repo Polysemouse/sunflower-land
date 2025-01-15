@@ -13,6 +13,7 @@ import { FactionName, GameState } from "features/game/types/game";
 import { translate } from "lib/i18n/translate";
 import { hasFeatureAccess } from "lib/flags";
 import { getBumpkinHoliday } from "lib/utils/getSeasonWeek";
+import { DogContainer } from "../containers/DogContainer";
 
 export type FactionNPC = {
   npc: NPCName;
@@ -102,6 +103,10 @@ export class PlazaScene extends BaseScene {
     [sessionId: string]: PlaceableContainer;
   } = {};
 
+  dogs: {
+    [sessionId: string]: DogContainer;
+  } = {};
+
   public arrows: Phaser.GameObjects.Sprite | undefined;
 
   constructor({ gameState }: { gameState: GameState }) {
@@ -174,7 +179,7 @@ export class PlazaScene extends BaseScene {
     });
 
     this.load.image("chest", "world/rare_chest.png");
-    this.load.image("trading_board", "world/trading_board.png");
+    this.load.image("weather_shop", "world/weather_shop.webp");
 
     this.load.image("basic_chest", "world/basic_chest.png");
     this.load.image("luxury_chest", "world/luxury_chest.png");
@@ -194,6 +199,16 @@ export class PlazaScene extends BaseScene {
     this.load.spritesheet("glint", "world/glint.png", {
       frameWidth: 7,
       frameHeight: 7,
+    });
+
+    this.load.spritesheet("dog_1", "world/dog_sheet_1.webp", {
+      frameWidth: 22,
+      frameHeight: 18,
+    });
+
+    this.load.spritesheet("dog_2", "world/dog_sheet_2.webp", {
+      frameWidth: 22,
+      frameHeight: 18,
     });
 
     super.preload();
@@ -221,26 +236,14 @@ export class PlazaScene extends BaseScene {
   async create() {
     super.create();
 
-    const tradingBoard = this.add.sprite(725, 260, "trading_board");
-    tradingBoard.setInteractive({ cursor: "pointer" }).on("pointerdown", () => {
-      if (this.checkDistanceToSprite(tradingBoard, 75)) {
-        interactableModalManager.open("trading_board");
+    const weatherShop = this.add.sprite(728, 250, "weather_shop");
+    weatherShop.setInteractive({ cursor: "pointer" }).on("pointerdown", () => {
+      if (this.checkDistanceToSprite(weatherShop, 75)) {
+        interactableModalManager.open("weather_shop");
       } else {
         this.currentPlayer?.speak(translate("base.iam.far.away"));
       }
     });
-
-    const tradingBoardIcon = this.add.sprite(745, 240, "trade_icon");
-    tradingBoardIcon
-      .setInteractive({ cursor: "pointer" })
-      .on("pointerdown", () => {
-        if (this.checkDistanceToSprite(tradingBoardIcon, 75)) {
-          interactableModalManager.open("trading_board");
-        } else {
-          this.currentPlayer?.speak(translate("base.iam.far.away"));
-        }
-      });
-    tradingBoardIcon.setDepth(1000000);
 
     let bumpkins = PLAZA_BUMPKINS;
 
@@ -664,6 +667,51 @@ export class PlazaScene extends BaseScene {
     });
   }
 
+  public addDog(id: 1 | 2, x: number, y: number, onPatted: () => void) {
+    const dogContainer = new DogContainer(this, x, y, id, onPatted);
+    this.dogs[id] = dogContainer;
+  }
+
+  public updateDogs() {
+    const server = this.mmoServer;
+    if (!server) return;
+
+    server.state.dogs.forEach((dog) => {
+      const dogContainer = this.dogs[dog.id];
+      if (!dogContainer) {
+        this.addDog(dog.id, dog.x, dog.y, () => {
+          server.send("pat_dog", {
+            action: "pat_dog",
+            id: dog.id,
+          });
+        });
+        return;
+      }
+
+      if (dogContainer) {
+        const distance = Math.sqrt(
+          (dogContainer.x - dog.x) ** 2 + (dogContainer.y - dog.y) ** 2,
+        );
+        if (distance > 2) {
+          if (dog.x > dogContainer.x) {
+            dogContainer.faceRight();
+          } else if (dog.x < dogContainer.x) {
+            dogContainer.faceLeft();
+          }
+
+          dogContainer.walk();
+        } else {
+          dogContainer.idle();
+        }
+
+        dogContainer.x = Phaser.Math.Linear(dogContainer.x, dog.x, 0.05);
+        dogContainer.y = Phaser.Math.Linear(dogContainer.y, dog.y, 0.05);
+
+        dogContainer.setDepth(dogContainer.y);
+      }
+    });
+  }
+
   public update() {
     super.update();
     this.syncPlaceables();
@@ -671,5 +719,7 @@ export class PlazaScene extends BaseScene {
     if (this.movementAngle && this.arrows) {
       this.arrows.setVisible(false);
     }
+
+    this.updateDogs();
   }
 }

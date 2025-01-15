@@ -108,7 +108,7 @@ export const Settings: React.FC<Props> = ({ isFarming }) => {
       <div
         key={`button-${index}`}
         onClick={onClick}
-        className="absolute z-50 mb-2 cursor-pointer hover:img-highlight"
+        className="absolute z-50 mb-2 cursor-pointer hover:img-highlight group"
         style={{
           width: `${buttonWidth}px`,
           height: `${buttonHeight}px`,
@@ -120,13 +120,20 @@ export const Settings: React.FC<Props> = ({ isFarming }) => {
         }}
       >
         <img
-          src={SUNNYSIDE.ui.round_button}
+          src={SUNNYSIDE.ui.round_button_pressed}
           className="absolute"
           style={{
             width: `${buttonWidth}px`,
           }}
         />
-        {children}
+        <img
+          src={SUNNYSIDE.ui.round_button}
+          className="absolute group-active:hidden"
+          style={{
+            width: `${buttonWidth}px`,
+          }}
+        />
+        <div className="group-active:translate-y-[2px]">{children}</div>
       </div>
     );
   };

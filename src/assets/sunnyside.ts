@@ -54,6 +54,7 @@ export const SUNNYSIDE = {
 
   //Announcement
   announcement: {
+    tornado: `${CONFIG.PROTECTED_IMAGE_URL}/announcements/tornado.png`,
     springPrestige: `${CONFIG.PROTECTED_IMAGE_URL}/announcements/spring_prestige.png`,
     desertPrestige: `${CONFIG.PROTECTED_IMAGE_URL}/announcements/desert_prestige.png`,
     desert_digging: `${CONFIG.PROTECTED_IMAGE_URL}/announcements/desert.webp`,
@@ -673,6 +674,7 @@ export const SUNNYSIDE = {
     add_button: `${CONFIG.PROTECTED_IMAGE_URL}/ui/add-button.png`,
     cursor: `${CONFIG.PROTECTED_IMAGE_URL}/ui/cursor.png`,
     round_button: `${CONFIG.PROTECTED_IMAGE_URL}/ui/round_button.png`,
+    round_button_pressed: `${CONFIG.PROTECTED_IMAGE_URL}/ui/round_button_pressed.png`,
     select_box: `${CONFIG.PROTECTED_IMAGE_URL}/ui/select_box.png`,
     green_bar_0: `${CONFIG.PROTECTED_IMAGE_URL}/ui/greenbar_00.png`,
     green_bar_1: `${CONFIG.PROTECTED_IMAGE_URL}/ui/greenbar_01.png`,
@@ -683,6 +685,7 @@ export const SUNNYSIDE = {
     green_bar_6: `${CONFIG.PROTECTED_IMAGE_URL}/ui/greenbar_06.png`,
     dot: `${CONFIG.PROTECTED_IMAGE_URL}/ui/select_dots.png`,
     primaryButton: `${CONFIG.PROTECTED_IMAGE_URL}/ui/light_button.png`,
+    primaryButtonPressed: `${CONFIG.PROTECTED_IMAGE_URL}/ui/light_button_pressed.png`,
     greyButton: `${CONFIG.PROTECTED_IMAGE_URL}/ui/grey_button.png`,
     site_bg: `${CONFIG.PROTECTED_IMAGE_URL}/ui/site_bg.png`,
     more: `${CONFIG.PROTECTED_IMAGE_URL}/ui/more.png`,
@@ -728,6 +731,9 @@ export const SUNNYSIDE = {
     progressBarBorder: `${CONFIG.PROTECTED_IMAGE_URL}/ui/progress/progress_bar_border.png`,
     transparentBarEdge: `${CONFIG.PROTECTED_IMAGE_URL}/ui/progress/transparent_bar_edge.png`,
     transparentBarLong: `${CONFIG.PROTECTED_IMAGE_URL}/ui/progress/transparent_bar_long.png`,
+    // Toggle
+    turn_off: `${CONFIG.PROTECTED_IMAGE_URL}/ui/toggle/turn_off.png`,
+    turn_on: `${CONFIG.PROTECTED_IMAGE_URL}/ui/toggle/turn_on.png`,
   },
   //Decorations
   decorations: {

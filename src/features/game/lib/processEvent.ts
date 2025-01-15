@@ -1,7 +1,12 @@
 import Decimal from "decimal.js-light";
 import { EVENTS, GameEvent } from "../events";
 import { FOODS, getKeys } from "../types/craftables";
-import { GameState, Inventory, InventoryItemName } from "../types/game";
+import {
+  GameState,
+  Inventory,
+  InventoryItemName,
+  Wardrobe,
+} from "../types/game";
 import { SKILL_TREE } from "../types/skills";
 import { Announcements } from "../types/announcements";
 import { EXOTIC_CROPS } from "../types/beans";
@@ -14,8 +19,10 @@ import {
 import { getActiveListedItems } from "features/island/hud/components/inventory/utils/inventory";
 import { KNOWN_IDS } from "../types";
 import { ANIMAL_FOODS } from "../types/animals";
+import { BumpkinItem, ITEM_IDS } from "../types/bumpkin";
+import { MaxedItem } from "./gameMachine";
 
-export const MAX_ITEMS: Inventory = {
+export const MAX_INVENTORY_ITEMS: Inventory = {
   Sunflower: new Decimal(30000),
   Potato: new Decimal(20000),
   Pumpkin: new Decimal(16000),
@@ -131,7 +138,7 @@ export const MAX_ITEMS: Inventory = {
   "Primula Enigma": new Decimal(80),
 
   Sunstone: new Decimal(20),
-  Crimstone: new Decimal(100),
+  Crimstone: new Decimal(500),
   Gold: new Decimal(400),
   Iron: new Decimal(800),
   Stone: new Decimal(1600),
@@ -304,6 +311,8 @@ export const MAX_ITEMS: Inventory = {
     {},
   ),
 
+  "Basic Bear": new Decimal(1000),
+
   // Max of 100 fish
   ...(Object.keys(FISH) as (FishName | MarineMarvelName)[]).reduce(
     (acc, name) => ({
@@ -349,6 +358,258 @@ export const MAX_ITEMS: Inventory = {
     {},
   ),
 };
+/**
+ * Add wearable into array if it requires a hoard limit
+ * The hoard limit number will be set in MAX_WEARABLES to 100
+ * If the Hoard limit needs to be set more than 100, please set it in MAX_WEARABLES
+ */
+export const MAX_BUMPKIN_WEARABLES: BumpkinItem[] = [
+  "Knight Gambit",
+  "Royal Braids",
+  "Bumpkin Armor",
+  "Bumpkin Helmet",
+  "Bumpkin Sword",
+  "Bumpkin Pants",
+  "Bumpkin Sabatons",
+  "Bumpkin Crown",
+  "Bumpkin Shield",
+  "Bumpkin Quiver",
+  "Bumpkin Medallion",
+  "Goblin Armor",
+  "Goblin Helmet",
+  "Goblin Pants",
+  "Goblin Sabatons",
+  "Goblin Axe",
+  "Goblin Crown",
+  "Goblin Shield",
+  "Goblin Quiver",
+  "Goblin Medallion",
+  "Sunflorian Armor",
+  "Sunflorian Sword",
+  "Sunflorian Helmet",
+  "Sunflorian Pants",
+  "Sunflorian Sabatons",
+  "Sunflorian Crown",
+  "Sunflorian Shield",
+  "Sunflorian Quiver",
+  "Sunflorian Medallion",
+  "Nightshade Armor",
+  "Nightshade Helmet",
+  "Nightshade Pants",
+  "Nightshade Sabatons",
+  "Nightshade Sword",
+  "Nightshade Crown",
+  "Nightshade Shield",
+  "Nightshade Quiver",
+  "Nightshade Medallion",
+  "Crimstone Armor",
+  "Daisy Tee",
+  "Beekeeper Suit",
+  "Beehive Staff",
+  "Blue Monarch Dress",
+  "Blue Monarch Shirt",
+  "Bee Wings",
+  "Beekeeper Hat",
+  "Queen Bee Crown",
+  "Bee Smoker",
+  "Gardening Overalls",
+  "Orange Monarch Dress",
+  "Orange Monarch Shirt",
+  "Full Bloom Shirt",
+  "Wellies",
+  "Royal Robe",
+  "Crown",
+  "Butterfly Wings",
+  "Olive Royalty Shirt",
+  "Mushroom Sweater",
+  "Crimstone Pants",
+  "Mushroom Shield",
+  "Mushroom Shoes",
+  "Crimstone Boots",
+  "Amber Amulet",
+  "Explorer Shirt",
+  "Crab Trap",
+  "Water Gourd",
+  "Ankh Shirt",
+  "Explorer Shorts",
+  "Explorer Hat",
+  "Desert Camel Background",
+  "Rock Hammer",
+  "Painter's Cap",
+  "Festival of Colors Background",
+  "Pixel Perfect Hoodie",
+  "Gift Giver",
+  "Soybean Onesie",
+  "Seedling Hat",
+  "Pumpkin Hat",
+  "Victorian Hat",
+  "Bat Wings",
+  "Fruit Bowl",
+  "Fruit Picker Apron",
+  "Fruit Picker Shirt",
+  "Wise Beard",
+  "Wise Robes",
+  "Pink Ponytail",
+  "Tattered Jacket",
+  "Greyed Glory",
+  "Love's Topper",
+  "Valentine's Field Background",
+  "Fox Hat",
+  "Grape Pants",
+  "Chicken Hat",
+  "Pale Potion",
+  "Lucky Red Hat",
+  "Lucky Red Suit",
+  "Banana Onesie",
+  "Straw Hat",
+  "Beige Farmer Potion",
+  "Light Brown Farmer Potion",
+  "Dark Brown Farmer Potion",
+  "Goblin Potion",
+  "Red Farmer Shirt",
+  "Blue Farmer Shirt",
+  "Yellow Farmer Shirt",
+  "Farmer Pants",
+  "Farmer Overalls",
+  "Lumberjack Overalls",
+  "Rancher Hair",
+  "Brown Rancher Hair",
+  "Explorer Hair",
+  "Buzz Cut",
+  "Witch's Broom",
+  "Witching Wardrobe",
+  "Infernal Bumpkin Potion",
+  "Infernal Goblin Potion",
+  "Ox Costume",
+  "Peg Leg",
+  "Pirate Potion",
+  "Pirate Hat",
+  "SFL T-Shirt",
+  "Merch Bucket Hat",
+  "Merch Coffee Mug",
+  "Merch Hoodie",
+  "Merch Tee",
+  "Witches' Eve Tee",
+  "Grey Merch Hoodie",
+  "Dawn Breaker Tee",
+  "Crow Wings",
+  "Halo",
+  "Imp Costume",
+  "Kama",
+  "Birthday Hat",
+  "Streamer Helmet",
+  "Double Harvest Cap",
+  "Potato Suit",
+  "Parsnip Horns",
+  "Unicorn Horn",
+  "Unicorn Hat",
+  "Pumpkin Shirt",
+  "Skull Shirt",
+  "Farm Background",
+  "Black Farmer Boots",
+  "Farmer Pitchfork",
+  "Project Dignity Hoodie",
+  "Valoria Wreath",
+  "Earn Alliance Sombrero",
+  "Ugly Christmas Sweater",
+  "Corn Onesie",
+  "Sunflower Rod",
+  "Bucket O' Worms",
+  "Angler Waders",
+  "Trident",
+  "Fishing Hat",
+  "Luminous Anglerfish Topper",
+  "Clown Shirt",
+  "Fresh Catch Vest",
+  "Skinning Knife",
+  "Koi Fish Hat",
+  "Normal Fish Hat",
+  "Tiki Armor",
+  "Fishing Pants",
+  "Seaside Tank Top",
+  "Fish Pro Vest",
+  "Tiki Mask",
+  "Fishing Spear",
+  "Stockeye Salmon Onesie",
+  "Reel Fishing Vest",
+  "Tiki Pants",
+  "Companion Cap",
+  "Elf Hat",
+  "Elf Suit",
+  "Santa Beard",
+  "Santa Suit",
+  "New Years Tiara",
+  "New Years Crown",
+  "Deep Sea Helm",
+  "Bee Suit",
+  "Blue Blossom Shirt",
+  "Fairy Sandals",
+  "Propeller Hat",
+  "Green Monarch Dress",
+  "Green Monarch Shirt",
+  "Rose Dress",
+  "Blue Rose Dress",
+  "Striped Blue Shirt",
+  "Striped Red Shirt",
+  "Striped Yellow Shirt",
+  "Tofu Mask",
+  "Queen's Crown",
+  "Cap n Bells",
+  "Motley",
+  "Royal Dress",
+  "Pharaoh Headdress",
+  "Camel Onesie",
+  "Sun Scarab Amulet",
+  "Oil Protection Hat",
+  "Desert Merchant Turban",
+  "Desert Merchant Shoes",
+  "Desert Merchant Suit",
+  "Bionic Drill",
+  "Pumpkin Plaza Background",
+  "Goblin Retreat Background",
+  "Kingdom Background",
+  "Elf Potion",
+  "Scarab Wings",
+  "Gam3s Cap",
+  "Cowboy Hat",
+  "Cowboy Shirt",
+  "Cowboy Trouser",
+  "Cowgirl Skirt",
+  "Dream Scarf",
+  "Milk Apron",
+  "White Sheep Onesie",
+  "Adventurer's Suit",
+  "Adventurer's Torch",
+  "Pumpkin Head",
+  "Candy Cane",
+  "Gingerbread Onesie",
+  "Blondie",
+  "Basic Hair",
+  "Parlour Hair",
+  "Sun Spots",
+  "Brown Long Hair",
+  "White Long Hair",
+  "Brown Suspenders",
+  "Blue Suspenders",
+  "Brown Boots",
+  "Yellow Boots",
+  "Axe",
+  "Sword",
+  "Forest Background",
+  "Seashore Background",
+];
+
+// Set all Wearable hoard limit to 110
+export const MAX_WEARABLES: Wardrobe = {
+  ...MAX_BUMPKIN_WEARABLES.reduce(
+    (acc, name) => ({
+      ...acc,
+      [name]: 100,
+    }),
+    {},
+  ),
+  "Basic Hair": 1000,
+};
 
 /**
  * Humanly possible SFL in a single session
@@ -357,7 +618,7 @@ export const MAX_SESSION_SFL = 255;
 
 export function checkProgress({ state, action, farmId }: ProcessEventArgs): {
   valid: boolean;
-  maxedItem?: InventoryItemName | "SFL";
+  maxedItem?: MaxedItem;
 } {
   let newState: GameState;
 
@@ -369,8 +630,17 @@ export function checkProgress({ state, action, farmId }: ProcessEventArgs): {
   }
 
   const auctionSFL = newState.auctioneer.bid?.sfl ?? new Decimal(0);
+
+  const offerSFL = Object.values(newState.trades.offers ?? {}).reduce(
+    (acc, offer) => {
+      return acc.add(offer.sfl);
+    },
+    new Decimal(0),
+  );
+
   const progress = newState.balance
     .add(auctionSFL)
+    .add(offerSFL)
     .sub(newState.previousBalance ?? new Decimal(0));
 
   /**
@@ -381,15 +651,18 @@ export function checkProgress({ state, action, farmId }: ProcessEventArgs): {
     return { valid: false, maxedItem: "SFL" };
   }
 
-  let maxedItem: InventoryItemName | undefined = undefined;
+  let maxedItem: InventoryItemName | BumpkinItem | undefined = undefined;
 
-  const inventory = newState.inventory;
+  const { inventory, wardrobe } = newState;
   const auctionBid = newState.auctioneer.bid?.ingredients ?? {};
 
   const listedItems = getActiveListedItems(newState);
   const listedInventoryItemNames = getKeys(listedItems).filter(
     (name) => name in KNOWN_IDS,
   ) as InventoryItemName[];
+  const listedWardrobeItemNames = getKeys(listedItems).filter(
+    (name) => name in ITEM_IDS,
+  ) as BumpkinItem[];
 
   // Check inventory amounts
   const validProgress = getKeys(inventory)
@@ -408,52 +681,84 @@ export function checkProgress({ state, action, farmId }: ProcessEventArgs): {
         .add(listingAmount)
         .minus(previousInventoryAmount);
 
-      const max = MAX_ITEMS[name] || new Decimal(0);
+      const max = MAX_INVENTORY_ITEMS[name] ?? new Decimal(0);
 
       if (max.eq(0)) return true;
-
       if (diff.gt(max)) {
         maxedItem = name;
-
         return false;
       }
 
       return true;
     });
 
-  return { valid: validProgress, maxedItem };
+  if (!validProgress) return { valid: validProgress, maxedItem };
+
+  // Check wardrobe amounts
+  const validWardrobeProgress = getKeys(wardrobe)
+    .concat(listedWardrobeItemNames)
+    .every((name) => {
+      const wardrobeAmount = wardrobe[name] ?? 0;
+      const listedAmount = listedItems[name] ?? 0;
+
+      const previousWardrobeAmount = newState.previousWardrobe[name] || 0;
+
+      const diff = wardrobeAmount + listedAmount - previousWardrobeAmount;
+
+      const max = MAX_WEARABLES[name] || 0;
+
+      if (max === 0) return true;
+      if (diff > max) {
+        maxedItem = name;
+        return false;
+      }
+
+      return true;
+    });
+
+  return { valid: validWardrobeProgress, maxedItem };
 }
 
 export function hasMaxItems({
-  current,
-  old,
+  currentInventory,
+  oldInventory,
+  currentWardrobe,
+  oldWardrobe,
 }: {
-  current: Inventory;
-  old: Inventory;
+  currentInventory: Inventory;
+  oldInventory: Inventory;
+  currentWardrobe: Wardrobe;
+  oldWardrobe: Wardrobe;
 }) {
-  let maxedItem: InventoryItemName | undefined = undefined;
-
   // Check inventory amounts
-  const validProgress = getKeys(current).every((name) => {
-    const oldAmount = old[name] || new Decimal(0);
-
-    const diff = current[name]?.minus(oldAmount) || new Decimal(0);
-
-    const max = MAX_ITEMS[name] || new Decimal(0);
+  const validInventoryProgress = getKeys(currentInventory).every((name) => {
+    const oldAmount = oldInventory[name] || new Decimal(0);
+    const diff = currentInventory[name]?.minus(oldAmount) || new Decimal(0);
+    const max = MAX_INVENTORY_ITEMS[name] || new Decimal(0);
 
     if (max.eq(0)) return true;
-
-    if (diff.gt(max)) {
-      maxedItem = name;
-
-      return false;
-    }
+    if (diff.gt(max)) return false;
 
     return true;
   });
 
-  return !validProgress;
+  if (!validInventoryProgress) return true;
+
+  // Check wardrobe amounts
+  const validWardrobeProgress = getKeys(currentWardrobe).every((name) => {
+    const oldAmount = oldWardrobe[name] || 0;
+    const diff = (currentWardrobe[name] ?? 0) - oldAmount;
+    const max = MAX_WEARABLES[name] || 0;
+
+    if (max === 0) return true;
+    if (diff > max) return false;
+
+    return true;
+  });
+
+  return !validWardrobeProgress;
 }
+
 type ProcessEventArgs = {
   state: GameState;
   action: GameEvent;

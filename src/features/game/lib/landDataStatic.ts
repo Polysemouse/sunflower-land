@@ -30,6 +30,35 @@ export const INITIAL_RESOURCES: Pick<
       y: 0,
       height: 1,
       width: 1,
+      crop: {
+        amount: 1,
+        name: "Cabbage",
+        plantedAt: 100,
+      },
+    },
+    2: {
+      createdAt: Date.now(),
+      x: -1,
+      y: 0,
+      height: 1,
+      width: 1,
+      crop: {
+        amount: 1,
+        name: "Cabbage",
+        plantedAt: 100,
+      },
+    },
+    3: {
+      createdAt: Date.now(),
+      x: -3,
+      y: 0,
+      height: 1,
+      width: 1,
+      crop: {
+        amount: 1,
+        name: "Cabbage",
+        plantedAt: 100,
+      },
     },
   },
   trees: {
@@ -227,6 +256,14 @@ export const STATIC_OFFLINE_FARM: GameState = {
     pots: {},
     oil: 50,
   },
+  calendar: {
+    dates: [
+      {
+        name: "tornado",
+        date: new Date().toISOString().substring(0, 10),
+      },
+    ],
+  },
   faction: {
     name: "goblins",
     history: {},
@@ -372,6 +409,14 @@ export const STATIC_OFFLINE_FARM: GameState = {
       },
     },
   },
+  competitions: {
+    progress: {
+      ANIMALS: {
+        initialProgress: {},
+        startedAt: 100000,
+      },
+    },
+  },
   chores: {
     choresCompleted: 0,
     choresSkipped: 0,
@@ -446,6 +491,11 @@ export const STATIC_OFFLINE_FARM: GameState = {
     },
   },
   inventory: {
+    "Orange Seed": new Decimal(10),
+    "Lemon Seed": new Decimal(10),
+    "Tomato Seed": new Decimal(10),
+    "Blueberry Seed": new Decimal(10),
+    "Banana Plant": new Decimal(10),
     "Golden Cow": new Decimal(1),
     "Trade Point": new Decimal(500),
     "Fairy Circle": new Decimal(1),

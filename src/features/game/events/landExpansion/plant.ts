@@ -42,6 +42,10 @@ import { isGreenhouseCrop } from "./plantGreenhouse";
 import { FACTION_ITEMS } from "features/game/lib/factions";
 import { produce } from "immer";
 import { hasFeatureAccess } from "lib/flags";
+import {
+  CalendarEventName,
+  getActiveCalenderEvent,
+} from "features/game/types/calendar";
 
 export type LandExpansionPlantAction = {
   type: "seed.planted";
@@ -94,6 +98,16 @@ export const getEnabledWellCount = (
   return enabledWells;
 };
 
+function isCropDestroyed({ id, game }: { id: string; game: GameState }) {
+  // Sort oldest to newest
+  const crops = getKeys(game.crops).sort((a, b) =>
+    game.crops[b].createdAt > game.crops[a].createdAt ? -1 : 1,
+  );
+  const cropsToRemove = crops.slice(0, Math.floor(crops.length / 2));
+
+  return cropsToRemove.includes(id);
+}
+
 export function isPlotFertile({
   plotIndex,
   crops,
@@ -115,6 +129,34 @@ export function isPlotFertile({
       .findIndex((plotId) => plotId === plotIndex) + 1;
 
   return cropPosition <= cropsWellCanWater;
+}
+
+export function getAffectedWeather({
+  id,
+  game,
+}: {
+  id: string;
+  game: GameState;
+}): CalendarEventName | undefined {
+  const weather = getActiveCalenderEvent({ game });
+
+  if (
+    weather === "tornado" &&
+    !game.calendar.tornado?.protected &&
+    isCropDestroyed({ id, game })
+  ) {
+    return "tornado";
+  }
+
+  if (
+    game.calendar.tsunami?.triggeredAt &&
+    !game.calendar.tsunami?.protected &&
+    isCropDestroyed({ id, game })
+  ) {
+    return "tsunami";
+  }
+
+  return undefined;
 }
 
 /**
