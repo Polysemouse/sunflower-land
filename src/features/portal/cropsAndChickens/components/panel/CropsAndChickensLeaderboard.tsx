@@ -12,6 +12,7 @@ import {
   getEndOfUTCWeek,
   getStartOfUTCWeek,
 } from "../../lib/cropsAndChickensUtils";
+import { Label } from "components/ui/Label";
 
 type Props = {
   onBack: () => void;
@@ -69,6 +70,12 @@ export const CropsAndChickensLeaderboard: React.FC<Props> = ({ onBack }) => {
           </div>
         </div>
       </div>
+
+      <Label type="danger">
+        {
+          "NOTE: The leaderboard display is currently only visible for beta testers."
+        }
+      </Label>
 
       {/* content */}
       <PortalLeaderboard
