@@ -15,7 +15,8 @@ import { toOrdinalSuffix } from "features/retreat/components/auctioneer/AuctionL
 import { NPCIcon } from "features/island/bumpkin/components/NPC";
 import { Label } from "components/ui/Label";
 import { SUNNYSIDE } from "assets/sunnyside";
-import { secondsToString } from "lib/utils/time";
+import { getRelativeTime, secondsToString } from "lib/utils/time";
+import useUiRefresher from "lib/utils/hooks/useUiRefresher";
 
 export const PortalLeaderboard: React.FC<{
   name: MinigameName;
@@ -36,6 +37,8 @@ export const PortalLeaderboard: React.FC<{
   formatPoints,
   isAccumulator,
 }) => {
+  useUiRefresher();
+
   const [data, setData] = useState<CompetitionLeaderboardResponse>();
 
   const formatDate = (date: Date) => date.toISOString().substring(0, 10);
@@ -90,8 +93,14 @@ export const PortalLeaderboard: React.FC<{
       </div>
     );
 
-  const { leaderboard, accumulators, miniboard, accumulatorMiniboard, player } =
-    data;
+  const {
+    leaderboard,
+    accumulators,
+    miniboard,
+    accumulatorMiniboard,
+    player,
+    lastUpdated,
+  } = data;
   const items = (!!isAccumulator && accumulators?.slice(0, 10)) || leaderboard;
   // const title =
   //   !!isAccumulator && accumulators?.length
@@ -125,6 +134,10 @@ export const PortalLeaderboard: React.FC<{
             />
           </>
         )}
+
+        <p className="font-secondary text-xs mt-1">
+          {t("last.updated")} {getRelativeTime(lastUpdated)}
+        </p>
       </div>
 
       {/* <Button className="mt-1" onClick={onBack}>

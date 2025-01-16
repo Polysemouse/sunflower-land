@@ -87,6 +87,7 @@ import { AnimalBuildingLevel } from "../events/landExpansion/upgradeBuilding";
 import { SeasonalCollectibleName } from "./megastore";
 import { TradeFood } from "../events/landExpansion/redeemTradeReward";
 import { CalendarEvent, CalendarEventName } from "./calendar";
+import { VipBundle } from "../lib/vipAccess";
 
 export type Reward = {
   coins?: number;
@@ -1293,6 +1294,34 @@ export type Season = {
   season: TemperateSeasonName;
 };
 
+type BaseCalendarEventDetails = {
+  date: string;
+  weather?: boolean;
+};
+
+type CalendarScheduledEvent = BaseCalendarEventDetails & {
+  name: "calendar";
+  title: string;
+  description: string;
+};
+
+type OtherCalendarEvent = BaseCalendarEventDetails & {
+  name: Exclude<CalendarEventName, "calendar">;
+};
+
+export type CalendarEventDetails = CalendarScheduledEvent | OtherCalendarEvent;
+
+export type Calendar = {
+  dates: CalendarEventDetails[];
+  tornado?: CalendarEvent;
+  tsunami?: CalendarEvent;
+  fullMoon?: CalendarEvent;
+  vip?: {
+    bundles: { name: VipBundle; boughtAt: number }[];
+    expiresAt: number;
+  };
+};
+
 export interface GameState {
   home: Home;
   bank: Bank;
@@ -1305,13 +1334,11 @@ export interface GameState {
     progress: Partial<Record<CompetitionName, CompetitionProgress>>;
   };
 
-  calendar: {
-    dates: { name: CalendarEventName; date: string }[];
-
-    tornado?: CalendarEvent;
-    tsunami?: CalendarEvent;
+  calendar: Calendar;
+  vip?: {
+    bundles: { name: VipBundle; boughtAt: number }[];
+    expiresAt: number;
   };
-
   shipments: {
     restockedAt?: number;
   };

@@ -298,6 +298,14 @@ export const STATIC_OFFLINE_FARM: GameState = {
   island: {
     type: "desert",
   },
+  competitions: {
+    progress: {
+      ANIMALS: {
+        initialProgress: {},
+        startedAt: 100,
+      },
+    },
+  },
   mysteryPrizes: {},
   minigames: {
     games: {},
@@ -409,14 +417,7 @@ export const STATIC_OFFLINE_FARM: GameState = {
       },
     },
   },
-  competitions: {
-    progress: {
-      ANIMALS: {
-        initialProgress: {},
-        startedAt: 100000,
-      },
-    },
-  },
+
   chores: {
     choresCompleted: 0,
     choresSkipped: 0,
@@ -490,6 +491,7 @@ export const STATIC_OFFLINE_FARM: GameState = {
       ],
     },
   },
+
   inventory: {
     "Orange Seed": new Decimal(10),
     "Lemon Seed": new Decimal(10),
@@ -516,7 +518,7 @@ export const STATIC_OFFLINE_FARM: GameState = {
     "Kernel Blend": new Decimal(100),
     "Rich Chicken": new Decimal(1),
     Wrangler: new Decimal(1),
-    "Bull Run Banner": new Decimal(1),
+    // "Bull Run Banner": new Decimal(1),
     "Basic Scarecrow": new Decimal(1),
     "Lemon Shark": new Decimal(1),
     "Longhorn Cowfish": new Decimal(1),
@@ -691,7 +693,7 @@ export const STATIC_OFFLINE_FARM: GameState = {
     Beehive: new Decimal(1),
     Banana: new Decimal(12),
     Crimstone: new Decimal(70),
-    Gem: new Decimal(200),
+    Gem: new Decimal(20000),
     Gold: new Decimal("400"),
     Iron: new Decimal("800"),
     Stone: new Decimal("1600"),
