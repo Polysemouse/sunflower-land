@@ -433,8 +433,22 @@ import {
 } from "./landExpansion/acknowledgeCalendarEvent";
 
 import { purchaseVIP, PurchaseVIPAction } from "./landExpansion/vipPurchased";
+import {
+  collectLavaPit,
+  CollectLavaPitAction,
+} from "./landExpansion/collectLavaPit";
+import { startLavaPit, StartLavaPitAction } from "./landExpansion/startLavaPit";
+import { placeLavaPit, PlaceLavaPitAction } from "./landExpansion/placeLavaPit";
+import { moveLavaPit, MoveLavaPitAction } from "./landExpansion/moveLavaPit";
+import { buyResource, ResourceBoughtAction } from "./landExpansion/buyResource";
+import {
+  exchangeObsidian,
+  ObsidianExchangedAction,
+} from "./landExpansion/exchangeObsidian";
 
 export type PlayingEvent =
+  | ObsidianExchangedAction
+  | ResourceBoughtAction
   | PurchaseVIPAction
   | SellAnimalAction
   | SpeedUpBuilding
@@ -567,6 +581,8 @@ export type PlayingEvent =
   | RedeemTradeRewardsAction
   | DailyResetAction
   | AcknowledgeCalendarEventAction
+  | CollectLavaPitAction
+  | StartLavaPitAction
   // To remove once December is finished
   | CollectCandyAction;
 
@@ -608,7 +624,9 @@ export type PlacementEvent =
   | MoveFlowerBedAction
   | PlaceFlowerBedAction
   | MoveOilReserveAction
-  | PlaceOilReserveAction;
+  | PlaceOilReserveAction
+  | PlaceLavaPitAction
+  | MoveLavaPitAction;
 
 export type GameEvent = PlayingEvent | PlacementEvent;
 export type GameEventName<T> = Extract<T, { type: string }>["type"];
@@ -634,6 +652,8 @@ type Handlers<T> = {
 };
 
 export const PLAYING_EVENTS: Handlers<PlayingEvent> = {
+  "obsidian.exchanged": exchangeObsidian,
+  "resource.bought": buyResource,
   "vip.purchased": purchaseVIP,
   "animal.sold": sellAnimal,
   "building.spedUp": speedUpBuilding,
@@ -768,6 +788,8 @@ export const PLAYING_EVENTS: Handlers<PlayingEvent> = {
   "candy.collected": collectCandy,
   "daily.reset": dailyReset,
   "calendarEvent.acknowledged": acknowledgeCalendarEvent,
+  "lavaPit.collected": collectLavaPit,
+  "lavaPit.started": startLavaPit,
 };
 
 export const PLACEMENT_EVENTS: Handlers<PlacementEvent> = {
@@ -809,6 +831,8 @@ export const PLACEMENT_EVENTS: Handlers<PlacementEvent> = {
   "sunstone.moved": moveSunstone,
   "oilReserve.moved": moveOilReserve,
   "oilReserve.placed": placeOilReserve,
+  "lavaPit.placed": placeLavaPit,
+  "lavaPit.moved": moveLavaPit,
 };
 
 export const EVENTS = { ...PLAYING_EVENTS, ...PLACEMENT_EVENTS };

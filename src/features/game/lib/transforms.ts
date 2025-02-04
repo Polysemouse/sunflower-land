@@ -26,6 +26,7 @@ export function makeGame(farm: any): GameState {
     vip: farm.vip,
     previousWardrobe: farm.previousWardrobe,
     competitions: farm.competitions,
+    verified: farm.verified,
     stock: Object.keys(farm.stock).reduce(
       (items, item) => ({
         ...items,
@@ -125,5 +126,6 @@ export function makeGame(farm: any): GameState {
     barn: farm.barn,
     craftingBox: farm.craftingBox,
     season: farm.season,
+    lavaPits: farm.lavaPits,
   };
 }
