@@ -748,7 +748,7 @@
   "crops-and-chickens.achievement.elite-gamer.title": "エリートゲーマー",
   "crops-and-chickens.achievement.elite-gamer.description": "正確に1337ポイントを獲得",
   "crops-and-chickens.achievement.grain-offering.title": "穀物の捧げ物",
-  "crops-and-chickens.achievement.grain-offering.description": "すべての（{{amount}}）小麦を一度に黒い鶏に捧げる",
+  "crops-and-chickens.achievement.grain-offering.description": "すべての小麦 ({{amount}}) を一度にハンター チキンに捧げる",
   "crops-and-chickens.achievement.grandmaster.title": "グランドマスター",
   "crops-and-chickens.achievement.grandmaster.description": "ゲームで25000ポイントを獲得",
   "crops-and-chickens.achievement.never-gonna-move-you-up.title": "あなたを動かさない",

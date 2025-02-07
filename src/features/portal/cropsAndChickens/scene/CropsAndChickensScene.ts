@@ -24,6 +24,7 @@ import {
   JOYSTICK_RADIUS,
   JOYSTICK_FORCE_MIN,
   HALLOWEEN_PLAYER_OPACITY,
+  INDEX_TO_CROP,
 } from "../CropsAndChickensConstants";
 import { NormalChickenContainer } from "./containers/NormalChickenContainer";
 import { HunterChickenContainer } from "./containers/HunterChickenContainer";
@@ -42,8 +43,9 @@ import {
 import { isTouchDevice } from "features/world/lib/device";
 import { getHolidayEvent } from "../lib/cropsAndChickensUtils";
 import { getHolidayAsset } from "../lib/CropsAndChickensHolidayAsset";
-
-type chickenType = "normal" | "hunter";
+import Decimal from "decimal.js-light";
+import { CropsAndChickensActivityName } from "../CropsAndChickensActivities";
+import { CropsAndChickensChickenName } from "../CropsAndChickensChickenName";
 
 export class CropsAndChickensScene extends BaseScene {
   sceneId: SceneId = "crops_and_chickens";
@@ -58,6 +60,7 @@ export class CropsAndChickensScene extends BaseScene {
   hasGoneUp!: boolean;
   hasGotToTheOtherSide!: boolean;
   hasStopped!: boolean;
+  activities!: Partial<Record<CropsAndChickensActivityName, Decimal>>;
 
   chickens: NormalChickenContainer[] = [];
   hunterChicken?: HunterChickenContainer;
@@ -96,6 +99,7 @@ export class CropsAndChickensScene extends BaseScene {
     this.hasGoneUp = false;
     this.hasGotToTheOtherSide = false;
     this.hasStopped = false;
+    this.activities = {};
   };
 
   /**
@@ -304,7 +308,7 @@ export class CropsAndChickensScene extends BaseScene {
       player: this.currentPlayer,
       isChickenFrozen: () =>
         this.isDead || this.isPlayerInDepositArea || !this.isGamePlaying,
-      killPlayer: () => this.killPlayer("hunter"),
+      killPlayer: () => this.killPlayer("Hunter Chicken"),
     });
 
     this.storageArea = new StorageAreaContainer({
@@ -726,7 +730,7 @@ export class CropsAndChickensScene extends BaseScene {
             direction: direction,
             scene: this,
             player: this.currentPlayer,
-            killPlayer: () => this.killPlayer("normal"),
+            killPlayer: () => this.killPlayer("Normal Chicken"),
           }),
       ),
     );
@@ -830,6 +834,7 @@ export class CropsAndChickensScene extends BaseScene {
     sound.play({ volume: 0.4 });
 
     // add crop to inventory
+    this.addActivity(`${INDEX_TO_CROP[cropIndex]} Harvested`, new Decimal(1));
     this.portalService?.send("CROP_HARVESTED", { cropIndex: cropIndex });
   };
 
@@ -862,6 +867,9 @@ export class CropsAndChickensScene extends BaseScene {
 
     // score and remove all crops from inventory
     this.animateDepositingCrops();
+    this.inventoryCropIndexes.forEach((cropIndex) => {
+      this.addActivity(`${INDEX_TO_CROP[cropIndex]} Deposited`, new Decimal(1));
+    });
     this.portalService?.send("CROP_DEPOSITED");
   };
 
@@ -919,7 +927,7 @@ export class CropsAndChickensScene extends BaseScene {
   /**
    * Kills the player then respawns the player.
    */
-  private killPlayer = (chickenType: chickenType) => {
+  private killPlayer = (chickenType: CropsAndChickensChickenName) => {
     if (!this.currentPlayer?.body || this.isDead || !this.isGamePlaying) {
       return;
     }
@@ -935,13 +943,17 @@ export class CropsAndChickensScene extends BaseScene {
 
     // achievements
     this.checkAchievements(
-      chickenType === "normal"
+      chickenType === "Normal Chicken"
         ? "player killed by normal chicken"
         : "player killed by hunter chicken",
     );
 
     // throw all crops out of the inventory
     this.animateDroppingCrops();
+    this.addActivity(`${chickenType} Collided`, new Decimal(1));
+    this.inventoryCropIndexes.forEach((cropIndex) => {
+      this.addActivity(`${INDEX_TO_CROP[cropIndex]} Dropped`, new Decimal(1));
+    });
     this.portalService?.send("PLAYER_KILLED");
 
     const spriteName = "player_death";
@@ -996,6 +1008,7 @@ export class CropsAndChickensScene extends BaseScene {
    * Ends the game.
    */
   private endGame = () => {
+    this.addActivity("Classic Mode Played", new Decimal(1));
     this.portalService?.send("GAME_OVER");
 
     // play sound
@@ -1034,6 +1047,21 @@ export class CropsAndChickensScene extends BaseScene {
       this.achievementGetSound?.play({ volume: 0.3 });
     this.portalService?.send("UNLOCKED_ACHIEVEMENTS", {
       achievementNames: achievementNames,
+    });
+  };
+
+  private addActivity = (
+    activity: CropsAndChickensActivityName,
+    value: Decimal,
+  ) => {
+    this.activities[activity] = this.activities[activity]?.add(value) ?? value;
+  };
+
+  private trackActivities = (
+    activities: Record<CropsAndChickensActivityName, Decimal>,
+  ) => {
+    this.portalService?.send("TRACK_ACTIVITIES", {
+      activities: activities,
     });
   };
 }

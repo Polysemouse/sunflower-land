@@ -13,6 +13,7 @@ import { GameState } from "features/game/types/game";
 import { purchaseMinigameItem } from "features/game/events/minigames/purchaseMinigameItem";
 import {
   achievementsUnlocked,
+  activitiesTracked,
   startAttempt,
   submitScore,
 } from "features/portal/lib/portalUtil";
@@ -22,6 +23,9 @@ import { unlockMinigameAchievements } from "features/game/events/minigames/unloc
 import { CropsAndChickensAchievementName } from "../CropsAndChickensAchievements";
 import { submitMinigameScore } from "features/game/events/minigames/submitMinigameScore";
 import { startMinigameAttempt } from "features/game/events/minigames/startMinigameAttempt";
+import Decimal from "decimal.js-light";
+import { CropsAndChickensActivityName } from "../CropsAndChickensActivities";
+import { trackMinigameActivities } from "features/game/events/minigames/trackMinigameActivities";
 
 export interface Context {
   id: number;
@@ -46,6 +50,11 @@ type CropHarvestedEvent = {
 type UnlockAchievementsEvent = {
   type: "UNLOCKED_ACHIEVEMENTS";
   achievementNames: CropsAndChickensAchievementName[];
+};
+
+type TrackActivitiesEvent = {
+  type: "TRACK_ACTIVITIES";
+  activities: Record<CropsAndChickensActivityName, Decimal>;
 };
 
 type SetIsJoystickActiveEvent = {
@@ -73,7 +82,8 @@ export type PortalEvent =
   | CropHarvestedEvent
   | { type: "CROP_DEPOSITED" }
   | { type: "PLAYER_KILLED" }
-  | UnlockAchievementsEvent;
+  | UnlockAchievementsEvent
+  | TrackActivitiesEvent;
 
 export type PortalState = {
   value:
@@ -163,6 +173,21 @@ export const portalMachine = createMachine<Context, PortalEvent, PortalState>({
               type: "minigame.achievementsUnlocked",
               id: "crops-and-chickens",
               achievementNames: event.achievementNames,
+            },
+          });
+        },
+      }) as any,
+    },
+    TRACK_ACTIVITIES: {
+      actions: assign<Context, any>({
+        state: (context: Context, event: TrackActivitiesEvent) => {
+          activitiesTracked({ activities: event.activities });
+          return trackMinigameActivities({
+            state: context.state!,
+            action: {
+              type: "minigame.activitiesTracked",
+              id: "crops-and-chickens",
+              activities: event.activities,
             },
           });
         },
@@ -358,13 +383,7 @@ export const portalMachine = createMachine<Context, PortalEvent, PortalState>({
           actions: assign({
             state: (context: any) => {
               submitScore({ score: context.score });
-              // activitiesTracked({
-              //   activities: {
-              //     "Games Played": new Decimal(1),
-              //   },
-              // });
-
-              const newState = submitMinigameScore({
+              return submitMinigameScore({
                 state: context.state,
                 action: {
                   type: "minigame.scoreSubmitted",
@@ -372,17 +391,6 @@ export const portalMachine = createMachine<Context, PortalEvent, PortalState>({
                   id: "crops-and-chickens",
                 },
               });
-              return newState;
-              // return trackMinigameActivities({
-              //   state: newState,
-              //   action: {
-              //     type: "minigame.activitiesTracked",
-              //     id: "crops-and-chickens",
-              //     activities: {
-              //       "Games Played": new Decimal(1),
-              //     },
-              //   },
-              // });
             },
           }) as any,
         },

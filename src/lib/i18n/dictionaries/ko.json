@@ -748,7 +748,7 @@
   "crops-and-chickens.achievement.elite-gamer.title": "엘리트 게이머",
   "crops-and-chickens.achievement.elite-gamer.description": "정확히 1337점을 기록하세요",
   "crops-and-chickens.achievement.grain-offering.title": "곡물 제물",
-  "crops-and-chickens.achievement.grain-offering.description": "검은 닭에게 모든 ({{amount}}) 밀을 한 번에 희생하세요",
+  "crops-and-chickens.achievement.grain-offering.description": "모든 밀 ({{amount}}) 을 한 번에 헌터 치킨에게 희생",
   "crops-and-chickens.achievement.grandmaster.title": "그랜드마스터",
   "crops-and-chickens.achievement.grandmaster.description": "게임에서 25000점을 기록하세요",
   "crops-and-chickens.achievement.never-gonna-move-you-up.title": "절대 위로 이동하지 않을 것입니다",

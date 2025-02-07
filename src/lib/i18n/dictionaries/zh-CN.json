@@ -721,7 +721,7 @@
   "crops-and-chickens.achievement.elite-gamer.title": "精英玩家",
   "crops-and-chickens.achievement.elite-gamer.description": "精确得分 1337 分",
   "crops-and-chickens.achievement.grain-offering.title": "谷物供应",
-  "crops-and-chickens.achievement.grain-offering.description": "立即将所有 ({{amount}}) 小麦献给黑鸡",
+  "crops-and-chickens.achievement.grain-offering.description": "一次性将所有 ({{amount}}) 小麦献给猎鸡",
   "crops-and-chickens.achievement.grandmaster.title": "特级大师",
   "crops-and-chickens.achievement.grandmaster.description": "在一场游戏中获得 25000 点积分",
   "crops-and-chickens.achievement.never-gonna-move-you-up.title": "永远不会让你向上移动",
