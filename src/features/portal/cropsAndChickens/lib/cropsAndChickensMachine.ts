@@ -358,7 +358,13 @@ export const portalMachine = createMachine<Context, PortalEvent, PortalState>({
           actions: assign({
             state: (context: any) => {
               submitScore({ score: context.score });
-              return submitMinigameScore({
+              // activitiesTracked({
+              //   activities: {
+              //     "Games Played": new Decimal(1),
+              //   },
+              // });
+
+              const newState = submitMinigameScore({
                 state: context.state,
                 action: {
                   type: "minigame.scoreSubmitted",
@@ -366,6 +372,17 @@ export const portalMachine = createMachine<Context, PortalEvent, PortalState>({
                   id: "crops-and-chickens",
                 },
               });
+              return newState;
+              // return trackMinigameActivities({
+              //   state: newState,
+              //   action: {
+              //     type: "minigame.activitiesTracked",
+              //     id: "crops-and-chickens",
+              //     activities: {
+              //       "Games Played": new Decimal(1),
+              //     },
+              //   },
+              // });
             },
           }) as any,
         },

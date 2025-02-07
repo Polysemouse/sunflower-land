@@ -141,6 +141,16 @@ export const Portal: React.FC<Props> = ({ portalName, onClose }) => {
       gameService.send("SAVE");
       return;
     }
+
+    // activities
+    if (event.data.event === "activitiesTracked") {
+      gameService.send("minigame.activitiesTracked", {
+        id: portalName,
+        activities: event.data.activities,
+      });
+      gameService.send("SAVE");
+      return;
+    }
   };
 
   useEffect(() => {
