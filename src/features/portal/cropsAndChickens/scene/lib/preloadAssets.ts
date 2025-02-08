@@ -6,6 +6,10 @@ import { getHolidayAsset } from "../../lib/CropsAndChickensHolidayAsset";
 import { getHolidayEvent } from "../../lib/cropsAndChickensUtils";
 import { CropsAndChickensScene } from "../CropsAndChickensScene";
 
+/**
+ * Preloads assets.
+ * @param scene The CropsAndChickensScene scene.
+ */
 export const preloadAssets = (scene: CropsAndChickensScene) => {
   const holidayEvent = getHolidayEvent();
 

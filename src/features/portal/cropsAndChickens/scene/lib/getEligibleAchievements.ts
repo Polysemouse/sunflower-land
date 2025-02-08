@@ -14,6 +14,12 @@ export type AchievementTrigger =
   | "player killed by normal chicken"
   | "player killed by hunter chicken";
 
+/**
+ * Gets the eligible achievements for the scene.
+ * @param scene The CropsAndChickensScene scene.
+ * @param trigger The trigger for the achievement.
+ * @returns The eligible achievements.
+ */
 export const getEligibleAchievements = (
   scene: CropsAndChickensScene,
   trigger: AchievementTrigger,

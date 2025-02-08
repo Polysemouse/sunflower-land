@@ -1,30 +1,23 @@
-import VirtualJoystick from "phaser3-rex-plugins/plugins/virtualjoystick.js";
-
 import { SQUARE_WIDTH } from "features/game/lib/constants";
-import { SPAWNS } from "features/world/lib/spawn";
 import { SceneId } from "features/world/mmoMachine";
 import { BaseScene } from "features/world/scenes/BaseScene";
 import { MachineInterpreter } from "../lib/cropsAndChickensMachine";
 import {
-  DEPOSIT_CHEST_XY,
   BOARD_OFFSET,
   BOARD_WIDTH,
   CHICKEN_SPAWN_CONFIGURATIONS,
   CHICKEN_SPRITE_PROPERTIES,
   CROP_SPAWN_CONFIGURATIONS,
   GAME_SECONDS,
-  PLAYER_DEATH_SPRITE_PROPERTIES,
   PLAYER_MAX_XY,
   PLAYER_MIN_XY,
   PLAYER_WALKING_SPEED,
-  SPRITE_FRAME_RATE,
   TIME_TICKING_SECONDS,
   TIME_TICKING_PREPARATION_SECONDS,
   ZOOM_OUT_SCALE,
   JOYSTICK_RADIUS,
   JOYSTICK_FORCE_MIN,
   HALLOWEEN_PLAYER_OPACITY,
-  INDEX_TO_CROP,
 } from "../CropsAndChickensConstants";
 import { NormalChickenContainer } from "./containers/NormalChickenContainer";
 import { HunterChickenContainer } from "./containers/HunterChickenContainer";
@@ -32,20 +25,19 @@ import { StorageAreaContainer } from "./containers/StorageAreaContainer";
 import { DepositIndicatorContainer } from "./containers/DepositIndicatorContainer";
 import { CropContainer } from "./containers/CropContainer";
 import { EventObject } from "xstate";
-import { CropsAndChickensAchievementName } from "../CropsAndChickensAchievements";
 import { hasFeatureAccess } from "lib/flags";
 import { getZoomOutSetting, ZOOM_OUT_EVENT } from "../hooks/useIsZoomOut";
 import { preloadAssets } from "./lib/preloadAssets";
-import {
-  AchievementTrigger,
-  getEligibleAchievements,
-} from "./lib/getEligibleAchievements";
-import { isTouchDevice } from "features/world/lib/device";
+
 import { getHolidayEvent } from "../lib/cropsAndChickensUtils";
 import { getHolidayAsset } from "../lib/CropsAndChickensHolidayAsset";
 import Decimal from "decimal.js-light";
 import { CropsAndChickensActivityName } from "../CropsAndChickensActivities";
-import { CropsAndChickensChickenName } from "../CropsAndChickensChickenName";
+import { killPlayer } from "./lib/killPlayer";
+import { depositCrops } from "./lib/depositCrops";
+import { harvestCrop } from "./lib/harvestCrop";
+import { endGame } from "./lib/endGame";
+import { initializeControls } from "./lib/initializeControls";
 
 export class CropsAndChickensScene extends BaseScene {
   sceneId: SceneId = "crops_and_chickens";
@@ -105,7 +97,7 @@ export class CropsAndChickensScene extends BaseScene {
   /**
    * Gets the joystick default position.
    */
-  private get joystickDefaultPosition() {
+  get joystickDefaultPosition() {
     return {
       x: this.cameras.main.centerX,
       y:
@@ -131,7 +123,7 @@ export class CropsAndChickensScene extends BaseScene {
   /**
    * Whether the player has beta access.
    */
-  private get hasBetaAccess() {
+  get hasBetaAccess() {
     if (!this.portalServiceContext?.state) return false;
 
     return hasFeatureAccess(
@@ -143,7 +135,7 @@ export class CropsAndChickensScene extends BaseScene {
   /**
    * The portal service.
    */
-  private get portalService() {
+  get portalService() {
     return this.registry.get("portalService") as MachineInterpreter | undefined;
   }
 
@@ -185,14 +177,14 @@ export class CropsAndChickensScene extends BaseScene {
   /**
    * The inventory score.
    */
-  private get inventory() {
+  get inventory() {
     return this.portalServiceContext?.inventory ?? 0;
   }
 
   /**
    * The target score.
    */
-  private get target() {
+  get targetScore() {
     return (
       this.portalServiceContext?.state?.minigames.prizes["crops-and-chickens"]
         ?.score ?? 0
@@ -202,7 +194,7 @@ export class CropsAndChickensScene extends BaseScene {
   /**
    * The existing achievement names.
    */
-  private get existingAchievementNames() {
+  get existingAchievementNames() {
     const achievements =
       this.portalServiceContext?.state?.minigames.games["crops-and-chickens"]
         ?.achievements ?? {};
@@ -234,7 +226,7 @@ export class CropsAndChickensScene extends BaseScene {
   /**
    * Whether the game is in the playing state.
    */
-  private get isGamePlaying() {
+  get isGamePlaying() {
     return this.portalService?.state.matches("playing") === true;
   }
 
@@ -277,7 +269,7 @@ export class CropsAndChickensScene extends BaseScene {
     });
 
     super.create();
-    this.initialiseCropsAndChickensControls();
+    initializeControls(this);
 
     // add joystick indicator on top of the player
     this.joystickIndicatorBase = this.add
@@ -308,13 +300,13 @@ export class CropsAndChickensScene extends BaseScene {
       player: this.currentPlayer,
       isChickenFrozen: () =>
         this.isDead || this.isPlayerInDepositArea || !this.isGamePlaying,
-      killPlayer: () => this.killPlayer("Hunter Chicken"),
+      killPlayer: () => killPlayer(this, "Hunter Chicken"),
     });
 
     this.storageArea = new StorageAreaContainer({
       scene: this,
       player: this.currentPlayer,
-      depositCrops: () => this.depositCrops(),
+      depositCrops: () => depositCrops(this),
     });
 
     this.depositIndicator = new DepositIndicatorContainer({
@@ -386,7 +378,7 @@ export class CropsAndChickensScene extends BaseScene {
 
     // end game when time is up
     if (this.isGamePlaying && this.secondsLeft <= 0) {
-      this.endGame();
+      endGame(this);
       this.timeTickingSound?.stop();
       this.timeTickingSound = undefined;
     }
@@ -470,82 +462,6 @@ export class CropsAndChickensScene extends BaseScene {
 
     this.updatePlayer();
     super.update();
-  }
-
-  /**
-   * Initialises the controls.
-   */
-  public initialiseCropsAndChickensControls() {
-    if (isTouchDevice()) {
-      // Initialise joystick
-      const { centerX, centerY } = this.cameras.main;
-
-      const idleOpacity = 0.4;
-      const joystickBase = this.add
-        .circle(0, 0, JOYSTICK_RADIUS, 0x000000, 0.2)
-        .setDepth(1000000000)
-        .setAlpha(idleOpacity);
-      const joystickThumb = this.add
-        .circle(0, 0, JOYSTICK_RADIUS / 2, 0xffffff, 0.2)
-        .setDepth(1000000000)
-        .setAlpha(idleOpacity);
-
-      const joystick = new VirtualJoystick(this, {
-        x: 0,
-        y: 0,
-        base: joystickBase,
-        thumb: joystickThumb,
-        forceMin: 0,
-      });
-
-      this.joystick = joystick;
-
-      // swipe for pointer input
-      this.input.on("pointerdown", (pointer: Phaser.Input.Pointer) => {
-        const setPositionX =
-          centerX + (pointer.x - centerX) / this.cameras.main.zoom;
-        const setPositionY =
-          centerY + (pointer.y - centerY) / this.cameras.main.zoom;
-
-        // set opacity and set joystick base to starting position
-        joystickBase.setAlpha(1.0);
-        joystickThumb.setAlpha(1.0);
-        joystick.setPosition(setPositionX, setPositionY);
-      });
-      this.input.on("pointerup", () => {
-        // reset joystick position and opacity when swipe is done
-        joystickBase.setAlpha(idleOpacity);
-        joystickThumb.setAlpha(idleOpacity);
-
-        const defaultPosition = this.joystickDefaultPosition;
-        joystick.setPosition(defaultPosition.x, defaultPosition.y);
-      });
-    }
-
-    // Initialise Keyboard
-    this.cursorKeys = this.input.keyboard?.createCursorKeys();
-    if (this.cursorKeys) {
-      const mmoLocalSettings = JSON.parse(
-        localStorage.getItem("mmo_settings") ?? "{}",
-      );
-      const layout = mmoLocalSettings.layout ?? "QWERTY";
-
-      // add WASD keys
-      this.cursorKeys.w = this.input.keyboard?.addKey(
-        layout === "QWERTY" ? "W" : "Z",
-        false,
-      );
-      this.cursorKeys.a = this.input.keyboard?.addKey(
-        layout === "QWERTY" ? "A" : "Q",
-        false,
-      );
-      this.cursorKeys.s = this.input.keyboard?.addKey("S", false);
-      this.cursorKeys.d = this.input.keyboard?.addKey("D", false);
-
-      this.input.keyboard?.removeCapture("SPACE");
-    }
-
-    this.input.setTopOnly(true);
   }
 
   /**
@@ -697,7 +613,8 @@ export class CropsAndChickensScene extends BaseScene {
           cropIndex: config.cropIndex,
           scene: this,
           player: this.currentPlayer,
-          harvestCrop: (crops, cropIndex) => this.harvestCrop(crops, cropIndex),
+          harvestCrop: (crops, cropIndex) =>
+            harvestCrop(this, crops, cropIndex),
         }),
     );
   }
@@ -730,7 +647,7 @@ export class CropsAndChickensScene extends BaseScene {
             direction: direction,
             scene: this,
             player: this.currentPlayer,
-            killPlayer: () => this.killPlayer("Normal Chicken"),
+            killPlayer: () => killPlayer(this, "Normal Chicken"),
           }),
       ),
     );
@@ -752,316 +669,5 @@ export class CropsAndChickensScene extends BaseScene {
       ...chickensFacingUp,
       ...chickensFacingDown,
     ];
-  };
-
-  /**
-   * Animates depositing crops.
-   */
-  private animateDepositingCrops = () => {
-    // skip function if player not found
-    if (!this.currentPlayer) return;
-    const player = this.currentPlayer;
-
-    // animate for each crop in inventory
-    this.inventoryCropIndexes.forEach(async (cropIndex, index) => {
-      const cropSprite = this.add.sprite(
-        player.x,
-        player.y,
-        "crops_harvested",
-        cropIndex,
-      );
-
-      // adjust the angle and distance for the crop to radiate outward
-      const angle = Phaser.Math.Angle.Random();
-      const distance = Phaser.Math.RND.between(16, 20);
-
-      this.tweens.add({
-        targets: cropSprite,
-        x: player.x + distance * Math.cos(angle),
-        y: player.y + distance * Math.sin(angle),
-        duration: 200,
-        ease: "Quad.easeOut",
-        onUpdate: () => {
-          cropSprite.setDepth(cropSprite.y);
-        },
-        onComplete: (
-          _: Phaser.Tweens.Tween,
-          targets: Phaser.GameObjects.Sprite[],
-        ) => {
-          // fading tween starts when movement tween is complete
-          targets.forEach((cropSprite) => {
-            this.tweens.add({
-              targets: cropSprite,
-              x: DEPOSIT_CHEST_XY,
-              y: DEPOSIT_CHEST_XY,
-              duration: 250,
-              delay: index * 50, // delay each crop animation slightly
-              ease: "Cubic.easeIn",
-              onUpdate: () => {
-                cropSprite.setDepth(cropSprite.y);
-              },
-              onComplete: () => {
-                if (cropSprite.active) cropSprite.destroy();
-                const sound = this.sound.add("crop_deposit_pop");
-                sound.play({
-                  volume: 0.1,
-                  detune: Phaser.Math.RND.between(-300, 300),
-                });
-              },
-            });
-          });
-        },
-      });
-    });
-  };
-
-  /**
-   * Harvests a crop.
-   * @param crops The crop sprites.
-   * @param cropIndex The crop index.
-   */
-  private harvestCrop = (
-    crops: Phaser.GameObjects.Sprite[],
-    cropIndex: number,
-  ) => {
-    // destroy planted crop sprites
-    crops.forEach((crop) => {
-      if (crop.active) crop.destroy();
-    });
-
-    // play sound
-    const sound = this.sound.add("harvest");
-    sound.play({ volume: 0.4 });
-
-    // add crop to inventory
-    this.addActivity(`${INDEX_TO_CROP[cropIndex]} Harvested`, new Decimal(1));
-    this.portalService?.send("CROP_HARVESTED", { cropIndex: cropIndex });
-  };
-
-  /**
-   * Deposits crops.
-   */
-  private depositCrops = () => {
-    // achievements
-    this.checkAchievements("empty deposit");
-
-    // skip function if there are nothing to deposit
-    if (this.inventoryCropIndexes.length === 0) return;
-
-    // play sound
-    const cropDepositSound = this.sound.add("crop_deposit");
-    cropDepositSound.play({ volume: 0.1 });
-
-    // play target reached sound if target is reached
-    if (
-      this.target >= 0 &&
-      this.score < this.target &&
-      this.score + this.inventory >= this.target
-    ) {
-      const targetReachedSound = this.sound.add("target_reached");
-      targetReachedSound.play({ volume: 1.0 });
-    }
-
-    // achievements
-    this.checkAchievements("deposit");
-
-    // score and remove all crops from inventory
-    this.animateDepositingCrops();
-    this.inventoryCropIndexes.forEach((cropIndex) => {
-      this.addActivity(`${INDEX_TO_CROP[cropIndex]} Deposited`, new Decimal(1));
-    });
-    this.portalService?.send("CROP_DEPOSITED");
-  };
-
-  /**
-   * Animates dropping crops when player is killed.
-   */
-  private animateDroppingCrops = () => {
-    // skip function if player not found
-    if (!this.currentPlayer) return;
-    const player = this.currentPlayer;
-
-    // animate for each crop in inventory
-    this.inventoryCropIndexes.forEach((cropIndex) => {
-      const cropSprite = this.add.sprite(
-        player.x,
-        player.y,
-        "crops_harvested",
-        cropIndex,
-      );
-
-      // adjust the angle and distance for the crop to radiate outward
-      const angle = Phaser.Math.Angle.Random();
-      const distance = Phaser.Math.RND.between(30, 50);
-
-      this.tweens.add({
-        targets: cropSprite,
-        x: player.x + distance * Math.cos(angle),
-        y: player.y + distance * Math.sin(angle),
-        duration: 400,
-        ease: "Quad.easeOut",
-        onUpdate: () => {
-          cropSprite.setDepth(cropSprite.y);
-        },
-        onComplete: (
-          _: Phaser.Tweens.Tween,
-          targets: Phaser.GameObjects.Sprite[],
-        ) => {
-          // fading tween starts when movement tween is complete
-          targets.forEach((cropSprite) => {
-            this.tweens.add({
-              targets: cropSprite,
-              alpha: 0, // fade out to completely transparent
-              delay: 500,
-              duration: 500, // fade out duration
-              onComplete: () => {
-                if (cropSprite.active) cropSprite.destroy(); // destroy sprite after fading out
-              },
-            });
-          });
-        },
-      });
-    });
-  };
-
-  /**
-   * Kills the player then respawns the player.
-   */
-  private killPlayer = (chickenType: CropsAndChickensChickenName) => {
-    if (!this.currentPlayer?.body || this.isDead || !this.isGamePlaying) {
-      return;
-    }
-
-    // freeze player
-    this.isDead = true;
-    this.deaths += 1;
-    this.currentPlayer.setVisible(false);
-
-    // play sound
-    const sound = this.sound.add("player_killed");
-    sound.play({ volume: 0.4 });
-
-    // achievements
-    this.checkAchievements(
-      chickenType === "Normal Chicken"
-        ? "player killed by normal chicken"
-        : "player killed by hunter chicken",
-    );
-
-    // throw all crops out of the inventory
-    this.animateDroppingCrops();
-    this.addActivity(`${chickenType} Collided`, new Decimal(1));
-    this.inventoryCropIndexes.forEach((cropIndex) => {
-      this.addActivity(`${INDEX_TO_CROP[cropIndex]} Dropped`, new Decimal(1));
-    });
-    this.portalService?.send("PLAYER_KILLED");
-
-    const spriteName = "player_death";
-    const spriteKey = "player_death_anim";
-
-    const playerDeath = this.add.sprite(
-      this.currentPlayer.x,
-      this.currentPlayer.y - 1,
-      spriteName,
-    );
-    playerDeath.setDepth(this.currentPlayer.body.position.y);
-    if (getHolidayEvent() === "halloween") {
-      playerDeath.setAlpha(HALLOWEEN_PLAYER_OPACITY);
-    }
-
-    if (!this.anims.exists(spriteKey as string)) {
-      this.anims.create({
-        key: spriteKey,
-        frames: this.anims.generateFrameNumbers(spriteName, {
-          start: 0,
-          end: PLAYER_DEATH_SPRITE_PROPERTIES.frames - 1,
-        }),
-        repeat: 0,
-        frameRate: SPRITE_FRAME_RATE,
-      });
-    }
-
-    playerDeath.play({ key: spriteKey });
-    if (this.currentPlayer.directionFacing === "left") {
-      playerDeath.setFlipX(true);
-    }
-
-    playerDeath.on("animationcomplete", async () => {
-      if (!this.currentPlayer) return;
-
-      await new Promise((res) => setTimeout(res, 1000));
-
-      this.currentPlayer.x = SPAWNS().crops_and_chickens.default.x;
-      this.currentPlayer.y = SPAWNS().crops_and_chickens.default.y;
-
-      this.isDead = false;
-
-      // show player if player is still playing
-      if (this.isGamePlaying) this.currentPlayer.setVisible(true);
-
-      if (playerDeath.active) playerDeath.destroy();
-      this.hunterChicken?.respawn();
-    });
-  };
-
-  /**
-   * Ends the game.
-   */
-  private endGame = () => {
-    this.addActivity("Classic Mode Played", new Decimal(1));
-    this.portalService?.send("GAME_OVER");
-
-    // play sound
-    const sound = this.sound.add("game_over");
-    sound.play({ volume: 0.5 });
-
-    // hide player
-    this.currentPlayer?.setVisible(false);
-
-    // achievements
-    this.checkAchievements("game over");
-  };
-
-  private checkAchievements = (trigger: AchievementTrigger) => {
-    if (!this.hasBetaAccess) return;
-
-    const achievementNames = getEligibleAchievements(this, trigger);
-
-    //TODO: enable achievements
-    //if (achievementNames.length > 0) this.unlockAchievements(achievementNames);
-  };
-
-  private unlockAchievements = (
-    achievementNames: CropsAndChickensAchievementName[],
-  ) => {
-    // if no new achievements, return
-    if (
-      achievementNames.every((name) =>
-        this.existingAchievementNames?.includes(name),
-      )
-    ) {
-      return;
-    }
-
-    if (!this.achievementGetSound?.isPlaying)
-      this.achievementGetSound?.play({ volume: 0.3 });
-    this.portalService?.send("UNLOCKED_ACHIEVEMENTS", {
-      achievementNames: achievementNames,
-    });
-  };
-
-  private addActivity = (
-    activity: CropsAndChickensActivityName,
-    value: Decimal,
-  ) => {
-    this.activities[activity] = this.activities[activity]?.add(value) ?? value;
-  };
-
-  private trackActivities = (
-    activities: Record<CropsAndChickensActivityName, Decimal>,
-  ) => {
-    this.portalService?.send("TRACK_ACTIVITIES", {
-      activities: activities,
-    });
   };
 }
