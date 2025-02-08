@@ -17,6 +17,7 @@ export const animateCropsDrop = (scene: CropsAndChickensScene) => {
       "crops_harvested",
       cropIndex,
     );
+    scene.hudCamera?.ignore(cropSprite);
 
     // adjust the angle and distance for the crop to radiate outward
     const angle = Phaser.Math.Angle.Random();

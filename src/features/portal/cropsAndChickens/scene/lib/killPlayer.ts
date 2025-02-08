@@ -59,6 +59,7 @@ export const killPlayer = (
     scene.currentPlayer.y - 1,
     spriteName,
   );
+  scene.hudCamera?.ignore(playerDeath);
   playerDeath.setDepth(scene.currentPlayer.body.position.y);
   if (getHolidayEvent() === "halloween") {
     playerDeath.setAlpha(HALLOWEEN_PLAYER_OPACITY);

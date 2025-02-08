@@ -155,12 +155,20 @@ const initializeKeyboardControls = (scene: CropsAndChickensScene) => {
  * @param scene The CropsAndChickensScene scene.
  */
 export const initializeControls = (scene: CropsAndChickensScene) => {
+  // Create the HUD camera
+  scene.hudCamera = scene.cameras.add();
+  scene.hudCamera.ignore(scene.children.list);
+
+  // add hud text
+  // const hudText = scene.add.text(20, 20, "test1234", {
+  //   fontSize: "100px",
+  //   fontFamily: "Arial",
+  //   color: "#ffffff",
+  //   align: "center",
+  // });
+
   if (isTouchDevice()) {
     scene.input.addPointer(2);
-
-    // Create the HUD camera
-    scene.hudCamera = scene.cameras.add();
-    scene.hudCamera.ignore(scene.children.list);
 
     initializeJoystick(scene);
     // initializePowerSkillButtons(scene);
