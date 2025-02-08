@@ -3,7 +3,27 @@ import VirtualJoystick from "phaser3-rex-plugins/plugins/virtualjoystick.js";
 import { isTouchDevice } from "features/world/lib/device";
 import { CropsAndChickensScene } from "../CropsAndChickensScene";
 import { JOYSTICK_RADIUS } from "../../CropsAndChickensConstants";
+import { depositCrops } from "./depositCrops";
+import { killPlayer } from "./killPlayer";
 
+// active pointer IDs for power skill buttons
+let buttonPointerIds: number[] = [];
+
+/**
+ * Gets the joystick default position.
+ * @param scene The CropsAndChickensScene scene.
+ */
+const joystickDefaultPosition = (scene: CropsAndChickensScene) => {
+  return {
+    x: scene.cameras.main.centerX,
+    y: scene.cameras.main.centerY + scene.cameras.main.height * 0.3,
+  };
+};
+
+/**
+ * Initializes the joystick.
+ * @param scene The CropsAndChickensScene scene.
+ */
 const initializeJoystick = (scene: CropsAndChickensScene) => {
   const { centerX, centerY } = scene.cameras.main;
 
@@ -24,29 +44,86 @@ const initializeJoystick = (scene: CropsAndChickensScene) => {
     thumb: joystickThumb,
     forceMin: 0,
   });
-
   scene.joystick = joystick;
 
-  // swipe for pointer input
-  scene.input.on("pointerdown", (pointer: Phaser.Input.Pointer) => {
-    const setPositionX =
-      centerX + (pointer.x - centerX) / scene.cameras.main.zoom;
-    const setPositionY =
-      centerY + (pointer.y - centerY) / scene.cameras.main.zoom;
+  // set joystick to default position
+  const defaultPosition = joystickDefaultPosition(scene);
+  joystick.setPosition(defaultPosition.x, defaultPosition.y);
 
-    // set opacity and set joystick base to starting position
+  // ignore joystick in main camera
+  scene.cameras.main.ignore(joystickBase);
+  scene.cameras.main.ignore(joystickThumb);
+
+  // update joystick opacity if joystick is active
+  let wasJoystickActive = false;
+  (joystick as any).on("update", () => {
+    const isJoystickActive = joystick.force > 0;
+    if (isJoystickActive === wasJoystickActive) return;
+
+    wasJoystickActive = isJoystickActive;
+    if (!isJoystickActive) return;
+
+    joystickBase.setAlpha(1.0);
+    joystickThumb.setAlpha(1.0);
+  });
+
+  // set joystick position on pointer down
+  scene.input.on("pointerdown", (pointer: Phaser.Input.Pointer) => {
+    if (buttonPointerIds.includes(pointer.id)) return;
+    if (!!joystick.pointer?.id && pointer.id !== joystick.pointer?.id) return;
+
+    const setPositionX = centerX + (pointer.x - centerX);
+    const setPositionY = centerY + (pointer.y - centerY);
+
     joystickBase.setAlpha(1.0);
     joystickThumb.setAlpha(1.0);
     joystick.setPosition(setPositionX, setPositionY);
   });
-  scene.input.on("pointerup", () => {
-    // reset joystick position and opacity when swipe is done
+
+  // reset joystick position and opacity on pointer up
+  scene.input.on("pointerup", (pointer: Phaser.Input.Pointer) => {
+    // remove pointer from active button pointer IDs
+    buttonPointerIds = buttonPointerIds.filter((id) => id !== pointer.id);
+
+    // reset joystick position and opacity if pointer is not active
+    if (joystick.pointer?.id) return;
+
     joystickBase.setAlpha(idleOpacity);
     joystickThumb.setAlpha(idleOpacity);
 
-    const defaultPosition = scene.joystickDefaultPosition;
+    const defaultPosition = joystickDefaultPosition(scene);
     joystick.setPosition(defaultPosition.x, defaultPosition.y);
   });
+};
+
+//TODO: Implement power skill buttons
+const initializePowerSkillButtons = (scene: CropsAndChickensScene) => {
+  const defaultPosition = joystickDefaultPosition(scene);
+
+  const skillButton1 = scene.add
+    .circle(defaultPosition.x + 150, defaultPosition.y, 30, 0xff0000)
+    .setScrollFactor(0)
+    .setDepth(1000000000)
+    .setInteractive()
+    .setPostPipeline("");
+  skillButton1.on("pointerdown", (pointer: Phaser.Input.Pointer) => {
+    buttonPointerIds.push(pointer.id);
+    killPlayer(scene, "Normal Chicken");
+  });
+  scene.cameras.main.ignore(skillButton1);
+
+  const skillButton2 = scene.add
+    .circle(defaultPosition.x + 150, defaultPosition.y - 80, 30, 0x00ff00)
+    .setScrollFactor(0)
+    .setDepth(1000000000)
+    .setInteractive()
+    .setPostPipeline("");
+  skillButton2.on("pointerdown", (pointer: Phaser.Input.Pointer) => {
+    buttonPointerIds.push(pointer.id);
+    depositCrops(scene);
+  });
+
+  scene.cameras.main.ignore(skillButton2);
 };
 
 const initializeKeyboardControls = (scene: CropsAndChickensScene) => {
@@ -79,7 +156,14 @@ const initializeKeyboardControls = (scene: CropsAndChickensScene) => {
  */
 export const initializeControls = (scene: CropsAndChickensScene) => {
   if (isTouchDevice()) {
+    scene.input.addPointer(2);
+
+    // Create the HUD camera
+    scene.hudCamera = scene.cameras.add();
+    scene.hudCamera.ignore(scene.children.list);
+
     initializeJoystick(scene);
+    // initializePowerSkillButtons(scene);
   }
 
   // Initialise Keyboard

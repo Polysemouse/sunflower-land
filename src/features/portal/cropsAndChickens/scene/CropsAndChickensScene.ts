@@ -42,6 +42,8 @@ import { initializeControls } from "./lib/initializeControls";
 export class CropsAndChickensScene extends BaseScene {
   sceneId: SceneId = "crops_and_chickens";
 
+  hudCamera?: Phaser.Cameras.Scene2D.Camera;
+
   joystickIndicatorBase: Phaser.GameObjects.Arc | undefined;
   joystickIndicatorDot: Phaser.GameObjects.Sprite | undefined;
 
@@ -93,25 +95,6 @@ export class CropsAndChickensScene extends BaseScene {
     this.hasStopped = false;
     this.activities = {};
   };
-
-  /**
-   * Gets the joystick default position.
-   */
-  get joystickDefaultPosition() {
-    return {
-      x: this.cameras.main.centerX,
-      y:
-        this.cameras.main.centerY +
-        (this.cameras.main.height * 0.3) / this.cameras.main.zoom,
-    };
-  }
-
-  /**
-   * Gets the joystick scale.
-   */
-  private get joystickScale() {
-    return 1 / this.cameras.main.zoom;
-  }
 
   /**
    * Whether the player is moving.
@@ -269,7 +252,6 @@ export class CropsAndChickensScene extends BaseScene {
     });
 
     super.create();
-    initializeControls(this);
 
     // add joystick indicator on top of the player
     this.joystickIndicatorBase = this.add
@@ -333,6 +315,9 @@ export class CropsAndChickensScene extends BaseScene {
       // cleanup event listeners for settings
       window.removeEventListener(ZOOM_OUT_EVENT as any, this.onSetZoomOut);
     });
+
+    // initialize controls after everything is set up so that the HUD camera can be set up properly
+    initializeControls(this);
   }
 
   /**
@@ -472,8 +457,7 @@ export class CropsAndChickensScene extends BaseScene {
 
     // joystick is active if force is greater than zero
     this.movementAngle =
-      this.joystick?.force &&
-      this.joystick.force >= JOYSTICK_FORCE_MIN * this.joystickScale
+      this.joystick?.force && this.joystick.force >= JOYSTICK_FORCE_MIN
         ? this.joystick?.angle
         : undefined;
 
@@ -521,12 +505,9 @@ export class CropsAndChickensScene extends BaseScene {
     // set joystick indicator dot if joystick is active
     if (this.joystick && this.joystick.force) {
       const angle = (this.joystick.angle / 180.0) * Math.PI;
-      const distance = Math.min(
-        this.joystick.force,
-        JOYSTICK_RADIUS * this.joystickScale,
-      );
+      const distance = Math.min(this.joystick.force, JOYSTICK_RADIUS);
       const offset = { x: 5, y: 1 };
-      const scale = 0.22 / this.joystickScale;
+      const scale = 0.22;
 
       this.joystickIndicatorBase
         ?.setVisible(true)
@@ -576,20 +557,6 @@ export class CropsAndChickensScene extends BaseScene {
 
     // set zoom out
     this.cameras.main.zoom = event.detail ? zoomOutScale : this.initialZoom;
-
-    if (!this.joystick) return;
-
-    // update joystick position and size
-    (this.joystick as any).radius = JOYSTICK_RADIUS * this.joystickScale;
-    (this.joystick?.base as Phaser.GameObjects.Arc)?.setScale(
-      this.joystickScale,
-    );
-    (this.joystick?.thumb as Phaser.GameObjects.Arc)?.setScale(
-      this.joystickScale,
-    );
-
-    const defaultPosition = this.joystickDefaultPosition;
-    this.joystick?.setPosition(defaultPosition.x, defaultPosition.y);
   };
 
   /**
