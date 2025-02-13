@@ -1,13 +1,11 @@
 import { BumpkinContainer } from "features/world/containers/BumpkinContainer";
 import {
-  CHICKEN_SPEEDS,
   CHICKEN_SPRITE_PROPERTIES,
   HUNTER_CHICKEN_INITIAL_DISTANCE,
   HUNTER_CHICKEN_SPEED_MULTIPLIER,
-  SPRITE_FRAME_RATE,
 } from "../../CropsAndChickensConstants";
-import { Physics } from "phaser";
 import { SPAWNS } from "features/world/lib/spawn";
+import { BaseChickenContainer } from "./BaseChickenContainer";
 
 interface Props {
   scene: Phaser.Scene;
@@ -16,177 +14,124 @@ interface Props {
   killPlayer: () => void;
 }
 
-export class HunterChickenContainer extends Phaser.GameObjects.Container {
+const getNormalizedPlayerCoordinates = (player?: BumpkinContainer) => {
+  const playerCoordinatesOffset = {
+    x: -5.5,
+    y: 0,
+  };
+
+  return player
+    ? {
+        x: player.x + playerCoordinatesOffset.x,
+        y: player.y + playerCoordinatesOffset.y,
+      }
+    : {
+        x: SPAWNS().crops_and_chickens.default.x + playerCoordinatesOffset.x,
+        y: SPAWNS().crops_and_chickens.default.y + playerCoordinatesOffset.y,
+      };
+};
+
+const getAngleTowardsPlayer = (
+  x: number,
+  y: number,
+  player?: BumpkinContainer,
+) => {
+  const normalizedPlayerCoordinates = getNormalizedPlayerCoordinates(player);
+  const angleTowardsPlayer = Phaser.Math.Angle.Between(
+    x,
+    y,
+    normalizedPlayerCoordinates.x,
+    normalizedPlayerCoordinates.y,
+  );
+  return angleTowardsPlayer;
+};
+
+const getDistanceBetweenPlayer = (
+  x: number,
+  y: number,
+  player?: BumpkinContainer,
+) => {
+  const playerCoordinates = getNormalizedPlayerCoordinates(player);
+  return Phaser.Math.Distance.Between(
+    playerCoordinates.x,
+    playerCoordinates.y,
+    x,
+    y,
+  );
+};
+
+const getRespawnState = (player?: BumpkinContainer) => {
+  const initialAngle = Phaser.Math.Angle.Random();
+
+  const playerCoordinates = getNormalizedPlayerCoordinates(player);
+  const x =
+    playerCoordinates.x +
+    HUNTER_CHICKEN_INITIAL_DISTANCE * Math.cos(initialAngle);
+  const y =
+    playerCoordinates.y +
+    HUNTER_CHICKEN_INITIAL_DISTANCE * Math.sin(initialAngle);
+  const angleTowardsPlayer = getAngleTowardsPlayer(x, y, player);
+
+  return {
+    angle: angleTowardsPlayer,
+    x,
+    y,
+  };
+};
+
+export class HunterChickenContainer extends BaseChickenContainer {
   player?: BumpkinContainer;
 
   constructor({ scene, player, isChickenFrozen, killPlayer }: Props) {
-    super(scene, 0, 0);
-    this.scene = scene;
-    this.player = player;
-    this.respawn();
-
-    ["left", "right", "up", "down"].forEach((animDirection) => {
-      const animSpriteName = `chicken_hunter_${animDirection}`;
-      const animSpriteKey = `chicken_hunter_${animDirection}_anim`;
-
-      if (scene.anims.exists(animSpriteKey)) return;
-
-      scene.anims.create({
-        key: animSpriteKey,
-        frames: scene.anims.generateFrameNumbers(animSpriteName, {
-          start: 0,
-          end: CHICKEN_SPRITE_PROPERTIES.frames - 1,
-        }),
-        repeat: -1,
-        frameRate: SPRITE_FRAME_RATE,
-      });
+    const respawnState = getRespawnState(player);
+    super({
+      x: respawnState.x,
+      y: respawnState.y,
+      angle: respawnState.angle,
+      spriteType: "chicken_hunter",
+      scene,
+      player,
+      killPlayer,
     });
 
-    let direction = "down";
+    // set initial speed multiplier
+    this.speedMultiplier = 0;
 
-    const spriteName = `chicken_hunter_${direction}`;
-    const spriteKey = `chicken_hunter_${direction}_anim`;
-
-    // offset when calculating angles and distances to player
-    const playerCoordinatesOffset = {
-      x: -5.5,
-      y: 0,
-    };
-
-    const playerCoordinates = player
-      ? {
-          x: player.x + playerCoordinatesOffset.x,
-          y: player.y + playerCoordinatesOffset.y,
-        }
-      : {
-          x: SPAWNS().crops_and_chickens.default.x + playerCoordinatesOffset.x,
-          y: SPAWNS().crops_and_chickens.default.y + playerCoordinatesOffset.y,
-        };
-    let angle = Phaser.Math.Angle.Between(
-      this.x,
-      this.y,
-      playerCoordinates.x,
-      playerCoordinates.y,
-    );
-
-    // add chicken sprite with offset
-    const chicken = scene.add.sprite(5.5, 3, spriteName);
-
-    const hunterChickenForwardMin =
-      CHICKEN_SPEEDS.forwardMin * HUNTER_CHICKEN_SPEED_MULTIPLIER;
-    const hunterChickenForwardMax =
-      CHICKEN_SPEEDS.forwardMax * HUNTER_CHICKEN_SPEED_MULTIPLIER;
-
-    const startFrame = CHICKEN_SPRITE_PROPERTIES.frames - 1; // start frame starts form 0
-    const landingFrame = 4; // frame index starts form 1
-
-    let forwardSpeed = 0;
-
-    chicken.play({ key: spriteKey, startFrame: startFrame });
-
-    chicken.on(
+    this.chicken.on(
       "animationupdate",
       (
         _animation: Phaser.Animations.Animation,
         frame: Phaser.Animations.AnimationFrame,
       ) => {
         if (!this.body || !player) return;
+        if (frame.index !== CHICKEN_SPRITE_PROPERTIES.landingFrame) return;
 
-        chicken.setTexture(`chicken_hunter_${direction}`, frame.index - 1);
+        const distance = getDistanceBetweenPlayer(this.x, this.y, player);
+        this.angle = getAngleTowardsPlayer(this.x, this.y, player);
 
-        const distance = Phaser.Math.Distance.Between(
-          player.x + playerCoordinatesOffset.x,
-          player.y + playerCoordinatesOffset.y,
-          this.x,
-          this.y,
-        );
-
-        if (frame.index === landingFrame) {
-          forwardSpeed = Phaser.Math.Clamp(
-            forwardSpeed +
-              Phaser.Math.RND.realInRange(
-                -0.5 * (forwardSpeed - hunterChickenForwardMin) - 2,
-                0.5 * (hunterChickenForwardMax - forwardSpeed) + 2,
-              ),
-            hunterChickenForwardMin,
-            hunterChickenForwardMax,
-          );
-
+        if (isChickenFrozen()) {
+          this.speedMultiplier = 0;
+        } else {
+          // increase speed of the chicken if it is too far from the player
+          this.speedMultiplier = HUNTER_CHICKEN_SPEED_MULTIPLIER;
           if (distance >= HUNTER_CHICKEN_INITIAL_DISTANCE) {
-            forwardSpeed *= Math.pow(
+            this.speedMultiplier *= Math.pow(
               distance / HUNTER_CHICKEN_INITIAL_DISTANCE,
               2,
             );
           }
-
-          if (isChickenFrozen()) forwardSpeed = 0;
-
-          angle = Phaser.Math.Angle.Between(
-            this.x,
-            this.y,
-            player.x + playerCoordinatesOffset.x,
-            player.y + playerCoordinatesOffset.y,
-          );
-
-          if (angle >= -Math.PI / 4 && angle <= Math.PI / 4) {
-            direction = "right";
-          } else if (angle > Math.PI / 4 && angle <= (3 * Math.PI) / 4) {
-            direction = "down";
-          } else if (
-            (angle > (3 * Math.PI) / 4 && angle <= Math.PI) ||
-            (angle >= -Math.PI && angle < (-3 * Math.PI) / 4)
-          ) {
-            direction = "left";
-          } else {
-            direction = "up";
-          }
-        }
-
-        if (frame.index < landingFrame) {
-          this.body.velocity.x = forwardSpeed * Math.cos(angle);
-          this.body.velocity.y = forwardSpeed * Math.sin(angle);
-        }
-
-        if (frame.index >= landingFrame) {
-          this.body.velocity.x = 0;
-          this.body.velocity.y = 0;
         }
       },
     );
-
-    scene.physics.add.existing(this);
-
-    if (!!this.body && !!player) {
-      (this.body as Physics.Arcade.Body)
-        .setSize(11, 8)
-        .setOffset(0, 2) // set offset to ensure correct rendering depth
-        .setImmovable(true)
-        .setCollideWorldBounds(false);
-
-      scene.physics.add.overlap(player, this, killPlayer, undefined, this);
-    }
-
-    // add the sprite to the container
-    this.add(chicken);
-
-    // add the container to the scene
-    scene.add.existing(this);
   }
 
   /**
    * Respawns the chicken.
    */
   public respawn = () => {
-    const initialAngle = Phaser.Math.Angle.Random();
-    const playerCoordinates = this.player
-      ? { x: this.player.x, y: this.player.y }
-      : SPAWNS().crops_and_chickens.default;
-
-    this.x =
-      playerCoordinates.x +
-      HUNTER_CHICKEN_INITIAL_DISTANCE * Math.cos(initialAngle);
-    this.y =
-      playerCoordinates.y +
-      HUNTER_CHICKEN_INITIAL_DISTANCE * Math.sin(initialAngle);
+    const respawnState = getRespawnState(this.player);
+    this.angle = respawnState.angle;
+    this.x = respawnState.x;
+    this.y = respawnState.y;
   };
 }

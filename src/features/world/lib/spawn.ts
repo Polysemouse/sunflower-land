@@ -18,8 +18,8 @@ export const SPAWNS: () => SpawnLocation = () => ({
   },
   crops_and_chickens: {
     default: {
-      x: 856,
-      y: 884,
+      x: 824,
+      y: 852,
     },
   },
   portal_example: {

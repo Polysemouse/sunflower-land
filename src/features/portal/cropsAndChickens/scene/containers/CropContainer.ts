@@ -1,5 +1,5 @@
 import { BumpkinContainer } from "features/world/containers/BumpkinContainer";
-import { BOARD_OFFSET, BOARD_WIDTH } from "../../CropsAndChickensConstants";
+import { BOARD_WIDTH } from "../../CropsAndChickensConstants";
 import { Physics } from "phaser";
 
 interface Props {
@@ -17,8 +17,8 @@ export class CropContainer extends Phaser.GameObjects.Container {
     this.scene = scene;
 
     // wrap crop positions around the board, with sprite offset
-    x = Phaser.Math.Wrap(x + 8, BOARD_OFFSET, BOARD_OFFSET + BOARD_WIDTH);
-    y = Phaser.Math.Wrap(y + 1, BOARD_OFFSET, BOARD_OFFSET + BOARD_WIDTH);
+    x = Phaser.Math.Wrap(x + 8, 0, BOARD_WIDTH);
+    y = Phaser.Math.Wrap(y + 1, 0, BOARD_WIDTH);
 
     // create crop sprites
     const spriteName = "crops_planted";

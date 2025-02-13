@@ -3,10 +3,8 @@ import { SceneId } from "features/world/mmoMachine";
 import { BaseScene } from "features/world/scenes/BaseScene";
 import { MachineInterpreter } from "../lib/cropsAndChickensMachine";
 import {
-  BOARD_OFFSET,
   BOARD_WIDTH,
-  CHICKEN_SPAWN_CONFIGURATIONS,
-  CHICKEN_SPRITE_PROPERTIES,
+  NORMAL_CHICKEN_RAIL_CONFIGURATIONS,
   CROP_SPAWN_CONFIGURATIONS,
   GAME_SECONDS,
   PLAYER_MAX_XY,
@@ -19,7 +17,10 @@ import {
   JOYSTICK_FORCE_MIN,
   HALLOWEEN_PLAYER_OPACITY,
 } from "../CropsAndChickensConstants";
-import { NormalChickenContainer } from "./containers/NormalChickenContainer";
+import {
+  NormalChickenRailType,
+  NormalChickenContainer,
+} from "./containers/NormalChickenContainer";
 import { HunterChickenContainer } from "./containers/HunterChickenContainer";
 import { StorageAreaContainer } from "./containers/StorageAreaContainer";
 import { DepositIndicatorContainer } from "./containers/DepositIndicatorContainer";
@@ -407,6 +408,23 @@ export class CropsAndChickensScene extends BaseScene {
 
       // warp chickens around player
       this.chickens.forEach((chicken) => {
+        // calculate which chunk the chicken is in
+        const chickenMinX = playerX - BOARD_WIDTH / 2;
+        const chickenMaxX = playerX + BOARD_WIDTH / 2;
+        const chickenMinY = playerY - BOARD_WIDTH / 2;
+        const chickenMaxY = playerY + BOARD_WIDTH / 2;
+        if (chicken.x < chickenMinX) {
+          chicken.chunk.x -= 1;
+        } else if (chicken.x > chickenMaxX) {
+          chicken.chunk.x += 1;
+        }
+        if (chicken.y < chickenMinY) {
+          chicken.chunk.y -= 1;
+        } else if (chicken.y > chickenMaxY) {
+          chicken.chunk.y += 1;
+        }
+
+        // warp chicken
         chicken.x = Phaser.Math.Wrap(
           chicken.x,
           playerX - BOARD_WIDTH / 2,
@@ -587,31 +605,18 @@ export class CropsAndChickensScene extends BaseScene {
   }
 
   /**
-   * Creates normal chickens for a given direction.
-   * @param direction The direction.
-   * @returns All normal chickens for a given direction.
+   * Creates normal chickens for a given rail.
+   * @param railType The rail type.
+   * @returns All normal chickens for a given rail.
    */
-  private createNormalChickens = (
-    direction: "left" | "right" | "up" | "down",
-  ) => {
-    return CHICKEN_SPAWN_CONFIGURATIONS.flatMap((config) =>
+  private createNormalChickens = (railType: NormalChickenRailType) => {
+    return NORMAL_CHICKEN_RAIL_CONFIGURATIONS.flatMap((config) =>
       Array.from(
         { length: config.count },
         () =>
           new NormalChickenContainer({
-            x:
-              direction === "left" || direction === "right"
-                ? Phaser.Math.RND.realInRange(0, BOARD_WIDTH) + BOARD_OFFSET
-                : SQUARE_WIDTH *
-                    (config.track + Phaser.Math.RND.realInRange(-2, 2)) +
-                  CHICKEN_SPRITE_PROPERTIES.frameHeight / 2,
-            y:
-              direction === "up" || direction === "down"
-                ? Phaser.Math.RND.realInRange(0, BOARD_WIDTH) + BOARD_OFFSET
-                : SQUARE_WIDTH *
-                    (config.track + Phaser.Math.RND.realInRange(-2, 2)) +
-                  CHICKEN_SPRITE_PROPERTIES.frameHeight / 2,
-            direction: direction,
+            railType: railType,
+            rail: config.rail,
             scene: this,
             player: this.currentPlayer,
             killPlayer: () => killPlayer(this, "Normal Chicken"),
