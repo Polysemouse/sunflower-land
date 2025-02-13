@@ -81,6 +81,7 @@ type IslandElementArgs = {
   beehives: GameState["beehives"];
   oilReserves: GameState["oilReserves"];
   lavaPits: GameState["lavaPits"];
+  isVisiting: boolean;
 };
 
 const getRecipeLocation = (game: GameState, level: number) => {
@@ -173,6 +174,7 @@ const getIslandElements = ({
   beehives,
   oilReserves,
   lavaPits,
+  isVisiting,
 }: IslandElementArgs) => {
   const mapPlacements: Array<JSX.Element> = [];
 
@@ -199,8 +201,6 @@ const getIslandElements = ({
                 index={itemIndex}
                 readyAt={building.readyAt}
                 createdAt={building.createdAt}
-                craftingItemName={building.crafting?.name}
-                craftingReadyAt={building.crafting?.readyAt}
                 showTimers={showTimers}
                 x={x}
                 y={y}
@@ -663,42 +663,44 @@ const getIslandElements = ({
     }),
   );
 
-  const recipeLocations = getRecipeLocations(game);
-  // Group recipes by location, to stop them overlapping
-  const recipeGroups = recipeLocations.reduce(
-    (groups, recipe) => {
-      const key = `${recipe.x},${recipe.y}`;
-      if (!groups[key]) {
-        groups[key] = [];
-      }
-      groups[key].push(recipe);
-      return groups;
-    },
-    {} as Record<
-      string,
-      (Coordinates & {
-        recipe: RecipeItemName;
-      })[]
-    >,
-  );
-
-  Object.entries(recipeGroups).forEach(([key, recipes]) => {
-    const [x, y] = key.split(",").map(Number);
-    mapPlacements.push(
-      <MapPlacement
-        key={`recipe-group-${key}`}
-        x={x}
-        y={y}
-        height={1}
-        width={1}
-      >
-        <RecipeStack
-          key={`recipe-${recipes}`}
-          recipes={recipes.map((r) => r.recipe)}
-        />
-      </MapPlacement>,
+  if (!isVisiting) {
+    const recipeLocations = getRecipeLocations(game);
+    // Group recipes by location, to stop them overlapping
+    const recipeGroups = recipeLocations.reduce(
+      (groups, recipe) => {
+        const key = `${recipe.x},${recipe.y}`;
+        if (!groups[key]) {
+          groups[key] = [];
+        }
+        groups[key].push(recipe);
+        return groups;
+      },
+      {} as Record<
+        string,
+        (Coordinates & {
+          recipe: RecipeItemName;
+        })[]
+      >,
     );
-  });
+
+    Object.entries(recipeGroups).forEach(([key, recipes]) => {
+      const [x, y] = key.split(",").map(Number);
+      mapPlacements.push(
+        <MapPlacement
+          key={`recipe-group-${key}`}
+          x={x}
+          y={y}
+          height={1}
+          width={1}
+        >
+          <RecipeStack
+            key={`recipe-${recipes}`}
+            recipes={recipes.map((r) => r.recipe)}
+          />
+        </MapPlacement>,
+      );
+    });
+  }
 
   return mapPlacements;
 };
@@ -707,6 +709,8 @@ const selectGameState = (state: MachineState) => state.context.state;
 const isLandscaping = (state: MachineState) => state.matches("landscaping");
 const isVisiting = (state: MachineState) => state.matches("visiting");
 const isPaused = (state: MachineState) => !!state.context.paused;
+const _islandType = (state: MachineState) => state.context.state.island.type;
+const _season = (state: MachineState) => state.context.state.season.season;
 
 export const Land: React.FC = () => {
   const { gameService, showTimers } = useContext(Context);
@@ -715,6 +719,8 @@ export const Land: React.FC = () => {
 
   const { pathname } = useLocation();
   const state = useSelector(gameService, selectGameState);
+  const islandType = useSelector(gameService, _islandType);
+  const season = useSelector(gameService, _season);
   const showMarketplace = pathname.includes("marketplace");
 
   const {
@@ -777,7 +783,7 @@ export const Land: React.FC = () => {
           // dynamic gameboard
           width: `${gameboardDimensions.x * GRID_WIDTH_PX}px`,
           height: `${gameboardDimensions.y * GRID_WIDTH_PX}px`,
-          backgroundImage: `url(${SUNNYSIDE.decorations.ocean})`,
+          backgroundImage: `url(${season === "winter" ? SUNNYSIDE.decorations.frozenOcean : islandType === "volcano" ? SUNNYSIDE.decorations.darkOcean : SUNNYSIDE.decorations.ocean})`,
           backgroundSize: `${64 * PIXEL_SCALE}px`,
           imageRendering: "pixelated",
         }}
@@ -853,6 +859,7 @@ export const Land: React.FC = () => {
                 beehives,
                 oilReserves,
                 lavaPits,
+                isVisiting: visiting,
               }).sort((a, b) => {
                 if (a.props.canCollide === false) {
                   return -1;
