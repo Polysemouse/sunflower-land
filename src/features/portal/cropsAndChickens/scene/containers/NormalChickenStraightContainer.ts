@@ -8,23 +8,17 @@ import {
 import { BaseChickenContainer } from "./BaseChickenContainer";
 import { SQUARE_WIDTH } from "features/game/lib/constants";
 
-export type NormalChickenRailType =
-  | "left"
-  | "right"
-  | "up"
-  | "down"
-  | "clockwise"
-  | "counterClockwise";
+export type NormalChickenStraightRailType = "left" | "right" | "up" | "down";
 
 interface Props {
-  railType: NormalChickenRailType;
+  railType: NormalChickenStraightRailType;
   rail: number; // the rail the chicken is riding on
   scene: Phaser.Scene;
   player?: BumpkinContainer;
   killPlayer: () => void;
 }
 
-export class NormalChickenContainer extends BaseChickenContainer {
+export class NormalChickenStraightContainer extends BaseChickenContainer {
   chunk: { x: number; y: number };
   railPosition: number;
   railAngle = 0;
@@ -33,12 +27,17 @@ export class NormalChickenContainer extends BaseChickenContainer {
   constructor({ railType, rail, scene, player, killPlayer }: Props) {
     const randomPosition = Phaser.Math.RND.realInRange(0, BOARD_WIDTH * 2);
     const railOffset = Phaser.Math.RND.realInRange(-2, 2);
-    const spriteOffset =
-      railType === "left" || railType === "right"
-        ? 2
-        : railType === "up" || railType === "down"
-          ? 2.5
-          : 0;
+    let spriteOffset;
+    switch (railType) {
+      case "left":
+      case "right":
+        spriteOffset = 2;
+        break;
+      case "up":
+      case "down":
+        spriteOffset = 2.5;
+        break;
+    }
     const railPosition = (rail + railOffset) * SQUARE_WIDTH + spriteOffset;
     const initialSidewaysDisplacement = Phaser.Math.RND.realInRange(
       -SQUARE_WIDTH / 2,
@@ -53,19 +52,25 @@ export class NormalChickenContainer extends BaseChickenContainer {
       railType === "up" || railType === "down"
         ? randomPosition
         : railPosition + initialSidewaysDisplacement;
-    const railAngle =
-      railType === "left"
-        ? Math.PI
-        : railType === "right"
-          ? 0
-          : railType === "up"
-            ? Math.PI / 2
-            : railType === "down"
-              ? -Math.PI / 2
-              : 0;
+
+    let railAngle;
+    switch (railType) {
+      case "left":
+        railAngle = Math.PI;
+        break;
+      case "right":
+        railAngle = 0;
+        break;
+      case "up":
+        railAngle = Math.PI / 2;
+        break;
+      case "down":
+        railAngle = -Math.PI / 2;
+        break;
+    }
     const angleOffset = Phaser.Math.RND.realInRange(
-      -CHICKEN_SPEEDS.maxAngleOffset,
-      CHICKEN_SPEEDS.maxAngleOffset,
+      -CHICKEN_SPEEDS.maxStraightAngleOffset,
+      CHICKEN_SPEEDS.maxStraightAngleOffset,
     );
     const angle = railAngle + angleOffset;
     super({
@@ -95,15 +100,20 @@ export class NormalChickenContainer extends BaseChickenContainer {
         const unwrappedY = this.y + this.chunk.y * BOARD_WIDTH;
 
         // calculate sidewaysDisplacement based on the direction
-        let sidewaysDisplacement = 0;
-        if (railType === "left") {
-          sidewaysDisplacement = railPosition - unwrappedY;
-        } else if (railType === "right") {
-          sidewaysDisplacement = unwrappedY - railPosition;
-        } else if (railType === "up") {
-          sidewaysDisplacement = railPosition - unwrappedX;
-        } else if (railType === "down") {
-          sidewaysDisplacement = unwrappedX - railPosition;
+        let sidewaysDisplacement;
+        switch (railType) {
+          case "left":
+            sidewaysDisplacement = railPosition - unwrappedY;
+            break;
+          case "right":
+            sidewaysDisplacement = unwrappedY - railPosition;
+            break;
+          case "up":
+            sidewaysDisplacement = railPosition - unwrappedX;
+            break;
+          case "down":
+            sidewaysDisplacement = unwrappedX - railPosition;
+            break;
         }
 
         // try to reduce sideways displacement by changing the angle of the chicken
@@ -113,14 +123,14 @@ export class NormalChickenContainer extends BaseChickenContainer {
               (-sidewaysDisplacement / CHICKEN_SPEEDS.forwardMax) *
                 SPRITE_FRAME_RATE *
                 0.005 -
-                CHICKEN_SPEEDS.maxAngleOffset,
+                CHICKEN_SPEEDS.maxStraightAngleOffset,
               (-sidewaysDisplacement / CHICKEN_SPEEDS.forwardMax) *
                 SPRITE_FRAME_RATE *
                 0.005 +
-                CHICKEN_SPEEDS.maxAngleOffset,
+                CHICKEN_SPEEDS.maxStraightAngleOffset,
             ),
-          -CHICKEN_SPEEDS.maxAngleOffset,
-          CHICKEN_SPEEDS.maxAngleOffset,
+          -CHICKEN_SPEEDS.maxStraightAngleOffset,
+          CHICKEN_SPEEDS.maxStraightAngleOffset,
         );
         this.angle = this.railAngle + this.angleOffset;
       },

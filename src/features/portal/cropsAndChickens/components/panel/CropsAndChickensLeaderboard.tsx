@@ -18,7 +18,7 @@ type Props = {
   onBack: () => void;
 };
 
-const _farmId = (state: PortalMachineState) => state.context.id;
+const _farmId = (state: PortalMachineState) => state.context.farmId;
 const _jwt = (state: PortalMachineState) => state.context.jwt;
 
 export const CropsAndChickensLeaderboard: React.FC<Props> = ({ onBack }) => {

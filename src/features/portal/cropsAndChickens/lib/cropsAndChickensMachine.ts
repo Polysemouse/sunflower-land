@@ -27,19 +27,21 @@ import Decimal from "decimal.js-light";
 import { CropsAndChickensActivityName } from "../CropsAndChickensActivities";
 import { trackMinigameActivities } from "features/game/events/minigames/trackMinigameActivities";
 
+type GameMode = "classic" | "hard";
+
 export interface Context {
-  id: number;
+  farmId: number;
   jwt: string;
   isJoystickActive: boolean;
   isSmallScreen: boolean;
   state: GameState | undefined;
+  gameMode: GameMode;
   score: number;
   inventory: number;
   depositedCropIndexes: number[];
   harvestedCropIndexes: number[];
   inventoryCropIndexes: number[];
   endAt: number;
-  attemptsLeft: number;
 }
 
 type CropHarvestedEvent = {
@@ -71,12 +73,13 @@ export type PortalEvent =
   | SetIsJoystickActiveEvent
   | SetIsSmallScreenEvent
   | { type: "START" }
+  | { type: "RETRY" }
   | { type: "CLAIM" }
   | { type: "CANCEL_PURCHASE" }
   | { type: "PURCHASED_RESTOCK" }
   | { type: "PURCHASED_UNLIMITED" }
-  | { type: "RETRY" }
-  | { type: "CONTINUE" }
+  | { type: "START_CLASSIC_MODE" }
+  | { type: "START_HARD_MODE" }
   | { type: "END_GAME_EARLY" }
   | { type: "GAME_OVER" }
   | CropHarvestedEvent
@@ -112,17 +115,28 @@ export type MachineInterpreter = Interpreter<
 
 export type PortalMachineState = State<Context, PortalEvent, PortalState>;
 
+const createResetActions = (
+  gameMode: GameMode,
+): Partial<{
+  [K in keyof Context]: () => Context[K];
+}> => ({
+  gameMode: () => gameMode,
+  score: () => 0,
+  inventory: () => 0,
+  depositedCropIndexes: () => [],
+  harvestedCropIndexes: () => [],
+  inventoryCropIndexes: () => [],
+  endAt: () => 0,
+});
+
 const resetGameTransition = {
-  RETRY: {
+  START_CLASSIC_MODE: {
     target: "starting",
-    actions: assign<Context, any>({
-      score: () => 0,
-      inventory: () => 0,
-      depositedCropIndexes: () => [],
-      harvestedCropIndexes: () => [],
-      inventoryCropIndexes: () => [],
-      endAt: () => 0,
-    }),
+    actions: assign<Context, any>(createResetActions("classic")),
+  },
+  START_HARD_MODE: {
+    target: "starting",
+    actions: assign<Context, any>(createResetActions("hard")),
   },
 };
 
@@ -130,13 +144,15 @@ export const portalMachine = createMachine<Context, PortalEvent, PortalState>({
   id: "portalMachine",
   initial: "initialising",
   context: {
-    id: 0,
+    farmId: 0,
     jwt: getJwt(),
 
     isJoystickActive: false,
     isSmallScreen: false,
 
     state: CONFIG.API_URL ? undefined : OFFLINE_FARM,
+
+    gameMode: "classic",
 
     score: 0,
     inventory: 0,
@@ -145,7 +161,6 @@ export const portalMachine = createMachine<Context, PortalEvent, PortalState>({
     harvestedCropIndexes: [],
     inventoryCropIndexes: [],
 
-    attemptsLeft: 0,
     endAt: 0,
   },
   on: {
@@ -223,10 +238,7 @@ export const portalMachine = createMachine<Context, PortalEvent, PortalState>({
             token: context.jwt,
           });
 
-          const minigame = game.minigames.games["crops-and-chickens"];
-          const attemptsLeft = getAttemptsLeft(minigame);
-
-          return { game, farmId, attemptsLeft };
+          return { game, farmId };
         },
         onDone: [
           {
@@ -234,7 +246,6 @@ export const portalMachine = createMachine<Context, PortalEvent, PortalState>({
             actions: assign({
               state: (_: any, event) => event.data.game,
               id: (_: any, event) => event.data.farmId,
-              attemptsLeft: (_: any, event) => event.data.attemptsLeft,
             }),
           },
         ],
@@ -287,6 +298,10 @@ export const portalMachine = createMachine<Context, PortalEvent, PortalState>({
         {
           target: "noAttempts",
           cond: (context) => {
+            if (context.gameMode === "hard") {
+              return false;
+            }
+
             const minigame =
               context.state?.minigames.games["crops-and-chickens"];
             const attemptsLeft = getAttemptsLeft(minigame);
@@ -301,11 +316,7 @@ export const portalMachine = createMachine<Context, PortalEvent, PortalState>({
     },
 
     introduction: {
-      on: {
-        CONTINUE: {
-          target: "starting",
-        },
-      },
+      on: resetGameTransition,
     },
 
     ready: {
@@ -314,6 +325,10 @@ export const portalMachine = createMachine<Context, PortalEvent, PortalState>({
           target: "playing",
           actions: assign<Context>({
             state: (context: any) => {
+              if (context.gameMode === "hard") {
+                return context.state;
+              }
+
               startAttempt();
               return startMinigameAttempt({
                 state: context.state,
@@ -324,7 +339,6 @@ export const portalMachine = createMachine<Context, PortalEvent, PortalState>({
               });
             },
             endAt: () => Date.now() + GAME_SECONDS * 1000,
-            attemptsLeft: (context: Context) => context.attemptsLeft - 1,
           }) as any,
         },
       },
@@ -382,6 +396,10 @@ export const portalMachine = createMachine<Context, PortalEvent, PortalState>({
           target: "gameOver",
           actions: assign({
             state: (context: any) => {
+              if (context.gameMode === "hard") {
+                return context.state;
+              }
+
               submitScore({ score: context.score });
               return submitMinigameScore({
                 state: context.state,
@@ -403,6 +421,10 @@ export const portalMachine = createMachine<Context, PortalEvent, PortalState>({
           // they have already completed the mission before
           target: "complete",
           cond: (context) => {
+            if (context.gameMode === "hard") {
+              return true;
+            }
+
             const dateKey = new Date().toISOString().slice(0, 10);
 
             const minigame =

@@ -11,13 +11,13 @@ import { SceneId } from "features/world/mmoMachine";
 import { PortalMachineState } from "./lib/cropsAndChickensMachine";
 
 const _gameState = (state: PortalMachineState) => state.context.state;
-const _id = (state: PortalMachineState) => state.context.id;
+const _farmId = (state: PortalMachineState) => state.context.farmId;
 
 export const CropsAndChickensPhaser: React.FC = () => {
   const { portalService } = useContext(PortalContext);
 
   const gameState = useSelector(portalService, _gameState);
-  const id = useSelector(portalService, _id);
+  const farmId = useSelector(portalService, _farmId);
 
   const [, setLoaded] = useState(false);
 
@@ -76,7 +76,7 @@ export const CropsAndChickensPhaser: React.FC = () => {
 
     game.current.registry.set("initialScene", scene);
     game.current.registry.set("gameState", gameState);
-    game.current.registry.set("id", id);
+    game.current.registry.set("id", farmId);
     game.current.registry.set("portalService", portalService);
 
     setLoaded(true);

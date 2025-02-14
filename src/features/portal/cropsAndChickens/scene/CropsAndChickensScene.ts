@@ -1,10 +1,13 @@
 import { SQUARE_WIDTH } from "features/game/lib/constants";
 import { SceneId } from "features/world/mmoMachine";
 import { BaseScene } from "features/world/scenes/BaseScene";
-import { MachineInterpreter } from "../lib/cropsAndChickensMachine";
+import {
+  MachineInterpreter,
+  PortalEvent,
+} from "../lib/cropsAndChickensMachine";
 import {
   BOARD_WIDTH,
-  NORMAL_CHICKEN_RAIL_CONFIGURATIONS,
+  NORMAL_CHICKEN_STRAIGHT_RAIL_CONFIGURATIONS,
   CROP_SPAWN_CONFIGURATIONS,
   GAME_SECONDS,
   PLAYER_MAX_XY,
@@ -16,11 +19,12 @@ import {
   JOYSTICK_RADIUS,
   JOYSTICK_FORCE_MIN,
   HALLOWEEN_PLAYER_OPACITY,
+  NORMAL_CHICKEN_CIRCULAR_RAIL_CONFIGURATIONS,
 } from "../CropsAndChickensConstants";
 import {
-  NormalChickenRailType,
-  NormalChickenContainer,
-} from "./containers/NormalChickenContainer";
+  NormalChickenStraightRailType,
+  NormalChickenStraightContainer,
+} from "./containers/NormalChickenStraightContainer";
 import { HunterChickenContainer } from "./containers/HunterChickenContainer";
 import { StorageAreaContainer } from "./containers/StorageAreaContainer";
 import { DepositIndicatorContainer } from "./containers/DepositIndicatorContainer";
@@ -30,7 +34,7 @@ import { hasFeatureAccess } from "lib/flags";
 import { getZoomOutSetting, ZOOM_OUT_EVENT } from "../hooks/useIsZoomOut";
 import { preloadAssets } from "./lib/preloadAssets";
 
-import { getHolidayEvent } from "../lib/cropsAndChickensUtils";
+import { getAttemptsLeft, getHolidayEvent } from "../lib/cropsAndChickensUtils";
 import { getHolidayAsset } from "../lib/CropsAndChickensHolidayAsset";
 import Decimal from "decimal.js-light";
 import { CropsAndChickensActivityName } from "../CropsAndChickensActivities";
@@ -39,6 +43,10 @@ import { depositCrops } from "./lib/depositCrops";
 import { harvestCrop } from "./lib/harvestCrop";
 import { endGame } from "./lib/endGame";
 import { initializeControls } from "./lib/initializeControls";
+import {
+  NormalChickenCircularContainer,
+  NormalChickenCircularRailType,
+} from "./containers/NormalChickenCircularContainer";
 
 export class CropsAndChickensScene extends BaseScene {
   sceneId: SceneId = "crops_and_chickens";
@@ -57,7 +65,10 @@ export class CropsAndChickensScene extends BaseScene {
   hasStopped!: boolean;
   activities!: Partial<Record<CropsAndChickensActivityName, Decimal>>;
 
-  chickens: NormalChickenContainer[] = [];
+  chickens: (
+    | NormalChickenStraightContainer
+    | NormalChickenCircularContainer
+  )[] = [];
   hunterChicken?: HunterChickenContainer;
   storageArea?: StorageAreaContainer;
   depositIndicator?: DepositIndicatorContainer;
@@ -131,6 +142,13 @@ export class CropsAndChickensScene extends BaseScene {
   }
 
   /**
+   * Whether the game is in hard mode.
+   */
+  private get isHardMode() {
+    return this.portalServiceContext?.gameMode === "hard";
+  }
+
+  /**
    * The deposited crop indexes.
    */
   public get depositedCropIndexes() {
@@ -195,6 +213,13 @@ export class CropsAndChickensScene extends BaseScene {
       ? GAME_SECONDS
       : Math.max(endAt - Date.now(), 0) / 1000;
     return secondsLeft;
+  }
+
+  get attemptsLeft() {
+    const minigame =
+      this.portalServiceContext?.state?.minigames.games["crops-and-chickens"];
+
+    return getAttemptsLeft(minigame);
   }
 
   /**
@@ -300,9 +325,11 @@ export class CropsAndChickensScene extends BaseScene {
 
     // reload scene when player hit retry
     const onRetry = (event: EventObject) => {
-      if (event.type === "RETRY") {
-        this.changeScene(this.sceneId);
-      }
+      const type = event.type as PortalEvent["type"];
+      if (type !== "START_CLASSIC_MODE" && type !== "START_HARD_MODE") return;
+      if (!this.isHardMode && this.attemptsLeft <= 0) return;
+
+      this.changeScene(this.sceneId);
     };
     this.portalService?.onEvent(onRetry);
 
@@ -561,7 +588,7 @@ export class CropsAndChickensScene extends BaseScene {
       this.currentPlayer.idle();
     }
 
-    this.joystickIndicatorBase?.setDepth(this.currentPlayer.y - 0.0001);
+    this.joystickIndicatorBase?.setDepth(this.currentPlayer.y - 1e-4);
     this.currentPlayer.setDepth(this.currentPlayer.y);
   }
 
@@ -605,16 +632,41 @@ export class CropsAndChickensScene extends BaseScene {
   }
 
   /**
-   * Creates normal chickens for a given rail.
+   * Creates normal chickens for a given straight rail.
    * @param railType The rail type.
-   * @returns All normal chickens for a given rail.
+   * @returns All normal chickens for a given straight rail.
    */
-  private createNormalChickens = (railType: NormalChickenRailType) => {
-    return NORMAL_CHICKEN_RAIL_CONFIGURATIONS.flatMap((config) =>
+  private createNormalChickensStraight = (
+    railType: NormalChickenStraightRailType,
+  ) => {
+    return NORMAL_CHICKEN_STRAIGHT_RAIL_CONFIGURATIONS.flatMap((config) =>
       Array.from(
         { length: config.count },
         () =>
-          new NormalChickenContainer({
+          new NormalChickenStraightContainer({
+            railType: railType,
+            rail: config.rail,
+            scene: this,
+            player: this.currentPlayer,
+            killPlayer: () => killPlayer(this, "Normal Chicken"),
+          }),
+      ),
+    );
+  };
+
+  /**
+   * Creates normal chickens for a given circular rail.
+   * @param railType The rail type.
+   * @returns All normal chickens for a given circular rail.
+   */
+  private createNormalChickensCircular = (
+    railType: NormalChickenCircularRailType,
+  ) => {
+    return NORMAL_CHICKEN_CIRCULAR_RAIL_CONFIGURATIONS.flatMap((config) =>
+      Array.from(
+        { length: config.count },
+        () =>
+          new NormalChickenCircularContainer({
             railType: railType,
             rail: config.rail,
             scene: this,
@@ -630,10 +682,10 @@ export class CropsAndChickensScene extends BaseScene {
    * @returns All normal chickens in the game.
    */
   private createAllNormalChickens = () => {
-    const chickensFacingLeft = this.createNormalChickens("left");
-    const chickensFacingRight = this.createNormalChickens("right");
-    const chickensFacingUp = this.createNormalChickens("up");
-    const chickensFacingDown = this.createNormalChickens("down");
+    const chickensFacingLeft = this.createNormalChickensStraight("left");
+    const chickensFacingRight = this.createNormalChickensStraight("right");
+    const chickensFacingUp = this.createNormalChickensStraight("up");
+    const chickensFacingDown = this.createNormalChickensStraight("down");
 
     this.chickens = [
       ...chickensFacingLeft,
@@ -641,5 +693,13 @@ export class CropsAndChickensScene extends BaseScene {
       ...chickensFacingUp,
       ...chickensFacingDown,
     ];
+
+    if (this.isHardMode) {
+      const chickensClockwise = this.createNormalChickensCircular("clockwise");
+      const chickensCounterClockwise =
+        this.createNormalChickensCircular("counterClockwise");
+      this.chickens.push(...chickensClockwise);
+      this.chickens.push(...chickensCounterClockwise);
+    }
   };
 }

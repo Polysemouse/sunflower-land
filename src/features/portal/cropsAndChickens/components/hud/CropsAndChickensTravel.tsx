@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useState } from "react";
+import React, { useContext, useEffect, useRef, useState } from "react";
 import { useSelector } from "@xstate/react";
 import { PortalContext } from "../../lib/PortalProvider";
 import { PIXEL_SCALE } from "features/game/lib/constants";
@@ -25,6 +25,7 @@ export const CropsAndChickensTravel: React.FC = () => {
   const isJoystickActive = useSelector(portalService, _isJoystickActive);
 
   const [showExitConfirmation, setShowExitConfirmation] = useState(false);
+  const lastExitConfirmationToggleTimeRef = useRef(0);
 
   const button = useSound("button");
 
@@ -34,6 +35,33 @@ export const CropsAndChickensTravel: React.FC = () => {
 
     setShowExitConfirmation(false);
   }, [isPlaying]);
+
+  // show exit confirmation on Escape key press
+  useEffect(() => {
+    const handleEscape = (event: KeyboardEvent) => {
+      const currentTime = Date.now();
+
+      // show exit confirmation only if game is playing and Escape key is pressed
+      if (showExitConfirmation || event.key !== "Escape") return;
+      if (!isPlaying) return;
+      if (currentTime - lastExitConfirmationToggleTimeRef.current < 500) return;
+
+      setShowExitConfirmation((prev) => !prev);
+    };
+
+    // add event listener on mount
+    window.addEventListener("keydown", handleEscape);
+
+    // clean up the event listener on unmount
+    return () => {
+      window.removeEventListener("keydown", handleEscape);
+    };
+  }, [isPlaying, showExitConfirmation, setShowExitConfirmation]);
+
+  // update last exit confirmation toggle time when exit confirmation is shown
+  useEffect(() => {
+    lastExitConfirmationToggleTimeRef.current = Date.now();
+  }, [showExitConfirmation]);
 
   return (
     <>

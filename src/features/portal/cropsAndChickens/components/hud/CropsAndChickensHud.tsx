@@ -12,9 +12,12 @@ import classNames from "classnames";
 import { useAchievementToast } from "../../providers/AchievementToastProvider";
 import { CropsAndChickensTarget } from "./CropsAndChickensTarget";
 import { MinigameAchievement } from "features/game/types/game";
+import { Label } from "components/ui/Label";
 
 const _isJoystickActive = (state: PortalMachineState) =>
   state.context.isJoystickActive;
+const _isHardMode = (state: PortalMachineState) =>
+  state.context.gameMode === "hard";
 const _achievements = (state: PortalMachineState) =>
   state.context.state?.minigames.games["crops-and-chickens"]?.achievements ??
   {};
@@ -27,6 +30,7 @@ export const CropsAndChickensHud: React.FC = () => {
   const { portalService } = useContext(PortalContext);
 
   const isJoystickActive = useSelector(portalService, _isJoystickActive);
+  const isHardMode = useSelector(portalService, _isHardMode);
   const achievements = useSelector(
     portalService,
     _achievements,
@@ -67,6 +71,11 @@ export const CropsAndChickensHud: React.FC = () => {
               left: `${PIXEL_SCALE * 6}px`,
             }}
           >
+            {isHardMode && (
+              <Label type="danger" className="mb-1">
+                {"Hard mode - testing only!"}
+              </Label>
+            )}
             <CropsAndChickensTarget />
             <CropsAndChickensScores />
           </div>

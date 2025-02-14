@@ -133,7 +133,7 @@ export const CropsAndChickens: React.FC = () => {
             showScore={false}
             showExitButton={true}
             confirmButtonText={t("start")}
-            onConfirm={() => portalService.send("CONTINUE")}
+            onConfirm={() => portalService.send("START_CLASSIC_MODE")}
           />
         </Modal>
       )}
@@ -145,7 +145,7 @@ export const CropsAndChickens: React.FC = () => {
             showScore={true}
             showExitButton={true}
             confirmButtonText={t("play.again")}
-            onConfirm={() => portalService.send("RETRY")}
+            onConfirm={() => portalService.send("START_CLASSIC_MODE")}
           />
         </Modal>
       )}
@@ -169,7 +169,7 @@ export const CropsAndChickens: React.FC = () => {
             showScore={true}
             showExitButton={true}
             confirmButtonText={t("play.again")}
-            onConfirm={() => portalService.send("RETRY")}
+            onConfirm={() => portalService.send("START_CLASSIC_MODE")}
           />
         </Modal>
       )}

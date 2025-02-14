@@ -17,9 +17,16 @@ interface Props {
 }
 
 const getDirection = (angle: number): "left" | "right" | "up" | "down" => {
-  if (angle >= -Math.PI / 4 && angle < Math.PI / 4) return "right";
-  if (angle >= Math.PI / 4 && angle < (3 * Math.PI) / 4) return "down";
-  if (angle >= (3 * Math.PI) / 4 || angle < -(3 * Math.PI) / 4) return "left";
+  const normalizedAngle = Phaser.Math.Angle.Normalize(angle);
+  if (normalizedAngle < Math.PI / 4 || normalizedAngle >= (7 * Math.PI) / 4) {
+    return "right";
+  }
+  if (normalizedAngle < (3 * Math.PI) / 4) {
+    return "down";
+  }
+  if (normalizedAngle < (5 * Math.PI) / 4) {
+    return "left";
+  }
   return "up";
 };
 

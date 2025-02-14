@@ -56,7 +56,8 @@ export const CHICKEN_SPRITE_PROPERTIES = {
 export const CHICKEN_SPEEDS = {
   forwardMin: 40,
   forwardMax: 80,
-  maxAngleOffset: 3 * (Math.PI / 180),
+  maxCircularAngleOffset: 6 * (Math.PI / 180),
+  maxStraightAngleOffset: 3 * (Math.PI / 180),
 };
 
 export const HUNTER_CHICKEN_INITIAL_DISTANCE = 100;
@@ -317,8 +318,8 @@ export const CROP_SPAWN_CONFIGURATIONS: {
   { cropIndex: 10, x: 25, y: 25 },
 ];
 
-// the number of chickens per rail in board coordinates
-export const NORMAL_CHICKEN_RAIL_CONFIGURATIONS: {
+// the number of chickens per straight rail in board coordinates
+export const NORMAL_CHICKEN_STRAIGHT_RAIL_CONFIGURATIONS: {
   count: number;
   rail: number;
 }[] = [
@@ -332,4 +333,16 @@ export const NORMAL_CHICKEN_RAIL_CONFIGURATIONS: {
   { count: 6, rail: 67 },
   { count: 10, rail: 71 },
   { count: 15, rail: 75 },
+];
+
+// the number of chickens per circular rail in radii in board coordinates
+export const NORMAL_CHICKEN_CIRCULAR_RAIL_CONFIGURATIONS: {
+  count: number;
+  rail: number;
+}[] = [
+  { count: 60, rail: 37 },
+  { count: 40, rail: 30.5 },
+  { count: 24, rail: 24 },
+  { count: 12, rail: 17.5 },
+  { count: 4, rail: 11 },
 ];

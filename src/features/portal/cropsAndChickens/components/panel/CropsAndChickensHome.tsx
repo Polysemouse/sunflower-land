@@ -24,6 +24,7 @@ import { CropsAndChickensMissions } from "./CropsAndChickensMissions";
 import { getHolidayAsset } from "../../lib/CropsAndChickensHolidayAsset";
 import { CropsAndChickensHomeNavigationButtons } from "./CropsAndChickensHomeNavigationButtons";
 import { CropsAndChickensLeaderboard } from "./CropsAndChickensLeaderboard";
+import { hasFeatureAccess } from "lib/flags";
 
 export type CropsAndChickensPage =
   | "main"
@@ -33,6 +34,7 @@ export type CropsAndChickensPage =
   | "leaderboard"
   | "guide";
 
+const _state = (state: PortalMachineState) => state.context.state;
 const _minigame = (state: PortalMachineState) =>
   state.context.state?.minigames.games["crops-and-chickens"];
 const _score = (state: PortalMachineState) => state.context.score;
@@ -56,6 +58,7 @@ export const CropsAndChickensHome: React.FC<Props> = ({
 
   const { portalService } = useContext(PortalContext);
 
+  const state = useSelector(portalService, _state);
   const minigame = useSelector(portalService, _minigame);
   const attemptsLeft = getAttemptsLeft(minigame);
   const score = useSelector(portalService, _score);
@@ -64,6 +67,10 @@ export const CropsAndChickensHome: React.FC<Props> = ({
 
   const dailyHighscore = getDailyHighscore(minigame);
   const personalHighscore = getPersonalHighscore(minigame);
+
+  const hasBetaAccess = state
+    ? hasFeatureAccess(state, "CROPS_AND_CHICKENS_BETA_TESTING")
+    : false;
 
   const [page, setPage] = React.useState<CropsAndChickensPage>("main");
 
@@ -155,6 +162,18 @@ export const CropsAndChickensHome: React.FC<Props> = ({
             {showExitButton && <Button onClick={goHome}>{t("exit")}</Button>}
             <Button onClick={onConfirm}>{confirmButtonText}</Button>
           </div>
+          {hasBetaAccess && (
+            <div className="flex flex-col gap-1">
+              <Label type="danger">
+                {
+                  "NOTE: The hard mode button is currently only visible for beta testers. Playing hard mode does not consume any attempts, however it does not count towards your daily scores either."
+                }
+              </Label>
+              <Button onClick={() => portalService.send("START_HARD_MODE")}>
+                {"Start Hard Mode"}
+              </Button>
+            </div>
+          )}
         </div>
       )}
       {page === "mailbox" && (
