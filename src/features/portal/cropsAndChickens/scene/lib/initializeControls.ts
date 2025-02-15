@@ -13,7 +13,7 @@ const POWER_SKILL_BUTTON_ALPHA = 0.3;
 const PROGRESS_ARC_LINE_WIDTH = 4;
 const PROGRESS_ARC_OFFSET = 5;
 
-const TOTAL_BUTTONS = 6;
+const TOTAL_BUTTONS = 4;
 
 // active pointer IDs for power skill buttons
 let buttonPointerIds: number[] = [];
@@ -108,47 +108,41 @@ const initializePowerSkillButtons = (scene: CropsAndChickensScene) => {
   initializePowerSkillButton(
     scene,
     "crop_deposit_arrow",
-    "chicken\nspeed x2",
+    "slow\nchickens",
     () => {
-      scene.enemySpeedMultiplier = 2;
-      scene.events.emit("enemySpeedMultiplierChanged", 2);
-    },
-    0,
-    500,
-    1000,
-  );
-  initializePowerSkillButton(
-    scene,
-    "crop_deposit_arrow",
-    "chicken\nspeed x1",
-    () => {
-      scene.enemySpeedMultiplier = 1;
-      scene.events.emit("enemySpeedMultiplierChanged", 1);
-    },
-    1,
-    500,
-    1000,
-  );
-  initializePowerSkillButton(
-    scene,
-    "crop_deposit_arrow",
-    "chicken\nspeed x0.5",
-    () => {
+      const skillSound = scene.sound.add("skill_slow_down");
+      skillSound.play({ volume: 0.8 });
+      const tintColor = 0x7f8fff;
+
+      scene.normalChickens.forEach((chicken) => {
+        chicken.chicken.setTint(tintColor);
+      });
+      scene.hunterChicken?.chicken.setTint(tintColor);
+
       scene.enemySpeedMultiplier = 0.5;
       scene.events.emit("enemySpeedMultiplierChanged", 0.5);
+      scene.time.delayedCall(10000, () => {
+        scene.normalChickens.forEach((chicken) => {
+          chicken.chicken.clearTint();
+        });
+        scene.hunterChicken?.chicken.clearTint();
+
+        scene.enemySpeedMultiplier = 1;
+        scene.events.emit("enemySpeedMultiplierChanged", 1);
+      });
     },
-    2,
-    500,
-    1000,
+    0,
+    10000,
+    20000,
   );
   initializePowerSkillButton(
     scene,
     "crop_deposit_arrow",
-    "kill nearby\nchickens",
+    "kill nearby\nnormal\nchickens",
     () => {
       killNormalChickensAroundPlayer(scene, 4);
     },
-    3,
+    1,
     1000,
     10000,
   );
@@ -159,7 +153,7 @@ const initializePowerSkillButtons = (scene: CropsAndChickensScene) => {
     () => {
       depositCrops(scene);
     },
-    4,
+    2,
     1000,
     15000,
   );
@@ -170,7 +164,7 @@ const initializePowerSkillButtons = (scene: CropsAndChickensScene) => {
     () => {
       killPlayer(scene, "Normal Chicken");
     },
-    5,
+    3,
     2000,
     3000,
   );
@@ -215,8 +209,8 @@ const initializePowerSkillButton = (
     // arrange buttons in a row at the bottom of the screen from left to right
     buttonX =
       width / 2 -
-      POWER_SKILL_BUTTON_SIZE * (2 * buttonIndex - 0.5 * (TOTAL_BUTTONS + 1)) -
-      POWER_SKILL_BUTTON_MARGIN * (2 * buttonIndex - 0.5 * (TOTAL_BUTTONS + 1));
+      POWER_SKILL_BUTTON_SIZE * (2 * buttonIndex - TOTAL_BUTTONS + 1) -
+      POWER_SKILL_BUTTON_MARGIN * (2 * buttonIndex - TOTAL_BUTTONS + 1);
     buttonY = height - POWER_SKILL_BUTTON_SIZE - POWER_SKILL_BUTTON_MARGIN;
   }
 
