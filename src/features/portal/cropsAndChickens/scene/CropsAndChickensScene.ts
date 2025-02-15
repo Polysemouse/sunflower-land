@@ -53,10 +53,10 @@ export class CropsAndChickensScene extends BaseScene {
 
   hudCamera?: Phaser.Cameras.Scene2D.Camera;
 
-  public enemySpeedMultiplier = 1;
-
   joystickIndicatorBase: Phaser.GameObjects.Arc | undefined;
   joystickIndicatorDot: Phaser.GameObjects.Sprite | undefined;
+
+  public enemySpeedMultiplier!: number;
 
   // player states
   isDead!: boolean;
@@ -101,6 +101,8 @@ export class CropsAndChickensScene extends BaseScene {
    * Sets the default states.
    */
   private setDefaultStates = () => {
+    this.enemySpeedMultiplier = 1;
+
     this.isDead = false;
     this.chunk = { x: 0, y: 0 };
     this.deaths = 0;
