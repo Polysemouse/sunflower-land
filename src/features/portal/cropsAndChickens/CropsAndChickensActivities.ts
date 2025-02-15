@@ -5,10 +5,12 @@ type HarvestedEvents = `${CropsAndChickensCropName} Harvested`;
 type DepositedEvents = `${CropsAndChickensCropName} Deposited`;
 type DroppedEvents = `${CropsAndChickensCropName} Dropped`;
 type CollidedEvents = `${CropsAndChickensChickenName} Collided`;
+type killedEVents = `${CropsAndChickensChickenName} Killed`;
 
 export type CropsAndChickensActivityName =
   | "Classic Mode Played"
   | HarvestedEvents
   | DepositedEvents
   | DroppedEvents
-  | CollidedEvents;
+  | CollidedEvents
+  | killedEVents;

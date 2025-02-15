@@ -65,7 +65,7 @@ export const killPlayer = (
     playerDeath.setAlpha(HALLOWEEN_PLAYER_OPACITY);
   }
 
-  if (!scene.anims.exists(spriteKey as string)) {
+  if (!scene.anims.exists(spriteKey)) {
     scene.anims.create({
       key: spriteKey,
       frames: scene.anims.generateFrameNumbers(spriteName, {

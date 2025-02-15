@@ -1,11 +1,13 @@
 import { BumpkinContainer } from "features/world/containers/BumpkinContainer";
 import {
+  CHICKEN_RESPAWNING_RADIUS,
   CHICKEN_SPEEDS,
   CHICKEN_SPRITE_PROPERTIES,
   SPRITE_FRAME_RATE,
 } from "../../CropsAndChickensConstants";
 import { Physics } from "phaser";
 import { CropsAndChickensScene } from "../CropsAndChickensScene";
+import { SQUARE_WIDTH } from "features/game/lib/constants";
 
 interface Props {
   x: number;
@@ -87,6 +89,15 @@ export class BaseChickenContainer extends Phaser.GameObjects.Container {
       ) => {
         if (!this.body) return;
 
+        // if chicken is far away from the player, reset the alpha
+        if (
+          !!player &&
+          Phaser.Math.Distance.Between(this.x, this.y, player.x, player.y) >
+            CHICKEN_RESPAWNING_RADIUS * SQUARE_WIDTH
+        ) {
+          this.setAlpha(1);
+        }
+
         const direction = getDirection(this.angle);
         this.chicken.setTexture(`${spriteType}_${direction}`, frame.index - 1);
 
@@ -125,7 +136,17 @@ export class BaseChickenContainer extends Phaser.GameObjects.Container {
         .setImmovable(true)
         .setCollideWorldBounds(false);
 
-      scene.physics.add.overlap(player, this, killPlayer, undefined, this);
+      scene.physics.add.overlap(
+        player,
+        this,
+        () => {
+          if (this.alpha < 1) return;
+
+          killPlayer();
+        },
+        undefined,
+        this,
+      );
     }
 
     // add the sprite to the container

@@ -67,7 +67,7 @@ export class CropsAndChickensScene extends BaseScene {
   hasStopped!: boolean;
   activities!: Partial<Record<CropsAndChickensActivityName, Decimal>>;
 
-  chickens: (
+  normalChickens: (
     | NormalChickenStraightContainer
     | NormalChickenCircularContainer
   )[] = [];
@@ -438,7 +438,7 @@ export class CropsAndChickensScene extends BaseScene {
       this.currentPlayer.y = playerY;
 
       // warp chickens around player
-      this.chickens.forEach((chicken) => {
+      this.normalChickens.forEach((chicken) => {
         // calculate which chunk the chicken is in
         const chickenMinX = playerX - BOARD_WIDTH / 2;
         const chickenMaxX = playerX + BOARD_WIDTH / 2;
@@ -691,7 +691,7 @@ export class CropsAndChickensScene extends BaseScene {
     const chickensFacingUp = this.createNormalChickensStraight("up");
     const chickensFacingDown = this.createNormalChickensStraight("down");
 
-    this.chickens = [
+    this.normalChickens = [
       ...chickensFacingLeft,
       ...chickensFacingRight,
       ...chickensFacingUp,
@@ -702,8 +702,8 @@ export class CropsAndChickensScene extends BaseScene {
       const chickensClockwise = this.createNormalChickensCircular("clockwise");
       const chickensCounterClockwise =
         this.createNormalChickensCircular("counterClockwise");
-      this.chickens.push(...chickensClockwise);
-      this.chickens.push(...chickensCounterClockwise);
+      this.normalChickens.push(...chickensClockwise);
+      this.normalChickens.push(...chickensCounterClockwise);
     }
   };
 }

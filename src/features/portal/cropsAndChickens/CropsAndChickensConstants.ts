@@ -46,6 +46,12 @@ export const PLAYER_DEATH_SPRITE_PROPERTIES = {
   frameHeight: 22,
 };
 
+export const CHICKEN_DEATH_SPRITE_PROPERTIES = {
+  frames: 10,
+  frameWidth: 15,
+  frameHeight: 15,
+};
+
 export const CHICKEN_SPRITE_PROPERTIES = {
   frames: 6,
   landingFrame: 4,
@@ -62,6 +68,8 @@ export const CHICKEN_SPEEDS = {
 
 export const HUNTER_CHICKEN_INITIAL_DISTANCE = 100;
 export const HUNTER_CHICKEN_SPEED_MULTIPLIER = 0.8;
+
+export const CHICKEN_RESPAWNING_RADIUS = 16;
 
 export type CropsAndChickensCropName =
   | "Sunflower"

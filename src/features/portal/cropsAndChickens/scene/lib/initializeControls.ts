@@ -5,12 +5,15 @@ import { CropsAndChickensScene } from "../CropsAndChickensScene";
 import { JOYSTICK_RADIUS } from "../../CropsAndChickensConstants";
 import { killPlayer } from "./killPlayer";
 import { depositCrops } from "./depositCrops";
+import { killNormalChickensAroundPlayer } from "./killNormalChickensAroundPlayer";
 
 const POWER_SKILL_BUTTON_SIZE = 28;
 const POWER_SKILL_BUTTON_MARGIN = 9;
-const POEWR_SKILL_BUTTON_ALPHA = 0.3;
+const POWER_SKILL_BUTTON_ALPHA = 0.3;
+const PROGRESS_ARC_LINE_WIDTH = 4;
+const PROGRESS_ARC_OFFSET = 5;
 
-const TOTAL_BUTTONS = 5;
+const TOTAL_BUTTONS = 6;
 
 // active pointer IDs for power skill buttons
 let buttonPointerIds: number[] = [];
@@ -105,7 +108,7 @@ const initializePowerSkillButtons = (scene: CropsAndChickensScene) => {
   initializePowerSkillButton(
     scene,
     "crop_deposit_arrow",
-    "chicken\nx2 speed",
+    "chicken\nspeed x2",
     () => {
       scene.enemySpeedMultiplier = 2;
       scene.events.emit("enemySpeedMultiplierChanged", 2);
@@ -117,7 +120,7 @@ const initializePowerSkillButtons = (scene: CropsAndChickensScene) => {
   initializePowerSkillButton(
     scene,
     "crop_deposit_arrow",
-    "chicken\nx1 speed",
+    "chicken\nspeed x1",
     () => {
       scene.enemySpeedMultiplier = 1;
       scene.events.emit("enemySpeedMultiplierChanged", 1);
@@ -129,7 +132,7 @@ const initializePowerSkillButtons = (scene: CropsAndChickensScene) => {
   initializePowerSkillButton(
     scene,
     "crop_deposit_arrow",
-    "chicken\nx0.5 speed",
+    "chicken\nspeed x0.5",
     () => {
       scene.enemySpeedMultiplier = 0.5;
       scene.events.emit("enemySpeedMultiplierChanged", 0.5);
@@ -141,11 +144,22 @@ const initializePowerSkillButtons = (scene: CropsAndChickensScene) => {
   initializePowerSkillButton(
     scene,
     "crop_deposit_arrow",
+    "kill nearby\nchickens",
+    () => {
+      killNormalChickensAroundPlayer(scene, 4);
+    },
+    3,
+    1000,
+    10000,
+  );
+  initializePowerSkillButton(
+    scene,
+    "crop_deposit_arrow",
     "deposit\ncrops",
     () => {
       depositCrops(scene);
     },
-    3,
+    4,
     1000,
     15000,
   );
@@ -156,12 +170,24 @@ const initializePowerSkillButtons = (scene: CropsAndChickensScene) => {
     () => {
       killPlayer(scene, "Normal Chicken");
     },
-    4,
-    1000,
+    5,
+    2000,
     3000,
   );
 };
 
+/**
+ * Initializes a power skill button in the given scene.
+ *
+ * @param scene - The scene where the button will be added.
+ * @param imageKey - The key of the image to be used for the button.
+ * @param text - The text to be displayed on the button.
+ * @param callback - The callback function to be executed when the button is pressed.
+ * @param buttonIndex - The index of the button, used to determine its position.
+ * @param effectDuration - The duration of the effect in milliseconds.
+ * @param cooldownDuration - The duration of the cooldown in milliseconds.
+ * @returns The created skill button.
+ */
 const initializePowerSkillButton = (
   scene: CropsAndChickensScene,
   imageKey: string,
@@ -171,19 +197,22 @@ const initializePowerSkillButton = (
   effectDuration: number,
   cooldownDuration: number,
 ) => {
-  const { width, height } = scene.cameras.main;
-
+  // flag to track if the pointer is over the button
+  // used for changing the cursor style
   let isPointerOverButton = false;
 
+  // get the position of the button
+  const { width, height } = scene.cameras.main;
   let buttonX, buttonY;
-
   if (isTouchDevice()) {
+    // arrange buttons in a column on the right side of the screen from bottom to top
     buttonX = width - POWER_SKILL_BUTTON_SIZE - POWER_SKILL_BUTTON_MARGIN;
     buttonY =
       height -
       POWER_SKILL_BUTTON_SIZE * (2 * buttonIndex + 3) -
       POWER_SKILL_BUTTON_MARGIN * (2 * buttonIndex + 3);
   } else {
+    // arrange buttons in a row at the bottom of the screen from left to right
     buttonX =
       width / 2 -
       POWER_SKILL_BUTTON_SIZE * (2 * buttonIndex - 0.5 * (TOTAL_BUTTONS + 1)) -
@@ -194,10 +223,23 @@ const initializePowerSkillButton = (
   const skillButton = scene.add
     .circle(buttonX, buttonY, POWER_SKILL_BUTTON_SIZE, 0xffffff)
     .setScrollFactor(0)
-    .setAlpha(POEWR_SKILL_BUTTON_ALPHA)
+    .setAlpha(POWER_SKILL_BUTTON_ALPHA)
     .setInteractive({
       cursor: "pointer",
     });
+
+  const progressArc = scene.add.graphics({
+    x: skillButton.x,
+    y: skillButton.y,
+  });
+
+  const progressMask = scene.add.graphics({
+    x: skillButton.x,
+    y: skillButton.y,
+  });
+  skillButton.setMask(
+    new Phaser.Display.Masks.GeometryMask(scene, progressMask),
+  );
 
   // const skillButtonImage = scene.add
   //   .image(buttonX, buttonY, imageKey)
@@ -216,24 +258,139 @@ const initializePowerSkillButton = (
     .setScrollFactor(0)
     .setOrigin(0.5);
 
-  const cooldownGraphics = scene.add.graphics({
-    x: skillButton.x,
-    y: skillButton.y,
-  });
-  cooldownGraphics.setVisible(false);
+  // ignore skill button in main camera
+  scene.cameras.main.ignore(skillButton);
+  // scene.cameras.main.ignore(skillButtonImage);
+  scene.cameras.main.ignore(skillButtonText);
+  scene.cameras.main.ignore(progressArc);
+  scene.cameras.main.ignore(progressMask);
 
-  skillButton.on("pointerdown", (pointer: Phaser.Input.Pointer) => {
-    if (isTouchDevice()) buttonPointerIds.push(pointer.id);
+  const disableButton = () => {
+    if (skillButton.input) skillButton.input.cursor = "default";
+    if (isPointerOverButton) scene.input.setDefaultCursor("default");
 
-    if (skillButton.getData("isOnCooldown")) return;
+    skillButton.setData("isOnEffectOrCooldown", true);
+    skillButton.setAlpha(POWER_SKILL_BUTTON_ALPHA * 0.5);
+    // skillButtonImage.setAlpha(0.5);
+    skillButtonText.setAlpha(0.5);
+  };
 
-    setUsedState();
-    scene.time.delayedCall(effectDuration, () => {
-      startCooldown();
+  const startEffect = () => {
+    const dummy = { progress: 0 };
+    scene.tweens.add({
+      targets: dummy,
+      progress: 1,
+      duration: effectDuration,
+      onUpdate: (tween) => {
+        drawProgress(true, 1 - tween.progress, 0xffff00, 0.8);
+      },
+      onComplete: () => {
+        startCooldown();
+      },
     });
+  };
 
-    callback(pointer);
-  });
+  const startCooldown = () => {
+    skillButton.fillColor = 0xffffff;
+
+    const dummy = { progress: 0 };
+    scene.tweens.add({
+      targets: dummy,
+      progress: 1,
+      duration: cooldownDuration,
+      onUpdate: (tween) => {
+        drawProgress(false, tween.progress, 0xffffff, 0.5);
+      },
+      onComplete: () => {
+        // restore button state
+        skillButton
+          .setData("isOnEffectOrCooldown", false)
+          .setAlpha(POWER_SKILL_BUTTON_ALPHA);
+        skillButton.fillColor = 0xffff00;
+        // skillButtonImage.setAlpha(1.0);
+        skillButtonText.setAlpha(1.0);
+        drawProgress(false, 0, 0xffffff, 0.0);
+
+        // restore cursor
+        if (skillButton.input) skillButton.input.cursor = "pointer";
+        if (isPointerOverButton) scene.input.setDefaultCursor("pointer");
+      },
+    });
+  };
+
+  const drawProgress = (
+    isEffectOn: boolean,
+    progress: number,
+    color: number,
+    alpha: number,
+  ) => {
+    progressArc
+      .clear()
+      .lineStyle(PROGRESS_ARC_LINE_WIDTH, color, alpha)
+      .beginPath()
+      .arc(
+        0,
+        0,
+        POWER_SKILL_BUTTON_SIZE + PROGRESS_ARC_OFFSET,
+        Phaser.Math.DegToRad(270),
+        Phaser.Math.DegToRad(270 + 360 * progress),
+        false,
+      )
+      .strokePath();
+
+    if (progress < 1) {
+      progressArc
+        .lineStyle(PROGRESS_ARC_LINE_WIDTH, color, alpha * 0.2)
+        .beginPath()
+        .arc(
+          0,
+          0,
+          POWER_SKILL_BUTTON_SIZE + PROGRESS_ARC_OFFSET,
+          Phaser.Math.DegToRad(270 + 360 * progress),
+          Phaser.Math.DegToRad(270 + 360),
+          false,
+        )
+        .strokePath();
+    }
+
+    if (isEffectOn) return;
+
+    progressMask
+      .clear()
+      .fillStyle(0xffffff, 0.5)
+      .beginPath()
+      .moveTo(0, 0)
+      .arc(
+        0,
+        0,
+        POWER_SKILL_BUTTON_SIZE,
+        Phaser.Math.DegToRad(270),
+        Phaser.Math.DegToRad(270 + 360 * progress),
+        false,
+      )
+      .lineTo(0, 0)
+      .closePath()
+      .fillPath();
+
+    // Draw the remaining part of the mask with lower opacity
+    if (progress < 1) {
+      progressMask
+        .fillStyle(0xffffff, 0.2)
+        .beginPath()
+        .moveTo(0, 0)
+        .arc(
+          0,
+          0,
+          POWER_SKILL_BUTTON_SIZE,
+          Phaser.Math.DegToRad(270 + 360 * progress),
+          Phaser.Math.DegToRad(270 + 360),
+          false,
+        )
+        .lineTo(0, 0)
+        .closePath()
+        .fillPath();
+    }
+  };
 
   skillButton.on("pointerover", () => {
     isPointerOverButton = true;
@@ -243,64 +400,21 @@ const initializePowerSkillButton = (
     isPointerOverButton = false;
   });
 
-  const setUsedState = () => {
-    if (skillButton.input) skillButton.input.cursor = "default";
-    if (isPointerOverButton) scene.input.setDefaultCursor("default");
+  skillButton.on("pointerdown", (pointer: Phaser.Input.Pointer) => {
+    if (isTouchDevice()) buttonPointerIds.push(pointer.id);
 
-    skillButton.setData("isOnCooldown", true);
-    skillButton.setAlpha(POEWR_SKILL_BUTTON_ALPHA * 0.5);
-    // skillButtonImage.setAlpha(0.5);
-    skillButtonText.setAlpha(0.5);
-  };
+    if (skillButton.getData("isOnEffectOrCooldown")) return;
 
-  const startCooldown = () => {
-    cooldownGraphics.setVisible(true);
-    cooldownGraphics.clear();
+    disableButton();
+    startEffect();
 
-    const dummy = { progress: 0 };
-    scene.tweens.add({
-      targets: dummy,
-      progress: 1,
-      duration: cooldownDuration,
-      onUpdate: (tween) => {
-        const progress = tween.progress;
-        drawCooldownCircle(progress);
-      },
-      onComplete: () => {
-        skillButton
-          .setData("isOnCooldown", false)
-          .setAlpha(POEWR_SKILL_BUTTON_ALPHA);
-        // skillButtonImage.setAlpha(1.0);
-        skillButtonText.setAlpha(1.0);
+    callback(pointer);
+  });
 
-        if (skillButton.input) skillButton.input.cursor = "pointer";
-        if (isPointerOverButton) scene.input.setDefaultCursor("pointer");
-
-        cooldownGraphics.setVisible(false);
-      },
-    });
-  };
-
-  const drawCooldownCircle = (progress: number) => {
-    cooldownGraphics.clear();
-    cooldownGraphics.lineStyle(4, 0xffffff, 0.5);
-    cooldownGraphics.beginPath();
-    cooldownGraphics.arc(
-      0,
-      0,
-      POWER_SKILL_BUTTON_SIZE + 5,
-      Phaser.Math.DegToRad(270),
-      Phaser.Math.DegToRad(270 + 360 * progress),
-      false,
-    );
-    cooldownGraphics.strokePath();
-  };
-
-  scene.cameras.main.ignore(skillButton);
-  scene.cameras.main.ignore(cooldownGraphics);
-
-  setUsedState();
+  // start cooldown immediately
+  disableButton();
   startCooldown();
+
   return skillButton;
 };
 
@@ -347,7 +461,7 @@ export const initializeControls = (scene: CropsAndChickensScene) => {
   if (scene.isHardMode && scene.hasBetaAccess)
     initializePowerSkillButtons(scene);
 
-  // initialise Keyboard
+  // initialize kaeyboard
   initializeKeyboardControls(scene);
 
   scene.input.setTopOnly(true);

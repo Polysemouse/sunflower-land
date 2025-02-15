@@ -1,4 +1,5 @@
 import {
+  CHICKEN_DEATH_SPRITE_PROPERTIES,
   CHICKEN_SPRITE_PROPERTIES,
   PLAYER_DEATH_SPRITE_PROPERTIES,
 } from "../../CropsAndChickensConstants";
@@ -32,6 +33,16 @@ export const preloadAssets = (scene: CropsAndChickensScene) => {
     {
       frameWidth: PLAYER_DEATH_SPRITE_PROPERTIES.frameWidth,
       frameHeight: PLAYER_DEATH_SPRITE_PROPERTIES.frameHeight,
+    },
+  );
+
+  // chicken death spritesheets
+  scene.load.spritesheet(
+    "chicken_death",
+    "crops-and-chickens/chicken_death.png",
+    {
+      frameWidth: CHICKEN_DEATH_SPRITE_PROPERTIES.frameWidth,
+      frameHeight: CHICKEN_DEATH_SPRITE_PROPERTIES.frameHeight,
     },
   );
 
@@ -155,6 +166,15 @@ export const preloadAssets = (scene: CropsAndChickensScene) => {
     "target_reached",
     "crops-and-chickens/audio/target_reached.mp3",
   );
+  scene.load.audio(
+    "chicken_killed",
+    "crops-and-chickens/audio/chicken_killed.mp3",
+  );
+  scene.load.audio(
+    "skill_chicken_explosion",
+    "crops-and-chickens/audio/skill_chicken_explosion.mp3",
+  );
+
   scene.load.audio(
     "player_killed",
     getHolidayAsset("audio_player_killed", holidayEvent),
