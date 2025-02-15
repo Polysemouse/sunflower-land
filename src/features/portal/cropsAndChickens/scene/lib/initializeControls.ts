@@ -226,20 +226,13 @@ const initializePowerSkillButton = (
     if (isTouchDevice()) buttonPointerIds.push(pointer.id);
 
     if (skillButton.getData("isOnCooldown")) return;
-    skillButton.setData("isOnCooldown", true);
 
-    callback(pointer);
-
-    if (skillButton.input) skillButton.input.cursor = "default";
-    if (isPointerOverButton) scene.input.setDefaultCursor("default");
-
-    skillButton.setAlpha(POEWR_SKILL_BUTTON_ALPHA * 0.5);
-    // skillButtonImage.setAlpha(0.5);
-    skillButtonText.setAlpha(0.5);
-
+    setUsedState();
     scene.time.delayedCall(effectDuration, () => {
       startCooldown();
     });
+
+    callback(pointer);
   });
 
   skillButton.on("pointerover", () => {
@@ -249,6 +242,16 @@ const initializePowerSkillButton = (
   skillButton.on("pointerout", () => {
     isPointerOverButton = false;
   });
+
+  const setUsedState = () => {
+    if (skillButton.input) skillButton.input.cursor = "default";
+    if (isPointerOverButton) scene.input.setDefaultCursor("default");
+
+    skillButton.setData("isOnCooldown", true);
+    skillButton.setAlpha(POEWR_SKILL_BUTTON_ALPHA * 0.5);
+    // skillButtonImage.setAlpha(0.5);
+    skillButtonText.setAlpha(0.5);
+  };
 
   const startCooldown = () => {
     cooldownGraphics.setVisible(true);
@@ -296,6 +299,7 @@ const initializePowerSkillButton = (
   scene.cameras.main.ignore(skillButton);
   scene.cameras.main.ignore(cooldownGraphics);
 
+  setUsedState();
   startCooldown();
   return skillButton;
 };
