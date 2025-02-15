@@ -8,13 +8,14 @@ import {
 } from "../../CropsAndChickensConstants";
 import { BaseChickenContainer } from "./BaseChickenContainer";
 import { SQUARE_WIDTH } from "features/game/lib/constants";
+import { CropsAndChickensScene } from "../CropsAndChickensScene";
 
 export type NormalChickenCircularRailType = "clockwise" | "counterClockwise";
 
 interface Props {
   railType: NormalChickenCircularRailType;
   rail: number; // the rail the chicken is riding on
-  scene: Phaser.Scene;
+  scene: CropsAndChickensScene;
   player?: BumpkinContainer;
   killPlayer: () => void;
 }
@@ -98,10 +99,12 @@ export class NormalChickenCircularContainer extends BaseChickenContainer {
             Phaser.Math.RND.realInRange(
               (-sidewaysRadiusDisplacement / CHICKEN_SPEEDS.forwardMax) *
                 SPRITE_FRAME_RATE *
+                scene.enemySpeedMultiplier *
                 0.02 -
                 CHICKEN_SPEEDS.maxCircularAngleOffset,
               (-sidewaysRadiusDisplacement / CHICKEN_SPEEDS.forwardMax) *
                 SPRITE_FRAME_RATE *
+                scene.enemySpeedMultiplier *
                 0.02 +
                 CHICKEN_SPEEDS.maxCircularAngleOffset,
             ),

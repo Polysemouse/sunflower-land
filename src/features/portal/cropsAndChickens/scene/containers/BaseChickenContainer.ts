@@ -5,13 +5,14 @@ import {
   SPRITE_FRAME_RATE,
 } from "../../CropsAndChickensConstants";
 import { Physics } from "phaser";
+import { CropsAndChickensScene } from "../CropsAndChickensScene";
 
 interface Props {
   x: number;
   y: number;
   angle: number; // angle in radians
   spriteType: "chicken_normal" | "chicken_hunter";
-  scene: Phaser.Scene;
+  scene: CropsAndChickensScene;
   player?: BumpkinContainer;
   killPlayer: () => void;
 }
@@ -54,7 +55,7 @@ export class BaseChickenContainer extends Phaser.GameObjects.Container {
           end: CHICKEN_SPRITE_PROPERTIES.frames - 1,
         }),
         repeat: -1,
-        frameRate: SPRITE_FRAME_RATE,
+        frameRate: SPRITE_FRAME_RATE * scene.enemySpeedMultiplier,
       });
     });
 
@@ -102,7 +103,8 @@ export class BaseChickenContainer extends Phaser.GameObjects.Container {
         }
 
         if (frame.index < CHICKEN_SPRITE_PROPERTIES.landingFrame) {
-          const speed = this.baseSpeed * this.speedMultiplier;
+          const speed =
+            this.baseSpeed * this.speedMultiplier * scene.enemySpeedMultiplier;
           this.body.velocity.x = speed * Math.cos(this.angle);
           this.body.velocity.y = speed * Math.sin(this.angle);
         }
@@ -131,5 +133,14 @@ export class BaseChickenContainer extends Phaser.GameObjects.Container {
 
     // add the container to the scene
     scene.add.existing(this);
+
+    // Listen for changes in enemySpeedMultiplier
+    scene.events.on("enemySpeedMultiplierChanged", this.updateFrameRate, this);
+  }
+
+  // update the frame rate of the chicken sprite
+  updateFrameRate(newMultiplier: number) {
+    if (!this.chicken.anims?.msPerFrame) return;
+    this.chicken.anims.msPerFrame = 1000 / (SPRITE_FRAME_RATE * newMultiplier);
   }
 }

@@ -22,7 +22,7 @@ export const killPlayer = (
   scene: CropsAndChickensScene,
   chickenType: CropsAndChickensChickenName,
 ) => {
-  if (!scene.currentPlayer?.body || scene.isDead || !scene.isGamePlaying) {
+  if (!scene.currentPlayer?.body || scene.isDead || !scene.isRulesRead) {
     return;
   }
 
@@ -93,7 +93,7 @@ export const killPlayer = (
     scene.isDead = false;
 
     // show player if player is still playing
-    if (scene.isGamePlaying) scene.currentPlayer.setVisible(true);
+    if (scene.isRulesRead) scene.currentPlayer.setVisible(true);
 
     if (playerDeath.active) playerDeath.destroy();
     scene.hunterChicken?.respawn();

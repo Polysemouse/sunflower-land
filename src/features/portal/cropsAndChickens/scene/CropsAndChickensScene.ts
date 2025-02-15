@@ -53,6 +53,8 @@ export class CropsAndChickensScene extends BaseScene {
 
   hudCamera?: Phaser.Cameras.Scene2D.Camera;
 
+  public enemySpeedMultiplier = 1;
+
   joystickIndicatorBase: Phaser.GameObjects.Arc | undefined;
   joystickIndicatorDot: Phaser.GameObjects.Sprite | undefined;
 
@@ -144,7 +146,7 @@ export class CropsAndChickensScene extends BaseScene {
   /**
    * Whether the game is in hard mode.
    */
-  private get isHardMode() {
+  get isHardMode() {
     return this.portalServiceContext?.gameMode === "hard";
   }
 
@@ -225,7 +227,7 @@ export class CropsAndChickensScene extends BaseScene {
   /**
    * Whether the player has read the rules.
    */
-  private get isRulesRead() {
+  get isRulesRead() {
     return (
       this.portalService?.state.matches("ready") === true ||
       this.portalService?.state.matches("playing") === true
@@ -235,7 +237,7 @@ export class CropsAndChickensScene extends BaseScene {
   /**
    * Whether the game is in the playing state.
    */
-  get isGamePlaying() {
+  private get isGamePlaying() {
     return this.portalService?.state.matches("playing") === true;
   }
 
