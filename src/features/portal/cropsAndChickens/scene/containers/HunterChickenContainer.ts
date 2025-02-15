@@ -6,9 +6,10 @@ import {
 } from "../../CropsAndChickensConstants";
 import { SPAWNS } from "features/world/lib/spawn";
 import { BaseChickenContainer } from "./BaseChickenContainer";
+import { CropsAndChickensScene } from "../CropsAndChickensScene";
 
 interface Props {
-  scene: Phaser.Scene;
+  scene: CropsAndChickensScene;
   player?: BumpkinContainer;
   isChickenFrozen: () => boolean;
   killPlayer: () => void;

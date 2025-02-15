@@ -59,7 +59,7 @@ export const getHolidayEvent = (): CropsAndChickensHolidayEvent => {
   const ONE_DAY = 24 * 60 * 60 * 1000;
 
   const aprilFoolsDate = Date.UTC(year, 3, 1);
-  const aprilFoolsStartDate = aprilFoolsDate - 6 * ONE_DAY;
+  const aprilFoolsStartDate = aprilFoolsDate - ONE_DAY;
   const aprilFoolsEndDate = aprilFoolsDate + ONE_DAY;
   if (now >= aprilFoolsStartDate && now < aprilFoolsEndDate)
     return "april_fools";
