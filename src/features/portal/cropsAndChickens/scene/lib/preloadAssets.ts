@@ -170,6 +170,9 @@ export const preloadAssets = (scene: CropsAndChickensScene) => {
     "chicken_killed",
     "crops-and-chickens/audio/chicken_killed.mp3",
   );
+
+  scene.load.audio("skill_ready", "crops-and-chickens/audio/skill_ready.mp3");
+
   scene.load.audio(
     "skill_chicken_explosion",
     "crops-and-chickens/audio/skill_chicken_explosion.mp3",

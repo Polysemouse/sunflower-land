@@ -155,7 +155,7 @@ export class BaseChickenContainer extends Phaser.GameObjects.Container {
     // add the container to the scene
     scene.add.existing(this);
 
-    // Listen for changes in enemySpeedMultiplier
+    // listen for changes in enemySpeedMultiplier
     scene.events.on("enemySpeedMultiplierChanged", this.updateFrameRate, this);
   }
 

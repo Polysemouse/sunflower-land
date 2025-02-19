@@ -296,6 +296,10 @@ const initializePowerSkillButton = (
         drawProgress(false, tween.progress, 0xffffff, 0.5);
       },
       onComplete: () => {
+        // play ready sound
+        const skillReadySound = scene.sound.add("skill_ready");
+        skillReadySound.play({ volume: 0.4 });
+
         // restore button state
         skillButton
           .setData("isOnEffectOrCooldown", false)
@@ -366,7 +370,7 @@ const initializePowerSkillButton = (
       .closePath()
       .fillPath();
 
-    // Draw the remaining part of the mask with lower opacity
+    // draw the remaining part of the mask with lower opacity
     if (progress < 1) {
       progressMask
         .fillStyle(0xffffff, 0.2)
@@ -397,6 +401,7 @@ const initializePowerSkillButton = (
   skillButton.on("pointerdown", (pointer: Phaser.Input.Pointer) => {
     if (isTouchDevice()) buttonPointerIds.push(pointer.id);
 
+    if (scene.isDead) return;
     if (skillButton.getData("isOnEffectOrCooldown")) return;
 
     disableButton();
