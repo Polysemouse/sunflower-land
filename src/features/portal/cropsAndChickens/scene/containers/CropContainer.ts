@@ -13,12 +13,12 @@ interface Props {
 
 export class CropContainer extends Phaser.GameObjects.Container {
   constructor({ x, y, cropIndex, scene, player, harvestCrop }: Props) {
-    super(scene, 8, 1); // crop sprites offset
+    super(scene);
     this.scene = scene;
 
     // wrap crop positions around the board, with sprite offset
-    x = Phaser.Math.Wrap(x + 8, 0, BOARD_WIDTH);
-    y = Phaser.Math.Wrap(y + 1, 0, BOARD_WIDTH);
+    x = Phaser.Math.Wrap(x, 0, BOARD_WIDTH);
+    y = Phaser.Math.Wrap(y - 7, 0, BOARD_WIDTH);
 
     // create crop sprites
     const spriteName = "crops_planted";
@@ -37,12 +37,12 @@ export class CropContainer extends Phaser.GameObjects.Container {
     // set crop collisions
     crops.forEach((crop) => {
       scene.physics.add.existing(crop);
-      crop.setDepth(crop.y);
+      crop.setDepth(crop.y + 5); // with offset
 
       if (!crop.body || !player) return;
 
       (crop.body as Physics.Arcade.Body)
-        .setSize(16, 12)
+        .setSize(16, 11)
         .setOffset(0, 11)
         .setImmovable(true)
         .setCollideWorldBounds(true);

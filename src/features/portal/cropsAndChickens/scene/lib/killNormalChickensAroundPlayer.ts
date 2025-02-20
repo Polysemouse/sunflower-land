@@ -84,8 +84,8 @@ export const killNormalChickensAroundPlayer = (
     chicken.setAlpha(0);
 
     // wrap sprite positions around the board, with sprite offset
-    const spriteX = Phaser.Math.Wrap(chicken.x + 5.5, 0, BOARD_WIDTH);
-    const spriteY = Phaser.Math.Wrap(chicken.y + 5.5, 0, BOARD_WIDTH);
+    const spriteX = Phaser.Math.Wrap(chicken.x, 0, BOARD_WIDTH);
+    const spriteY = Phaser.Math.Wrap(chicken.y, 0, BOARD_WIDTH);
 
     // create sprites
     const sprites = [
@@ -102,7 +102,7 @@ export const killNormalChickensAroundPlayer = (
     // create animation and play
     sprites.forEach((sprite) => {
       scene.hudCamera?.ignore(sprite);
-      sprite.setDepth(chicken.body?.position.y || 0);
+      sprite.setDepth(chicken.y);
 
       if (!scene.anims.exists(spriteKey)) {
         scene.anims.create({

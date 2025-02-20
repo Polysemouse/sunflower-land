@@ -56,7 +56,7 @@ export const killPlayer = (
 
   const playerDeath = scene.add.sprite(
     scene.currentPlayer.x,
-    scene.currentPlayer.y - 1,
+    scene.currentPlayer.y - 7,
     spriteName,
   );
   scene.hudCamera?.ignore(playerDeath);

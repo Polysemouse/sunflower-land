@@ -53,9 +53,10 @@ export class DepositIndicatorContainer extends Phaser.GameObjects.Container {
         DEPOSIT_CHEST_XY,
       )
     ) {
+      // adjust with offset
       this.moveIndicator(
-        this.player.body.position.x,
-        this.player.body.position.y,
+        this.player.body.position.x + 5,
+        this.player.body.position.y + 4,
       );
     } else {
       // hide the indicator if the object is on the screen

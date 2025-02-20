@@ -768,7 +768,6 @@ export abstract class BaseScene extends Phaser.Scene {
 
       // (this.currentPlayer.body as Phaser.Physics.Arcade.Body).width = 10;
       (this.currentPlayer.body as Phaser.Physics.Arcade.Body)
-        .setOffset(3, 10)
         .setSize(10, 8)
         .setCollideWorldBounds(true);
 

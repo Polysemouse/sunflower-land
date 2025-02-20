@@ -28,18 +28,7 @@ export class NormalChickenStraightContainer extends BaseChickenContainer {
   constructor({ railType, rail, scene, player, killPlayer }: Props) {
     const randomPosition = Phaser.Math.RND.realInRange(0, BOARD_WIDTH * 2);
     const railOffset = Phaser.Math.RND.realInRange(-2, 2);
-    let spriteOffset;
-    switch (railType) {
-      case "left":
-      case "right":
-        spriteOffset = 2;
-        break;
-      case "up":
-      case "down":
-        spriteOffset = 2.5;
-        break;
-    }
-    const railPosition = (rail + railOffset) * SQUARE_WIDTH + spriteOffset;
+    const railPosition = (rail + railOffset) * SQUARE_WIDTH;
     const initialSidewaysDisplacement = Phaser.Math.RND.realInRange(
       -SQUARE_WIDTH / 2,
       SQUARE_WIDTH / 2,

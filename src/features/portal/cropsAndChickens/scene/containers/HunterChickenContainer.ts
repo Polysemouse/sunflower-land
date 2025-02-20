@@ -16,19 +16,14 @@ interface Props {
 }
 
 const getNormalizedPlayerCoordinates = (player?: BumpkinContainer) => {
-  const playerCoordinatesOffset = {
-    x: -5.5,
-    y: 0,
-  };
-
   return player
     ? {
-        x: player.x + playerCoordinatesOffset.x,
-        y: player.y + playerCoordinatesOffset.y,
+        x: player.x,
+        y: player.y,
       }
     : {
-        x: SPAWNS().crops_and_chickens.default.x + playerCoordinatesOffset.x,
-        y: SPAWNS().crops_and_chickens.default.y + playerCoordinatesOffset.y,
+        x: SPAWNS().crops_and_chickens.default.x,
+        y: SPAWNS().crops_and_chickens.default.y,
       };
 };
 

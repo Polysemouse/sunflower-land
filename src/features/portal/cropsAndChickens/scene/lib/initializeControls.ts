@@ -140,7 +140,7 @@ const initializePowerSkillButtons = (scene: CropsAndChickensScene) => {
     "crop_deposit_arrow",
     "kill nearby\nnormal\nchickens",
     () => {
-      killNormalChickensAroundPlayer(scene, 4);
+      killNormalChickensAroundPlayer(scene, 5);
     },
     1,
     1000,

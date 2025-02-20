@@ -20,11 +20,6 @@ interface Props {
   killPlayer: () => void;
 }
 
-const spriteOffset = {
-  x: -2.5,
-  y: -2,
-};
-
 export class NormalChickenCircularContainer extends BaseChickenContainer {
   chunk: { x: number; y: number };
   railRadius: number;
@@ -43,13 +38,11 @@ export class NormalChickenCircularContainer extends BaseChickenContainer {
     const x =
       DEPOSIT_CHEST_XY +
       (railRadius + initialSidewaysRadiusDisplacement) *
-        Math.cos(randomAngleFromCenter) +
-      spriteOffset.x;
+        Math.cos(randomAngleFromCenter);
     const y =
       DEPOSIT_CHEST_XY +
       (railRadius + initialSidewaysRadiusDisplacement) *
-        Math.sin(randomAngleFromCenter) +
-      spriteOffset.y;
+        Math.sin(randomAngleFromCenter);
 
     const angleOffset = Phaser.Math.RND.realInRange(
       -CHICKEN_SPEEDS.maxStraightAngleOffset,
@@ -89,8 +82,8 @@ export class NormalChickenCircularContainer extends BaseChickenContainer {
           Phaser.Math.Distance.Between(
             unwrappedX,
             unwrappedY,
-            DEPOSIT_CHEST_XY + spriteOffset.x,
-            DEPOSIT_CHEST_XY + spriteOffset.y,
+            DEPOSIT_CHEST_XY,
+            DEPOSIT_CHEST_XY,
           ) - railRadius;
 
         // try to reduce sideways displacement by changing the angle of the chicken

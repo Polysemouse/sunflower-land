@@ -9,6 +9,11 @@ import { Physics } from "phaser";
 import { CropsAndChickensScene } from "../CropsAndChickensScene";
 import { SQUARE_WIDTH } from "features/game/lib/constants";
 
+const CHICKEN_HITBOX_DIMENSIONS = {
+  width: 11,
+  height: 8,
+};
+
 interface Props {
   x: number;
   y: number;
@@ -43,6 +48,10 @@ export class BaseChickenContainer extends Phaser.GameObjects.Container {
     super(scene, x, y);
     this.angle = angle;
     this.scene = scene;
+    this.setSize(
+      CHICKEN_HITBOX_DIMENSIONS.width,
+      CHICKEN_HITBOX_DIMENSIONS.height,
+    );
 
     // create sprite animations
     ["left", "right", "up", "down"].forEach((direction) => {
@@ -65,7 +74,7 @@ export class BaseChickenContainer extends Phaser.GameObjects.Container {
     const direction = getDirection(this.angle);
     const spriteKey = `${spriteType}_${direction}_anim`;
     const spriteName = `${spriteType}_${direction}`;
-    this.chicken = scene.add.sprite(5.5, 3, spriteName);
+    this.chicken = scene.add.sprite(0, -3, spriteName);
 
     this.baseSpeed = Phaser.Math.RND.realInRange(
       CHICKEN_SPEEDS.forwardMin,
@@ -131,8 +140,10 @@ export class BaseChickenContainer extends Phaser.GameObjects.Container {
 
     if (!!this.body && !!player) {
       (this.body as Physics.Arcade.Body)
-        .setSize(11, 8)
-        .setOffset(0, 2) // set offset to ensure correct rendering depth
+        .setSize(
+          CHICKEN_HITBOX_DIMENSIONS.width,
+          CHICKEN_HITBOX_DIMENSIONS.height,
+        )
         .setImmovable(true)
         .setCollideWorldBounds(false);
 

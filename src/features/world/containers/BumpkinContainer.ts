@@ -1,4 +1,4 @@
-import { INITIAL_FARM, SQUARE_WIDTH } from "features/game/lib/constants";
+import { INITIAL_FARM } from "features/game/lib/constants";
 import { SpeechBubble } from "./SpeechBubble";
 import { buildNPCSheets } from "features/bumpkins/actions/buildNPCSheets";
 import { tokenUriBuilder } from "lib/utils/tokenUriBuilder";
@@ -85,18 +85,16 @@ export class BumpkinContainer extends Phaser.GameObjects.Container {
     this.direction = direction ?? "right";
     scene.physics.add.existing(this);
 
-    this.silhouette = scene.add.sprite(0, 0, "silhouette");
+    this.silhouette = scene.add.sprite(0, -6, "silhouette");
     this.add(this.silhouette);
     this.sprite = this.silhouette;
 
-    this.shadow = this.scene.add
-      .sprite(0.5, 8, "shadow")
-      .setSize(SQUARE_WIDTH, SQUARE_WIDTH);
+    this.shadow = this.scene.add.sprite(0.5, 2, "shadow");
     this.add(this.shadow).moveTo(this.shadow, 0);
 
     this.loadSprites(scene);
 
-    this.setSize(SQUARE_WIDTH, SQUARE_WIDTH);
+    this.setSize(10, 8);
 
     this.reaction = this.scene.add.group();
 
@@ -112,7 +110,7 @@ export class BumpkinContainer extends Phaser.GameObjects.Container {
         !acknowledgedNPCs()[name as NPCName] &&
         this.scene.textures.exists("alert")
       ) {
-        this.alert = this.scene.add.sprite(1, -23, "alert").setSize(4, 10);
+        this.alert = this.scene.add.sprite(1, -29, "alert").setSize(4, 10);
         this.add(this.alert);
       }
 
@@ -163,7 +161,7 @@ export class BumpkinContainer extends Phaser.GameObjects.Container {
 
     if (scene.textures.exists(this.spriteKey)) {
       // If we have idle sheet then we can create the idle animation and set the sprite up straight away
-      const idle = scene.add.sprite(0, 2, this.spriteKey).setOrigin(0.5);
+      const idle = scene.add.sprite(0, -4, this.spriteKey).setOrigin(0.5);
       this.add(idle);
       if (this.clothing.aura !== undefined) {
         this.moveTo(idle, 2);
@@ -201,7 +199,7 @@ export class BumpkinContainer extends Phaser.GameObjects.Container {
         }
 
         const idle = scene.add
-          .sprite(0, 2, this.spriteKey as string)
+          .sprite(0, -4, this.spriteKey as string)
           .setOrigin(0.5);
         this.add(idle);
         if (this.clothing.aura !== undefined) {
@@ -365,11 +363,14 @@ export class BumpkinContainer extends Phaser.GameObjects.Container {
       this.removeGift();
     }
 
-    this.icon = this.scene.add.sprite(0, -12, "gift_icon").setOrigin(0.5);
+    this.icon = this.scene.add.sprite(0, -18, "gift_icon").setOrigin(0.5);
     this.add(this.icon);
 
     if (this.scene.textures.exists("sparkle")) {
-      this.fx = this.scene.add.sprite(0, -8, "sparkle").setOrigin(0.5).setZ(10);
+      this.fx = this.scene.add
+        .sprite(0, -14, "sparkle")
+        .setOrigin(0.5)
+        .setZ(10);
       this.add(this.fx);
 
       this.scene.anims.create({
@@ -421,7 +422,7 @@ export class BumpkinContainer extends Phaser.GameObjects.Container {
       //Back-Aura
       if (container.scene.textures.exists(this.backAuraKey)) {
         const backaura = container.scene.add
-          .sprite(0, -3, this.backAuraKey)
+          .sprite(0, -9, this.backAuraKey)
           .setOrigin(0.5);
         this.add(backaura);
         this.moveTo(backaura, 1);
@@ -449,7 +450,7 @@ export class BumpkinContainer extends Phaser.GameObjects.Container {
               return;
             }
             const backaura = container.scene.add
-              .sprite(0, -3, this.backAuraKey as string)
+              .sprite(0, -9, this.backAuraKey as string)
               .setOrigin(0.5);
             this.add(backaura);
             this.moveTo(backaura, 1);
@@ -463,7 +464,7 @@ export class BumpkinContainer extends Phaser.GameObjects.Container {
       //Front-Aura
       if (container.scene.textures.exists(this.frontAuraKey)) {
         const frontaura = container.scene.add
-          .sprite(0, 2, this.frontAuraKey)
+          .sprite(0, -4, this.frontAuraKey)
           .setOrigin(0.5);
         this.add(frontaura);
         this.moveTo(frontaura, 3);
@@ -491,7 +492,7 @@ export class BumpkinContainer extends Phaser.GameObjects.Container {
               return;
             }
             const frontaura = container.scene.add
-              .sprite(0, 2, this.frontAuraKey as string)
+              .sprite(0, -4, this.frontAuraKey as string)
               .setOrigin(0.5);
             this.add(frontaura);
             this.moveTo(frontaura, 3);
@@ -640,7 +641,7 @@ export class BumpkinContainer extends Phaser.GameObjects.Container {
       this.reaction.add(label);
     }
 
-    const reaction = this.scene.add.sprite(0, -14, react);
+    const reaction = this.scene.add.sprite(0, -20, react);
     if (reaction.displayWidth > reaction.displayHeight) {
       reaction.displayWidth = 10;
       reaction.scaleY = reaction.scaleX;
@@ -802,7 +803,7 @@ export class BumpkinContainer extends Phaser.GameObjects.Container {
       this.fx?.destroy();
     }
 
-    const poof = this.scene.add.sprite(0, 4, "poof").setOrigin(0.5);
+    const poof = this.scene.add.sprite(0, -2, "poof").setOrigin(0.5);
     this.add(poof);
 
     this.scene.anims.create({
@@ -834,7 +835,7 @@ export class BumpkinContainer extends Phaser.GameObjects.Container {
     }
 
     if (container.scene.textures.exists("smoke")) {
-      const poof = this.scene.add.sprite(0, 4, "smoke").setOrigin(0.5);
+      const poof = this.scene.add.sprite(0, -2, "smoke").setOrigin(0.5);
       this.add(poof);
       this.bringToTop(poof);
 
