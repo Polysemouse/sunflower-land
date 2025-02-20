@@ -132,7 +132,7 @@ const initializePowerSkillButtons = (scene: CropsAndChickensScene) => {
       });
     },
     0,
-    10000,
+    15000,
     20000,
   );
   initializePowerSkillButton(

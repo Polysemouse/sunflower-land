@@ -348,9 +348,9 @@ export const NORMAL_CHICKEN_CIRCULAR_RAIL_CONFIGURATIONS: {
   count: number;
   rail: number;
 }[] = [
-  { count: 30, rail: 37 },
-  { count: 20, rail: 30.5 },
-  { count: 12, rail: 24 },
-  { count: 6, rail: 17.5 },
-  { count: 2, rail: 11 },
+  { count: 45, rail: 37 },
+  { count: 30, rail: 30.5 },
+  { count: 18, rail: 24 },
+  { count: 9, rail: 17.5 },
+  { count: 3, rail: 11 },
 ];
