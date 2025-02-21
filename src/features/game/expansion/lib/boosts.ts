@@ -150,16 +150,17 @@ const applyTempCollectibleBoost = ({
 
   if (expiresAt <= cookStartAt) return seconds;
 
-  const totalCookingTime = seconds.toNumber();
-  const timeUntilExpiry = (expiresAt - cookStartAt) / 1000;
+  return new Decimal(seconds.toNumber() * boostValue);
+};
 
-  const boostedTime = Math.min(timeUntilExpiry, totalCookingTime);
-  const remainingTime = totalCookingTime - boostedTime;
+const hasValidRoninNFT = (game: GameState, cookStartAt: number) => {
+  if (!game.nfts?.ronin) return false;
 
-  const boostedTimeWithBoost = boostedTime * boostValue;
+  const { name, expiresAt } = game.nfts.ronin;
 
-  // boosted portion + remaining portion
-  return new Decimal(boostedTimeWithBoost + remainingTime);
+  const hasCookBoost = !name.includes("Bronze");
+
+  return expiresAt > cookStartAt && hasCookBoost;
 };
 
 export const getCookingTime = ({
@@ -234,6 +235,10 @@ export const getCookingTime = ({
 
   if (isCollectibleBuilt({ name: "Desert Gnome", game })) {
     reducedSecs = reducedSecs.mul(0.9);
+  }
+
+  if (hasValidRoninNFT(game, cookStartAt)) {
+    reducedSecs = reducedSecs.mul(0.5);
   }
 
   // 10% reduction on Fire Pit with Fast Feasts skill
