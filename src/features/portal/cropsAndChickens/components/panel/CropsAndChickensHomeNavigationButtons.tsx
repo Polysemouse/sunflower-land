@@ -9,7 +9,7 @@ import factions from "assets/icons/factions.webp";
 import { PortalMachineState } from "../../lib/cropsAndChickensMachine";
 import { SUNNYSIDE } from "assets/sunnyside";
 import trophy from "assets/icons/trophy.png";
-import crown from "assets/sfts/goblin_crown.png";
+import leaderboards from "public/crops-and-chickens/leaderboards.png";
 import { SquareIcon } from "components/ui/SquareIcon";
 import { hasFeatureAccess } from "lib/flags";
 import letter from "assets/icons/letter.png";
@@ -109,7 +109,7 @@ export const CropsAndChickensHomeNavigationButtons: React.FC<Props> = ({
           className="whitespace-nowrap capitalize w-[48px] h-[50px]"
           onClick={() => setPage("achievements")}
         >
-          <SquareIcon className="mt-0.5" icon={trophy} width={9} />
+          <SquareIcon className="mt-0.5" icon={trophy} width={10} />
         </Button>
       )}
       {hasBetaAccess && (
@@ -117,7 +117,7 @@ export const CropsAndChickensHomeNavigationButtons: React.FC<Props> = ({
           className="whitespace-nowrap capitalize w-[48px] h-[50px]"
           onClick={() => setPage("leaderboard")}
         >
-          <SquareIcon className="mt-0.5" icon={crown} width={8} />
+          <SquareIcon className="mt-0.5" icon={leaderboards} width={9} />
         </Button>
       )}
       <Button
@@ -127,7 +127,7 @@ export const CropsAndChickensHomeNavigationButtons: React.FC<Props> = ({
         <SquareIcon
           className="mt-0.5"
           icon={SUNNYSIDE.icons.expression_confused}
-          width={7.5}
+          width={8}
         />
       </Button>
     </div>

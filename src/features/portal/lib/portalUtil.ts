@@ -110,10 +110,11 @@ export function achievementsUnlocked({
     // eslint-disable-next-line no-console
     console.log(`Sunflower Land running in test mode - achievements unlocked`);
   } else {
-    window.parent.postMessage(
-      { event: "achievementsUnlocked", achievementNames },
-      "*",
-    );
+    //TODO: Enable this when we have achievements
+    // window.parent.postMessage(
+    //   { event: "achievementsUnlocked", achievementNames },
+    //   "*",
+    // );
   }
 }
 

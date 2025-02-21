@@ -43,6 +43,5 @@ export const checkAchievements = (
 
   const achievementNames = getEligibleAchievements(scene, trigger);
 
-  //TODO: enable achievements
-  // if (achievementNames.length > 0) unlockAchievements(scene, achievementNames);
+  if (achievementNames.length > 0) unlockAchievements(scene, achievementNames);
 };

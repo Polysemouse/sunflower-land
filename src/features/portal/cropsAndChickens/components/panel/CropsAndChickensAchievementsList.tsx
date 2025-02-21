@@ -8,12 +8,14 @@ import {
   CropsAndChickensAchievementName,
 } from "../../CropsAndChickensAchievements";
 import { SquareIcon } from "components/ui/SquareIcon";
-import { InnerPanel, OuterPanel } from "components/ui/Panel";
+import { InnerPanel } from "components/ui/Panel";
 import { SUNNYSIDE } from "assets/sunnyside";
 import { PIXEL_SCALE } from "features/game/lib/constants";
 import { useAppTranslation } from "lib/i18n/useAppTranslations";
 import { Label } from "components/ui/Label";
 import { useSound } from "lib/utils/hooks/useSound";
+import { Box } from "components/ui/Box";
+import Decimal from "decimal.js-light";
 
 const _achievements = (state: PortalMachineState) =>
   state.context.state?.minigames.games["crops-and-chickens"]?.achievements ??
@@ -38,6 +40,17 @@ export const CropsAndChickensAchievementsList: React.FC<Props> = ({
   const completedAchievementNames = (
     Object.keys(AVAILABLE_ACHIEVEMENTS) as CropsAndChickensAchievementName[]
   ).filter((achievementName) => achievements[achievementName]);
+
+  const [selectedAchievementName, setSelectedAchievementName] =
+    React.useState<CropsAndChickensAchievementName>(
+      inProgressAchievementNames.length > 0
+        ? inProgressAchievementNames[0]
+        : completedAchievementNames[0],
+    );
+
+  const selectedAchievement = AVAILABLE_ACHIEVEMENTS[selectedAchievementName];
+  const selectedAchievementUnlockedAt =
+    achievements[selectedAchievementName]?.unlockedAt;
 
   return (
     <div className="flex flex-col gap-1 max-h-[75vh]">
@@ -77,72 +90,75 @@ export const CropsAndChickensAchievementsList: React.FC<Props> = ({
 
       <Label type="danger">
         {
-          "NOTE: The achievements system is currently disabled and is still a work in progress. Completing achievements will NOT unlock them. However, you are still encouraged to try them out for fun!"
+          "NOTE: The achievements system is currently only visible for beta testers. It is still a work in progress, completing achievements will NOT unlock them. However, you are still encouraged to try them out for fun!"
         }
       </Label>
 
-      {/* achievements */}
-      <div className="flex flex-col gap-1 overflow-y-auto scrollable px-1">
-        {/* in progress */}
-        <div className="flex flex-col gap-1">
-          <Label type="default">{t("in.progress")}</Label>
-          <div className="flex flex-col gap-1">
-            {inProgressAchievementNames.map((achievementName, index) => {
-              const achievement = AVAILABLE_ACHIEVEMENTS[achievementName];
-
-              return (
-                <OuterPanel key={index}>
-                  <div className="flex flex-row p-1 items-center">
-                    <div className="ml-2 mr-3">
-                      <SquareIcon icon={achievement.icon} width={16} />
-                    </div>
-                    <div className="flex flex-col gap-1 w-full">
-                      <div>{achievement.title}</div>
-                      <div className="text-xs">{achievement.description}</div>
-                    </div>
-                  </div>
-                </OuterPanel>
-              );
-            })}
+      <InnerPanel>
+        <div className="flex flex-row p-1 items-center">
+          <div className="ml-1.5 mr-3">
+            <SquareIcon icon={selectedAchievement.icon} width={14} />
+          </div>
+          <div className="flex flex-col gap-1 w-full">
+            <div>{selectedAchievement.title}</div>
+            <div className="text-xs">{selectedAchievement.description}</div>
           </div>
         </div>
-
-        {/* completed */}
-        {completedAchievementNames.length > 0 && (
-          <div className="flex flex-col gap-1 mt-2">
-            <Label type="default">{t("completed")}</Label>
-            <div className="flex flex-col gap-1">
-              {completedAchievementNames.map((achievementName, index) => {
-                const achievement = AVAILABLE_ACHIEVEMENTS[achievementName];
-                const unlockedAt = achievements[achievementName].unlockedAt;
-
-                return (
-                  <InnerPanel key={index}>
-                    <div className="flex flex-row p-1 items-center">
-                      <div className="ml-2 mr-3">
-                        <SquareIcon icon={achievement.icon} width={16} />
-                      </div>
-                      <div className="flex flex-col gap-1 w-full">
-                        <div>{achievement.title}</div>
-                        <div className="text-xs">{achievement.description}</div>
-                      </div>
-                    </div>
-                    <Label
-                      type="success"
-                      icon={SUNNYSIDE.icons.confirm}
-                      className="text-xs ml-1"
-                    >
-                      {t("crops-and-chickens.achievementUnlockedAt", {
-                        time: new Date(unlockedAt).toLocaleString(),
-                      })}
-                    </Label>
-                  </InnerPanel>
-                );
-              })}
-            </div>
-          </div>
+        {selectedAchievementUnlockedAt && (
+          <Label
+            type="success"
+            icon={SUNNYSIDE.icons.confirm}
+            className="text-xs ml-1"
+          >
+            {t("crops-and-chickens.achievementUnlockedAt", {
+              time: new Date(selectedAchievementUnlockedAt).toLocaleString(),
+            })}
+          </Label>
         )}
-      </div>
+      </InnerPanel>
+
+      <InnerPanel className="flex flex-col gap-1">
+        <Label type="default">{t("in.progress")}</Label>
+        <div className="flex flex-wrap">
+          {inProgressAchievementNames.map((achievementName) => {
+            return (
+              <Box
+                isSelected={achievementName === selectedAchievementName}
+                key={achievementName}
+                onClick={() => setSelectedAchievementName(achievementName)}
+                image={AVAILABLE_ACHIEVEMENTS[achievementName].icon}
+                count={
+                  completedAchievementNames.includes(achievementName)
+                    ? new Decimal(1)
+                    : new Decimal(0)
+                }
+              />
+            );
+          })}
+        </div>
+        {completedAchievementNames.length > 0 && (
+          <Label type="default" className="mt-4">
+            {t("completed")}
+          </Label>
+        )}
+        <div className="flex flex-wrap">
+          {completedAchievementNames.map((achievementName) => {
+            return (
+              <Box
+                isSelected={achievementName === selectedAchievementName}
+                key={achievementName}
+                onClick={() => setSelectedAchievementName(achievementName)}
+                image={AVAILABLE_ACHIEVEMENTS[achievementName].icon}
+                count={
+                  completedAchievementNames.includes(achievementName)
+                    ? new Decimal(1)
+                    : new Decimal(0)
+                }
+              />
+            );
+          })}
+        </div>
+      </InnerPanel>
     </div>
   );
 };

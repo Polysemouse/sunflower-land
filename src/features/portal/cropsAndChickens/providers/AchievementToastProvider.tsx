@@ -9,6 +9,8 @@ import { InnerPanel } from "components/ui/Panel";
 import { SquareIcon } from "components/ui/SquareIcon";
 import { HudContainer } from "components/ui/HudContainer";
 import { SUNNYSIDE } from "assets/sunnyside";
+import { isTouchDevice } from "features/world/lib/device";
+import classNames from "classnames";
 
 interface AchievementToastContextProps {
   showAchievementToasts: (achievementNames: string[]) => void;
@@ -31,6 +33,8 @@ export const useAchievementToast = () => {
 const AchievementToastProvider: React.FC = ({ children }) => {
   const { t } = useAppTranslation();
 
+  const touchDevice = isTouchDevice();
+
   const [achievementNames, setAchievementNames] = useState<
     CropsAndChickensAchievementName[]
   >([]);
@@ -52,11 +56,20 @@ const AchievementToastProvider: React.FC = ({ children }) => {
     <AchievementToastContext.Provider value={{ showAchievementToasts }}>
       {children}
       <HudContainer zIndex="z-[99999]">
-        <div className="absolute flex justify-center bottom-0 w-full pointer-events-none">
+        <div
+          className={classNames(
+            "absolute flex justify-center w-full pointer-events-none",
+            {
+              "bottom-0": touchDevice,
+              "top-0": !touchDevice,
+            },
+          )}
+        >
           <div
             className="absolute flex flex-col gap-1 items-center"
             style={{
-              bottom: `${PIXEL_SCALE * 3}px`,
+              bottom: touchDevice ? `${PIXEL_SCALE * 3}px` : undefined,
+              top: !touchDevice ? `${PIXEL_SCALE * 3}px` : undefined,
               marginLeft: `${PIXEL_SCALE * 3}px`,
               marginRight: `${PIXEL_SCALE * 3}px`,
             }}
@@ -67,11 +80,10 @@ const AchievementToastProvider: React.FC = ({ children }) => {
               return (
                 <InnerPanel key={index} className="flex flex-col items-center">
                   <div className="flex flex-row p-1 items-center">
-                    <SquareIcon
-                      className="ml-2 mr-4"
-                      icon={achievement.icon}
-                      width={16}
-                    />
+                    <div className="ml-1.5 mr-3">
+                      <SquareIcon icon={achievement.icon} width={14} />
+                    </div>
+
                     <div className="flex flex-col gap-1 w-full">
                       <div>{t("crops-and-chickens.achievementUnlocked")}</div>
                       <div className="text-xs">{achievement.title}</div>
