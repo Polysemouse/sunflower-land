@@ -65,7 +65,7 @@ export class NormalChickenCircularContainer extends BaseChickenContainer {
     this.railRadius = railRadius;
     this.angleOffset = angleOffset;
 
-    this.chicken.on(
+    this.sprite.on(
       "animationupdate",
       (
         _animation: Phaser.Animations.Animation,
@@ -92,12 +92,12 @@ export class NormalChickenCircularContainer extends BaseChickenContainer {
             Phaser.Math.RND.realInRange(
               (-sidewaysRadiusDisplacement / CHICKEN_SPEEDS.forwardMax) *
                 SPRITE_FRAME_RATE *
-                scene.enemySpeedMultiplier *
+                this.speedMultiplier *
                 0.02 -
                 CHICKEN_SPEEDS.maxCircularAngleOffset,
               (-sidewaysRadiusDisplacement / CHICKEN_SPEEDS.forwardMax) *
                 SPRITE_FRAME_RATE *
-                scene.enemySpeedMultiplier *
+                this.speedMultiplier *
                 0.02 +
                 CHICKEN_SPEEDS.maxCircularAngleOffset,
             ),

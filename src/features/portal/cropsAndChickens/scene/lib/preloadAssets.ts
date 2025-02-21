@@ -36,10 +36,10 @@ export const preloadAssets = (scene: CropsAndChickensScene) => {
     },
   );
 
-  // chicken death spritesheets
+  // chicken effect spritesheets
   scene.load.spritesheet(
     "chicken_death",
-    "crops-and-chickens/chicken_death.png",
+    getHolidayAsset("chicken_death", holidayEvent),
     {
       frameWidth: CHICKEN_DEATH_SPRITE_PROPERTIES.frameWidth,
       frameHeight: CHICKEN_DEATH_SPRITE_PROPERTIES.frameHeight,
@@ -177,6 +177,7 @@ export const preloadAssets = (scene: CropsAndChickensScene) => {
     "skill_chicken_explosion",
     "crops-and-chickens/audio/skill_chicken_explosion.mp3",
   );
+  scene.load.audio("skill_freeze", "crops-and-chickens/audio/skill_freeze.mp3");
   scene.load.audio(
     "skill_slow_down",
     "crops-and-chickens/audio/skill_slow_down.mp3",

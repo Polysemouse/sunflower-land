@@ -13,7 +13,7 @@ const POWER_SKILL_BUTTON_ALPHA = 0.3;
 const PROGRESS_ARC_LINE_WIDTH = 4;
 const PROGRESS_ARC_OFFSET = 5;
 
-const TOTAL_BUTTONS = 4;
+const TOTAL_BUTTONS = 5;
 
 // active pointer IDs for power skill buttons
 let buttonPointerIds: number[] = [];
@@ -109,40 +109,55 @@ const initializePowerSkillButtons = (scene: CropsAndChickensScene) => {
     scene,
     "crop_deposit_arrow",
     "slow\nchickens",
+    "M",
     () => {
       const skillSound = scene.sound.add("skill_slow_down");
       skillSound.play({ volume: 0.8 });
-      const tintColor = 0x7f8fff;
 
       scene.normalChickens.forEach((chicken) => {
-        chicken.chicken.setTint(tintColor);
+        chicken.slowSpeed();
       });
-      scene.hunterChicken?.chicken.setTint(tintColor);
+      scene.hunterChicken?.slowSpeed();
 
-      scene.enemySpeedMultiplier = 0.5;
-      scene.events.emit("enemySpeedMultiplierChanged", 0.5);
       scene.time.delayedCall(10000, () => {
         scene.normalChickens.forEach((chicken) => {
-          chicken.chicken.clearTint();
+          chicken.restoreSpeed();
         });
-        scene.hunterChicken?.chicken.clearTint();
-
-        scene.enemySpeedMultiplier = 1;
-        scene.events.emit("enemySpeedMultiplierChanged", 1);
+        scene.hunterChicken?.restoreSpeed();
       });
     },
     0,
-    15000,
+    10000,
+    20000,
+  );
+  initializePowerSkillButton(
+    scene,
+    "crop_deposit_arrow",
+    "freeze\nhunter\nchicken",
+    "N",
+    () => {
+      const skillSound = scene.sound.add("skill_freeze");
+      skillSound.play({ volume: 0.5 });
+
+      scene.hunterChicken?.freeze();
+
+      scene.time.delayedCall(10000, () => {
+        scene.hunterChicken?.unfreeze();
+      });
+    },
+    1,
+    10000,
     20000,
   );
   initializePowerSkillButton(
     scene,
     "crop_deposit_arrow",
     "kill nearby\nnormal\nchickens",
+    "B",
     () => {
       killNormalChickensAroundPlayer(scene, 5);
     },
-    1,
+    2,
     1000,
     10000,
   );
@@ -150,10 +165,11 @@ const initializePowerSkillButtons = (scene: CropsAndChickensScene) => {
     scene,
     "crop_deposit_arrow",
     "deposit\ncrops",
+    "V",
     () => {
       depositCrops(scene);
     },
-    2,
+    3,
     1000,
     15000,
   );
@@ -161,10 +177,11 @@ const initializePowerSkillButtons = (scene: CropsAndChickensScene) => {
     scene,
     "crop_deposit_arrow",
     "suicide",
+    "C",
     () => {
       killPlayer(scene, "Normal Chicken");
     },
-    3,
+    4,
     2000,
     3000,
   );
@@ -186,7 +203,8 @@ const initializePowerSkillButton = (
   scene: CropsAndChickensScene,
   imageKey: string,
   text: string,
-  callback: (pointer: Phaser.Input.Pointer) => void,
+  hotkey: string,
+  callback: () => void,
   buttonIndex: number,
   effectDuration: number,
   cooldownDuration: number,
@@ -251,6 +269,24 @@ const initializePowerSkillButton = (
     })
     .setScrollFactor(0)
     .setOrigin(0.5);
+
+  // draw hotkey text above the button if it is not a touch device
+  if (!isTouchDevice()) {
+    const hoykeyText = scene.add
+      .text(buttonX, buttonY - POWER_SKILL_BUTTON_SIZE, hotkey, {
+        fontSize: "30px",
+        fontFamily: "Basic",
+        color: "#000000",
+        align: "center",
+        stroke: "#ffffff",
+        strokeThickness: 4,
+      })
+      .setScrollFactor(0)
+      .setOrigin(0.5);
+
+    // ignore hotkey text in main camera
+    scene.cameras.main.ignore(hoykeyText);
+  }
 
   // ignore skill button in main camera
   scene.cameras.main.ignore(skillButton);
@@ -398,16 +434,25 @@ const initializePowerSkillButton = (
     isPointerOverButton = false;
   });
 
-  skillButton.on("pointerdown", (pointer: Phaser.Input.Pointer) => {
-    if (isTouchDevice()) buttonPointerIds.push(pointer.id);
-
+  const tryActivateButton = () => {
     if (scene.isDead) return;
     if (skillButton.getData("isOnEffectOrCooldown")) return;
 
     disableButton();
     startEffect();
 
-    callback(pointer);
+    callback();
+  };
+
+  // hotkey activation
+  scene.input.keyboard?.on("keydown-" + hotkey, () => {
+    tryActivateButton();
+  });
+
+  skillButton.on("pointerdown", (pointer: Phaser.Input.Pointer) => {
+    if (isTouchDevice()) buttonPointerIds.push(pointer.id);
+
+    tryActivateButton();
   });
 
   // start cooldown immediately

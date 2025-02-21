@@ -22,7 +22,7 @@ export const killPlayer = (
   scene: CropsAndChickensScene,
   chickenType: CropsAndChickensChickenName,
 ) => {
-  if (!scene.currentPlayer?.body || scene.isDead || !scene.isRulesRead) {
+  if (!scene.currentPlayer || scene.isDead || !scene.isRulesRead) {
     return;
   }
 
@@ -60,7 +60,7 @@ export const killPlayer = (
     spriteName,
   );
   scene.hudCamera?.ignore(playerDeath);
-  playerDeath.setDepth(scene.currentPlayer.body.position.y);
+  playerDeath.setDepth(scene.currentPlayer.y);
   if (getHolidayEvent() === "halloween") {
     playerDeath.setAlpha(HALLOWEEN_PLAYER_OPACITY);
   }

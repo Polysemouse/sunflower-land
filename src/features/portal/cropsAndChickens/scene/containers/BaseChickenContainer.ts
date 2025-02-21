@@ -8,11 +8,17 @@ import {
 import { Physics } from "phaser";
 import { CropsAndChickensScene } from "../CropsAndChickensScene";
 import { SQUARE_WIDTH } from "features/game/lib/constants";
+import { FrozenPipeline } from "../../pipelines/frozenPipeline";
 
 const CHICKEN_HITBOX_DIMENSIONS = {
   width: 11,
   height: 8,
 };
+
+const SLOW_TINT_COLOR = 0x6f8fff;
+const SLOW_SPEED_MULTIPLIER = 0.5;
+
+type Direction = "left" | "right" | "up" | "down";
 
 interface Props {
   x: number;
@@ -24,7 +30,7 @@ interface Props {
   killPlayer: () => void;
 }
 
-const getDirection = (angle: number): "left" | "right" | "up" | "down" => {
+const getDirection = (angle: number): Direction => {
   const normalizedAngle = Phaser.Math.Angle.Normalize(angle);
   if (normalizedAngle < Math.PI / 4 || normalizedAngle >= (7 * Math.PI) / 4) {
     return "right";
@@ -42,7 +48,13 @@ export class BaseChickenContainer extends Phaser.GameObjects.Container {
   angle: number; // angle in radians
   baseSpeed: number;
   speedMultiplier = 1;
-  chicken: Phaser.GameObjects.Sprite;
+  isFrozen = false;
+  isLockInPlace = false;
+  isSlowedDown = false;
+  frozenFrameIndex?: number;
+  frozenDirection?: Direction;
+  sprite: Phaser.GameObjects.Sprite;
+  scene: CropsAndChickensScene;
 
   constructor({ x, y, angle, spriteType, scene, player, killPlayer }: Props) {
     super(scene, x, y);
@@ -66,7 +78,10 @@ export class BaseChickenContainer extends Phaser.GameObjects.Container {
           end: CHICKEN_SPRITE_PROPERTIES.frames - 1,
         }),
         repeat: -1,
-        frameRate: SPRITE_FRAME_RATE * scene.enemySpeedMultiplier,
+        frameRate:
+          SPRITE_FRAME_RATE *
+          this.speedMultiplier *
+          (this.isSlowedDown ? SLOW_SPEED_MULTIPLIER : 1),
       });
     });
 
@@ -74,7 +89,7 @@ export class BaseChickenContainer extends Phaser.GameObjects.Container {
     const direction = getDirection(this.angle);
     const spriteKey = `${spriteType}_${direction}_anim`;
     const spriteName = `${spriteType}_${direction}`;
-    this.chicken = scene.add.sprite(0, -3, spriteName);
+    this.sprite = scene.add.sprite(0, -3, spriteName);
 
     this.baseSpeed = Phaser.Math.RND.realInRange(
       CHICKEN_SPEEDS.forwardMin,
@@ -85,12 +100,12 @@ export class BaseChickenContainer extends Phaser.GameObjects.Container {
       0,
       CHICKEN_SPRITE_PROPERTIES.frames - 1,
     );
-    this.chicken.play({
+    this.sprite.play({
       key: spriteKey,
       startFrame: startFrame,
     });
 
-    this.chicken.on(
+    this.sprite.on(
       "animationupdate",
       (
         _animation: Phaser.Animations.Animation,
@@ -107,8 +122,12 @@ export class BaseChickenContainer extends Phaser.GameObjects.Container {
           this.setAlpha(1);
         }
 
-        const direction = getDirection(this.angle);
-        this.chicken.setTexture(`${spriteType}_${direction}`, frame.index - 1);
+        const direction = this.frozenDirection || getDirection(this.angle);
+        const frameIndex =
+          this.frozenFrameIndex !== undefined
+            ? this.frozenFrameIndex
+            : frame.index;
+        this.sprite.setTexture(`${spriteType}_${direction}`, frameIndex - 1);
 
         if (frame.index === CHICKEN_SPRITE_PROPERTIES.landingFrame) {
           this.baseSpeed = Phaser.Math.Clamp(
@@ -124,7 +143,10 @@ export class BaseChickenContainer extends Phaser.GameObjects.Container {
 
         if (frame.index < CHICKEN_SPRITE_PROPERTIES.landingFrame) {
           const speed =
-            this.baseSpeed * this.speedMultiplier * scene.enemySpeedMultiplier;
+            this.baseSpeed *
+            (this.isFrozen || this.isLockInPlace ? 0 : 1) *
+            this.speedMultiplier *
+            (this.isSlowedDown ? SLOW_SPEED_MULTIPLIER : 1);
           this.body.velocity.x = speed * Math.cos(this.angle);
           this.body.velocity.y = speed * Math.sin(this.angle);
         }
@@ -161,18 +183,55 @@ export class BaseChickenContainer extends Phaser.GameObjects.Container {
     }
 
     // add the sprite to the container
-    this.add(this.chicken);
+    this.add(this.sprite);
 
     // add the container to the scene
     scene.add.existing(this);
-
-    // listen for changes in enemySpeedMultiplier
-    scene.events.on("enemySpeedMultiplierChanged", this.updateFrameRate, this);
   }
+
+  // freeze the chicken
+  freeze = () => {
+    this.isFrozen = true;
+    this.frozenFrameIndex = this.sprite.anims.currentFrame?.index;
+    this.frozenDirection = getDirection(this.angle);
+
+    const frozenPipeline = (
+      this.scene.renderer as Phaser.Renderer.WebGL.WebGLRenderer
+    ).pipelines.get("frozen") as FrozenPipeline;
+    if (!frozenPipeline) return;
+
+    this.sprite.setPipeline("frozen");
+  };
+
+  // restore the speed of the chicken
+  restoreSpeed = () => {
+    this.isSlowedDown = false;
+    this.updateFrameRate(this.isSlowedDown);
+
+    this.sprite.clearTint();
+  };
+
+  // slow down the chicken
+  slowSpeed = () => {
+    this.isSlowedDown = true;
+    this.updateFrameRate(this.isSlowedDown);
+
+    this.sprite.setTint(SLOW_TINT_COLOR);
+  };
+
+  // unfreeze the chicken
+  unfreeze = () => {
+    this.isFrozen = false;
+    this.frozenFrameIndex = undefined;
+    this.frozenDirection = undefined;
+
+    this.sprite.resetPipeline();
+  };
 
   // update the frame rate of the chicken sprite
-  updateFrameRate(newMultiplier: number) {
-    if (!this.chicken.anims?.msPerFrame) return;
-    this.chicken.anims.msPerFrame = 1000 / (SPRITE_FRAME_RATE * newMultiplier);
-  }
+  updateFrameRate = (isSlowedDown: boolean) => {
+    if (!this.sprite.anims?.msPerFrame) return;
+    this.sprite.anims.msPerFrame =
+      1000 / (SPRITE_FRAME_RATE * (isSlowedDown ? SLOW_SPEED_MULTIPLIER : 1));
+  };
 }

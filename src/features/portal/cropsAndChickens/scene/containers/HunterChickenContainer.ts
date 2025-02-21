@@ -91,9 +91,9 @@ export class HunterChickenContainer extends BaseChickenContainer {
     });
 
     // set initial speed multiplier
-    this.speedMultiplier = 0;
+    this.isLockInPlace = false;
 
-    this.chicken.on(
+    this.sprite.on(
       "animationupdate",
       (
         _animation: Phaser.Animations.Animation,
@@ -106,8 +106,10 @@ export class HunterChickenContainer extends BaseChickenContainer {
         this.angle = getAngleTowardsPlayer(this.x, this.y, player);
 
         if (isChickenFrozen()) {
-          this.speedMultiplier = 0;
+          this.isLockInPlace = true;
         } else {
+          this.isLockInPlace = false;
+
           // increase speed of the chicken if it is too far from the player
           this.speedMultiplier = HUNTER_CHICKEN_SPEED_MULTIPLIER;
           if (distance >= HUNTER_CHICKEN_INITIAL_DISTANCE) {

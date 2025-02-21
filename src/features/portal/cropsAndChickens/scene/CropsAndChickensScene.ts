@@ -47,6 +47,7 @@ import {
   NormalChickenCircularContainer,
   NormalChickenCircularRailType,
 } from "./containers/NormalChickenCircularContainer";
+import { initializePipelines } from "./lib/initializePipelines";
 
 export class CropsAndChickensScene extends BaseScene {
   sceneId: SceneId = "crops_and_chickens";
@@ -55,8 +56,6 @@ export class CropsAndChickensScene extends BaseScene {
 
   joystickIndicatorBase: Phaser.GameObjects.Arc | undefined;
   joystickIndicatorDot: Phaser.GameObjects.Sprite | undefined;
-
-  public enemySpeedMultiplier!: number;
 
   // player states
   isDead!: boolean;
@@ -101,8 +100,6 @@ export class CropsAndChickensScene extends BaseScene {
    * Sets the default states.
    */
   private setDefaultStates = () => {
-    this.enemySpeedMultiplier = 1;
-
     this.isDead = false;
     this.chunk = { x: 0, y: 0 };
     this.deaths = 0;
@@ -282,6 +279,9 @@ export class CropsAndChickensScene extends BaseScene {
     });
 
     super.create();
+
+    // initialize pipelines
+    initializePipelines(this);
 
     // add joystick indicator on top of the player
     this.joystickIndicatorBase = this.add

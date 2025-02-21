@@ -21,6 +21,7 @@ type CropsAndChickensAssetName =
   | "chicken_normal_up_movements"
   | "chicken_hunter"
   | "chicken_normal"
+  | "chicken_death"
   | "crops_harvested"
   | "crops_planted"
   | CropsAndChickensCropName
@@ -117,6 +118,10 @@ const CROPS_AND_CHICKENS_ASSETS: Record<
     halloween: "crops-and-chickens/chicken_normal_halloween.png",
     christmas: "crops-and-chickens/chicken_normal_christmas.png",
     april_fools: "crops-and-chickens/chicken_normal_april_fools.png",
+  },
+  chicken_death: {
+    none: "crops-and-chickens/chicken_death.png",
+    april_fools: "crops-and-chickens/chicken_death_april_fools.png",
   },
   crops_harvested: {
     none: "crops-and-chickens/crops_harvested.png",
