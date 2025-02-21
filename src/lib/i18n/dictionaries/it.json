@@ -732,6 +732,8 @@
   "crops-and-chickens.personalBest": "Migliore personale",
   "crops-and-chickens.endGameConfirmation": "Sei sicuro di voler terminare il gioco in anticipo?",
   "crops-and-chickens.endGame": "Fine del gioco",
+  "crops-and-chickens.achievementPoints": "Punti di successo",
+  "crops-and-chickens.achievementPointsColon": "Punti di successo: {{points}}",
   "crops-and-chickens.achievementUnlocked": "Obiettivo sbloccato!",
   "crops-and-chickens.achievementUnlockedAt": "Sbloccato a {{time}}",
   "crops-and-chickens.achievement.but-its-honest-work.title": "Ma è un lavoro onesto",

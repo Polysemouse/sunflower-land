@@ -736,6 +736,8 @@
   "crops-and-chickens.personalBest": "Persönlicher Rekord",
   "crops-and-chickens.endGameConfirmation": "Bist du sicher, dass du das Spiel frühzeitig beenden möchtest?",
   "crops-and-chickens.endGame": "Spiel beenden",
+  "crops-and-chickens.achievementPoints": "Erfolgspunkte",
+  "crops-and-chickens.achievementPointsColon": "Erfolgspunkte: {{points}}",
   "crops-and-chickens.achievementUnlocked": "Erfolg freigeschaltet!",
   "crops-and-chickens.achievementUnlockedAt": "Freigeschaltet um {{time}}",
   "crops-and-chickens.achievement.but-its-honest-work.title": "Aber es ist ehrliche Arbeit",

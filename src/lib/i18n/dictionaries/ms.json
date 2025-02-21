@@ -736,6 +736,8 @@
   "crops-and-chickens.personalBest": "Terbaik peribadi",
   "crops-and-chickens.endGameConfirmation": "Adakah anda pasti ingin menamatkan permainan lebih awal?",
   "crops-and-chickens.endGame": "Tamatkan permainan",
+  "crops-and-chickens.achievementPoints": "Mata pencapaian",
+  "crops-and-chickens.achievementPointsColon": "Mata pencapaian: {{points}}",
   "crops-and-chickens.achievementUnlocked": "Pencapaian Terkunci!",
   "crops-and-chickens.achievementUnlockedAt": "Terkunci pada {{time}}",
   "crops-and-chickens.achievement.but-its-honest-work.title": "Tetapi Ini Kerja Jujur",

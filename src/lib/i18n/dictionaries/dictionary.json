@@ -860,6 +860,8 @@
   "crops-and-chickens.personalBest": "Personal best",
   "crops-and-chickens.endGameConfirmation": "Are you sure you want to end the game early?",
   "crops-and-chickens.endGame": "End game",
+  "crops-and-chickens.achievementPoints": "Achievement points",
+  "crops-and-chickens.achievementPointsColon": "Achievement points: {{points}}",
   "crops-and-chickens.achievementUnlocked": "Achievement Unlocked!",
   "crops-and-chickens.achievementUnlockedAt": "Unlocked at {{time}}",
   "crops-and-chickens.achievement.but-its-honest-work.title": "But It's Honest Work",

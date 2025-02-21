@@ -709,6 +709,8 @@
   "crops-and-chickens.personalBest": "个人最佳",
   "crops-and-chickens.endGameConfirmation": "你确定要提早结束游戏吗？",
   "crops-and-chickens.endGame": "游戏结束",
+  "crops-and-chickens.achievementPoints": "成就点数",
+  "crops-and-chickens.achievementPointsColon": "成就点数：{{points}}",
   "crops-and-chickens.achievementUnlocked": "成就已解锁！",
   "crops-and-chickens.achievementUnlockedAt": "在 {{time}} 解锁",
   "crops-and-chickens.achievement.but-its-honest-work.title": "但这是诚实的工作",

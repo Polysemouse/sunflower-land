@@ -736,6 +736,8 @@
   "crops-and-chickens.personalBest": "개인 최고 기록",
   "crops-and-chickens.endGameConfirmation": "게임을 일찍 종료하시겠습니까?",
   "crops-and-chickens.endGame": "게임 종료",
+  "crops-and-chickens.achievementPoints": "업적 포인트",
+  "crops-and-chickens.achievementPointsColon": "업적 포인트: {{points}}",
   "crops-and-chickens.achievementUnlocked": "업적 달성!",
   "crops-and-chickens.achievementUnlockedAt": "{{time}}에 달성",
   "crops-and-chickens.achievement.but-its-honest-work.title": "하지만 정직한 일입니다",

@@ -130,10 +130,12 @@ export const CropsAndChickensHome: React.FC<Props> = ({
             >
               {showScore && (
                 <div className="flex flex-col items-center w-1/2">
-                  <span className="text-sm">
+                  <span className="text-sm text-center">
                     {t("crops-and-chickens.score")}
                   </span>
-                  <span className="text-2xl">{formatNumber(score)}</span>
+                  <span className="text-2xl text-center">
+                    {formatNumber(score)}
+                  </span>
                 </div>
               )}
               <div className="flex justify-between gap-2 w-full">

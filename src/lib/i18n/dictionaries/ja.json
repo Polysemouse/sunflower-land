@@ -736,6 +736,8 @@
   "crops-and-chickens.personalBest": "自己ベスト",
   "crops-and-chickens.endGameConfirmation": "ゲームを早めに終了してもよろしいですか？",
   "crops-and-chickens.endGame": "ゲーム終了",
+  "crops-and-chickens.achievementPoints": "実績ポイント",
+  "crops-and-chickens.achievementPointsColon": "実績ポイント: {{points}}",
   "crops-and-chickens.achievementUnlocked": "実績解除！",
   "crops-and-chickens.achievementUnlockedAt": "{{time}}に解除",
   "crops-and-chickens.achievement.but-its-honest-work.title": "でもこれは正直な仕事です",

@@ -2577,6 +2577,8 @@
   "crops-and-chickens.personalBest": "Kişisel en iyi",
   "crops-and-chickens.endGameConfirmation": "Oyunu erken bitirmek istediğinizden emin misiniz?",
   "crops-and-chickens.endGame": "Oyunu bitir",
+  "crops-and-chickens.achievementPoints": "Başarı puanları",
+  "crops-and-chickens.achievementPointsColon": "Başarı puanları: {{points}}",
   "crops-and-chickens.achievementUnlocked": "Başarı Kilidi Açıldı!",
   "crops-and-chickens.achievementUnlockedAt": "Kilidi açıldı {{time}}",
   "crops-and-chickens.achievement.but-its-honest-work.title": "Ama bu dürüst bir iş",

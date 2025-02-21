@@ -16,6 +16,8 @@ import { Label } from "components/ui/Label";
 import { useSound } from "lib/utils/hooks/useSound";
 import { Box } from "components/ui/Box";
 import Decimal from "decimal.js-light";
+import { formatNumber } from "lib/utils/formatNumber";
+import trophy from "assets/icons/trophy.png";
 
 const _achievements = (state: PortalMachineState) =>
   state.context.state?.minigames.games["crops-and-chickens"]?.achievements ??
@@ -51,6 +53,18 @@ export const CropsAndChickensAchievementsList: React.FC<Props> = ({
   const selectedAchievement = AVAILABLE_ACHIEVEMENTS[selectedAchievementName];
   const selectedAchievementUnlockedAt =
     achievements[selectedAchievementName]?.unlockedAt;
+
+  const maxAchievementPoints = Object.values(AVAILABLE_ACHIEVEMENTS).reduce(
+    (acc, achievement) => acc.add(achievement.points),
+    new Decimal(0),
+  );
+  const currentAchievementPoints = (
+    Object.keys(achievements) as CropsAndChickensAchievementName[]
+  ).reduce(
+    (acc, achievementName) =>
+      acc.add(AVAILABLE_ACHIEVEMENTS[achievementName].points),
+    new Decimal(0),
+  );
 
   return (
     <div className="flex flex-col gap-1 max-h-[75vh]">
@@ -94,6 +108,18 @@ export const CropsAndChickensAchievementsList: React.FC<Props> = ({
         }
       </Label>
 
+      <Label
+        type="chill"
+        className="flex flex-col gap-4 items-center p-1 !w-full"
+      >
+        <div className="flex flex-col items-center w-1/2">
+          <span className="text-sm text-center">
+            {t("crops-and-chickens.achievementPoints")}
+          </span>
+          <span className="text-2xl text-center">{`${formatNumber(currentAchievementPoints)}/${formatNumber(maxAchievementPoints)}`}</span>
+        </div>
+      </Label>
+
       <InnerPanel>
         <div className="flex flex-row p-1 items-center">
           <div className="ml-1.5 mr-3">
@@ -104,17 +130,24 @@ export const CropsAndChickensAchievementsList: React.FC<Props> = ({
             <div className="text-xs">{selectedAchievement.description}</div>
           </div>
         </div>
-        {selectedAchievementUnlockedAt && (
-          <Label
-            type="success"
-            icon={SUNNYSIDE.icons.confirm}
-            className="text-xs ml-1"
-          >
-            {t("crops-and-chickens.achievementUnlockedAt", {
-              time: new Date(selectedAchievementUnlockedAt).toLocaleString(),
+        <div className="flex flex-wrap justify-between gap-1">
+          <Label type="warning" icon={trophy} className="ml-1">
+            {t("crops-and-chickens.achievementPointsColon", {
+              points: selectedAchievement.points,
             })}
           </Label>
-        )}
+          {selectedAchievementUnlockedAt && (
+            <Label
+              type="success"
+              icon={SUNNYSIDE.icons.confirm}
+              className="text-xs ml-1"
+            >
+              {t("crops-and-chickens.achievementUnlockedAt", {
+                time: new Date(selectedAchievementUnlockedAt).toLocaleString(),
+              })}
+            </Label>
+          )}
+        </div>
       </InnerPanel>
 
       <InnerPanel className="flex flex-col gap-1">
