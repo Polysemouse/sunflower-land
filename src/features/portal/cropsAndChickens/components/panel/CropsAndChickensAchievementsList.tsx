@@ -112,7 +112,7 @@ export const CropsAndChickensAchievementsList: React.FC<Props> = ({
         type="chill"
         className="flex flex-col gap-4 items-center p-1 !w-full"
       >
-        <div className="flex flex-col items-center w-1/2">
+        <div className="flex flex-col items-center w-full">
           <span className="text-sm text-center">
             {t("crops-and-chickens.achievementPoints")}
           </span>
