@@ -359,12 +359,7 @@ export const COLLECTIBLE_COMPONENTS: Record<
   ...getKeys(DECORATION_TEMPLATES).reduce(
     (previous, name) => ({
       ...previous,
-      [name]: () => (
-        <TemplateCollectible
-          name={name}
-          dimensions={DECORATION_TEMPLATES[name].dimensions}
-        />
-      ),
+      [name]: () => <TemplateCollectible name={name} />,
     }),
     {} as Record<TemplateDecorationName, React.FC<CollectibleProps>>,
   ),
@@ -1846,12 +1841,12 @@ export const COLLECTIBLE_COMPONENTS: Record<
     <ImageStyle
       {...props}
       divStyle={{
-        width: `${PIXEL_SCALE * 16}px`,
+        width: `${PIXEL_SCALE * 30}px`,
         bottom: `${PIXEL_SCALE * 0}px`,
         left: `${PIXEL_SCALE * 0}px`,
       }}
       imgStyle={{
-        width: `${PIXEL_SCALE * 16}px`,
+        width: `${PIXEL_SCALE * 30}px`,
       }}
       image={ITEM_DETAILS["Jin"].image}
       alt="Jin"

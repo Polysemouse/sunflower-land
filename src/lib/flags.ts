@@ -63,11 +63,11 @@ export type ExperimentName = "ONBOARDING_CHALLENGES" | "GEM_BOOSTS";
  */
 const featureFlags = {
   CROPS_AND_CHICKENS_BETA_TESTING: defaultFeatureFlag,
-  CROP_QUICK_SELECT: () => false,
-  PORTALS: testnetFeatureFlag,
   JEST_TEST: defaultFeatureFlag,
   EASTER: () => false, // To re-enable next easter
-  RONIN_LOGIN: testnetLocalStorageFeatureFlag("ronin_login"),
+  DISABLE_BLOCKCHAIN_ACTIONS: timeBasedFeatureFlag(
+    new Date("2025-03-24T00:00:00Z"),
+  ),
 } satisfies Record<string, FeatureFlag>;
 
 export type FeatureName = keyof typeof featureFlags;

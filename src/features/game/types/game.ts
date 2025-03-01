@@ -1366,6 +1366,13 @@ export type VIP = {
 
 export type Chain = "ronin";
 
+export type NFT = {
+  name: string;
+  tokenId: number;
+  expiresAt: number;
+  acknowledgedAt?: number;
+};
+
 export interface GameState {
   home: Home;
   bank: Bank;
@@ -1570,17 +1577,7 @@ export interface GameState {
   };
   season: Season;
   lavaPits: Record<string, LavaPit>;
-  nfts?: Partial<
-    Record<
-      Chain,
-      {
-        name: string;
-        tokenId: number;
-        expiresAt: number;
-        acknowledgedAt?: number;
-      }
-    >
-  >;
+  nfts?: Partial<Record<Chain, NFT>>;
 }
 
 export interface Context {

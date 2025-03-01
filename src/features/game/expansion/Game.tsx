@@ -5,6 +5,8 @@ import { useActor, useSelector } from "@xstate/react";
 import { useInterval } from "lib/utils/hooks/useInterval";
 import * as AuthProvider from "features/auth/lib/Provider";
 
+import mailIcon from "assets/icons/letter.png";
+
 import { Loading } from "features/auth/components";
 import { ErrorCode } from "lib/errors";
 import { ErrorMessage } from "features/auth/ErrorMessage";
@@ -80,6 +82,9 @@ import { CalendarEvent } from "./components/temperateSeason/CalendarEvent";
 import { DailyReset } from "../components/DailyReset";
 import { RoninWelcomePack } from "./components/RoninWelcomePack";
 import { ClaimRoninAirdrop } from "./components/onChainAirdrops/ClaimRoninAirdrop";
+import { FLOWERTeaserContent } from "../components/FLOWERTeaser";
+import { pixelGrayBorderStyle } from "../lib/style";
+import { RoninJinClaim } from "./components/RoninJinClaim";
 
 function camelToDotCase(str: string): string {
   return str.replace(/([a-z])([A-Z])/g, "$1.$2").toLowerCase() as string;
@@ -114,6 +119,7 @@ const SHOW_MODAL: Record<StateValues, boolean> = {
   swarming: true,
   coolingDown: true,
   gameRules: true,
+  FLOWERTeaser: true,
   randomising: false,
   visiting: false,
   loadLandToVisit: true,
@@ -153,6 +159,7 @@ const SHOW_MODAL: Record<StateValues, boolean> = {
   seasonChanged: false,
   roninWelcomePack: true,
   roninAirdrop: true,
+  jinAirdrop: true,
 };
 
 // State change selectors
@@ -186,6 +193,7 @@ const isPurchasing = (state: MachineState) =>
 const showGems = (state: MachineState) => state.matches("gems");
 const isCoolingDown = (state: MachineState) => state.matches("coolingDown");
 const isGameRules = (state: MachineState) => state.matches("gameRules");
+const isFLOWERTeaser = (state: MachineState) => state.matches("FLOWERTeaser");
 const isDepositing = (state: MachineState) => state.matches("depositing");
 const isLoadingLandToVisit = (state: MachineState) =>
   state.matches("loadLandToVisit");
@@ -229,6 +237,7 @@ const isCalendarEvent = (state: MachineState) => state.matches("calendarEvent");
 const isRoninWelcomePack = (state: MachineState) =>
   state.matches("roninWelcomePack");
 const isRoninAirdrop = (state: MachineState) => state.matches("roninAirdrop");
+const isJinAirdrop = (state: MachineState) => state.matches("jinAirdrop");
 const GameContent: React.FC = () => {
   const { gameService } = useContext(Context);
   useSound("desert", true);
@@ -369,6 +378,7 @@ export const GameWrapper: React.FC = ({ children }) => {
   const swarming = useSelector(gameService, isSwarming);
   const coolingDown = useSelector(gameService, isCoolingDown);
   const gameRules = useSelector(gameService, isGameRules);
+  const FLOWERTeaser = useSelector(gameService, isFLOWERTeaser);
   const depositing = useSelector(gameService, isDepositing);
   const loadingLandToVisit = useSelector(gameService, isLoadingLandToVisit);
   const loadingSession = useSelector(gameService, isLoadingSession);
@@ -395,7 +405,7 @@ export const GameWrapper: React.FC = ({ children }) => {
   const calendarEvent = useSelector(gameService, isCalendarEvent);
   const roninWelcomePack = useSelector(gameService, isRoninWelcomePack);
   const roninAirdrop = useSelector(gameService, isRoninAirdrop);
-
+  const jinAirdrop = useSelector(gameService, isJinAirdrop);
   const showPWAInstallPrompt = useSelector(authService, _showPWAInstallPrompt);
 
   const { t } = useAppTranslation();
@@ -448,16 +458,7 @@ export const GameWrapper: React.FC = ({ children }) => {
   if (loadingSession || loadingLandToVisit || portalling) {
     return (
       <>
-        <div
-          className="h-screen w-full fixed top-0"
-          style={{
-            zIndex: 49,
-
-            backgroundImage: `url(${SUNNYSIDE.decorations.ocean})`,
-            backgroundSize: `${64 * PIXEL_SCALE}px`,
-            imageRendering: "pixelated",
-          }}
-        >
+        <Ocean>
           <Modal show backdrop={false}>
             <div
               className={classNames(
@@ -508,8 +509,21 @@ export const GameWrapper: React.FC = ({ children }) => {
             <Panel>
               <Loading />
             </Panel>
+            <div
+              className={classNames(
+                `w-full justify-center items-center flex  text-xs p-1 pr-4 mt-1 relative`,
+              )}
+              style={{
+                background: "#c0cbdc",
+                color: "#181425",
+                ...pixelGrayBorderStyle,
+              }}
+            >
+              <img src={mailIcon} className="w-8 mr-2" />
+              <p className="text-xs flex-1">{t("news.flowerSoon")}</p>
+            </div>
           </Modal>
-        </div>
+        </Ocean>
       </>
     );
   }
@@ -528,15 +542,19 @@ export const GameWrapper: React.FC = ({ children }) => {
 
   const stateValue = typeof state === "object" ? Object.keys(state)[0] : state;
 
-  const onHide = () => {
-    listed ||
-    listingDeleted ||
-    traded ||
-    sniped ||
-    marketPriceChanged ||
-    tradeAlreadyFulfilled
-      ? gameService.send("CONTINUE")
-      : undefined;
+  const onHide = (): (() => void) | undefined => {
+    if (
+      listed ||
+      listingDeleted ||
+      traded ||
+      sniped ||
+      marketPriceChanged ||
+      tradeAlreadyFulfilled
+    ) {
+      gameService.send("CONTINUE");
+    } else {
+      return undefined;
+    }
   };
 
   const effectTranslationKey = camelToDotCase(
@@ -584,6 +602,7 @@ export const GameWrapper: React.FC = ({ children }) => {
             {swarming && <Swarming />}
             {coolingDown && <Cooldown />}
             {gameRules && <Rules />}
+            {FLOWERTeaser && <FLOWERTeaserContent />}
             {transacting && <Transaction />}
             {depositing && <Loading text={t("depositing")} />}
             {trading && <Loading text={t("trading")} />}
@@ -604,6 +623,7 @@ export const GameWrapper: React.FC = ({ children }) => {
             {hasBBs && <Gems />}
             {roninWelcomePack && <RoninWelcomePack />}
             {roninAirdrop && <ClaimRoninAirdrop />}
+            {jinAirdrop && <RoninJinClaim />}
           </Panel>
         </Modal>
 
