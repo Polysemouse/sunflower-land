@@ -3,9 +3,10 @@ import {
   DEPOSIT_CHEST_XY,
   DEPOSIT_INDICATOR_PLAYER_DISTANCE,
 } from "../../CropsAndChickensConstants";
+import { CropsAndChickensScene } from "../CropsAndChickensScene";
 
 interface Props {
-  scene: Phaser.Scene;
+  scene: CropsAndChickensScene;
   player?: BumpkinContainer;
   hasCropsInInventory: () => boolean;
 }

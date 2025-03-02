@@ -90,8 +90,8 @@ export class HunterChickenContainer extends BaseChickenContainer {
       killPlayer,
     });
 
-    // set initial speed multiplier
-    this.isLockInPlace = false;
+    // set initial lock in place state
+    this.isLockInPlace = true;
 
     this.sprite.on(
       "animationupdate",

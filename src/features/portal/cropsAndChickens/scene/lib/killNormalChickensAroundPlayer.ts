@@ -2,7 +2,7 @@ import { SQUARE_WIDTH } from "features/game/lib/constants";
 import { CropsAndChickensScene } from "../CropsAndChickensScene";
 import {
   BOARD_WIDTH,
-  PLAYER_DEATH_SPRITE_PROPERTIES,
+  CHICKEN_DEATH_SPRITE_PROPERTIES,
   SPRITE_FRAME_RATE,
 } from "../../CropsAndChickensConstants";
 import { addActivity } from "./addActivity";
@@ -109,7 +109,7 @@ export const killNormalChickensAroundPlayer = (
           key: spriteKey,
           frames: scene.anims.generateFrameNumbers(spriteName, {
             start: 0,
-            end: PLAYER_DEATH_SPRITE_PROPERTIES.frames - 1,
+            end: CHICKEN_DEATH_SPRITE_PROPERTIES.frames - 1,
           }),
           repeat: 0,
           frameRate: SPRITE_FRAME_RATE,

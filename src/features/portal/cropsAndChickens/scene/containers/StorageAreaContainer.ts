@@ -1,9 +1,10 @@
 import { BumpkinContainer } from "features/world/containers/BumpkinContainer";
 import { CROP_DEPOSIT_AREA_DIMENSIONS } from "../../CropsAndChickensConstants";
 import { Physics } from "phaser";
+import { CropsAndChickensScene } from "../CropsAndChickensScene";
 
 interface Props {
-  scene: Phaser.Scene;
+  scene: CropsAndChickensScene;
   player?: BumpkinContainer;
   depositCrops: () => void;
 }

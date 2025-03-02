@@ -3,26 +3,19 @@ import VirtualJoystick from "phaser3-rex-plugins/plugins/virtualjoystick.js";
 import { isTouchDevice } from "features/world/lib/device";
 import { CropsAndChickensScene } from "../CropsAndChickensScene";
 import { JOYSTICK_RADIUS } from "../../CropsAndChickensConstants";
-import { killPlayer } from "./killPlayer";
-import { depositCrops } from "./depositCrops";
 import { killNormalChickensAroundPlayer } from "./killNormalChickensAroundPlayer";
+import { PowerSkillButtonContainer } from "../containers/PowerSkillButtonContainer";
 
-const POWER_SKILL_BUTTON_SIZE = 28;
-const POWER_SKILL_BUTTON_MARGIN = 9;
-const POWER_SKILL_BUTTON_ALPHA = 0.3;
-const PROGRESS_ARC_LINE_WIDTH = 4;
-const PROGRESS_ARC_OFFSET = 5;
-
-const TOTAL_BUTTONS = 5;
-
-// active pointer IDs for power skill buttons
-let buttonPointerIds: number[] = [];
+//TODO: Move constants to CropsAndChickensConstants
+const BUTTON_RADIUS = 28;
+const BUTTON_MARGIN = 9;
+const TOTAL_BUTTONS = 3;
 
 /**
  * Gets the joystick default position.
  * @param scene The CropsAndChickensScene scene.
  */
-const joystickDefaultPosition = (scene: CropsAndChickensScene) => {
+const getJoystickDefaultPosition = (scene: CropsAndChickensScene) => {
   return {
     x: scene.cameras.main.centerX,
     y: scene.cameras.main.centerY + scene.cameras.main.height * 0.3,
@@ -54,7 +47,7 @@ const initializeJoystick = (scene: CropsAndChickensScene) => {
   scene.joystick = joystick;
 
   // set joystick to default position
-  const defaultPosition = joystickDefaultPosition(scene);
+  const defaultPosition = getJoystickDefaultPosition(scene);
   joystick.setPosition(defaultPosition.x, defaultPosition.y);
 
   // ignore joystick in main camera
@@ -76,7 +69,7 @@ const initializeJoystick = (scene: CropsAndChickensScene) => {
 
   // set joystick position on pointer down
   scene.input.on("pointerdown", (pointer: Phaser.Input.Pointer) => {
-    if (buttonPointerIds.includes(pointer.id)) return;
+    if (scene.buttonPointerIds.includes(pointer.id)) return;
     if (!!joystick.pointer?.id && pointer.id !== joystick.pointer?.id) return;
 
     const setPositionX = centerX + (pointer.x - centerX);
@@ -90,7 +83,9 @@ const initializeJoystick = (scene: CropsAndChickensScene) => {
   // reset joystick position and opacity on pointer up
   scene.input.on("pointerup", (pointer: Phaser.Input.Pointer) => {
     // remove pointer from active button pointer IDs
-    buttonPointerIds = buttonPointerIds.filter((id) => id !== pointer.id);
+    scene.buttonPointerIds = scene.buttonPointerIds.filter(
+      (id) => id !== pointer.id,
+    );
 
     // reset joystick position and opacity if pointer is not active
     if (joystick.pointer?.id) return;
@@ -98,368 +93,95 @@ const initializeJoystick = (scene: CropsAndChickensScene) => {
     joystickBase.setAlpha(idleOpacity);
     joystickThumb.setAlpha(idleOpacity);
 
-    const defaultPosition = joystickDefaultPosition(scene);
+    const defaultPosition = getJoystickDefaultPosition(scene);
     joystick.setPosition(defaultPosition.x, defaultPosition.y);
   });
 };
 
-//TODO: Implement power skill buttons
+//TODO: Implement power skill buttons properly
 const initializePowerSkillButtons = (scene: CropsAndChickensScene) => {
-  initializePowerSkillButton(
-    scene,
-    "crop_deposit_arrow",
-    "slow\nchickens",
-    "M",
-    () => {
-      const skillSound = scene.sound.add("skill_slow_down");
-      skillSound.play({ volume: 0.8 });
-
-      scene.normalChickens.forEach((chicken) => {
-        chicken.slowSpeed();
-      });
-      scene.hunterChicken?.slowSpeed();
-
-      scene.time.delayedCall(10000, () => {
-        scene.normalChickens.forEach((chicken) => {
-          chicken.restoreSpeed();
-        });
-        scene.hunterChicken?.restoreSpeed();
-      });
-    },
-    0,
-    10000,
-    20000,
-  );
-  initializePowerSkillButton(
-    scene,
-    "crop_deposit_arrow",
-    "freeze\nhunter\nchicken",
-    "N",
-    () => {
-      const skillSound = scene.sound.add("skill_freeze");
-      skillSound.play({ volume: 0.5 });
-
-      scene.hunterChicken?.freeze();
-
-      scene.time.delayedCall(10000, () => {
-        scene.hunterChicken?.unfreeze();
-      });
-    },
-    1,
-    10000,
-    20000,
-  );
-  initializePowerSkillButton(
-    scene,
-    "crop_deposit_arrow",
-    "kill nearby\nnormal\nchickens",
-    "B",
-    () => {
-      killNormalChickensAroundPlayer(scene, 5);
-    },
-    2,
-    1000,
-    10000,
-  );
-  initializePowerSkillButton(
-    scene,
-    "crop_deposit_arrow",
-    "deposit\ncrops",
-    "V",
-    () => {
-      depositCrops(scene);
-    },
-    3,
-    1000,
-    15000,
-  );
-  initializePowerSkillButton(
-    scene,
-    "crop_deposit_arrow",
-    "suicide",
-    "C",
-    () => {
-      killPlayer(scene, "Normal Chicken");
-    },
-    4,
-    2000,
-    3000,
-  );
-};
-
-/**
- * Initializes a power skill button in the given scene.
- *
- * @param scene - The scene where the button will be added.
- * @param imageKey - The key of the image to be used for the button.
- * @param text - The text to be displayed on the button.
- * @param callback - The callback function to be executed when the button is pressed.
- * @param buttonIndex - The index of the button, used to determine its position.
- * @param effectDuration - The duration of the effect in milliseconds.
- * @param cooldownDuration - The duration of the cooldown in milliseconds.
- * @returns The created skill button.
- */
-const initializePowerSkillButton = (
-  scene: CropsAndChickensScene,
-  imageKey: string,
-  text: string,
-  hotkey: string,
-  callback: () => void,
-  buttonIndex: number,
-  effectDuration: number,
-  cooldownDuration: number,
-) => {
-  // flag to track if the pointer is over the button
-  // used for changing the cursor style
-  let isPointerOverButton = false;
-
-  // get the position of the button
   const { width, height } = scene.cameras.main;
-  let buttonX, buttonY;
-  if (isTouchDevice()) {
-    // arrange buttons in a column on the right side of the screen from bottom to top
-    buttonX = width - POWER_SKILL_BUTTON_SIZE - POWER_SKILL_BUTTON_MARGIN;
-    buttonY =
-      height -
-      POWER_SKILL_BUTTON_SIZE * (2 * buttonIndex + 3) -
-      POWER_SKILL_BUTTON_MARGIN * (2 * buttonIndex + 3);
-  } else {
-    // arrange buttons in a row at the bottom of the screen from left to right
-    buttonX =
-      width / 2 -
-      POWER_SKILL_BUTTON_SIZE * (2 * buttonIndex - TOTAL_BUTTONS + 1) -
-      POWER_SKILL_BUTTON_MARGIN * (2 * buttonIndex - TOTAL_BUTTONS + 1);
-    buttonY = height - POWER_SKILL_BUTTON_SIZE - POWER_SKILL_BUTTON_MARGIN;
-  }
 
-  const skillButton = scene.add
-    .circle(buttonX, buttonY, POWER_SKILL_BUTTON_SIZE, 0xffffff)
-    .setScrollFactor(0)
-    .setAlpha(POWER_SKILL_BUTTON_ALPHA)
-    .setInteractive({
-      cursor: "pointer",
-    });
-
-  const progressArc = scene.add.graphics({
-    x: skillButton.x,
-    y: skillButton.y,
-  });
-
-  const progressMask = scene.add.graphics({
-    x: skillButton.x,
-    y: skillButton.y,
-  });
-  skillButton.setMask(
-    new Phaser.Display.Masks.GeometryMask(scene, progressMask),
-  );
-
-  // const skillButtonImage = scene.add
-  //   .image(buttonX, buttonY, imageKey)
-  //   .setScrollFactor(0)
-  //   .setScale(PIXEL_SCALE);
-
-  const skillButtonText = scene.add
-    .text(buttonX, buttonY, text, {
-      fontSize: "16px",
-      fontFamily: "Basic",
-      color: "#000000",
-      align: "center",
-      stroke: "#ffffff",
-      strokeThickness: 2,
-    })
-    .setScrollFactor(0)
-    .setOrigin(0.5);
-
-  // draw hotkey text above the button if it is not a touch device
-  if (!isTouchDevice()) {
-    const hoykeyText = scene.add
-      .text(buttonX, buttonY - POWER_SKILL_BUTTON_SIZE, hotkey, {
-        fontSize: "30px",
-        fontFamily: "Basic",
-        color: "#000000",
-        align: "center",
-        stroke: "#ffffff",
-        strokeThickness: 4,
-      })
-      .setScrollFactor(0)
-      .setOrigin(0.5);
-
-    // ignore hotkey text in main camera
-    scene.cameras.main.ignore(hoykeyText);
-  }
-
-  // ignore skill button in main camera
-  scene.cameras.main.ignore(skillButton);
-  // scene.cameras.main.ignore(skillButtonImage);
-  scene.cameras.main.ignore(skillButtonText);
-  scene.cameras.main.ignore(progressArc);
-  scene.cameras.main.ignore(progressMask);
-
-  const disableButton = () => {
-    if (skillButton.input) skillButton.input.cursor = "default";
-    if (isPointerOverButton) scene.input.setDefaultCursor("default");
-
-    skillButton.setData("isOnEffectOrCooldown", true);
-    skillButton.setAlpha(POWER_SKILL_BUTTON_ALPHA * 0.5);
-    // skillButtonImage.setAlpha(0.5);
-    skillButtonText.setAlpha(0.5);
-  };
-
-  const startEffect = () => {
-    const dummy = { progress: 0 };
-    scene.tweens.add({
-      targets: dummy,
-      progress: 1,
-      duration: effectDuration,
-      onUpdate: (tween) => {
-        drawProgress(true, 1 - tween.progress, 0xffff00, 0.8);
-      },
-      onComplete: () => {
-        startCooldown();
-      },
-    });
-  };
-
-  const startCooldown = () => {
-    skillButton.fillColor = 0xffffff;
-
-    const dummy = { progress: 0 };
-    scene.tweens.add({
-      targets: dummy,
-      progress: 1,
-      duration: cooldownDuration,
-      onUpdate: (tween) => {
-        drawProgress(false, tween.progress, 0xffffff, 0.5);
-      },
-      onComplete: () => {
-        // play ready sound
-        const skillReadySound = scene.sound.add("skill_ready");
-        skillReadySound.play({ volume: 0.4 });
-
-        // restore button state
-        skillButton
-          .setData("isOnEffectOrCooldown", false)
-          .setAlpha(POWER_SKILL_BUTTON_ALPHA);
-        skillButton.fillColor = 0xffff00;
-        // skillButtonImage.setAlpha(1.0);
-        skillButtonText.setAlpha(1.0);
-        drawProgress(false, 0, 0xffffff, 0.0);
-
-        // restore cursor
-        if (skillButton.input) skillButton.input.cursor = "pointer";
-        if (isPointerOverButton) scene.input.setDefaultCursor("pointer");
-      },
-    });
-  };
-
-  const drawProgress = (
-    isEffectOn: boolean,
-    progress: number,
-    color: number,
-    alpha: number,
-  ) => {
-    progressArc
-      .clear()
-      .lineStyle(PROGRESS_ARC_LINE_WIDTH, color, alpha)
-      .beginPath()
-      .arc(
-        0,
-        0,
-        POWER_SKILL_BUTTON_SIZE + PROGRESS_ARC_OFFSET,
-        Phaser.Math.DegToRad(270),
-        Phaser.Math.DegToRad(270 + 360 * progress),
-        false,
-      )
-      .strokePath();
-
-    if (progress < 1) {
-      progressArc
-        .lineStyle(PROGRESS_ARC_LINE_WIDTH, color, alpha * 0.2)
-        .beginPath()
-        .arc(
-          0,
-          0,
-          POWER_SKILL_BUTTON_SIZE + PROGRESS_ARC_OFFSET,
-          Phaser.Math.DegToRad(270 + 360 * progress),
-          Phaser.Math.DegToRad(270 + 360),
-          false,
-        )
-        .strokePath();
+  const buttonPositions = Array.from({ length: TOTAL_BUTTONS }, (_, i) => {
+    let buttonX, buttonY;
+    if (isTouchDevice()) {
+      // arrange buttons in a column on the right side of the screen from bottom to top
+      buttonX = width - BUTTON_RADIUS - BUTTON_MARGIN;
+      buttonY =
+        height - BUTTON_RADIUS * (2 * i + 3) - BUTTON_MARGIN * (2 * i + 3);
+    } else {
+      // arrange buttons in a row at the bottom of the screen from left to right
+      buttonX =
+        width / 2 -
+        BUTTON_RADIUS * (2 * i - TOTAL_BUTTONS + 1) -
+        BUTTON_MARGIN * (2 * i - TOTAL_BUTTONS + 1);
+      buttonY = height - BUTTON_RADIUS - BUTTON_MARGIN;
     }
 
-    if (isEffectOn) return;
-
-    progressMask
-      .clear()
-      .fillStyle(0xffffff, 0.5)
-      .beginPath()
-      .moveTo(0, 0)
-      .arc(
-        0,
-        0,
-        POWER_SKILL_BUTTON_SIZE,
-        Phaser.Math.DegToRad(270),
-        Phaser.Math.DegToRad(270 + 360 * progress),
-        false,
-      )
-      .lineTo(0, 0)
-      .closePath()
-      .fillPath();
-
-    // draw the remaining part of the mask with lower opacity
-    if (progress < 1) {
-      progressMask
-        .fillStyle(0xffffff, 0.2)
-        .beginPath()
-        .moveTo(0, 0)
-        .arc(
-          0,
-          0,
-          POWER_SKILL_BUTTON_SIZE,
-          Phaser.Math.DegToRad(270 + 360 * progress),
-          Phaser.Math.DegToRad(270 + 360),
-          false,
-        )
-        .lineTo(0, 0)
-        .closePath()
-        .fillPath();
-    }
-  };
-
-  skillButton.on("pointerover", () => {
-    isPointerOverButton = true;
+    return { x: buttonX, y: buttonY };
   });
 
-  skillButton.on("pointerout", () => {
-    isPointerOverButton = false;
-  });
+  scene.powerSkillButtons = [
+    new PowerSkillButtonContainer({
+      scene,
+      powerSkillName: "Slow Mo Chickens",
+      x: buttonPositions[0].x,
+      y: buttonPositions[0].y,
+      tempText: "slow\nchicken",
+      hotkey: "M",
+      cooldownDuration: 10000,
+      effectDuration: 20000,
+      callback: () => {
+        const skillSound = scene.sound.add("skill_slow_down");
+        skillSound.play({ volume: 0.8 });
 
-  const tryActivateButton = () => {
-    if (scene.isDead) return;
-    if (skillButton.getData("isOnEffectOrCooldown")) return;
+        scene.normalChickens.forEach((chicken) => {
+          chicken.slowSpeed();
+        });
+        scene.hunterChicken?.slowSpeed();
 
-    disableButton();
-    startEffect();
+        scene.time.delayedCall(10000, () => {
+          scene.normalChickens.forEach((chicken) => {
+            chicken.restoreSpeed();
+          });
+          scene.hunterChicken?.restoreSpeed();
+        });
+      },
+    }),
+    new PowerSkillButtonContainer({
+      scene,
+      powerSkillName: "Frozen Hunter",
+      x: buttonPositions[1].x,
+      y: buttonPositions[1].y,
+      tempText: "freeze\nhunter\nchicken",
+      hotkey: "N",
+      cooldownDuration: 15000,
+      effectDuration: 15000,
+      callback: () => {
+        const skillSound = scene.sound.add("skill_freeze");
+        skillSound.play({ volume: 0.5 });
 
-    callback();
-  };
+        scene.hunterChicken?.freeze();
 
-  // hotkey activation
-  scene.input.keyboard?.on("keydown-" + hotkey, () => {
-    tryActivateButton();
-  });
-
-  skillButton.on("pointerdown", (pointer: Phaser.Input.Pointer) => {
-    if (isTouchDevice()) buttonPointerIds.push(pointer.id);
-
-    tryActivateButton();
-  });
-
-  // start cooldown immediately
-  disableButton();
-  startCooldown();
-
-  return skillButton;
+        scene.time.delayedCall(15000, () => {
+          scene.hunterChicken?.unfreeze();
+        });
+      },
+    }),
+    new PowerSkillButtonContainer({
+      scene,
+      powerSkillName: "Eggsplosion",
+      x: buttonPositions[2].x,
+      y: buttonPositions[2].y,
+      tempText: "kill nearby\nnormal\nchickens",
+      hotkey: "B",
+      cooldownDuration: 10000,
+      effectDuration: 1000,
+      callback: () => {
+        killNormalChickensAroundPlayer(scene, 5);
+      },
+    }),
+  ];
 };
 
 const initializeKeyboardControls = (scene: CropsAndChickensScene) => {
@@ -505,7 +227,7 @@ export const initializeControls = (scene: CropsAndChickensScene) => {
   if (scene.isHardMode && scene.hasBetaAccess)
     initializePowerSkillButtons(scene);
 
-  // initialize kaeyboard
+  // initialize keyboard
   initializeKeyboardControls(scene);
 
   scene.input.setTopOnly(true);

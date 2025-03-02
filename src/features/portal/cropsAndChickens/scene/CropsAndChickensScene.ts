@@ -48,11 +48,16 @@ import {
   NormalChickenCircularRailType,
 } from "./containers/NormalChickenCircularContainer";
 import { initializePipelines } from "./lib/initializePipelines";
+import { PowerSkillButtonContainer } from "./containers/PowerSkillButtonContainer";
 
 export class CropsAndChickensScene extends BaseScene {
   sceneId: SceneId = "crops_and_chickens";
 
   hudCamera?: Phaser.Cameras.Scene2D.Camera;
+
+  buttonPointerIds: number[] = [];
+
+  powerSkillButtons: PowerSkillButtonContainer[] = [];
 
   joystickIndicatorBase: Phaser.GameObjects.Arc | undefined;
   joystickIndicatorDot: Phaser.GameObjects.Sprite | undefined;
@@ -492,6 +497,10 @@ export class CropsAndChickensScene extends BaseScene {
     // must be called after setting hasStopped
     if (!this.isGamePlaying && this.isMoving) {
       this.portalService?.send("START");
+
+      this.powerSkillButtons.forEach((button) => {
+        button.startCooldown();
+      });
     }
 
     this.updatePlayer();

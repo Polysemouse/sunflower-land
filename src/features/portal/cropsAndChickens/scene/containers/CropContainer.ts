@@ -1,12 +1,13 @@
 import { BumpkinContainer } from "features/world/containers/BumpkinContainer";
 import { BOARD_WIDTH } from "../../CropsAndChickensConstants";
 import { Physics } from "phaser";
+import { CropsAndChickensScene } from "../CropsAndChickensScene";
 
 interface Props {
   x: number;
   y: number;
   cropIndex: number;
-  scene: Phaser.Scene;
+  scene: CropsAndChickensScene;
   player?: BumpkinContainer;
   harvestCrop: (crops: Phaser.GameObjects.Sprite[], cropIndex: number) => void;
 }

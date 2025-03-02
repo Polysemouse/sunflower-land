@@ -192,4 +192,14 @@ export const preloadAssets = (scene: CropsAndChickensScene) => {
     "time_ticking_preparation",
     "crops-and-chickens/audio/time_ticking_preparation.mp3",
   );
+
+  // ui
+  scene.load.image(
+    "power_skill_button_base_disabled",
+    "crops-and-chickens/ui/power_skill_button_base_disabled.png",
+  );
+  scene.load.image(
+    "power_skill_button_base_enabled",
+    "crops-and-chickens/ui/power_skill_button_base_enabled.png",
+  );
 };
