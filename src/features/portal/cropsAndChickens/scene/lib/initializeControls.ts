@@ -129,8 +129,8 @@ const initializePowerSkillButtons = (scene: CropsAndChickensScene) => {
       y: buttonPositions[0].y,
       tempText: "slow\nchicken",
       hotkey: "M",
-      cooldownDuration: 10000,
-      effectDuration: 20000,
+      cooldownDuration: 20000,
+      effectDuration: 10000,
       callback: () => {
         const skillSound = scene.sound.add("skill_slow_down");
         skillSound.play({ volume: 0.8 });

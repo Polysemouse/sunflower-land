@@ -21,6 +21,7 @@ interface Props {
 }
 
 export class PowerSkillButtonContainer extends Phaser.GameObjects.Container {
+  scene: CropsAndChickensScene;
   buttonBase: Phaser.GameObjects.Image;
   buttonBaseMasked: Phaser.GameObjects.Image;
   buttonBaseMask: Phaser.GameObjects.Graphics;
@@ -199,8 +200,10 @@ export class PowerSkillButtonContainer extends Phaser.GameObjects.Container {
       },
       onComplete: () => {
         // play ready sound
-        const skillReadySound = this.scene.sound.add("skill_ready");
-        skillReadySound.play({ volume: 0.4 });
+        if (this.scene.isRulesRead) {
+          const skillReadySound = this.scene.sound.add("skill_ready");
+          skillReadySound.play({ volume: 0.4 });
+        }
 
         // restore button state
         this.isOnEffectOrCooldown = false;

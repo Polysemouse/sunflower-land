@@ -55,9 +55,8 @@ export class CropsAndChickensScene extends BaseScene {
 
   hudCamera?: Phaser.Cameras.Scene2D.Camera;
 
-  buttonPointerIds: number[] = [];
-
-  powerSkillButtons: PowerSkillButtonContainer[] = [];
+  buttonPointerIds!: number[];
+  powerSkillButtons!: PowerSkillButtonContainer[];
 
   joystickIndicatorBase: Phaser.GameObjects.Arc | undefined;
   joystickIndicatorDot: Phaser.GameObjects.Sprite | undefined;
@@ -112,6 +111,9 @@ export class CropsAndChickensScene extends BaseScene {
     this.hasGotToTheOtherSide = false;
     this.hasStopped = false;
     this.activities = {};
+
+    this.buttonPointerIds = [];
+    this.powerSkillButtons = [];
   };
 
   /**
