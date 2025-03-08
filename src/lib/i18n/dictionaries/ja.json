@@ -4219,7 +4219,6 @@
   "skill.treeCharge": "-10% の木の成長時間",
   "skill.moreAxes": "+50 アックスストック",
   "skill.instaChop": "1 タップツリー",
-  "skill.toughTree": "1/10 の木材生産量が +3 になる確率",
   "skill.fellersDiscount": "-20% の税金費用",
   "skill.moneyTree": "木を切り刻むと 1% の確率で200枚のコインが見つかる",
   "skill.treeBlitz": "すべての木を瞬時に成長させる能力",
@@ -5460,5 +5459,10 @@
   "rocketman.flower.launch": "4月1日に、$FLOWERがゲームに追加されます！",
   "rocketman.flower.compete": "毎月のチャレンジに参加して$FLOWERを獲得しましょう。",
   "rocketman.flower.social": "ソーシャルタスクを完了して情報を広め、$FLOWERを獲得しましょう。",
-  "rocketman.flower.eligible": "ポリゴン、Ronin、BASEのユーザーが対象です。"
+  "rocketman.flower.eligible": "ポリゴン、Ronin、BASEのユーザーが対象です。",
+  "marketplace.listing.failure.tradeNotFound": "取引が見つかりません",
+  "bountyType.label": "{{type}} バウンティ",
+  "ronin.nft.activates": "VIPアクセスは3日後に有効になります。",
+  "select.player": "プレイヤーを選択",
+  "skill.toughTree": "木材生産量が3倍になる確率は1/10"
 }

@@ -4219,7 +4219,6 @@
   "skill.treeCharge": "-10% tempo di crescita degli alberi",
   "skill.moreAxes": "+50 assi di scorta",
   "skill.instaChop": "1 Tap Tree",
-  "skill.toughTree": "1/10 di possibilità di +3 di resa in legno",
   "skill.fellersDiscount": "-20% costo dell'ascia",
   "skill.moneyTree": "1% di possibilità di trovare 200 monete tagliando gli alberi",
   "skill.treeBlitz": "Capacità di far crescere istantaneamente tutti gli alberi",
@@ -5460,5 +5459,10 @@
   "rocketman.flower.launch": "Il 1° aprile, $FLOWER verrà aggiunto al gioco!",
   "rocketman.flower.compete": "Competi nelle sfide mensili per guadagnare $FLOWER.",
   "rocketman.flower.social": "Completa le attività sociali, diffondi la notizia e guadagna $FLOWER.",
-  "rocketman.flower.eligible": "Gli utenti Polygon, Ronin e BASE sono idonei."
+  "rocketman.flower.eligible": "Gli utenti Polygon, Ronin e BASE sono idonei.",
+  "marketplace.listing.failure.tradeNotFound": "Commercio non trovato",
+  "bountyType.label": "{{type}} Premi",
+  "ronin.nft.activates": "Il tuo accesso VIP verrà attivato tra 3 giorni.",
+  "select.player": "Seleziona giocatore",
+  "skill.toughTree": "1/10 di possibilità di resa del legno x3"
 }

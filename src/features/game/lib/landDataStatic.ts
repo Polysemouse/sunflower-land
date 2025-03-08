@@ -258,7 +258,7 @@ export const STATIC_OFFLINE_FARM: GameState = {
       {
         id: "1",
         name: "Cow",
-        level: 1,
+        level: 4,
         coins: 100,
       },
       {
@@ -266,6 +266,12 @@ export const STATIC_OFFLINE_FARM: GameState = {
         name: "Chicken",
         level: 1,
         coins: 100,
+      },
+      {
+        id: "4",
+        name: "Cow",
+        level: 1,
+        items: { Gem: 1 },
       },
       {
         id: "2",
@@ -295,7 +301,7 @@ export const STATIC_OFFLINE_FARM: GameState = {
         id: "22",
         name: "Chicken",
         level: 1,
-        items: { Scroll: 1 },
+        items: { Gem: 1 },
       },
       {
         id: "obsidian-test",
@@ -641,9 +647,9 @@ export const STATIC_OFFLINE_FARM: GameState = {
         type: "Cow",
         state: "idle",
         createdAt: 0,
-        experience: 120,
+        experience: 800,
         asleepAt: Date.now() - 1000 * 60 * 60 * 12,
-        awakeAt: Date.now() + 1000 * 60 * 60 * 12,
+        awakeAt: Date.now(),
         lovedAt: Date.now(),
         item: "Petting Hand",
       },

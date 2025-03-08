@@ -4219,7 +4219,6 @@
   "skill.treeCharge": "-10% ağaç büyüme süresi",
   "skill.moreAxes": "+50 balta stoğu",
   "skill.instaChop": "1 Musluk Ağaçları",
-  "skill.toughTree": "1/10 şansı +3 odun verimi",
   "skill.fellersDiscount": "-20% balta maliyeti",
   "skill.moneyTree": "Ağaçları keserken %1 200 jeton bulma şansı",
   "skill.treeBlitz": "Tüm ağaçları anında büyütme yeteneği",
@@ -5460,5 +5459,10 @@
   "rocketman.flower.launch": "1 Nisan'da $FLOWER oyuna eklenecek!",
   "rocketman.flower.compete": "$FLOWER kazanmak için aylık mücadelelerde yarışın.",
   "rocketman.flower.social": "Sosyal görevleri tamamlayın, haberi yayın ve $FLOWER kazanın.",
-  "rocketman.flower.eligible": "Polygon, Ronin & BASE kullanıcıları uygundur."
+  "rocketman.flower.eligible": "Polygon, Ronin & BASE kullanıcıları uygundur.",
+  "marketplace.listing.failure.tradeNotFound": "Ticaret bulunamadı",
+  "bountyType.label": "{{type}} Ödüller",
+  "ronin.nft.activates": "VIP Erişiminiz 3 gün içinde etkinleştirilecektir.",
+  "select.player": "Oyuncu Seçin",
+  "skill.toughTree": "1/10 x3 odun verimi şansı"
 }

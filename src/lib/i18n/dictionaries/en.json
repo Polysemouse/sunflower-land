@@ -2594,6 +2594,7 @@
   "marketplace.offering.success": "Congratulations, you have successfully made an offer. Now be patient and wait for a Bumpkin to accept!",
   "marketplace.listing.success": "Congratulations, you have successfully listed your item for sale. Now be patient and wait for a Bumpkin to buy it!",
   "marketplace.listing.failure": "Oops, something went wrong. Please try again.",
+  "marketplace.listing.failure.tradeNotFound": "Trade not found",
   "marketplace.listing.cancelling": "Cancelling listing",
   "marketplace.listing.cancelling.success": "Congratulations, you have successfully cancelled your listing!",
   "marketplace.listing.cancelling.failure": "Oops, something went wrong. Please try again.",
@@ -4065,6 +4066,7 @@
   "bounties.sell.sfl": "Are you sure you want to sell this for {{amount}} SFL?",
   "bounties.sell.animal.sick": "Hmm, I see this poor animal is sick. I'll still take them off your hands, but I will have to offer you a reduced bounty. Deal?",
   "bounties.animal.select": "Select a {{name}} to sell.",
+  "bountyType.label": "{{type}} Bounties",
   "npcDialogues.chase.intro1": "Howdy Bumpkin! Animals are coming to Sunflower Land on November 1st.",
   "npcDialogues.chase.intro2": "However I'm in a bit of a pickle. My herd has mysteriously gone missing - it's like they disappeared out of thin air!",
   "npcDialogues.sheep.intro1": "Thanks for finding me! One moment I was pretending to be a sheep with the Cowboy and the next moment I was here.",
@@ -4106,7 +4108,7 @@
   "skill.treeCharge": "-10% tree growth time",
   "skill.moreAxes": "+50 axe stock",
   "skill.instaChop": "1 Tap Trees",
-  "skill.toughTree": "1/10 chance of +3 wood yield",
+  "skill.toughTree": "1/10 chance of x3 wood yield",
   "skill.fellersDiscount": "-20% axe cost",
   "skill.moneyTree": "1% chance of finding 200 Coins when chopping trees",
   "skill.treeTurnaround": "15% chance for trees to grow instantly",
@@ -5440,6 +5442,7 @@
   "ronin.nft.perkOne": "VIP Access (Farm created after February 1st, 2025)",
   "ronin.nft.perkTwo": "2x Faster Cooking",
   "ronin.nft.expires": "These perks won't last forever, so make the most of them while they last!",
+  "ronin.nft.activates": "Your VIP Access will be activated in 3 days.",
   "news.flower.launch": "$FLOWER Launch",
   "news.flower.launch.description": "A new $ERC20 is coming to Sunflower Land. Learn about the new utility & how to earn.",
   "news.ronin.network": "Ronin Network",
@@ -5460,5 +5463,6 @@
   "rocketman.flower.launch": "On April 1st, $FLOWER will be added to the game!",
   "rocketman.flower.compete": "Compete in monthly challenges to earn $FLOWER.",
   "rocketman.flower.social": "Complete social tasks, spread the word, and earn $FLOWER.",
-  "rocketman.flower.eligible": "Polygon, Ronin & BASE users are eligible."
+  "rocketman.flower.eligible": "Polygon, Ronin & BASE users are eligible.",
+  "select.player": "Select Player"
 }

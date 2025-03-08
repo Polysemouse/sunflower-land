@@ -4219,7 +4219,6 @@
   "skill.treeCharge": "-10% Baumwachstumszeit",
   "skill.moreAxes": "+50 Axtstock",
   "skill.instaChop": "1 Stechbäume",
-  "skill.toughTree": "1/10 Chance auf +3 Holzausbeute",
   "skill.fellersDiscount": "-20% Steuerkosten",
   "skill.moneyTree": "1% Chance, beim Baumfällen 200 Münzen zu finden",
   "skill.treeBlitz": "Fähigkeit, alle Bäume sofort wachsen zu lassen",
@@ -5460,5 +5459,10 @@
   "rocketman.flower.launch": "Am 1. April wird $FLOWER dem Spiel hinzugefügt!",
   "rocketman.flower.compete": "Nimm an monatlichen Herausforderungen teil, um $FLOWER zu verdienen.",
   "rocketman.flower.social": "Erledige soziale Aufgaben, verbreite die Nachricht und verdiene $FLOWER.",
-  "rocketman.flower.eligible": "Polygon-, Ronin- und BASE-Benutzer sind berechtigt."
+  "rocketman.flower.eligible": "Polygon-, Ronin- und BASE-Benutzer sind berechtigt.",
+  "marketplace.listing.failure.tradeNotFound": "Handel wurde nicht gefunden",
+  "bountyType.label": "{{type}} Kopfgelder",
+  "ronin.nft.activates": "Ihr VIP-Zugang wird in 3 Tagen aktiviert.",
+  "select.player": "Wähle Spieler",
+  "skill.toughTree": "Chance von 1/10 auf x3 Holzausbeute"
 }
