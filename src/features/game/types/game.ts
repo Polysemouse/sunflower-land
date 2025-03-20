@@ -91,6 +91,7 @@ import {
   SeasonalEventName,
 } from "./calendar";
 import { VipBundle } from "../lib/vipAccess";
+import { SocialTaskName } from "../events/landExpansion/completeSocialTask";
 
 export type Reward = {
   coins?: number;
@@ -229,6 +230,7 @@ export type Coupons =
   | "Prize Ticket"
   | "Mark"
   | "Trade Point"
+  | "Love Charm"
   | Keys
   | SeasonalTicket
   | FactionEmblem;
@@ -346,6 +348,9 @@ export const COUPONS: Record<Coupons, { description: string }> = {
   },
   Timeshard: {
     description: "",
+  },
+  "Love Charm": {
+    description: translate("description.love.charm"),
   },
 };
 
@@ -1578,7 +1583,48 @@ export interface GameState {
   season: Season;
   lavaPits: Record<string, LavaPit>;
   nfts?: Partial<Record<Chain, NFT>>;
+
+  faceRecognition?: {
+    session?: {
+      id: string;
+      createdAt: number;
+      token: string;
+    };
+    history: FaceRecognitionEvent[];
+  };
+  telegram?: {
+    linkedAt: number;
+    startedAt?: number;
+    joinedAt?: number;
+  };
+  twitter?: {
+    linkedAt: number;
+    followedAt?: number;
+    isAuthorised?: boolean;
+  };
+  discord?: {
+    connected: boolean;
+  };
+  referrals?: {
+    totalReferrals: number;
+  };
+  socialTasks?: {
+    completed: Partial<Record<SocialTaskName, { completedAt: number }>>;
+  };
 }
+
+export type FaceRecognitionEvent =
+  | { event: "succeeded"; createdAt: number; confidence: number }
+  | { event: "failed"; createdAt: number; confidence: number }
+  | {
+      event: "duplicate";
+      createdAt: number;
+      duplicates: {
+        similarity: number;
+        faceId: string;
+        farmId: number;
+      }[];
+    };
 
 export interface Context {
   state?: GameState;

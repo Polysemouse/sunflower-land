@@ -27,7 +27,8 @@ import { GameCalendar } from "features/game/expansion/components/temperateSeason
 
 import chest from "assets/icons/chest.png";
 import { LockdownWidget } from "features/announcements/AnnouncementWidgets";
-
+import { hasFeatureAccess } from "lib/flags";
+import { RewardsButton } from "./components/referral/RewardsButton";
 /**
  * Heads up display - a concept used in games for the small overlaid display of information.
  * Balances, Inventory, actions etc.
@@ -45,7 +46,7 @@ const HudComponent: React.FC = () => {
 
   const autosaving = gameState.matches("autosaving");
 
-  const handleBuyCurrenciesModal = () => {
+  const handleCurrenciesModal = () => {
     openModal("BUY_GEMS");
   };
 
@@ -63,6 +64,10 @@ const HudComponent: React.FC = () => {
   const linkedWallet = gameService.state?.context?.linkedWallet;
   const isFullUser = farmAddress !== undefined;
   const isTutorial = gameState.context.state.island.type === "basic";
+  const hasReferralProgram = hasFeatureAccess(
+    gameState.context.state,
+    "REFERRAL_PROGRAM",
+  );
   return (
     <>
       <HudContainer>
@@ -89,7 +94,7 @@ const HudComponent: React.FC = () => {
         />
         {pathname.includes("beach") && <DesertDiggingDisplay />}
         <Balances
-          onClick={farmAddress ? handleBuyCurrenciesModal : undefined}
+          onClick={farmAddress ? handleCurrenciesModal : undefined}
           sfl={gameState.context.state.balance}
           coins={gameState.context.state.coins}
           gems={gameState.context.state.inventory["Gem"] ?? new Decimal(0)}
@@ -103,7 +108,7 @@ const HudComponent: React.FC = () => {
           }}
         >
           <MarketplaceButton />
-          <CodexButton />
+          {!hasReferralProgram && <CodexButton />}
           <TravelButton />
         </div>
         <div
@@ -120,6 +125,9 @@ const HudComponent: React.FC = () => {
         </div>
         <BumpkinProfile />
         {!isTutorial && <GameCalendar />}
+        {hasReferralProgram && <CodexButton />}
+        {hasReferralProgram && <RewardsButton />}
+
         <div
           className="absolute z-50 flex flex-col justify-between"
           style={{

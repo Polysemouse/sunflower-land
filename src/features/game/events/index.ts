@@ -461,6 +461,10 @@ import {
   acknowledgeOnChainAirdrop,
   AcknowledgeOnChainAirdropAction,
 } from "./landExpansion/acknowledgeOnChainAirdrop";
+import {
+  completeSocialTask,
+  CompleteSocialTaskAction,
+} from "./landExpansion/completeSocialTask";
 
 export type PlayingEvent =
   | ObsidianExchangedAction
@@ -601,6 +605,7 @@ export type PlayingEvent =
   | StartLavaPitAction
   | CancelQueuedRecipeAction
   | AcknowledgeOnChainAirdropAction
+  | CompleteSocialTaskAction
   // To remove once December is finished
   | CollectCandyAction;
 
@@ -810,6 +815,7 @@ export const PLAYING_EVENTS: Handlers<PlayingEvent> = {
   "lavaPit.collected": collectLavaPit,
   "lavaPit.started": startLavaPit,
   "upgrade.spedUp": speedUpUpgrade,
+  "socialTask.completed": completeSocialTask,
 };
 
 export const PLACEMENT_EVENTS: Handlers<PlacementEvent> = {

@@ -3,7 +3,6 @@ import { useSelector } from "@xstate/react";
 import { PortalContext } from "../../lib/PortalProvider";
 import { PIXEL_SCALE } from "features/game/lib/constants";
 import { SUNNYSIDE } from "assets/sunnyside";
-import worldIcon from "assets/icons/world.png";
 import { goHome } from "features/portal/lib/portalUtil";
 import { useAppTranslation } from "lib/i18n/useAppTranslations";
 import { ConfirmationModal } from "components/ui/ConfirmationModal";
@@ -100,7 +99,7 @@ export const CropsAndChickensTravel: React.FC = () => {
             }}
           />
           <img
-            src={worldIcon}
+            src={SUNNYSIDE.icons.worldIcon}
             style={{
               width: `${PIXEL_SCALE * 12}px`,
               left: `${PIXEL_SCALE * 5}px`,

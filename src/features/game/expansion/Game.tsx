@@ -71,7 +71,6 @@ import { HenHouseInside } from "features/henHouse/HenHouseInside";
 import { BarnInside } from "features/barn/BarnInside";
 import { EFFECT_EVENTS } from "../actions/effect";
 import { TranslationKeys } from "lib/i18n/dictionaries/types";
-import { Button } from "components/ui/Button";
 import { GameState } from "../types/game";
 import { Ocean } from "features/world/ui/Ocean";
 import { OffersAcceptedPopup } from "./components/OffersAcceptedPopup";
@@ -85,6 +84,11 @@ import { ClaimRoninAirdrop } from "./components/onChainAirdrops/ClaimRoninAirdro
 import { FLOWERTeaserContent } from "../components/FLOWERTeaser";
 import { pixelGrayBorderStyle } from "../lib/style";
 import { RoninJinClaim } from "./components/RoninJinClaim";
+import {
+  EFFECT_SUCCESS_COMPONENTS,
+  EffectSuccess,
+} from "./components/EffectSuccess";
+import { LoveCharm } from "./components/LoveCharm";
 
 function camelToDotCase(str: string): string {
   return str.replace(/([a-z])([A-Z])/g, "$1.$2").toLowerCase() as string;
@@ -106,8 +110,13 @@ const getModalStatesForEffects = () =>
 export const AUTO_SAVE_INTERVAL = 1000 * 30; // autosave every 30 seconds
 const SHOW_MODAL: Record<StateValues, boolean> = {
   ...getModalStatesForEffects(),
+  // Hide these modals
+  depositingFlower: false,
+  depositingFlowerSuccess: false,
+  depositingFlowerFailed: false,
   // Every new state should be added below here
   gems: true,
+  communityCoin: true,
   loading: true,
   playing: false,
   autosaving: false,
@@ -191,6 +200,8 @@ const isPurchasing = (state: MachineState) =>
   state.matches("purchasing") || state.matches("buyingBlockBucks");
 
 const showGems = (state: MachineState) => state.matches("gems");
+const showCommunityCoin = (state: MachineState) =>
+  state.matches("communityCoin");
 const isCoolingDown = (state: MachineState) => state.matches("coolingDown");
 const isGameRules = (state: MachineState) => state.matches("gameRules");
 const isFLOWERTeaser = (state: MachineState) => state.matches("FLOWERTeaser");
@@ -396,6 +407,7 @@ export const GameWrapper: React.FC = ({ children }) => {
   const playing = useSelector(gameService, isPlaying);
   const hasSomethingArrived = useSelector(gameService, somethingArrived);
   const hasBBs = useSelector(gameService, showGems);
+  const hasCommunityCoin = useSelector(gameService, showCommunityCoin);
   const effectPending = useSelector(gameService, isEffectPending);
   const effectSuccess = useSelector(gameService, isEffectSuccess);
   const effectFailure = useSelector(gameService, isEffectFailure);
@@ -540,7 +552,10 @@ export const GameWrapper: React.FC = ({ children }) => {
     );
   }
 
-  const stateValue = typeof state === "object" ? Object.keys(state)[0] : state;
+  const stateValue =
+    typeof state === "object"
+      ? (Object.keys(state)[0] as StateValues)
+      : (state as StateValues);
 
   const onHide = (): (() => void) | undefined => {
     if (
@@ -572,23 +587,10 @@ export const GameWrapper: React.FC = ({ children }) => {
           >
             {/* Effects */}
             {effectPending && <Loading text={t(effectTranslationKey)} />}
-            {effectSuccess && (
-              <>
-                <div className="p-1.5">
-                  <Label type="success" className="mb-2">
-                    {t("success")}
-                  </Label>
-                  <p className="text-sm mb-2">{t(effectTranslationKey)}</p>
-                </div>
-                <Button
-                  onClick={() => {
-                    gameService.send("CONTINUE");
-                  }}
-                >
-                  {t("continue")}
-                </Button>
-              </>
-            )}
+            {effectSuccess &&
+              (EFFECT_SUCCESS_COMPONENTS[stateValue as StateValues] ?? (
+                <EffectSuccess state={stateValue} />
+              ))}
             {effectFailure && (
               <ErrorMessage errorCode={errorCode as ErrorCode} />
             )}
@@ -621,6 +623,7 @@ export const GameWrapper: React.FC = ({ children }) => {
             {vip && <VIPOffer />}
             {hasSomethingArrived && <SomethingArrived />}
             {hasBBs && <Gems />}
+            {hasCommunityCoin && <LoveCharm />}
             {roninWelcomePack && <RoninWelcomePack />}
             {roninAirdrop && <ClaimRoninAirdrop />}
             {jinAirdrop && <RoninJinClaim />}

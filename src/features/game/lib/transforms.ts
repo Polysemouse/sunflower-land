@@ -129,5 +129,11 @@ export function makeGame(farm: any): GameState {
     season: farm.season,
     lavaPits: farm.lavaPits,
     nfts: farm.nfts,
+    faceRecognition: farm.faceRecognition,
+    telegram: farm.telegram,
+    discord: farm.discord,
+    socialTasks: farm.socialTasks,
+    referrals: farm.referrals,
+    twitter: farm.twitter,
   };
 }

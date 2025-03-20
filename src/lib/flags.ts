@@ -5,10 +5,10 @@ const adminFeatureFlag = ({ wardrobe, inventory }: GameState) =>
   CONFIG.NETWORK === "amoy" ||
   (!!((wardrobe["Gift Giver"] ?? 0) > 0) && !!inventory["Beta Pass"]?.gt(0));
 
-const seasonAdminFeatureFlag = (game: GameState) => {
+const usernameFeatureFlag = (game: GameState) => {
   return (
     testnetFeatureFlag() ||
-    ["adam", "tango", "eliassfl", "dcol", "Aeon", "Craig", "Spencer"]
+    ["adam", "tango", "elias", "dcol", "birb", "Celinhotv", "LittleEins"]
       .map((name) => name.toLowerCase())
       .includes(game.username?.toLowerCase() ?? "")
   );
@@ -22,12 +22,12 @@ const testnetFeatureFlag = () => CONFIG.NETWORK === "amoy";
 const localStorageFeatureFlag = (key: string) =>
   !!localStorage.getItem(key) === true;
 
-const testnetLocalStorageFeatureFlag = (key: string) => (game: GameState) => {
+const testnetLocalStorageFeatureFlag = (key: string) => () => {
   return testnetFeatureFlag() || localStorageFeatureFlag(key);
 };
 
 const timeBasedFeatureFlag = (date: Date) => () => {
-  return testnetFeatureFlag() || Date.now() > date.getTime();
+  return Date.now() > date.getTime();
 };
 
 const betaTimeBasedFeatureFlag = (date: Date) => (game: GameState) => {
@@ -41,11 +41,10 @@ const timePeriodFeatureFlag =
   };
 
 // Used for testing production features
-export const ADMIN_IDS = [1, 3, 51, 39488, 128727];
+export const ADMIN_IDS = [1, 3, 39488, 128727];
 /**
  * Adam: 1
  * Spencer: 3
- * Sacul: 51
  * Craig: 39488
  * Elias: 128727
  */
@@ -72,12 +71,25 @@ const FEATURE_FLAGS = {
   // Permanent Feature Flags
   AIRDROP_PLAYER: adminFeatureFlag,
   HOARDING_CHECK: defaultFeatureFlag,
-  REPORT_PLAYER: defaultFeatureFlag,
+
+  FACE_RECOGNITION: (game) => {
+    return game.createdAt > new Date("2025-01-01T00:00:00Z").getTime();
+  },
+
+  FACE_RECOGNITION_TEST: defaultFeatureFlag,
 
   // Temporary Feature Flags
   DISABLE_BLOCKCHAIN_ACTIONS: timeBasedFeatureFlag(
     new Date("2025-03-24T00:00:00Z"),
   ),
+  REFERRAL_PROGRAM: usernameFeatureFlag,
+  FLOWER_DEPOSIT: usernameFeatureFlag,
+  TELEGRAM: defaultFeatureFlag,
+
+  // Testnet only feature flags - Please don't change these until release
+  COMMUNITY_COIN_EXCHANGE: testnetFeatureFlag,
+  FLOWER_GEMS: testnetFeatureFlag,
+  LEDGER: testnetLocalStorageFeatureFlag("ledger"),
 } satisfies Record<string, FeatureFlag>;
 
 export type FeatureName = keyof typeof FEATURE_FLAGS;
