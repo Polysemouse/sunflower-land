@@ -25,11 +25,13 @@ import { getHolidayAsset } from "../../lib/CropsAndChickensHolidayAsset";
 import { CropsAndChickensHomeNavigationButtons } from "./CropsAndChickensHomeNavigationButtons";
 import { CropsAndChickensLeaderboard } from "./CropsAndChickensLeaderboard";
 import { hasFeatureAccess } from "lib/flags";
+import { CropsAndChickensUpgrades } from "./CropsAndChickensUpgrades";
 
 export type CropsAndChickensPage =
   | "main"
   | "mailbox"
   | "missions"
+  | "upgrades"
   | "achievements"
   | "leaderboard"
   | "guide";
@@ -183,6 +185,9 @@ export const CropsAndChickensHome: React.FC<Props> = ({
       )}
       {page === "missions" && (
         <CropsAndChickensMissions onBack={() => setPage("main")} />
+      )}
+      {page === "upgrades" && (
+        <CropsAndChickensUpgrades onBack={() => setPage("main")} />
       )}
       {page === "achievements" && (
         <CropsAndChickensAchievementsList onBack={() => setPage("main")} />

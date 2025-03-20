@@ -124,7 +124,7 @@ const initializePowerSkillButtons = (scene: CropsAndChickensScene) => {
   scene.powerSkillButtons = [
     new PowerSkillButtonContainer({
       scene,
-      powerSkillName: "Slow Mo Chickens",
+      abilityName: "Slow Mo Chickens",
       x: buttonPositions[0].x,
       y: buttonPositions[0].y,
       tempText: "slow\nchicken",
@@ -150,7 +150,7 @@ const initializePowerSkillButtons = (scene: CropsAndChickensScene) => {
     }),
     new PowerSkillButtonContainer({
       scene,
-      powerSkillName: "Frozen Hunter",
+      abilityName: "Frozen Hunter",
       x: buttonPositions[1].x,
       y: buttonPositions[1].y,
       tempText: "freeze\nhunter\nchicken",
@@ -170,7 +170,7 @@ const initializePowerSkillButtons = (scene: CropsAndChickensScene) => {
     }),
     new PowerSkillButtonContainer({
       scene,
-      powerSkillName: "Eggsplosion",
+      abilityName: "Eggsplosion",
       x: buttonPositions[2].x,
       y: buttonPositions[2].y,
       tempText: "kill nearby\nnormal\nchickens",

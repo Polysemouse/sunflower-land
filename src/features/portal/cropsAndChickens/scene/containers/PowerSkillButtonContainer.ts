@@ -1,8 +1,8 @@
 import { isTouchDevice } from "features/world/lib/device";
 import { CropsAndChickensScene } from "../CropsAndChickensScene";
 import {
-  AVAILABLE_POWER_SKILLS,
-  CropsAndChickensPowerSkillName,
+  AVAILABLE_ABILITIES,
+  CropsAndChickensAbilityName,
 } from "../../CropsAndChickensUpgrades";
 import { PIXEL_SCALE } from "features/game/lib/constants";
 
@@ -10,7 +10,7 @@ const BUTTON_RADIUS = 28;
 
 interface Props {
   scene: CropsAndChickensScene;
-  powerSkillName: CropsAndChickensPowerSkillName;
+  abilityName: CropsAndChickensAbilityName;
   x: number;
   y: number;
   tempText: string;
@@ -42,7 +42,7 @@ export class PowerSkillButtonContainer extends Phaser.GameObjects.Container {
 
   constructor({
     scene,
-    powerSkillName,
+    abilityName,
     x,
     y,
     tempText,
@@ -72,7 +72,7 @@ export class PowerSkillButtonContainer extends Phaser.GameObjects.Container {
     this.buttonBaseMask = scene.add.graphics().setVisible(false);
 
     this.icon = scene.add
-      .image(0, 0, AVAILABLE_POWER_SKILLS[powerSkillName].iconKey)
+      .image(0, 0, AVAILABLE_ABILITIES[abilityName].iconKey)
       .setScale(PIXEL_SCALE);
 
     this.tempText = scene.add

@@ -9,6 +9,7 @@ import factions from "assets/icons/factions.webp";
 import { PortalMachineState } from "../../lib/cropsAndChickensMachine";
 import { SUNNYSIDE } from "assets/sunnyside";
 import trophy from "assets/icons/trophy.png";
+import goldenSeed from "public/crops-and-chickens/golden_seed.png";
 import leaderboards from "public/crops-and-chickens/leaderboards.png";
 import { SquareIcon } from "components/ui/SquareIcon";
 import { hasFeatureAccess } from "lib/flags";
@@ -104,6 +105,14 @@ export const CropsAndChickensHomeNavigationButtons: React.FC<Props> = ({
           </Label>
         )}
       </div>
+      {hasBetaAccess && (
+        <Button
+          className="whitespace-nowrap capitalize w-[48px] h-[50px]"
+          onClick={() => setPage("upgrades")}
+        >
+          <SquareIcon className="mt-0.5" icon={goldenSeed} width={6} />
+        </Button>
+      )}
       {hasBetaAccess && (
         <Button
           className="whitespace-nowrap capitalize w-[48px] h-[50px]"
