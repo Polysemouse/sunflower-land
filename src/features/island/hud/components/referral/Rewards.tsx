@@ -1,7 +1,7 @@
 import { Modal } from "components/ui/Modal";
 import { CloseButtonPanel } from "features/game/components/CloseablePanel";
 import React, { useState } from "react";
-import giftIcon from "assets/icons/gift.png";
+// import giftIcon from "assets/icons/gift.png";
 import { DailyRewardContent } from "../../../../game/expansion/components/dailyReward/DailyReward";
 import { SUNNYSIDE } from "assets/sunnyside";
 import { TaskBoard } from "./TaskBoard";
@@ -57,6 +57,8 @@ interface Props {
   completeTask: (taskId: SocialTaskName) => void;
   loveCharmCount: Decimal;
   socialTasks?: GameState["socialTasks"];
+  isChestLocked: boolean;
+  isAnyTaskCompleted: boolean;
 }
 
 export const Rewards: React.FC<Props> = ({
@@ -71,29 +73,36 @@ export const Rewards: React.FC<Props> = ({
   completeTask,
   loveCharmCount,
   socialTasks,
+  isChestLocked,
+  isAnyTaskCompleted,
 }) => {
-  const [tab, setTab] = useState<number>(0);
+  const [tab, setTab] = useState<"Task Board" | "Daily Reward">("Task Board");
 
   return (
     <Modal show={show} onHide={onHide}>
       <CloseButtonPanel
         tabs={[
-          { icon: SUNNYSIDE.ui.board, name: "Task Board" },
+          {
+            icon: SUNNYSIDE.ui.board,
+            name: "Task Board",
+            alert: isAnyTaskCompleted,
+          },
+          // { icon: giftIcon, name: "Rewards Shop" },
           ...(bumpkinLevel > 5
             ? [
                 {
                   icon: SUNNYSIDE.decorations.treasure_chest,
                   name: "Daily Reward",
+                  alert: isChestLocked,
                 },
               ]
             : []),
-          { icon: giftIcon, name: "Rewards Shop" },
         ]}
         currentTab={tab}
         setCurrentTab={setTab}
         onClose={onHide}
       >
-        {tab === 0 && (
+        {tab === "Task Board" && (
           <TaskBoard
             state={state}
             completeTask={completeTask}
@@ -101,7 +110,7 @@ export const Rewards: React.FC<Props> = ({
             loveCharmCount={loveCharmCount}
           />
         )}
-        {tab === 1 && (
+        {tab === "Daily Reward" && (
           <DailyRewardContent
             onClose={onHide}
             gameService={gameService}

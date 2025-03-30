@@ -92,6 +92,7 @@ import {
 } from "./calendar";
 import { VipBundle } from "../lib/vipAccess";
 import { SocialTaskName } from "../events/landExpansion/completeSocialTask";
+import { TwitterPost, TwitterPostName } from "./social";
 
 export type Reward = {
   coins?: number;
@@ -1413,6 +1414,11 @@ export interface GameState {
   };
 
   username?: string;
+  settings: {
+    username?: {
+      setAt?: number;
+    };
+  };
   coins: number;
   balance: Decimal;
   previousBalance: Decimal;
@@ -1494,21 +1500,12 @@ export interface GameState {
     rewardCollectedAt?: number;
     kickedAt?: number;
     kickedById?: number;
-    budBox?: {
-      openedAt: number;
-    };
-    raffle?: {
-      entries: Record<string, number>;
-    };
-    vipChest?: {
-      openedAt: number;
-    };
-    giftGiver?: {
-      openedAt: number;
-    };
-    pirateChest?: {
-      openedAt: number;
-    };
+    raffle?: { entries: Record<string, number> };
+    budBox?: { openedAt: number };
+    vipChest?: { openedAt: number };
+    giftGiver?: { openedAt: number };
+    streamerHat?: { openedAt: number };
+    pirateChest?: { openedAt: number };
     keysBought?: KeysBought;
   };
   conversations: ConversationName[];
@@ -1601,12 +1598,22 @@ export interface GameState {
     linkedAt: number;
     followedAt?: number;
     isAuthorised?: boolean;
+    verifiedPostsAt?: number;
+    tweets?: Partial<Record<TwitterPostName, TwitterPost>>;
   };
   discord?: {
     connected: boolean;
   };
   referrals?: {
     totalReferrals: number;
+    totalVIPReferrals?: number;
+    totalUnclaimedReferrals?: number;
+    rewards?: {
+      items?: Partial<Record<InventoryItemName, number>>;
+      wearables?: Partial<Record<BumpkinItem, number>>;
+      coins?: number;
+      sfl?: number;
+    };
   };
   socialTasks?: {
     completed: Partial<Record<SocialTaskName, { completedAt: number }>>;

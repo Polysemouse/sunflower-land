@@ -436,7 +436,6 @@ import {
   AcknowledgeCalendarEventAction,
 } from "./landExpansion/acknowledgeCalendarEvent";
 
-import { purchaseVIP, PurchaseVIPAction } from "./landExpansion/vipPurchased";
 import {
   collectLavaPit,
   CollectLavaPitAction,
@@ -465,12 +464,15 @@ import {
   completeSocialTask,
   CompleteSocialTaskAction,
 } from "./landExpansion/completeSocialTask";
+import {
+  claimReferralRewards,
+  ClaimReferralRewardsAction,
+} from "./landExpansion/claimReferralRewards";
 
 export type PlayingEvent =
   | ObsidianExchangedAction
   | SpeedUpUpgradeAction
   | ResourceBoughtAction
-  | PurchaseVIPAction
   | SellAnimalAction
   | SpeedUpBuilding
   | SacrificeBearAction
@@ -548,6 +550,7 @@ export type PlayingEvent =
   | MissFishAction
   | RevealLandAction
   | BurnCollectibleAction
+  | ClaimReferralRewardsAction
   | ClaimBonusAction
   | AccelerateComposterAction
   | BuyFarmHandAction
@@ -679,7 +682,6 @@ export const PLAYING_EVENTS: Handlers<PlayingEvent> = {
   "recipe.cancelled": cancelQueuedRecipe,
   "obsidian.exchanged": exchangeObsidian,
   "resource.bought": buyResource,
-  "vip.purchased": purchaseVIP,
   "animal.sold": sellAnimal,
   "building.spedUp": speedUpBuilding,
   "bear.sacrificed": sacrificeBear,
@@ -816,6 +818,7 @@ export const PLAYING_EVENTS: Handlers<PlayingEvent> = {
   "lavaPit.started": startLavaPit,
   "upgrade.spedUp": speedUpUpgrade,
   "socialTask.completed": completeSocialTask,
+  "referral.rewardsClaimed": claimReferralRewards,
 };
 
 export const PLACEMENT_EVENTS: Handlers<PlacementEvent> = {

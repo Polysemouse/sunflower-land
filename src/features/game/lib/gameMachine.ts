@@ -310,7 +310,6 @@ export type BlockchainEvent =
   | { type: "REVEAL" }
   | { type: "SKIP_MIGRATION" }
   | { type: "END_VISIT" }
-  | { type: "PROVE_PERSONHOOD" }
   | { type: "PERSONHOOD_FINISHED"; verified: boolean }
   | { type: "PERSONHOOD_CANCELLED" }
   | GameEvent
@@ -504,6 +503,7 @@ export type BlockchainState = {
     | "introduction"
     | "gems"
     | "communityCoin"
+    | "referralRewards"
     | "playing"
     | "autosaving"
     | "buyingSFL"
@@ -545,7 +545,6 @@ export type BlockchainState = {
     | "claimAuction"
     | "refundAuction"
     | "blacklisted"
-    | "provingPersonhood"
     | "somethingArrived"
     | "seasonChanged"
     | "randomising"
@@ -644,7 +643,9 @@ export function startGame(authContext: AuthContext) {
       context: {
         fslId: "123",
         farmId:
-          CONFIG.NETWORK === "mainnet" ? 0 : Math.floor(Math.random() * 1000),
+          CONFIG.NETWORK === "mainnet"
+            ? authContext.user.token?.farmId ?? 0
+            : Math.floor(Math.random() * 1000),
         actions: [],
         state: EMPTY,
         sessionId: INITIAL_SESSION,
@@ -963,6 +964,15 @@ export function startGame(authContext: AuthContext) {
                 context.state.nfts.ronin.expiresAt > Date.now(),
             },
             {
+              target: "referralRewards",
+              cond: (context) => {
+                return (
+                  hasFeatureAccess(context.state, "REFERRAL_PROGRAM") &&
+                  !!context.state.referrals?.rewards
+                );
+              },
+            },
+            {
               target: "somethingArrived",
               cond: (context) => !!context.revealed,
             },
@@ -1107,7 +1117,6 @@ export function startGame(authContext: AuthContext) {
         },
         vip: {
           on: {
-            "vip.purchased": (GAME_EVENT_HANDLERS as any)["vip.purchased"],
             ACKNOWLEDGE: {
               target: "notifying",
             },
@@ -1409,9 +1418,6 @@ export function startGame(authContext: AuthContext) {
               actions: assign((_, event) => ({
                 state: event.state,
               })),
-            },
-            PROVE_PERSONHOOD: {
-              target: "provingPersonhood",
             },
           },
         },
@@ -2234,6 +2240,17 @@ export function startGame(authContext: AuthContext) {
           },
         },
 
+        referralRewards: {
+          on: {
+            ACKNOWLEDGE: {
+              target: "notifying",
+            },
+            "referral.rewardsClaimed": (GAME_EVENT_HANDLERS as any)[
+              "referral.rewardsClaimed"
+            ],
+          },
+        },
+
         swarming: {
           on: {
             REFRESH: {
@@ -2293,19 +2310,6 @@ export function startGame(authContext: AuthContext) {
           },
         },
 
-        provingPersonhood: {
-          on: {
-            PERSONHOOD_FINISHED: {
-              actions: assign({
-                verified: (_context, event) => event.verified,
-              }),
-              target: "playing",
-            },
-            PERSONHOOD_CANCELLED: {
-              target: "playing",
-            },
-          },
-        },
         randomising: {
           invoke: {
             src: async () => {

@@ -55,7 +55,6 @@ import { ListingDeleted } from "../components/listingDeleted";
 import { AuthMachineState } from "features/auth/lib/authMachine";
 import { usePWAInstall } from "features/pwa/PWAInstallProvider";
 import { fixInstallPromptTextStyles } from "features/pwa/lib/fixInstallPromptStyles";
-import { PersonhoodContent } from "features/retreat/components/personhood/PersonhoodContent";
 import { hasFeatureAccess } from "lib/flags";
 import { SUNNYSIDE } from "assets/sunnyside";
 import { PriceChange } from "../components/PriceChange";
@@ -89,6 +88,7 @@ import {
   EffectSuccess,
 } from "./components/EffectSuccess";
 import { LoveCharm } from "./components/LoveCharm";
+import { ClaimReferralRewards } from "./components/ClaimReferralRewards";
 
 function camelToDotCase(str: string): string {
   return str.replace(/([a-z])([A-Z])/g, "$1.$2").toLowerCase() as string;
@@ -114,9 +114,19 @@ const SHOW_MODAL: Record<StateValues, boolean> = {
   depositingFlower: false,
   depositingFlowerSuccess: false,
   depositingFlowerFailed: false,
+  changingUsername: false,
+  changingUsernameSuccess: false,
+  changingUsernameFailed: false,
+  assigningUsername: false,
+  assigningUsernameSuccess: false,
+  assigningUsernameFailed: false,
+  claimingStreamReward: false,
+  claimingStreamRewardSuccess: false,
+  claimingStreamRewardFailed: false,
   // Every new state should be added below here
   gems: true,
   communityCoin: true,
+  referralRewards: true,
   loading: true,
   playing: false,
   autosaving: false,
@@ -162,7 +172,6 @@ const SHOW_MODAL: Record<StateValues, boolean> = {
   offers: true,
   marketplaceSale: true,
   portalling: true,
-  provingPersonhood: false,
   sellMarketResource: false,
   somethingArrived: true,
   seasonChanged: false,
@@ -202,6 +211,8 @@ const isPurchasing = (state: MachineState) =>
 const showGems = (state: MachineState) => state.matches("gems");
 const showCommunityCoin = (state: MachineState) =>
   state.matches("communityCoin");
+const _showReferralRewards = (state: MachineState) =>
+  state.matches("referralRewards");
 const isCoolingDown = (state: MachineState) => state.matches("coolingDown");
 const isGameRules = (state: MachineState) => state.matches("gameRules");
 const isFLOWERTeaser = (state: MachineState) => state.matches("FLOWERTeaser");
@@ -228,8 +239,6 @@ const hasVipNotification = (state: MachineState) => state.matches("vip");
 const isPlaying = (state: MachineState) => state.matches("playing");
 const somethingArrived = (state: MachineState) =>
   state.matches("somethingArrived");
-const isProvingPersonhood = (state: MachineState) =>
-  state.matches("provingPersonhood");
 const isEffectPending = (state: MachineState) =>
   Object.values(EFFECT_EVENTS).some((stateName) => state.matches(stateName));
 const isEffectSuccess = (state: MachineState) =>
@@ -367,7 +376,6 @@ export const GameWrapper: React.FC = ({ children }) => {
   const pwaInstallRef = usePWAInstall();
 
   const loading = useSelector(gameService, isLoading);
-  const provingPersonhood = useSelector(gameService, isProvingPersonhood);
   const portalling = useSelector(gameService, isPortalling);
   const trading = useSelector(gameService, isTrading);
   const traded = useSelector(gameService, isTraded);
@@ -408,6 +416,7 @@ export const GameWrapper: React.FC = ({ children }) => {
   const hasSomethingArrived = useSelector(gameService, somethingArrived);
   const hasBBs = useSelector(gameService, showGems);
   const hasCommunityCoin = useSelector(gameService, showCommunityCoin);
+  const showReferralRewards = useSelector(gameService, _showReferralRewards);
   const effectPending = useSelector(gameService, isEffectPending);
   const effectSuccess = useSelector(gameService, isEffectSuccess);
   const effectFailure = useSelector(gameService, isEffectFailure);
@@ -627,6 +636,7 @@ export const GameWrapper: React.FC = ({ children }) => {
             {roninWelcomePack && <RoninWelcomePack />}
             {roninAirdrop && <ClaimRoninAirdrop />}
             {jinAirdrop && <RoninJinClaim />}
+            {showReferralRewards && <ClaimReferralRewards />}
           </Panel>
         </Modal>
 
@@ -645,17 +655,6 @@ export const GameWrapper: React.FC = ({ children }) => {
 
         <Introduction />
         <NewMail />
-
-        {provingPersonhood && (
-          <Modal
-            show={true}
-            onHide={() => gameService.send("PERSONHOOD_CANCELLED")}
-          >
-            <Panel className="text-shadow">
-              <PersonhoodContent />
-            </Panel>
-          </Modal>
-        )}
 
         {children}
       </ToastProvider>

@@ -14,6 +14,7 @@ import { tokenUriBuilder } from "lib/utils/tokenUriBuilder";
 import { EXPIRY_COOLDOWNS } from "./collectibleBuilt";
 
 export const STATIC_OFFLINE_FARM: GameState = {
+  settings: {},
   username: "Local Hero",
   coins: 10000,
   balance: new Decimal(0),
@@ -364,7 +365,19 @@ export const STATIC_OFFLINE_FARM: GameState = {
     oil: 100,
     pots: {},
   },
-
+  twitter: {
+    linkedAt: Date.now(),
+    followedAt: Date.now(),
+    isAuthorised: true,
+    // verifiedPostsAt: Date.now(),
+    tweets: {
+      FARM: {
+        completedAt: Date.now() - 11 * 24 * 60 * 60 * 1000,
+        tweetId: "123",
+        total: 10,
+      },
+    },
+  },
   createdAt: new Date().getTime(),
 
   experiments: ["GEM_BOOSTS"],
