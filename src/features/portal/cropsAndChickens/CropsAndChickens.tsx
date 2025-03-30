@@ -13,14 +13,17 @@ import { useAppTranslation } from "lib/i18n/useAppTranslations";
 import { PortalMachineState } from "./lib/cropsAndChickensMachine";
 import { Loading } from "features/auth/components";
 import { CONFIG } from "lib/config";
-import { authorisePortal, claimPrize } from "../lib/portalUtil";
+import { authorisePortal, claimPrize, goHome } from "../lib/portalUtil";
 import { CropsAndChickensRulesPanel } from "./components/panel/CropsAndChickensRulesPanel";
 import { CropsAndChickensNoAttemptsPanel } from "./components/panel/CropsAndChickensNoAttemptsPanel";
 import AchievementToastProvider from "./providers/AchievementToastProvider";
 import { getFont, getLanguage } from "../actions/loadPortal";
 import i18n from "lib/i18n";
 import { changeFont } from "lib/utils/fonts";
+import { Maintenance } from "features/auth/components/Maintenance";
+import { CloseButtonPanel } from "features/game/components/CloseablePanel";
 
+const _farmId = (state: PortalMachineState) => state.context.farmId;
 const _sflBalance = (state: PortalMachineState) => state.context.state?.balance;
 const _isError = (state: PortalMachineState) => state.matches("error");
 const _isUnauthorised = (state: PortalMachineState) =>
@@ -38,6 +41,7 @@ export const CropsAndChickens: React.FC = () => {
   const { portalService } = useContext(PortalContext);
   const { t } = useAppTranslation();
 
+  const farmId = useSelector(portalService, _farmId);
   const sflBalance = useSelector(portalService, _sflBalance);
   const isError = useSelector(portalService, _isError);
   const isUnauthorised = useSelector(portalService, _isUnauthorised);
@@ -74,6 +78,16 @@ export const CropsAndChickens: React.FC = () => {
       window.removeEventListener("beforeunload", handleBeforeUnload);
     };
   }, []);
+
+  if ([235238].includes(farmId)) {
+    return (
+      <Modal show onHide={goHome}>
+        <CloseButtonPanel onClose={goHome}>
+          <Maintenance />
+        </CloseButtonPanel>
+      </Modal>
+    );
+  }
 
   if (isError) {
     return (

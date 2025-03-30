@@ -245,7 +245,7 @@ export const portalMachine = createMachine<Context, PortalEvent, PortalState>({
             target: "introduction",
             actions: assign({
               state: (_: any, event) => event.data.game,
-              id: (_: any, event) => event.data.farmId,
+              farmId: (_: any, event) => event.data.farmId,
             }),
           },
         ],
