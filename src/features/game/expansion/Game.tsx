@@ -26,7 +26,7 @@ import { Panel } from "components/ui/Panel";
 import { Hoarding } from "../components/Hoarding";
 import { Swarming } from "../components/Swarming";
 import { Cooldown } from "../components/Cooldown";
-import { Route, Routes } from "react-router";
+import { Route, Routes, useNavigate } from "react-router";
 import { Land } from "./Land";
 import { VisitingHud } from "features/island/hud/VisitingHud";
 import { VisitLandExpansionForm } from "./components/VisitLandExpansionForm";
@@ -101,7 +101,7 @@ const getModalStatesForEffects = () =>
     (states, stateName) => ({
       ...states,
       [stateName]: true,
-      [`${stateName}Failure`]: true,
+      [`${stateName}Failed`]: true,
       [`${stateName}Success`]: true,
     }),
     {} as Record<BlockchainState["value"], boolean>,
@@ -156,14 +156,6 @@ const SHOW_MODAL: Record<StateValues, boolean> = {
   claimAuction: false,
   refundAuction: false,
   promo: true,
-  trading: true,
-  listing: true,
-  deleteTradeListing: true,
-  tradeListingDeleted: true,
-  fulfillTradeListing: false,
-  listed: true,
-  sniped: true,
-  tradeAlreadyFulfilled: true,
   priceChanged: true,
   buds: false,
   mailbox: false,
@@ -245,9 +237,9 @@ const isEffectSuccess = (state: MachineState) =>
   Object.values(EFFECT_EVENTS).some((stateName) =>
     state.matches(`${stateName}Success`),
   );
-const isEffectFailure = (state: MachineState) =>
+const isEffectFailed = (state: MachineState) =>
   Object.values(EFFECT_EVENTS).some((stateName) =>
-    state.matches(`${stateName}Failure`),
+    state.matches(`${stateName}Failed`),
   );
 const hasMarketplaceSales = (state: MachineState) =>
   state.matches("marketplaceSale");
@@ -266,6 +258,7 @@ const GameContent: React.FC = () => {
   const landToVisitNotFound = useSelector(gameService, isLandToVisitNotFound);
   const { t } = useAppTranslation();
   const [gameState] = useActor(gameService);
+  const navigate = useNavigate();
 
   const PATH_ACCESS: Partial<Record<string, (game: GameState) => boolean>> = {
     GreenHouse: (game) =>
@@ -419,7 +412,7 @@ export const GameWrapper: React.FC = ({ children }) => {
   const showReferralRewards = useSelector(gameService, _showReferralRewards);
   const effectPending = useSelector(gameService, isEffectPending);
   const effectSuccess = useSelector(gameService, isEffectSuccess);
-  const effectFailure = useSelector(gameService, isEffectFailure);
+  const effectFailed = useSelector(gameService, isEffectFailed);
   const showSales = useSelector(gameService, hasMarketplaceSales);
   const competition = useSelector(gameService, isCompetition);
   const seasonChanged = useSelector(gameService, isSeasonChanged);
@@ -600,7 +593,7 @@ export const GameWrapper: React.FC = ({ children }) => {
               (EFFECT_SUCCESS_COMPONENTS[stateValue as StateValues] ?? (
                 <EffectSuccess state={stateValue} />
               ))}
-            {effectFailure && (
+            {effectFailed && (
               <ErrorMessage errorCode={errorCode as ErrorCode} />
             )}
 

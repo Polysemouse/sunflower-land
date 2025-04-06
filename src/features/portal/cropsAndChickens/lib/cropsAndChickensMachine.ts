@@ -4,8 +4,8 @@ import { CONFIG } from "lib/config";
 import { decodeToken } from "features/auth/actions/login";
 import {
   GAME_SECONDS,
-  RESTOCK_ATTEMPTS_SFL,
-  UNLIMITED_ATTEMPTS_SFL,
+  RESTOCK_ATTEMPTS_FLOWER,
+  UNLIMITED_ATTEMPTS_FLOWER,
   DAILY_ATTEMPTS,
   SCORE_TABLE,
 } from "../CropsAndChickensConstants";
@@ -268,7 +268,7 @@ export const portalMachine = createMachine<Context, PortalEvent, PortalState>({
                 state: context.state!,
                 action: {
                   id: "crops-and-chickens",
-                  sfl: RESTOCK_ATTEMPTS_SFL,
+                  sfl: RESTOCK_ATTEMPTS_FLOWER,
                   type: "minigame.itemPurchased",
                   items: {},
                 },
@@ -283,7 +283,7 @@ export const portalMachine = createMachine<Context, PortalEvent, PortalState>({
                 state: context.state!,
                 action: {
                   id: "crops-and-chickens",
-                  sfl: UNLIMITED_ATTEMPTS_SFL,
+                  sfl: UNLIMITED_ATTEMPTS_FLOWER,
                   type: "minigame.itemPurchased",
                   items: {},
                 },

@@ -1,7 +1,7 @@
 import { Minigame } from "features/game/types/game";
 import {
-  RESTOCK_ATTEMPTS_SFL,
-  UNLIMITED_ATTEMPTS_SFL,
+  RESTOCK_ATTEMPTS_FLOWER,
+  UNLIMITED_ATTEMPTS_FLOWER,
   DAILY_ATTEMPTS,
   CROP_SPAWN_CONFIGURATIONS,
   CROP_TO_INDEX,
@@ -109,7 +109,7 @@ export const getAttemptsLeft = (minigame?: Minigame) => {
   const endOfTodayUTC = startOfTodayUTC + 24 * 60 * 60 * 1000; // 24 hours later
   const hasUnlimitedAttempts = purchases.some(
     (purchase) =>
-      purchase.sfl === UNLIMITED_ATTEMPTS_SFL &&
+      purchase.sfl === UNLIMITED_ATTEMPTS_FLOWER &&
       purchase.purchasedAt >= startOfTodayUTC &&
       purchase.purchasedAt < endOfTodayUTC,
   );
@@ -118,7 +118,7 @@ export const getAttemptsLeft = (minigame?: Minigame) => {
 
   const restockedCount = purchases.filter(
     (purchase) =>
-      purchase.sfl === RESTOCK_ATTEMPTS_SFL &&
+      purchase.sfl === RESTOCK_ATTEMPTS_FLOWER &&
       purchase.purchasedAt >= startOfTodayUTC &&
       purchase.purchasedAt < endOfTodayUTC,
   ).length;

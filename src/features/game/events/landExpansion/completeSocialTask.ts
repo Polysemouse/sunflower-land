@@ -6,6 +6,7 @@ import { GameState, InventoryItemName } from "features/game/types/game";
 import { produce } from "immer";
 import { hasFeatureAccess } from "lib/flags";
 import { translate } from "lib/i18n/translate";
+import codexIcon from "assets/icons/codex.webp";
 
 export type OtherTasks = {
   title: string;
@@ -21,28 +22,19 @@ export type OtherTasks = {
  */
 export type Task = OtherTasks & {
   requirement: (state: GameState) => boolean;
-  requirementProgress?: (state: GameState) => number;
-  requirementTotal?: number;
+  requirementTotal: number;
   reward: Partial<Record<InventoryItemName, number>>;
+  currentProgress?: (state: GameState) => number;
 };
 
-export const TASKS = {
-  "Refer a friend": {
-    title: translate("socialTask.referFriend"),
-    description: translate("socialTask.referFriend.description"),
-    image: SUNNYSIDE.icons.player,
-    reward: { "Love Charm": 15 },
-    requirement: (state) =>
-      (state.referrals ?? { totalReferrals: 0 }).totalReferrals > 0,
-    requirementProgress: (state) =>
-      (state.referrals ?? { totalReferrals: 0 }).totalReferrals,
-  },
+export const IN_GAME_TASKS = {
   "Link your Discord": {
     title: translate("socialTask.linkDiscord"),
     description: translate("socialTask.linkDiscord.description"),
     image: SUNNYSIDE.icons.discord,
     reward: { "Love Charm": 25 },
     requirement: (state) => !!state.discord?.connected,
+    requirementTotal: 1,
   },
   "Link your Telegram": {
     title: translate("socialTask.linkTelegram"),
@@ -50,50 +42,43 @@ export const TASKS = {
     image: SUNNYSIDE.icons.telegram,
     reward: { "Love Charm": 25 },
     requirement: (state) => !!state.telegram?.linkedAt,
+    requirementTotal: 1,
   },
   "Upgrade to Petal Paradise": {
     title: translate("socialTask.upgradeToPetalParadise"),
     description: translate("socialTask.upgradeToPetalParadise.description"),
-    image: SUNNYSIDE.icons.player,
+    image: SUNNYSIDE.icons.hammer,
     reward: { "Love Charm": 25 },
     requirement: (state) =>
       hasRequiredIslandExpansion(state.island.type, "spring"),
+    requirementTotal: 1,
   },
   "Complete 50 deliveries": {
     title: translate("socialTask.complete50Deliveries"),
     description: translate("socialTask.complete50Deliveries.description"),
-    image: SUNNYSIDE.icons.player,
+    image: codexIcon,
     reward: { "Love Charm": 25 },
     requirement: (state) => state.delivery.fulfilledCount >= 50,
     requirementTotal: 50,
-    requirementProgress: (state) => state.delivery.fulfilledCount,
+    currentProgress: (state) => state.delivery.fulfilledCount,
   },
 } satisfies Record<string, Task>;
 
-export type SocialTaskName = keyof typeof TASKS;
+export type InGameTaskName = keyof typeof IN_GAME_TASKS;
 
-/**
- * Other ways to earn Love Charm (Read-only)
- */
-export const OTHER_WAYS_TO_EARN_LOVE_CHARM = {
-  "Refer a VIP friend": {
-    title: translate("socialTask.referVipFriend"),
-    image: SUNNYSIDE.icons.player,
-    description: translate("socialTask.referVipFriend.description"),
-  },
-  "Join a stream": {
-    title: translate("socialTask.joinStream"),
-    image: SUNNYSIDE.icons.player,
-    description: translate("socialTask.joinStream.description"),
-  },
-} satisfies Record<string, OtherTasks>;
+export const ALL_TASKS = {
+  ...IN_GAME_TASKS,
+};
 
 export const isSocialTask = (task: Task | OtherTasks): task is Task =>
   "requirement" in task;
 
+export const isSocialTaskName = (task: string): task is InGameTaskName =>
+  task in IN_GAME_TASKS;
+
 export type CompleteSocialTaskAction = {
   type: "socialTask.completed";
-  taskId: SocialTaskName;
+  taskId: InGameTaskName;
 };
 
 type Options = {
@@ -108,11 +93,12 @@ export function completeSocialTask({
   createdAt = Date.now(),
 }: Options): Readonly<GameState> {
   return produce(state, (stateCopy) => {
-    if (!hasFeatureAccess(stateCopy, "REFERRAL_PROGRAM")) {
-      throw new Error("Referral program is not enabled");
+    if (!hasFeatureAccess(stateCopy, "TASK_BOARD")) {
+      throw new Error("Task board is not enabled");
     }
+
     const { taskId } = action;
-    const task = TASKS[taskId] as Task | undefined;
+    const task = IN_GAME_TASKS[taskId] as Task | undefined;
 
     if (!task) {
       throw new Error("Task not found");

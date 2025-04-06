@@ -2,8 +2,8 @@ import React, { useEffect } from "react";
 import { useInterpret } from "@xstate/react";
 import { MachineInterpreter, portalMachine } from "./cropsAndChickensMachine";
 import {
-  RESTOCK_ATTEMPTS_SFL,
-  UNLIMITED_ATTEMPTS_SFL,
+  RESTOCK_ATTEMPTS_FLOWER,
+  UNLIMITED_ATTEMPTS_FLOWER,
 } from "../CropsAndChickensConstants";
 
 interface PortalContext {
@@ -26,12 +26,12 @@ export const PortalProvider: React.FC = ({ children }) => {
     const handleMessage = (event: MessageEvent) => {
       if (
         event.data.event === "purchased" &&
-        event.data.sfl === RESTOCK_ATTEMPTS_SFL
+        event.data.sfl === RESTOCK_ATTEMPTS_FLOWER
       ) {
         portalService.send("PURCHASED_RESTOCK");
       } else if (
         event.data.event === "purchased" &&
-        event.data.sfl === UNLIMITED_ATTEMPTS_SFL
+        event.data.sfl === UNLIMITED_ATTEMPTS_FLOWER
       ) {
         portalService.send("PURCHASED_UNLIMITED");
       }

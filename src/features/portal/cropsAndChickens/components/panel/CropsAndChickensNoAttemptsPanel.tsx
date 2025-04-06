@@ -7,18 +7,17 @@ import { PortalContext } from "../../lib/PortalProvider";
 import { Label } from "components/ui/Label";
 import { useAppTranslation } from "lib/i18n/useAppTranslations";
 import { PortalMachineState } from "../../lib/cropsAndChickensMachine";
-import sfl from "assets/icons/sfl.webp";
+import flowerIcon from "assets/icons/flower_token.webp";
 import { CloseButtonPanel } from "features/game/components/CloseablePanel";
 import { NPC_WEARABLES } from "lib/npcs";
 import {
   DAILY_ATTEMPTS,
-  RESTOCK_ATTEMPTS_SFL,
-  UNLIMITED_ATTEMPTS_SFL,
+  RESTOCK_ATTEMPTS_FLOWER,
+  UNLIMITED_ATTEMPTS_FLOWER,
 } from "../../CropsAndChickensConstants";
 import { purchase } from "features/portal/lib/portalUtil";
 import { SUNNYSIDE } from "assets/sunnyside";
 import { setPrecision } from "lib/utils/formatNumber";
-import sflIcon from "assets/icons/sfl.webp";
 import Decimal from "decimal.js-light";
 import { PIXEL_SCALE } from "features/game/lib/constants";
 
@@ -39,10 +38,10 @@ export const CropsAndChickensNoAttemptsPanel: React.FC = () => {
             {t("crops-and-chickens.noAttemptsRemaining")}
           </Label>
           <Label
-            icon={sfl}
-            type={sflBalance.lt(RESTOCK_ATTEMPTS_SFL) ? "danger" : "default"}
+            icon={flowerIcon}
+            type={sflBalance.lt(RESTOCK_ATTEMPTS_FLOWER) ? "danger" : "default"}
           >
-            {t("crops-and-chickens.sflRequired")}
+            {t("crops-and-chickens.flowerRequired")}
           </Label>
         </div>
 
@@ -56,10 +55,10 @@ export const CropsAndChickensNoAttemptsPanel: React.FC = () => {
         <div className="flex items-center space-x-1 relative">
           <p className="balance-text">{setPrecision(sflBalance).toString()}</p>
           <img
-            src={sflIcon}
+            src={flowerIcon}
             alt="SFL"
             style={{
-              width: `${PIXEL_SCALE * 11}px`,
+              width: `${PIXEL_SCALE * 9}px`,
             }}
           />
         </div>
@@ -69,30 +68,30 @@ export const CropsAndChickensNoAttemptsPanel: React.FC = () => {
           {t("back")}
         </Button>
         <Button
-          disabled={sflBalance.lt(RESTOCK_ATTEMPTS_SFL)}
+          disabled={sflBalance.lt(RESTOCK_ATTEMPTS_FLOWER)}
           onClick={() =>
             purchase({
-              sfl: RESTOCK_ATTEMPTS_SFL,
+              sfl: RESTOCK_ATTEMPTS_FLOWER,
               items: {},
             })
           }
         >
           {t("crops-and-chickens.buyAttempts", {
             attempts: DAILY_ATTEMPTS,
-            sfl: RESTOCK_ATTEMPTS_SFL,
+            flower: RESTOCK_ATTEMPTS_FLOWER,
           })}
         </Button>
         <Button
-          disabled={sflBalance.lt(UNLIMITED_ATTEMPTS_SFL)}
+          disabled={sflBalance.lt(UNLIMITED_ATTEMPTS_FLOWER)}
           onClick={() =>
             purchase({
-              sfl: UNLIMITED_ATTEMPTS_SFL,
+              sfl: UNLIMITED_ATTEMPTS_FLOWER,
               items: {},
             })
           }
         >
           {t("crops-and-chickens.unlockAttempts", {
-            sfl: UNLIMITED_ATTEMPTS_SFL,
+            flower: UNLIMITED_ATTEMPTS_FLOWER,
           })}
         </Button>
       </div>

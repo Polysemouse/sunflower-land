@@ -19,32 +19,26 @@ import { getKeys } from "features/game/types/decorations";
 import { ITEM_DETAILS } from "features/game/types/images";
 import { TranslationKeys } from "lib/i18n/dictionaries/types";
 import saveIcon from "assets/icons/save.webp";
+import { getBumpkinBanner } from "./actions/getBumpkinBanner";
+import { Loading } from "../Loading";
+import { TextInput } from "components/ui/TextInput";
 
 const TWITTER_POST_DESCRIPTIONS: Record<TwitterPostName, TranslationKeys> = {
   FARM: "twitter.post.farm",
   WEEKLY: "twitter.post.weekly",
 };
 
-export const Twitter: React.FC<{ onClose: () => void }> = ({ onClose }) => {
-  const { gameService, gameState } = useGame();
-  const telegram = gameState.context.state.telegram;
-
-  const { t } = useAppTranslation();
-
-  return (
-    <CloseButtonPanel onClose={onClose} container={OuterPanel}>
-      <TwitterRewards />
-    </CloseButtonPanel>
-  );
-};
+export const Twitter: React.FC<{ onClose: () => void }> = ({ onClose }) => (
+  <CloseButtonPanel onClose={onClose} container={OuterPanel}>
+    <TwitterRewards />
+  </CloseButtonPanel>
+);
 
 const VERIFY_COOLDOWN_MS = 15 * 60 * 1000;
 
 const TwitterRewards: React.FC = () => {
   const [selected, setSelected] = useState<TwitterPostName>();
-  const { gameService, gameState } = useGame();
-  const { authService } = useContext(AuthProvider.Context);
-  const [authState] = useActor(authService);
+  const { gameState } = useGame();
 
   const { t } = useAppTranslation();
 
@@ -76,7 +70,7 @@ const TwitterRewards: React.FC = () => {
 
         return (
           <ButtonPanel
-            className="mb-2"
+            className="mt-1"
             key={key}
             onClick={() => setSelected(key)}
           >
@@ -106,6 +100,17 @@ const TwitterRewards: React.FC = () => {
           </ButtonPanel>
         );
       })}
+
+      <div className="mb-1 mx-1">
+        <span
+          className="underline text-xs cursor-pointer "
+          onClick={() => {
+            window.open(`https://x.com/0xsunflowerland`, "_blank");
+          }}
+        >
+          {`x.com/0xsunflowerland`}
+        </span>
+      </div>
     </InnerPanel>
   );
 };
@@ -117,6 +122,8 @@ const TwitterPost: React.FC<{ name: TwitterPostName; onClose: () => void }> = ({
   const { gameService, gameState } = useGame();
   const { authService } = useContext(AuthProvider.Context);
   const [authState] = useActor(authService);
+
+  const [url, setUrl] = useState<string>();
 
   const [showConfirm, setShowConfirm] = useState(false);
 
@@ -178,7 +185,7 @@ const TwitterPost: React.FC<{ name: TwitterPostName; onClose: () => void }> = ({
     VERIFY_COOLDOWN_MS - (Date.now() - (twitter.verifiedPostsAt ?? 0));
 
   const hasCompleted =
-    (twitter?.tweets?.FARM?.completedAt ?? 0) >
+    (twitter?.tweets?.[name]?.completedAt ?? 0) >
     Date.now() - 7 * 24 * 60 * 60 * 1000;
 
   if (showConfirm) {
@@ -193,16 +200,24 @@ const TwitterPost: React.FC<{ name: TwitterPostName; onClose: () => void }> = ({
           })}
         </p>
         <p className="text-xs mb-2 mx-1">{t("twitter.verify.click.button")}</p>
+        <TextInput
+          placeholder="Your Tweet URL..."
+          value={url}
+          onValueChange={(msg) => setUrl(msg)}
+        />
         <div className="flex gap-1">
           <Button onClick={() => setShowConfirm(false)}>{t("back")}</Button>
           <Button
+            disabled={!url}
             onClick={() => {
               gameService.send("twitter.posted", {
                 effect: {
                   type: "twitter.posted",
+                  url,
                 },
                 authToken: authState.context.user.rawToken as string,
               });
+              onClose();
             }}
           >
             {t("twitter.verify.button")}
@@ -218,6 +233,7 @@ const TwitterPost: React.FC<{ name: TwitterPostName; onClose: () => void }> = ({
   return (
     <InnerPanel className="p-2  mt-1">
       <Component />
+
       {cooldown > 0 && (
         <>
           <p className="text-xs mx-1 my-1">
@@ -294,23 +310,53 @@ const TwitterFarm: React.FC = () => {
 };
 
 const TwitterWeekly: React.FC = () => {
-  const { gameService, gameState } = useGame();
+  const { authService } = useContext(AuthProvider.Context);
+  const [authState] = useActor(authService);
+  const { gameState } = useGame();
   const { t } = useAppTranslation();
 
-  const [image, setImage] = useState<string>(
-    SUNNYSIDE.announcement.flowerBanner,
-  );
+  const [image, setImage] = useState<string>();
 
   const twitter = gameState.context.state.twitter;
 
   // In last 7 days
   const hasCompleted =
-    (twitter?.tweets?.FARM?.completedAt ?? 0) >
+    (twitter?.tweets?.WEEKLY?.completedAt ?? 0) >
     Date.now() - 7 * 24 * 60 * 60 * 1000;
 
   useEffect(() => {
-    // Generate Image
+    const load = async () => {
+      const data = await getBumpkinBanner(
+        authState.context.user.rawToken as string,
+      );
+      setImage(data.url);
+    };
+
+    load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  if (!image) {
+    return <Loading />;
+  }
+
+  const handleDownload = async () => {
+    try {
+      const response = await fetch(image);
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "sunflower-banner.gif";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      alert("Long press the image and select 'Download' manually.");
+    }
+  };
 
   return (
     <>
@@ -342,16 +388,15 @@ const TwitterWeekly: React.FC = () => {
 
       <div className="relative">
         <img src={image} className="w-full my-2" />
-        <a
-          // href={image}
-          download={image}
-          className="absolute bottom-2 right-2 h-12 w-12 "
+        <div
+          className="absolute bottom-2 right-2 h-12 w-12 cursor-pointer"
+          onClick={handleDownload}
         >
           <img src={SUNNYSIDE.icons.disc} className="w-full" />
           <div className="absolute inset-0 flex items-center justify-center w-full h-full">
             <img src={saveIcon} className="w-6" />
           </div>
-        </a>
+        </div>
       </div>
 
       <p className="text-xs mx-1 my-1">

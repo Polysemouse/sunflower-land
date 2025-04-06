@@ -1,7 +1,7 @@
 import { SQUARE_WIDTH } from "features/game/lib/constants";
 
-export const UNLIMITED_ATTEMPTS_SFL = 3;
-export const RESTOCK_ATTEMPTS_SFL = 1;
+export const UNLIMITED_ATTEMPTS_FLOWER = 3;
+export const RESTOCK_ATTEMPTS_FLOWER = 1;
 export const DAILY_ATTEMPTS = 5;
 
 export const WEEKLY_MISSION_EXTRA_ATTEMPTS_GOAL = 10000;

@@ -203,7 +203,7 @@ export const STATIC_OFFLINE_FARM: GameState = {
 
   shipments: {},
   gems: {},
-
+  flower: {},
   bumpkin: {
     equipped: INITIAL_EQUIPMENT as Equipped,
     experience: 100000,
@@ -634,7 +634,14 @@ export const STATIC_OFFLINE_FARM: GameState = {
       },
     ],
   },
-  pumpkinPlaza: {},
+  pumpkinPlaza: {
+    blockchainBox: {
+      openedAt: Date.now(),
+      tier: "gold",
+      items: {},
+      vipDays: 1,
+    },
+  },
   treasureIsland: {
     holes: {},
   },

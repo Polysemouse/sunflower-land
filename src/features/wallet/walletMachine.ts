@@ -45,24 +45,27 @@ export type WalletAction =
   | "specialEvent"
   | "login"
   | "deposit"
+  | "confirmDeposit" // Only used if the player has items in their wallet
   | "withdraw"
   | "purchase"
+  | "confirmPurchase" // Only used if the player has POL
   | "donate"
   | "dailyReward"
   | "sync"
   | "dequip"
-  | "wishingWell"
-  | "connectWallet"
   | "marketplace"
-  | "refresh";
+  | "transfer";
 
 // Certain actions do not require an NFT to perform
 const NON_NFT_ACTIONS: WalletAction[] = [
   "login",
+  "deposit",
+  "purchase",
   "donate",
   "dailyReward",
   "specialEvent",
   "dequip",
+  "marketplace",
 ];
 
 const NON_POLYGON_ACTIONS: WalletAction[] = ["login", "dailyReward"];
