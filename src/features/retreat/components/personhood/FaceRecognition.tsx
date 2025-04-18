@@ -20,6 +20,7 @@ import {
 import { isMobile } from "mobile-device-detect";
 import { HudContainer } from "components/ui/HudContainer";
 import { secondsToString } from "lib/utils/time";
+import { InstallAppModal } from "features/island/hud/components/settings-menu/general-settings/InstallAppModal";
 
 // Text keys embedded in the liveness detector
 const TRANSLATION_KEYS: TranslationKeys[] = [
@@ -81,13 +82,15 @@ const TRANSLATION_KEYS: TranslationKeys[] = [
   "waitingCameraPermissionText",
 ];
 
-export const FaceRecognition: React.FC = () => {
+export const FaceRecognition: React.FC<{ skipIntro?: boolean }> = ({
+  skipIntro = false,
+}) => {
   const { authService } = useContext(AuthProvider.Context);
   const [authState] = useActor(authService);
 
   const ref = useRef<HTMLDivElement>(null);
-  const [showIntro, setShowIntro] = useState(true);
-
+  const [showIntro, setShowIntro] = useState(!skipIntro);
+  const [showMobileInstall, setShowMobileInstall] = useState(false);
   const { t } = useAppTranslation();
 
   const { gameState, gameService } = useGame();
@@ -106,7 +109,7 @@ export const FaceRecognition: React.FC = () => {
         faceRecognition.session.createdAt + 3 * 60 * 1000 < Date.now();
 
       if (!hasExpired) {
-        handleAnalysisComplete();
+        // handleAnalysisComplete();
       }
     }
   }, []);
@@ -129,6 +132,10 @@ export const FaceRecognition: React.FC = () => {
       authToken: authState.context.user.rawToken as string,
     });
   };
+
+  if (showMobileInstall) {
+    return <InstallAppModal />;
+  }
 
   if (showIntro) {
     return (
@@ -251,6 +258,28 @@ export const FaceRecognition: React.FC = () => {
           },
         }}
       />
+
+      {!isMobile && (
+        <div className="my-2 text-center">
+          <span className="text-xs my-1 mr-2">
+            {t("faceRecognition.mobile")}
+          </span>
+          <span
+            className="text-xs my-1 underline cursor-pointer"
+            onClick={() => setShowMobileInstall(true)}
+          >
+            {t("faceRecognition.mobile.two")}
+          </span>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export const FaceRecognitionSettings: React.FC = () => {
+  return (
+    <div>
+      <FaceRecognition />
     </div>
   );
 };

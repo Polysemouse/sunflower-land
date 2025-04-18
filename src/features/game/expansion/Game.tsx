@@ -68,7 +68,7 @@ import { Transaction } from "features/island/hud/Transaction";
 import { Gems } from "./components/Gems";
 import { HenHouseInside } from "features/henHouse/HenHouseInside";
 import { BarnInside } from "features/barn/BarnInside";
-import { EFFECT_EVENTS } from "../actions/effect";
+import { STATE_MACHINE_EFFECTS } from "../actions/effect";
 import { TranslationKeys } from "lib/i18n/dictionaries/types";
 import { GameState } from "../types/game";
 import { Ocean } from "features/world/ui/Ocean";
@@ -89,6 +89,7 @@ import {
 } from "./components/EffectSuccess";
 import { LoveCharm } from "./components/LoveCharm";
 import { ClaimReferralRewards } from "./components/ClaimReferralRewards";
+import { SoftBan } from "features/retreat/components/personhood/SoftBan";
 
 function camelToDotCase(str: string): string {
   return str.replace(/([a-z])([A-Z])/g, "$1.$2").toLowerCase() as string;
@@ -97,7 +98,7 @@ function camelToDotCase(str: string): string {
 const land = SUNNYSIDE.land.island;
 
 const getModalStatesForEffects = () =>
-  Object.values(EFFECT_EVENTS).reduce(
+  Object.values(STATE_MACHINE_EFFECTS).reduce(
     (states, stateName) => ({
       ...states,
       [stateName]: true,
@@ -170,6 +171,7 @@ const SHOW_MODAL: Record<StateValues, boolean> = {
   roninWelcomePack: true,
   roninAirdrop: true,
   jinAirdrop: true,
+  investigating: true,
 };
 
 // State change selectors
@@ -226,19 +228,22 @@ const isRefundingAuction = (state: MachineState) =>
 const isPromoing = (state: MachineState) => state.matches("promo");
 const isBlacklisted = (state: MachineState) => state.matches("blacklisted");
 const hasAirdrop = (state: MachineState) => state.matches("airdrop");
+const isInvestigating = (state: MachineState) => state.matches("investigating");
 const hasFulfilledOffers = (state: MachineState) => state.matches("offers");
 const hasVipNotification = (state: MachineState) => state.matches("vip");
 const isPlaying = (state: MachineState) => state.matches("playing");
 const somethingArrived = (state: MachineState) =>
   state.matches("somethingArrived");
 const isEffectPending = (state: MachineState) =>
-  Object.values(EFFECT_EVENTS).some((stateName) => state.matches(stateName));
+  Object.values(STATE_MACHINE_EFFECTS).some((stateName) =>
+    state.matches(stateName),
+  );
 const isEffectSuccess = (state: MachineState) =>
-  Object.values(EFFECT_EVENTS).some((stateName) =>
+  Object.values(STATE_MACHINE_EFFECTS).some((stateName) =>
     state.matches(`${stateName}Success`),
   );
 const isEffectFailed = (state: MachineState) =>
-  Object.values(EFFECT_EVENTS).some((stateName) =>
+  Object.values(STATE_MACHINE_EFFECTS).some((stateName) =>
     state.matches(`${stateName}Failed`),
   );
 const hasMarketplaceSales = (state: MachineState) =>
@@ -421,6 +426,7 @@ export const GameWrapper: React.FC = ({ children }) => {
   const roninAirdrop = useSelector(gameService, isRoninAirdrop);
   const jinAirdrop = useSelector(gameService, isJinAirdrop);
   const showPWAInstallPrompt = useSelector(authService, _showPWAInstallPrompt);
+  const investigating = useSelector(gameService, isInvestigating);
 
   const { t } = useAppTranslation();
   useInterval(() => {
@@ -630,6 +636,7 @@ export const GameWrapper: React.FC = ({ children }) => {
             {roninAirdrop && <ClaimRoninAirdrop />}
             {jinAirdrop && <RoninJinClaim />}
             {showReferralRewards && <ClaimReferralRewards />}
+            {investigating && <SoftBan />}
           </Panel>
         </Modal>
 

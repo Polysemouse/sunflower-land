@@ -93,6 +93,7 @@ import {
 import { VipBundle } from "../lib/vipAccess";
 import { InGameTaskName } from "../events/landExpansion/completeSocialTask";
 import { TwitterPost, TwitterPostName } from "./social";
+import { NetworkName } from "../events/landExpansion/updateNetwork";
 
 export type Reward = {
   coins?: number;
@@ -1430,6 +1431,7 @@ export interface GameState {
     username?: {
       setAt?: number;
     };
+    network?: NetworkName;
   };
   coins: number;
   balance: Decimal;
@@ -1574,6 +1576,11 @@ export interface GameState {
     amount: Decimal;
   };
   desert: Desert;
+
+  ban: {
+    status: "investigating" | "permanent" | "ok";
+    isSocialVerified?: boolean;
+  };
 
   experiments: ExperimentName[];
   henHouse: AnimalBuilding;

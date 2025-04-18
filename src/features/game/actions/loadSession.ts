@@ -11,18 +11,17 @@ import { Moderation } from "../lib/gameMachine";
 type Request = {
   token: string;
   transactionId: string;
+  wallet?: string;
 };
 
 type Response = {
   farmId: string;
   farmAddress?: string;
   game: GameState;
-  isBlacklisted?: boolean;
   deviceTrackerId: string;
   announcements: Announcements;
 
   verified: boolean;
-  promoCode?: string;
   moderation: Moderation;
   sessionId: string;
   analyticsId: string;
@@ -53,7 +52,6 @@ export async function loadSession(
     await new Promise((res) => setTimeout(res, loadSessionErrors * 5000));
   }
 
-  const promoCode = getPromoCode();
   const signUpMethod = getSignupMethod();
 
   const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -69,9 +67,9 @@ export async function loadSession(
     },
     body: JSON.stringify({
       clientVersion: CONFIG.CLIENT_VERSION as string,
-      promoCode,
       signUpMethod,
       timezone,
+      wallet: request.wallet,
     }),
   });
 
@@ -117,7 +115,6 @@ export async function loadSession(
     announcements,
     verified,
     moderation,
-    promoCode: promo,
     farmId,
     sessionId,
     farmAddress,
@@ -139,7 +136,6 @@ export async function loadSession(
     announcements: Announcements;
     verified: boolean;
     moderation: Moderation;
-    promoCode?: string;
     sessionId: string;
     farmId: string;
     analyticsId: string;
@@ -166,12 +162,10 @@ export async function loadSession(
     sessionId,
     farmId,
     game: makeGame(farm),
-    isBlacklisted,
     deviceTrackerId,
     announcements,
     verified,
     moderation,
-    promoCode: promo,
     analyticsId,
     linkedWallet,
     wallet,
@@ -225,20 +219,4 @@ export function saveSession(farmId: number) {
   };
 
   return localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(newSessions));
-}
-
-const PROMO_LS_KEY = `sb_wiz.promo-key.v.${host}`;
-
-export function savePromoCode(id: string) {
-  localStorage.setItem(PROMO_LS_KEY, id);
-}
-
-export function getPromoCode() {
-  const item = localStorage.getItem(PROMO_LS_KEY);
-
-  if (!item) {
-    return undefined;
-  }
-
-  return item;
 }

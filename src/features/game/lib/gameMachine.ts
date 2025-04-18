@@ -29,7 +29,7 @@ import {
   PlacedLamp,
   Purchase,
 } from "../types/game";
-import { getPromoCode, loadSession } from "../actions/loadSession";
+import { loadSession } from "../actions/loadSession";
 import { EMPTY } from "./constants";
 import { autosave } from "../actions/autosave";
 import { CollectibleName } from "../types/craftables";
@@ -87,9 +87,9 @@ import { OFFLINE_FARM } from "./landData";
 import { isValidRedirect } from "features/portal/lib/portalUtil";
 import {
   Effect,
-  EFFECT_EVENTS,
+  STATE_MACHINE_EFFECTS,
   postEffect,
-  StateName,
+  StateMachineStateName,
   StateNameWithStatus,
 } from "../actions/effect";
 import { TRANSACTION_SIGNATURES, TransactionName } from "../types/transactions";
@@ -149,7 +149,6 @@ export interface Context {
     } | null;
   };
   auctionResults?: AuctionResults;
-  promoCode?: string;
   moderation: Moderation;
   saveQueued: boolean;
   linkedWallet?: string;
@@ -161,7 +160,7 @@ export interface Context {
   discordId?: string;
   fslId?: string;
   oauthNonce: string;
-  data: Partial<Record<StateName, any>>;
+  data: Partial<Record<StateMachineStateName, any>>;
 }
 
 export type Moderation = {
@@ -373,28 +372,28 @@ const PLACEMENT_EVENT_HANDLERS: TransitionsConfig<Context, BlockchainEvent> =
   );
 
 const EFFECT_EVENT_HANDLERS: TransitionsConfig<Context, BlockchainEvent> =
-  getKeys(EFFECT_EVENTS).reduce(
+  getKeys(STATE_MACHINE_EFFECTS).reduce(
     (events, eventName) => ({
       ...events,
       [eventName]: {
-        target: EFFECT_EVENTS[eventName],
+        target: STATE_MACHINE_EFFECTS[eventName],
       },
     }),
     {},
   );
 
-const EFFECT_STATES = Object.values(EFFECT_EVENTS).reduce(
+const EFFECT_STATES = Object.values(STATE_MACHINE_EFFECTS).reduce(
   (states, stateName) => ({
     ...states,
     [`${stateName}Success`]: {
       on: {
-        CONTINUE: { target: "playing" },
+        CONTINUE: { target: "notifying" },
       },
     },
     [`${stateName}Failed`]: {
       on: {
-        CONTINUE: { target: "playing" },
-        REFRESH: { target: "playing" },
+        CONTINUE: { target: "notifying" },
+        REFRESH: { target: "notifying" },
       },
     },
     [stateName]: {
@@ -442,7 +441,7 @@ const EFFECT_STATES = Object.values(EFFECT_EVENTS).reduce(
           // If there is a transaction on the gameState move into playing so that
           // the transaction flow can handle the rest of the flow
           {
-            target: `playing`,
+            target: `notifying`,
             actions: [
               assign((_, event: DoneInvokeEvent<any>) => ({
                 actions: [],
@@ -471,6 +470,7 @@ export type BlockchainState = {
     | "FLOWERTeaser"
     | "portalling"
     | "introduction"
+    | "investigating"
     | "gems"
     | "communityCoin"
     | "referralRewards"
@@ -511,7 +511,7 @@ export type BlockchainState = {
     | "roninWelcomePack"
     | "roninAirdrop"
     | "jinAirdrop"
-    | StateName
+    | StateMachineStateName
     | StateNameWithStatus; // TEST ONLY
   context: Context;
 };
@@ -601,6 +601,7 @@ export function startGame(authContext: AuthContext) {
       initial: "loading",
       context: {
         fslId: "123",
+        discordId: "123",
         farmId:
           CONFIG.NETWORK === "mainnet"
             ? authContext.user.token?.farmId ?? 0
@@ -657,9 +658,12 @@ export function startGame(authContext: AuthContext) {
             src: async (context) => {
               const fingerprint = "X";
 
+              const { connector } = getAccount(config);
+
               const response = await loadSession({
                 token: authContext.user.rawToken as string,
                 transactionId: context.transactionId as string,
+                wallet: connector?.name,
               });
 
               // If no farm go no farms route
@@ -668,14 +672,12 @@ export function startGame(authContext: AuthContext) {
 
               return {
                 farmId: Number(response.farmId),
-                isBlacklisted: response.isBlacklisted,
                 state: response.game,
                 sessionId: response.sessionId,
                 fingerprint,
                 deviceTrackerId: response.deviceTrackerId,
                 announcements: response.announcements,
                 moderation: response.moderation,
-                promoCode: response.promoCode,
                 farmAddress: response.farmAddress,
                 analyticsId: response.analyticsId,
                 linkedWallet: response.linkedWallet,
@@ -692,7 +694,9 @@ export function startGame(authContext: AuthContext) {
             onDone: [
               {
                 target: "blacklisted",
-                cond: (_, event) => event.data.isBlacklisted,
+                cond: (_, event) => {
+                  return event.data.state.ban.status === "permanent";
+                },
               },
               {
                 target: "portalling",
@@ -845,6 +849,13 @@ export function startGame(authContext: AuthContext) {
             },
 
             {
+              target: "investigating",
+              cond: (context) => {
+                return context.state.ban.status === "investigating";
+              },
+            },
+
+            {
               target: "gems",
               cond: (context) => {
                 return !!context.state.inventory["Block Buck"]?.gte(1);
@@ -988,15 +999,15 @@ export function startGame(authContext: AuthContext) {
             // EVENTS THAT TARGET NOTIFYING OR LOADING MUST GO ABOVE THIS LINE
 
             // EVENTS THAT TARGET PLAYING MUST GO BELOW THIS LINE
-            {
-              target: "promo",
-              cond: (context) => {
-                return (
-                  context.state.bumpkin?.experience === 0 &&
-                  getPromoCode() === "crypto-com"
-                );
-              },
-            },
+            // {
+            //   target: "promo",
+            //   cond: (context) => {
+            //     return (
+            //       context.state.bumpkin?.experience === 0 &&
+            //       getPromoCode() === "crypto-com"
+            //     );
+            //   },
+            // },
             {
               target: "airdrop",
               cond: (context) => {
@@ -1489,7 +1500,7 @@ export function startGame(authContext: AuthContext) {
 
               const { transaction, request } = event as TransactEvent;
 
-              const { game } = await TRANSACTION_SIGNATURES[transaction]({
+              const { gameState } = await TRANSACTION_SIGNATURES[transaction]({
                 ...request,
                 farmId: Number(context.farmId),
                 token: authContext.user.rawToken as string,
@@ -1498,7 +1509,7 @@ export function startGame(authContext: AuthContext) {
 
               return {
                 // sessionId: sessionId,
-                farm: game,
+                farm: gameState,
               };
             },
             onDone: {
@@ -1918,6 +1929,20 @@ export function startGame(authContext: AuthContext) {
           },
         },
 
+        investigating: {
+          on: {
+            "faceRecognition.started": {
+              target: STATE_MACHINE_EFFECTS["faceRecognition.started"],
+            },
+            "faceRecognition.completed": {
+              target: STATE_MACHINE_EFFECTS["faceRecognition.completed"],
+            },
+            "telegram.linked": {
+              target: STATE_MACHINE_EFFECTS["telegram.linked"],
+            },
+          },
+        },
+
         competition: {
           on: {
             "competition.started": (GAME_EVENT_HANDLERS as any)[
@@ -2053,22 +2078,14 @@ export function startGame(authContext: AuthContext) {
         },
         COMMUNITY_UPDATE: {
           actions: assign({
-            state: (_, event) => {
-              return event.game;
-            },
+            state: (_, event) => event.game,
           }),
         },
         WALLET_UPDATED: {
           actions: assign({
-            nftId: (_, event) => {
-              return event.nftId;
-            },
-            farmAddress: (_, event) => {
-              return event.farmAddress;
-            },
-            linkedWallet: (_, event) => {
-              return event.linkedWallet;
-            },
+            nftId: (_, event) => event.nftId,
+            farmAddress: (_, event) => event.farmAddress,
+            linkedWallet: (_, event) => event.linkedWallet,
           }),
         },
       },
@@ -2111,7 +2128,6 @@ export function startGame(authContext: AuthContext) {
           deviceTrackerId: (_, event) => event.data.deviceTrackerId,
           announcements: (_, event) => event.data.announcements,
           moderation: (_, event) => event.data.moderation,
-          promoCode: (_, event) => event.data.promoCode,
           farmAddress: (_, event) => event.data.farmAddress,
           linkedWallet: (_, event) => event.data.linkedWallet,
           wallet: (_, event) => event.data.wallet,

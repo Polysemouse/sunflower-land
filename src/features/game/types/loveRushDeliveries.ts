@@ -32,8 +32,8 @@ export const getLoveRushDeliveryNPCType = (
 const isBasicLoveRushDeliveryNPC = (npcName: NPCName) =>
   (
     [
-      "betty",
-      "peggy",
+      // "betty", Removed April 17th
+      // "peggy", Removed April 17th
       "pumpkin' pete",
       "grimbly",
       "grubnuk",
@@ -46,16 +46,23 @@ const isMediumLoveRushDeliveryNPC = (npcName: NPCName) =>
     [
       "gordo",
       "guria",
-      "blacksmith",
-      "corale",
-      "tango",
-      "old salty",
+      // "blacksmith", Removed April 17th
+      // "corale", Removed April 17th
+      // "tango", Removed April 17th
+      // "old salty", Removed April 17th
     ] as NPCName[]
   ).includes(npcName);
 
 const isAdvancedLoveRushDeliveryNPC = (npcName: NPCName) =>
   (
-    ["bert", "finley", "miranda", "finn", "gambit", "victoria"] as NPCName[]
+    [
+      "bert",
+      "finley",
+      "miranda",
+      "finn",
+      "gambit",
+      // "victoria" Removed April 17th
+    ] as NPCName[]
   ).includes(npcName);
 
 const isExpertLoveRushDeliveryNPC = (npcName: NPCName) =>
@@ -78,24 +85,24 @@ export const LOVE_RUSH_DELIVERIES_REWARDS: Record<
   },
   medium: {
     1: 6,
-    2: 10,
-    3: 13,
+    2: 9,
+    3: 12,
     4: 15,
-    5: 20,
+    5: 18,
   },
   advanced: {
     1: 10,
-    2: 16,
-    3: 22,
-    4: 28,
-    5: 35,
+    2: 13,
+    3: 16,
+    4: 19,
+    5: 22,
   },
   expert: {
-    1: 25,
-    2: 32,
-    3: 39,
-    4: 45,
-    5: 50,
+    1: 20,
+    2: 24,
+    3: 27,
+    4: 30,
+    5: 33,
   },
 };
 
@@ -108,21 +115,25 @@ export function getLoveRushStreaks({
 }): { currentStreak: number; newStreak: number } {
   let currentStreak: number = streaks?.streak ?? 0;
   let newStreak: number = currentStreak + 1;
-  const lastClaimedAt = new Date(streaks?.lastClaimedAt ?? 0);
-  const currentDate = new Date(createdAt);
+  const lastClaimedAt = streaks?.lastClaimedAt ?? 0;
 
+  // Get the date in YYYY-MM-DD format
+  const lastClaimAtDate = new Date(lastClaimedAt).toISOString().split("T")[0];
+  const currentDate = new Date(createdAt).toISOString().split("T")[0];
+
+  // Calculate the difference in days between the last claim and the current date from 00:00:00 UTC
   const dayDifference =
-    (currentDate.getTime() - lastClaimedAt.getTime()) / (1000 * 60 * 60 * 24);
+    (new Date(currentDate).getTime() - new Date(lastClaimAtDate).getTime()) /
+    (1000 * 60 * 60 * 24);
 
+  // If the difference is greater than 1, reset the streak
   if (dayDifference > 1) {
     currentStreak = 0;
     newStreak = 1;
   }
 
-  const lastClaimAtDate = lastClaimedAt.toISOString().split("T")[0];
-  const currentDateString = currentDate.toISOString().split("T")[0];
-
-  if (lastClaimAtDate === currentDateString) {
+  // If the last claim is the same as the current date, set the new streak to the current streak
+  if (lastClaimAtDate === currentDate) {
     newStreak = currentStreak;
   }
 
@@ -153,6 +164,8 @@ export function getLoveRushDeliveryRewards({
 
   if (hasVipAccess({ game })) {
     loveCharmReward = loveCharmReward * 2;
+  } else {
+    loveCharmReward = Math.ceil(loveCharmReward * 0.5);
   }
   return { loveCharmReward };
 }
@@ -167,9 +180,9 @@ export function getLoveCharmReward({
   points: number;
 }): { loveCharmReward: number } {
   let loveCharmReward: number;
-  if (points >= 6 || !!BUMPKIN_FLOWER_BONUSES[name]?.[flower]) {
+  if (BUMPKIN_FLOWER_BONUSES[name]?.[flower]) {
     loveCharmReward = 10;
-  } else if (points >= 3) {
+  } else if (points >= 6) {
     loveCharmReward = 5;
   } else {
     loveCharmReward = 2;

@@ -373,8 +373,7 @@ export const STATIC_OFFLINE_FARM: GameState = {
     tweets: {
       FARM: {
         completedAt: Date.now() - 11 * 24 * 60 * 60 * 1000,
-        tweetId: "123",
-        total: 10,
+        tweetIds: ["123", "1907659583642059200"],
       },
     },
   },
@@ -777,5 +776,8 @@ export const STATIC_OFFLINE_FARM: GameState = {
   season: {
     season: "autumn",
     startedAt: Date.now(),
+  },
+  ban: {
+    status: "ok",
   },
 };

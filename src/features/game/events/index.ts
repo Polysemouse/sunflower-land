@@ -474,6 +474,10 @@ import {
   buyRewardShopItem,
   BuyRewardShopItemAction,
 } from "./landExpansion/buyRewardItem";
+import {
+  updateNetwork,
+  UpdateNetworkAction,
+} from "./landExpansion/updateNetwork";
 
 export type PlayingEvent =
   | ObsidianExchangedAction
@@ -616,7 +620,8 @@ export type PlayingEvent =
   | ExchangeFlowerAction
   // To remove once December is finished
   | CollectCandyAction
-  | BuyRewardShopItemAction;
+  | BuyRewardShopItemAction
+  | UpdateNetworkAction;
 
 export type PlacementEvent =
   | ConstructBuildingAction
@@ -825,6 +830,7 @@ export const PLAYING_EVENTS: Handlers<PlayingEvent> = {
   "referral.rewardsClaimed": claimReferralRewards,
   "exchange.flower": exchangeFlower,
   "rewardItem.bought": buyRewardShopItem,
+  "network.updated": updateNetwork,
 };
 
 export const PLACEMENT_EVENTS: Handlers<PlacementEvent> = {
