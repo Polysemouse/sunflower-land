@@ -79,7 +79,7 @@ export const CropsAndChickens: React.FC = () => {
     };
   }, []);
 
-  if ([1791, 235238].includes(farmId)) {
+  if ([8977155953124760].includes(farmId)) {
     return (
       <Modal show onHide={goHome}>
         <CloseButtonPanel onClose={goHome}>
