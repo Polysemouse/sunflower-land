@@ -71,7 +71,6 @@ import { TradeableName } from "../actions/sellMarketResource";
 import { MinigameCurrency } from "../events/minigames/purchaseMinigameItem";
 import { FactionShopCollectibleName, FactionShopFoodName } from "./factionShop";
 import { DiggingFormationName } from "./desert";
-import { Rewards } from "./rewards";
 import { ExperimentName } from "lib/flags";
 import { CollectionName, MarketplaceTradeableName } from "./marketplace";
 import { GameTransaction } from "./transactions";
@@ -94,6 +93,7 @@ import { VipBundle } from "../lib/vipAccess";
 import { InGameTaskName } from "../events/landExpansion/completeSocialTask";
 import { TwitterPost, TwitterPostName } from "./social";
 import { NetworkName } from "../events/landExpansion/updateNetwork";
+import { RewardBoxes, RewardBoxName } from "./rewardBoxes";
 
 export type Reward = {
   coins?: number;
@@ -233,6 +233,8 @@ export type Coupons =
   | "Mark"
   | "Trade Point"
   | "Love Charm"
+  | "Easter Token 2025"
+  | "Easter Ticket 2025"
   | Keys
   | SeasonalTicket
   | FactionEmblem;
@@ -353,6 +355,15 @@ export const COUPONS: Record<Coupons, { description: string }> = {
   },
   "Love Charm": {
     description: translate("description.love.charm"),
+  },
+  "Easter Token 2025": {
+    description: "placeholder",
+  },
+  "Easter Ticket 2025": {
+    description: "placeholder",
+  },
+  Geniseed: {
+    description: "placeholder",
   },
 };
 
@@ -494,7 +505,8 @@ export type InventoryItemName =
   | RecipeCraftableName
   | SeasonalCollectibleName
   | TradeFood
-  | SeasonalBanner;
+  | SeasonalBanner
+  | RewardBoxName;
 
 export type Inventory = Partial<Record<InventoryItemName, Decimal>>;
 
@@ -1051,11 +1063,19 @@ export type MinigameAchievement = {
 
 export type Minigame = {
   highscore: number;
+  // SFL attempts purchased
   purchases?: {
     sfl: number;
     items?: Partial<Record<MinigameCurrency, number>>;
     purchasedAt: number;
   }[];
+
+  // Minigame shop
+  shop?: {
+    wearables?: Wardrobe;
+    items?: Partial<Record<InventoryItemName, number>>;
+  };
+
   history: Record<string, MinigameHistory>;
   achievements?: Record<string, MinigameAchievement>;
   activities?: Record<string, Decimal>;
@@ -1128,7 +1148,8 @@ export type Currency =
   | "Sunstone"
   | "Seasonal Ticket"
   | "Mark"
-  | "Love Charm";
+  | "Love Charm"
+  | "Easter Token 2025";
 
 export type ShopItemBase = {
   shortDescription: string;
@@ -1392,8 +1413,6 @@ export interface GameState {
   home: Home;
   bank: Bank;
 
-  rewards: Rewards;
-
   choreBoard: ChoreBoard;
 
   competitions: {
@@ -1557,7 +1576,6 @@ export interface GameState {
 
   christmas2024?: Christmas;
   flowerShop?: FlowerShop;
-  megastore: MegaStore;
   specialEvents: SpecialEvents;
   goblinMarket: {
     resources: Partial<
@@ -1643,6 +1661,8 @@ export interface GameState {
   socialTasks?: {
     completed: Partial<Record<InGameTaskName, { completedAt: number }>>;
   };
+
+  rewardBoxes?: RewardBoxes;
 }
 
 export type FaceRecognitionEvent =

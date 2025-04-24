@@ -244,10 +244,7 @@ import {
   FlowerShopTradedAction,
   tradeFlowerShop,
 } from "./landExpansion/tradeFlowerShop";
-import {
-  buyMegaStoreItem,
-  BuyMegaStoreItemAction,
-} from "./landExpansion/buyMegaStoreItem";
+
 import {
   completeSpecialEventTask,
   CompleteSpecialEventTaskAction,
@@ -343,10 +340,7 @@ import {
   TrackMinigameActivitiesAction,
 } from "./minigames/trackMinigameActivities";
 import { BuyMoreDigsAction, buyMoreDigs } from "./landExpansion/buyMoreDigs";
-import {
-  completeDailyChallenge,
-  CompleteDailyChallengeAction,
-} from "./landExpansion/completeDailyChallenge";
+
 import {
   startMinigameAttempt,
   StartMinigameAttemptAction,
@@ -475,9 +469,21 @@ import {
   BuyRewardShopItemAction,
 } from "./landExpansion/buyRewardItem";
 import {
+  buyEventShopItem,
+  BuyMinigameItemAction,
+} from "./landExpansion/buyPortalItem";
+import {
   updateNetwork,
   UpdateNetworkAction,
 } from "./landExpansion/updateNetwork";
+import {
+  acknowledgeRewardBox,
+  AcknowledgeRewardBoxAction,
+} from "./landExpansion/acknowledgeRewardBox";
+import {
+  openRewardBox,
+  OpenRewardBoxAction,
+} from "./landExpansion/openRewardBox";
 
 export type PlayingEvent =
   | ObsidianExchangedAction
@@ -494,7 +500,6 @@ export type PlayingEvent =
   | ShipmentRestockAction
   | StartCompetitionAction
   | ClaimOfferAction
-  | CompleteDailyChallengeAction
   | OilGreenhouseAction
   | HarvestGreenhouseAction
   | PlantGreenhouseAction
@@ -569,7 +574,6 @@ export type PlayingEvent =
   | UpgradeFarmAction
   | PurchaseBannerAction
   | FlowerShopTradedAction
-  | BuyMegaStoreItemAction
   | CompleteSpecialEventTaskAction
   | GiftFlowersAction
   | ClaimGiftAction
@@ -621,7 +625,10 @@ export type PlayingEvent =
   // To remove once December is finished
   | CollectCandyAction
   | BuyRewardShopItemAction
-  | UpdateNetworkAction;
+  | UpdateNetworkAction
+  | BuyMinigameItemAction
+  | AcknowledgeRewardBoxAction
+  | OpenRewardBoxAction;
 
 export type PlacementEvent =
   | ConstructBuildingAction
@@ -702,7 +709,6 @@ export const PLAYING_EVENTS: Handlers<PlayingEvent> = {
   "bounty.sold": sellBounty,
   "competition.started": startCompetition,
   "offer.claimed": claimOffer,
-  "dailyChallenge.completed": completeDailyChallenge,
   "faction.left": leaveFaction,
   "faction.prizeClaimed": claimFactionPrize,
   "greenhouse.oiled": oilGreenhouse,
@@ -785,7 +791,6 @@ export const PLAYING_EVENTS: Handlers<PlayingEvent> = {
   "farm.upgraded": upgrade,
   "banner.purchased": purchaseBanner,
   "flowerShop.traded": tradeFlowerShop,
-  "megastoreItem.bought": buyMegaStoreItem,
   "specialEvent.taskCompleted": completeSpecialEventTask,
   "flowers.gifted": giftFlowers,
   "gift.claimed": claimGift,
@@ -831,6 +836,9 @@ export const PLAYING_EVENTS: Handlers<PlayingEvent> = {
   "exchange.flower": exchangeFlower,
   "rewardItem.bought": buyRewardShopItem,
   "network.updated": updateNetwork,
+  "minigameItem.bought": buyEventShopItem,
+  "rewardBox.acknowledged": acknowledgeRewardBox,
+  "rewardBox.opened": openRewardBox,
 };
 
 export const PLACEMENT_EVENTS: Handlers<PlacementEvent> = {

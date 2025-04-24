@@ -354,6 +354,7 @@ import { BlackSheep } from "./components/BlackSheep";
 import { GoldenFence } from "./components/GoldenFence";
 import { GoldenStoneFence } from "./components/GoldenStoneFence";
 import { Tiles } from "./components/Tiles";
+import { GreatBloomBanner } from "./components/GreatBloomBanner";
 
 export const COLLECTIBLE_COMPONENTS: Record<
   CollectibleName | "Bud",
@@ -567,6 +568,7 @@ export const COLLECTIBLE_COMPONENTS: Record<
   "Pharaoh's Treasure Banner": PharaohsTreasureBanner,
   "Bull Run Banner": BullRunBanner,
   "Winds of Change Banner": WindsOfChangeBanner,
+  "Great Bloom Banner": GreatBloomBanner,
 
   "Bonnie's Tombstone": BonniesTombstone,
   "Chestnut Fungi Stool": ChestnutFungiStool,
@@ -2157,6 +2159,96 @@ export const COLLECTIBLE_COMPONENTS: Record<
   "Red Tile": (props: CollectibleProps) => <Tiles {...props} name="Red Tile" />,
   "Yellow Tile": (props: CollectibleProps) => (
     <Tiles {...props} name="Yellow Tile" />
+  ),
+  "Carrot House": (props: CollectibleProps) => (
+    <ImageStyle
+      {...props}
+      divStyle={{
+        width: `${PIXEL_SCALE * 32}px`,
+        bottom: `${PIXEL_SCALE * 0}px`,
+        left: `${PIXEL_SCALE * 0}px`,
+      }}
+      imgStyle={{
+        width: `${PIXEL_SCALE * 32}px`,
+      }}
+      image={ITEM_DETAILS["Carrot House"].image}
+      alt="Carrot House"
+    />
+  ),
+  "Orange Bunny Lantern": (props: CollectibleProps) => (
+    <ImageStyle
+      {...props}
+      divStyle={{
+        width: `${PIXEL_SCALE * 16}px`,
+        bottom: `${PIXEL_SCALE * 0}px`,
+        left: `${PIXEL_SCALE * 0}px`,
+      }}
+      imgStyle={{
+        width: `${PIXEL_SCALE * 16}px`,
+      }}
+      image={ITEM_DETAILS["Orange Bunny Lantern"].image}
+      alt="Orange Bunny Lantern"
+    />
+  ),
+  "White Bunny Lantern": (props: CollectibleProps) => (
+    <ImageStyle
+      {...props}
+      divStyle={{
+        width: `${PIXEL_SCALE * 16}px`,
+        bottom: `${PIXEL_SCALE * 0}px`,
+        left: `${PIXEL_SCALE * 0}px`,
+      }}
+      imgStyle={{
+        width: `${PIXEL_SCALE * 16}px`,
+      }}
+      image={ITEM_DETAILS["White Bunny Lantern"].image}
+      alt="White Bunny Lantern"
+    />
+  ),
+  "Orange Tunnel Bunny": (props: CollectibleProps) => (
+    <ImageStyle
+      {...props}
+      divStyle={{
+        width: `${PIXEL_SCALE * 18}px`,
+        bottom: `${PIXEL_SCALE * 0}px`,
+        left: `${PIXEL_SCALE * 0}px`,
+      }}
+      imgStyle={{
+        width: `${PIXEL_SCALE * 18}px`,
+      }}
+      image={ITEM_DETAILS["Orange Tunnel Bunny"].image}
+      alt="Orange Tunnel Bunny"
+    />
+  ),
+  "White Tunnel Bunny": (props: CollectibleProps) => (
+    <ImageStyle
+      {...props}
+      divStyle={{
+        width: `${PIXEL_SCALE * 18}px`,
+        bottom: `${PIXEL_SCALE * 0}px`,
+        left: `${PIXEL_SCALE * 0}px`,
+      }}
+      imgStyle={{
+        width: `${PIXEL_SCALE * 18}px`,
+      }}
+      image={ITEM_DETAILS["White Tunnel Bunny"].image}
+      alt="White Tunnel Bunny"
+    />
+  ),
+  "Easter Basket": (props: CollectibleProps) => (
+    <ImageStyle
+      {...props}
+      divStyle={{
+        width: `${PIXEL_SCALE * 32}px`,
+        bottom: `${PIXEL_SCALE * 0}px`,
+        left: `${PIXEL_SCALE * 0}px`,
+      }}
+      imgStyle={{
+        width: `${PIXEL_SCALE * 32}px`,
+      }}
+      image={ITEM_DETAILS["Easter Basket"].image}
+      alt="Easter Basket"
+    />
   ),
 };
 // Need readonly versions for some troublesome components while in design mode

@@ -849,6 +849,19 @@ import purpleTile from "assets/decorations/tiles/icon/purple_tile_icon.webp";
 import redTile from "assets/decorations/tiles/icon/red_tile_icon.webp";
 import yellowTile from "assets/decorations/tiles/icon/yellow_tile_icon.webp";
 
+import carrotHouse from "assets/sfts/carrot_house.webp";
+import whiteTunnelBunny from "assets/sfts/white_tunnel_bunny.webp";
+import orangeTunnelBunny from "assets/sfts/orange_tunnel_bunny.webp";
+import orangeBunnyLantern from "assets/sfts/orange_bunny_lantern.webp";
+import whiteBunnyLantern from "assets/sfts/white_bunny_lantern.webp";
+import easterBasket2025 from "assets/sfts/easter_basket.webp";
+import easterToken2025 from "assets/icons/easter_token_2025.webp";
+import easterTicket2025 from "assets/icons/easter_ticket_2025.webp";
+
+import bronzeLoveBox from "assets/rewardBoxes/bronze_love_box.webp";
+import silverLoveBox from "assets/rewardBoxes/silver_love_box.webp";
+import goldLoveBox from "assets/rewardBoxes/gold_love_box.webp";
+
 import { COUPONS, EASTER_EGG, FERTILISERS, InventoryItemName } from "./game";
 
 import { CROPS, CROP_SEEDS, GREENHOUSE_CROPS, GREENHOUSE_SEEDS } from "./crops";
@@ -5077,5 +5090,57 @@ export const ITEM_DETAILS: Items = {
   "Yellow Tile": {
     image: yellowTile,
     description: translate("description.yellowTile"),
+  },
+  "Easter Token 2025": {
+    image: easterToken2025,
+    description: translate("description.easterToken2025"),
+  },
+  "Easter Ticket 2025": {
+    image: easterTicket2025,
+    description: translate("description.easterTicket2025"),
+  },
+  "Carrot House": {
+    image: carrotHouse,
+    description: translate("description.carrotHouse"),
+  },
+  "Orange Bunny Lantern": {
+    image: orangeBunnyLantern,
+    description: translate("description.orangeBunnyLantern"),
+  },
+  "White Bunny Lantern": {
+    image: whiteBunnyLantern,
+    description: translate("description.whiteBunnyLantern"),
+  },
+  "Orange Tunnel Bunny": {
+    image: orangeTunnelBunny,
+    description: translate("description.orangeTunnelBunny"),
+  },
+  "White Tunnel Bunny": {
+    image: whiteTunnelBunny,
+    description: translate("description.whiteTunnelBunny"),
+  },
+  "Easter Basket": {
+    image: easterBasket2025,
+    description: translate("description.easterBasket2025"),
+  },
+  "Bronze Love Box": {
+    image: bronzeLoveBox,
+    description: translate("description.bronzeLoveBox"),
+  },
+  "Silver Love Box": {
+    image: silverLoveBox,
+    description: translate("description.silverLoveBox"),
+  },
+  "Gold Love Box": {
+    image: goldLoveBox,
+    description: translate("description.goldLoveBox"),
+  },
+  "Great Bloom Banner": {
+    image: SUNNYSIDE.icons.expression_confused,
+    description: "Placeholder",
+  },
+  Geniseed: {
+    image: SUNNYSIDE.icons.expression_confused,
+    description: "Placeholder",
   },
 };
