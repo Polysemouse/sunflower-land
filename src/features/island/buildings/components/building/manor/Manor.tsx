@@ -3,7 +3,7 @@ import React, { useContext, useEffect, useState } from "react";
 import { PIXEL_SCALE } from "features/game/lib/constants";
 import { BuildingProps } from "../Building";
 import { Context } from "features/game/GameProvider";
-import { useActor, useSelector } from "@xstate/react";
+import { useActor } from "@xstate/react";
 import { LetterBox } from "features/farming/mail/LetterBox";
 import { SUNNYSIDE } from "assets/sunnyside";
 import { Bumpkin } from "features/game/types/game";
@@ -12,24 +12,25 @@ import { useNavigate } from "react-router";
 import { Section } from "lib/utils/hooks/useScrollIntoView";
 import { HomeBumpkins } from "../house/HomeBumpkins";
 import { MANOR_VARIANTS } from "features/island/lib/alternateArt";
-import { MachineState } from "features/game/lib/gameMachine";
-const _season = (state: MachineState) => state.context.state.season.season;
+import { DailyReward } from "features/game/expansion/components/dailyReward/DailyReward";
+import { useVisiting } from "lib/utils/visitUtils";
 
-export const Manor: React.FC<BuildingProps> = ({ isBuilt, island }) => {
+export const Manor: React.FC<BuildingProps> = ({ isBuilt, season }) => {
   const { gameService, showAnimations } = useContext(Context);
   const [gameState] = useActor(gameService);
-
-  const season = useSelector(gameService, _season);
-
-  const [showHeart, setShowHeart] = useState(false);
+  const { isVisiting } = useVisiting();
 
   const navigate = useNavigate();
 
+  const [showHeart, setShowHeart] = useState(false);
+
   const handleClick = () => {
     if (isBuilt) {
-      navigate("/home");
-
-      // Add future on click actions here
+      if (isVisiting) {
+        navigate(`/visit/${gameState.context.farmId}/home`);
+      } else {
+        navigate("/home");
+      }
       return;
     }
   };
@@ -57,7 +58,7 @@ export const Manor: React.FC<BuildingProps> = ({ isBuilt, island }) => {
     <div className="absolute h-full w-full">
       <BuildingImageWrapper name="Town Center" onClick={handleClick}>
         <img
-          src={MANOR_VARIANTS[island][season]}
+          src={MANOR_VARIANTS["Desert Biome"][season]}
           className="absolute pointer-events-none"
           id={Section.Home}
           style={{
@@ -67,6 +68,16 @@ export const Manor: React.FC<BuildingProps> = ({ isBuilt, island }) => {
           }}
         />
       </BuildingImageWrapper>
+      <div
+        className="absolute"
+        style={{
+          left: `${PIXEL_SCALE * -5}px`,
+
+          top: `${PIXEL_SCALE * -13}px`,
+        }}
+      >
+        <DailyReward />
+      </div>
 
       <div
         className="absolute w-full"

@@ -32,12 +32,16 @@ import { SUNNYSIDE } from "assets/sunnyside";
 import { ITEM_DETAILS } from "features/game/types/images";
 import { isMobile } from "mobile-device-detect";
 import { ZoomContext } from "components/ZoomProvider";
-import { InnerPanel } from "components/ui/Panel";
 import { RemoveKuebikoModal } from "./RemoveKuebikoModal";
-import { hasRemoveRestriction } from "features/game/types/removeables";
 import { PlaceableLocation } from "features/game/types/collectibles";
 import { RemoveHungryCaterpillarModal } from "./RemoveHungryCaterpillarModal";
-import { RemoveCropMachineModal } from "./RemoveCropMachineModal";
+import { HourglassType } from "./components/Hourglass";
+import { HOURGLASSES } from "features/game/events/landExpansion/burnCollectible";
+import { hasRemoveRestriction } from "features/game/types/removeables";
+import { hasFeatureAccess } from "lib/flags";
+import { InnerPanel } from "components/ui/Panel";
+import flipped from "assets/icons/flipped.webp";
+import flipIcon from "assets/icons/flip.webp";
 
 export const RESOURCE_MOVE_EVENTS: Record<
   ResourceName,
@@ -84,31 +88,44 @@ function getMoveAction(
   throw new Error("No matching move event");
 }
 
+export const RESOURCES_REMOVE_ACTIONS: Record<
+  Exclude<ResourceName, "Boulder">,
+  GameEventName<PlacementEvent>
+> = {
+  Tree: "tree.removed",
+  "Crop Plot": "plot.removed",
+  "Fruit Patch": "fruitPatch.removed",
+  "Gold Rock": "gold.removed",
+  "Iron Rock": "iron.removed",
+  "Stone Rock": "stone.removed",
+  "Crimstone Rock": "crimstone.removed",
+  Beehive: "beehive.removed",
+  "Flower Bed": "flowerBed.removed",
+  "Sunstone Rock": "sunstone.removed",
+  "Oil Reserve": "oilReserve.removed",
+  "Lava Pit": "lavaPit.removed",
+};
+
 export function getRemoveAction(
   name: InventoryItemName | "Bud",
+  hasLandscapingAccess?: boolean,
 ): GameEventName<PlacementEvent> | null {
   if (
     name in BUILDINGS_DIMENSIONS &&
     name !== "Manor" &&
     name !== "Town Center" &&
     name !== "House" &&
-    name !== "Market" &&
-    name !== "Fire Pit" &&
-    name !== "Workbench" &&
-    name !== "Mansion"
+    name !== "Mansion" &&
+    ((name !== "Market" && name !== "Fire Pit" && name !== "Workbench") ||
+      hasLandscapingAccess)
   ) {
     return "building.removed";
   }
 
   if (
-    name in RESOURCES ||
-    name === "Manor" ||
-    name === "House" ||
-    name === "Town Center" ||
-    name === "Market" ||
-    name === "Fire Pit" ||
-    name === "Workbench" ||
-    name === "Mansion"
+    HOURGLASSES.includes(name as HourglassType) ||
+    name === "Time Warp Totem" ||
+    name === "Super Totem"
   ) {
     return null;
   }
@@ -125,8 +142,16 @@ export function getRemoveAction(
     return "bud.removed";
   }
 
+  if (name in RESOURCES_REMOVE_ACTIONS && hasLandscapingAccess) {
+    return RESOURCES_REMOVE_ACTIONS[name as Exclude<ResourceName, "Boulder">];
+  }
+
   return null;
 }
+
+const isCollectible = (
+  name: CollectibleName | BuildingName | "Chicken" | "Bud",
+): name is CollectibleName => name in COLLECTIBLES_DIMENSIONS;
 
 export interface MovableProps {
   name: CollectibleName | BuildingName | "Chicken" | "Bud";
@@ -139,7 +164,9 @@ export interface MovableProps {
 
 const getMovingItem = (state: MachineState) => state.context.moving;
 
-export const MoveableComponent: React.FC<MovableProps> = ({
+export const MoveableComponent: React.FC<
+  React.PropsWithChildren<MovableProps>
+> = ({
   name,
   id,
   index,
@@ -159,19 +186,23 @@ export const MoveableComponent: React.FC<MovableProps> = ({
   const isActive = useRef(false);
   const [showRemoveConfirmation, setShowRemoveConfirmation] = useState(false);
 
-  const landscapingMachine = gameService.state.children
+  const landscapingMachine = gameService.getSnapshot().children
     .landscaping as MachineInterpreter;
 
   const movingItem = useSelector(landscapingMachine, getMovingItem);
 
   const isSelected = movingItem?.id === id && movingItem?.name === name;
-  const removeAction = !isMobile && getRemoveAction(name);
-  const hasRemovalAction = !!removeAction;
-  const [isRestricted, restrictionReason] = hasRemoveRestriction(
-    name,
-    id,
-    gameService.state.context.state,
+  const hasLandscaping = useSelector(gameService, (state) =>
+    hasFeatureAccess(state.context.state, "LANDSCAPING"),
   );
+  const removeAction = !isMobile && getRemoveAction(name, hasLandscaping);
+  const hasRemovalAction = !!removeAction;
+
+  const [isRestricted, restrictionReason] = hasRemoveRestriction({
+    name,
+    state: gameService.getSnapshot().context.state,
+    id,
+  });
 
   /**
    * Deselect if clicked outside of element
@@ -193,6 +224,24 @@ export const MoveableComponent: React.FC<MovableProps> = ({
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, [nodeRef, isSelected]);
+
+  const flip = () => {
+    if (isCollectible(name)) {
+      landscapingMachine.send("FLIP", { id, name, location });
+    }
+  };
+
+  const isFlipped = useSelector(gameService, (state) => {
+    if (!isCollectible(name)) return false;
+    const collectibles =
+      location === "home"
+        ? state.context.state.home.collectibles
+        : state.context.state.collectibles;
+    return (
+      collectibles[name]?.find((collectible) => collectible.id === id)
+        ?.flipped ?? false
+    );
+  });
 
   const remove = () => {
     if (!removeAction) {
@@ -231,7 +280,7 @@ export const MoveableComponent: React.FC<MovableProps> = ({
 
   const detect = ({ x, y }: Coordinates) => {
     const game = removePlaceable({
-      state: gameService.state.context.state,
+      state: gameService.getSnapshot().context.state,
       id,
       name,
     });
@@ -239,12 +288,7 @@ export const MoveableComponent: React.FC<MovableProps> = ({
       name: name as CollectibleName,
       state: game,
       location,
-      position: {
-        x,
-        y,
-        width: dimensions.width,
-        height: dimensions.height,
-      },
+      position: { x, y, width: dimensions.width, height: dimensions.height },
     });
 
     setIsColliding(collisionDetected);
@@ -271,10 +315,7 @@ export const MoveableComponent: React.FC<MovableProps> = ({
           return;
         }
 
-        landscapingMachine.send("MOVE", {
-          name,
-          id,
-        });
+        landscapingMachine.send("MOVE", { name, id });
 
         isActive.current = true;
       }}
@@ -310,7 +351,7 @@ export const MoveableComponent: React.FC<MovableProps> = ({
         }
 
         const game = removePlaceable({
-          state: gameService.state.context.state,
+          state: gameService.getSnapshot().context.state,
           id,
           name,
         });
@@ -330,10 +371,7 @@ export const MoveableComponent: React.FC<MovableProps> = ({
           gameService.send(getMoveAction(name), {
             // Don't send name for resource events and Bud events
             ...(name in RESOURCE_MOVE_EVENTS || name === "Bud" ? {} : { name }),
-            coordinates: {
-              x: coordinatesX + xDiff,
-              y: coordinatesY + yDiff,
-            },
+            coordinates: { x: coordinatesX + xDiff, y: coordinatesY + yDiff },
             id,
             // Resources do not require location to be passed
             location: name in RESOURCE_MOVE_EVENTS ? undefined : location,
@@ -360,9 +398,7 @@ export const MoveableComponent: React.FC<MovableProps> = ({
           >
             <div
               className="relative mr-2"
-              style={{
-                width: `${PIXEL_SCALE * 18}px`,
-              }}
+              style={{ width: `${PIXEL_SCALE * 18}px` }}
             >
               <img className="w-full" src={SUNNYSIDE.icons.disc} />
               {isDragging ? (
@@ -387,14 +423,38 @@ export const MoveableComponent: React.FC<MovableProps> = ({
                 />
               )}
             </div>
+            {isCollectible(name) && (
+              <div
+                className="relative mr-2"
+                style={{ width: `${PIXEL_SCALE * 18}px` }}
+                onClick={flip}
+              >
+                <img className="w-full" src={SUNNYSIDE.icons.disc} />
+                {isFlipped ? (
+                  <img
+                    className="absolute"
+                    src={flipped}
+                    style={{
+                      width: `${PIXEL_SCALE * 12}px`,
+                      right: `${PIXEL_SCALE * 3}px`,
+                      top: `${PIXEL_SCALE * 4}px`,
+                    }}
+                  />
+                ) : (
+                  <img
+                    className="absolute"
+                    src={flipIcon}
+                    style={{
+                      width: `${PIXEL_SCALE * 13}px`,
+                      right: `${PIXEL_SCALE * 2.5}px`,
+                      top: `${PIXEL_SCALE * 4}px`,
+                    }}
+                  />
+                )}
+              </div>
+            )}
             {showRemoveConfirmation && name === "Kuebiko" && (
               <RemoveKuebikoModal
-                onClose={() => setShowRemoveConfirmation(false)}
-                onRemove={() => remove()}
-              />
-            )}
-            {showRemoveConfirmation && name === "Crop Machine" && (
-              <RemoveCropMachineModal
                 onClose={() => setShowRemoveConfirmation(false)}
                 onRemove={() => remove()}
               />
@@ -408,13 +468,11 @@ export const MoveableComponent: React.FC<MovableProps> = ({
             {hasRemovalAction && (
               <div
                 className={classNames("group relative cursor-pointer", {
-                  "cursor-not-allowed": isRestricted,
+                  "cursor-not-allowed": isRestricted && !hasLandscaping,
                 })}
-                style={{
-                  width: `${PIXEL_SCALE * 18}px`,
-                }}
+                style={{ width: `${PIXEL_SCALE * 18}px` }}
                 onClick={(e) => {
-                  if (!isRestricted) remove();
+                  if (!isRestricted || hasLandscaping) remove();
                   e.preventDefault();
                 }}
               >
@@ -442,7 +500,7 @@ export const MoveableComponent: React.FC<MovableProps> = ({
                         top: `${PIXEL_SCALE * 3}px`,
                       }}
                     />
-                    {isRestricted && (
+                    {isRestricted && !hasLandscaping && (
                       <img
                         src={SUNNYSIDE.icons.cancel}
                         className="absolute right-0 top-0 w-1/2 h-1/2 object-contain"
@@ -451,12 +509,10 @@ export const MoveableComponent: React.FC<MovableProps> = ({
                     )}
                   </>
                 )}
-                {isRestricted && (
+                {isRestricted && !hasLandscaping && (
                   <div
                     className="flex justify-center absolute w-full pointer-events-none invisible group-hover:!visible"
-                    style={{
-                      top: `${PIXEL_SCALE * -10}px`,
-                    }}
+                    style={{ top: `${PIXEL_SCALE * -10}px` }}
                   >
                     <InnerPanel className="absolute whitespace-nowrap w-fit z-50">
                       <div className="text-xs mx-1 p-1">

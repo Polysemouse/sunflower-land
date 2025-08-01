@@ -14,8 +14,6 @@ import {
   Panel,
 } from "components/ui/Panel";
 import { NoticeboardItems } from "features/world/ui/kingdom/KingdomNoticeboard";
-import flowerIcon from "assets/icons/flower_token.webp";
-import giftIcon from "assets/icons/gift.png";
 import classNames from "classnames";
 import { toOrdinalSuffix } from "features/retreat/components/auctioneer/AuctionLeaderboardTable";
 import {
@@ -25,8 +23,7 @@ import {
   CompetitionName,
   CompetitionPlayer,
   CompetitionTaskName,
-  getCompetitionPoints,
-  getTaskCompleted,
+  getCompetitionPointsPerTask,
 } from "features/game/types/competitions";
 import { getKeys } from "features/game/types/decorations";
 import { Button } from "components/ui/Button";
@@ -39,9 +36,11 @@ import { getRelativeTime } from "lib/utils/time";
 import { NPCIcon } from "features/island/bumpkin/components/NPC";
 import { NPC_WEARABLES } from "lib/npcs";
 import { ITEM_DETAILS } from "features/game/types/images";
-import { CompetitionPrizes } from "./CompetitionPrizes";
 import { GameState } from "features/game/types/game";
 import { MachineState } from "features/game/lib/gameMachine";
+import chefIcon from "assets/icons/chef_hat.png";
+import lockIcon from "assets/icons/lock.png";
+import calendarIcon from "assets/icons/calendar.webp";
 
 const _state = (state: MachineState) => state.context.state;
 
@@ -75,18 +74,12 @@ export const CompetitionModal: React.FC<{
   if (showIntro) {
     return (
       <SpeakingModal
-        bumpkinParts={NPC_WEARABLES.richie}
+        bumpkinParts={NPC_WEARABLES.peggy}
         onClose={() => setShowIntro(false)}
         message={[
-          {
-            text: t("competition.intro.one"),
-          },
-          {
-            text: t("competition.intro.two"),
-          },
-          {
-            text: t("competition.intro.three"),
-          },
+          { text: t("competition.intro.one") },
+          { text: t("competition.intro.two") },
+          { text: t("competition.intro.three") },
         ]}
       />
     );
@@ -94,7 +87,7 @@ export const CompetitionModal: React.FC<{
 
   if (!competitions.progress[competitionName]) {
     return (
-      <Panel bumpkinParts={NPC_WEARABLES.richie}>
+      <Panel bumpkinParts={NPC_WEARABLES.peggy}>
         <div className="p-1">
           <Label type="default" className="mb-1">
             {t("competition.areYouReady")}
@@ -120,7 +113,7 @@ export const CompetitionModal: React.FC<{
 
   return (
     <OuterPanel
-      bumpkinParts={NPC_WEARABLES.richie}
+      bumpkinParts={NPC_WEARABLES.peggy}
       className="scrollable overflow-y-scroll"
       style={{ maxHeight: "400px" }}
     >
@@ -137,7 +130,8 @@ export const CompetitionModal: React.FC<{
 export const CompetitionDetails: React.FC<{
   competitionName: CompetitionName;
   state: GameState;
-}> = ({ competitionName, state }) => {
+  hideLeaderboard?: boolean;
+}> = ({ competitionName, state, hideLeaderboard }) => {
   const { t } = useAppTranslation();
 
   const [task, setTask] = useState<CompetitionTaskName>();
@@ -165,28 +159,40 @@ export const CompetitionDetails: React.FC<{
     );
   }
 
+  const hasBegun = Date.now() > competition.startAt;
+
   return (
     <>
       <InnerPanel className="mb-1">
         <div className="p-1">
           <div className="flex justify-between mb-2 flex-wrap">
             <Label type="default">{t("competition.farmerCompetition")}</Label>
-            <Label type="info" icon={SUNNYSIDE.icons.stopwatch}>
-              <TimerDisplay fontSize={24} time={end} />
-            </Label>
+            {hasBegun && (
+              <Label type="info" icon={SUNNYSIDE.icons.stopwatch}>
+                <TimerDisplay fontSize={24} time={end} />
+              </Label>
+            )}
+            {!hasBegun && (
+              <Label type="formula" icon={lockIcon}>
+                {new Date(competition.startAt).toLocaleDateString()}
+              </Label>
+            )}
           </div>
           <p className="text-xs mb-3">{t("competition.hurry")}</p>
           <NoticeboardItems
             iconWidth={8}
             items={[
               {
-                icon: ITEM_DETAILS["Black Sheep"].image,
+                icon: ITEM_DETAILS["Love Charm"].image,
                 text: t("competition.prizes.one"),
               },
-              { icon: flowerIcon, text: t("competition.prizes.two") },
+              { icon: chefIcon, text: t("competition.prizes.two") },
               {
-                icon: giftIcon,
-                text: t("competition.prizes.three"),
+                icon: calendarIcon,
+                text: t("competition.prizes.three", {
+                  startDate: new Date(competition.startAt).toLocaleString(),
+                  endDate: new Date(competition.endAt).toLocaleString(),
+                }),
               },
             ]}
           />
@@ -196,11 +202,13 @@ export const CompetitionDetails: React.FC<{
       <>
         <InnerPanel className="mb-1">
           <div className="p-1">
-            <div className="flex justify-between mb-2">
-              <Label type="default" className="">
+            <div className="flex justify-between flex-wrap">
+              <Label type="default" className="mb-1">
                 {t("competition.earnPoints")}
               </Label>
-              <Label type="vibrant">{`${getCompetitionPoints({ game: state, name: competitionName })} points`}</Label>
+              <Label type="vibrant" className="mb-1">
+                {`${state.competitions.progress[competitionName]?.points ?? 0} points`}
+              </Label>
             </div>
             <p className="text-xs mb-3">{t("competition.earnPoints.how")}</p>
             <div className="flex flex-wrap -mx-1 items-center">
@@ -220,7 +228,11 @@ export const CompetitionDetails: React.FC<{
                     <Label
                       type="warning"
                       className="absolute -top-4 -right-2"
-                    >{`${COMPETITION_POINTS[competitionName].points[name]} points`}</Label>
+                    >{`${getCompetitionPointsPerTask({
+                      game: state,
+                      name: competitionName,
+                      task: name,
+                    })} points`}</Label>
                   </ButtonPanel>
                 </div>
               ))}
@@ -228,7 +240,7 @@ export const CompetitionDetails: React.FC<{
           </div>
         </InnerPanel>
 
-        {/* <CompetitionLeaderboard name={competitionName} /> */}
+        {hideLeaderboard && <CompetitionLeaderboard name={competitionName} />}
 
         <InnerPanel>
           <div className="p-1">
@@ -244,22 +256,16 @@ export const CompetitionDetails: React.FC<{
                 },
 
                 {
-                  icon: flowerIcon,
+                  icon: ITEM_DETAILS["Love Charm"].image,
                   text: t("competition.rules.three"),
                 },
                 {
                   icon: SUNNYSIDE.icons.stopwatch,
                   text: t("competition.rules.four"),
                 },
-                {
-                  icon: giftIcon,
-                  text: t("competition.rules.five"),
-                },
               ]}
             />
           </div>
-
-          <CompetitionPrizes />
         </InnerPanel>
       </>
 
@@ -275,14 +281,11 @@ export const CompetitionDetails: React.FC<{
                 <Label type="default" className="mb-2">
                   {task}
                 </Label>
-                <p className="text-xs mb-2">
-                  {COMPETITION_TASK_DETAILS[task].description}
-                </p>
                 <div className="flex items-center justify-between mb-2">
-                  <p className="text-xs">
-                    {`Completed: ${getTaskCompleted({ task, name: competitionName, game: state })}`}
+                  <p className="text-xs mb-2">
+                    {COMPETITION_TASK_DETAILS[task].description}
                   </p>
-                  <Label type="vibrant">{`${getTaskCompleted({ task, name: competitionName, game: state }) * (COMPETITION_POINTS[competitionName]?.points[task] ?? 0)} Points`}</Label>
+                  <Label type="vibrant">{`${state.competitions.progress[competitionName]?.currentProgress[task] ?? 0} Points`}</Label>
                 </div>
               </div>
             </>
@@ -304,9 +307,9 @@ export const CompetitionLeaderboard: React.FC<{ name: CompetitionName }> = ({
   useEffect(() => {
     const load = async () => {
       const data = await getCompetitionLeaderboard({
-        farmId: gameService.state.context.farmId,
+        farmId: gameService.getSnapshot().context.farmId,
         name,
-        jwt: authService.state.context.user.rawToken as string,
+        jwt: authService.getSnapshot().context.user.rawToken as string,
       });
 
       setData(data);
@@ -322,7 +325,7 @@ export const CompetitionLeaderboard: React.FC<{ name: CompetitionName }> = ({
       </InnerPanel>
     );
 
-  const { leaderboard, lastUpdated, miniboard, player, devs } = data;
+  const { leaderboard, lastUpdated, miniboard, player } = data;
   return (
     <>
       <InnerPanel className="mb-1">
@@ -343,15 +346,6 @@ export const CompetitionLeaderboard: React.FC<{ name: CompetitionName }> = ({
               <p className="text-center text-xs mb-2">{`...`}</p>
               <CompetitionTable items={miniboard} />
             </>
-          )}
-          {/* Add devs positions */}
-          {devs && (
-            <div className="mt-2 space-y-2">
-              <Label type="default" className="">
-                {`Devs`}
-              </Label>
-              <CompetitionTable items={devs} />
-            </div>
           )}
         </div>
       </InnerPanel>

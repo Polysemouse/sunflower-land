@@ -1,9 +1,9 @@
-import Decimal from "decimal.js-light";
 import { Worm } from "./composters";
 import { GameState, InventoryItemName, TemperateSeasonName } from "./game";
-import { Tool } from "./tools";
 import { isWearableActive } from "../lib/wearables";
 import { translate } from "lib/i18n/translate";
+import { PurchaseOptions } from "./buyOptionPurchaseItem";
+import { Decimal } from "decimal.js-light";
 
 export type PurchaseableBait = "Fishing Lure";
 export type FishingBait = Worm | PurchaseableBait;
@@ -64,16 +64,17 @@ export type MarineMarvelName =
   | "Battle Fish"
   | "Lemon Shark"
   | "Longhorn Cowfish"
-  | "Jellyfish";
+  | "Jellyfish"
+  | "Pink Dolphin";
 
 export type OldFishName = "Kraken Tentacle";
 
-export const PURCHASEABLE_BAIT: Record<PurchaseableBait, Tool> = {
+export const PURCHASEABLE_BAIT: Record<PurchaseableBait, PurchaseOptions> = {
   "Fishing Lure": {
-    ingredients: {
-      Gem: new Decimal(10),
+    purchaseOptions: {
+      Gem: { ingredients: { Gem: new Decimal(10) } },
+      Feather: { ingredients: { Feather: new Decimal(100) } },
     },
-    price: 0,
     description: translate("purchaseableBait.fishingLure.description"),
     name: "Fishing Lure",
   },
@@ -227,8 +228,6 @@ export const CHUM_DETAILS: Record<Chum, string> = {
   Zucchini: "",
 };
 
-export type FishingLocation = "beach" | "wharf";
-
 type Fish = {
   baits: FishingBait[];
   type: FishType;
@@ -243,6 +242,7 @@ export type ChapterFish = Extract<
   | "Battle Fish"
   | "Longhorn Cowfish"
   | "Jellyfish"
+  | "Pink Dolphin"
 >;
 
 export const CHAPTER_FISH: Record<ChapterFish, Fish> = {
@@ -271,6 +271,12 @@ export const CHAPTER_FISH: Record<ChapterFish, Fish> = {
     seasons: [],
   },
   Jellyfish: {
+    baits: ["Grub", "Red Wiggler", "Fishing Lure"],
+    type: "chapter",
+    likes: [],
+    seasons: [],
+  },
+  "Pink Dolphin": {
     baits: ["Grub", "Red Wiggler", "Fishing Lure"],
     type: "chapter",
     likes: [],
@@ -549,19 +555,6 @@ export const FISH: Record<FishName | MarineMarvelName, Fish> = {
 
   ...CHAPTER_FISH,
 };
-
-export type Tide = "Dusktide" | "Dawnlight";
-
-export type FishingConditions = "Sunny" | "Windy" | "Full Moon" | "Fish Frenzy";
-
-export function getTide(utcTime: Date = new Date()): Tide {
-  const hours = new Date(utcTime).getUTCHours();
-  if (hours >= 0 && hours < 12) {
-    return "Dawnlight";
-  } else {
-    return "Dusktide";
-  }
-}
 
 /**
  * Difficulty 1-5 how hard the challenge will be

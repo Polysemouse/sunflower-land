@@ -1,8 +1,5 @@
-import { GameState } from "features/game/types/game";
-import {
-  ResourceName,
-  RESOURCE_DIMENSIONS,
-} from "features/game/types/resources";
+import { GameState, Rock } from "features/game/types/game";
+import { ResourceName } from "features/game/types/resources";
 import Decimal from "decimal.js-light";
 import { produce } from "immer";
 
@@ -29,25 +26,51 @@ export function placeStone({
 }: Options): GameState {
   return produce(state, (game) => {
     const available = (game.inventory["Stone Rock"] || new Decimal(0)).minus(
-      Object.keys(game.stones).length,
+      Object.values(game.stones).filter(
+        (stone) => stone.x !== undefined && stone.y !== undefined,
+      ).length,
     );
 
     if (available.lt(1)) {
       throw new Error("No stone available");
     }
 
-    game.stones = {
-      ...game.stones,
-      [action.id as unknown as number]: {
-        createdAt: createdAt,
+    const existingStone = Object.entries(game.stones).find(
+      ([_, stone]) => stone.x === undefined && stone.y === undefined,
+    );
+
+    if (existingStone) {
+      const [id, stone] = existingStone;
+      const updatedStone = {
+        ...stone,
         x: action.coordinates.x,
         y: action.coordinates.y,
-        ...RESOURCE_DIMENSIONS["Stone Rock"],
-        stone: {
-          amount: 0,
-          minedAt: 0,
-        },
+      };
+
+      if (updatedStone.stone && updatedStone.removedAt) {
+        const existingProgress =
+          updatedStone.removedAt - updatedStone.stone.minedAt;
+        updatedStone.stone.minedAt = createdAt - existingProgress;
+        delete updatedStone.removedAt;
+      }
+
+      game.stones[id] = updatedStone;
+
+      return game;
+    }
+
+    const newStone: Rock = {
+      createdAt,
+      x: action.coordinates.x,
+      y: action.coordinates.y,
+      stone: {
+        minedAt: 0,
       },
+    };
+
+    game.stones = {
+      ...game.stones,
+      [action.id]: newStone,
     };
 
     return game;

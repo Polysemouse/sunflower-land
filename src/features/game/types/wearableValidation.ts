@@ -21,6 +21,7 @@ import {
   areAnyCookingBuildingWorking,
   isCraftingBoxWorking,
   areAnySeasonCropsorGHCropsGrowing,
+  areAnyAnimalsHealthy,
 } from "./removeables";
 import { GameState } from "./game";
 
@@ -95,6 +96,7 @@ const withdrawConditions: Partial<Record<BumpkinItem, isWithdrawable>> = {
     !areAnySeasonCropsorGHCropsGrowing(state, "autumn")[0],
   "Frozen Heart": (state) =>
     !areAnySeasonCropsorGHCropsGrowing(state, "winter")[0],
+  "Oracle Syringe": (state) => !areAnyAnimalsHealthy(state)[0],
 };
 
 export const canWithdrawBoostedWearable = (
@@ -103,7 +105,8 @@ export const canWithdrawBoostedWearable = (
 ): boolean => {
   if (!state) return false;
 
-  if ((state.wardrobe?.[name] ?? 0) > 1) return true;
+  // If they have more than one of the wearable, they can withdraw it
+  if ((state.wardrobe[name] ?? 0) > 1) return true;
 
   if (!withdrawConditions[name]) return true;
 

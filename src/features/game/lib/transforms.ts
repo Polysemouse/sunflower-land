@@ -49,8 +49,6 @@ export function makeGame(farm: any): GameState {
     trades: farm.trades,
     farmHands: farm.farmHands,
 
-    bertObsession: farm.bertObsession,
-
     expansionConstruction: farm.expansionConstruction,
     expandedAt: farm.expandedAt,
     greenhouse: farm.greenhouse,
@@ -101,9 +99,11 @@ export function makeGame(farm: any): GameState {
     flowerShop: farm.flowerShop,
     specialEvents: farm.specialEvents,
     experiments: farm.experiments,
-
+    floatingIsland: farm.floatingIsland,
+    megastore: farm.megastore,
     goblinMarket: farm.goblinMarket,
     faction: farm.faction,
+    previousFaction: farm.previousFaction,
     dailyFactionDonationRequest: farm.dailyFactionDonationRequest
       ? {
           resource: farm.dailyFactionDonationRequest.resource,
@@ -127,5 +127,10 @@ export function makeGame(farm: any): GameState {
     twitter: farm.twitter,
     ban: farm.ban,
     rewardBoxes: farm.rewardBoxes,
+    withdrawals: farm.withdrawals,
+    blessing: farm.blessing,
+    aoe: farm.aoe,
+    boostsUsedAt: farm.boostsUsedAt,
+    socialFarming: farm.socialFarming,
   };
 }

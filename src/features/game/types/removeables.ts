@@ -19,21 +19,22 @@ import {
   CropName,
   GREENHOUSE_CROPS,
   GreenHouseCropName,
-} from "features/game/types/crops";
-import { canMine } from "../expansion/lib/utils";
-import { Bud, StemTrait, TypeTrait } from "./buds";
-import {
   isAdvancedCrop,
   isBasicCrop,
   isMediumCrop,
-  isCropGrowing,
-} from "features/game/events/landExpansion/harvest";
+} from "features/game/types/crops";
+import { canMine } from "../expansion/lib/utils";
+import { Bud, StemTrait, TypeTrait } from "./buds";
+import { isCropGrowing } from "features/game/events/landExpansion/harvest";
 import { isFruitGrowing } from "features/game/events/landExpansion/fruitHarvested";
 import { CompostName, isComposting } from "./composters";
 import { getDailyFishingCount } from "./fishing";
 import { FLOWERS, FLOWER_SEEDS } from "./flowers";
 import { getCurrentHoneyProduced } from "../expansion/components/resources/beehive/beehiveMachine";
-import { DEFAULT_HONEY_PRODUCTION_TIME } from "../lib/updateBeehives";
+import {
+  DEFAULT_HONEY_PRODUCTION_TIME,
+  getActiveBeehives,
+} from "../lib/updateBeehives";
 import { translate } from "lib/i18n/translate";
 import { canDrillOilReserve } from "../events/landExpansion/drillOilReserve";
 import { getKeys } from "./decorations";
@@ -282,6 +283,45 @@ function areAnyMineralsMined(game: GameState): Restriction {
   return areGoldsMined;
 }
 
+export function areAnyChickensHealthy(game: GameState): Restriction {
+  const chickensAreHealthy = Object.values(game.henHouse.animals).some(
+    (animal) => animal.state !== "sick",
+  );
+
+  return [chickensAreHealthy, "Chickens are healthy"];
+}
+
+export function areAnySheepsHealthy(game: GameState): Restriction {
+  const chickensAreHealthy = Object.values(game.barn.animals).some(
+    (animal) => animal.state !== "sick" && animal.type === "Sheep",
+  );
+
+  return [chickensAreHealthy, "Sheeps are healthy"];
+}
+
+export function areAnyCowsHealthy(game: GameState): Restriction {
+  const chickensAreHealthy = Object.values(game.barn.animals).some(
+    (animal) => animal.state !== "sick" && animal.type === "Cow",
+  );
+
+  return [chickensAreHealthy, "Cows are healthy"];
+}
+
+export function areAnyAnimalsHealthy(game: GameState): Restriction {
+  const areChickensHealthy = areAnyChickensHealthy(game);
+  const areSheepsHealthy = areAnySheepsHealthy(game);
+  const areCowsHealthy = areAnyCowsHealthy(game);
+
+  if (areChickensHealthy[0]) {
+    return areChickensHealthy;
+  }
+  if (areSheepsHealthy[0]) {
+    return areSheepsHealthy;
+  }
+
+  return areCowsHealthy;
+}
+
 export function areAnyChickensSleeping(game: GameState): Restriction {
   const chickensAreSleeping = Object.values(game.henHouse.animals).some(
     (animal) =>
@@ -370,8 +410,10 @@ export function areFlowersGrowing(game: GameState): Restriction {
 }
 
 export function isBeehivesFull(game: GameState): Restriction {
+  const activeBeehives = getActiveBeehives(game.beehives);
+
   // 0.9 Small buffer in case of any rounding errors
-  const beehiveProducing = Object.values(game.beehives).every(
+  const beehiveProducing = Object.values(activeBeehives).every(
     (hive) =>
       getCurrentHoneyProduced(hive) >= DEFAULT_HONEY_PRODUCTION_TIME * 0.9,
   );
@@ -634,6 +676,7 @@ export const REMOVAL_RESTRICTIONS: Partial<
   "Woody the Beaver": (game) => areAnyTreesChopped(game),
   "Apprentice Beaver": (game) => areAnyTreesChopped(game),
   "Foreman Beaver": (game) => areAnyTreesChopped(game),
+  Quarry: (game) => areAnyStonesMined(game),
   "Wood Nymph Wendy": (game) => areAnyTreesChopped(game),
   "Tiki Totem": (game) => areAnyTreesChopped(game),
 
@@ -767,6 +810,11 @@ export const REMOVAL_RESTRICTIONS: Partial<
   "Barn Blueprint": (game) =>
     hasBonusAnimals(game, "Cow") || hasBonusAnimals(game, "Sheep"),
   "Golden Sheep": (game) => areAnySheepSleeping(game),
+
+  // Great Bloom
+  "Giant Yam": (game) => cropIsGrowing({ item: "Yam", game }),
+  "Giant Zucchini": (game) => cropIsGrowing({ item: "Zucchini", game }),
+  "Giant Kale": (game) => cropIsGrowing({ item: "Kale", game }),
 };
 
 export const BUD_REMOVAL_RESTRICTIONS: Record<
@@ -836,12 +884,24 @@ export const hasBudRemoveRestriction = (
 
   return [false, translate("restrictionReason.noRestriction")];
 };
-
-export const hasRemoveRestriction = (
-  name: InventoryItemName | "Bud",
-  id: string,
-  state: GameState,
-): Restriction => {
+/**
+ * This function checks if a user has a restriction on removing an item.
+ * If true, item cannot be removed.
+ * If false, item can be removed.
+ *
+ * It checks if the item is a Genie Lamp and if it is, it checks if the rubbedCount is more than 0.
+ * If the rubbedCount is more than 0, it returns true and the reason is "Genie Lamp rubbed".
+ * Otherwise, it returns false and the reason is "No restriction".
+ */
+export const hasRemoveRestriction = ({
+  name,
+  state,
+  id,
+}: {
+  name: InventoryItemName | "Bud";
+  state: GameState;
+  id?: string;
+}): Restriction => {
   if (name === "Bud") {
     const bud = state.buds?.[Number(id)];
     return bud
@@ -851,25 +911,23 @@ export const hasRemoveRestriction = (
 
   if (name === "Genie Lamp") {
     const collectibleGroup = state.collectibles[name];
-    if (!collectibleGroup)
-      return [true, translate("restrictionReason.genieLampRubbed")];
+    if (!collectibleGroup) return [false, "No restriction"];
 
     const collectibleToRemove = collectibleGroup.find(
       (collectible) => collectible.id === id,
     );
-    if (!collectibleToRemove)
-      return [true, translate("restrictionReason.genieLampRubbed")];
+    if (!collectibleToRemove) return [false, "No restriction"];
 
     const rubbedCount = collectibleToRemove.rubbedCount ?? 0;
     if (rubbedCount > 0) {
-      return [true, translate("restrictionReason.genieLampRubbed")];
+      return [true, "Genie Lamp rubbed"];
     }
   }
 
   const removeRestriction = REMOVAL_RESTRICTIONS[name];
   if (removeRestriction) return removeRestriction(state);
 
-  return [false, translate("restrictionReason.noRestriction")];
+  return [false, "No restriction"];
 };
 
 export const hasMoveRestriction = (
@@ -887,11 +945,11 @@ export const hasMoveRestriction = (
     name === "Queen Cornelia" ||
     name === "Gnome";
 
-  const [isRestricted, restrictionReason] = hasRemoveRestriction(
+  const [isRestricted, restrictionReason] = hasRemoveRestriction({
     name,
     id,
     state,
-  );
+  });
 
   return [isRestricted && isAoEItem, restrictionReason];
 };

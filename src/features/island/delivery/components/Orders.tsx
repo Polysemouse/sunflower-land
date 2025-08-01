@@ -25,7 +25,7 @@ import { NPCIcon } from "features/island/bumpkin/components/NPC";
 import { NPCName, NPC_WEARABLES } from "lib/npcs";
 import {
   getDayOfYear,
-  millisecondsToString,
+  secondsTillReset,
   secondsToString,
 } from "lib/utils/time";
 import {
@@ -41,7 +41,6 @@ import { RequirementLabel } from "components/ui/RequirementsLabel";
 import { Button } from "components/ui/Button";
 import { ButtonPanel, InnerPanel, OuterPanel } from "components/ui/Panel";
 import { getSeasonalTicket } from "features/game/types/seasons";
-import { secondsTillReset } from "features/helios/components/hayseedHank/HayseedHankV2";
 import { Revealing } from "features/game/components/Revealing";
 import { Revealed } from "features/game/components/Revealed";
 import { Label } from "components/ui/Label";
@@ -58,11 +57,6 @@ import { ITEM_IDS } from "features/game/types/bumpkin";
 import { isCollectible } from "features/game/events/landExpansion/garbageSold";
 import { Context } from "features/game/GameProvider";
 import { getActiveCalendarEvent } from "features/game/types/calendar";
-import { getLoveRushStreaks } from "features/game/types/loveRushDeliveries";
-import { getLoveRushDeliveryRewards } from "../../../game/types/loveRushDeliveries";
-import { hasFeatureAccess } from "lib/flags";
-import { MachineState } from "features/game/lib/gameMachine";
-import { useSelector } from "@xstate/react";
 
 // Bumpkins
 export const BEACH_BUMPKINS: NPCName[] = [
@@ -122,12 +116,12 @@ const makeRewardAmountForLabel = ({
   state: GameState;
 }) => {
   if (order.reward.sfl !== undefined) {
-    const sfl = getOrderSellPrice<Decimal>(state, order);
+    const { reward: sfl } = getOrderSellPrice<Decimal>(state, order);
 
     return formatNumber(sfl, { decimalPlaces: 4 });
   }
 
-  const coins = getOrderSellPrice<number>(state, order);
+  const { reward: coins } = getOrderSellPrice<number>(state, order);
 
   return formatNumber(coins);
 };
@@ -137,26 +131,15 @@ export type OrderCardProps = {
   selected: Order;
   onClick: (id: string) => void;
   state: GameState;
-  isLoveRushEventActive: boolean;
 };
 export const OrderCard: React.FC<OrderCardProps> = ({
   order,
   selected,
   onClick,
   state,
-  isLoveRushEventActive,
 }) => {
   const npcName = order.from;
   const tickets = generateDeliveryTickets({ game: state, npc: npcName });
-  const { newStreak, currentStreak } = getLoveRushStreaks({
-    streaks: state.npcs?.[npcName]?.streaks,
-  });
-  const { loveCharmReward } = getLoveRushDeliveryRewards({
-    currentStreak,
-    newStreak,
-    game: state,
-    npcName,
-  });
 
   return (
     <div className="py-1 px-1" key={order.id}>
@@ -167,16 +150,6 @@ export const OrderCard: React.FC<OrderCardProps> = ({
         })}
         style={{ paddingBottom: "20px" }}
       >
-        {isLoveRushEventActive && loveCharmReward > 0 && (
-          <div className="absolute -top-4 -left-5">
-            <div className="relative">
-              <img src={ITEM_DETAILS["Love Charm"].image} className="w-12" />
-              <p className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-white text-shadow text-xs">
-                {loveCharmReward}
-              </p>
-            </div>
-          </div>
-        )}
         {hasOrderRequirements({ order, state }) && !order.completedAt && (
           <img
             src={SUNNYSIDE.icons.heart}
@@ -339,9 +312,6 @@ export const LockedOrderCard: React.FC<{ npc: NPCName }> = ({ npc }) => {
   );
 };
 
-const _isLoveRushEventActive = (state: MachineState) =>
-  hasFeatureAccess(state.context.state, "LOVE_RUSH");
-
 export const DeliveryOrders: React.FC<Props> = ({
   selectedId,
   onSelect,
@@ -349,10 +319,7 @@ export const DeliveryOrders: React.FC<Props> = ({
   state,
 }) => {
   const { gameService } = useContext(Context);
-  const isLoveRushEventActive = useSelector(
-    gameService,
-    _isLoveRushEventActive,
-  );
+
   const { delivery, balance: sfl, coins, npcs, bumpkin } = state;
 
   const navigate = useNavigate();
@@ -400,12 +367,12 @@ export const DeliveryOrders: React.FC<Props> = ({
 
   const makeRewardAmountForLabel = (order: Order) => {
     if (order.reward.sfl !== undefined) {
-      const sfl = getOrderSellPrice<Decimal>(state, order);
+      const { reward: sfl } = getOrderSellPrice<Decimal>(state, order);
 
       return formatNumber(sfl, { decimalPlaces: 4 });
     }
 
-    const coins = getOrderSellPrice<number>(state, order);
+    const { reward: coins } = getOrderSellPrice<number>(state, order);
 
     return formatNumber(coins);
   };
@@ -417,11 +384,11 @@ export const DeliveryOrders: React.FC<Props> = ({
     return t("island.pumpkin.plaza");
   };
 
-  if (gameService.state.matches("revealing") && isRevealing) {
+  if (gameService.getSnapshot().matches("revealing") && isRevealing) {
     return <Revealing icon={chest} />;
   }
 
-  if (gameService.state.matches("revealed") && isRevealing) {
+  if (gameService.getSnapshot().matches("revealed") && isRevealing) {
     return <Revealed onAcknowledged={() => setIsRevealing(false)} />;
   }
 
@@ -455,26 +422,13 @@ export const DeliveryOrders: React.FC<Props> = ({
     .filter((name) => isSFLNPC(name))
     .sort((a, b) => (NPC_DELIVERY_LEVELS[a] > NPC_DELIVERY_LEVELS[b] ? 1 : -1))
     .find((npc) => level < (NPC_DELIVERY_LEVELS?.[npc] ?? 0));
-  const { newStreak, currentStreak } = getLoveRushStreaks({
-    streaks: state.npcs?.[previewOrder.from]?.streaks,
-  });
-  const { loveCharmReward } = getLoveRushDeliveryRewards({
-    currentStreak,
-    newStreak,
-    game: state,
-    npcName: previewOrder.from,
-  });
 
-  const loveRushEndTime = new Date("2025-05-05T00:00:00Z").getTime();
-  const loveRushRemainingTime = loveRushEndTime - Date.now();
   return (
     <div className="flex md:flex-row flex-col-reverse md:mr-1 items-start h-full">
       <InnerPanel
         className={classNames(
           "flex flex-col h-full overflow-hidden scrollable overflow-y-auto pl-1 md:flex w-full md:w-2/3",
-          {
-            hidden: selectedId,
-          },
+          { hidden: selectedId },
         )}
       >
         <div className="p-1">
@@ -483,19 +437,6 @@ export const DeliveryOrders: React.FC<Props> = ({
             {getActiveCalendarEvent({ game: state }) === "doubleDelivery" && (
               <Label type="vibrant" icon={lightning}>
                 {t("double.rewards.deliveries")}
-              </Label>
-            )}
-            {isLoveRushEventActive && (
-              <Label
-                type="info"
-                icon={ITEM_DETAILS["Love Charm"].image}
-                secondaryIcon={SUNNYSIDE.icons.stopwatch}
-              >
-                {t("loveRush.eventTime", {
-                  time: millisecondsToString(loveRushRemainingTime, {
-                    length: "short",
-                  }),
-                })}
               </Label>
             )}
           </div>
@@ -514,7 +455,6 @@ export const DeliveryOrders: React.FC<Props> = ({
             return (
               <OrderCard
                 state={state}
-                isLoveRushEventActive={isLoveRushEventActive}
                 key={order.id}
                 order={order}
                 selected={previewOrder}
@@ -568,7 +508,6 @@ export const DeliveryOrders: React.FC<Props> = ({
             return (
               <OrderCard
                 state={state}
-                isLoveRushEventActive={isLoveRushEventActive}
                 key={order.id}
                 order={order}
                 selected={previewOrder}
@@ -597,7 +536,6 @@ export const DeliveryOrders: React.FC<Props> = ({
             return (
               <OrderCard
                 state={state}
-                isLoveRushEventActive={isLoveRushEventActive}
                 key={order.id}
                 order={order}
                 selected={previewOrder}
@@ -646,19 +584,14 @@ export const DeliveryOrders: React.FC<Props> = ({
         <InnerPanel
           className={classNames(
             "md:ml-1 md:flex md:flex-col items-center flex-1 relative w-full overflow-y-auto scrollable max-h-[440px]",
-            {
-              hidden: !selectedId,
-            },
+            { hidden: !selectedId },
           )}
         >
           <img
             src={SUNNYSIDE.icons.arrow_left}
             className={classNames(
               "absolute top-2 left-2 cursor-pointer md:hidden z-10",
-              {
-                hidden: !selectedId,
-                block: !!selectedId,
-              },
+              { hidden: !selectedId, block: !!selectedId },
             )}
             style={{ width: `${PIXEL_SCALE * 11}px` }}
             onClick={() => onSelect(undefined)}
@@ -843,27 +776,6 @@ export const DeliveryOrders: React.FC<Props> = ({
                     </span>
                   </Label>
                 </div>
-                {isLoveRushEventActive && (
-                  <div className="flex flex-wrap gap-1 justify-between w-full">
-                    {loveCharmReward > 0 && (
-                      <Label
-                        type="vibrant"
-                        icon={ITEM_DETAILS["Love Charm"].image}
-                      >
-                        {`Love Rush Bonus:`}
-                        <br />
-                        {`${loveCharmReward} Love Charms`}
-                      </Label>
-                    )}
-                    <Label
-                      type="vibrant"
-                      icon={SUNNYSIDE.icons.lightning}
-                      className="capitalize"
-                    >
-                      {`${previewOrder.from} Streak: ${currentStreak}`}
-                    </Label>
-                  </div>
-                )}
               </div>
               <div className="mb-1">
                 {getActiveCalendarEvent({ game: state }) === "doubleDelivery" &&
@@ -875,10 +787,7 @@ export const DeliveryOrders: React.FC<Props> = ({
               </div>
               <div>
                 {!previewOrder.completedAt &&
-                  hasOrderRequirements({
-                    order: previewOrder,
-                    state,
-                  }) && (
+                  hasOrderRequirements({ order: previewOrder, state }) && (
                     <Button
                       className="!text-xs !mt-0 !-mb-1"
                       onClick={() => {

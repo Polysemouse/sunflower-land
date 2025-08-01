@@ -21,7 +21,7 @@ import { Button } from "components/ui/Button";
 import { SUNNYSIDE } from "assets/sunnyside";
 import { Modal } from "components/ui/Modal";
 import { BumpkinPainting } from "./components/BumpkinPainting";
-import { Bumpkin, IslandType } from "features/game/types/game";
+import { Bumpkin } from "features/game/types/game";
 import {
   HOME_BOUNDS,
   NON_COLLIDING_OBJECTS,
@@ -32,15 +32,19 @@ import { useAppTranslation } from "lib/i18n/useAppTranslations";
 import { SpeakingModal } from "features/game/components/SpeakingModal";
 import { NPC_WEARABLES } from "lib/npcs";
 import { EXTERIOR_ISLAND_BG } from "features/barn/BarnInside";
+import { LandBiomeName } from "features/island/biomes/biomes";
+import { getCurrentBiome } from "features/island/biomes/biomes";
+import { useVisiting } from "lib/utils/visitUtils";
+import { VisitingHud } from "features/island/hud/VisitingHud";
 
 const selectGameState = (state: MachineState) => state.context.state;
 const isLandscaping = (state: MachineState) => state.matches("landscaping");
 
-const BACKGROUND_IMAGE: Record<IslandType, string> = {
-  basic: SUNNYSIDE.land.tent_inside,
-  spring: SUNNYSIDE.land.house_inside,
-  desert: SUNNYSIDE.land.manor_inside,
-  volcano: SUNNYSIDE.land.mansion_inside,
+const BACKGROUND_IMAGE: Record<LandBiomeName, string> = {
+  "Basic Biome": SUNNYSIDE.land.tent_inside,
+  "Spring Biome": SUNNYSIDE.land.house_inside,
+  "Desert Biome": SUNNYSIDE.land.manor_inside,
+  "Volcano Biome": SUNNYSIDE.land.mansion_inside,
 };
 
 function hasReadIntro() {
@@ -52,7 +56,8 @@ function acknowledgeIntro() {
 }
 
 export const Home: React.FC = () => {
-  const [showIntro, setShowIntro] = useState(!hasReadIntro());
+  const { isVisiting } = useVisiting();
+  const [showIntro, setShowIntro] = useState(!hasReadIntro() && !isVisiting);
 
   const { gameService, showTimers } = useContext(Context);
 
@@ -98,35 +103,38 @@ export const Home: React.FC = () => {
       .filter((name) => collectibles[name])
       .flatMap((name, nameIndex) => {
         const items = collectibles[name]!;
-        return items.map((collectible, itemIndex) => {
-          const { readyAt, createdAt, coordinates, id } = collectible;
-          const { x, y } = coordinates;
-          const { width, height } = COLLECTIBLES_DIMENSIONS[name];
+        return items
+          .filter((collectible) => collectible.coordinates)
+          .map((collectible, itemIndex) => {
+            const { readyAt, createdAt, coordinates, id } = collectible;
+            const { x, y } = coordinates!;
+            const { width, height } = COLLECTIBLES_DIMENSIONS[name];
 
-          return (
-            <MapPlacement
-              key={`collectible-${nameIndex}-${itemIndex}`}
-              x={x}
-              y={y}
-              height={height}
-              width={width}
-              z={NON_COLLIDING_OBJECTS.includes(name) ? 0 : 1}
-            >
-              <Collectible
-                location="home"
-                name={name}
-                id={id}
-                readyAt={readyAt}
-                createdAt={createdAt}
-                showTimers={showTimers}
-                x={coordinates.x}
-                y={coordinates.y}
-                grid={gameGrid}
-                game={state}
-              />
-            </MapPlacement>
-          );
-        });
+            return (
+              <MapPlacement
+                key={`collectible-${nameIndex}-${itemIndex}`}
+                x={x}
+                y={y}
+                height={height}
+                width={width}
+                z={NON_COLLIDING_OBJECTS.includes(name) ? 0 : 1}
+              >
+                <Collectible
+                  location="home"
+                  name={name}
+                  id={id}
+                  readyAt={readyAt}
+                  createdAt={createdAt}
+                  showTimers={showTimers}
+                  x={coordinates!.x}
+                  y={coordinates!.y}
+                  grid={gameGrid}
+                  game={state}
+                  flipped={collectible.flipped}
+                />
+              </MapPlacement>
+            );
+          });
       }),
   );
 
@@ -147,6 +155,7 @@ export const Home: React.FC = () => {
   );
 
   const bounds = HOME_BOUNDS[state.island.type];
+  const currentBiome = getCurrentBiome(state.island);
 
   return (
     <>
@@ -178,7 +187,7 @@ export const Home: React.FC = () => {
             width: `${gameboardDimensions.x * GRID_WIDTH_PX}px`,
             height: `${gameboardDimensions.y * GRID_WIDTH_PX}px`,
             imageRendering: "pixelated",
-            backgroundImage: `url(${EXTERIOR_ISLAND_BG[state.island.type]})`,
+            backgroundImage: `url(${EXTERIOR_ISLAND_BG[currentBiome]})`,
             backgroundRepeat: "repeat",
             backgroundPosition: "center",
             backgroundSize: `${96 * PIXEL_SCALE}px ${96 * PIXEL_SCALE}px`,
@@ -212,7 +221,7 @@ export const Home: React.FC = () => {
               {landscaping && <Placeable location="home" />}
 
               <img
-                src={BACKGROUND_IMAGE[state.island.type]}
+                src={BACKGROUND_IMAGE[currentBiome]}
                 id={Section.GenesisBlock}
                 className="relative z-0"
                 style={{
@@ -238,12 +247,20 @@ export const Home: React.FC = () => {
 
               {!landscaping && (
                 <>
-                  <div className="absolute -top-16 left-0 w-full">
-                    <InteriorBumpkins game={state} />
-                  </div>
+                  {!isVisiting && (
+                    <div className="absolute -top-16 left-0 w-full">
+                      <InteriorBumpkins game={state} />
+                    </div>
+                  )}
                   <Button
                     className="absolute -bottom-16"
-                    onClick={() => navigate("/")}
+                    onClick={() =>
+                      navigate(
+                        isVisiting
+                          ? `/visit/${gameService.state.context.farmId}`
+                          : "/",
+                      )
+                    }
                   >
                     {t("exit")}
                   </Button>
@@ -256,8 +273,9 @@ export const Home: React.FC = () => {
           </div>
         </div>
 
-        {!landscaping && <Hud isFarming location="home" />}
+        {!landscaping && !isVisiting && <Hud isFarming location="home" />}
         {landscaping && <LandscapingHud location="home" />}
+        {isVisiting && <VisitingHud />}
 
         <Modal show={showPainting} onHide={() => setShowPainting(false)}>
           <BumpkinPainting

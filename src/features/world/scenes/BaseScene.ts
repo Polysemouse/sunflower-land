@@ -20,7 +20,7 @@ import {
   SceneId,
 } from "../mmoMachine";
 import { Player, PlazaRoomState } from "../types/Room";
-import { FactionName, GameState } from "features/game/types/game";
+import { FactionName, GameState, IslandType } from "features/game/types/game";
 import { translate } from "lib/i18n/translate";
 import { Room } from "colyseus.js";
 
@@ -41,9 +41,11 @@ import {
   getPlazaShaderSetting,
 } from "lib/utils/hooks/usePlazaShader";
 import { playerSelectionListManager } from "../ui/PlayerSelectionList";
-import { playerModalManager } from "../ui/player/PlayerModals";
+
 import { getHolidayEvent } from "features/portal/cropsAndChickens/lib/cropsAndChickensUtils";
 import { STREAM_REWARD_COOLDOWN } from "../ui/player/StreamReward";
+import { hasVipAccess } from "features/game/lib/vipAccess";
+import { playerModalManager } from "features/social/lib/playerModalManager";
 
 export type NPCBumpkin = {
   x: number;
@@ -70,23 +72,12 @@ type BaseSceneOptions = {
     imageKey?: string;
     defaultTilesetConfig?: any;
   };
-  mmo?: {
-    enabled: boolean;
-    url?: string;
-    serverId?: string;
-    sceneId?: string;
-  };
+  mmo?: { enabled: boolean; url?: string; serverId?: string; sceneId?: string };
   controls?: {
     enabled: boolean; // Default to true
   };
-  audio?: {
-    fx: {
-      walk_key: Footsteps;
-    };
-  };
-  player?: {
-    spawn: Coordinates;
-  };
+  audio?: { fx: { walk_key: Footsteps } };
+  player?: { spawn: Coordinates };
 };
 
 export const FACTION_NAME_COLORS: Record<FactionName, string> = {
@@ -116,9 +107,7 @@ export abstract class BaseScene extends Phaser.Scene {
   serverPosition: { x: number; y: number } = { x: 0, y: 0 };
   packetSentAt = 0;
 
-  playerEntities: {
-    [sessionId: string]: BumpkinContainer;
-  } = {};
+  playerEntities: { [sessionId: string]: BumpkinContainer } = {};
 
   colliders?: Phaser.GameObjects.Group;
   triggerColliders?: Phaser.GameObjects.Group;
@@ -333,6 +322,11 @@ export abstract class BaseScene extends Phaser.Scene {
           updatedAt: 0,
         },
         experience: this.gameState.bumpkin?.experience ?? 0,
+        totalDeliveries: this.gameState.delivery.fulfilledCount ?? 0,
+        dailyStreak: this.gameState.dailyRewards?.streaks ?? 0,
+        isVip: hasVipAccess({ game: this.gameState }),
+        createdAt: this.gameState.createdAt,
+        islandType: this.gameState.island.type,
       });
 
       this.initialiseCamera();
@@ -362,12 +356,29 @@ export abstract class BaseScene extends Phaser.Scene {
         if (clickedBumpkins.length === 0) return;
 
         const players = clickedBumpkins.map((clickedBumpkin) => {
-          const { farmId, clothing, experience, username } = clickedBumpkin;
-          return {
-            id: farmId!,
+          const {
+            farmId,
             clothing,
-            experience: experience ?? 0,
+            totalDeliveries,
+            dailyStreak,
+            isVip,
+            createdAt,
+            faction,
+            islandType,
+            experience,
             username,
+          } = clickedBumpkin;
+          return {
+            farmId: farmId as number,
+            clothing,
+            experience: experience as number,
+            username: username as string,
+            faction,
+            totalDeliveries: totalDeliveries as number,
+            dailyStreak: dailyStreak as number,
+            isVip: isVip as boolean,
+            createdAt: createdAt as number,
+            islandType: islandType as IslandType,
           };
         });
 
@@ -435,9 +446,7 @@ export abstract class BaseScene extends Phaser.Scene {
   private roof: Phaser.Tilemaps.TilemapLayer | null = null;
 
   public initialiseMap() {
-    this.map = this.make.tilemap({
-      key: this.options.name,
-    });
+    this.map = this.make.tilemap({ key: this.options.name });
 
     const tilesetKey = this.options.map?.tilesetUrl ?? "Sunnyside V3";
     const imageKey = this.options.map?.imageKey ?? "tileset";
@@ -774,6 +783,11 @@ export abstract class BaseScene extends Phaser.Scene {
     clothing,
     npc,
     experience,
+    totalDeliveries,
+    dailyStreak,
+    isVip,
+    createdAt,
+    islandType,
   }: {
     isCurrentPlayer: boolean;
     x: number;
@@ -784,6 +798,11 @@ export abstract class BaseScene extends Phaser.Scene {
     clothing: Player["clothing"];
     npc?: NPCName;
     experience?: number;
+    totalDeliveries?: number;
+    dailyStreak?: number;
+    isVip?: boolean;
+    createdAt?: number;
+    islandType?: IslandType;
   }): BumpkinContainer {
     const defaultClick = () => {
       const distance = Phaser.Math.Distance.BetweenPoints(
@@ -811,7 +830,12 @@ export abstract class BaseScene extends Phaser.Scene {
       experience,
       farmId,
       faction,
-      //onClick: defaultClick,
+      onClick: !isCurrentPlayer ? defaultClick : undefined,
+      totalDeliveries,
+      dailyStreak,
+      isVip,
+      createdAt,
+      islandType,
     });
 
     // if (!npc) {
@@ -1259,7 +1283,7 @@ export abstract class BaseScene extends Phaser.Scene {
         );
         const now = Date.now();
         const streamerHatLastClaimedAt =
-          this.gameService.state.context.state.pumpkinPlaza.streamerHat
+          this.gameService.getSnapshot().context.state.pumpkinPlaza.streamerHat
             ?.openedAt ?? 0;
 
         if (
@@ -1267,10 +1291,11 @@ export abstract class BaseScene extends Phaser.Scene {
           distance < 75
         ) {
           playerModalManager.open({
-            id: player.farmId,
+            farmId: player.farmId,
             clothing: player.clothing,
             experience: player.experience,
             username: player.username,
+            faction: player.faction,
           });
           this.lastModalOpenTime = streamerHatLastClaimedAt;
         }

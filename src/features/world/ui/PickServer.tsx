@@ -13,6 +13,7 @@ import { ResizableBar } from "components/ui/ProgressBar";
 import { SUNNYSIDE } from "assets/sunnyside";
 import { CROP_LIFECYCLE } from "features/island/plots/lib/plant";
 import brazilFlag from "assets/sfts/flags/brazil_flag.webp";
+import flowerIcon from "assets/icons/flower_token.webp";
 import { CloseButtonPanel } from "features/game/components/CloseablePanel";
 import { useNavigate } from "react-router";
 import { Context } from "features/game/GameProvider";
@@ -26,10 +27,12 @@ interface Props {
 // If colyseus does not return one of the servers, it means its empty
 const ICONS = [
   SUNNYSIDE.icons.water,
-  CROP_LIFECYCLE.basic.Sunflower.crop,
+  CROP_LIFECYCLE["Basic Biome"].Sunflower.crop,
   SUNNYSIDE.icons.heart,
   brazilFlag,
-  CROP_LIFECYCLE.basic.Pumpkin.crop,
+  CROP_LIFECYCLE["Basic Biome"].Pumpkin.crop,
+  CROP_LIFECYCLE["Basic Biome"].Kale.crop,
+  flowerIcon,
 ];
 
 export const PickServer: React.FC<Props> = ({ mmoService }) => {
@@ -42,7 +45,7 @@ export const PickServer: React.FC<Props> = ({ mmoService }) => {
 
   const serverMaxCapacity = MAX_PLAYERS;
 
-  const servers = mmoService.state.context.availableServers;
+  const servers = mmoService.getSnapshot().context.availableServers;
 
   const progressBar = (progress: number, max: number, server: number) => {
     let percentage = (progress / max) * 100;
@@ -60,10 +63,7 @@ export const PickServer: React.FC<Props> = ({ mmoService }) => {
         <ResizableBar
           percentage={percentage}
           type="progress"
-          outerDimensions={{
-            width: 30,
-            height: 8,
-          }}
+          outerDimensions={{ width: 30, height: 8 }}
         />
       </div>
     );
@@ -76,12 +76,7 @@ export const PickServer: React.FC<Props> = ({ mmoService }) => {
       onClose={() => {
         navigate(`/`);
       }}
-      tabs={[
-        {
-          icon: SUNNYSIDE.icons.player,
-          name: "Town",
-        },
-      ]}
+      tabs={[{ icon: SUNNYSIDE.icons.player, name: "Town" }]}
     >
       {tab === 0 && (
         <div className="p-2">
@@ -92,9 +87,7 @@ export const PickServer: React.FC<Props> = ({ mmoService }) => {
                 <ButtonPanel
                   className={classNames(
                     "flex relative items-center justify-between !p-2 mb-1 cursor-pointer hover:bg-brown-200",
-                    {
-                      "cursor-not-allowed": isServerFull(servers, server.id),
-                    },
+                    { "cursor-not-allowed": isServerFull(servers, server.id) },
                   )}
                   key={server.id}
                   onClick={() =>

@@ -1,4 +1,4 @@
-import { Context, GameProvider } from "features/game/GameProvider";
+import { Context } from "features/game/GameProvider";
 import { ModalProvider } from "features/game/components/modal/ModalProvider";
 import React, { createContext, useContext, useEffect } from "react";
 import { PhaserComponent } from "./Phaser";
@@ -23,48 +23,44 @@ import { PIXEL_SCALE } from "features/game/lib/constants";
 import { WorldIntroduction } from "./ui/WorldIntroduction";
 import { useAppTranslation } from "lib/i18n/useAppTranslations";
 import { GameWrapper } from "features/game/expansion/Game";
-import { WorldHud } from "features/island/hud/WorldHud";
+
 import { Loading } from "features/auth/components";
 import { GameState } from "features/game/types/game";
 import { Forbidden } from "features/auth/components/Forbidden";
 import { getBumpkinLevel } from "features/game/lib/level";
+import { getActiveFloatingIsland } from "features/game/types/floatingIsland";
+import { adminFeatureFlag } from "lib/flags";
 
 interface Props {
   isCommunity?: boolean;
 }
 
-export const WorldContext = createContext<{
-  isCommunity: boolean;
-}>({
+export const WorldContext = createContext<{ isCommunity: boolean }>({
   isCommunity: false,
 });
 
 export const World: React.FC<Props> = ({ isCommunity = false }) => {
   return (
-    <GameProvider>
-      <ModalProvider>
-        <WorldContext.Provider value={{ isCommunity }}>
-          <Explore />
+    <ModalProvider>
+      <WorldContext.Provider value={{ isCommunity }}>
+        <Explore />
+        <div
+          aria-label="World"
+          className="fixed inset-safe-area pointer-events-none inset-safe-area"
+          style={{ zIndex: 11 }}
+        >
           <div
-            aria-label="World"
-            className="fixed inset-safe-area pointer-events-none inset-safe-area"
-            style={{
-              zIndex: 11,
-            }}
+            onMouseDown={(e) => e.stopPropagation()}
+            onMouseUp={(e) => e.stopPropagation()}
+            onTouchStart={(e) => e.stopPropagation()}
+            onTouchEnd={(e) => e.stopPropagation()}
+            className="pointer-events-auto"
           >
-            <div
-              onMouseDown={(e) => e.stopPropagation()}
-              onMouseUp={(e) => e.stopPropagation()}
-              onTouchStart={(e) => e.stopPropagation()}
-              onTouchEnd={(e) => e.stopPropagation()}
-              className="pointer-events-auto"
-            >
-              <Outlet />
-            </div>
+            <Outlet />
           </div>
-        </WorldContext.Provider>
-      </ModalProvider>
-    </GameProvider>
+        </div>
+      </WorldContext.Provider>
+    </ModalProvider>
   );
 };
 
@@ -85,6 +81,8 @@ const SCENE_ACCESS: Partial<Record<SceneId, (game: GameState) => boolean>> = {
   sunflorian_house: (game) => game.faction?.name === "sunflorians",
   bumpkin_house: (game) => game.faction?.name === "bumpkins",
   nightshade_house: (game) => game.faction?.name === "nightshades",
+  love_island: (game) =>
+    !!getActiveFloatingIsland({ state: game }) || !!adminFeatureFlag(game),
   infernos: (game) => {
     const level = getBumpkinLevel(game.bumpkin?.experience ?? 0);
     return level >= 30;
@@ -117,6 +115,7 @@ export const MMO: React.FC<MMOProps> = ({ isCommunity }) => {
 
   const { gameService } = useContext(Context);
   const [gameState] = useActor(gameService);
+
   const { name } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
@@ -135,6 +134,7 @@ export const MMO: React.FC<MMOProps> = ({ isCommunity }) => {
     },
   }) as unknown as MMOMachineInterpreter;
   const [mmoState] = useActor(mmoService);
+  mmoService.onStop(() => mmoState.context.server?.leave());
 
   useEffect(() => {
     if (
@@ -186,15 +186,13 @@ export const MMO: React.FC<MMOProps> = ({ isCommunity }) => {
     );
   }
 
-  if (!mmoService.state) {
+  if (!mmoService.getSnapshot()) {
     return <></>;
   }
 
   // Otherwise if connected, return Plaza Screen
   return (
     <>
-      <WorldHud />
-
       <PhaserComponent
         mmoService={mmoService}
         isCommunity={isCommunity}

@@ -7,10 +7,10 @@ import { NPC_WEARABLES } from "lib/npcs";
 import { AuctionHouseModal } from "./AuctionHouseModal";
 import { BoatModal } from "./BoatModal";
 import { PlazaBanner } from "./PlazaBanner";
-import { OuterPanel } from "components/ui/Panel";
+import { OuterPanel, Panel } from "components/ui/Panel";
 import { NyeButton } from "./NyeButton";
 import { useAppTranslation } from "lib/i18n/useAppTranslations";
-import { BasicTreasureChest } from "./chests/BasicTreasureChest";
+import { TreasureChest } from "./chests/TreasureChest";
 import { SceneId } from "../mmoMachine";
 import { BudBox } from "./chests/BudBox";
 import { Raffle } from "./chests/Raffle";
@@ -40,10 +40,18 @@ import { ChristmasPortal } from "./portals/ChristmasPortal";
 import { ChristmasReward } from "./npcs/Santa";
 import { WeatherShop } from "features/game/expansion/components/temperateSeason/WeatherShop";
 import { PortalChooser } from "./portals/PortalChooser";
-import { EventShop } from "./eventShop/eventShop";
 import { EasterEggstravaganza } from "./portals/EasterEggstravaganza";
+import { HotAirBalloon } from "features/loveIsland/HotAirBalloon";
+import { FloatingIslandShop } from "./loveRewardShop/FloatingIslandShop";
+import { MegaBountyBoard } from "./flowerShop/MegaBountyBoard";
+import { PetalPuzzlePrize } from "./loveRewardShop/PetalPuzzlePrize";
+import { FlowerExchange } from "./npcs/Rocketman";
+import { Blessings } from "features/loveIsland/blessings/Blessings";
+import { EventMegaStore } from "./eventmegastore/EventMegaStore";
+import { EventNoticeboard } from "./EventNoticeboard";
 
 type InteractableName =
+  | "guardian"
   | "desert_noticeboard"
   | "faction_noticeboard"
   | "kingdom_noticeboard"
@@ -84,8 +92,10 @@ type InteractableName =
   | "beach"
   | "lazy_bud"
   | "plaza_blue_book"
+  | "petal_clue"
   | "plaza_orange_book"
   | "plaza_green_book"
+  | "mega_bounty_board"
   | "potion_house"
   | "clubhouse_reward"
   | "raffle"
@@ -133,8 +143,13 @@ type InteractableName =
   | "christmas_portal"
   | "festive_tree"
   | "portal_chooser"
-  | "event_shop"
-  | "easter-eggstravaganza";
+  | "easter-eggstravaganza"
+  | "air_balloon"
+  | "floating_island_shop"
+  | "petal_puzzle_prize"
+  | "flower_exchange"
+  | "event_store"
+  | "event_noticeboard";
 
 class InteractableModalManager {
   private listener?: (name: InteractableName, isOpen: boolean) => void;
@@ -207,6 +222,15 @@ export const InteractableModals: React.FC<Props> = ({ id, scene }) => {
       )}
       <Modal show={interactable === "faction_intro"} onHide={closeModal}>
         <FactionWelcome onClose={closeModal} />
+      </Modal>
+      <Modal show={interactable === "air_balloon"} onHide={closeModal}>
+        <HotAirBalloon onClose={closeModal} />
+      </Modal>
+      <Modal show={interactable === "floating_island_shop"} onHide={closeModal}>
+        <FloatingIslandShop onClose={closeModal} />
+      </Modal>
+      <Modal show={interactable === "petal_puzzle_prize"} onHide={closeModal}>
+        <PetalPuzzlePrize onClose={closeModal} />
       </Modal>
       <Modal show={interactable === "weather_shop"} onHide={closeModal}>
         <WeatherShop onClose={closeModal} />
@@ -307,8 +331,19 @@ export const InteractableModals: React.FC<Props> = ({ id, scene }) => {
           ]}
         />
       </Modal>
+      <Modal show={interactable === "petal_clue"} onHide={closeModal}>
+        <SpeakingModal
+          onClose={closeModal}
+          bumpkinParts={NPC_WEARABLES["rocket man"]}
+          message={[
+            {
+              text: t("interactableModals.petalClue.message1"),
+            },
+          ]}
+        />
+      </Modal>
       <Modal show={interactable === "basic_chest"} onHide={closeModal}>
-        <BasicTreasureChest
+        <TreasureChest
           type="Treasure Key"
           onClose={closeModal}
           location={"plaza"}
@@ -316,7 +351,7 @@ export const InteractableModals: React.FC<Props> = ({ id, scene }) => {
         />
       </Modal>
       <Modal show={interactable === "rare_chest"} onHide={closeModal}>
-        <BasicTreasureChest
+        <TreasureChest
           type="Rare Key"
           onClose={closeModal}
           location={"plaza"}
@@ -324,7 +359,7 @@ export const InteractableModals: React.FC<Props> = ({ id, scene }) => {
         />
       </Modal>
       <Modal show={interactable === "luxury_chest"} onHide={closeModal}>
-        <BasicTreasureChest
+        <TreasureChest
           type="Luxury Key"
           onClose={closeModal}
           location={"plaza"}
@@ -383,6 +418,9 @@ export const InteractableModals: React.FC<Props> = ({ id, scene }) => {
           ]}
         />
       </Modal>
+      <Modal show={interactable === "mega_bounty_board"} onHide={closeModal}>
+        <MegaBountyBoard onClose={closeModal} />
+      </Modal>
       <Modal show={interactable === "beach_orange_book"} onHide={closeModal}>
         <SpeakingModal
           onClose={closeModal}
@@ -415,7 +453,7 @@ export const InteractableModals: React.FC<Props> = ({ id, scene }) => {
         <BudBox onClose={closeModal} setIsLoading={setIsLoading} />
       </Modal>
       <Modal show={interactable === "raffle"} onHide={closeModal}>
-        <Raffle onClose={closeModal} />
+        <Raffle />
       </Modal>
       <Modal show={interactable === "bank"} onHide={closeModal}>
         <BankModal onClose={closeModal} farmAddress="?" />
@@ -476,6 +514,16 @@ export const InteractableModals: React.FC<Props> = ({ id, scene }) => {
 
       <Modal show={interactable === "portal_chooser"} onHide={closeModal}>
         <PortalChooser onClose={closeModal} />
+      </Modal>
+
+      <Modal show={interactable === "guardian"} onHide={closeModal}>
+        <Blessings onClose={closeModal} />
+      </Modal>
+
+      <Modal show={interactable === "flower_exchange"} onHide={closeModal}>
+        <Panel>
+          <FlowerExchange onClose={closeModal} />
+        </Panel>
       </Modal>
 
       <Modal show={interactable === "chicken_rescue"} onHide={closeModal}>
@@ -850,9 +898,6 @@ export const InteractableModals: React.FC<Props> = ({ id, scene }) => {
       <Modal show={interactable === "goblin_market"} onHide={closeModal}>
         <GoblinMarket onClose={closeModal} />
       </Modal>
-      <Modal show={interactable === "event_shop"}>
-        <EventShop onClose={closeModal} />
-      </Modal>
       <Modal
         show={interactable === "easter-eggstravaganza"}
         onHide={closeModal}
@@ -866,6 +911,12 @@ export const InteractableModals: React.FC<Props> = ({ id, scene }) => {
       </Modal>
       <Modal show={interactable === "christmas_reward"}>
         <ChristmasReward onClose={closeModal} />
+      </Modal>
+      <Modal show={interactable === "event_store"} onHide={closeModal}>
+        <EventMegaStore onClose={closeModal} />
+      </Modal>
+      <Modal show={interactable === "event_noticeboard"} onHide={closeModal}>
+        <EventNoticeboard onClose={closeModal} />
       </Modal>
     </>
   );

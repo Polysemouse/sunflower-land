@@ -17,6 +17,7 @@ import {
 import { produce } from "immer";
 import { BUILDING_DAILY_OIL_CAPACITY } from "./supplyCookingOil";
 import { hasVipAccess } from "features/game/lib/vipAccess";
+import { updateBoostUsed } from "features/game/types/updateBoostUsed";
 
 export type RecipeCookedAction = {
   type: "recipe.cooked";
@@ -98,14 +99,14 @@ export const getReadyAt = ({
 }: GetReadyAtArgs) => {
   const withOilBoost = getCookingOilBoost(item, game, buildingId).timeToCook;
 
-  const seconds = getCookingTime({
+  const { reducedSecs, boostsUsed } = getCookingTime({
     seconds: withOilBoost,
     item,
     game,
     cookStartAt: createdAt,
   });
 
-  return createdAt + seconds * 1000;
+  return { createdAt: createdAt + reducedSecs * 1000, boostsUsed };
 };
 
 export const BUILDING_DAILY_OIL_CONSUMPTION: Record<
@@ -132,9 +133,12 @@ export function getOilConsumption(
 export function getCookingRequirements({
   state,
   item,
+  skipDoubleNomBoost = false,
 }: {
   state: GameState;
   item: CookableName;
+  // Ignored when getting the requirements for a recipe made before the skill was applied
+  skipDoubleNomBoost?: boolean;
 }): Inventory {
   let { ingredients } = COOKABLES[item];
   const { bumpkin } = state;
@@ -142,7 +146,7 @@ export function getCookingRequirements({
   ingredients = Object.entries(ingredients).reduce(
     (inventory, [ingredient, amount]) => {
       // Double Nom - 2x ingredients
-      if (bumpkin.skills["Double Nom"]) {
+      if (bumpkin.skills["Double Nom"] && !skipDoubleNomBoost) {
         amount = amount.mul(2);
       }
 
@@ -244,7 +248,7 @@ export function cook({
       recipeStartAt = lastRecipeReadyAt;
     }
 
-    const readyAt = getReadyAt({
+    const { createdAt: readyAt, boostsUsed } = getReadyAt({
       buildingId: buildingId,
       item,
       createdAt: recipeStartAt,
@@ -256,6 +260,8 @@ export function cook({
       {
         name: item,
         boost: { Oil: oilConsumed },
+        // Marks whether the Double Nom skill was applied at the time of cooking
+        skills: { "Double Nom": !!bumpkin.skills["Double Nom"] },
         readyAt,
         // Placeholder - can be different from backend
         amount,
@@ -265,6 +271,12 @@ export function cook({
     const previousOilRemaining = building.oil || 0;
 
     building.oil = previousOilRemaining - oilConsumed;
+
+    stateCopy.boostsUsedAt = updateBoostUsed({
+      game: stateCopy,
+      boostNames: boostsUsed,
+      createdAt,
+    });
 
     return stateCopy;
   });

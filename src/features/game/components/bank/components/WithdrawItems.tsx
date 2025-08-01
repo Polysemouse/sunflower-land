@@ -25,6 +25,9 @@ import { PIXEL_SCALE } from "features/game/lib/constants";
 import { MachineState } from "features/game/lib/gameMachine";
 import { hasReputation, Reputation } from "features/game/lib/reputation";
 import { RequiredReputation } from "features/island/hud/components/reputation/Reputation";
+import { isFaceVerified } from "features/retreat/components/personhood/lib/faceRecognition";
+import { FaceRecognition } from "features/retreat/components/personhood/FaceRecognition";
+import { hasBoostRestriction } from "features/game/types/withdrawRestrictions";
 
 interface Props {
   onWithdraw: (ids: number[], amounts: string[]) => void;
@@ -109,27 +112,10 @@ export const WithdrawItems: React.FC<Props> = ({
     };
   };
 
-  const isCurrentObsession = (itemName: InventoryItemName) => {
-    const obsessionCompletedAt = state.npcs?.bert?.questCompletedAt;
-    const currentObsession = state.bertObsession;
-
-    if (!obsessionCompletedAt || !currentObsession) return false;
-    if (currentObsession.name !== itemName) return false;
-
-    return (
-      obsessionCompletedAt >= currentObsession.startDate &&
-      obsessionCompletedAt <= currentObsession.endDate
-    );
-  };
-
   const withdrawableItems = getKeys(inventory)
     .filter((itemName) => {
       const withdrawAt = INVENTORY_RELEASES[itemName]?.withdrawAt;
-      return (
-        !!withdrawAt &&
-        withdrawAt <= new Date() &&
-        !isCurrentObsession(itemName)
-      );
+      return !!withdrawAt && withdrawAt <= new Date();
     })
     .sort((a, b) => KNOWN_IDS[a] - KNOWN_IDS[b]);
 
@@ -144,6 +130,10 @@ export const WithdrawItems: React.FC<Props> = ({
 
   if (!hasAccess) {
     return <RequiredReputation reputation={Reputation.Seedling} />;
+  }
+
+  if (!isFaceVerified({ game: state })) {
+    return <FaceRecognition />;
   }
 
   return (
@@ -166,7 +156,13 @@ export const WithdrawItems: React.FC<Props> = ({
               <Box
                 count={inventoryCount}
                 key={itemName}
-                disabled={inventoryCount.lessThanOrEqualTo(0)}
+                disabled={
+                  inventoryCount.lessThanOrEqualTo(0) ||
+                  hasBoostRestriction({
+                    boostUsedAt: state.boostsUsedAt,
+                    item: itemName,
+                  }).isRestricted
+                }
                 onClick={() => onAdd(itemName)}
                 image={details.image}
                 canBeLongPressed={allowLongpressWithdrawal}

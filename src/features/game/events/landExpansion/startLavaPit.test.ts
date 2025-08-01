@@ -3,12 +3,15 @@ import { startLavaPit } from "./startLavaPit";
 import { INITIAL_FARM } from "features/game/lib/constants";
 import { GameState } from "features/game/types/game";
 
+import * as config from "lib/config";
+
 const TEST_FARM: GameState = {
   ...INITIAL_FARM,
   inventory: {
     ...INITIAL_FARM.inventory,
     Oil: new Decimal(100),
-    Cobia: new Decimal(10),
+    Pepper: new Decimal(750),
+    Zucchini: new Decimal(1000),
   },
   season: {
     season: "summer",
@@ -17,6 +20,11 @@ const TEST_FARM: GameState = {
 };
 
 describe("startLavaPit", () => {
+  const spy = jest.spyOn((config as any).default, "CONFIG", "get");
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
   const now = Date.now();
 
   it("requires the lava pit to exist", () => {
@@ -36,7 +44,7 @@ describe("startLavaPit", () => {
           ...TEST_FARM,
           inventory: {},
           lavaPits: {
-            1: { x: 0, y: 0, width: 2, height: 2, createdAt: 0 },
+            1: { x: 0, y: 0, createdAt: 0 },
           },
         },
         action: { type: "lavaPit.started", id: "1" },
@@ -50,21 +58,21 @@ describe("startLavaPit", () => {
       state: {
         ...TEST_FARM,
         lavaPits: {
-          1: { x: 0, y: 0, width: 2, height: 2, createdAt: 0 },
+          1: { x: 0, y: 0, createdAt: 0 },
         },
       },
       action: { type: "lavaPit.started", id: "1" },
       createdAt: now,
     });
 
-    expect(result.inventory.Oil).toEqual(new Decimal(40));
+    expect(result.inventory.Oil).toEqual(new Decimal(0));
   });
 
   it("starts the lava pit", () => {
     const result = startLavaPit({
       state: {
         ...TEST_FARM,
-        lavaPits: { 1: { x: 0, y: 0, width: 2, height: 2, createdAt: 0 } },
+        lavaPits: { 1: { x: 0, y: 0, createdAt: 0 } },
       },
       action: { type: "lavaPit.started", id: "1" },
       createdAt: now,
@@ -82,8 +90,6 @@ describe("startLavaPit", () => {
             1: {
               x: 0,
               y: 0,
-              width: 2,
-              height: 2,
               startedAt: now,
               createdAt: 0,
             },
@@ -100,7 +106,7 @@ describe("startLavaPit", () => {
       state: {
         ...TEST_FARM,
         lavaPits: {
-          1: { x: 0, y: 0, width: 2, height: 2, createdAt: 0, collectedAt: 1 },
+          1: { x: 0, y: 0, createdAt: 0, collectedAt: 1 },
         },
       },
       action: { type: "lavaPit.started", id: "1" },

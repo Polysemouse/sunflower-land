@@ -2,6 +2,7 @@ import React, { useContext, useState } from "react";
 import { Button } from "components/ui/Button";
 import { useActor } from "@xstate/react";
 import { Context } from "features/game/GameProvider";
+import * as AuthProvider from "features/auth/lib/Provider";
 
 import { useAppTranslation } from "lib/i18n/useAppTranslations";
 import { OuterPanel } from "components/ui/Panel";
@@ -20,6 +21,7 @@ import { isMinigameComplete } from "features/game/events/minigames/claimMinigame
 import { ClaimReward } from "features/game/expansion/components/ClaimReward";
 import { getKeys } from "features/game/types/craftables";
 import { ITEM_DETAILS } from "features/game/types/images";
+import { PortalLeaderboard } from "./PortalLeaderboard";
 
 export const MinigamePrizeUI: React.FC<{
   prize?: MinigamePrize;
@@ -86,6 +88,7 @@ interface Props {
 }
 
 export const FruitDash: React.FC<Props> = ({ onClose }) => {
+  const { authService } = useContext(AuthProvider.Context);
   const { gameService } = useContext(Context);
   const [gameState] = useActor(gameService);
 
@@ -93,15 +96,14 @@ export const FruitDash: React.FC<Props> = ({ onClose }) => {
 
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
 
+  const [page, setPage] = useState<"play" | "leaderboard">("play");
+
   const { t } = useAppTranslation();
 
   const dateKey = new Date().toISOString().slice(0, 10);
   const history = minigame?.history ?? {};
 
-  const dailyAttempt = history[dateKey] ?? {
-    attempts: 0,
-    highscore: 0,
-  };
+  const dailyAttempt = history[dateKey] ?? { attempts: 0, highscore: 0 };
 
   const prize = gameState.context.state.minigames.prizes["fruit-dash"];
 
@@ -118,9 +120,7 @@ export const FruitDash: React.FC<Props> = ({ onClose }) => {
   }
 
   const onClaim = () => {
-    gameService.send("minigame.prizeClaimed", {
-      id: "fruit-dash",
-    });
+    gameService.send("minigame.prizeClaimed", { id: "fruit-dash" });
 
     onClose();
   };
@@ -148,6 +148,18 @@ export const FruitDash: React.FC<Props> = ({ onClose }) => {
     );
   }
 
+  if (page === "leaderboard") {
+    return (
+      <PortalLeaderboard
+        farmId={gameService.getSnapshot().context.farmId}
+        jwt={authService.getSnapshot().context.user.rawToken as string}
+        onBack={() => setPage("play")}
+        name={"fruit-dash"}
+        startDate={new Date(2024, 6, 2)}
+      />
+    );
+  }
+
   return (
     <>
       <div className="mb-1">
@@ -166,7 +178,12 @@ export const FruitDash: React.FC<Props> = ({ onClose }) => {
           })}
         />
       </div>
-      <Button onClick={playNow}>{t("minigame.playNow")}</Button>
+      <div className="flex">
+        <Button className="mr-1" onClick={() => setPage("leaderboard")}>
+          {t("competition.leaderboard")}
+        </Button>
+        <Button onClick={playNow}>{t("minigame.playNow")}</Button>
+      </div>
     </>
   );
 };

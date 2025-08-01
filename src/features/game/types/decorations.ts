@@ -4,6 +4,8 @@ import { BB_TO_GEM_RATIO, Inventory } from "./game";
 import { BoostTreasure, DecorationTreasure } from "./treasure";
 import { translate } from "lib/i18n/translate";
 import { Template } from "./templates";
+import { BeanName } from "./beans";
+import { DollName } from "../lib/crafting";
 
 /**
  * getKeys is a ref to Object.keys, but the return is typed literally.
@@ -32,17 +34,6 @@ export type AchievementDecorationName =
   | "Rainbow Artist Bear"
   | "Devil Bear";
 
-export type BasicDecorationName =
-  | "White Tulips"
-  | "Potted Sunflower"
-  | "Potted Potato"
-  | "Potted Pumpkin"
-  | "Cactus"
-  | "Basic Bear"
-  | "Bonnie's Tombstone"
-  | "Grubnash's Tombstone"
-  | "Town Sign";
-
 export type LandscapingDecorationName =
   | "Dirt Path"
   | "Bush"
@@ -56,11 +47,19 @@ export type LandscapingDecorationName =
   | "Stone Fence"
   | "Field Maple"
   | "Red Maple"
-  | "Golden Maple";
+  | "Golden Maple"
+  | TileName
+  | "White Tulips"
+  | "Potted Sunflower"
+  | "Potted Potato"
+  | "Potted Pumpkin"
+  | "Cactus"
+  | "Basic Bear"
+  | "Bonnie's Tombstone"
+  | "Grubnash's Tombstone"
+  | "Town Sign";
 
-export type ShopDecorationName =
-  | BasicDecorationName
-  | LandscapingDecorationName;
+export type ShopDecorationName = LandscapingDecorationName;
 
 export type SeasonalDecorationName =
   | "Blossombeard"
@@ -162,7 +161,17 @@ export type EventDecorationName =
   | "White Bunny Lantern"
   | "Orange Tunnel Bunny"
   | "White Tunnel Bunny"
-  | "Easter Basket";
+  | "Easter Basket"
+  | "Paint Buckets"
+  | "Rainbow Well"
+  | "Floating Toy"
+  | "Rainbow Flower"
+  | "Pony Toy"
+  | "Red Slime Balloon"
+  | "Blue Slime Balloon"
+  | "Gold Cooking Trophy"
+  | "Silver Cooking Trophy"
+  | "Bronze Cooking Trophy";
 
 export type TileName =
   | "Black Tile"
@@ -175,7 +184,8 @@ export type TileName =
 export type PotionHouseDecorationName =
   | "Giant Potato"
   | "Giant Pumpkin"
-  | "Giant Cabbage";
+  | "Giant Cabbage"
+  | BeanName;
 
 export type InteriorDecorationName = "Rug" | "Wardrobe";
 
@@ -184,9 +194,31 @@ export type AnimalDecorationName =
   | "Mama Duck"
   | "Summer Duckling"
   | "Autumn Duckling"
-  | "Winter Duckling";
+  | "Winter Duckling"
+  | "Wheat Whiskers";
 
 export const DECORATION_TEMPLATES = {
+  "Gold Cooking Trophy": {
+    dimensions: {
+      width: 1,
+      height: 1,
+    },
+    isWithdrawable: () => false,
+  },
+  "Silver Cooking Trophy": {
+    dimensions: {
+      width: 1,
+      height: 1,
+    },
+    isWithdrawable: () => false,
+  },
+  "Bronze Cooking Trophy": {
+    dimensions: {
+      width: 1,
+      height: 1,
+    },
+    isWithdrawable: () => false,
+  },
   "Polygon Banner": {
     dimensions: {
       width: 1,
@@ -355,11 +387,180 @@ export const DECORATION_TEMPLATES = {
     },
     isWithdrawable: () => Date.now() > new Date("2024-11-01").getTime(),
   },
+  Doll: {
+    dimensions: {
+      width: 1,
+      height: 1,
+    },
+    isWithdrawable: () => false,
+  },
+  "Buzz Doll": {
+    dimensions: {
+      width: 1,
+      height: 1,
+    },
+    isWithdrawable: () => false,
+  },
+  "Lunar Doll": {
+    dimensions: {
+      width: 1,
+      height: 1,
+    },
+    isWithdrawable: () => false,
+  },
+  "Juicy Doll": {
+    dimensions: {
+      width: 1,
+      height: 1,
+    },
+    isWithdrawable: () => false,
+  },
+  "Crude Doll": {
+    dimensions: {
+      width: 1,
+      height: 1,
+    },
+    isWithdrawable: () => false,
+  },
+  "Cluck Doll": {
+    dimensions: {
+      width: 1,
+      height: 1,
+    },
+    isWithdrawable: () => false,
+  },
+  "Wooly Doll": {
+    dimensions: {
+      width: 1,
+      height: 1,
+    },
+    isWithdrawable: () => false,
+  },
+  "Moo Doll": {
+    dimensions: {
+      width: 1,
+      height: 1,
+    },
+    isWithdrawable: () => false,
+  },
+  "Bloom Doll": {
+    dimensions: {
+      width: 1,
+      height: 1,
+    },
+    isWithdrawable: () => false,
+  },
+  "Shadow Doll": {
+    dimensions: {
+      width: 1,
+      height: 1,
+    },
+    isWithdrawable: () => false,
+  },
+  "Ember Doll": {
+    dimensions: {
+      width: 1,
+      height: 1,
+    },
+    isWithdrawable: () => false,
+  },
+  "Gilded Doll": {
+    dimensions: {
+      width: 1,
+      height: 1,
+    },
+    isWithdrawable: () => false,
+  },
+  "Lumber Doll": {
+    dimensions: {
+      width: 1,
+      height: 1,
+    },
+    isWithdrawable: () => false,
+  },
+  "Harvest Doll": {
+    dimensions: {
+      width: 1,
+      height: 1,
+    },
+    isWithdrawable: () => false,
+  },
+  "Sizzle Doll": {
+    dimensions: {
+      width: 1,
+      height: 1,
+    },
+    isWithdrawable: () => false,
+  },
+  "Angler Doll": {
+    dimensions: {
+      width: 1,
+      height: 1,
+    },
+    isWithdrawable: () => false,
+  },
+  "Dune Doll": {
+    dimensions: {
+      width: 1,
+      height: 1,
+    },
+    isWithdrawable: () => false,
+  },
+  "Mouse Doll": {
+    dimensions: {
+      width: 1,
+      height: 1,
+    },
+    isWithdrawable: () => false,
+  },
+  "Grubby Doll": {
+    dimensions: {
+      width: 1,
+      height: 1,
+    },
+    isWithdrawable: () => false,
+  },
+  "Nefari Doll": {
+    dimensions: {
+      width: 1,
+      height: 1,
+    },
+    isWithdrawable: () => false,
+  },
+  "Frosty Doll": {
+    dimensions: {
+      width: 1,
+      height: 1,
+    },
+    isWithdrawable: () => false,
+  },
+  "Cosmo Doll": {
+    dimensions: {
+      width: 1,
+      height: 1,
+    },
+    isWithdrawable: () => false,
+  },
+  "Bigfin Doll": {
+    dimensions: {
+      width: 1,
+      height: 1,
+    },
+    isWithdrawable: () => false,
+  },
+  "Solar Doll": {
+    dimensions: {
+      width: 1,
+      height: 1,
+    },
+    isWithdrawable: () => false,
+  },
 } satisfies Record<string, Template>;
 
 export type TemplateDecorationName = keyof typeof DECORATION_TEMPLATES;
 
 export type DecorationName =
+  | DollName
   | AchievementDecorationName
   | ShopDecorationName
   | EventDecorationName
@@ -374,6 +575,10 @@ export type DecorationName =
 
 export const DECORATION_DIMENSIONS: Record<DecorationName, Dimensions> = {
   "Jelly Lamp": {
+    width: 2,
+    height: 2,
+  },
+  "Magic Bean": {
     width: 2,
     height: 2,
   },
@@ -1030,6 +1235,38 @@ export const DECORATION_DIMENSIONS: Record<DecorationName, Dimensions> = {
     width: 2,
     height: 2,
   },
+  "Paint Buckets": {
+    width: 1,
+    height: 2,
+  },
+  "Rainbow Well": {
+    width: 2,
+    height: 2,
+  },
+  "Floating Toy": {
+    width: 1,
+    height: 2,
+  },
+  "Rainbow Flower": {
+    width: 2,
+    height: 2,
+  },
+  "Pony Toy": {
+    width: 1,
+    height: 1,
+  },
+  "Red Slime Balloon": {
+    width: 1,
+    height: 2,
+  },
+  "Blue Slime Balloon": {
+    width: 1,
+    height: 2,
+  },
+  "Wheat Whiskers": {
+    width: 1,
+    height: 1,
+  },
 };
 
 export type Decoration = {
@@ -1039,84 +1276,10 @@ export type Decoration = {
   coins?: number;
 };
 
-export const BASIC_DECORATIONS: () => Record<
-  BasicDecorationName,
-  Decoration
-> = () => ({
-  "White Tulips": {
-    name: "White Tulips",
-    coins: 80,
-    ingredients: {},
-    description: translate("description.white.tulips"),
-  },
-  "Potted Sunflower": {
-    name: "Potted Sunflower",
-    description: translate("description.potted.sunflower"),
-    coins: 80,
-    ingredients: {
-      Sunflower: new Decimal(100),
-    },
-  },
-  "Potted Potato": {
-    name: "Potted Potato",
-    description: translate("description.potted.potato"),
-    coins: 200,
-    ingredients: {
-      Potato: new Decimal(200),
-    },
-  },
-  "Potted Pumpkin": {
-    name: "Potted Pumpkin",
-    description: translate("description.potted.pumpkin"),
-    coins: 800,
-    ingredients: {
-      Pumpkin: new Decimal(200),
-    },
-  },
-  Cactus: {
-    name: "Cactus",
-    description: translate("description.cactus"),
-    coins: 80,
-    ingredients: {},
-  },
-  "Basic Bear": {
-    name: "Basic Bear",
-    description: translate("description.basic.bear"),
-    coins: 200,
-    ingredients: {},
-  },
-
-  "Bonnie's Tombstone": {
-    name: "Bonnie's Tombstone",
-    description: translate("description.bonnies.tombstone"),
-    coins: 0,
-    ingredients: {
-      Stone: new Decimal(10),
-    },
-  },
-
-  "Grubnash's Tombstone": {
-    name: "Grubnash's Tombstone",
-    description: translate("description.grubnashs.tombstone"),
-    coins: 0,
-    ingredients: {
-      Stone: new Decimal(20),
-      Iron: new Decimal(10),
-    },
-  },
-  "Town Sign": {
-    name: "Town Sign",
-    description: translate("description.town.sign"),
-    coins: 0,
-    ingredients: {},
-    limit: 1,
-  },
-});
-
-export const LANDSCAPING_DECORATIONS: () => Record<
+export const LANDSCAPING_DECORATIONS: Record<
   LandscapingDecorationName,
   Decoration
-> = () => ({
+> = {
   "Dirt Path": {
     name: "Dirt Path",
     description: translate("description.dirt.path"),
@@ -1223,12 +1386,135 @@ export const LANDSCAPING_DECORATIONS: () => Record<
       Wood: new Decimal(100),
     },
   },
-});
+  "Black Tile": {
+    name: "Black Tile",
+    ingredients: {
+      Sand: new Decimal(1),
+      "Sea Cucumber": new Decimal(1),
+      Eggplant: new Decimal(1),
+    },
+    description: "",
+  },
+  "Blue Tile": {
+    name: "Blue Tile",
+    ingredients: {
+      Sand: new Decimal(1),
+      "Cockle Shell": new Decimal(1),
+      Blueberry: new Decimal(1),
+    },
+    description: "",
+  },
+  "Green Tile": {
+    name: "Green Tile",
+    ingredients: {
+      Sand: new Decimal(1),
+      Seaweed: new Decimal(1),
+      Kale: new Decimal(1),
+    },
+    description: "",
+  },
+  "Purple Tile": {
+    name: "Purple Tile",
+    ingredients: {
+      Sand: new Decimal(1),
+      "Clam Shell": new Decimal(1),
+      Beetroot: new Decimal(1),
+    },
+    description: "",
+  },
+  "Red Tile": {
+    name: "Red Tile",
+    ingredients: {
+      Sand: new Decimal(1),
+      "Wooden Compass": new Decimal(1),
+      Apple: new Decimal(1),
+    },
+    description: "",
+  },
+  "Yellow Tile": {
+    name: "Yellow Tile",
+    ingredients: {
+      Sand: new Decimal(1),
+      Starfish: new Decimal(1),
+      Sunflower: new Decimal(5),
+    },
+    description: "",
+  },
+  "White Tulips": {
+    name: "White Tulips",
+    coins: 80,
+    ingredients: {},
+    description: translate("description.white.tulips"),
+  },
+  "Potted Sunflower": {
+    name: "Potted Sunflower",
+    description: translate("description.potted.sunflower"),
+    coins: 80,
+    ingredients: {
+      Sunflower: new Decimal(100),
+    },
+  },
+  "Potted Potato": {
+    name: "Potted Potato",
+    description: translate("description.potted.potato"),
+    coins: 200,
+    ingredients: {
+      Potato: new Decimal(200),
+    },
+  },
+  "Potted Pumpkin": {
+    name: "Potted Pumpkin",
+    description: translate("description.potted.pumpkin"),
+    coins: 800,
+    ingredients: {
+      Pumpkin: new Decimal(200),
+    },
+  },
+  Cactus: {
+    name: "Cactus",
+    description: translate("description.cactus"),
+    coins: 80,
+    ingredients: {},
+  },
+  "Basic Bear": {
+    name: "Basic Bear",
+    description: translate("description.basic.bear"),
+    coins: 200,
+    ingredients: {},
+  },
 
-export const POTION_HOUSE_DECORATIONS: () => Record<
+  "Bonnie's Tombstone": {
+    name: "Bonnie's Tombstone",
+    description: translate("description.bonnies.tombstone"),
+    coins: 0,
+    ingredients: {
+      Stone: new Decimal(10),
+    },
+  },
+
+  "Grubnash's Tombstone": {
+    name: "Grubnash's Tombstone",
+    description: translate("description.grubnashs.tombstone"),
+    coins: 0,
+    ingredients: {
+      Stone: new Decimal(20),
+      Iron: new Decimal(10),
+    },
+  },
+  "Town Sign": {
+    name: "Town Sign",
+    description: translate("description.town.sign"),
+    coins: 10000,
+    ingredients: {
+      Wood: new Decimal(100),
+    },
+  },
+};
+
+export const POTION_HOUSE_DECORATIONS: Record<
   PotionHouseDecorationName,
   Decoration
-> = () => ({
+> = {
   "Magic Bean": {
     name: "Magic Bean",
     description: translate("description.magic.bean"),
@@ -1261,13 +1547,12 @@ export const POTION_HOUSE_DECORATIONS: () => Record<
       "Potion Ticket": new Decimal(1000),
     },
   },
-});
+};
 
 export const DECORATIONS: Record<
   ShopDecorationName | PotionHouseDecorationName,
   Decoration
 > = {
-  ...BASIC_DECORATIONS(),
-  ...LANDSCAPING_DECORATIONS(),
-  ...POTION_HOUSE_DECORATIONS(),
+  ...LANDSCAPING_DECORATIONS,
+  ...POTION_HOUSE_DECORATIONS,
 };

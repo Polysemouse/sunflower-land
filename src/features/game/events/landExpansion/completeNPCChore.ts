@@ -10,12 +10,16 @@ import { NPCName } from "lib/npcs";
 import {
   getCurrentSeason,
   getSeasonalTicket,
+  SeasonName,
 } from "features/game/types/seasons";
 import { isWearableActive } from "features/game/lib/wearables";
 import { hasVipAccess } from "features/game/lib/vipAccess";
 import { isCollectibleBuilt } from "features/game/lib/collectibleBuilt";
-import { hasFeatureAccess } from "lib/flags";
-import { getLoveRushChoreReward } from "features/game/types/loveRushChores";
+import {
+  SeasonalTierItemName,
+  MegastoreKeys,
+} from "features/game/types/megastore";
+import { isCollectible } from "./garbageSold";
 
 export type CompleteNPCChoreAction = {
   type: "chore.fulfilled";
@@ -26,6 +30,73 @@ type Options = {
   state: Readonly<GameState>;
   action: CompleteNPCChoreAction;
   createdAt?: number;
+};
+
+export const CHAPTER_TICKET_BOOST_ITEMS: Record<
+  SeasonName,
+  {
+    basic: Exclude<SeasonalTierItemName, MegastoreKeys>;
+    rare: Exclude<SeasonalTierItemName, MegastoreKeys>;
+    epic: Exclude<SeasonalTierItemName, MegastoreKeys>;
+  }
+> = {
+  "Solar Flare": {
+    basic: "Cow Scratcher",
+    rare: "Cow Scratcher",
+    epic: "Cow Scratcher",
+  },
+  "Dawn Breaker": {
+    basic: "Cow Scratcher",
+    rare: "Cow Scratcher",
+    epic: "Cow Scratcher",
+  },
+  "Witches' Eve": {
+    basic: "Cow Scratcher",
+    rare: "Cow Scratcher",
+    epic: "Cow Scratcher",
+  },
+  "Catch the Kraken": {
+    basic: "Cow Scratcher",
+    rare: "Cow Scratcher",
+    epic: "Cow Scratcher",
+  },
+  "Spring Blossom": {
+    basic: "Cow Scratcher",
+    rare: "Cow Scratcher",
+    epic: "Cow Scratcher",
+  },
+  "Clash of Factions": {
+    basic: "Cow Scratcher",
+    rare: "Cow Scratcher",
+    epic: "Cow Scratcher",
+  },
+  "Pharaoh's Treasure": {
+    basic: "Cow Scratcher",
+    rare: "Cow Scratcher",
+    epic: "Cow Scratcher",
+  },
+  "Bull Run": {
+    basic: "Cowboy Hat",
+    rare: "Cowboy Shirt",
+    epic: "Cowboy Trouser",
+  },
+  "Winds of Change": {
+    basic: "Acorn Hat",
+    rare: "Igloo",
+    epic: "Hammock",
+  },
+  "Great Bloom": {
+    basic: "Flower Mask",
+    rare: "Love Charm Shirt",
+    epic: "Heart Air Balloon",
+  },
+
+  // TODO: Add Better Together items
+  "Better Together": {
+    basic: "Garbage Bin Hat",
+    rare: "Raccoon Onesie",
+    epic: "Recycle Shirt",
+  },
 };
 
 export function completeNPCChore({
@@ -87,26 +158,6 @@ export function completeNPCChore({
     draft.npcs[npcName].friendship.points += 1;
     draft.npcs[npcName].friendship.updatedAt = createdAt;
 
-    if (hasFeatureAccess(draft, "LOVE_RUSH")) {
-      const { loveCharmReward } = getLoveRushChoreReward({
-        npcName,
-        game: draft,
-        createdAt,
-      });
-      draft.inventory["Love Charm"] = (
-        draft.inventory["Love Charm"] ?? new Decimal(0)
-      ).add(loveCharmReward);
-
-      // Add 100 love charms for completing 21 chores
-      const hasCompleted21Chores =
-        Object.values(draft.choreBoard.chores).filter(
-          (chore) => chore.completedAt,
-        ).length === 21;
-      if (hasCompleted21Chores) {
-        draft.inventory["Love Charm"] = draft.inventory["Love Charm"].add(100);
-      }
-    }
-
     return draft;
   });
 }
@@ -123,52 +174,27 @@ export function generateChoreRewards({
   const items = Object.assign({}, chore.reward.items) ?? {};
 
   if (!items[getSeasonalTicket(now)]) return items;
+  let amount = items[getSeasonalTicket(now)] ?? 0;
 
   if (hasVipAccess({ game, now: now.getTime() })) {
-    items[getSeasonalTicket(now)] = (items[getSeasonalTicket(now)] ?? 0) + 2;
+    amount += 2;
   }
+  const chapter = getCurrentSeason(now);
+  const chapterBoost = CHAPTER_TICKET_BOOST_ITEMS[chapter];
 
-  if (
-    getCurrentSeason() === "Bull Run" &&
-    isWearableActive({ game, name: "Cowboy Hat" })
-  ) {
-    items[getSeasonalTicket(now)] = (items[getSeasonalTicket(now)] ?? 0) + 1;
-  }
+  Object.values(chapterBoost).forEach((item) => {
+    if (isCollectible(item)) {
+      if (isCollectibleBuilt({ game, name: item })) {
+        amount += 1;
+      }
+    } else {
+      if (isWearableActive({ game, name: item })) {
+        amount += 1;
+      }
+    }
+  });
 
-  if (
-    getCurrentSeason() === "Bull Run" &&
-    isWearableActive({ game, name: "Cowboy Shirt" })
-  ) {
-    items[getSeasonalTicket(now)] = (items[getSeasonalTicket(now)] ?? 0) + 1;
-  }
-
-  if (
-    getCurrentSeason() === "Bull Run" &&
-    isWearableActive({ game, name: "Cowboy Trouser" })
-  ) {
-    items[getSeasonalTicket(now)] = (items[getSeasonalTicket(now)] ?? 0) + 1;
-  }
-
-  if (
-    getCurrentSeason() === "Winds of Change" &&
-    isWearableActive({ game, name: "Acorn Hat" })
-  ) {
-    items[getSeasonalTicket(now)] = (items[getSeasonalTicket(now)] ?? 0) + 1;
-  }
-
-  if (
-    getCurrentSeason() === "Winds of Change" &&
-    isCollectibleBuilt({ game, name: "Igloo" })
-  ) {
-    items[getSeasonalTicket(now)] = (items[getSeasonalTicket(now)] ?? 0) + 1;
-  }
-
-  if (
-    getCurrentSeason() === "Winds of Change" &&
-    isCollectibleBuilt({ game, name: "Hammock" })
-  ) {
-    items[getSeasonalTicket(now)] = (items[getSeasonalTicket(now)] ?? 0) + 1;
-  }
+  items[getSeasonalTicket(now)] = amount;
 
   return items;
 }

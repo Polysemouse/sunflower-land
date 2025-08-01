@@ -637,4 +637,9 @@ export type FlowerGrowthStage =
   | "almost"
   | "ready";
 
-export type MutantFlowerName = "Desert Rose" | "Chicory" | "Chamomile";
+export type MutantFlowerName =
+  | "Desert Rose"
+  | "Chicory"
+  | "Chamomile"
+  | "Lunalist"
+  | "Venus Bumpkin Trap";

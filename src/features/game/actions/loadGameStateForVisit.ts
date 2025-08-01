@@ -3,7 +3,7 @@ import { GameState } from "../types/game";
 
 const API_URL = CONFIG.API_URL;
 
-type VisitGameState = Omit<
+export type VisitGameState = Omit<
   GameState,
   | "tradedAt"
   | "tradeOffer"
@@ -12,14 +12,24 @@ type VisitGameState = Omit<
   | "stock"
   | "stockExpiry"
   | "expansionRequirements"
->;
+> & {
+  moderator: {
+    wallet?: string;
+    discordId?: string;
+    isFaceRecognised?: boolean;
+    account: "wallet" | "google" | "fsl" | "wechat";
+    nftId?: number;
+  };
+};
 
 export async function loadGameStateForVisit(
   id: number,
   token?: string,
 ): Promise<{
-  state: VisitGameState;
+  visitorFarmState: GameState;
   isBanned: boolean;
+  visitorId: number;
+  visitedFarmState: VisitGameState;
 }> {
   // Go and fetch the state for the farm you are trying to visit
   const url = `${API_URL}/visit/${id}`;

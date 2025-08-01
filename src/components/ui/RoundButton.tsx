@@ -16,17 +16,13 @@ interface RoundButtonProps {
   buttonSize?: number;
 }
 
-export const RoundButton: React.FC<RoundButtonProps> = ({
-  children,
-  onClick,
-  disabled,
-  className,
-  buttonSize = 22,
-}) => {
+export const RoundButton: React.FC<
+  React.PropsWithChildren<RoundButtonProps>
+> = ({ children, onClick, disabled, className, buttonSize = 22 }) => {
   return (
     <div
       onClick={onClick}
-      className={classNames("relative flex z-50", className, {
+      className={classNames("relative flex", className, {
         "cursor-pointer hover:img-highlight group": !disabled,
       })}
       style={{

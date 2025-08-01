@@ -16,7 +16,9 @@ import { ReferralContent } from "features/island/hud/components/referral/Referra
 import { CloseButtonPanel } from "../CloseablePanel";
 import { DiscordBonus } from "features/game/expansion/components/DiscordBoat";
 import { Streams } from "./components/Streams";
-import { LoveRush } from "./components/LoveRush";
+import { Merkl } from "./components/Merkl";
+import { Rewards } from "features/island/hud/components/referral/Rewards";
+import { DailyRewardChest } from "features/game/expansion/components/dailyReward/DailyReward";
 type GlobalModal =
   | "BUY_GEMS"
   | "DISCORD"
@@ -34,26 +36,24 @@ type GlobalModal =
   | "TWITTER"
   | "REFERRAL"
   | "STREAMS"
-  | "LOVE_RUSH";
+  | "MERKL"
+  | "DEPOSIT"
+  | "DAILY_REWARD"
+  | "EARN";
 
 export const ModalContext = createContext<{
   openModal: (type: GlobalModal) => void;
   // eslint-disable-next-line no-console
 }>({ openModal: console.log });
 
-export const ModalProvider: FC = ({ children }) => {
+export const ModalProvider: FC<React.PropsWithChildren> = ({ children }) => {
   const [opened, setOpened] = useState<GlobalModal>();
-  const [closeable, setCloseable] = useState(true);
 
   const openModal = (type: GlobalModal) => {
     setOpened(type);
   };
 
-  const handleClose = () => {
-    if (!closeable) return;
-
-    setOpened(undefined);
-  };
+  const handleClose = () => setOpened(undefined);
 
   return (
     <ModalContext.Provider value={{ openModal }}>
@@ -69,6 +69,12 @@ export const ModalProvider: FC = ({ children }) => {
         show={opened === "BUY_BANNER"}
         onClose={handleClose}
         initialPage="vip"
+      />
+
+      <CurrenciesModal
+        show={opened === "DEPOSIT"}
+        onClose={handleClose}
+        initialPage="deposit"
       />
 
       <Modal show={opened === "DISCORD"} onHide={handleClose}>
@@ -110,8 +116,8 @@ export const ModalProvider: FC = ({ children }) => {
         <Streams onClose={handleClose} />
       </Modal>
 
-      <Modal show={opened === "LOVE_RUSH"} onHide={handleClose}>
-        <LoveRush onClose={handleClose} />
+      <Modal show={opened === "MERKL"} onHide={handleClose}>
+        <Merkl onClose={handleClose} />
       </Modal>
 
       <Modal show={opened === "FIRST_EXPANSION"}>
@@ -207,6 +213,14 @@ export const ModalProvider: FC = ({ children }) => {
           bumpkinParts={NPC_WEARABLES["pumpkin' pete"]}
         />
       </Modal>
+
+      <Rewards show={opened === "EARN"} onHide={handleClose} tab={"Earn"} />
+
+      <DailyRewardChest
+        show={opened === "DAILY_REWARD"}
+        onHide={handleClose}
+        tab={0}
+      />
     </ModalContext.Provider>
   );
 };

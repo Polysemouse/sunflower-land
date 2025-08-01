@@ -27,6 +27,7 @@ import {
 } from "features/island/lib/alternateArt";
 import { getSupportedPlots } from "features/game/events/landExpansion/plant";
 import { getBumpkinLevel } from "features/game/lib/level";
+import { getCurrentBiome, LandBiomeName } from "features/island/biomes/biomes";
 
 interface Props {
   buildingName: UpgradableBuildingType;
@@ -95,11 +96,13 @@ export const UpgradeBuildingModal: React.FC<Props> = ({
   const currentSupportedPlots = getSupportedPlots({
     wellLevel: currentLevel,
     buildings: state.buildings,
+    island: state.island.type,
   });
 
   const nextSupportedPlots = getSupportedPlots({
     wellLevel: nextLevel,
     buildings: state.buildings,
+    island: state.island.type,
   });
 
   const nextLevelFertility = nextSupportedPlots - currentSupportedPlots;
@@ -113,7 +116,9 @@ export const UpgradeBuildingModal: React.FC<Props> = ({
       return WATER_WELL_VARIANTS[state.season.season][nextLevel];
     }
 
-    return BARN_IMAGES[state.island.type][state.season.season][nextLevel];
+    const biome: LandBiomeName = getCurrentBiome(state.island);
+
+    return BARN_IMAGES[biome][state.season.season][nextLevel];
   };
 
   const buildingIcon = getBuildingIcon();

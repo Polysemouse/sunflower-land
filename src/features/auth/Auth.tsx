@@ -1,8 +1,6 @@
-import React, { useContext, useState } from "react";
+import React, { useContext } from "react";
 import { useActor } from "@xstate/react";
 import { Modal } from "components/ui/Modal";
-
-import mailIcon from "assets/icons/letter.png";
 
 import * as AuthProvider from "features/auth/lib/Provider";
 
@@ -25,7 +23,7 @@ import { hasFeatureAccess } from "lib/flags";
 import { WalletInUse } from "./components/WalletInUse";
 import { LoginSettings } from "./components/LoginSettings";
 import { NPC_WEARABLES } from "lib/npcs";
-import { pixelGrayBorderStyle } from "features/game/lib/style";
+import { SystemMessageWidget } from "features/announcements/SystemMessageWidget";
 
 type Props = {
   showOfflineModal: boolean;
@@ -34,8 +32,6 @@ type Props = {
 export const Auth: React.FC<Props> = ({ showOfflineModal }) => {
   const { authService } = useContext(AuthProvider.Context);
   const [authState] = useActor(authService);
-
-  const [showMessage, setShowMessage] = useState(true);
   const { t } = useAppTranslation();
 
   return (
@@ -107,7 +103,7 @@ export const Auth: React.FC<Props> = ({ showOfflineModal }) => {
             {authState.matches("authorising") && <Loading />}
             {authState.matches("verifying") && <Verifying />}
             {(authState.matches("idle") || authState.matches("signIn")) && (
-              <SignIn type="signin" />
+              <SignIn />
             )}
             {authState.matches("signUp") && <SignUp />}
             {authState.matches("creating") && <Loading text={t("creating")} />}
@@ -119,28 +115,8 @@ export const Auth: React.FC<Props> = ({ showOfflineModal }) => {
             )}
           </Panel>
         )}
-        {showMessage && (
-          <div
-            className={classNames(
-              `w-full justify-center items-center flex  text-xs p-1 pr-4 mt-1 relative`,
-            )}
-            style={{
-              background: "#c0cbdc",
-              color: "#181425",
-              ...pixelGrayBorderStyle,
-            }}
-            onClick={() => setShowMessage(false)}
-          >
-            <img src={mailIcon} className="w-8 mr-2" />
-            <p className="text-xs flex-1">{t("news.flowerSoon")}</p>
-            <img
-              src={SUNNYSIDE.icons.close}
-              className="absolute right-2 top-1 w-5 cursor-pointer"
-            />
-          </div>
-        )}
+        <SystemMessageWidget />
       </Modal>
-
       {!authState.matches("connected") && !authState.matches("visiting") && (
         <LoginSettings />
       )}

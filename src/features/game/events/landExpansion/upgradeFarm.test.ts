@@ -85,8 +85,6 @@ describe("upgradeFarm", () => {
             castedAt: 10001023,
             caught: { Anchovy: 1 },
           },
-          beach: {},
-          weather: "Sunny",
         },
         mushrooms: {
           mushrooms: {
@@ -102,13 +100,10 @@ describe("upgradeFarm", () => {
         oilReserves: {
           oil: {
             oil: {
-              amount: 10,
               drilledAt: 1,
             },
             createdAt: 1,
             drilled: 1,
-            height: 1,
-            width: 1,
             x: 1,
             y: 1,
           },
@@ -151,11 +146,8 @@ describe("upgradeFarm", () => {
               createdAt: Date.now(),
               x: -2,
               y: 0,
-              height: 1,
-              width: 3,
               flower: {
                 name: "Red Pansy",
-                amount: 1,
                 plantedAt: 123,
               },
             },
@@ -164,8 +156,6 @@ describe("upgradeFarm", () => {
         beehives: {
           "1234": {
             flowers: [],
-            height: 1,
-            width: 1,
             x: 1,
             y: 1,
             swarm: true,
@@ -177,13 +167,10 @@ describe("upgradeFarm", () => {
         },
         crimstones: {
           crim: {
-            height: 1,
             minesLeft: 1,
             stone: {
-              amount: 1,
               minedAt: Date.now() - 1 * 60 * 60 * 1000,
             },
-            width: 1,
             x: 100,
             y: 100,
           },
@@ -237,11 +224,8 @@ describe("upgradeFarm", () => {
               createdAt: Date.now(),
               x: -2,
               y: 0,
-              height: 1,
-              width: 3,
               flower: {
                 name: "Red Pansy",
-                amount: 1,
                 plantedAt: 123,
               },
             },
@@ -347,13 +331,10 @@ describe("upgradeFarm", () => {
     const createdAt = Date.now();
     const sunstones = {
       "1234": {
-        height: 1,
         minesLeft: 1,
         stone: {
-          amount: 1,
           minedAt: Date.now() - 1 * 60 * 60 * 1000,
         },
-        width: 1,
         x: 100,
         y: 100,
       },
@@ -409,13 +390,10 @@ describe("upgradeFarm", () => {
     const createdAt = Date.now();
     const sunstones = {
       "1234": {
-        height: 1,
         minesLeft: 1,
         stone: {
-          amount: 1,
           minedAt: Date.now() - 1 * 60 * 60 * 1000,
         },
-        width: 1,
         x: 100,
         y: 100,
       },
@@ -447,13 +425,10 @@ describe("upgradeFarm", () => {
     const createdAt = Date.now();
     const sunstones = {
       "1234": {
-        height: 1,
         minesLeft: 1,
         stone: {
-          amount: 1,
           minedAt: Date.now() - 1 * 60 * 60 * 1000,
         },
-        width: 1,
         x: 100,
         y: 100,
       },
@@ -489,13 +464,10 @@ describe("upgradeFarm", () => {
     const createdAt = Date.now();
     const sunstones = {
       "1234": {
-        height: 1,
         minesLeft: 1,
         stone: {
-          amount: 1,
           minedAt: Date.now() - 1 * 60 * 60 * 1000,
         },
-        width: 1,
         x: 100,
         y: 100,
       },
@@ -648,5 +620,25 @@ describe("upgradeFarm", () => {
         location: undefined,
       },
     });
+  });
+  it("resets the biome upon upgrade", () => {
+    const state = upgrade({
+      state: {
+        ...INITIAL_FARM,
+        inventory: {
+          "Basic Land": new Decimal(25),
+          Oil: new Decimal(200),
+        },
+        island: {
+          type: "desert",
+          biome: "Spring Biome",
+        },
+      },
+      action: {
+        type: "farm.upgraded",
+      },
+    });
+
+    expect(state.island.biome).toBeUndefined();
   });
 });

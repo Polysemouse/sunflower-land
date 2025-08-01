@@ -1,10 +1,15 @@
 import Decimal from "decimal.js-light";
-import { BuildingName } from "features/game/types/buildings";
+import {
+  BuildingName,
+  CookingBuildingName,
+} from "features/game/types/buildings";
 import { trackActivity } from "features/game/types/bumpkinActivity";
 import { getKeys } from "features/game/types/decorations";
 import { GameState } from "features/game/types/game";
 import { produce } from "immer";
 import { getCurrentCookingItem, recalculateQueue } from "./cancelQueuedRecipe";
+import { hasFeatureAccess } from "lib/flags";
+import { CookableName } from "features/game/types/consumables";
 
 export type InstantCookRecipe = {
   type: "recipe.spedUp";
@@ -89,6 +94,20 @@ export function makeGemHistory({
   return game;
 }
 
+// To delete after cookoff
+export const COOK_OFF_FOODS: CookableName[] = [
+  "Fried Tofu",
+  "Rice Bun",
+  "Grape Juice",
+  "Banana Blast",
+  "Orange Cake",
+  "Honey Cake",
+  "Fermented Fish",
+  "Fancy Fries",
+  "Pancakes",
+  "Tofu Scramble",
+];
+
 export function speedUpRecipe({
   state,
   action,
@@ -110,6 +129,13 @@ export function speedUpRecipe({
       throw new Error("Nothing is cooking");
     }
 
+    if (
+      hasFeatureAccess(state, "PEGGYS_COOKOFF") &&
+      COOK_OFF_FOODS.includes(recipe.name)
+    ) {
+      throw new Error("This recipe is restricted during peggy's cookoff");
+    }
+
     const gems = getInstantGems({
       readyAt: recipe.readyAt,
       now: createdAt,
@@ -126,15 +152,16 @@ export function speedUpRecipe({
       game.inventory[recipe.name] ?? new Decimal(0)
     ).add(recipe.amount ?? 1);
 
-    // Remove the sped up recipe from the queue
-    const filteredQueue = queue.filter((r) => r.readyAt !== recipe.readyAt);
+    const queueWithoutSpedUpRecipe = queue.filter(
+      (item) => item.readyAt !== recipe.readyAt,
+    );
 
     building.crafting = recalculateQueue({
-      queue: filteredQueue,
+      queue: queueWithoutSpedUpRecipe,
       createdAt,
-      buildingId: building.id,
+      buildingName: action.buildingName as CookingBuildingName,
+      isInstantCook: true,
       game,
-      isInstant: true,
     });
 
     game = makeGemHistory({ game, amount: gems });

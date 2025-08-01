@@ -31,16 +31,21 @@ import {
 import { Transition } from "@headlessui/react";
 import { useTranslation } from "react-i18next";
 import { useSound } from "lib/utils/hooks/useSound";
-import { WakesIn } from "features/game/expansion/components/animals/WakesIn";
 import Decimal from "decimal.js-light";
 import { InfoPopover } from "features/island/common/InfoPopover";
 import {
+  getBarnDelightCost,
   handleFoodXP,
   REQUIRED_FOOD_QTY,
 } from "features/game/events/landExpansion/feedAnimal";
 import { getAnimalXP } from "features/game/events/landExpansion/loveAnimal";
 import { MutantAnimalModal } from "features/farming/animals/components/MutantAnimalModal";
 import { isCollectibleBuilt } from "features/game/lib/collectibleBuilt";
+import { isWearableActive } from "features/game/lib/wearables";
+import { Modal } from "components/ui/Modal";
+import { CloseButtonPanel } from "features/game/components/CloseablePanel";
+import { OuterPanel } from "components/ui/Panel";
+import { SleepingAnimalModal } from "./SleepingAnimalModal";
 
 export const ANIMAL_EMOTION_ICONS: Record<
   Exclude<TState["value"], "idle" | "needsLove" | "initial" | "sick">,
@@ -130,9 +135,8 @@ export const Cow: React.FC<{ id: string; disabled: boolean }> = ({
   const { t } = useTranslation();
 
   const [showDrops, setShowDrops] = useState(false);
-  const [showWakesIn, setShowWakesIn] = useState(false);
+  const [showAnimalDetails, setShowAnimalDetails] = useState(false);
   const [showNoFoodSelected, setShowNoFoodSelected] = useState(false);
-  const [showNoToolPopover, setShowNoToolPopover] = useState(false);
   const [showNotEnoughFood, setShowNotEnoughFood] = useState(false);
   const [showNoMedicine, setShowNoMedicine] = useState(false);
   // Sounds
@@ -149,7 +153,7 @@ export const Cow: React.FC<{ id: string; disabled: boolean }> = ({
   const idle = cowMachineState === "idle";
   const sick = cowMachineState === "sick" || cow.state === "sick";
 
-  const requiredFoodQty = getBoostedFoodQuantity({
+  const { foodQuantity: requiredFoodQty } = getBoostedFoodQuantity({
     animalType: "Cow",
     foodQuantity: REQUIRED_FOOD_QTY.Cow,
     game,
@@ -157,6 +161,11 @@ export const Cow: React.FC<{ id: string; disabled: boolean }> = ({
 
   const hasGoldenCow = isCollectibleBuilt({
     name: "Golden Cow",
+    game,
+  });
+
+  const hasOracleSyringeEquipped = isWearableActive({
+    name: "Oracle Syringe",
     game,
   });
 
@@ -185,9 +194,7 @@ export const Cow: React.FC<{ id: string; disabled: boolean }> = ({
 
   const onLoveClick = async () => {
     if ((inventory[cow.item] ?? new Decimal(0)).lt(1)) {
-      setShowNoToolPopover(true);
-      await new Promise((resolve) => setTimeout(resolve, 700));
-      setShowNoToolPopover(false);
+      handleShowDetails();
       return;
     }
 
@@ -249,7 +256,14 @@ export const Cow: React.FC<{ id: string; disabled: boolean }> = ({
 
   const onSickClick = async () => {
     const medicineCount = inventory["Barn Delight"] ?? new Decimal(0);
-    const hasEnoughMedicine = medicineCount.gte(1);
+    const { amount: barnDelightCost } = getBarnDelightCost({ state: game });
+    const hasEnoughMedicine = medicineCount.gte(barnDelightCost);
+
+    if (hasOracleSyringeEquipped) {
+      playCureAnimal();
+      cureCow("Barn Delight");
+      return;
+    }
 
     if (hasEnoughMedicine) {
       playCureAnimal();
@@ -262,6 +276,18 @@ export const Cow: React.FC<{ id: string; disabled: boolean }> = ({
     setShowNoMedicine(false);
 
     return;
+  };
+
+  const handleShowDetails = () => {
+    // Check if an event has been fired in the last 0.5 seconds - if so return;
+    const lastEventTime = gameService
+      .getSnapshot()
+      .context.actions.at(-1)?.createdAt;
+    const currentTime = Date.now();
+
+    if (currentTime - (lastEventTime?.getTime() ?? 0) < 500) return;
+
+    setShowAnimalDetails(true);
   };
 
   const onReadyClick = async () => {
@@ -292,7 +318,7 @@ export const Cow: React.FC<{ id: string; disabled: boolean }> = ({
     if (needsLove) return onLoveClick();
 
     if (sleeping) {
-      setShowWakesIn((prev) => !prev);
+      handleShowDetails();
       return;
     }
 
@@ -330,7 +356,6 @@ export const Cow: React.FC<{ id: string; disabled: boolean }> = ({
 
   const getInfoPopoverMessage = () => {
     if (showNoFoodSelected) return t("animal.noFoodMessage");
-    if (showNoToolPopover) return t("animal.toolRequired", { tool: cow.item });
     if (showNoMedicine) return t("animal.noMedicine");
     if (showNotEnoughFood)
       return t("animal.notEnoughFood", { amount: requiredFoodQty });
@@ -391,7 +416,11 @@ export const Cow: React.FC<{ id: string; disabled: boolean }> = ({
       : "#fff";
   const xpIndicatorAmount = getAnimalXPEarned();
 
-  const { animalXP } = getAnimalXP({ state: game, name: showLoveItem! });
+  const { animalXP } = getAnimalXP({
+    state: game,
+    name: showLoveItem!,
+    animal: "Cow",
+  });
 
   return (
     <>
@@ -411,8 +440,6 @@ export const Cow: React.FC<{ id: string; disabled: boolean }> = ({
           width: `${GRID_WIDTH_PX * 2}px`,
           height: `${GRID_WIDTH_PX * 2}px`,
         }}
-        onMouseLeave={() => showWakesIn && setShowWakesIn(false)}
-        onTouchEnd={() => showWakesIn && setShowWakesIn(false)}
       >
         <div className="relative w-full h-full">
           {showDrops && (
@@ -456,15 +483,25 @@ export const Cow: React.FC<{ id: string; disabled: boolean }> = ({
               quantity={idle && !hasGoldenCow ? requiredFoodQty : undefined}
             />
           )}
-          {(sleeping || needsLove) && showWakesIn && (
-            <WakesIn awakeAt={cow.awakeAt} className="-top-10" />
-          )}
+          <Modal
+            show={showAnimalDetails}
+            onHide={() => setShowAnimalDetails(false)}
+          >
+            <CloseButtonPanel
+              container={OuterPanel}
+              onClose={() => setShowAnimalDetails(false)}
+            >
+              <SleepingAnimalModal
+                id={cow.id}
+                animal={cow}
+                awakeAt={cow.awakeAt}
+                onClose={() => setShowAnimalDetails(false)}
+              />
+            </CloseButtonPanel>
+          </Modal>
           <InfoPopover
             showPopover={
-              showNoToolPopover ||
-              showNoFoodSelected ||
-              showNoMedicine ||
-              showNotEnoughFood
+              showNoFoodSelected || showNoMedicine || showNotEnoughFood
             }
             className="-top-10 left-1/2 transform -translate-x-1/2 z-20"
           >
@@ -480,7 +517,7 @@ export const Cow: React.FC<{ id: string; disabled: boolean }> = ({
           experience={cow.experience}
           className="absolute -bottom-2.5 left-1/2 transform -translate-x-1/2 ml-1 pointer-events-none"
           // Don't block level up UI with wakes in panel if accidentally clicked
-          onLevelUp={() => setShowWakesIn(false)}
+          onLevelUp={() => setShowAnimalDetails(false)}
         />
         {/* Feed XP */}
         <Transition
@@ -494,6 +531,7 @@ export const Cow: React.FC<{ id: string; disabled: boolean }> = ({
           leaveFrom="opacity-100"
           leaveTo="opacity-0"
           className="flex -top-1 left-1/2 -translate-x-1/2 absolute z-40 pointer-events-none"
+          as="div"
         >
           <span
             className="text-sm yield-text"
@@ -515,6 +553,7 @@ export const Cow: React.FC<{ id: string; disabled: boolean }> = ({
           leaveFrom="opacity-100"
           leaveTo="opacity-0"
           className="flex -top-1 left-1/2 -translate-x-1/2 absolute z-40 pointer-events-none"
+          as="div"
         >
           <span
             className="text-sm yield-text"

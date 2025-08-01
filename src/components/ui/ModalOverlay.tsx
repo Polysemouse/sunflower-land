@@ -14,7 +14,7 @@ interface Props {
   onBackdropClick: () => void;
 }
 
-export const ModalOverlay: React.FC<Props> = ({
+export const ModalOverlay: React.FC<React.PropsWithChildren<Props>> = ({
   show,
   className,
   children,
@@ -57,6 +57,7 @@ export const ModalOverlay: React.FC<Props> = ({
         leaveTo="scale-0"
         afterLeave={() => setIsVisible(false)}
         className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 transform w-full sm:w-5/6 z-20"
+        as="div"
       >
         {isVisible && <>{children}</>}
       </Transition.Child>

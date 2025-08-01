@@ -13,7 +13,7 @@ import { translate } from "lib/i18n/translate";
 import { SOUNDS } from "assets/sound-effects/soundEffects";
 
 import { npcModalManager } from "../ui/NPCModals";
-import { FactionName } from "features/game/types/game";
+import { FactionName, TemperateSeasonName } from "features/game/types/game";
 import { Coordinates } from "features/game/expansion/components/MapPlacement";
 import { getKeys } from "features/game/types/decorations";
 import { JoinFactionAction } from "features/game/events/landExpansion/joinFaction";
@@ -25,53 +25,25 @@ import {
 import { hasReadKingdomNotice } from "../ui/kingdom/KingdomNoticeboard";
 import { EventObject } from "xstate";
 import { capitalize } from "lib/utils/capitalize";
+import { hasFeatureAccess } from "lib/flags";
+import { Label } from "../containers/Label";
+
+const GUARDIAN_MAP: Record<TemperateSeasonName, string> = {
+  autumn: "autumn_guardian",
+  spring: "spring_guardian",
+  summer: "summer_guardian",
+  winter: "winter_guardian",
+};
 
 export const KINGDOM_NPCS: NPCBumpkin[] = [
-  {
-    x: 305,
-    y: 500,
-    npc: "billy",
-    direction: "left",
-  },
-  {
-    x: 112,
-    y: 181,
-    npc: "jester",
-  },
-  {
-    x: 263,
-    y: 105,
-    npc: "victoria",
-    direction: "left",
-  },
-  {
-    x: 353,
-    y: 737,
-    npc: "gambit",
-    direction: "left",
-  },
-  {
-    x: 110,
-    y: 800,
-    npc: "graxle",
-  },
-  {
-    x: 400,
-    y: 452,
-    npc: "barlow",
-    direction: "left",
-  },
-  {
-    x: 370,
-    y: 630,
-    npc: "reginald",
-    direction: "left",
-  },
-  {
-    x: 100,
-    y: 440,
-    npc: "nyx",
-  },
+  { x: 305, y: 500, npc: "billy", direction: "left" },
+  { x: 112, y: 181, npc: "jester" },
+  { x: 263, y: 105, npc: "victoria", direction: "left" },
+  { x: 353, y: 737, npc: "gambit", direction: "left" },
+  { x: 110, y: 800, npc: "graxle" },
+  { x: 400, y: 452, npc: "barlow", direction: "left" },
+  { x: 370, y: 630, npc: "reginald", direction: "left" },
+  { x: 100, y: 440, npc: "nyx" },
   { npc: "eldric", x: 129, y: 562 },
 ];
 
@@ -124,16 +96,16 @@ export class KingdomScene extends BaseScene {
     this.load.spritesheet(
       "portal_crops_and_chickens",
       "world/portal_well_crops_and_chickens_sheet.png",
-      {
-        frameWidth: 20,
-        frameHeight: 25,
-      },
+      { frameWidth: 20, frameHeight: 25 },
     );
 
     this.load.spritesheet("portal_halloween", "world/portal_halloween.png", {
       frameWidth: 23,
       frameHeight: 32,
     });
+
+    const guardian = GUARDIAN_MAP[this.gameState.season.season];
+    this.load.image("guardian", `world/${guardian}.webp`);
 
     this.load.spritesheet("castle_bud_1", "world/castle_bud_1.webp", {
       frameWidth: 32,
@@ -176,9 +148,7 @@ export class KingdomScene extends BaseScene {
   }
 
   create() {
-    this.map = this.make.tilemap({
-      key: "kingdom",
-    });
+    this.map = this.make.tilemap({ key: "kingdom" });
 
     super.create();
 
@@ -245,10 +215,7 @@ export class KingdomScene extends BaseScene {
     const portal = this.add.sprite(285, 515, "portal");
     this.anims.create({
       key: "portal_anim",
-      frames: this.anims.generateFrameNumbers("portal", {
-        start: 0,
-        end: 8,
-      }),
+      frames: this.anims.generateFrameNumbers("portal", { start: 0, end: 8 }),
       repeat: -1,
       frameRate: 10,
     });
@@ -333,7 +300,7 @@ export class KingdomScene extends BaseScene {
     });
     bud3.setScale(-1, 1).play("castle_bud_3_anim", true);
 
-    const faction = this.gameService.state.context.state.faction?.name;
+    const faction = this.gameService.getSnapshot().context.state.faction?.name;
     getKeys(DOORS).forEach((key) => {
       if (faction === key) return;
 
@@ -381,6 +348,22 @@ export class KingdomScene extends BaseScene {
       nature1.play({ loop: true, volume: 0.3 });
     }
 
+    if (hasFeatureAccess(this.gameState, "BLESSING")) {
+      const guardian = this.add.sprite(192, 324, "guardian");
+      guardian.setInteractive({ cursor: "pointer" }).on("pointerdown", () => {
+        if (this.checkDistanceToSprite(guardian, 40)) {
+          interactableModalManager.open("guardian");
+        } else {
+          this.currentPlayer?.speak(translate("base.iam.far.away"));
+        }
+      });
+
+      const guardianLabel = new Label(this, "TRIBUTE", "grey");
+      guardianLabel.setPosition(192, 294);
+      guardianLabel.setDepth(10000000);
+      this.add.existing(guardianLabel);
+    }
+
     // Shut down the sound when the scene changes
     this.events.once("shutdown", () => {
       this.sound.getAllPlaying().forEach((sound) => {
@@ -413,7 +396,7 @@ export class KingdomScene extends BaseScene {
       });
 
     const leaderboard = await getChampionsLeaderboard<KingdomLeaderboard>({
-      farmId: Number(this.gameService.state.context.farmId),
+      farmId: Number(this.gameService.getSnapshot().context.farmId),
       date: getPreviousWeek(),
     });
 

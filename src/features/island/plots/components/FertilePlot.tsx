@@ -9,6 +9,7 @@ import { Bar, LiveProgressBar } from "components/ui/ProgressBar";
 import powerup from "assets/icons/level_up.png";
 import locust from "assets/icons/locust.webp";
 import sunshower from "assets/icons/sunshower.webp";
+import bee from "assets/icons/bee.webp";
 
 import { TimerPopover } from "../../common/TimerPopover";
 import useUiRefresher from "lib/utils/hooks/useUiRefresher";
@@ -32,7 +33,7 @@ interface Props {
   showTimers: boolean;
 }
 
-const _island = (state: MachineState) => state.context.state.island.type;
+const _island = (state: MachineState) => state.context.state.island;
 
 const FertilePlotComponent: React.FC<Props> = ({
   cropName,
@@ -54,13 +55,12 @@ const FertilePlotComponent: React.FC<Props> = ({
 
   let startAt = plantedAt ?? 0;
   if (cropName && game.bumpkin) {
-    const fertiliserName = fertiliser?.name ?? undefined;
     harvestSeconds = getCropPlotTime({
       crop: cropName,
       game,
       plot,
-      fertiliser: fertiliserName,
-    });
+      createdAt: Date.now(),
+    }).time;
     startAt = readyAt - harvestSeconds * 1000;
   }
   const timeLeft = readyAt > 0 ? (readyAt - Date.now()) / 1000 : 0;
@@ -117,7 +117,7 @@ const FertilePlotComponent: React.FC<Props> = ({
             width: `${PIXEL_SCALE * 16}px`,
           }}
         >
-          <Soil cropName={cropName} stage={stage} islandType={island} />
+          <Soil cropName={cropName} stage={stage} island={island} />
         </div>
       </div>
       {activeInsectPlague && !isProtected && (
@@ -166,6 +166,19 @@ const FertilePlotComponent: React.FC<Props> = ({
             width: `${PIXEL_SCALE * 6}px`,
             bottom: `${PIXEL_SCALE * 9}px`,
             right: `${PIXEL_SCALE * 0}px`,
+          }}
+        />
+      )}
+
+      {/* Bee Swarm */}
+      {plot.beeSwarm && (
+        <img
+          className="absolute z-10 pointer-events-none"
+          src={bee}
+          style={{
+            width: `${PIXEL_SCALE * 8}px`,
+            top: `${PIXEL_SCALE * -2}px`,
+            left: `${PIXEL_SCALE * 0}px`,
           }}
         />
       )}

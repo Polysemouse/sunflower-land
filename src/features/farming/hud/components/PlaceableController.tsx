@@ -32,12 +32,13 @@ import { RESOURCE_DIMENSIONS } from "features/game/types/resources";
 import { LANDSCAPING_DECORATIONS } from "features/game/types/decorations";
 import { useAppTranslation } from "lib/i18n/useAppTranslations";
 import { ITEM_ICONS } from "features/island/hud/components/inventory/Chest";
-import { IslandType, TemperateSeasonName } from "features/game/types/game";
+import { GameState, TemperateSeasonName } from "features/game/types/game";
 import {
   isBuildingUpgradable,
   makeUpgradableBuildingKey,
   UpgradableBuildingType,
 } from "features/game/events/landExpansion/upgradeBuilding";
+import { getCurrentBiome } from "features/island/biomes/biomes";
 
 interface Props {
   location: PlaceableLocation;
@@ -45,7 +46,8 @@ interface Props {
 
 export const PlaceableController: React.FC<Props> = ({ location }) => {
   const { gameService } = useContext(Context);
-  const child = gameService.state.children.landscaping as MachineInterpreter;
+  const child = gameService.getSnapshot().children
+    .landscaping as MachineInterpreter;
   const { t } = useAppTranslation();
   const [
     {
@@ -125,12 +127,8 @@ export const PlaceableController: React.FC<Props> = ({ location }) => {
       const nextPosition = { x: coordinates.x, y: coordinates.y - height };
       const collisionDetected = detectCollision({
         name: placeable as CollectibleName,
-        state: gameService.state.context.state,
-        position: {
-          ...nextPosition,
-          width,
-          height,
-        },
+        state: gameService.getSnapshot().context.state,
+        position: { ...nextPosition, width, height },
         location,
       });
 
@@ -141,10 +139,7 @@ export const PlaceableController: React.FC<Props> = ({ location }) => {
         location,
       });
     } else {
-      send({
-        type: "PLACE",
-        location,
-      });
+      send({ type: "PLACE", location });
     }
   };
 
@@ -152,7 +147,7 @@ export const PlaceableController: React.FC<Props> = ({ location }) => {
     send("BACK");
   };
 
-  const island = gameState.context.state.island.type;
+  const island = gameState.context.state.island;
   const season = gameState.context.state.season.season;
   const buildingLevel = isBuildingUpgradable(placeable as BuildingName)
     ? gameState.context.state[
@@ -162,7 +157,7 @@ export const PlaceableController: React.FC<Props> = ({ location }) => {
 
   const getPlaceableImage = (
     placeable: LandscapingPlaceable,
-    island: IslandType,
+    island: GameState["island"],
     season: TemperateSeasonName,
     level?: number,
   ) => {
@@ -170,7 +165,7 @@ export const PlaceableController: React.FC<Props> = ({ location }) => {
       return "";
     }
     return (
-      ITEM_ICONS(island, season, level)[placeable] ??
+      ITEM_ICONS(season, getCurrentBiome(island), level)[placeable] ??
       ITEM_DETAILS[placeable].image
     );
   };
@@ -211,7 +206,7 @@ export const PlaceableController: React.FC<Props> = ({ location }) => {
     location === "home" &&
     ((!COLLECTIBLES_DIMENSIONS[placeable as CollectibleName] &&
       !isBudName(placeable)) ||
-      placeable in LANDSCAPING_DECORATIONS() ||
+      placeable in LANDSCAPING_DECORATIONS ||
       placeable === "Magic Bean");
 
   return (
@@ -230,17 +225,13 @@ export const PlaceableController: React.FC<Props> = ({ location }) => {
 
         <div
           className="flex items-stretch space-x-2 sm:h-12 w-80 sm:w-[400px]"
-          style={{
-            height: `${PIXEL_SCALE * 17}px`,
-          }}
+          style={{ height: `${PIXEL_SCALE * 17}px` }}
         >
           <Button onClick={handleCancelPlacement}>
             <img
               src={SUNNYSIDE.icons.cancel}
               alt="cancel"
-              style={{
-                width: `${PIXEL_SCALE * 11}px`,
-              }}
+              style={{ width: `${PIXEL_SCALE * 11}px` }}
             />
           </Button>
 
@@ -251,9 +242,7 @@ export const PlaceableController: React.FC<Props> = ({ location }) => {
             <img
               src={SUNNYSIDE.icons.confirm}
               alt="confirm"
-              style={{
-                width: `${PIXEL_SCALE * 12}px`,
-              }}
+              style={{ width: `${PIXEL_SCALE * 12}px` }}
             />
           </Button>
         </div>

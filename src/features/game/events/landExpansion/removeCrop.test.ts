@@ -69,8 +69,6 @@ describe("removeCrop", () => {
               createdAt: Date.now(),
               x: 1,
               y: 1,
-              height: 1,
-              width: 1,
             },
           },
         },
@@ -97,7 +95,6 @@ describe("removeCrop", () => {
               crop: {
                 name: "Sunflower",
                 plantedAt: dateNow - 40 * 1000,
-                amount: 1,
               },
             },
           },
@@ -121,7 +118,6 @@ describe("removeCrop", () => {
               crop: {
                 name: "Sunflower",
                 plantedAt: dateNow - 40 * 1000,
-                amount: 1,
               },
             },
           },
@@ -148,7 +144,6 @@ describe("removeCrop", () => {
               crop: {
                 name: "Sunflower",
                 plantedAt: dateNow - 40 * 1000,
-                amount: 1,
               },
             },
           },
@@ -172,7 +167,6 @@ describe("removeCrop", () => {
               crop: {
                 name: "Sunflower",
                 plantedAt: dateNow - 120 * 1000,
-                amount: 1,
               },
             },
           },
@@ -195,7 +189,6 @@ describe("removeCrop", () => {
             crop: {
               name: "Sunflower",
               plantedAt: dateNow - 40 * 1000,
-              amount: 1,
             },
           },
         },

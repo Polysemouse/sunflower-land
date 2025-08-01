@@ -13,7 +13,6 @@ import { Label } from "components/ui/Label";
 import { translate } from "lib/i18n/translate";
 
 import { removeJWT } from "features/auth/actions/social";
-import { WalletContext } from "features/wallet/WalletProvider";
 import { CloseButtonPanel } from "features/game/components/CloseablePanel";
 import { useAppTranslation } from "lib/i18n/useAppTranslations";
 
@@ -37,7 +36,7 @@ import { Share } from "./general-settings/Share";
 import { PlazaSettings } from "./plaza-settings/PlazaSettingsModal";
 import { DeveloperOptions } from "./developer-options/DeveloperOptions";
 import { Discord } from "./general-settings/DiscordModal";
-import { DepositWrapper } from "features/goblins/bank/components/Deposit";
+import { DepositWrapper } from "features/goblins/bank/components/DepositGameItems";
 import { useSound } from "lib/utils/hooks/useSound";
 import { ConfirmationModal } from "components/ui/ConfirmationModal";
 import lockIcon from "assets/icons/lock.png";
@@ -53,15 +52,13 @@ import {
 import { preload } from "swr";
 import { useSelector } from "@xstate/react";
 import { MachineState } from "features/game/lib/gameMachine";
-import {
-  LockdownWidget,
-  ReferralWidget,
-} from "features/announcements/AnnouncementWidgets";
+import { ReferralWidget } from "features/announcements/AnnouncementWidgets";
 import { AirdropPlayer } from "./general-settings/AirdropPlayer";
 import { hasFeatureAccess } from "lib/flags";
 import { FaceRecognitionSettings } from "features/retreat/components/personhood/FaceRecognition";
 import { ModalContext } from "features/game/components/modal/ModalProvider";
 import { TransferAccountWrapper } from "./blockchain-settings/TransferAccount";
+import { DEV_PlayerSearch } from "./developer-options/DEV_PlayerSearch";
 
 export interface ContentComponentProps {
   onSubMenuClick: (id: SettingMenuId) => void;
@@ -82,7 +79,6 @@ const GameOptions: React.FC<ContentComponentProps> = ({
 }) => {
   const { gameService } = useContext(GameContext);
   const { authService } = useContext(Auth.Context);
-  const { walletService } = useContext(WalletContext);
 
   const { openModal } = useContext(ModalContext);
 
@@ -119,14 +115,13 @@ const GameOptions: React.FC<ContentComponentProps> = ({
   const onLogout = () => {
     removeJWT();
     authService.send("LOGOUT");
-    walletService.send("RESET");
   };
 
-  const canRefresh = !gameService.state.context.state.transaction;
-  const hideRefresh = !gameService.state.context.nftId;
+  const canRefresh = !gameService.getSnapshot().context.state.transaction;
+  const hideRefresh = !gameService.getSnapshot().context.nftId;
 
   const hasHoardingCheck = hasFeatureAccess(
-    gameService.state?.context?.state,
+    gameService.getSnapshot()?.context?.state,
     "HOARDING_CHECK",
   );
 
@@ -147,12 +142,12 @@ const GameOptions: React.FC<ContentComponentProps> = ({
               }, 2000);
               copypaste.play();
               clipboard.copy(
-                gameService.state?.context?.farmId.toString() as string,
+                gameService.getSnapshot()?.context?.farmId.toString() as string,
               );
             }}
           >
             {t("gameOptions.farmId", {
-              farmId: gameService.state?.context?.farmId,
+              farmId: gameService.getSnapshot()?.context?.farmId,
             })}
           </Label>
         </div>
@@ -288,7 +283,6 @@ export const GameOptionsModal: React.FC<GameOptionsModalProps> = ({
       >
         <SelectedComponent onSubMenuClick={setSelected} onClose={onHide} />
       </CloseButtonPanel>
-      <LockdownWidget />
       <ReferralWidget />
     </Modal>
   );
@@ -318,6 +312,7 @@ export type SettingMenuId =
 
   // Amoy Testnet Actions
   | "hoardingCheck"
+  | "playerSearch"
   // Plaza Settings
   | "pickServer"
   | "shader";
@@ -389,11 +384,7 @@ export const settingMenus: Record<SettingMenuId, SettingMenu> = {
     parent: "general",
     content: FaceRecognitionSettings,
   },
-  discord: {
-    title: "Discord",
-    parent: "general",
-    content: Discord,
-  },
+  discord: { title: "Discord", parent: "general", content: Discord },
   changeLanguage: {
     title: translate("gameOptions.generalSettings.changeLanguage"),
     parent: "general",
@@ -411,15 +402,16 @@ export const settingMenus: Record<SettingMenuId, SettingMenu> = {
   },
 
   // Developer Options
-  admin: {
-    title: `Airdrop Player`,
-    parent: "amoy",
-    content: AirdropPlayer,
-  },
+  admin: { title: `Airdrop Player`, parent: "amoy", content: AirdropPlayer },
   hoardingCheck: {
     title: "Hoarding Check (DEV)",
     parent: "amoy",
     content: (props) => <DEV_HoarderCheck {...props} />,
+  },
+  playerSearch: {
+    title: "Player Search (DEV)",
+    parent: "amoy",
+    content: (props) => <DEV_PlayerSearch {...props} />,
   },
 
   // Plaza Settings

@@ -1,4 +1,4 @@
-import React, { useContext, useState } from "react";
+import React, { useContext, useRef, useState } from "react";
 
 import { PIXEL_SCALE } from "features/game/lib/constants";
 import { Context } from "features/game/GameProvider";
@@ -34,12 +34,14 @@ import { SEASONAL_SEEDS, SeedName } from "features/game/types/seeds";
 import { SeasonalSeed } from "../plots/components/SeasonalSeed";
 import { Modal } from "components/ui/Modal";
 import { isFullMoonBerry } from "features/game/events/landExpansion/seedBought";
+import { getCurrentBiome } from "../biomes/biomes";
+import { getFruitYield } from "features/game/events/landExpansion/fruitHarvested";
 
 const HasAxes = (
   inventory: Partial<Record<InventoryItemName, Decimal>>,
   game: GameState,
 ) => {
-  const axesNeeded = getRequiredAxeAmount(inventory, game);
+  const { amount: axesNeeded } = getRequiredAxeAmount(inventory, game);
 
   // has enough axes to chop the tree
   if (axesNeeded <= 0) return true;
@@ -67,7 +69,7 @@ const compareGame = (prev: GameState, next: GameState) =>
   isCollectibleBuilt({ name: "Foreman Beaver", game: prev }) ===
   isCollectibleBuilt({ name: "Foreman Beaver", game: next });
 
-const _island = (state: MachineState) => state.context.state.island.type;
+const _island = (state: MachineState) => state.context.state.island;
 
 interface Props {
   id: string;
@@ -83,10 +85,10 @@ export const FruitPatch: React.FC<Props> = ({ id }) => {
   const [collectingWood, setCollectingWood] = useState(false);
   const [collectedFruitName, setCollectedFruitName] =
     useState<PatchFruitName>();
-  const [collectedFruitAmount, setCollectedFruitAmount] = useState<number>();
   const [collectedWoodAmount, setCollectedWoodAmount] = useState<number>();
   const [showQuickSelect, setShowQuickSelect] = useState(false);
   const [showSeasonalSeed, setShowSeasonalSeed] = useState(false);
+  const fruitHarvested = useRef(0);
   const fruitPatch = useSelector(
     gameService,
     (state) => state.context.state.fruitPatches[id],
@@ -103,7 +105,7 @@ export const FruitPatch: React.FC<Props> = ({ id }) => {
         JSON.stringify(HasFruitSeeds(next)),
   );
   const island = useSelector(gameService, _island);
-
+  const biome = getCurrentBiome(island);
   const { play: harvestAudio } = useSound("harvest");
   const { play: plantAudio } = useSound("plant");
   const { play: treeFallAudio } = useSound("tree_fall");
@@ -155,6 +157,14 @@ export const FruitPatch: React.FC<Props> = ({ id }) => {
 
   const harvestFruit = async () => {
     if (!fruitPatch) return;
+    const amount =
+      fruit?.amount ??
+      getFruitYield({
+        game,
+        name: fruit?.name as PatchFruitName,
+        fertiliser: fertiliser?.name,
+        criticalDrop: (name) => !!(fruit?.criticalHit?.[name] ?? 0),
+      }).amount;
 
     const newState = gameService.send("fruit.harvested", {
       index: id,
@@ -163,7 +173,7 @@ export const FruitPatch: React.FC<Props> = ({ id }) => {
     if (!newState.matches("hoarding")) {
       setCollectingFruit(true);
       setCollectedFruitName(fruit?.name);
-      setCollectedFruitAmount(fruit?.amount);
+      fruitHarvested.current += amount;
 
       harvestAudio();
       setPlayShakingAnimation(true);
@@ -172,7 +182,7 @@ export const FruitPatch: React.FC<Props> = ({ id }) => {
 
       setCollectingFruit(false);
       setCollectedFruitName(undefined);
-      setCollectedFruitAmount(undefined);
+      fruitHarvested.current = 0;
       setPlayShakingAnimation(false);
     }
   };
@@ -180,7 +190,10 @@ export const FruitPatch: React.FC<Props> = ({ id }) => {
   const removeTree = async () => {
     if (!hasAxes) return;
 
-    if (!isCollectibleBuilt({ name: "Foreman Beaver", game }))
+    if (
+      !isCollectibleBuilt({ name: "Foreman Beaver", game }) &&
+      !game.bumpkin?.skills["No Axe No Worries"]
+    )
       shortcutItem("Axe");
 
     const newState = gameService.send("fruitTree.removed", {
@@ -207,7 +220,7 @@ export const FruitPatch: React.FC<Props> = ({ id }) => {
       <div className="w-full h-full relative">
         {/* Fruit patch soil */}
         <img
-          src={FRUIT_PATCH_VARIANTS[island]}
+          src={FRUIT_PATCH_VARIANTS[biome]}
           className="absolute pointer-events-none"
           style={{
             width: `${PIXEL_SCALE * 30}px`,
@@ -244,7 +257,7 @@ export const FruitPatch: React.FC<Props> = ({ id }) => {
         {collectingFruit && (
           <ResourceDropAnimator
             resourceName={collectedFruitName}
-            resourceAmount={collectedFruitAmount}
+            resourceAmount={fruitHarvested.current}
           />
         )}
 
@@ -266,6 +279,7 @@ export const FruitPatch: React.FC<Props> = ({ id }) => {
         leaveFrom="opacity-100"
         leaveTo="opacity-0"
         className="flex bottom-20 left-10 absolute z-40"
+        as="div"
       >
         <QuickSelect
           options={getKeys(PATCH_FRUIT_SEEDS)

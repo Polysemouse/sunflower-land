@@ -26,9 +26,11 @@ import { Context } from "features/game/GameProvider";
 import { MachineState } from "features/game/lib/gameMachine";
 import { useSelector } from "@xstate/react";
 import { LiveProgressBar } from "components/ui/ProgressBar";
-import { getReadyAt } from "features/game/events/landExpansion/harvestGreenHouse";
+import {
+  getGreenhouseCropYieldAmount,
+  getReadyAt,
+} from "features/game/events/landExpansion/harvestGreenHouse";
 import { ITEM_DETAILS } from "features/game/types/images";
-import { GreenhousePlant } from "features/game/types/game";
 import {
   getOilUsage,
   SEED_TO_PLANT,
@@ -86,7 +88,8 @@ export const GreenhousePot: React.FC<Props> = ({ id }) => {
   const [showQuickSelect, setShowQuickSelect] = useState(false);
   const [showTimeRemaining, setShowTimeRemaining] = useState(false);
   const [showOilWarning, setShowOilWarning] = useState(false);
-  const harvested = useRef<GreenhousePlant>();
+  const harvestedName = useRef<GreenHouseCropName | GreenHouseFruitName>();
+  const harvestedAmount = useRef<number>(0);
 
   const state = useSelector(gameService, _state);
   const { inventory, greenhouse } = state;
@@ -94,7 +97,7 @@ export const GreenhousePot: React.FC<Props> = ({ id }) => {
 
   const pot = pots[id];
 
-  const oilRequired = getOilUsage({
+  const { usage: oilRequired } = getOilUsage({
     seed: selectedItem as GreenHouseCropSeedName,
     game: state,
   });
@@ -113,26 +116,19 @@ export const GreenhousePot: React.FC<Props> = ({ id }) => {
       return;
     }
 
-    if (oilRequired > gameService.state.context.state.greenhouse.oil) {
+    if (oilRequired > gameService.getSnapshot().context.state.greenhouse.oil) {
       setShowOilWarning(true);
       await new Promise((res) => setTimeout(res, 2000));
       setShowOilWarning(false);
       return;
     }
 
-    gameService.send("greenhouse.planted", {
-      id,
-      seed,
-    });
+    gameService.send("greenhouse.planted", { id, seed });
   };
 
   if (!pot?.plant) {
     return (
-      <div
-        style={{
-          width: `${PIXEL_SCALE * 28}px`,
-        }}
-      >
+      <div style={{ width: `${PIXEL_SCALE * 28}px` }}>
         {/* Harvest Animation */}
         {showAnimations && (
           <Transition
@@ -146,15 +142,14 @@ export const GreenhousePot: React.FC<Props> = ({ id }) => {
             leaveFrom="opacity-100"
             leaveTo="opacity-0"
             className="flex -top-2 left-[40%] absolute w-full z-40 pointer-events-none"
+            as="div"
           >
             <img
-              src={ITEM_DETAILS[harvested.current?.name ?? "Rice"].image}
+              src={ITEM_DETAILS[harvestedName.current ?? "Rice"].image}
               className="mr-2 img-highlight-heavy"
-              style={{
-                width: `${PIXEL_SCALE * 7}px`,
-              }}
+              style={{ width: `${PIXEL_SCALE * 7}px` }}
             />
-            <span className="text-sm yield-text">{`+${formatNumber(harvested.current?.amount ?? 0)}`}</span>
+            <span className="text-sm yield-text">{`+${formatNumber(harvestedAmount.current)}`}</span>
           </Transition>
         )}
 
@@ -169,6 +164,7 @@ export const GreenhousePot: React.FC<Props> = ({ id }) => {
           leaveFrom="opacity-100"
           leaveTo="opacity-0"
           className="flex top-[-200%] left-[50%] absolute z-40 shadow-md"
+          as="div"
         >
           <QuickSelect
             options={[
@@ -197,6 +193,7 @@ export const GreenhousePot: React.FC<Props> = ({ id }) => {
           leaveFrom="opacity-100"
           leaveTo="opacity-0"
           className="flex -top-4 left-[80%] absolute z-40 shadow-md w-auto"
+          as="div"
         >
           <Label type="danger" icon={barrelIcon} className="whitespace-nowrap">
             {`${oilRequired} ${t("greenhouse.oilRequired")}`}
@@ -206,9 +203,7 @@ export const GreenhousePot: React.FC<Props> = ({ id }) => {
         <img
           src={emptyPot}
           className="cursor-pointer hover:img-highlight"
-          style={{
-            width: `${PIXEL_SCALE * 28}px`,
-          }}
+          style={{ width: `${PIXEL_SCALE * 28}px` }}
           onClick={() => plant()}
         />
       </div>
@@ -216,11 +211,7 @@ export const GreenhousePot: React.FC<Props> = ({ id }) => {
   }
 
   const plantedAt = pot.plant.plantedAt;
-  const readyAt = getReadyAt({
-    game: gameService.state.context.state,
-    plant: pot.plant.name,
-    createdAt: plantedAt,
-  });
+  const readyAt = getReadyAt({ plant: pot.plant.name, createdAt: plantedAt });
   const harvestSeconds = (readyAt - plantedAt) / 1000;
   const secondsLeft = (readyAt - Date.now()) / 1000;
   const startAt = plantedAt ?? 0;
@@ -228,6 +219,7 @@ export const GreenhousePot: React.FC<Props> = ({ id }) => {
   const percentage = ((harvestSeconds - secondsLeft) / harvestSeconds) * 100;
 
   const harvest = async () => {
+    if (!pot.plant) return;
     if (Date.now() < readyAt) {
       setShowTimeRemaining(true);
       await new Promise((res) => setTimeout(res, 2000));
@@ -235,11 +227,17 @@ export const GreenhousePot: React.FC<Props> = ({ id }) => {
       return;
     }
 
-    harvested.current = pot.plant;
+    harvestedName.current = pot.plant.name;
+    harvestedAmount.current =
+      pot.plant.amount ??
+      getGreenhouseCropYieldAmount({
+        crop: pot.plant.name,
+        game: state,
+        createdAt: Date.now(),
+        criticalDrop: (name) => !!(pot.plant?.criticalHit?.[name] ?? 0),
+      }).amount;
 
-    gameService.send("greenhouse.harvested", {
-      id,
-    });
+    gameService.send("greenhouse.harvested", { id });
 
     if (showAnimations) {
       setShowHarvested(true);
@@ -261,17 +259,11 @@ export const GreenhousePot: React.FC<Props> = ({ id }) => {
   }
 
   return (
-    <div
-      style={{
-        width: `${PIXEL_SCALE * 28}px`,
-      }}
-    >
+    <div style={{ width: `${PIXEL_SCALE * 28}px` }}>
       <img
         src={PLANT_STAGES[pot.plant.name][stage]}
         className="cursor-pointer hover:img-highlight"
-        style={{
-          width: `${PIXEL_SCALE * 28}px`,
-        }}
+        style={{ width: `${PIXEL_SCALE * 28}px` }}
         onClick={harvest}
       />
       {showTimers && Date.now() < readyAt && (
@@ -304,6 +296,7 @@ export const GreenhousePot: React.FC<Props> = ({ id }) => {
         leaveFrom="opacity-100"
         leaveTo="opacity-0"
         className="flex top-0 left-[90%] absolute z-40 shadow-md w-[200px]"
+        as="div"
       >
         <Label
           type="info"

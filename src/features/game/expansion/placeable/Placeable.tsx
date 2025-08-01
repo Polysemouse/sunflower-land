@@ -27,16 +27,14 @@ import { isBudName } from "features/game/types/buds";
 import { PlaceableLocation } from "features/game/types/collectibles";
 import { RESOURCE_DIMENSIONS } from "features/game/types/resources";
 import { useAppTranslation } from "lib/i18n/useAppTranslations";
-import {
-  GameState,
-  IslandType,
-  TemperateSeasonName,
-} from "features/game/types/game";
+import { GameState, TemperateSeasonName } from "features/game/types/game";
 import { DIRT_PATH_VARIANTS } from "features/island/lib/alternateArt";
+import { getCurrentBiome, LandBiomeName } from "features/island/biomes/biomes";
 
 export const PLACEABLES = (state: GameState) => {
-  const island: IslandType = state.island.type;
+  const island: GameState["island"] = state.island;
   const season: TemperateSeasonName = state.season.season;
+  const biome: LandBiomeName = getCurrentBiome(island);
 
   return {
     Chicken: () => <Chicken x={0} y={0} id="123" />, // Temp id for placing, when placed action will assign a random UUID and the temp one will be overridden.
@@ -45,7 +43,7 @@ export const PLACEABLES = (state: GameState) => {
     ...READONLY_BUILDINGS(state),
     "Dirt Path": () => (
       <img
-        src={DIRT_PATH_VARIANTS[island]}
+        src={DIRT_PATH_VARIANTS[biome]}
         style={{ width: `${PIXEL_SCALE * 22}px` }}
       />
     ),
@@ -105,15 +103,16 @@ export const Placeable: React.FC<Props> = ({ location }) => {
   const nodeRef = useRef(null);
   const { gameService } = useContext(Context);
 
-  const { island, season } = gameService.state.context.state;
+  const { island, season } = gameService.getSnapshot().context.state;
 
   const [gameState] = useActor(gameService);
   const [showHint, setShowHint] = useState(true);
 
-  const child = gameService.state.children.landscaping as MachineInterpreter;
+  const child = gameService.getSnapshot().children
+    .landscaping as MachineInterpreter;
 
   const [machine, send] = useActor(child);
-  const { placeable, collisionDetected, origin, coordinates } = machine.context;
+  const { placeable, collisionDetected, origin } = machine.context;
 
   const grid = getGameGrid(gameState.context.state);
 
@@ -133,13 +132,8 @@ export const Placeable: React.FC<Props> = ({ location }) => {
 
   const detect = ({ x, y }: Coordinates) => {
     const collisionDetected = detectCollision({
-      state: gameService.state.context.state,
-      position: {
-        x,
-        y,
-        width: dimensions.width,
-        height: dimensions.height,
-      },
+      state: gameService.getSnapshot().context.state,
+      position: { x, y, width: dimensions.width, height: dimensions.height },
       location,
       name: placeable as CollectibleName,
     });
@@ -151,13 +145,15 @@ export const Placeable: React.FC<Props> = ({ location }) => {
     getInitialCoordinates(origin);
 
   useEffect(() => {
-    const [startingX, startingY] = getInitialCoordinates({ x: 0, y: 0 });
+    if (!placeable) return;
+
+    const [startingX, startingY] = getInitialCoordinates(origin);
 
     detect({
       x: Math.round(startingX / GRID_WIDTH_PX),
       y: Math.round(-startingY / GRID_WIDTH_PX),
     });
-  }, []);
+  }, [placeable]);
 
   useEffect(() => {
     setShowHint(true);
@@ -177,7 +173,7 @@ export const Placeable: React.FC<Props> = ({ location }) => {
         id="bg-overlay "
         className=" bg-black opacity-40 fixed inset-0"
         style={{
-          zIndex: 99,
+          zIndex: 1999,
           height: "200%",
           right: "-1000px",
           left: "-1000px",
@@ -186,13 +182,10 @@ export const Placeable: React.FC<Props> = ({ location }) => {
           bottom: "1000px",
         }}
       />
-      <div className="fixed left-1/2 top-1/2" style={{ zIndex: 100 }}>
+      <div className="fixed left-1/2 top-1/2" style={{ zIndex: 2000 }}>
         <Draggable
           key={`${origin?.x}-${origin?.y}`}
-          defaultPosition={{
-            x: DEFAULT_POSITION_X,
-            y: DEFAULT_POSITION_Y,
-          }}
+          defaultPosition={{ x: DEFAULT_POSITION_X, y: DEFAULT_POSITION_Y }}
           nodeRef={nodeRef}
           grid={[GRID_WIDTH_PX * scale.get(), GRID_WIDTH_PX * scale.get()]}
           scale={scale.get()}
@@ -228,9 +221,7 @@ export const Placeable: React.FC<Props> = ({ location }) => {
             {showHint && (
               <div
                 className="flex absolute pointer-events-none z-50 bg-[#000000af] p-1 rounded w-max"
-                style={{
-                  top: "-35px",
-                }}
+                style={{ top: "-35px" }}
               >
                 <img src={SUNNYSIDE.icons.drag} className="h-6 mr-2" />
                 <span className="text-white text-sm">
@@ -259,7 +250,7 @@ export const Placeable: React.FC<Props> = ({ location }) => {
                 readyAt={0}
                 x={0}
                 y={0}
-                island={island.type}
+                island={island}
                 season={season.season}
                 grid={grid}
                 game={gameState.context.state}

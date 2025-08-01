@@ -6,13 +6,38 @@ import { getBumpkinLevel } from "../lib/level";
 import { getKeys } from "./decorations";
 import { BumpkinParts } from "lib/utils/tokenUriBuilder";
 import { ITEM_DETAILS } from "./images";
+import { hasVipAccess } from "../lib/vipAccess";
 
-export type CompetitionName = "TESTING" | "FSL" | "ANIMALS";
+export type CompetitionName = "TESTING" | "FSL" | "ANIMALS" | "PEGGYS_COOKOFF";
 
 export type CompetitionProgress = {
   startedAt: number;
-  initialProgress: Partial<Record<CompetitionTaskName, number>>;
+  initialProgress?: Partial<Record<CompetitionTaskName, number>>;
+  currentProgress: Partial<Record<CompetitionTaskName, number>>;
+  points: number;
 };
+
+/*
+Fire Pit:
+Cook Fried Tofu: 1 Points
+Cook Rice Bun: 6 Points
+
+Smoothie Shack:
+Prepare Grape Juice: 5 Points
+Prepare Banana Blast: 7 Points
+
+Bakery:
+Cook Honey Cake: 10 Points
+Cook Orange Cake: 5 Points
+
+Deli:
+Cook Fermented Fish: 10 Points
+Cook Fancy Fries: 20 Points
+
+Kitchen:
+Cook Pancakes: 2 Points
+Cook Tofu Scramble: 4 Points
+*/
 
 export type CompetitionTaskName =
   | "Level up"
@@ -24,10 +49,19 @@ export type CompetitionTaskName =
   | "Sell chicken"
   | "Complete delivery"
   | "Eat pizza"
-  | "Cook honey cake"
+  | "Cook Honey Cake"
   | "Craft bear"
   | "Craft basic hair"
-  | "Harvest barley";
+  | "Harvest barley"
+  | "Cook Fried Tofu"
+  | "Cook Rice Bun"
+  | "Prepare Grape Juice"
+  | "Prepare Banana Blast"
+  | "Cook Orange Cake"
+  | "Cook Fermented Fish"
+  | "Cook Fancy Fries"
+  | "Cook Pancakes"
+  | "Cook Tofu Scramble";
 
 export const COMPETITION_TASK_PROGRESS: Record<
   CompetitionTaskName,
@@ -81,7 +115,7 @@ export const COMPETITION_TASK_PROGRESS: Record<
     return expansions;
   },
   "Level up": (game) => getBumpkinLevel(game.bumpkin.experience),
-  "Cook honey cake": (game) => game.bumpkin.activity["Honey Cake Cooked"] ?? 0,
+  "Cook Honey Cake": (game) => game.bumpkin.activity["Honey Cake Cooked"] ?? 0,
   "Craft basic hair": (game) => game.farmActivity["Basic Hair Crafted"] ?? 0,
   "Craft bear": (game) => game.farmActivity["Basic Bear Crafted"] ?? 0,
   "Eat pizza": (game) => game.bumpkin.activity["Pizza Margherita Fed"] ?? 0,
@@ -127,6 +161,22 @@ export const COMPETITION_TASK_PROGRESS: Record<
 
     return bountied - soldInFirstFewDays;
   },
+
+  "Cook Fried Tofu": (game) => game.bumpkin.activity["Fried Tofu Cooked"] ?? 0,
+  "Cook Rice Bun": (game) => game.bumpkin.activity["Rice Bun Cooked"] ?? 0,
+  "Prepare Grape Juice": (game) =>
+    game.bumpkin.activity["Grape Juice Cooked"] ?? 0,
+  "Prepare Banana Blast": (game) =>
+    game.bumpkin.activity["Banana Blast Cooked"] ?? 0,
+  "Cook Orange Cake": (game) =>
+    game.bumpkin.activity["Orange Cake Cooked"] ?? 0,
+  "Cook Fermented Fish": (game) =>
+    game.bumpkin.activity["Fermented Fish Cooked"] ?? 0,
+  "Cook Fancy Fries": (game) =>
+    game.bumpkin.activity["Fancy Fries Cooked"] ?? 0,
+  "Cook Pancakes": (game) => game.bumpkin.activity["Pancakes Cooked"] ?? 0,
+  "Cook Tofu Scramble": (game) =>
+    game.bumpkin.activity["Tofu Scramble Cooked"] ?? 0,
 };
 
 export const COMPETITION_POINTS: Record<
@@ -171,6 +221,22 @@ export const COMPETITION_POINTS: Record<
       "Harvest barley": 1,
     },
   },
+  PEGGYS_COOKOFF: {
+    startAt: new Date("2025-07-10T00:00:00Z").getTime(),
+    endAt: new Date("2025-07-20T00:00:00Z").getTime(),
+    points: {
+      "Cook Fried Tofu": 1,
+      "Cook Rice Bun": 6,
+      "Prepare Grape Juice": 5,
+      "Prepare Banana Blast": 7,
+      "Cook Orange Cake": 5,
+      "Cook Honey Cake": 10,
+      "Cook Fermented Fish": 10,
+      "Cook Fancy Fries": 20,
+      "Cook Pancakes": 2,
+      "Cook Tofu Scramble": 4,
+    },
+  },
 };
 
 export const COMPETITION_TASK_DETAILS: Record<
@@ -193,7 +259,7 @@ export const COMPETITION_TASK_DETAILS: Record<
     icon: levelupIcon,
     description: "Cook food and level up your Bumpkin.",
   },
-  "Cook honey cake": {
+  "Cook Honey Cake": {
     icon: ITEM_DETAILS["Honey Cake"].image,
     description: "Cook a Honey Cake at the Bakery",
   },
@@ -225,23 +291,45 @@ export const COMPETITION_TASK_DETAILS: Record<
     icon: ITEM_DETAILS["Barley"].image,
     description: "Harvest Barley at the Farm",
   },
+  "Cook Fried Tofu": {
+    icon: ITEM_DETAILS["Fried Tofu"].image,
+    description: "Cook a Fried Tofu at the Fire Pit",
+  },
+  "Cook Rice Bun": {
+    icon: ITEM_DETAILS["Rice Bun"].image,
+    description: "Cook a Rice Bun at the Fire Pit",
+  },
+  "Prepare Grape Juice": {
+    icon: ITEM_DETAILS["Grape Juice"].image,
+    description: "Prepare a Grape Juice at the Smoothie Shack",
+  },
+  "Prepare Banana Blast": {
+    icon: ITEM_DETAILS["Banana Blast"].image,
+    description: "Prepare a Banana Blast at the Smoothie Shack",
+  },
+  "Cook Orange Cake": {
+    icon: ITEM_DETAILS["Orange Cake"].image,
+    description: "Cook an Orange Cake at the Bakery",
+  },
+  "Cook Fermented Fish": {
+    icon: ITEM_DETAILS["Fermented Fish"].image,
+    description: "Cook a Fermented Fish at the Deli",
+  },
+  "Cook Fancy Fries": {
+    icon: ITEM_DETAILS["Fancy Fries"].image,
+    description: "Cook Fancy Fries at the Deli",
+  },
+  "Cook Pancakes": {
+    icon: ITEM_DETAILS["Pancakes"].image,
+    description: "Cook Pancakes at the Kitchen",
+  },
+  "Cook Tofu Scramble": {
+    icon: ITEM_DETAILS["Tofu Scramble"].image,
+    description: "Cook a Tofu Scramble at the Kitchen",
+  },
 };
 
-export function getCompetitionPoints({
-  game,
-  name,
-}: {
-  game: GameState;
-  name: CompetitionName;
-}): number {
-  return getKeys(COMPETITION_POINTS[name].points).reduce((total, task) => {
-    const completed = getTaskCompleted({ game, name, task });
-
-    return total + completed * (COMPETITION_POINTS[name]?.points[task] ?? 0);
-  }, 0);
-}
-
-export function getTaskCompleted({
+export const getCompetitionPointsPerTask = ({
   game,
   name,
   task,
@@ -249,14 +337,57 @@ export function getTaskCompleted({
   game: GameState;
   name: CompetitionName;
   task: CompetitionTaskName;
-}): number {
-  const { competitions } = game;
-  const previous = competitions.progress[name]?.initialProgress[task] ?? 0;
-  const count = COMPETITION_TASK_PROGRESS[task](game);
-  const completed = count - previous;
+}) => {
+  let points = COMPETITION_POINTS[name]?.points[task] ?? 0;
+  const hasVIP = hasVipAccess({ game });
+  if (hasVIP) {
+    points += 1;
+  }
+  return points;
+};
 
-  return completed;
-}
+// export function getCompetitionPoints({
+//   game,
+//   name,
+// }: {
+//   game: GameState;
+//   name: CompetitionName;
+// }): number {
+//   const hasStarted = COMPETITION_POINTS[name].startAt <= Date.now();
+
+//   if (!hasStarted) return 0;
+
+//   return getKeys(COMPETITION_POINTS[name].points).reduce((total, task) => {
+//     const completed = getTaskCompleted({ game, name, task });
+//     const points = getCompetitionPointsPerTask({ game, name, task });
+
+//     return total + completed * points;
+//   }, 0);
+// }
+
+// export function getTaskCompleted({
+//   game,
+//   name,
+//   task,
+// }: {
+//   game: GameState;
+//   name: CompetitionName;
+//   task: CompetitionTaskName;
+// }): number {
+//   const { competitions } = game;
+
+//   // If the competition has not started, no progress is possible, so return 0
+//   if (!competitions.progress[name]) return 0;
+
+//   const previous = competitions.progress[name].initialProgress?.[task] ?? 0;
+
+//   if (!previous) return 0;
+
+//   const count = COMPETITION_TASK_PROGRESS[task](game);
+//   const completed = count - previous;
+
+//   return completed;
+// }
 
 export type CompetitionPlayer = {
   id: number;

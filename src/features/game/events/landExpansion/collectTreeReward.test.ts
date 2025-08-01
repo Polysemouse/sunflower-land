@@ -26,11 +26,8 @@ describe("collectTreeReward", () => {
             0: {
               x: -2,
               y: -1,
-              height: 1,
-              width: 1,
               wood: {
                 choppedAt: dateNow,
-                amount: 1,
               },
             },
           },
@@ -53,11 +50,8 @@ describe("collectTreeReward", () => {
             0: {
               x: -2,
               y: -1,
-              height: 1,
-              width: 1,
               wood: {
                 choppedAt: dateNow,
-                amount: 1,
                 reward: {
                   coins: 100,
                 },
@@ -82,11 +76,8 @@ describe("collectTreeReward", () => {
           0: {
             x: -2,
             y: -1,
-            height: 1,
-            width: 1,
             wood: {
               choppedAt: 0,
-              amount: 1,
               reward: {
                 coins: 100,
               },

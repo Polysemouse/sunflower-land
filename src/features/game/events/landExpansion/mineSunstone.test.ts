@@ -9,24 +9,18 @@ const GAME_STATE: GameState = {
     0: {
       stone: {
         minedAt: 0,
-        amount: 2,
       },
       minesLeft: 10,
       x: 1,
       y: 1,
-      height: 1,
-      width: 1,
     },
     1: {
       stone: {
         minedAt: 0,
-        amount: 3,
       },
       minesLeft: 1,
       x: 4,
       y: 1,
-      height: 1,
-      width: 1,
     },
   },
 };
@@ -92,7 +86,7 @@ describe("mineSunstone", () => {
     const game = mineSunstone(payload);
 
     expect(game.inventory["Gold Pickaxe"]).toEqual(new Decimal(0));
-    expect(game.inventory.Sunstone).toEqual(new Decimal(2));
+    expect(game.inventory.Sunstone).toEqual(new Decimal(1));
     expect(game.sunstones["0"].minesLeft).toEqual(9);
   });
 
@@ -117,7 +111,7 @@ describe("mineSunstone", () => {
     const game = mineSunstone(payload);
 
     expect(game.inventory["Gold Pickaxe"]).toEqual(new Decimal(0));
-    expect(game.inventory.Sunstone).toEqual(new Decimal(3));
+    expect(game.inventory.Sunstone).toEqual(new Decimal(1));
     expect(game.sunstones["1"]).toBeUndefined();
     expect(game.inventory["Sunstone Rock"]).toEqual(new Decimal(1));
   });

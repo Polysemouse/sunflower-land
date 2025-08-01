@@ -10,9 +10,9 @@ import { NPC_WEARABLES, NPCName } from "lib/npcs";
 import { SpeakingText } from "features/game/components/SpeakingModal";
 import { useAppTranslation } from "lib/i18n/useAppTranslations";
 import { MinigameName } from "features/game/types/minigames";
-import { Halloween } from "./Halloween";
 import { translate } from "lib/i18n/translate";
 import { CloseButtonPanel } from "features/game/components/CloseablePanel";
+import { MineWhack } from "./MineWhack";
 
 const host = window.location.host.replace(/^www\./, "");
 const LOCAL_STORAGE_KEY = `portal-chooser-${host}-${window.location.pathname}`;
@@ -66,11 +66,11 @@ const PORTAL_OPTIONS: PortalOption[] = [
     component: FruitDash,
   },
   {
-    id: "halloween",
-    npc: "luna",
-    title: translate("portal.halloween.title"),
-    description: translate("portal.halloween.description"),
-    component: Halloween,
+    id: "mine-whack",
+    npc: "minewhack",
+    title: translate("portal.mineWhack.title"),
+    description: translate("portal.mineWhack.description"),
+    component: MineWhack,
   },
 ];
 

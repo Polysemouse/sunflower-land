@@ -4,7 +4,9 @@ import { Box } from "components/ui/Box";
 import { Button } from "components/ui/Button";
 import { Context } from "features/game/GameProvider";
 import {
+  CROP_SEEDS,
   CropName,
+  CropSeedName,
   GREENHOUSE_SEEDS,
   GreenHouseCropSeedName,
 } from "features/game/types/crops";
@@ -57,7 +59,9 @@ import { getKeys } from "features/game/types/decorations";
 import { MachineState } from "features/game/lib/gameMachine";
 import {
   BASIC_CROP_MACHINE_SEEDS,
-  CROP_EXTENSION_MOD_SEEDS,
+  CROP_EXTENSION_MOD_I_SEEDS,
+  CROP_EXTENSION_MOD_II_SEEDS,
+  CROP_EXTENSION_MOD_III_SEEDS,
 } from "features/game/events/landExpansion/supplyCropMachine";
 import { isFullMoon } from "features/game/types/calendar";
 import { hasRequiredIslandExpansion } from "features/game/lib/hasRequiredIslandExpansion";
@@ -89,7 +93,7 @@ export const SeasonalSeeds: React.FC = () => {
   const selected = SEEDS[selectedName];
   const { t } = useAppTranslation();
 
-  const price = getBuyPrice(selectedName, selected, state);
+  const { price } = getBuyPrice(selectedName, selected, state);
 
   const onSeedClick = (seedName: SeedName) => {
     setSelectedName(seedName);
@@ -234,25 +238,31 @@ export const SeasonalSeeds: React.FC = () => {
 
   const getPlantSeconds = () => {
     if (selectedName in FLOWER_SEEDS) {
-      return getFlowerTime(selectedName as FlowerSeedName, state);
+      return getFlowerTime(selectedName as FlowerSeedName, state).seconds;
     }
 
     if (yields && yields in PATCH_FRUIT)
-      return getFruitPatchTime(selectedName as PatchFruitSeedName, state);
+      return getFruitPatchTime(selectedName as PatchFruitSeedName, state)
+        .seconds;
 
     if (
       selectedName in GREENHOUSE_SEEDS ||
       selectedName in GREENHOUSE_FRUIT_SEEDS
     ) {
       const plant = SEED_TO_PLANT[selectedName as GreenHouseCropSeedName];
-      const seconds = getGreenhouseCropTime({
+      const { seconds } = getGreenhouseCropTime({
         crop: plant,
         game: state,
       });
       return seconds;
     }
 
-    return getCropPlotTime({ crop: yields as CropName, game: state });
+    const { time } = getCropPlotTime({
+      crop: yields as CropName,
+      game: state,
+      createdAt: Date.now(),
+    });
+    return time;
   };
 
   const getHarvestCount = () => {
@@ -264,15 +274,50 @@ export const SeasonalSeeds: React.FC = () => {
   };
 
   const cropMachineSeeds = getKeys(SEEDS).filter((seed) => {
-    if (!inventory["Crop Machine"] || currentSeasonSeeds.includes(seed)) {
+    // Skip if no crop machine
+    if (!inventory["Crop Machine"]) {
       return false;
     }
 
-    return (
-      BASIC_CROP_MACHINE_SEEDS.includes(seed) ||
-      (bumpkin.skills["Crop Extension Module"] &&
-        CROP_EXTENSION_MOD_SEEDS.includes(seed))
-    );
+    // Skip if seed is already in current season
+    if (currentSeasonSeeds.includes(seed)) {
+      return false;
+    }
+
+    const isCropSeed = (seed: SeedName): seed is CropSeedName =>
+      seed in CROP_SEEDS;
+
+    // Skip if seed is not a crop seed
+    if (!isCropSeed(seed)) {
+      return false;
+    }
+
+    // Check if seed is available based on machine modules
+    const hasModuleI = bumpkin.skills["Crop Extension Module I"];
+    const hasModuleII = bumpkin.skills["Crop Extension Module II"];
+    const hasModuleIII = bumpkin.skills["Crop Extension Module III"];
+
+    // If seed is a basic crop machine seed, return true
+    if (BASIC_CROP_MACHINE_SEEDS.includes(seed)) {
+      return true;
+    }
+
+    // If Player has Module I and seed is in the list, return true
+    if (hasModuleI && CROP_EXTENSION_MOD_I_SEEDS.includes(seed)) {
+      return true;
+    }
+
+    // If Player has Module II and seed is in the list, return true
+    if (hasModuleII && CROP_EXTENSION_MOD_II_SEEDS.includes(seed)) {
+      return true;
+    }
+
+    // If Player has Module III and seed is in the list, return true
+    if (hasModuleIII && CROP_EXTENSION_MOD_III_SEEDS.includes(seed)) {
+      return true;
+    }
+
+    return false;
   });
 
   const validSeeds = [

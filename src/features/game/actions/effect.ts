@@ -33,7 +33,18 @@ type EffectName =
   | "account.migrated"
   | "moderation.kicked"
   | "moderation.muted"
-  | "moderation.unmuted";
+  | "moderation.unmuted"
+  | "blessing.offered"
+  | "blessing.seeked"
+  | "nft.assigned"
+  | "marketplace.bulkListingsCancelled"
+  | "marketplace.bulkOffersCancelled"
+  | "farm.followed"
+  | "farm.unfollowed"
+  | "message.sent"
+  | "farm.cheered";
+
+type VisitEffectName = "villageProject.cheered" | "farm.cleaned";
 
 // IMPORTANT: If your effect does not go via a state in the state machine then exclude it here!
 // Create a type that excludes the events that are not individual state machine states
@@ -42,12 +53,16 @@ export type StateMachineEffectName = Exclude<
   | "withdraw.items"
   | "withdraw.wearables"
   | "withdraw.buds"
-  | "wallet.linked"
   | "account.migrated"
   | "moderation.kicked"
   | "moderation.muted"
   | "moderation.unmuted"
+  | "farm.followed"
+  | "farm.unfollowed"
+  | "message.sent"
 >;
+
+export type StateMachineVisitEffectName = VisitEffectName;
 
 export type StateMachineStateName =
   | "marketplacePurchasing"
@@ -69,11 +84,24 @@ export type StateMachineStateName =
   | "assigningUsername"
   | "changingUsername"
   | "claimingStreamReward"
-  | "claimingBlockchainBox";
+  | "claimingBlockchainBox"
+  | "offeringBlessing"
+  | "seekingBlessing"
+  | "marketplaceBulkListingsCancelling"
+  | "marketplaceBulkOffersCancelling"
+  | "linkingWallet"
+  | "assigningNFT"
+  | "cheeringFarm";
+
+export type StateMachineVisitStateName =
+  | "cheeringVillageProject"
+  | "cleaningFarm";
 
 export type StateNameWithStatus =
   | `${StateMachineStateName}Success`
-  | `${StateMachineStateName}Failed`;
+  | `${StateMachineStateName}Failed`
+  | `${StateMachineVisitStateName}Success`
+  | `${StateMachineVisitStateName}Failed`;
 
 // StateName is the feature.progressive_tense_verb. This will be used as the gameMachine state.
 export const STATE_MACHINE_EFFECTS: Record<
@@ -100,7 +128,23 @@ export const STATE_MACHINE_EFFECTS: Record<
   "username.changed": "changingUsername",
   "streamReward.claimed": "claimingStreamReward",
   "blockchainBox.claimed": "claimingBlockchainBox",
+  "blessing.offered": "offeringBlessing",
+  "blessing.seeked": "seekingBlessing",
+  "marketplace.bulkListingsCancelled": "marketplaceBulkListingsCancelling",
+  "marketplace.bulkOffersCancelled": "marketplaceBulkOffersCancelling",
+  "wallet.linked": "linkingWallet",
+  "nft.assigned": "assigningNFT",
+  "farm.cheered": "cheeringFarm",
 };
+
+export const STATE_MACHINE_VISIT_EFFECTS: Record<
+  StateMachineVisitEffectName,
+  StateMachineVisitStateName
+> = {
+  "villageProject.cheered": "cheeringVillageProject",
+  "farm.cleaned": "cleaningFarm",
+};
+
 export interface Effect {
   type: EffectName;
   [key: string]: any;

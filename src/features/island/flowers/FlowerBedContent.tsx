@@ -173,7 +173,7 @@ export const FlowerBedContent: React.FC<Props> = ({ id, onClose }) => {
                   type="info"
                   className="whitespace-nowrap"
                 >
-                  {secondsToString(getFlowerTime(seed, state), {
+                  {secondsToString(getFlowerTime(seed, state).seconds, {
                     length: "medium",
                   })}
                 </Label>
@@ -183,9 +183,7 @@ export const FlowerBedContent: React.FC<Props> = ({ id, onClose }) => {
         )}
         <div
           className="relative mx-auto w-full mt-2"
-          style={{
-            width: `${PIXEL_SCALE * 80}px`,
-          }}
+          style={{ width: `${PIXEL_SCALE * 80}px` }}
         >
           <img src={flowerBed} className="w-full" />
 
@@ -278,10 +276,11 @@ export const FlowerBedContent: React.FC<Props> = ({ id, onClose }) => {
                   {hasSeedRequirements ? (
                     <Label type={"info"} icon={SUNNYSIDE.icons.stopwatch}>
                       {secondsToString(
-                        getFlowerTime(seed, gameService.state.context.state),
-                        {
-                          length: "medium",
-                        },
+                        getFlowerTime(
+                          seed,
+                          gameService.getSnapshot().context.state,
+                        ).seconds,
+                        { length: "medium" },
                       )}
                     </Label>
                   ) : (

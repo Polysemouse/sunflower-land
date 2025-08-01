@@ -21,9 +21,8 @@ import { SeasonalMutants } from "../components/SeasonalMutants";
 import { useAppTranslation } from "lib/i18n/useAppTranslations";
 import { SeasonalStore } from "features/world/ui/megastore/SeasonalStore";
 import { ITEM_DETAILS } from "features/game/types/images";
-import { FlowerBountiesModal } from "features/world/ui/flowerShop/FlowerBounties";
-import { BertObsession } from "features/world/ui/npcs/Bert";
 import { GameState } from "features/game/types/game";
+import { MegaBountyBoardContent } from "features/world/ui/flowerShop/MegaBountyBoard";
 
 const CHAPTER_GRAPHICS: Record<SeasonName, string> = {
   "Solar Flare": "?",
@@ -36,6 +35,7 @@ const CHAPTER_GRAPHICS: Record<SeasonName, string> = {
   "Bull Run": SUNNYSIDE.announcement.bullRunSeason,
   "Winds of Change": SUNNYSIDE.announcement.windsOfChangeSeason,
   "Great Bloom": "",
+  "Better Together": "",
 };
 
 const CHORES_DELIVERIES_START_DATE: Record<SeasonName, string> = {
@@ -49,6 +49,7 @@ const CHORES_DELIVERIES_START_DATE: Record<SeasonName, string> = {
   "Bull Run": "Nov 11th",
   "Winds of Change": "Feb 10th",
   "Great Bloom": "May 5th",
+  "Better Together": "Aug 4th",
 };
 
 interface Props {
@@ -69,7 +70,6 @@ export const Season: React.FC<Props> = ({
   farmId,
 }) => {
   const { t } = useAppTranslation();
-  const { bertObsession: currentObsession, npcs, inventory, wardrobe } = state;
   return (
     <div
       className={classNames(
@@ -152,18 +152,7 @@ export const Season: React.FC<Props> = ({
           />
         </div>
       </InnerPanel>
-      <InnerPanel className="mb-1">
-        <FlowerBountiesModal readonly state={state} />
-      </InnerPanel>
-      <InnerPanel className="mb-1">
-        <BertObsession
-          readonly
-          currentObsession={currentObsession}
-          npcs={npcs}
-          inventory={inventory}
-          wardrobe={wardrobe}
-        />
-      </InnerPanel>
+      <MegaBountyBoardContent readonly />
       <InnerPanel className="mb-1">
         <SeasonalStore readonly state={state} />
       </InnerPanel>

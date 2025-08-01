@@ -2,7 +2,11 @@ import React, { useContext } from "react";
 
 import { Button } from "components/ui/Button";
 import { Label } from "components/ui/Label";
-import { Offer } from "features/game/types/marketplace";
+import {
+  getResourceTax,
+  MARKETPLACE_TAX,
+  Offer,
+} from "features/game/types/marketplace";
 import { useAppTranslation } from "lib/i18n/useAppTranslations";
 
 import { useSelector } from "@xstate/react";
@@ -29,7 +33,6 @@ import { calculateTradePoints } from "features/game/events/landExpansion/addTrad
 import { InventoryItemName } from "features/game/types/game";
 import { hasReputation, Reputation } from "features/game/lib/reputation";
 import { RequiredReputation } from "features/island/hud/components/reputation/Reputation";
-import { hasFeatureAccess } from "lib/flags";
 import { isFaceVerified } from "features/retreat/components/personhood/lib/faceRecognition";
 import { FaceRecognition } from "features/retreat/components/personhood/FaceRecognition";
 import { isTradeResource } from "features/game/actions/tradeLimits";
@@ -53,7 +56,6 @@ const AcceptOfferContent: React.FC<{
 
   const { gameService } = useContext(Context);
   const state = useSelector(gameService, _state);
-  const { bertObsession, npcs } = state;
   const hasReputation = useSelector(gameService, _hasReputation);
 
   useOnMachineTransition<ContextType, BlockchainEvent>(
@@ -113,20 +115,8 @@ const AcceptOfferContent: React.FC<{
           points: offer.type === "instant" ? 1 : 3,
         }).multipliedPoints;
 
-  // Check if the item is a bert obsession and whether the bert obsession is completed
-  const isItemBertObsession = bertObsession?.name === display.name;
-  const obsessionCompletedAt = npcs?.bert?.questCompletedAt;
-  const isBertsObesessionCompleted =
-    !!obsessionCompletedAt &&
-    bertObsession &&
-    obsessionCompletedAt >= bertObsession.startDate &&
-    obsessionCompletedAt <= bertObsession.endDate;
-
-  const isResource = display.type === "resources";
-
   if (
     isTradeResource(display.name as InventoryItemName) &&
-    hasFeatureAccess(state, "FACE_RECOGNITION") &&
     !isFaceVerified({ game: state })
   ) {
     return (
@@ -139,6 +129,14 @@ const AcceptOfferContent: React.FC<{
         <FaceRecognition />
       </>
     );
+  }
+
+  let tax = offer.sfl * MARKETPLACE_TAX;
+  if (
+    display.type === "collectibles" &&
+    isTradeResource(display.name as InventoryItemName)
+  ) {
+    tax = offer.sfl * getResourceTax({ game: state });
   }
 
   return (
@@ -155,6 +153,7 @@ const AcceptOfferContent: React.FC<{
         <TradeableSummary
           display={display}
           sfl={offer.sfl}
+          tax={tax}
           quantity={offer.quantity}
           estTradePoints={estTradePoints}
         />
@@ -171,11 +170,7 @@ const AcceptOfferContent: React.FC<{
           {t("cancel")}
         </Button>
         <Button
-          disabled={
-            !hasReputation ||
-            !hasItem ||
-            (isItemBertObsession && isBertsObesessionCompleted && !isResource)
-          }
+          disabled={!hasReputation || !hasItem}
           onClick={() => confirm()}
           className="relative"
         >

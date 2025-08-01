@@ -5,8 +5,6 @@ import { useActor, useSelector } from "@xstate/react";
 import { useInterval } from "lib/utils/hooks/useInterval";
 import * as AuthProvider from "features/auth/lib/Provider";
 
-import mailIcon from "assets/icons/letter.png";
-
 import { Loading } from "features/auth/components";
 import { ErrorCode } from "lib/errors";
 import { ErrorMessage } from "features/auth/ErrorMessage";
@@ -26,7 +24,7 @@ import { Panel } from "components/ui/Panel";
 import { Hoarding } from "../components/Hoarding";
 import { Swarming } from "../components/Swarming";
 import { Cooldown } from "../components/Cooldown";
-import { Route, Routes, useNavigate } from "react-router";
+import { Route, Routes } from "react-router";
 import { Land } from "./Land";
 import { VisitingHud } from "features/island/hud/VisitingHud";
 import { VisitLandExpansionForm } from "./components/VisitLandExpansionForm";
@@ -68,7 +66,10 @@ import { Transaction } from "features/island/hud/Transaction";
 import { Gems } from "./components/Gems";
 import { HenHouseInside } from "features/henHouse/HenHouseInside";
 import { BarnInside } from "features/barn/BarnInside";
-import { STATE_MACHINE_EFFECTS } from "../actions/effect";
+import {
+  STATE_MACHINE_EFFECTS,
+  STATE_MACHINE_VISIT_EFFECTS,
+} from "../actions/effect";
 import { TranslationKeys } from "lib/i18n/dictionaries/types";
 import { GameState } from "../types/game";
 import { Ocean } from "features/world/ui/Ocean";
@@ -81,16 +82,18 @@ import { DailyReset } from "../components/DailyReset";
 import { RoninWelcomePack } from "./components/RoninWelcomePack";
 import { ClaimRoninAirdrop } from "./components/onChainAirdrops/ClaimRoninAirdrop";
 import { FLOWERTeaserContent } from "../components/FLOWERTeaser";
-import { pixelGrayBorderStyle } from "../lib/style";
 import { RoninJinClaim } from "./components/RoninJinClaim";
 import {
   EFFECT_SUCCESS_COMPONENTS,
   EffectSuccess,
-} from "./components/EffectSuccess";
+} from "./components/effects/EffectSuccess";
 import { LoveCharm } from "./components/LoveCharm";
 import { ClaimReferralRewards } from "./components/ClaimReferralRewards";
 import { SoftBan } from "features/retreat/components/personhood/SoftBan";
 import { RewardBox } from "features/rewardBoxes/RewardBox";
+import { ClaimBlessingReward } from "features/loveIsland/blessings/ClaimBlessing";
+import { Cheering } from "./components/Cheering";
+import { SystemMessageWidget } from "features/announcements/SystemMessageWidget";
 
 function camelToDotCase(str: string): string {
   return str.replace(/([a-z])([A-Z])/g, "$1.$2").toLowerCase() as string;
@@ -99,7 +102,10 @@ function camelToDotCase(str: string): string {
 const land = SUNNYSIDE.land.island;
 
 const getModalStatesForEffects = () =>
-  Object.values(STATE_MACHINE_EFFECTS).reduce(
+  Object.values({
+    ...STATE_MACHINE_EFFECTS,
+    ...STATE_MACHINE_VISIT_EFFECTS,
+  }).reduce(
     (states, stateName) => ({
       ...states,
       [stateName]: true,
@@ -109,7 +115,7 @@ const getModalStatesForEffects = () =>
     {} as Record<BlockchainState["value"], boolean>,
   );
 
-export const AUTO_SAVE_INTERVAL = 1000 * 30; // autosave every 30 seconds
+export const AUTO_SAVE_INTERVAL = 1000 * 60; // autosave every 60 seconds
 const SHOW_MODAL: Record<StateValues, boolean> = {
   ...getModalStatesForEffects(),
   // Hide these modals
@@ -125,6 +131,8 @@ const SHOW_MODAL: Record<StateValues, boolean> = {
   claimingStreamReward: false,
   claimingStreamRewardSuccess: false,
   claimingStreamRewardFailed: false,
+  airdroppingRewardFailed: false,
+
   // Every new state should be added below here
   gems: true,
   communityCoin: true,
@@ -173,6 +181,8 @@ const SHOW_MODAL: Record<StateValues, boolean> = {
   roninAirdrop: true,
   jinAirdrop: true,
   investigating: true,
+  blessing: true,
+  cheers: true,
 };
 
 // State change selectors
@@ -198,7 +208,6 @@ const isRefreshing = (state: MachineState) => state.matches("refreshing");
 const isBuyingSFL = (state: MachineState) => state.matches("buyingSFL");
 const isError = (state: MachineState) => state.matches("error");
 const isHoarding = (state: MachineState) => state.matches("hoarding");
-const isVisiting = (state: MachineState) => state.matches("visiting");
 const isSwarming = (state: MachineState) => state.matches("swarming");
 const isPurchasing = (state: MachineState) =>
   state.matches("purchasing") || state.matches("buyingBlockBucks");
@@ -230,23 +239,27 @@ const isPromoing = (state: MachineState) => state.matches("promo");
 const isBlacklisted = (state: MachineState) => state.matches("blacklisted");
 const hasAirdrop = (state: MachineState) => state.matches("airdrop");
 const isInvestigating = (state: MachineState) => state.matches("investigating");
+const isBlessing = (state: MachineState) => state.matches("blessing");
 const hasFulfilledOffers = (state: MachineState) => state.matches("offers");
 const hasVipNotification = (state: MachineState) => state.matches("vip");
 const isPlaying = (state: MachineState) => state.matches("playing");
 const somethingArrived = (state: MachineState) =>
   state.matches("somethingArrived");
 const isEffectPending = (state: MachineState) =>
-  Object.values(STATE_MACHINE_EFFECTS).some((stateName) =>
-    state.matches(stateName),
-  );
+  Object.values({
+    ...STATE_MACHINE_EFFECTS,
+    ...STATE_MACHINE_VISIT_EFFECTS,
+  }).some((stateName) => state.matches(stateName));
 const isEffectSuccess = (state: MachineState) =>
-  Object.values(STATE_MACHINE_EFFECTS).some((stateName) =>
-    state.matches(`${stateName}Success`),
-  );
+  Object.values({
+    ...STATE_MACHINE_EFFECTS,
+    ...STATE_MACHINE_VISIT_EFFECTS,
+  }).some((stateName) => state.matches(`${stateName}Success`));
 const isEffectFailed = (state: MachineState) =>
-  Object.values(STATE_MACHINE_EFFECTS).some((stateName) =>
-    state.matches(`${stateName}Failed`),
-  );
+  Object.values({
+    ...STATE_MACHINE_EFFECTS,
+    ...STATE_MACHINE_VISIT_EFFECTS,
+  }).some((stateName) => state.matches(`${stateName}Failed`));
 const hasMarketplaceSales = (state: MachineState) =>
   state.matches("marketplaceSale");
 const isCompetition = (state: MachineState) => state.matches("competition");
@@ -256,15 +269,15 @@ const isRoninWelcomePack = (state: MachineState) =>
   state.matches("roninWelcomePack");
 const isRoninAirdrop = (state: MachineState) => state.matches("roninAirdrop");
 const isJinAirdrop = (state: MachineState) => state.matches("jinAirdrop");
-const GameContent: React.FC = () => {
+const isCheers = (state: MachineState) => state.matches("cheers");
+
+const GameContent: React.FC<{ isVisiting: boolean }> = ({ isVisiting }) => {
   const { gameService } = useContext(Context);
   useSound("desert", true);
 
-  const visiting = useSelector(gameService, isVisiting);
   const landToVisitNotFound = useSelector(gameService, isLandToVisitNotFound);
   const { t } = useAppTranslation();
   const [gameState] = useActor(gameService);
-  const navigate = useNavigate();
 
   const PATH_ACCESS: Partial<Record<string, (game: GameState) => boolean>> = {
     GreenHouse: (game) =>
@@ -315,12 +328,13 @@ const GameContent: React.FC = () => {
     );
   }
 
-  if (visiting) {
+  if (isVisiting) {
     return (
       <>
         <div className="absolute z-10 w-full h-full">
           <Routes>
             <Route path="/:id" element={<Land />} />
+            <Route path="/:id/home" element={<Home />} />
           </Routes>
         </div>
       </>
@@ -358,10 +372,10 @@ const GameContent: React.FC = () => {
   );
 };
 
-export const Game: React.FC = () => {
+export const Game: React.FC<{ isVisiting: boolean }> = ({ isVisiting }) => {
   return (
     <GameWrapper>
-      <GameContent />
+      <GameContent isVisiting={isVisiting} />
     </GameWrapper>
   );
 };
@@ -369,7 +383,9 @@ export const Game: React.FC = () => {
 const _showPWAInstallPrompt = (state: AuthMachineState) =>
   state.context.showPWAInstallPrompt;
 
-export const GameWrapper: React.FC = ({ children }) => {
+export const GameWrapper: React.FC<React.PropsWithChildren> = ({
+  children,
+}) => {
   const { authService } = useContext(AuthProvider.Context);
   const { gameService } = useContext(Context);
   const pwaInstallRef = usePWAInstall();
@@ -428,6 +444,8 @@ export const GameWrapper: React.FC = ({ children }) => {
   const jinAirdrop = useSelector(gameService, isJinAirdrop);
   const showPWAInstallPrompt = useSelector(authService, _showPWAInstallPrompt);
   const investigating = useSelector(gameService, isInvestigating);
+  const blessing = useSelector(gameService, isBlessing);
+  const cheers = useSelector(gameService, isCheers);
 
   const { t } = useAppTranslation();
   useInterval(() => {
@@ -530,19 +548,7 @@ export const GameWrapper: React.FC = ({ children }) => {
             <Panel>
               <Loading />
             </Panel>
-            <div
-              className={classNames(
-                `w-full justify-center items-center flex  text-xs p-1 pr-4 mt-1 relative`,
-              )}
-              style={{
-                background: "#c0cbdc",
-                color: "#181425",
-                ...pixelGrayBorderStyle,
-              }}
-            >
-              <img src={mailIcon} className="w-8 mr-2" />
-              <p className="text-xs flex-1">{t("news.flowerSoon")}</p>
-            </div>
+            <SystemMessageWidget />
           </Modal>
         </Ocean>
       </>
@@ -638,6 +644,12 @@ export const GameWrapper: React.FC = ({ children }) => {
             {jinAirdrop && <RoninJinClaim />}
             {showReferralRewards && <ClaimReferralRewards />}
             {investigating && <SoftBan />}
+            {blessing && (
+              <ClaimBlessingReward
+                onClose={() => gameService.send("ACKNOWLEDGE")}
+              />
+            )}
+            {cheers && <Cheering />}
           </Panel>
         </Modal>
 
@@ -648,7 +660,7 @@ export const GameWrapper: React.FC = ({ children }) => {
         {competition && (
           <Modal show onHide={() => gameService.send("ACKNOWLEDGE")}>
             <CompetitionModal
-              competitionName="ANIMALS"
+              competitionName="PEGGYS_COOKOFF"
               onClose={() => gameService.send("ACKNOWLEDGE")}
             />
           </Modal>

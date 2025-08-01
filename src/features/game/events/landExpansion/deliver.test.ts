@@ -12,6 +12,7 @@ import {
 } from "features/game/lib/constants";
 import { getSeasonalTicket } from "features/game/types/seasons";
 import { TEST_BUMPKIN } from "features/game/lib/bumpkinData";
+import { getBumpkinHoliday } from "lib/utils/getSeasonWeek";
 
 const FIRST_DAY_OF_SEASON = new Date("2024-11-01T16:00:00Z").getTime();
 const MID_SEASON = new Date("2023-08-15T15:00:00Z").getTime();
@@ -382,46 +383,6 @@ describe("deliver", () => {
     });
 
     expect(state.coins).toEqual(384);
-  });
-
-  it("rewards michellin star boost", () => {
-    const state = deliverOrder({
-      state: {
-        ...TEST_FARM,
-        bumpkin: {
-          ...INITIAL_BUMPKIN,
-          skills: {
-            "Michelin Stars": 1,
-          },
-        },
-        inventory: {
-          "Sunflower Cake": new Decimal(1),
-        },
-        delivery: {
-          ...TEST_FARM.delivery,
-          fulfilledCount: 0,
-          orders: [
-            {
-              id: "123",
-              createdAt: 0,
-              readyAt: MID_SEASON,
-              from: "betty",
-              items: {
-                "Sunflower Cake": 1,
-              },
-              reward: { coins: 320 },
-            },
-          ],
-        },
-      },
-      action: {
-        id: "123",
-        type: "order.delivered",
-      },
-      createdAt: MID_SEASON,
-    });
-
-    expect(state.coins).toEqual(336);
   });
 
   it("rewards 25% SFL when Crown is Active", () => {
@@ -1840,22 +1801,28 @@ describe("deliver", () => {
   });
 
   it("gives 100% more seasonal ticket on completed deliveries if double delivery is active", () => {
-    const mockDate = new Date("2025-02-11").getTime();
+    const now = new Date().getTime();
+    if (getBumpkinHoliday({ now }).holiday) {
+      return;
+    }
+
     const state = deliverOrder({
       state: {
-        ...TEST_FARM,
+        ...INITIAL_FARM,
         coins: 6400,
-        inventory: { Timeshard: new Decimal(0) },
+        inventory: {
+          "Amber Fossil": new Decimal(0),
+        },
         delivery: {
-          ...TEST_FARM.delivery,
+          ...INITIAL_FARM.delivery,
           orders: [
             {
               id: "123",
               createdAt: 0,
-              readyAt: mockDate,
+              readyAt: now,
               from: "tywin",
               items: { coins: 6400 },
-              reward: { items: { Timeshard: 5 } },
+              reward: {},
             },
           ],
         },
@@ -1863,12 +1830,12 @@ describe("deliver", () => {
           dates: [
             {
               name: "doubleDelivery",
-              date: new Date(mockDate).toISOString().substring(0, 10),
+              date: new Date(now).toISOString().substring(0, 10),
             },
           ],
           doubleDelivery: {
-            triggeredAt: mockDate,
-            startedAt: mockDate,
+            triggeredAt: now,
+            startedAt: now,
           },
         },
       },
@@ -1876,10 +1843,10 @@ describe("deliver", () => {
         id: "123",
         type: "order.delivered",
       },
-      createdAt: mockDate,
+      createdAt: now,
     });
 
-    expect(state.inventory["Timeshard"]).toEqual(new Decimal(10));
+    expect(state.inventory[getSeasonalTicket()]).toEqual(new Decimal(10));
   });
 
   it("can deliver items from the wardrobe", () => {
@@ -1921,288 +1888,38 @@ describe("deliver", () => {
 
     expect(state.wardrobe["Basic Hair"]).toEqual(0);
     expect(state.inventory[getSeasonalTicket()]).toEqual(new Decimal(4));
-  }); // To delete after Love Rush event
-  describe("Love Rush", () => {
-    const eventTime = new Date("2025-04-07T15:00:00Z").getTime();
-    beforeEach(() => {
-      jest.useFakeTimers();
-      jest.setSystemTime(eventTime);
-    });
+  });
 
-    afterEach(() => {
-      jest.useRealTimers();
-    });
-
-    it("gives players love charms for completing deliveries", () => {
-      const state = deliverOrder({
-        state: {
-          ...INITIAL_FARM,
-          inventory: {
-            "Love Charm": new Decimal(0),
-            Sunflower: new Decimal(1),
-          },
-          delivery: {
-            ...INITIAL_FARM.delivery,
-            orders: [
-              {
-                id: "123",
-                createdAt: eventTime,
-                readyAt: eventTime,
-                from: "grimbly",
-                items: { Sunflower: 1 },
-                reward: {},
+  it("tracks the bumpkin activity", () => {
+    const state = deliverOrder({
+      state: {
+        ...TEST_FARM,
+        coins: 9600,
+        delivery: {
+          ...TEST_FARM.delivery,
+          orders: [
+            {
+              id: "123",
+              createdAt: 0,
+              readyAt: Date.now(),
+              from: "tywin",
+              items: {
+                coins: 9600,
               },
-            ],
-          },
-        },
-        action: {
-          id: "123",
-          type: "order.delivered",
-        },
-        createdAt: eventTime,
-      });
-
-      expect(state.inventory["Love Charm"]).toEqual(new Decimal(2));
-    });
-
-    it("gives players 2x love charms for completing deliveries if they have VIP access", () => {
-      const state = deliverOrder({
-        state: {
-          ...INITIAL_FARM,
-          inventory: {
-            "Love Charm": new Decimal(0),
-            Sunflower: new Decimal(1),
-            "Lifetime Farmer Banner": new Decimal(1),
-          },
-          delivery: {
-            ...INITIAL_FARM.delivery,
-            orders: [
-              {
-                id: "123",
-                createdAt: eventTime,
-                readyAt: eventTime,
-                from: "grimbly",
-                items: { Sunflower: 1 },
-                reward: {},
-              },
-            ],
-          },
-        },
-        action: {
-          id: "123",
-          type: "order.delivered",
-        },
-        createdAt: eventTime,
-      });
-
-      expect(state.inventory["Love Charm"]).toEqual(new Decimal(6));
-    });
-
-    it("gives players more love charms for completing deliveries if they have a streak", () => {
-      const state = deliverOrder({
-        state: {
-          ...INITIAL_FARM,
-          inventory: {
-            "Love Charm": new Decimal(0),
-            Sunflower: new Decimal(1),
-          },
-          npcs: {
-            grimbly: {
-              deliveryCount: 1,
-              streaks: {
-                streak: 1,
-                lastClaimedAt: eventTime - 24 * 60 * 60 * 1000,
-              },
+              reward: {},
             },
-          },
-          delivery: {
-            ...INITIAL_FARM.delivery,
-            orders: [
-              {
-                id: "123",
-                createdAt: eventTime,
-                readyAt: eventTime,
-                from: "grimbly",
-                items: { Sunflower: 1 },
-                reward: {},
-              },
-            ],
-          },
+          ],
         },
-        action: {
-          id: "123",
-          type: "order.delivered",
+        bumpkin: {
+          ...INITIAL_BUMPKIN,
         },
-        createdAt: eventTime,
-      });
-
-      expect(state.inventory["Love Charm"]).toEqual(new Decimal(3));
+      },
+      action: {
+        id: "123",
+        type: "order.delivered",
+      },
     });
-    it("gives players the max love charms if they have a streak of more than 5", () => {
-      const state = deliverOrder({
-        state: {
-          ...INITIAL_FARM,
-          inventory: {
-            "Love Charm": new Decimal(0),
-            Sunflower: new Decimal(1),
-          },
-          npcs: {
-            grimbly: {
-              deliveryCount: 1,
-              streaks: {
-                streak: 6,
-                lastClaimedAt: eventTime - 24 * 60 * 60 * 1000,
-              },
-            },
-          },
-          delivery: {
-            ...INITIAL_FARM.delivery,
-            orders: [
-              {
-                id: "123",
-                createdAt: eventTime,
-                readyAt: eventTime,
-                from: "grimbly",
-                items: { Sunflower: 1 },
-                reward: {},
-              },
-            ],
-          },
-        },
-        action: {
-          id: "123",
-          type: "order.delivered",
-        },
-        createdAt: eventTime,
-      });
 
-      expect(state.inventory["Love Charm"]).toEqual(new Decimal(8));
-    });
-    it("resets the streak if the player has not delivered for more than 2 days", () => {
-      const state = deliverOrder({
-        state: {
-          ...INITIAL_FARM,
-          inventory: {
-            "Love Charm": new Decimal(0),
-            Sunflower: new Decimal(1),
-          },
-          npcs: {
-            grimbly: {
-              deliveryCount: 1,
-              streaks: {
-                streak: 6,
-                lastClaimedAt: eventTime - 48 * 60 * 60 * 1000,
-              },
-            },
-          },
-          delivery: {
-            ...INITIAL_FARM.delivery,
-            orders: [
-              {
-                id: "123",
-                createdAt: eventTime,
-                readyAt: eventTime,
-                from: "grimbly",
-                items: { Sunflower: 1 },
-                reward: {},
-              },
-            ],
-          },
-        },
-        action: {
-          id: "123",
-          type: "order.delivered",
-        },
-        createdAt: eventTime,
-      });
-
-      expect(state.inventory["Love Charm"]).toEqual(new Decimal(2));
-      expect(state.npcs?.grimbly?.streaks?.streak).toEqual(1);
-    });
-    it("does not give love charms after the event ends", () => {
-      jest.useFakeTimers();
-      jest.setSystemTime(new Date("2025-05-05T15:00:00Z").getTime());
-      const state = deliverOrder({
-        state: {
-          ...INITIAL_FARM,
-          inventory: {
-            "Love Charm": new Decimal(0),
-            Sunflower: new Decimal(1),
-          },
-          npcs: {
-            grimbly: {
-              deliveryCount: 1,
-              streaks: {
-                streak: 6,
-                lastClaimedAt: eventTime,
-              },
-            },
-          },
-          delivery: {
-            ...INITIAL_FARM.delivery,
-            orders: [
-              {
-                id: "123",
-                createdAt: eventTime,
-                readyAt: eventTime,
-                from: "grimbly",
-                items: { Sunflower: 1 },
-                reward: {},
-              },
-            ],
-          },
-        },
-        action: {
-          id: "123",
-          type: "order.delivered",
-        },
-        createdAt: eventTime,
-      });
-
-      expect(state.inventory["Love Charm"]).toEqual(new Decimal(0));
-    });
-    it("doesn't break the streak if the player delivers on consecutive days", () => {
-      jest.useFakeTimers();
-      jest.setSystemTime(new Date("2025-05-01T20:00:00Z").getTime()); // More than 24 hours apart but still consecutive days
-      const state = deliverOrder({
-        state: {
-          ...INITIAL_FARM,
-          inventory: {
-            "Love Charm": new Decimal(0),
-            Sunflower: new Decimal(1),
-          },
-          npcs: {
-            grimbly: {
-              deliveryCount: 1,
-              streaks: {
-                streak: 6,
-                lastClaimedAt: new Date("2025-04-30T15:00:00Z").getTime(),
-              },
-            },
-          },
-          delivery: {
-            ...INITIAL_FARM.delivery,
-            orders: [
-              {
-                id: "123",
-                createdAt: eventTime,
-                readyAt: eventTime,
-                from: "grimbly",
-                items: { Sunflower: 1 },
-                reward: {},
-              },
-            ],
-          },
-        },
-        action: {
-          id: "123",
-          type: "order.delivered",
-        },
-        createdAt: new Date("2025-05-01T20:00:00Z").getTime(),
-      });
-
-      expect(state.inventory["Love Charm"]).toEqual(new Decimal(8));
-      expect(state.npcs?.grimbly?.streaks?.streak).toEqual(7);
-    });
+    expect(state.bumpkin.activity["Coins Spent"]).toBe(9600);
   });
 });

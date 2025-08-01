@@ -9,8 +9,12 @@ import bee from "assets/icons/bee.webp";
 import chefHat from "assets/icons/chef_hat.png";
 import { ITEM_DETAILS } from "./images";
 import { translate } from "lib/i18n/translate";
-import { hasSeasonEnded } from "./seasons";
+import { getCurrentSeason, getSeasonalTicket, SEASONS } from "./seasons";
 import { SEASON_ICONS } from "features/island/buildings/components/building/market/SeasonalSeeds";
+import { isCollectible } from "../events/landExpansion/garbageSold";
+import { TranslationKeys } from "lib/i18n/dictionaries/types";
+import { CHAPTER_TICKET_BOOST_ITEMS } from "../events/landExpansion/completeNPCChore";
+import { getObjectEntries } from "../expansion/lib/utils";
 
 export const SPECIAL_ITEM_LABELS: Partial<Record<BumpkinItem, BuffLabel[]>> = {
   Halo: [
@@ -87,7 +91,7 @@ export const BUMPKIN_ITEM_BUFF_LABELS: Partial<
       shortDescription: translate("bumpkinItemBuff.eggplant.onesie.boost"),
       labelType: "success",
       boostTypeIcon: powerup,
-      boostedItemIcon: CROP_LIFECYCLE.basic.Eggplant.crop,
+      boostedItemIcon: CROP_LIFECYCLE["Basic Biome"].Eggplant.crop,
     },
   ],
   "Golden Spatula": [
@@ -110,7 +114,7 @@ export const BUMPKIN_ITEM_BUFF_LABELS: Partial<
       shortDescription: translate("bumpkinItemBuff.parsnip.boost"),
       labelType: "success",
       boostTypeIcon: powerup,
-      boostedItemIcon: CROP_LIFECYCLE.basic.Parsnip.crop,
+      boostedItemIcon: CROP_LIFECYCLE["Basic Biome"].Parsnip.crop,
     },
   ],
   "Sunflower Shield": [
@@ -118,7 +122,7 @@ export const BUMPKIN_ITEM_BUFF_LABELS: Partial<
       shortDescription: translate("bumpkinItemBuff.sunflower.shield.boost"),
       labelType: "vibrant",
       boostTypeIcon: lightning,
-      boostedItemIcon: CROP_LIFECYCLE.basic.Sunflower.crop,
+      boostedItemIcon: CROP_LIFECYCLE["Basic Biome"].Sunflower.crop,
     },
   ],
   "Sunflower Amulet": [
@@ -126,7 +130,7 @@ export const BUMPKIN_ITEM_BUFF_LABELS: Partial<
       shortDescription: translate("bumpkinItemBuff.sunflower.amulet.boost"),
       labelType: "success",
       boostTypeIcon: powerup,
-      boostedItemIcon: CROP_LIFECYCLE.basic.Sunflower.crop,
+      boostedItemIcon: CROP_LIFECYCLE["Basic Biome"].Sunflower.crop,
     },
   ],
   "Carrot Amulet": [
@@ -134,7 +138,7 @@ export const BUMPKIN_ITEM_BUFF_LABELS: Partial<
       shortDescription: translate("bumpkinItemBuff.carrot.amulet.boost"),
       labelType: "info",
       boostTypeIcon: SUNNYSIDE.icons.stopwatch,
-      boostedItemIcon: CROP_LIFECYCLE.basic.Carrot.crop,
+      boostedItemIcon: CROP_LIFECYCLE["Basic Biome"].Carrot.crop,
     },
   ],
   "Beetroot Amulet": [
@@ -142,7 +146,7 @@ export const BUMPKIN_ITEM_BUFF_LABELS: Partial<
       shortDescription: translate("bumpkinItemBuff.beetroot.amulet.boost"),
       labelType: "success",
       boostTypeIcon: powerup,
-      boostedItemIcon: CROP_LIFECYCLE.basic.Beetroot.crop,
+      boostedItemIcon: CROP_LIFECYCLE["Basic Biome"].Beetroot.crop,
     },
   ],
   "Green Amulet": [
@@ -179,7 +183,7 @@ export const BUMPKIN_ITEM_BUFF_LABELS: Partial<
       shortDescription: translate("bumpkinItemBuff.corn.onesie.boost"),
       labelType: "success",
       boostTypeIcon: powerup,
-      boostedItemIcon: CROP_LIFECYCLE.basic.Corn.crop,
+      boostedItemIcon: CROP_LIFECYCLE["Basic Biome"].Corn.crop,
     },
   ],
   "Sunflower Rod": [
@@ -748,42 +752,6 @@ export const BUMPKIN_ITEM_BUFF_LABELS: Partial<
       boostedItemIcon: chefHat,
     },
   ],
-  "Cowboy Hat": [
-    ...(hasSeasonEnded("Bull Run")
-      ? []
-      : ([
-          {
-            shortDescription: translate("description.cowboyHat.boost"),
-            labelType: "success",
-            boostTypeIcon: powerup,
-            boostedItemIcon: ITEM_DETAILS.Horseshoe.image,
-          },
-        ] as BuffLabel[])),
-  ],
-  "Cowboy Shirt": [
-    ...(hasSeasonEnded("Bull Run")
-      ? []
-      : ([
-          {
-            shortDescription: translate("description.cowboyShirt.boost"),
-            labelType: "success",
-            boostTypeIcon: powerup,
-            boostedItemIcon: ITEM_DETAILS.Horseshoe.image,
-          },
-        ] as BuffLabel[])),
-  ],
-  "Cowboy Trouser": [
-    ...(hasSeasonEnded("Bull Run")
-      ? []
-      : ([
-          {
-            shortDescription: translate("description.cowboyTrouser.boost"),
-            labelType: "success",
-            boostTypeIcon: powerup,
-            boostedItemIcon: ITEM_DETAILS.Horseshoe.image,
-          },
-        ] as BuffLabel[])),
-  ],
   "Milk Apron": [
     {
       shortDescription: translate("description.milkApron.boost"),
@@ -848,24 +816,12 @@ export const BUMPKIN_ITEM_BUFF_LABELS: Partial<
       boostedItemIcon: SUNNYSIDE.resource.wool,
     },
   ],
-  "Acorn Hat": [
-    ...(hasSeasonEnded("Winds of Change")
-      ? []
-      : ([
-          {
-            shortDescription: translate("description.bonusTimeshard.boost"),
-            labelType: "success",
-            boostTypeIcon: powerup,
-            boostedItemIcon: ITEM_DETAILS.Timeshard.image,
-          },
-        ] as BuffLabel[])),
-  ],
   "Ladybug Suit": [
     {
       shortDescription: translate("description.ladybugSuit.boost"),
       labelType: "success",
       boostTypeIcon: SUNNYSIDE.ui.coins,
-      boostedItemIcon: CROP_LIFECYCLE.basic.Onion.crop,
+      boostedItemIcon: CROP_LIFECYCLE["Basic Biome"].Onion.crop,
     },
   ],
   "Crab Hat": [
@@ -881,7 +837,7 @@ export const BUMPKIN_ITEM_BUFF_LABELS: Partial<
       shortDescription: translate("description.sickle.boost"),
       labelType: "success",
       boostTypeIcon: powerup,
-      boostedItemIcon: CROP_LIFECYCLE.basic.Wheat.crop,
+      boostedItemIcon: CROP_LIFECYCLE["Basic Biome"].Wheat.crop,
     },
   ],
   "Sol & Luna": [
@@ -924,5 +880,109 @@ export const BUMPKIN_ITEM_BUFF_LABELS: Partial<
       boostedItemIcon: SEASON_ICONS["winter"],
     },
   ],
+  "Oracle Syringe": [
+    {
+      shortDescription: translate("description.oracleSyringe.boost"),
+      labelType: "success",
+      boostTypeIcon: lightning,
+    },
+  ],
+  "Obsidian Necklace": [
+    {
+      shortDescription: translate("description.obsidianNecklace.boost"),
+      labelType: "info",
+      boostTypeIcon: SUNNYSIDE.icons.stopwatch,
+    },
+  ],
+  "Medic Apron": [
+    {
+      shortDescription: translate("description.medicApron.boost"),
+      labelType: "vibrant",
+      boostTypeIcon: lightning,
+    },
+  ],
+  "Broccoli Hat": [
+    {
+      shortDescription: translate("description.broccoliHat.boost"),
+      labelType: "info",
+      boostTypeIcon: SUNNYSIDE.icons.stopwatch,
+    },
+  ],
+  "Red Pepper Onesie": [
+    {
+      shortDescription: translate("description.redPepperOnesie.boost"),
+      labelType: "info",
+      boostTypeIcon: SUNNYSIDE.icons.stopwatch,
+    },
+  ],
+  "Turd Topper": [
+    {
+      shortDescription: translate("description.turdTopper.boost"),
+      labelType: "success",
+      boostTypeIcon: powerup,
+      boostedItemIcon: ITEM_DETAILS["Rapid Root"].image,
+    },
+  ],
+  "Lava Swimwear": [
+    {
+      shortDescription: translate("bumpkinItemBuff.lava.swimwear.boost"),
+      labelType: "vibrant",
+      boostTypeIcon: lightning,
+      boostedItemIcon: ITEM_DETAILS["Lava Pit"].image,
+    },
+  ],
+  "Oil Gallon": [
+    {
+      shortDescription: translate("bumpkinItemBuff.oil.gallon.boost"),
+      labelType: "success",
+      boostTypeIcon: powerup,
+      boostedItemIcon: ITEM_DETAILS["Oil"].image,
+    },
+  ],
+  "Architect Ruler": [
+    {
+      shortDescription: translate("description.architectRuler.boost"),
+      labelType: "info",
+      boostTypeIcon: SUNNYSIDE.icons.stopwatch,
+      boostedItemIcon: ITEM_DETAILS["Crafting Box"].image,
+    },
+  ],
+  "Pickaxe Shark": [
+    {
+      shortDescription: translate("description.pickaxeShark.boost.1"),
+      labelType: "info",
+      boostTypeIcon: SUNNYSIDE.icons.stopwatch,
+      boostedItemIcon: ITEM_DETAILS["Gold"].image,
+    },
+    {
+      shortDescription: translate("description.pickaxeShark.boost.2"),
+      labelType: "info",
+      boostTypeIcon: SUNNYSIDE.icons.stopwatch,
+      boostedItemIcon: ITEM_DETAILS["Gold"].image,
+    },
+  ],
   ...SPECIAL_ITEM_LABELS,
+  ...Object.fromEntries(
+    getObjectEntries(CHAPTER_TICKET_BOOST_ITEMS)
+      .filter(([chapter]) => getCurrentSeason() === chapter)
+      .flatMap(([chapter, items]) => {
+        const ticket = getSeasonalTicket(new Date(SEASONS[chapter].startDate));
+        const translationKey =
+          `description.bonus${ticket.replace(/\s+/g, "")}.boost` as TranslationKeys;
+
+        return Object.values(items)
+          .filter((item) => !isCollectible(item))
+          .map((item) => [
+            item,
+            [
+              {
+                shortDescription: translate(translationKey),
+                labelType: "success",
+                boostTypeIcon: powerup,
+                boostedItemIcon: ITEM_DETAILS[ticket].image,
+              },
+            ],
+          ]);
+      }),
+  ),
 };

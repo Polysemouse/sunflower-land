@@ -18,22 +18,16 @@ const GAME_STATE: GameState = {
     0: {
       wood: {
         choppedAt: 0,
-        amount: 3,
       },
       x: 1,
       y: 1,
-      height: 2,
-      width: 2,
     },
     1: {
       wood: {
         choppedAt: 0,
-        amount: 4,
       },
       x: 4,
       y: 1,
-      height: 2,
-      width: 2,
     },
   },
 };
@@ -97,12 +91,8 @@ describe("chop", () => {
 
     const game = chop(payload);
 
-    const { trees } = game;
-    const tree = (trees as Record<number, Tree>)[0];
-
     expect(game.inventory.Axe).toEqual(new Decimal(0));
-    expect(game.inventory.Wood).toEqual(new Decimal(3));
-    expect(tree.wood.amount).toBeGreaterThan(0);
+    expect(game.inventory.Wood).toEqual(new Decimal(1));
   });
 
   it("chops multiple trees", () => {
@@ -129,14 +119,8 @@ describe("chop", () => {
       } as LandExpansionChopAction,
     });
 
-    const { trees } = game;
-    const tree1 = (trees as Record<number, Tree>)[0];
-    const tree2 = (trees as Record<number, Tree>)[1];
-
     expect(game.inventory.Axe).toEqual(new Decimal(1));
-    expect(game.inventory.Wood).toEqual(new Decimal(7));
-    expect(tree1.wood.amount).toBeGreaterThan(0);
-    expect(tree2.wood.amount).toBeGreaterThan(0);
+    expect(game.inventory.Wood).toEqual(new Decimal(2));
   });
 
   it("chops trees with the logger Skill", () => {
@@ -158,11 +142,7 @@ describe("chop", () => {
       } as LandExpansionChopAction,
     });
 
-    const { trees } = game;
-    const tree = (trees as Record<number, Tree>)[0];
-
-    expect(game.inventory.Wood).toEqual(new Decimal(3));
-    expect(tree.wood.amount).toBeGreaterThan(0);
+    expect(game.inventory.Wood).toEqual(new Decimal(1));
     expect(game.inventory.Axe).toEqual(new Decimal(0.5));
   });
   it("tree replenishes normally", () => {
@@ -284,11 +264,7 @@ describe("chop", () => {
       } as LandExpansionChopAction,
     });
 
-    const { trees } = game;
-    const tree = (trees as Record<number, Tree>)[0];
-
-    expect(game.inventory.Wood).toEqual(new Decimal(3));
-    expect(tree.wood.amount).toBeGreaterThan(0);
+    expect(game.inventory.Wood).toEqual(new Decimal(1.2));
   });
 
   describe("BumpkinActivity", () => {
@@ -353,49 +329,10 @@ describe("chop", () => {
 });
 
 describe("getChoppedAt", () => {
-  it("applies a 20% speed boost with Tree Hugger skill", () => {
-    const now = Date.now();
-
-    const time = getChoppedAt({
-      game: TEST_FARM,
-      skills: { "Tree Hugger": 1 },
-      createdAt: now,
-    });
-
-    const treeTimeWithBoost = TREE_RECOVERY_TIME * 1000 * 0.2;
-    expect(time).toEqual(now - treeTimeWithBoost);
-  });
-
-  it("tree replenishes faster when Apprentice Beaver is placed and the bumpkins has the skill Tree Hugger", () => {
-    const now = Date.now();
-
-    const time = getChoppedAt({
-      game: {
-        ...TEST_FARM,
-
-        collectibles: {
-          "Apprentice Beaver": [
-            {
-              id: "123",
-              createdAt: now,
-              coordinates: { x: 1, y: 1 },
-              readyAt: now - 5 * 60 * 1000,
-            },
-          ],
-        },
-      },
-      skills: { "Tree Hugger": 1 },
-      createdAt: now,
-    });
-
-    const buff = TREE_RECOVERY_TIME * 0.5 * 1.2 * 1000;
-    expect(time).toEqual(now - buff);
-  });
-
   it("tree replenishes faster with time warp", () => {
     const now = Date.now();
 
-    const time = getChoppedAt({
+    const { time } = getChoppedAt({
       game: {
         ...TEST_FARM,
         collectibles: {
@@ -409,7 +346,6 @@ describe("getChoppedAt", () => {
           ],
         },
       },
-      skills: {},
       createdAt: now,
     });
 
@@ -419,7 +355,7 @@ describe("getChoppedAt", () => {
   it("tree replenishes faster with Super Totem", () => {
     const now = Date.now();
 
-    const time = getChoppedAt({
+    const { time } = getChoppedAt({
       game: {
         ...TEST_FARM,
         collectibles: {
@@ -433,7 +369,6 @@ describe("getChoppedAt", () => {
           ],
         },
       },
-      skills: {},
       createdAt: now,
     });
 
@@ -443,7 +378,7 @@ describe("getChoppedAt", () => {
   it(" doesn't stack Super Totem and Time warp totem", () => {
     const now = Date.now();
 
-    const time = getChoppedAt({
+    const { time } = getChoppedAt({
       game: {
         ...TEST_FARM,
         collectibles: {
@@ -465,7 +400,6 @@ describe("getChoppedAt", () => {
           ],
         },
       },
-      skills: {},
       createdAt: now,
     });
 
@@ -477,7 +411,7 @@ describe("getChoppedAt", () => {
   it("does not go negative with all buffs", () => {
     const now = Date.now();
 
-    const time = getChoppedAt({
+    const { time } = getChoppedAt({
       game: {
         ...TEST_FARM,
         collectibles: {
@@ -507,11 +441,10 @@ describe("getChoppedAt", () => {
           ],
         },
       },
-      skills: { "Tree Hugger": 1 },
       createdAt: now,
     });
 
-    const buff = TREE_RECOVERY_TIME - TREE_RECOVERY_TIME * 0.5 * 0.5 * 0.8;
+    const buff = TREE_RECOVERY_TIME - TREE_RECOVERY_TIME * 0.5 * 0.5;
 
     expect(time).toEqual(now - buff * 1000);
   });
@@ -519,7 +452,7 @@ describe("getChoppedAt", () => {
   it("applies a Timber Hourglass boost of -25% recovery time for 4 hours", () => {
     const now = Date.now();
 
-    const createdAt = getChoppedAt({
+    const { time: createdAt } = getChoppedAt({
       game: {
         ...TEST_FARM,
         collectibles: {
@@ -533,7 +466,6 @@ describe("getChoppedAt", () => {
           ],
         },
       },
-      skills: {},
       createdAt: now,
     });
 
@@ -547,7 +479,7 @@ describe("getChoppedAt", () => {
     const now = Date.now();
     const fiveHoursAgo = now - 5 * 60 * 60 * 1000;
 
-    const createdAt = getChoppedAt({
+    const { time: createdAt } = getChoppedAt({
       game: {
         ...TEST_FARM,
         collectibles: {
@@ -561,7 +493,6 @@ describe("getChoppedAt", () => {
           ],
         },
       },
-      skills: {},
       createdAt: now,
     });
 
@@ -571,9 +502,14 @@ describe("getChoppedAt", () => {
   it("applies a 10% recovery time boost with Tree Charge skill", () => {
     const now = Date.now();
 
-    const time = getChoppedAt({
-      game: TEST_FARM,
-      skills: { "Tree Charge": 1 },
+    const { time } = getChoppedAt({
+      game: {
+        ...TEST_FARM,
+        bumpkin: {
+          ...INITIAL_BUMPKIN,
+          skills: { "Tree Charge": 1 },
+        },
+      },
       createdAt: now,
     });
 

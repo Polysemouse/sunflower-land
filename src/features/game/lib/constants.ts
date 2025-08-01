@@ -42,29 +42,8 @@ export const CHICKEN_COOP_MULTIPLIER = 1.5;
 
 export const POPOVER_TIME_MS = 1000;
 
-export const makeMegaStoreAvailableDates = () => {
-  const now = new Date();
-
-  const currentMonthStart = new Date(now);
-  const nextMonthStart = new Date(now);
-
-  // Set "from" as the first day of the current month
-  currentMonthStart.setUTCDate(1);
-  currentMonthStart.setUTCHours(0, 0, 0, 0);
-
-  // Set "to" as the first day of the next month
-  nextMonthStart.setUTCMonth(nextMonthStart.getMonth() + 1);
-  nextMonthStart.setUTCDate(1);
-  nextMonthStart.setUTCHours(0, 0, 0, 0);
-
-  return {
-    from: currentMonthStart.getTime(),
-    to: nextMonthStart.getTime(),
-  };
-};
-
 export function isBuildingReady(building: PlacedItem[]) {
-  return building.some((b) => b.readyAt <= Date.now());
+  return building.some((b) => b.readyAt <= Date.now() && b.coordinates);
 }
 
 export type StockableName = Extract<
@@ -236,26 +215,20 @@ export const INVENTORY_LIMIT = (
 export const INITIAL_GOLD_MINES: GameState["gold"] = {
   0: {
     stone: {
-      amount: 0.1,
       minedAt: 0,
     },
     x: -4,
     y: 2,
-    height: 1,
-    width: 1,
   },
 };
 
 export const INITIAL_EXPANSION_IRON: GameState["iron"] = {
   0: {
     stone: {
-      amount: 0.1,
       minedAt: 0,
     },
     x: 2,
     y: -1,
-    height: 1,
-    width: 1,
   },
 };
 
@@ -290,60 +263,47 @@ export const INITIAL_RESOURCES: Pick<
     1: {
       createdAt: Date.now(),
       wood: {
-        amount: 2,
         choppedAt: 0,
+        criticalHit: { Native: 1 },
       },
       x: -3,
       y: 3,
-      height: 2,
-      width: 2,
     },
     2: {
       createdAt: Date.now(),
       wood: {
-        amount: 1,
         choppedAt: 0,
       },
       x: 5,
       y: 0,
-      height: 2,
-      width: 2,
     },
 
     3: {
       createdAt: Date.now(),
       wood: {
-        amount: 2,
+        criticalHit: { Native: 1 },
         choppedAt: 0,
       },
       x: 7,
       y: 9,
-      height: 2,
-      width: 2,
     },
   },
   stones: {
     1: {
       createdAt: Date.now(),
       stone: {
-        amount: 1,
         minedAt: 0,
       },
       x: 7,
       y: 5,
-      height: 1,
-      width: 1,
     },
     2: {
       createdAt: Date.now(),
       stone: {
-        amount: 1,
         minedAt: 0,
       },
       x: 3,
       y: 6,
-      height: 1,
-      width: 1,
     },
   },
   fruitPatches: {},
@@ -434,7 +394,7 @@ export const INITIAL_FARM: GameState = {
   previousInventory: {},
   wardrobe: {},
   previousWardrobe: {},
-  bank: { taxFreeSFL: 0 },
+  bank: { taxFreeSFL: 0, withdrawnAmount: 0 },
 
   calendar: {
     dates: [],
@@ -567,9 +527,7 @@ export const INITIAL_FARM: GameState = {
 
   fishing: {
     dailyAttempts: {},
-    weather: "Sunny",
     wharf: {},
-    beach: {},
   },
   mailbox: {
     read: [],
@@ -578,6 +536,10 @@ export const INITIAL_FARM: GameState = {
   stock: INITIAL_STOCK(),
   chickens: {},
   trades: {},
+  floatingIsland: {
+    schedule: [],
+    shop: {},
+  },
   buildings: {
     "Town Center": [
       {
@@ -708,6 +670,27 @@ export const INITIAL_FARM: GameState = {
     status: "ok",
     isSocialVerified: false,
   },
+  blessing: {
+    offering: {
+      item: "Potato",
+      prize: "Potato",
+    },
+  },
+  aoe: {},
+  socialFarming: {
+    points: 0,
+    villageProjects: {},
+    cheersGiven: {
+      date: "",
+      farms: [],
+      projects: {},
+    },
+    cheers: {
+      cheersUsed: 0,
+      freeCheersClaimedAt: 0,
+    },
+    dailyCollections: {},
+  },
 };
 
 export const TEST_FARM: GameState = {
@@ -751,6 +734,10 @@ export const TEST_FARM: GameState = {
   },
   shipments: {},
   gems: {},
+  floatingIsland: {
+    schedule: [],
+    shop: {},
+  },
   flower: {},
   competitions: {
     progress: {},
@@ -761,7 +748,7 @@ export const TEST_FARM: GameState = {
     choresSkipped: 0,
   },
   stock: INITIAL_STOCK(),
-  bank: { taxFreeSFL: 0 },
+  bank: { taxFreeSFL: 0, withdrawnAmount: 0 },
   chickens: {},
   experiments: [],
   farmActivity: {},
@@ -770,9 +757,7 @@ export const TEST_FARM: GameState = {
   island: { type: "basic" },
   farmHands: { bumpkins: {} },
   fishing: {
-    weather: "Sunny",
     wharf: {},
-    beach: {},
     dailyAttempts: {},
   },
   greenhouse: {
@@ -790,70 +775,52 @@ export const TEST_FARM: GameState = {
   crops: {
     1: {
       createdAt: Date.now(),
-      crop: { name: "Sunflower", plantedAt: 0, amount: 1 },
+      crop: { name: "Sunflower", plantedAt: 0 },
       x: -2,
       y: 0,
-      height: 1,
-      width: 1,
     },
     2: {
       createdAt: Date.now(),
-      crop: { name: "Sunflower", plantedAt: 0, amount: 1 },
+      crop: { name: "Sunflower", plantedAt: 0 },
       x: -1,
       y: 0,
-      height: 1,
-      width: 1,
     },
     3: {
       createdAt: Date.now(),
-      crop: { name: "Sunflower", plantedAt: 0, amount: 1 },
+      crop: { name: "Sunflower", plantedAt: 0 },
       x: 0,
       y: 0,
-      height: 1,
-      width: 1,
     },
     4: {
       createdAt: Date.now(),
       x: -2,
       y: -1,
-      height: 1,
-      width: 1,
     },
     5: {
       createdAt: Date.now(),
       x: -1,
       y: -1,
-      height: 1,
-      width: 1,
     },
     6: {
       createdAt: Date.now(),
       x: 0,
       y: -1,
-      height: 1,
-      width: 1,
     },
 
     7: {
       createdAt: Date.now(),
       x: -2,
       y: 1,
-      height: 1,
-      width: 1,
     },
     8: {
       createdAt: Date.now(),
       x: -1,
       y: 1,
-      height: 1,
-      width: 1,
     },
     9: {
       createdAt: Date.now(),
       x: 0,
       y: 1,
-      height: 1,
-      width: 1,
     },
   },
   mysteryPrizes: {},
@@ -941,23 +908,17 @@ export const TEST_FARM: GameState = {
   stones: {
     1: {
       stone: {
-        amount: 1,
         minedAt: 0,
       },
       x: 7,
       y: 3,
-      height: 1,
-      width: 1,
     },
     2: {
       stone: {
-        amount: 1,
         minedAt: 0,
       },
       x: 3,
       y: 6,
-      height: 1,
-      width: 1,
     },
   },
   crimstones: {},
@@ -965,34 +926,27 @@ export const TEST_FARM: GameState = {
   trees: {
     1: {
       wood: {
-        amount: 2,
+        criticalHit: { Native: 1 },
         choppedAt: 0,
       },
       x: -3,
       y: 3,
-      height: 2,
-      width: 2,
     },
     2: {
       wood: {
-        amount: 1,
         choppedAt: 0,
       },
       x: 7,
       y: 0,
-      height: 2,
-      width: 2,
     },
 
     3: {
       wood: {
-        amount: 2,
+        criticalHit: { Native: 1 },
         choppedAt: 0,
       },
       x: 7,
       y: 9,
-      height: 2,
-      width: 2,
     },
   },
   sunstones: {},
@@ -1036,6 +990,27 @@ export const TEST_FARM: GameState = {
     isSocialVerified: false,
     status: "ok",
   },
+  blessing: {
+    offering: {
+      item: "Potato",
+      prize: "Potato",
+    },
+  },
+  aoe: {},
+  socialFarming: {
+    points: 0,
+    villageProjects: {},
+    cheersGiven: {
+      date: "",
+      farms: [],
+      projects: {},
+    },
+    cheers: {
+      cheersUsed: 0,
+      freeCheersClaimedAt: 0,
+    },
+    dailyCollections: {},
+  },
 };
 
 export const INITIAL_EQUIPPED: Equipped = {
@@ -1068,7 +1043,7 @@ export const EMPTY: GameState = {
   calendar: {
     dates: [],
   },
-  bank: { taxFreeSFL: 0 },
+  bank: { taxFreeSFL: 0, withdrawnAmount: 0 },
   experiments: [],
   minigames: {
     games: {},
@@ -1082,6 +1057,10 @@ export const EMPTY: GameState = {
   choreBoard: INITIAL_CHORE_BOARD,
 
   stock: {},
+  floatingIsland: {
+    schedule: [],
+    shop: {},
+  },
   stockExpiry: {},
   wardrobe: {},
   previousWardrobe: {},
@@ -1139,9 +1118,7 @@ export const EMPTY: GameState = {
   farmActivity: {},
   milestones: {},
   fishing: {
-    weather: "Sunny",
     wharf: {},
-    beach: {},
     dailyAttempts: {},
   },
   mushrooms: {
@@ -1181,5 +1158,26 @@ export const EMPTY: GameState = {
   ban: {
     isSocialVerified: false,
     status: "ok",
+  },
+  blessing: {
+    offering: {
+      item: "Potato",
+      prize: "Potato",
+    },
+  },
+  aoe: {},
+  socialFarming: {
+    points: 0,
+    villageProjects: {},
+    cheersGiven: {
+      date: "",
+      farms: [],
+      projects: {},
+    },
+    cheers: {
+      cheersUsed: 0,
+      freeCheersClaimedAt: 0,
+    },
+    dailyCollections: {},
   },
 };

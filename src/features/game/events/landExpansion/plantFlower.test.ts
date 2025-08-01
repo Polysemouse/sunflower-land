@@ -18,11 +18,8 @@ const GAME_STATE: GameState = {
         createdAt: Date.now(),
         x: -2,
         y: 0,
-        height: 1,
-        width: 3,
         flower: {
           name: "Red Pansy",
-          amount: 1,
           plantedAt: 123,
         },
       },
@@ -30,8 +27,6 @@ const GAME_STATE: GameState = {
         createdAt: Date.now(),
         x: -2,
         y: 0,
-        height: 1,
-        width: 3,
       },
     },
   },
@@ -149,7 +144,6 @@ describe("plantFlower", () => {
       expect.objectContaining({
         flower: expect.objectContaining({
           plantedAt: expect.any(Number),
-          amount: 1,
         }),
       }),
     );
@@ -379,7 +373,7 @@ describe("getFlowerTime", () => {
     const seed = "Bloom Seed";
     const growSeconds = FLOWER_SEEDS[seed].plantSeconds;
 
-    const time = getFlowerTime(seed, {
+    const { seconds: time } = getFlowerTime(seed, {
       ...GAME_STATE,
       collectibles: {
         "Blossom Hourglass": [
@@ -402,7 +396,7 @@ describe("getFlowerTime", () => {
     const seed = "Bloom Seed";
     const growSeconds = FLOWER_SEEDS[seed].plantSeconds;
 
-    const time = getFlowerTime(seed, {
+    const { seconds: time } = getFlowerTime(seed, {
       ...GAME_STATE,
       collectibles: {
         "Blossom Hourglass": [
@@ -423,7 +417,7 @@ describe("getFlowerTime", () => {
     const seed = "Bloom Seed";
     const growSeconds = FLOWER_SEEDS[seed].plantSeconds;
 
-    const time = getFlowerTime(seed, {
+    const { seconds: time } = getFlowerTime(seed, {
       ...GAME_STATE,
       bumpkin: {
         ...TEST_BUMPKIN,
@@ -438,7 +432,7 @@ describe("getFlowerTime", () => {
     const seed = "Bloom Seed";
     const growSeconds = FLOWER_SEEDS[seed].plantSeconds;
 
-    const time = getFlowerTime(seed, {
+    const { seconds: time } = getFlowerTime(seed, {
       ...GAME_STATE,
       bumpkin: {
         ...TEST_BUMPKIN,

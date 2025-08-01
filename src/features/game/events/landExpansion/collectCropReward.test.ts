@@ -29,8 +29,6 @@ describe("collectCropReward", () => {
               createdAt: Date.now(),
               x: -2,
               y: -1,
-              height: 1,
-              width: 1,
             },
           },
         },
@@ -53,12 +51,9 @@ describe("collectCropReward", () => {
               createdAt: Date.now(),
               x: -2,
               y: -1,
-              height: 1,
-              width: 1,
               crop: {
                 name: "Sunflower",
                 plantedAt: dateNow,
-                amount: 1,
               },
             },
           },
@@ -82,12 +77,9 @@ describe("collectCropReward", () => {
               createdAt: Date.now(),
               x: -2,
               y: -1,
-              height: 1,
-              width: 1,
               crop: {
                 name: "Sunflower",
                 plantedAt: dateNow,
-                amount: 1,
                 reward: {
                   items: [
                     {
@@ -118,12 +110,9 @@ describe("collectCropReward", () => {
             createdAt: Date.now(),
             x: -2,
             y: -1,
-            height: 1,
-            width: 1,
             crop: {
               name: "Sunflower",
               plantedAt: 0,
-              amount: 1,
               reward: {
                 items: [
                   {
@@ -158,12 +147,9 @@ describe("collectCropReward", () => {
             createdAt: Date.now(),
             x: -2,
             y: -1,
-            height: 1,
-            width: 1,
             crop: {
               name: "Sunflower",
               plantedAt: 0,
-              amount: 1,
               reward: {
                 items: [
                   {
@@ -198,12 +184,9 @@ describe("collectCropReward", () => {
             createdAt: Date.now(),
             x: -2,
             y: -1,
-            height: 1,
-            width: 1,
             crop: {
               name: "Sunflower",
               plantedAt: 0,
-              amount: 1,
               reward: {
                 coins: 100,
               },

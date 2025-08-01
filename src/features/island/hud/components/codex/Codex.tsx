@@ -22,7 +22,6 @@ import classNames from "classnames";
 import { useSound } from "lib/utils/hooks/useSound";
 
 import factions from "assets/icons/factions.webp";
-import trophyIcon from "assets/icons/trophy.png";
 import chores from "assets/icons/chores.webp";
 import { Leaderboards } from "features/game/expansion/components/leaderboard/actions/cache";
 import { fetchLeaderboardData } from "features/game/expansion/components/leaderboard/actions/leaderboard";
@@ -33,11 +32,9 @@ import {
   getSeasonalTicket,
 } from "features/game/types/seasons";
 import { ChoreBoard } from "./pages/ChoreBoard";
-import { FLOWERS } from "features/game/types/flowers";
 import { CompetitionDetails } from "features/competition/CompetitionBoard";
 import { MachineState } from "features/game/lib/gameMachine";
-import { LoveRushWidget } from "features/announcements/AnnouncementWidgets";
-import { hasFeatureAccess } from "lib/flags";
+import { ANIMALS } from "features/game/types/animals";
 
 interface Props {
   show: boolean;
@@ -46,28 +43,15 @@ interface Props {
 
 const _farmId = (state: MachineState) => state.context.farmId;
 const _state = (state: MachineState) => state.context.state;
-const _isLoveRushEventActive = (state: MachineState) =>
-  hasFeatureAccess(state.context.state, "LOVE_RUSH");
 
 export const Codex: React.FC<Props> = ({ show, onHide }) => {
   const { t } = useAppTranslation();
   const { gameService } = useContext(Context);
   const farmId = useSelector(gameService, _farmId);
   const state = useSelector(gameService, _state);
-  const isLoveRushEventActive = useSelector(
-    gameService,
-    _isLoveRushEventActive,
-  );
-  const {
-    username,
-    bertObsession,
-    npcs,
-    bounties,
-    delivery,
-    choreBoard,
-    kingdomChores,
-    faction,
-  } = state;
+
+  const { username, bounties, delivery, choreBoard, kingdomChores, faction } =
+    state;
 
   const [currentTab, setCurrentTab] = useState<CodexCategoryName>("Deliveries");
   const [showMilestoneReached, setShowMilestoneReached] = useState(false);
@@ -117,28 +101,17 @@ export const Codex: React.FC<Props> = ({ show, onHide }) => {
 
   const id = username ?? String(farmId);
 
-  const currentObsession = bertObsession;
-  const obsessionCompletedAt = npcs?.bert?.questCompletedAt;
-
-  const incompleteObsession =
-    !currentObsession ||
-    (obsessionCompletedAt &&
-      obsessionCompletedAt >= currentObsession.startDate &&
-      obsessionCompletedAt <= currentObsession.endDate)
-      ? 0
-      : 1;
-
-  const incompleteFlowerBounties = bounties.requests.filter(
-    (deal) => deal.name in FLOWERS,
+  const incompleteMegaBounties = bounties.requests.filter(
+    (deal) => !Object.keys(ANIMALS).includes(deal.name),
   );
-  const incompleteFlowerBountiesCount = incompleteFlowerBounties.reduce(
+  const incompleteMegaBountiesCount = incompleteMegaBounties.reduce(
     (count, deal) => {
       const isSold = !!bounties.completed.find(
         (request) => request.id === deal.id,
       );
       return isSold ? count - 1 : count;
     },
-    incompleteFlowerBounties.length,
+    incompleteMegaBounties.length,
   );
 
   const incompleteDeliveries = delivery.orders.filter(
@@ -169,7 +142,7 @@ export const Codex: React.FC<Props> = ({ show, onHide }) => {
     {
       name: "Leaderboard",
       icon: ITEM_DETAILS[getSeasonalTicket()].image,
-      count: incompleteObsession + incompleteFlowerBountiesCount,
+      count: incompleteMegaBountiesCount,
     },
     {
       name: "Fish",
@@ -191,11 +164,6 @@ export const Codex: React.FC<Props> = ({ show, onHide }) => {
           },
         ]
       : []),
-    {
-      name: "Competition" as const,
-      icon: trophyIcon,
-      count: 0,
-    },
   ];
 
   return (
@@ -303,12 +271,17 @@ export const Codex: React.FC<Props> = ({ show, onHide }) => {
                   "flex flex-col h-full overflow-hidden overflow-y-auto scrollable",
                 )}
               >
-                <CompetitionDetails competitionName="ANIMALS" state={state} />
+                <CompetitionDetails
+                  competitionName="PEGGYS_COOKOFF"
+                  state={state}
+                  hideLeaderboard={
+                    Date.now() < new Date("2025-07-17T00:00:00Z").getTime()
+                  }
+                />
               </div>
             )}
           </div>
         </OuterPanel>
-        {isLoveRushEventActive && <LoveRushWidget />}
         {showMilestoneReached && (
           <div className="absolute w-full sm:w-5/6 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[200]">
             <MilestoneReached

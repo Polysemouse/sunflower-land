@@ -18,7 +18,7 @@ export const DeveloperOptions: React.FC<ContentComponentProps> = ({
   return (
     <>
       {hasFeatureAccess(
-        gameService.state?.context?.state,
+        gameService.getSnapshot()?.context?.state,
         "AIRDROP_PLAYER",
       ) && (
         <Button className="p-1 mb-1" onClick={() => onSubMenuClick("admin")}>
@@ -26,7 +26,7 @@ export const DeveloperOptions: React.FC<ContentComponentProps> = ({
         </Button>
       )}
       {hasFeatureAccess(
-        gameService.state?.context?.state,
+        gameService.getSnapshot()?.context?.state,
         "HOARDING_CHECK",
       ) && (
         <Button
@@ -34,6 +34,17 @@ export const DeveloperOptions: React.FC<ContentComponentProps> = ({
           className="p-1 mb-1"
         >
           {`Hoarding Check`}
+        </Button>
+      )}
+      {hasFeatureAccess(
+        gameService.getSnapshot()?.context?.state,
+        "MODERATOR",
+      ) && (
+        <Button
+          onClick={() => onSubMenuClick("playerSearch")}
+          className="p-1 mb-1"
+        >
+          {`Player Search`}
         </Button>
       )}
       {CONFIG.NETWORK === "amoy" && (

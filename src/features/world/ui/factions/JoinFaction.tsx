@@ -9,7 +9,10 @@ import { MachineState } from "features/game/lib/gameMachine";
 import { useSelector } from "@xstate/react";
 import { capitalize } from "lib/utils/capitalize";
 import { FactionName } from "features/game/types/game";
-import { SFL_COST } from "features/game/events/landExpansion/joinFaction";
+import {
+  FACTION_BOOST_COOLDOWN,
+  SFL_COST,
+} from "features/game/events/landExpansion/joinFaction";
 import { ClaimReward } from "features/game/expansion/components/ClaimReward";
 import { useSound } from "lib/utils/hooks/useSound";
 import { InlineDialogue } from "../TypingMessage";
@@ -52,7 +55,13 @@ export const JoinFaction: React.FC<Props> = ({ faction, onClose }) => {
   const recruiterVoice = useSound(FACTION_RECRUITERS[faction] as any);
 
   const sameFaction = joinedFaction && joinedFaction.name === faction;
-  const hasSFL = gameService.state.context.state.balance.gte(cost);
+  const hasSFL = gameService.getSnapshot().context.state.balance.gte(cost);
+  const previousFaction =
+    gameService.getSnapshot().context.state.previousFaction;
+  const hasRecentlyLeftFaction =
+    previousFaction &&
+    Date.now() - previousFaction.leftAt < FACTION_BOOST_COOLDOWN &&
+    previousFaction.name !== faction;
 
   useEffect(() => {
     const load = async () => {
@@ -105,16 +114,20 @@ export const JoinFaction: React.FC<Props> = ({ faction, onClose }) => {
 
   const intro = `${t("faction.restrited.area", {
     faction: capitalize(faction),
-  })} ${t("faction.not.pledged", {
-    faction: capitalize(faction),
-  })}`;
+  })} ${t("faction.not.pledged", { faction: capitalize(faction) })}`;
+
+  const cooldownMessage = hasRecentlyLeftFaction
+    ? `You recently left the ${capitalize(
+        previousFaction.name,
+      )} faction. XP boosts are disabled until ${new Date(
+        previousFaction.leftAt + FACTION_BOOST_COOLDOWN,
+      ).toLocaleDateString()} if you join the ${capitalize(faction)} faction.`
+    : null;
 
   const confirmFaction = `${t("faction.cost", {
     cost,
     faction: capitalize(faction),
-  })} ${t("faction.pledge.reward", {
-    banner: FACTION_BANNERS[faction],
-  })}`;
+  })} ${t("faction.pledge.reward", { banner: FACTION_BANNERS[faction] })}`;
 
   // If joined a different faction, show a message that they can't change
   if (joinedFaction && joinedFaction.name !== faction) {
@@ -146,7 +159,10 @@ export const JoinFaction: React.FC<Props> = ({ faction, onClose }) => {
               <Label type="default">{capitalize(faction)}</Label>
               <Label type="danger">{t("faction.noAccess")}</Label>
             </div>
-            <span className="text-xs sm:text-sm">
+            <span className="text-xs sm:text-sm space-y-2">
+              {cooldownMessage && (
+                <Label type="warning">{cooldownMessage}</Label>
+              )}
               <InlineDialogue message={intro} />
             </span>
           </div>
@@ -183,9 +199,7 @@ export const JoinFaction: React.FC<Props> = ({ faction, onClose }) => {
             reward={{
               sfl: 0,
               factionPoints: 0,
-              items: {
-                [FACTION_BANNERS[faction]]: 1,
-              },
+              items: { [FACTION_BANNERS[faction]]: 1 },
               coins: 0,
               createdAt: new Date().getTime(),
               id: `${new Date().getTime()}`,

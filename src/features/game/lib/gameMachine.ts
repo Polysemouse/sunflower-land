@@ -53,7 +53,6 @@ import { randomID } from "lib/utils/random";
 import { buySFL } from "../actions/buySFL";
 import { PlaceableLocation } from "../types/collectibles";
 import {
-  getFLOWERTeaserLastRead,
   getGameRulesLastRead,
   getIntroductionRead,
   getVipRead,
@@ -91,6 +90,9 @@ import {
   postEffect,
   StateMachineStateName,
   StateNameWithStatus,
+  STATE_MACHINE_VISIT_EFFECTS,
+  StateMachineVisitStateName,
+  StateMachineVisitEffectName,
 } from "../actions/effect";
 import { TRANSACTION_SIGNATURES, TransactionName } from "../types/transactions";
 import { getKeys } from "../types/decorations";
@@ -99,8 +101,14 @@ import { getLastTemperateSeasonStartedAt } from "./temperateSeason";
 import { hasVipAccess } from "./vipAccess";
 import { getActiveCalendarEvent, SeasonalEventName } from "../types/calendar";
 import { SpecialEventName } from "../types/specialEvents";
-import { getAccount } from "@wagmi/core";
+import { getAccount, getChainId } from "@wagmi/core";
 import { config } from "features/wallet/WalletProvider";
+import { depositFlower } from "lib/blockchain/DepositFlower";
+import { NetworkOption } from "features/island/hud/components/deposit/DepositFlower";
+import { blessingIsReady } from "./blessings";
+import { getBumpkinLevel } from "./level";
+import { hasFeatureAccess } from "lib/flags";
+import { COMPETITION_POINTS } from "../types/competitions";
 
 // Run at startup in case removed from query params
 const portalName = new URLSearchParams(window.location.search).get("portal");
@@ -161,6 +169,9 @@ export interface Context {
   fslId?: string;
   oauthNonce: string;
   data: Partial<Record<StateMachineStateName, any>>;
+  rawToken?: string;
+  visitorId?: number;
+  visitorState?: GameState;
 }
 
 export type Moderation = {
@@ -180,13 +191,6 @@ export type Moderation = {
 type CommunityEvent = {
   type: "COMMUNITY_UPDATE";
   game: GameState;
-};
-
-type WalletUpdatedEvent = {
-  type: "WALLET_UPDATED";
-  linkedWallet: string;
-  farmAddress: string;
-  nftId: number;
 };
 
 type BuyBlockBucksEvent = {
@@ -226,12 +230,18 @@ type BuySFLEvent = {
 
 type DepositEvent = {
   type: "DEPOSIT";
-  sfl: string;
   itemIds: number[];
   itemAmounts: string[];
   wearableIds: number[];
   wearableAmounts: number[];
   budIds: number[];
+};
+
+type DepositFlowerFromLinkedWalletEvent = {
+  type: "DEPOSIT_FLOWER_FROM_LINKED_WALLET";
+  amount: bigint;
+  depositAddress: `0x${string}`;
+  selectedNetwork: NetworkOption;
 };
 
 type UpdateEvent = {
@@ -265,7 +275,6 @@ type TransactEvent = {
 export type BlockchainEvent =
   | { type: "SAVE" }
   | TransactEvent
-  | WalletUpdatedEvent
   | CommunityEvent
   | SellMarketResourceEvent
   | { type: "REFRESH" }
@@ -296,80 +305,107 @@ export type BlockchainEvent =
   | { type: "UPGRADE" }
   | { type: "CLOSE" }
   | { type: "RANDOMISE" }
+  | DepositFlowerFromLinkedWalletEvent
+  | { type: StateMachineVisitEffectName }
   | Effect; // Test only
+
+const playingEventHandler = (eventName: string) => {
+  return {
+    [eventName]: [
+      {
+        target: "hoarding",
+        cond: (context: Context, event: PlayingEvent) => {
+          const { valid } = checkProgress({
+            state: context.state as GameState,
+            action: event,
+            farmId: context.farmId,
+          });
+
+          return !valid;
+        },
+        actions: assign((context: Context, event: PlayingEvent) => {
+          const { maxedItem } = checkProgress({
+            state: context.state as GameState,
+            action: event,
+            farmId: context.farmId,
+          });
+
+          return { maxedItem };
+        }),
+      },
+      {
+        actions: assign((context: Context, event: PlayingEvent) => {
+          const result = processEvent({
+            state: context.state,
+            action: event,
+            announcements: context.announcements,
+            farmId: context.farmId,
+            visitorState: context.visitorState,
+          });
+
+          const actions = [
+            ...context.actions,
+            {
+              ...event,
+              createdAt: new Date(),
+            },
+          ];
+
+          if (Array.isArray(result)) {
+            const [state, visitorState] = result;
+            return {
+              state,
+              actions,
+              visitorState,
+            };
+          }
+
+          return {
+            state: result,
+            actions,
+          };
+        }),
+      },
+    ],
+  };
+};
 
 // // For each game event, convert it to an XState event + handler
 const GAME_EVENT_HANDLERS: TransitionsConfig<Context, BlockchainEvent> =
   Object.keys(PLAYING_EVENTS).reduce(
     (events, eventName) => ({
       ...events,
-      [eventName]: [
-        {
-          target: "hoarding",
-          cond: (context: Context, event: PlayingEvent) => {
-            const { valid } = checkProgress({
-              state: context.state as GameState,
-              action: event,
-              farmId: context.farmId,
-            });
+      ...playingEventHandler(eventName),
+    }),
+    {},
+  );
 
-            return !valid;
+const PLACEMENT_EVENT_HANDLERS: TransitionsConfig<Context, BlockchainEvent> = [
+  ...Object.keys(PLACEMENT_EVENTS),
+  "biome.bought",
+  "biome.applied",
+].reduce(
+  (events, eventName) => ({
+    ...events,
+    [eventName]: {
+      actions: assign((context: Context, event: PlacementEvent) => ({
+        state: processEvent({
+          state: context.state as GameState,
+          action: event,
+          farmId: context.farmId,
+        }) as GameState,
+        actions: [
+          ...context.actions,
+          {
+            ...event,
+            createdAt: new Date(),
           },
-          actions: assign((context: Context, event: PlayingEvent) => {
-            const { maxedItem } = checkProgress({
-              state: context.state as GameState,
-              action: event,
-              farmId: context.farmId,
-            });
-
-            return { maxedItem };
-          }),
-        },
-        {
-          actions: assign((context: Context, event: PlayingEvent) => ({
-            state: processEvent({
-              state: context.state as GameState,
-              action: event,
-              announcements: context.announcements,
-              farmId: context.farmId,
-            }) as GameState,
-            actions: [
-              ...context.actions,
-              {
-                ...event,
-                createdAt: new Date(),
-              },
-            ],
-          })),
-        },
-      ],
-    }),
-    {},
-  );
-
-const PLACEMENT_EVENT_HANDLERS: TransitionsConfig<Context, BlockchainEvent> =
-  Object.keys(PLACEMENT_EVENTS).reduce(
-    (events, eventName) => ({
-      ...events,
-      [eventName]: {
-        actions: assign((context: Context, event: PlacementEvent) => ({
-          state: processEvent({
-            state: context.state as GameState,
-            action: event,
-            farmId: context.farmId,
-          }) as GameState,
-          actions: [
-            ...context.actions,
-            {
-              ...event,
-              createdAt: new Date(),
-            },
-          ],
-        })),
-      },
-    }),
-    {},
-  );
+        ],
+      })),
+    },
+  }),
+  {},
+);
 
 const EFFECT_EVENT_HANDLERS: TransitionsConfig<Context, BlockchainEvent> =
   getKeys(STATE_MACHINE_EFFECTS).reduce(
@@ -387,13 +423,34 @@ const EFFECT_STATES = Object.values(STATE_MACHINE_EFFECTS).reduce(
     ...states,
     [`${stateName}Success`]: {
       on: {
-        CONTINUE: { target: "notifying" },
+        CONTINUE: [
+          {
+            target: "visiting",
+            cond: (context: Context, event: DoneInvokeEvent<any>) =>
+              !!context.visitorId,
+          },
+          { target: "notifying" },
+        ],
       },
     },
     [`${stateName}Failed`]: {
       on: {
-        CONTINUE: { target: "notifying" },
-        REFRESH: { target: "notifying" },
+        CONTINUE: [
+          {
+            target: "visiting",
+            cond: (context: Context, event: DoneInvokeEvent<any>) =>
+              !!context.visitorId,
+          },
+          { target: "notifying" },
+        ],
+        REFRESH: [
+          {
+            target: "visiting",
+            cond: (context: Context, event: DoneInvokeEvent<any>) =>
+              !!context.visitorId,
+          },
+          { target: "notifying" },
+        ],
       },
     },
     [stateName]: {
@@ -407,7 +464,7 @@ const EFFECT_STATES = Object.values(STATE_MACHINE_EFFECTS).reduce(
               farmId: Number(context.farmId),
               sessionId: context.sessionId as string,
               actions: context.actions,
-              token: authToken,
+              token: authToken ?? context.rawToken,
               fingerprint: context.fingerprint as string,
               deviceTrackerId: context.deviceTrackerId as string,
               transactionId: context.transactionId as string,
@@ -415,11 +472,18 @@ const EFFECT_STATES = Object.values(STATE_MACHINE_EFFECTS).reduce(
           }
 
           const { gameState, data } = await postEffect({
-            farmId: Number(context.farmId),
+            farmId: Number(context.visitorId ?? context.farmId),
             effect,
-            token: authToken,
+            token: authToken ?? context.rawToken,
             transactionId: context.transactionId as string,
           });
+
+          if (context.visitorId) {
+            return {
+              state: makeGame(data.visitedFarmState),
+              data,
+            };
+          }
 
           return { state: gameState, data };
         },
@@ -433,6 +497,11 @@ const EFFECT_STATES = Object.values(STATE_MACHINE_EFFECTS).reduce(
                 return {
                   actions: [],
                   state: event.data.state,
+                  linkedWallet:
+                    event.data.data?.linkedWallet ?? context.linkedWallet,
+                  nftId: event.data.data?.nftId ?? context.nftId,
+                  farmAddress:
+                    event.data.data?.farmAddress ?? context.farmAddress,
                   data: { ...context.data, [stateName]: event.data.data },
                 };
               }),
@@ -460,6 +529,104 @@ const EFFECT_STATES = Object.values(STATE_MACHINE_EFFECTS).reduce(
   {},
 );
 
+const VISIT_EFFECT_EVENT_HANDLERS: TransitionsConfig<Context, BlockchainEvent> =
+  getKeys(STATE_MACHINE_VISIT_EFFECTS).reduce(
+    (events, eventName) => ({
+      ...events,
+      [eventName]: {
+        target: STATE_MACHINE_VISIT_EFFECTS[eventName],
+      },
+    }),
+    {},
+  );
+
+const VISIT_EFFECT_STATES = Object.values(STATE_MACHINE_VISIT_EFFECTS).reduce(
+  (states, stateName) => ({
+    ...states,
+    [`${stateName}Success`]: {
+      on: {
+        CONTINUE: [{ target: "visiting" }],
+      },
+    },
+    [`${stateName}Failed`]: {
+      on: {
+        CONTINUE: [{ target: "visiting" }],
+        REFRESH: [{ target: "visiting" }],
+      },
+    },
+    [stateName]: {
+      entry: "setTransactionId",
+      invoke: {
+        src: async (context: Context, event: PostEffectEvent) => {
+          const { effect, authToken } = event;
+
+          if (context.actions.length > 0) {
+            await autosave({
+              farmId: Number(context.visitorId),
+              sessionId: context.sessionId as string,
+              actions: context.actions,
+              token: authToken ?? context.rawToken,
+              fingerprint: context.fingerprint as string,
+              deviceTrackerId: context.deviceTrackerId as string,
+              transactionId: context.transactionId as string,
+            });
+          }
+
+          const { gameState, data } = await postEffect({
+            farmId: Number(context.visitorId),
+            effect,
+            token: authToken ?? context.rawToken,
+            transactionId: context.transactionId as string,
+          });
+
+          return {
+            state: makeGame(data.visitedFarmState),
+            data,
+            visitorState: gameState,
+          };
+        },
+        onDone: [
+          {
+            target: `${stateName}Success`,
+            cond: (_: Context, event: DoneInvokeEvent<any>) =>
+              !event.data.state.transaction,
+            actions: [
+              assign((context: Context, event: DoneInvokeEvent<any>) => {
+                return {
+                  actions: [],
+                  state: event.data.state,
+                  linkedWallet:
+                    event.data.data?.linkedWallet ?? context.linkedWallet,
+                  nftId: event.data.data?.nftId ?? context.nftId,
+                  farmAddress:
+                    event.data.data?.farmAddress ?? context.farmAddress,
+                  data: { ...context.data, [stateName]: event.data.data },
+                  visitorState: event.data.visitorState,
+                };
+              }),
+            ],
+          },
+          {
+            target: "visiting",
+            actions: [
+              assign((context: Context, event: DoneInvokeEvent<any>) => ({
+                actions: [],
+                state: event.data.state,
+                visitorState: event.data.visitorState,
+              })),
+            ],
+          },
+        ],
+        onError: {
+          target: `${stateName}Failed`,
+          actions: "assignErrorMessage",
+        },
+      },
+    },
+  }),
+  {},
+);
+
 export type BlockchainState = {
   value:
     | "loading"
@@ -467,6 +634,7 @@ export type BlockchainState = {
     | "landToVisitNotFound"
     | "visiting"
     | "gameRules"
+    | "blessing"
     | "FLOWERTeaser"
     | "portalling"
     | "introduction"
@@ -508,10 +676,12 @@ export type BlockchainState = {
     | "seasonChanged"
     | "randomising"
     | "competition"
+    | "cheers"
     | "roninWelcomePack"
     | "roninAirdrop"
     | "jinAirdrop"
     | StateMachineStateName
+    | StateMachineVisitStateName
     | StateNameWithStatus; // TEST ONLY
   context: Context;
 };
@@ -574,18 +744,40 @@ const handleSuccessfulSave = (context: Context, event: any) => {
     (action) => action.createdAt.getTime() > event.data.saveAt.getTime(),
   );
 
+  if (recentActions.length === 0) {
+    return {
+      state: event.data.farm,
+      saveQueued: false,
+      actions: [],
+      announcements: event.data.announcements,
+    };
+  }
+
   const updatedState = recentActions.reduce((state, action) => {
     return processEvent({
       state,
       action,
       announcements: context.announcements,
       farmId: context.farmId,
+      visitorState: context.visitorState,
     });
   }, event.data.farm);
+
+  if (Array.isArray(updatedState)) {
+    const [state, visitorState] = updatedState;
+    return {
+      state,
+      actions: recentActions,
+      visitorState,
+      saveQueued: false,
+      announcements: event.data.announcements,
+    };
+  }
 
   return {
     actions: recentActions,
     state: updatedState,
+    visitorState: context.visitorState,
     saveQueued: false,
     announcements: event.data.announcements,
   };
@@ -606,6 +798,7 @@ export function startGame(authContext: AuthContext) {
           CONFIG.NETWORK === "mainnet"
             ? authContext.user.token?.farmId ?? 0
             : Math.floor(Math.random() * 1000),
+        rawToken: authContext.user.rawToken,
         actions: [],
         state: EMPTY,
         sessionId: INITIAL_SESSION,
@@ -628,13 +821,10 @@ export function startGame(authContext: AuthContext) {
       },
       states: {
         ...EFFECT_STATES,
+        ...VISIT_EFFECT_STATES,
         loading: {
           id: "loading",
           always: [
-            {
-              target: "loadLandToVisit",
-              cond: () => window.location.href.includes("visit"),
-            },
             {
               target: "error",
               cond: () => !!getError(),
@@ -693,6 +883,11 @@ export function startGame(authContext: AuthContext) {
             },
             onDone: [
               {
+                target: "loadLandToVisit",
+                cond: () => window.location.href.includes("visit"),
+                actions: ["assignGame"],
+              },
+              {
                 target: "blacklisted",
                 cond: (_, event) => {
                   return event.data.state.ban.status === "permanent";
@@ -746,31 +941,53 @@ export function startGame(authContext: AuthContext) {
 
         loadLandToVisit: {
           invoke: {
-            src: async (_, event) => {
-              let landId: number;
+            src: async (context, event) => {
+              // Autosave just in case
+              if (context.actions.length > 0) {
+                await autosave({
+                  farmId: Number(context.farmId),
+                  sessionId: context.sessionId as string,
+                  actions: context.actions,
+                  token: authContext.user.rawToken as string,
+                  fingerprint: context.fingerprint as string,
+                  deviceTrackerId: context.deviceTrackerId as string,
+                  transactionId: context.transactionId as string,
+                });
+              }
+
+              let farmId: number;
 
               // We can enter this state two ways
               // 1. Directly on load if the url has a visit path (/visit)
               // 2. From a VISIT event passed back to the machine which will include a farmId in the payload
 
               if (!(event as VisitEvent).landId) {
-                landId = Number(window.location.href.split("/").pop());
+                farmId = Number(window.location.href.split("/").pop());
               } else {
-                landId = (event as VisitEvent).landId;
+                farmId = (event as VisitEvent).landId;
               }
 
-              const { state } = await loadGameStateForVisit(Number(landId));
+              const { visitedFarmState, visitorFarmState, visitorId } =
+                await loadGameStateForVisit(
+                  Number(farmId),
+                  authContext.user.rawToken as string,
+                );
 
               return {
-                state: makeGame(state),
-                farmId: landId,
+                state: makeGame(visitedFarmState),
+                farmId,
+                visitorId,
+                visitorState: makeGame(visitorFarmState),
               };
             },
             onDone: {
               target: "visiting",
               actions: assign({
-                state: (_context, event) => event.data.state,
-                farmId: (_context, event) => event.data.farmId,
+                state: (_, event) => event.data.state,
+                farmId: (_, event) => event.data.farmId,
+                visitorId: (_, event) => event.data.visitorId,
+                visitorState: (_, event) => event.data.visitorState,
+                actions: (_, event) => [],
               }),
             },
             onError: {
@@ -790,11 +1007,23 @@ export function startGame(authContext: AuthContext) {
         },
         visiting: {
           on: {
+            ...VISIT_EFFECT_EVENT_HANDLERS,
+            ...playingEventHandler("clutter.collected"),
+            SAVE: {
+              target: "autosaving",
+            },
             VISIT: {
               target: "loadLandToVisit",
             },
             END_VISIT: {
-              target: "loading",
+              target: "playing",
+              actions: assign((context) => ({
+                visitorId: undefined,
+                visitorState: undefined,
+                state: context.visitorState,
+                farmId: context.visitorId,
+                actions: [],
+              })),
             },
           },
         },
@@ -810,30 +1039,6 @@ export function startGame(authContext: AuthContext) {
                 return (
                   !lastRead ||
                   Date.now() - lastRead.getTime() > 7 * 24 * 60 * 60 * 1000
-                );
-              },
-            },
-
-            {
-              target: "FLOWERTeaser",
-              cond: () => {
-                const lastRead = getFLOWERTeaserLastRead();
-
-                if (!lastRead) return true;
-
-                const march31st2025 = new Date("2025-03-31").getTime();
-                const dateNow = Date.now();
-                const account = getAccount(config);
-                const accountConnectorName = account?.connector?.name;
-                const sevenDaysInMs = 7 * 24 * 60 * 60 * 1000;
-
-                // Show teaser if:
-                // 1. Player is using Ronin wallet
-                // 2. Current date is before March 31st 2025
-                // 3. Player has read teaser before AND it's been 7+ days since last read
-                return (
-                  dateNow < march31st2025 &&
-                  dateNow - (lastRead?.getTime() ?? 0) > sevenDaysInMs
                 );
               },
             },
@@ -878,6 +1083,18 @@ export function startGame(authContext: AuthContext) {
             {
               target: "swarming",
               cond: () => isSwarming(),
+            },
+            {
+              target: "blessing",
+              cond: (context) => {
+                const { offered, reward } = context.state.blessing;
+
+                if (reward) return true;
+
+                if (!offered) return false;
+
+                return blessingIsReady({ game: context.state });
+              },
             },
             {
               target: "vip",
@@ -995,6 +1212,65 @@ export function startGame(authContext: AuthContext) {
                 );
               },
             },
+            {
+              target: "competition",
+              cond: (context: Context) => {
+                if (!hasFeatureAccess(context.state, "PEGGYS_COOKOFF"))
+                  return false;
+
+                const hasStarted =
+                  Date.now() > COMPETITION_POINTS.PEGGYS_COOKOFF.startAt;
+
+                if (!hasStarted) return false;
+
+                const level = getBumpkinLevel(
+                  context.state.bumpkin?.experience ?? 0,
+                );
+
+                if (level <= 5) return false;
+
+                const competition =
+                  context.state.competitions.progress.PEGGYS_COOKOFF;
+
+                // Show the competition introduction if they have not started it yet
+                return !competition;
+              },
+            },
+            {
+              target: "cheers",
+              cond: (context) => {
+                if (!hasFeatureAccess(context.state, "CHEERS")) return false;
+
+                const now = Date.now();
+
+                const today = new Date(now).toISOString().split("T")[0];
+                const yesterday = new Date(now - 24 * 60 * 60 * 1000)
+                  .toISOString()
+                  .split("T")[0];
+
+                if (
+                  context.state.socialFarming.cheers?.freeCheersClaimedAt >=
+                  new Date(today).getTime()
+                ) {
+                  return false;
+                }
+
+                const dayFreeCheersClaimed = new Date(
+                  context.state.socialFarming.cheers?.freeCheersClaimedAt,
+                )
+                  .toISOString()
+                  .split("T")[0];
+
+                const cheersUsedYesterday =
+                  dayFreeCheersClaimed === yesterday
+                    ? context.state.socialFarming.cheers?.cheersUsed
+                    : 0;
+
+                const newCheerCount = 3 - cheersUsedYesterday;
+
+                return newCheerCount > 0;
+              },
+            },
 
             // EVENTS THAT TARGET NOTIFYING OR LOADING MUST GO ABOVE THIS LINE
 
@@ -1046,24 +1322,6 @@ export function startGame(authContext: AuthContext) {
                 !!context.state.nfts?.ronin?.acknowledgedAt &&
                 (context.state.inventory["Jin"] ?? new Decimal(0)).lt(1),
             },
-            // {
-            //   target: "competition",
-            //   cond: (context: Context) => {
-
-            //     // TODO is competition active?
-
-            //     const level = getBumpkinLevel(
-            //       context.state.bumpkin?.experience ?? 0,
-            //     );
-
-            //     if (level <= 5) return false;
-
-            //     const competition = context.state.competitions.progress.ANIMALS;
-
-            //     // Show the competition introduction if they have not started it yet
-            //     return !competition;
-            //   },
-            // },
             {
               target: "playing",
             },
@@ -1134,6 +1392,19 @@ export function startGame(authContext: AuthContext) {
 
         gameRules: {
           on: {
+            ACKNOWLEDGE: {
+              target: "notifying",
+            },
+          },
+        },
+        blessing: {
+          on: {
+            "blessing.claimed": (GAME_EVENT_HANDLERS as any)[
+              "blessing.claimed"
+            ],
+            "blessing.seeked": {
+              target: STATE_MACHINE_EFFECTS["blessing.seeked"],
+            },
             ACKNOWLEDGE: {
               target: "notifying",
             },
@@ -1339,6 +1610,9 @@ export function startGame(authContext: AuthContext) {
             DEPOSIT: {
               target: "depositing",
             },
+            DEPOSIT_FLOWER_FROM_LINKED_WALLET: {
+              target: "depositingFlowerFromLinkedWallet",
+            },
             REFRESH: {
               target: "loading",
             },
@@ -1379,6 +1653,9 @@ export function startGame(authContext: AuthContext) {
                 state: event.state,
               })),
             },
+            VISIT: {
+              target: "loadLandToVisit",
+            },
           },
         },
         buyingSFL: {
@@ -1415,10 +1692,11 @@ export function startGame(authContext: AuthContext) {
           },
           invoke: {
             src: async (context, event) => {
+              const farmId = context.visitorId ?? context.farmId;
               const data = await saveGame(
                 context,
                 event,
-                context.farmId as number,
+                farmId,
                 authContext.user.rawToken as string,
               );
 
@@ -1464,6 +1742,13 @@ export function startGame(authContext: AuthContext) {
 
                   return !isAcknowledged;
                 },
+                actions: assign((context: Context, event) =>
+                  handleSuccessfulSave(context, event),
+                ),
+              },
+              {
+                target: "visiting",
+                cond: (context, _) => !!context.visitorId,
                 actions: assign((context: Context, event) =>
                   handleSuccessfulSave(context, event),
                 ),
@@ -1537,7 +1822,6 @@ export function startGame(authContext: AuthContext) {
             ],
           },
         },
-
         buyingBlockBucks: {
           entry: "setTransactionId",
           invoke: {
@@ -1828,13 +2112,44 @@ export function startGame(authContext: AuthContext) {
             CONTINUE: "playing",
           },
         },
+        depositingFlowerFromLinkedWallet: {
+          invoke: {
+            src: async (context, event) => {
+              if (!wallet.getAccount()) throw new Error("No account");
+
+              const { amount, depositAddress, selectedNetwork } =
+                event as DepositFlowerFromLinkedWalletEvent;
+
+              await depositFlower({
+                account: wallet.getAccount() as `0x${string}`,
+                depositAddress,
+                amount,
+                selectedNetwork,
+              });
+            },
+            onDone: {
+              target: "playing",
+              actions: send(() => ({
+                type: "flower.depositStarted",
+                effect: {
+                  type: "flower.depositStarted",
+                  chainId: getChainId(config),
+                },
+                authToken: authContext.user.rawToken as string,
+              })),
+            },
+            onError: {
+              target: "error",
+              actions: "assignErrorMessage",
+            },
+          },
+        },
         depositing: {
           invoke: {
             src: async (context, event) => {
               if (!wallet.getAccount()) throw new Error("No account");
 
               const {
-                sfl,
                 itemAmounts,
                 itemIds,
                 wearableIds,
@@ -1843,9 +2158,9 @@ export function startGame(authContext: AuthContext) {
               } = event as DepositEvent;
 
               await depositToFarm({
+                sfl: "0", // Hardcoded to 0 for now. SFL is retired.
                 account: wallet.getAccount() as `0x${string}`,
                 farmId: context.nftId as number,
-                sfl: sfl,
                 itemIds: itemIds,
                 itemAmounts: itemAmounts,
                 wearableAmounts,
@@ -1954,6 +2269,14 @@ export function startGame(authContext: AuthContext) {
           },
         },
 
+        cheers: {
+          on: {
+            "cheers.claimed": (GAME_EVENT_HANDLERS as any)["cheers.claimed"],
+            ACKNOWLEDGE: {
+              target: "notifying",
+            },
+          },
+        },
         gems: {
           on: {
             ACKNOWLEDGE: {
@@ -2079,13 +2402,6 @@ export function startGame(authContext: AuthContext) {
         COMMUNITY_UPDATE: {
           actions: assign({
             state: (_, event) => event.game,
-          }),
-        },
-        WALLET_UPDATED: {
-          actions: assign({
-            nftId: (_, event) => event.nftId,
-            farmAddress: (_, event) => event.farmAddress,
-            linkedWallet: (_, event) => event.linkedWallet,
           }),
         },
       },

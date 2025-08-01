@@ -1,7 +1,7 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 import React, { useContext, useEffect, useRef, useState } from "react";
 import { Game, AUTO } from "phaser";
-import { useActor, useSelector } from "@xstate/react";
+import { useSelector } from "@xstate/react";
 import NinePatchPlugin from "phaser3-rex-plugins/plugins/ninepatch-plugin.js";
 import VirtualJoystickPlugin from "phaser3-rex-plugins/plugins/virtualjoystick-plugin.js";
 import { PhaserNavMeshPlugin } from "phaser-navmesh";
@@ -61,11 +61,12 @@ import { ToastContext } from "features/game/toast/ToastProvider";
 import { AuthMachineState } from "features/auth/lib/authMachine";
 import { InfernosScene } from "./scenes/InferniaScene";
 import { PlayerSelectionList } from "./ui/PlayerSelectionList";
-import { EasterIslandScene } from "./scenes/EasterIslandScene";
 import { StreamScene } from "./scenes/StreamScene";
-import { ModerationTools } from "./ui/moderationTools/ModerationTools";
 import { LoveIslandScene } from "./scenes/LoveIslandScene";
 import { hasFeatureAccess } from "lib/flags";
+import { WorldHud } from "features/island/hud/WorldHud";
+import { PlayerModal } from "features/social/PlayerModal";
+import { MachineState as GameMachineState } from "features/game/lib/gameMachine";
 
 const _roomState = (state: MachineState) => state.value;
 const _scene = (state: MachineState) => state.context.sceneId;
@@ -99,34 +100,25 @@ interface Props {
   route: SceneId;
 }
 
-export const PhaserComponent: React.FC<Props> = ({
-  isCommunity,
-  mmoService,
-  inventory,
-  route,
-}) => {
+const _loggedInFarmId = (state: GameMachineState) =>
+  state.context.visitorId ? state.context.visitorId : state.context.farmId;
+const _state = (state: GameMachineState) => state.context.state;
+
+export const PhaserComponent: React.FC<Props> = ({ mmoService, route }) => {
   const { t } = useAppTranslation();
 
   const { authService } = useContext(AuthProvider.Context);
   const { gameService, selectedItem, shortcutItem } = useContext(Context);
-
-  const [
-    {
-      context: { state, farmId },
-    },
-  ] = useActor(gameService);
-
   const { toastsList } = useContext(ToastContext);
+
+  const loggedInFarmId = useSelector(gameService, _loggedInFarmId);
+  const state = useSelector(gameService, _state);
 
   const [messages, setMessages] = useState<Message[]>([]);
   const [players, setPlayers] = useState<Player[]>([]);
-  const [isModerator, setIsModerator] = useState(false);
-
   const [isMuted, setIsMuted] = useState<ModerationEvent | undefined>();
-
   const [MuteEvent, setMuteEvent] = useState<ModerationEvent | undefined>();
   const [KickEvent, setKickEvent] = useState<ModerationEvent | undefined>();
-
   const [loaded, setLoaded] = useState(false);
 
   const navigate = useNavigate();
@@ -135,14 +127,13 @@ export const PhaserComponent: React.FC<Props> = ({
 
   const mmoState = useSelector(mmoService, _roomState);
   const scene = useSelector(mmoService, _scene);
-
   const rawToken = useSelector(authService, _rawToken);
 
   const scenes = [
     Preloader,
     new WoodlandsScene({ gameState: state }),
     BeachScene,
-    new PlazaScene({ gameState: state }),
+    PlazaScene,
     RetreatScene,
     KingdomScene,
     GoblinHouseScene,
@@ -152,48 +143,31 @@ export const PhaserComponent: React.FC<Props> = ({
     ExampleAnimationScene,
     ExampleRPGScene,
     InfernosScene,
-    EasterIslandScene,
     StreamScene,
-    ...(hasFeatureAccess(state, "LOVE_ISLAND") ? [LoveIslandScene] : []),
+    LoveIslandScene,
   ];
 
   useEffect(() => {
     // Set up community APIs
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (window as any).CommunityAPI = prepareAPI({
-      farmId: farmId as number,
+      farmId: loggedInFarmId,
       jwt: rawToken,
       gameService,
     });
-
-    // Set up moderator by looking if bumpkin has Halo hat equipped and Beta Pass in inventory
-    const { wardrobe } = state;
-    const isModerator = !!inventory["Beta Pass"] && !!wardrobe.Halo;
-
-    isModerator ? setIsModerator(true) : setIsModerator(false); // I know i know this is a bit useless but useful for debugging rofl
-
-    // Check if user is muted and if so, apply mute details to isMuted state
-    // Removed for now, will be added back later in a next PR
   }, []);
 
   useEffect(() => {
     const config: Phaser.Types.Core.GameConfig = {
       type: AUTO,
-      fps: {
-        target: 30,
-        smoothStep: true,
-      },
+      fps: { target: 30, smoothStep: true },
       backgroundColor: "#000000",
       parent: "phaser-example",
       autoRound: true,
       pixelArt: true,
       plugins: {
         global: [
-          {
-            key: "rexNinePatchPlugin",
-            plugin: NinePatchPlugin,
-            start: true,
-          },
+          { key: "rexNinePatchPlugin", plugin: NinePatchPlugin, start: true },
           {
             key: "rexVirtualJoystick",
             plugin: VirtualJoystickPlugin,
@@ -213,27 +187,19 @@ export const PhaserComponent: React.FC<Props> = ({
       height: window.innerHeight,
       physics: {
         default: "arcade",
-        arcade: {
-          debug: true,
-          gravity: { x: 0, y: 0 },
-        },
+        arcade: { debug: true, gravity: { x: 0, y: 0 } },
       },
       scene: scenes,
-      loader: {
-        crossOrigin: "anonymous",
-      },
+      loader: { crossOrigin: "anonymous" },
     };
 
-    game.current = new Game({
-      ...config,
-      parent: "game-content",
-    });
+    game.current = new Game({ ...config, parent: "game-content" });
 
     game.current.registry.set("mmoService", mmoService); // LEGACY
     game.current.registry.set("gameState", state);
     game.current.registry.set("authService", authService);
     game.current.registry.set("gameService", gameService);
-    game.current.registry.set("id", farmId);
+    game.current.registry.set("id", loggedInFarmId);
     game.current.registry.set("initialScene", scene);
     game.current.registry.set("navigate", navigate);
     game.current.registry.set("selectedItem", selectedItem);
@@ -241,12 +207,12 @@ export const PhaserComponent: React.FC<Props> = ({
 
     const listener = (e: EventObject) => {
       if (e.type === "bumpkin.equipped") {
-        mmoService.state.context.server?.send(0, {
+        mmoService.getSnapshot().context.server?.send(0, {
           clothing: (e as EquipBumpkinAction).equipment,
         });
       }
       if (e.type === "UPDATE_USERNAME") {
-        mmoService.state.context.server?.send(0, {
+        mmoService.getSnapshot().context.server?.send(0, {
           username: (e as UpdateUsernameEvent).username,
         });
       }
@@ -264,8 +230,11 @@ export const PhaserComponent: React.FC<Props> = ({
 
   // When server changes, update game registry
   useEffect(() => {
-    game.current?.registry.set("mmoServer", mmoService.state.context.server);
-  }, [mmoService.state.context.server]);
+    game.current?.registry.set(
+      "mmoServer",
+      mmoService.getSnapshot().context.server,
+    );
+  }, [mmoService.getSnapshot().context.server]);
 
   // When selected item changes in context, update game registry
   useEffect(() => {
@@ -293,33 +262,36 @@ export const PhaserComponent: React.FC<Props> = ({
 
   useEffect(() => {
     // Listen to moderation events
-    mmoService.state.context.server?.onMessage(
-      "moderation_event",
-      (event: ModerationEvent) => {
-        const clientFarmId = farmId as number;
-        if (!clientFarmId || clientFarmId !== event.farmId) return;
+    mmoService
+      .getSnapshot()
+      .context.server?.onMessage(
+        "moderation_event",
+        (event: ModerationEvent) => {
+          const clientFarmId = loggedInFarmId;
+          if (!clientFarmId || clientFarmId !== event.farmId) return;
 
-        switch (event.type) {
-          case "kick":
-            setKickEvent(event);
-            break;
-          case "mute":
-            setIsMuted(event);
-            setMuteEvent(event);
-            break;
-          default:
-            break;
-        }
-      },
-    );
+          switch (event.type) {
+            case "kick":
+              setKickEvent(event);
+              break;
+            case "mute":
+              setIsMuted(event);
+              setMuteEvent(event);
+              break;
+            default:
+              break;
+          }
+        },
+      );
 
     // Update Messages on change
-    mmoService.state.context.server?.state.messages.onChange(() => {
+    mmoService.getSnapshot().context.server?.state.messages.onChange(() => {
       const currentScene =
         game.current?.scene.getScenes(true)[0]?.scene.key ?? scene;
 
-      const sceneMessages =
-        mmoService.state.context.server?.state.messages.filter(
+      const sceneMessages = mmoService
+        .getSnapshot()
+        .context.server?.state.messages.filter(
           (m) => m.sceneId === currentScene,
         ) as Message[];
 
@@ -337,8 +309,8 @@ export const PhaserComponent: React.FC<Props> = ({
     });
 
     // Update Players on change
-    mmoService.state.context.server?.state.players.onChange(() => {
-      const playersMap = mmoService.state.context.server?.state.players;
+    mmoService.getSnapshot().context.server?.state.players.onChange(() => {
+      const playersMap = mmoService.getSnapshot().context.server?.state.players;
 
       if (playersMap) {
         setPlayers((currentPlayers) => {
@@ -385,9 +357,9 @@ export const PhaserComponent: React.FC<Props> = ({
     });
 
     mmoBus.listen((message) => {
-      mmoService.state.context.server?.send(0, message);
+      mmoService.getSnapshot().context.server?.send(0, message);
     });
-  }, [mmoService.state.context.server]);
+  }, [mmoService.getSnapshot().context.server]);
 
   useEffect(() => {
     if (isMuted?.mutedUntil) {
@@ -406,8 +378,11 @@ export const PhaserComponent: React.FC<Props> = ({
     const item = toastsList.filter((toast) => !toast.hidden)[0];
 
     if (item && item.difference.gt(0)) {
-      mmoService.state.context.server?.send(0, {
-        reaction: { reaction: item.item, quantity: item.difference.toNumber() },
+      mmoService.getSnapshot().context.server?.send(0, {
+        reaction: {
+          reaction: item.item,
+          quantity: item.difference.toNumber(),
+        },
       });
     }
   }, [toastsList]);
@@ -418,8 +393,9 @@ export const PhaserComponent: React.FC<Props> = ({
     const currentScene =
       game.current?.scene.getScenes(true)[0]?.scene.key ?? scene;
 
-    const sceneMessages =
-      mmoService.state.context.server?.state.messages.filter(
+    const sceneMessages = mmoService
+      .getSnapshot()
+      .context.server?.state.messages.filter(
         (m) => m.sceneId === currentScene,
       ) as Message[];
 
@@ -446,6 +422,12 @@ export const PhaserComponent: React.FC<Props> = ({
 
   return (
     <div>
+      <WorldHud
+        scene={scene}
+        server={mmoService.getSnapshot().context.server?.name}
+        messages={messages}
+        players={players}
+      />
       <div id="game-content" ref={ref} />
 
       {/* Hud Components should all be inside here. - ie. components positioned absolutely to the window */}
@@ -465,37 +447,31 @@ export const PhaserComponent: React.FC<Props> = ({
           </InnerPanel>
         )}
 
-        <ChatUI
-          farmId={farmId}
-          gameState={state}
-          scene={scene}
-          onMessage={(m) => {
-            mmoService.state.context.server?.send(0, {
-              text: m.text ?? "?",
-            });
-          }}
-          onCommand={(name, args) => {
-            handleCommand(name, args).then(updateMessages);
-          }}
-          messages={messages ?? []}
-          isMuted={isMuted ? true : false}
-          onReact={(reaction) => {
-            mmoService.state.context.server?.send(0, {
-              reaction: { reaction },
-            });
-          }}
-          onBudPlace={(tokenId) => {
-            mmoService.state.context.server?.send(0, {
-              budId: tokenId,
-            });
-          }}
-        />
-        {isModerator && !isCommunity && (
-          <ModerationTools
-            scene={game.current?.scene.getScene(scene)}
+        {!hasFeatureAccess(state, "SOCIAL_FARMING") && (
+          <ChatUI
+            farmId={loggedInFarmId}
+            gameState={state}
+            scene={scene}
+            onMessage={(m) => {
+              mmoService
+                .getSnapshot()
+                .context.server?.send(0, { text: m.text ?? "?" });
+            }}
+            onCommand={(name, args) => {
+              handleCommand(name, args).then(updateMessages);
+            }}
             messages={messages ?? []}
-            players={players ?? []}
-            gameService={gameService}
+            isMuted={isMuted ? true : false}
+            onReact={(reaction) => {
+              mmoService
+                .getSnapshot()
+                .context.server?.send(0, { reaction: { reaction } });
+            }}
+            onBudPlace={(tokenId) => {
+              mmoService
+                .getSnapshot()
+                .context.server?.send(0, { budId: tokenId });
+            }}
           />
         )}
 
@@ -523,7 +499,6 @@ export const PhaserComponent: React.FC<Props> = ({
       </HudContainer>
 
       {/* Modals */}
-
       {MuteEvent && (
         <Muted event={MuteEvent} onClose={() => setMuteEvent(undefined)} />
       )}
@@ -538,11 +513,19 @@ export const PhaserComponent: React.FC<Props> = ({
         />
       )}
 
-      <NPCModals id={farmId as number} scene={scene} />
+      <NPCModals id={loggedInFarmId} />
       <PlayerSelectionList />
-      <PlayerModals game={state} farmId={farmId as number} />
+      {hasFeatureAccess(state, "SOCIAL_FARMING") ? (
+        <PlayerModal
+          game={state}
+          loggedInFarmId={loggedInFarmId}
+          token={rawToken}
+        />
+      ) : (
+        <PlayerModals game={state} farmId={loggedInFarmId} />
+      )}
       <CommunityModals />
-      <InteractableModals id={farmId as number} scene={scene} key={scene} />
+      <InteractableModals id={loggedInFarmId} scene={scene} key={scene} />
       <Modal
         show={mmoState === "loading" || mmoState === "initialising"}
         backdrop={false}

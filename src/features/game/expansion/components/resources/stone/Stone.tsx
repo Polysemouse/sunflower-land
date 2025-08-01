@@ -4,7 +4,12 @@ import { STONE_RECOVERY_TIME } from "features/game/lib/constants";
 import { Context } from "features/game/GameProvider";
 
 import { getTimeLeft } from "lib/utils/time";
-import { InventoryItemName, Rock, Skills } from "features/game/types/game";
+import {
+  GameState,
+  InventoryItemName,
+  Rock,
+  Skills,
+} from "features/game/types/game";
 import useUiRefresher from "lib/utils/hooks/useUiRefresher";
 import { useSelector } from "@xstate/react";
 import { MachineState } from "features/game/lib/gameMachine";
@@ -14,18 +19,33 @@ import { DepletingStone } from "./components/DepletingStone";
 import { RecoveredStone } from "./components/RecoveredStone";
 import { canMine } from "features/game/expansion/lib/utils";
 import { useSound } from "lib/utils/hooks/useSound";
+import { isCollectibleBuilt } from "features/game/lib/collectibleBuilt";
+import {
+  getRequiredPickaxeAmount,
+  getStoneDropAmount,
+} from "features/game/events/landExpansion/stoneMine";
 
 const HITS = 3;
 const tool = "Pickaxe";
 
-const HasTool = (inventory: Partial<Record<InventoryItemName, Decimal>>) => {
-  return (inventory[tool] ?? new Decimal(0)).gte(1);
+const HasTool = (
+  inventory: Partial<Record<InventoryItemName, Decimal>>,
+  gameState: GameState,
+) => {
+  const { amount: requiredToolAmount } = getRequiredPickaxeAmount(gameState);
+  if (requiredToolAmount.lte(0)) return true;
+  return (inventory[tool] ?? new Decimal(0)).gte(requiredToolAmount);
 };
 
 const selectInventory = (state: MachineState) => state.context.state.inventory;
 const compareResource = (prev: Rock, next: Rock) => {
   return JSON.stringify(prev) === JSON.stringify(next);
 };
+
+const _state = (state: MachineState) => state.context.state;
+const _compareQuarryExistence = (prev: GameState, next: GameState) =>
+  isCollectibleBuilt({ name: "Quarry", game: prev }) ===
+  isCollectibleBuilt({ name: "Quarry", game: next });
 
 const selectSkills = (state: MachineState) =>
   state.context.state.bumpkin?.skills;
@@ -44,9 +64,9 @@ export const Stone: React.FC<Props> = ({ id }) => {
 
   // When to hide the resource that pops out
   const [collecting, setCollecting] = useState(false);
-  const [collectedAmount, setCollectedAmount] = useState<number>();
 
   const divRef = useRef<HTMLDivElement>(null);
+  const harvested = useRef<number>(0);
 
   const { play: miningFallAudio } = useSound("mining_fall");
 
@@ -63,6 +83,7 @@ export const Stone: React.FC<Props> = ({ id }) => {
     };
   }, []);
 
+  const game = useSelector(gameService, _state, _compareQuarryExistence);
   const resource = useSelector(
     gameService,
     (state) => state.context.state.stones[id],
@@ -72,12 +93,12 @@ export const Stone: React.FC<Props> = ({ id }) => {
     gameService,
     selectInventory,
     (prev, next) =>
-      HasTool(prev) === HasTool(next) &&
+      HasTool(prev, game) === HasTool(next, game) &&
       (prev.Logger ?? new Decimal(0)).equals(next.Logger ?? new Decimal(0)),
   );
   const skills = useSelector(gameService, selectSkills, compareSkills);
 
-  const hasTool = HasTool(inventory);
+  const hasTool = HasTool(inventory, game);
   const timeLeft = getTimeLeft(resource.stone.minedAt, STONE_RECOVERY_TIME);
   const mined = !canMine(resource, STONE_RECOVERY_TIME);
 
@@ -86,7 +107,9 @@ export const Stone: React.FC<Props> = ({ id }) => {
   const strike = () => {
     if (!hasTool) return;
 
-    shortcutItem(tool);
+    if (!isCollectibleBuilt({ name: "Quarry", game })) {
+      shortcutItem(tool);
+    }
 
     if (skills["Tap Prospector"]) {
       // insta-mine the mineral
@@ -103,6 +126,17 @@ export const Stone: React.FC<Props> = ({ id }) => {
   };
 
   const mine = async () => {
+    const stoneMined = new Decimal(
+      resource.stone.amount ??
+        getStoneDropAmount({
+          game,
+          rock: resource,
+          createdAt: Date.now(),
+          criticalDropGenerator: (name) =>
+            !!(resource.stone.criticalHit?.[name] ?? 0),
+        }).amount,
+    );
+
     const newState = gameService.send("stoneRock.mined", {
       index: id,
     });
@@ -110,7 +144,7 @@ export const Stone: React.FC<Props> = ({ id }) => {
     if (!newState.matches("hoarding")) {
       if (showAnimations) {
         setCollecting(true);
-        setCollectedAmount(resource.stone.amount);
+        harvested.current = stoneMined.toNumber();
       }
 
       miningFallAudio();
@@ -118,7 +152,7 @@ export const Stone: React.FC<Props> = ({ id }) => {
       if (showAnimations) {
         await new Promise((res) => setTimeout(res, 3000));
         setCollecting(false);
-        setCollectedAmount(undefined);
+        harvested.current = 0;
       }
     }
   };
@@ -137,7 +171,7 @@ export const Stone: React.FC<Props> = ({ id }) => {
       )}
 
       {/* Depleting resource animation */}
-      {collecting && <DepletingStone resourceAmount={collectedAmount} />}
+      {collecting && <DepletingStone resourceAmount={harvested.current} />}
 
       {/* Depleted resource */}
       {mined && <DepletedStone timeLeft={timeLeft} />}

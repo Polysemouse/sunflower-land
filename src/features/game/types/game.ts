@@ -21,12 +21,13 @@ import { BumpkinActivityName } from "./bumpkinActivity";
 import { DecorationName } from "./decorations";
 import { BeanName, ExoticCropName, MutantCropName } from "./beans";
 import {
+  FullMoonFruit,
   GreenHouseFruitName,
   GreenHouseFruitSeedName,
   PatchFruitName,
   PatchFruitSeedName,
 } from "./fruits";
-import { TreasureName } from "./treasure";
+import { BeachBountyTreasure, TreasureName } from "./treasure";
 import {
   GoblinBlacksmithItemName,
   GoblinPirateItemName,
@@ -40,7 +41,7 @@ import {
 import { TreasureToolName, WorkbenchToolName } from "./tools";
 import { ConversationName } from "./announcements";
 import { NPCName } from "lib/npcs";
-import { SeasonalBanner, SeasonalTicket } from "./seasons";
+import { SeasonalBanner, SeasonalTicket, SeasonName } from "./seasons";
 import { Bud } from "./buds";
 import {
   CompostName,
@@ -53,11 +54,9 @@ import { MilestoneName } from "./milestones";
 import {
   FishName,
   FishingBait,
-  FishingConditions,
   MarineMarvelName,
   OldFishName,
 } from "./fishing";
-import { Coordinates } from "../expansion/components/MapPlacement";
 import { MinigameName } from "./minigames";
 import {
   FlowerCrossBreedName,
@@ -72,17 +71,23 @@ import { MinigameCurrency } from "../events/minigames/purchaseMinigameItem";
 import { FactionShopCollectibleName, FactionShopFoodName } from "./factionShop";
 import { DiggingFormationName } from "./desert";
 import { ExperimentName } from "lib/flags";
-import { CollectionName, MarketplaceTradeableName } from "./marketplace";
+import {
+  BudNFTName,
+  CollectionName,
+  MarketplaceTradeableName,
+} from "./marketplace";
 import { GameTransaction } from "./transactions";
 import { CompetitionName, CompetitionProgress } from "./competitions";
 import { AnimalType } from "./animals";
 import { ChoreBoard } from "./choreBoard";
 import {
+  DollName,
   RecipeCollectibleName,
+  RecipeItemName,
   Recipes,
   RecipeWearableName,
 } from "../lib/crafting";
-import { SeasonalCollectibleName } from "./megastore";
+import { SeasonalCollectibleName, SeasonalTierItemName } from "./megastore";
 import { TradeFood } from "../events/landExpansion/redeemTradeReward";
 import {
   CalendarEvent,
@@ -94,6 +99,13 @@ import { InGameTaskName } from "../events/landExpansion/completeSocialTask";
 import { TwitterPost, TwitterPostName } from "./social";
 import { NetworkName } from "../events/landExpansion/updateNetwork";
 import { RewardBoxes, RewardBoxName } from "./rewardBoxes";
+import { FloatingIslandShop, FloatingShopItemName } from "./floatingIsland";
+import { Blessing } from "../lib/blessings";
+import { LandBiomeName } from "features/island/biomes/biomes";
+import { MonumentName } from "./monuments";
+import { AOEItemName } from "../expansion/placeable/lib/collisionDetection";
+import { Coordinates } from "../expansion/components/MapPlacement";
+import { ClutterName } from "./clutter";
 
 export type Reward = {
   coins?: number;
@@ -200,11 +212,17 @@ export type MutantChicken =
   | "Knight Chicken"
   | "Pharaoh Chicken"
   | "Alien Chicken"
-  | "Summer Chicken";
+  | "Summer Chicken"
+  | "Love Chicken"
+  | "Janitor Chicken";
 
-export type MutantCow = "Mootant" | "Frozen Cow";
+export type MutantCow = "Mootant" | "Frozen Cow" | "Dr Cow" | "Baby Cow";
 
-export type MutantSheep = "Toxic Tuft" | "Frozen Sheep";
+export type MutantSheep =
+  | "Toxic Tuft"
+  | "Frozen Sheep"
+  | "Nurse Sheep"
+  | "Baby Sheep";
 
 export type MutantAnimal = MutantChicken | MutantCow | MutantSheep;
 
@@ -235,6 +253,9 @@ export type Coupons =
   | "Love Charm"
   | "Easter Token 2025"
   | "Easter Ticket 2025"
+  | "Colors Token 2025"
+  | "Colors Ticket 2025"
+  | "Cheer"
   | Keys
   | SeasonalTicket
   | FactionEmblem;
@@ -357,14 +378,22 @@ export const COUPONS: Record<Coupons, { description: string }> = {
     description: translate("description.love.charm"),
   },
   "Easter Token 2025": {
-    description: "placeholder",
+    description: "",
   },
   "Easter Ticket 2025": {
-    description: "placeholder",
+    description: "",
   },
   Geniseed: {
-    description: "placeholder",
+    description: translate("description.geniseed"),
   },
+  "Colors Token 2025": {
+    description: translate("description.colorToken2025"),
+  },
+  "Colors Ticket 2025": {
+    description: translate("description.colorTicket2025"),
+  },
+  Bracelet: { description: "" },
+  Cheer: { description: translate("description.cheer") },
 };
 
 export type Purchase = {
@@ -430,16 +459,45 @@ export type FlowerBounty = Bounty & {
   name: FlowerName;
 };
 
-export type SFLBounty = Bounty & {
+export type ObsidianBounty = Bounty & {
   name: "Obsidian";
-  sfl: number;
+  sfl?: number;
 };
 
-export type BountyRequest = AnimalBounty | FlowerBounty | SFLBounty;
+export type FishBounty = Bounty & {
+  name: FishName;
+};
+
+export type DollBounty = Bounty & {
+  name: DollName;
+};
+
+export type ExoticBounty = Bounty & {
+  name:
+    | ExoticCropName
+    | BeachBountyTreasure
+    | FullMoonFruit
+    | RecipeCraftableName;
+};
+
+export type MarkBounty = Bounty & {
+  name: "Mark";
+  quantity: number;
+};
+
+export type BountyRequest =
+  | AnimalBounty
+  | FlowerBounty
+  | ObsidianBounty
+  | FishBounty
+  | ExoticBounty
+  | MarkBounty
+  | DollBounty;
 
 export type Bounties = {
   requests: BountyRequest[];
   completed: { id: string; soldAt: number }[];
+  bonusClaimedAt?: number;
 };
 
 export type InventoryItemName =
@@ -506,7 +564,11 @@ export type InventoryItemName =
   | SeasonalCollectibleName
   | TradeFood
   | SeasonalBanner
-  | RewardBoxName;
+  | RewardBoxName
+  | LandBiomeName
+  | MonumentName
+  | DollName
+  | ClutterName;
 
 export type Inventory = Partial<Record<InventoryItemName, Decimal>>;
 
@@ -527,14 +589,6 @@ type PastAction = GameEvent & {
   createdAt: Date;
 };
 
-export interface CurrentObsession {
-  type: "collectible" | "wearable";
-  name: InventoryItemName | BumpkinItem;
-  startDate: number;
-  endDate: number;
-  reward: number;
-}
-
 export type WarCollectionOffer = {
   warBonds: number;
   startAt: string;
@@ -545,43 +599,56 @@ export type WarCollectionOffer = {
   }[];
 };
 
-export type Position = {
-  x: number;
-  y: number;
-  height: number;
-  width: number;
-};
 export type Wood = {
-  amount: number;
   choppedAt: number;
   reward?: Omit<Reward, "sfl">;
+  criticalHit?: CriticalHit;
+  amount?: number;
 };
+
+export type CriticalHitName =
+  | InventoryItemName
+  | BumpkinRevampSkillName
+  | BumpkinItem
+  | "Native";
+
+export type CriticalHit = Partial<Record<CriticalHitName, number>>;
 
 export type PlantedCrop = {
   id?: string;
   name: CropName;
   plantedAt: number;
-  amount: number;
+  criticalHit?: CriticalHit;
   reward?: Omit<Reward, "sfl">;
+  amount?: number;
+  boostedTime?: number;
 };
 
 export type PlantedFruit = {
   name: PatchFruitName;
   plantedAt: number;
-  amount: number;
   harvestsLeft: number;
   harvestedAt: number;
+  criticalHit?: CriticalHit;
+  amount?: number;
+};
+
+type OptionalCoordinates = {
+  x?: number;
+  y?: number;
 };
 
 export type Tree = {
   wood: Wood;
   createdAt?: number;
-} & Position;
+  removedAt?: number;
+} & OptionalCoordinates;
 
 export type Stone = {
-  amount: number;
-  // Epoch time in milliseconds
   minedAt: number;
+  criticalHit?: CriticalHit;
+  amount?: number;
+  boostedTime?: number;
 };
 
 export type FiniteResource = {
@@ -591,11 +658,10 @@ export type FiniteResource = {
 export type Rock = {
   stone: Stone;
   createdAt?: number;
-} & Position;
+  removedAt?: number;
+} & OptionalCoordinates;
 
 export type Oil = {
-  amount: number;
-  // Epoch time in milliseconds
   drilledAt: number;
 };
 
@@ -603,18 +669,26 @@ export type OilReserve = {
   oil: Oil;
   drilled: number;
   createdAt: number;
-} & Position;
+  removedAt?: number;
+} & OptionalCoordinates;
 
 export type CropPlot = {
   crop?: PlantedCrop;
   fertiliser?: CropFertiliser;
+  amount?: number;
   createdAt: number;
-} & Position;
+  beeSwarm?: {
+    count: number;
+    swarmActivatedAt: number;
+  };
+  removedAt?: number;
+} & OptionalCoordinates;
 
 export type GreenhousePlant = {
   name: GreenHouseCropName | GreenHouseFruitName;
   plantedAt: number;
-  amount: number;
+  criticalHit?: CriticalHit;
+  amount?: number;
 };
 
 export type GreenhousePot = {
@@ -623,16 +697,18 @@ export type GreenhousePot = {
 
 export type FruitPatch = {
   fruit?: PlantedFruit;
+  createdAt: number;
   fertiliser?: FruitFertiliser;
-} & Position;
-
-export type Mine = Position;
+  removedAt?: number;
+} & OptionalCoordinates;
 
 export type BuildingProduct = {
   name: CookableName;
   readyAt: number;
   amount?: number;
   boost?: Partial<Record<InventoryItemName, number>>;
+  skills?: Partial<Record<BumpkinRevampSkillName, boolean>>;
+  timeRemaining?: number;
 };
 
 export type BuildingProduce = {
@@ -643,19 +719,20 @@ export type BuildingProduce = {
 
 export type Cancelled = Partial<{
   [key in InventoryItemName]: {
-    count: number;
     cancelledAt: number;
   };
 }>;
 
 export type PlacedItem = {
   id: string;
-  coordinates: { x: number; y: number };
+  coordinates?: { x: number; y: number };
   readyAt: number;
   createdAt: number;
+  removedAt?: number;
   cancelled?: Cancelled;
   crafting?: BuildingProduct[];
   oil?: number;
+  flipped?: boolean;
 };
 
 type ShakeItem = PlacedItem & { shakenAt?: number };
@@ -686,12 +763,14 @@ export type CompostBuilding = PlacedItem & {
 export type CropMachineQueueItem = {
   crop: CropName;
   seeds: number;
-  amount: number;
   growTimeRemaining: number;
   totalGrowTime: number;
   startTime?: number;
   growsUntil?: number;
   readyAt?: number;
+  criticalHit?: CriticalHit;
+  amount?: number;
+  pausedTimeRemaining?: number;
 };
 
 export type CropMachineBuilding = PlacedItem & {
@@ -737,6 +816,7 @@ export type Airdrop = {
   coordinates?: Coordinates;
   factionPoints?: number;
   vipDays?: number;
+  recipes?: RecipeItemName[];
 };
 
 // Mystery Prize reveals
@@ -760,6 +840,9 @@ export type Bid = {
   biddedAt: number;
   tickets: number;
 };
+export type Minted = Partial<
+  Record<SeasonName, Record<InventoryItemName | BumpkinItem, number>>
+>;
 
 export type MazeAttempts = Partial<Record<SeasonWeek, MazeMetadata>>;
 
@@ -803,6 +886,7 @@ export type Desert = {
   digging: {
     extraDigs?: number;
     patterns: DiggingFormationName[];
+    completedPatterns?: DiggingFormationName[];
     grid: (DugHole | DugHole[])[];
     streak?: StreakReward;
   };
@@ -845,7 +929,8 @@ export type BedName =
   | "Desert Bed"
   | "Cow Bed"
   | "Pirate Bed"
-  | "Royal Bed";
+  | "Royal Bed"
+  | "Double Bed";
 
 export type RecipeCraftableName =
   | "Cushion"
@@ -941,6 +1026,7 @@ export type PotionHouse = {
     status: "in_progress" | "finished";
     attempts: Attempt[];
     reward?: number;
+    multiplier?: number;
   };
   history: {
     [score: number]: number;
@@ -1084,6 +1170,7 @@ export type Minigame = {
 export type TradeListing = {
   items: Partial<Record<MarketplaceTradeableName, number>>;
   sfl: number;
+  tax?: number; // Defaults to 10% of the sfl
   createdAt: number;
   collection: CollectionName;
   boughtAt?: number;
@@ -1098,6 +1185,7 @@ export type TradeListing = {
 export type TradeOffer = {
   items: Partial<Record<MarketplaceTradeableName, number>>;
   sfl: number;
+  tax?: number; // Defaults to 10% of the sfl
   collection: CollectionName;
   createdAt: number;
   fulfilledAt?: number;
@@ -1115,13 +1203,15 @@ type FishingSpot = {
 };
 
 export type Fishing = {
-  weather: FishingConditions;
   wharf: FishingSpot;
-  beach: FishingSpot;
   dailyAttempts?: {
     [date: string]: number;
   };
   extraReels?: ExtraReels;
+
+  // TODO remove after 1st June
+  beach?: FishingSpot;
+  weather?: string;
 };
 
 export type ExtraReels = {
@@ -1149,7 +1239,8 @@ export type Currency =
   | "Seasonal Ticket"
   | "Mark"
   | "Love Charm"
-  | "Easter Token 2025";
+  | "Easter Token 2025"
+  | "Colors Token 2025";
 
 export type ShopItemBase = {
   shortDescription: string;
@@ -1206,16 +1297,18 @@ export type Home = {
 export type PlantedFlower = {
   name: FlowerName;
   plantedAt: number;
-  amount: number;
   crossbreed?: FlowerCrossBreedName;
   dirty?: boolean;
   reward?: Reward;
+  criticalHit?: CriticalHit;
+  amount?: number;
 };
 
 export type FlowerBed = {
   flower?: PlantedFlower;
   createdAt: number;
-} & Position;
+  removedAt?: number;
+} & OptionalCoordinates;
 
 export type FlowerBeds = Record<string, FlowerBed>;
 
@@ -1233,7 +1326,8 @@ export type Beehive = {
     produced: number;
   };
   flowers: AttachedFlower[];
-} & Position;
+  removedAt?: number;
+} & OptionalCoordinates;
 
 export type Beehives = Record<string, Beehive>;
 
@@ -1304,6 +1398,7 @@ export type Faction = {
   kitchen?: FactionKitchen;
   pet?: FactionPet;
   history: Record<string, FactionHistory>;
+  boostCooldownUntil?: number;
 };
 
 export type DonationItemName =
@@ -1355,6 +1450,7 @@ export type UpgradableBuilding = {
 
 export type Bank = {
   taxFreeSFL: number;
+  withdrawnAmount: number;
 };
 
 export type TemperateSeasonName = "spring" | "summer" | "autumn" | "winter";
@@ -1387,13 +1483,10 @@ export type Calendar = Partial<Record<SeasonalEventName, CalendarEvent>> & {
 
 export type LavaPit = {
   createdAt: number;
-  x: number;
-  y: number;
-  height: number;
-  width: number;
   startedAt?: number;
   collectedAt?: number;
-};
+  removedAt?: number;
+} & OptionalCoordinates;
 
 export type VIP = {
   bundles: { name: VipBundle; boughtAt: number }[];
@@ -1408,6 +1501,14 @@ export type NFT = {
   expiresAt: number;
   acknowledgedAt?: number;
 };
+
+export type BoostName =
+  | InventoryItemName
+  | BumpkinItem
+  | BumpkinRevampSkillName
+  | BudNFTName;
+
+export type BoostUsedAt = Partial<Record<BoostName, number>>;
 
 export interface GameState {
   home: Home;
@@ -1443,6 +1544,7 @@ export interface GameState {
     upgradedAt?: number;
     previousExpansions?: number;
     sunstones?: number;
+    biome?: LandBiomeName;
   };
 
   username?: string;
@@ -1460,8 +1562,6 @@ export interface GameState {
   createdAt: number;
 
   tradedAt?: string;
-  bertObsession?: CurrentObsession;
-  bertObsessionCompletedAt?: Date;
   warCollectionOffer?: WarCollectionOffer;
 
   minigames: {
@@ -1480,6 +1580,7 @@ export interface GameState {
   previousWardrobe: Wardrobe;
   stock: Inventory;
   stockExpiry: StockExpiry;
+  boostsUsedAt?: BoostUsedAt;
 
   // When an item is burnt, what the prize was
   mysteryPrizes: Partial<Record<InventoryItemName, Reveal[]>>;
@@ -1557,6 +1658,7 @@ export interface GameState {
   dailyRewards?: DailyRewards;
   auctioneer: {
     bid?: Bid;
+    minted?: Minted;
   };
   chores?: ChoresV2;
   kingdomChores: KingdomChores;
@@ -1571,7 +1673,15 @@ export interface GameState {
     tradePoints?: number;
     dailyListings?: { date: number; count: number };
     dailyPurchases?: { date: number; count: number };
+    weeklySales?: {
+      [date: string]: Partial<Record<MarketplaceTradeableName, number>>;
+    };
+
+    weeklyPurchases?: {
+      [date: string]: Partial<Record<MarketplaceTradeableName, number>>;
+    };
   };
+
   buds?: Record<number, Bud>;
 
   christmas2024?: Christmas;
@@ -1589,6 +1699,10 @@ export interface GameState {
     >;
   };
   faction?: Faction;
+  previousFaction?: {
+    name: FactionName;
+    leftAt: number;
+  };
   dailyFactionDonationRequest?: {
     resource: DonationItemName;
     amount: Decimal;
@@ -1646,6 +1760,7 @@ export interface GameState {
   };
   discord?: {
     connected: boolean;
+    verified: boolean;
   };
   referrals?: {
     totalReferrals: number;
@@ -1663,7 +1778,69 @@ export interface GameState {
   };
 
   rewardBoxes?: RewardBoxes;
+
+  floatingIsland: {
+    schedule: {
+      startAt: number;
+      endAt: number;
+    }[];
+    shop: FloatingIslandShop;
+    boughtAt?: Partial<Record<FloatingShopItemName, number>>;
+    petalPuzzleSolvedAt?: number;
+  };
+  megastore?: {
+    boughtAt: Partial<Record<SeasonalTierItemName, number>>;
+  };
+  withdrawals?: {
+    amount: number;
+  };
+  blessing: Blessing;
+
+  monuments?: Partial<Record<MonumentName, { createdAt: number }>>;
+
+  aoe: AOE;
+  socialFarming: {
+    points: number;
+    villageProjects: Partial<Record<MonumentName, { cheers: number }>>;
+    cheersGiven: {
+      date: string;
+      projects: Partial<Record<MonumentName, number[]>>;
+      farms: number[];
+    };
+    cheers: {
+      cheersUsed: number;
+      freeCheersClaimedAt: number;
+    };
+    dailyCollections?: Record<
+      number,
+      {
+        pointGivenAt?: number;
+        clutter: Record<
+          string,
+          {
+            collectedAt: number;
+            type: ClutterName;
+          }
+        >;
+      }
+    >;
+    clutter?: {
+      spawnedAt: number;
+      locations: Record<
+        string,
+        {
+          type: ClutterName;
+          x: number;
+          y: number;
+        }
+      >;
+    };
+  };
 }
+
+export type AOE = Partial<
+  Record<AOEItemName, Partial<Record<number, Partial<Record<number, number>>>>>
+>;
 
 export type FaceRecognitionEvent =
   | { event: "succeeded"; createdAt: number; confidence: number }

@@ -7,7 +7,6 @@ import { GameWallet } from "features/wallet/Wallet";
 import { useAppTranslation } from "lib/i18n/useAppTranslations";
 import { Transaction } from "features/island/hud/Transaction";
 import { Panel } from "components/ui/Panel";
-import { RoninSupportWidget } from "features/wallet/components/PolygonRequired";
 
 interface Props {
   onClose: () => void;
@@ -19,15 +18,13 @@ export const StoreOnChainModal: React.FC<Props> = ({ onClose }) => {
   const storeData = () => {
     gameService.send("TRANSACT", {
       transaction: "transaction.progressSynced",
-      request: {
-        captcha: "",
-      },
+      request: { captcha: "" },
     });
     onClose();
   };
 
   // Transaction already in progress
-  const transaction = gameService.state.context.state.transaction;
+  const transaction = gameService.getSnapshot().context.state.transaction;
   if (transaction) {
     return (
       <Panel>
@@ -65,7 +62,6 @@ export const StoreOnChainModal: React.FC<Props> = ({ onClose }) => {
           </>
         </GameWallet>
       </CloseButtonPanel>
-      <RoninSupportWidget />
     </>
   );
 };

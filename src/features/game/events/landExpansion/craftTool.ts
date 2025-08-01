@@ -1,5 +1,4 @@
 import Decimal from "decimal.js-light";
-import { getKeys } from "features/game/types/craftables";
 import {
   TreasureToolName,
   TREASURE_TOOLS,
@@ -12,18 +11,12 @@ import { trackActivity } from "features/game/types/bumpkinActivity";
 import cloneDeep from "lodash.clonedeep";
 
 import { GameState, IslandType } from "../../types/game";
-import {
-  PURCHASEABLE_BAIT,
-  PurchaseableBait,
-} from "features/game/types/fishing";
 import { hasRequiredIslandExpansion } from "features/game/lib/hasRequiredIslandExpansion";
 import { getWeatherShop, WeatherShopItem } from "features/game/types/calendar";
+import { hasFeatureAccess } from "lib/flags";
+import { getObjectEntries } from "features/game/expansion/lib/utils";
 
-type CraftableToolName =
-  | WorkbenchToolName
-  | TreasureToolName
-  | PurchaseableBait
-  | WeatherShopItem;
+type CraftableToolName = WorkbenchToolName | TreasureToolName | WeatherShopItem;
 
 export type CraftToolAction = {
   type: "tool.crafted";
@@ -36,7 +29,6 @@ export const CRAFTABLE_TOOLS = (
 ): Record<CraftableToolName, Tool> => ({
   ...WORKBENCH_TOOLS,
   ...TREASURE_TOOLS,
-  ...PURCHASEABLE_BAIT,
   ...LOVE_ANIMAL_TOOLS,
   ...getWeatherShop(islandType),
 });
@@ -119,12 +111,30 @@ export function craftTool({ state, action }: Options) {
     throw new Error("Insufficient Coins");
   }
 
-  const subtractedInventory = getKeys(tool.ingredients).reduce(
-    (inventory, ingredientName) => {
-      const count = inventory[ingredientName] || new Decimal(0);
-      const totalAmount =
-        tool.ingredients[ingredientName]?.mul(amount) || new Decimal(0);
+  let toolIngredients = tool.ingredients;
 
+  // To delete when LEATHER_TOOLS is released
+  if (!hasFeatureAccess(stateCopy, "LEATHER_TOOLS")) {
+    if (action.tool === "Oil Drill") {
+      toolIngredients = {
+        Wood: new Decimal(25),
+        Iron: new Decimal(10),
+      };
+    }
+
+    if (action.tool === "Sand Drill") {
+      toolIngredients = {
+        Oil: new Decimal(1),
+        Crimstone: new Decimal(1),
+        Wood: new Decimal(5),
+      };
+    }
+  }
+
+  const subtractedInventory = getObjectEntries(toolIngredients).reduce(
+    (inventory, [ingredientName, ingredientAmount]) => {
+      const count = inventory[ingredientName] || new Decimal(0);
+      const totalAmount = ingredientAmount?.mul(amount) || new Decimal(0);
       if (count.lessThan(totalAmount)) {
         throw new Error(`Insufficient ingredient: ${ingredientName}`);
       }
@@ -144,13 +154,14 @@ export function craftTool({ state, action }: Options) {
     bumpkin.activity,
     new Decimal(amount),
   );
+
+  stateCopy.coins = stateCopy.coins - price;
   bumpkin.activity = trackActivity(
     "Coins Spent",
     bumpkin.activity,
     new Decimal(price),
   );
 
-  stateCopy.coins = stateCopy.coins - price;
   stateCopy.inventory = {
     ...subtractedInventory,
     [action.tool]: oldAmount.add(amount) as Decimal,

@@ -4,7 +4,7 @@ import { assign, createMachine, Interpreter, State } from "xstate";
 import { PlazaRoomState } from "./types/Room";
 
 import { CONFIG } from "lib/config";
-import { Bumpkin, FactionName } from "features/game/types/game";
+import { Bumpkin, FactionName, IslandType } from "features/game/types/game";
 import { INITIAL_BUMPKIN } from "features/game/lib/constants";
 import { SPAWNS } from "./lib/spawn";
 import { Moderation } from "features/game/lib/gameMachine";
@@ -31,7 +31,6 @@ export type Scenes = {
   bumpkin_house: Room<PlazaRoomState> | undefined;
   portal_example: Room<PlazaRoomState> | undefined;
   infernos: Room<PlazaRoomState> | undefined;
-  easter_island: Room<PlazaRoomState> | undefined;
   stream: Room<PlazaRoomState> | undefined;
   love_island: Room<PlazaRoomState> | undefined;
 };
@@ -72,6 +71,8 @@ export type ServerId =
   | "sunflorea_oasis"
   | "sunflorea_brazil"
   | "sunflorea_magic"
+  | "sunflorea_kale"
+  | "sunflorea_flower"
   | "sunflorea_stream";
 
 export type ServerName =
@@ -80,6 +81,8 @@ export type ServerName =
   | "Oasis"
   | "Brazil"
   | "Magic"
+  | "Kale"
+  | "Flower"
   | "Bumpkin Bazaar";
 export type ServerPurpose = "Chill & Chat" | "Trading";
 
@@ -114,7 +117,24 @@ const SERVERS: Server[] = [
     population: 0,
     purpose: "Chill & Chat",
   },
-  // { name: "Magic", id: "sunflorea_magic", population: 0 },
+  {
+    name: "Magic",
+    id: "sunflorea_magic",
+    population: 0,
+    purpose: "Chill & Chat",
+  },
+  {
+    name: "Kale",
+    id: "sunflorea_kale",
+    population: 0,
+    purpose: "Chill & Chat",
+  },
+  {
+    name: "Flower",
+    id: "sunflorea_flower",
+    population: 0,
+    purpose: "Chill & Chat",
+  },
 ];
 
 export interface MMOContext {
@@ -133,6 +153,11 @@ export interface MMOContext {
   isCommunity?: boolean;
   firstDeliveryNpc?: NPCName;
   moderation: Moderation;
+  totalDeliveries: number;
+  dailyStreak: number;
+  isVip: boolean;
+  createdAt: number;
+  islandType: IslandType;
 }
 
 export type MMOState = {
@@ -197,12 +222,16 @@ export const mmoMachine = createMachine<MMOContext, MMOEvent, MMOState>({
     previousSceneId: null,
     experience: 0,
     isCommunity: false,
+    totalDeliveries: 0,
+    dailyStreak: 0,
+    isVip: false,
+    createdAt: 0,
+    islandType: "basic",
     moderation: {
       kicked: [],
       muted: [],
     },
   },
-  exit: (context) => context.server?.leave(),
   states: {
     initialising: {
       always: [
@@ -308,6 +337,11 @@ export const mmoMachine = createMachine<MMOContext, MMOEvent, MMOState>({
             moderation: context.moderation,
             username: context.username,
             faction: context.faction,
+            totalDeliveries: context.totalDeliveries,
+            dailyStreak: context.dailyStreak,
+            isVip: context.isVip,
+            createdAt: context.createdAt,
+            islandType: context.islandType,
           });
 
           return { server, client, serverId };
@@ -359,6 +393,11 @@ export const mmoMachine = createMachine<MMOContext, MMOEvent, MMOState>({
               sceneId: context.sceneId,
               experience: context.experience,
               moderation: context.moderation,
+              totalDeliveries: context.totalDeliveries,
+              dailyStreak: context.dailyStreak,
+              isVip: context.isVip,
+              createdAt: context.createdAt,
+              islandType: context.islandType,
             },
           );
 

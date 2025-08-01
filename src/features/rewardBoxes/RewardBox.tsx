@@ -1,4 +1,4 @@
-import React, { useContext, useRef } from "react";
+import React, { useContext, useEffect, useRef, useState } from "react";
 
 import { Label } from "components/ui/Label";
 import { Context, useGame } from "features/game/GameProvider";
@@ -15,6 +15,8 @@ import { ClaimReward } from "features/game/expansion/components/ClaimReward";
 import { InventoryItemName } from "features/game/types/game";
 import coinsIcon from "assets/icons/coins.webp";
 import vipIcon from "assets/icons/vip.webp";
+import flowerTokenIcon from "assets/icons/flower_token.webp";
+
 import { useAppTranslation } from "lib/i18n/useAppTranslations";
 export const RewardBox: React.FC = () => {
   const { gameService } = useContext(Context);
@@ -57,11 +59,9 @@ export const RewardBox: React.FC = () => {
   );
 };
 
-type BoxRewardName = InventoryItemName | "Coins" | "VIP";
+type BoxRewardName = InventoryItemName | "Coins" | "VIP" | "Flower";
 
-export const OpeningBox: React.FC<{
-  name: RewardBoxName;
-}> = ({ name }) => {
+export const OpeningBox: React.FC<{ name: RewardBoxName }> = ({ name }) => {
   const openedAt = useRef<number>(0);
   const { gameService, gameState } = useGame();
   const { t } = useAppTranslation();
@@ -69,6 +69,21 @@ export const OpeningBox: React.FC<{
   const ANIMATION_DURATION = 1800;
   // Delay between each crow's animation
   const SEQUENCE_DELAY = 600;
+
+  const [isReady, setIsReady] = useState(false);
+
+  // Every second, check whether it is time to show
+  // We have this effect, to ensure the animation shows for at least 3 seconds
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const reward =
+        gameService.getSnapshot().context.state.rewardBoxes?.[name]?.reward;
+      const readyToView = openedAt.current + 3000 < Date.now() && !!reward;
+
+      setIsReady(readyToView);
+    }, 1000);
+    return () => clearInterval(interval);
+  }, []);
 
   // Get all available rarecrow names
   const itemNames: BoxRewardName[] = REWARD_BOXES[name].rewards.reduce(
@@ -82,6 +97,9 @@ export const OpeningBox: React.FC<{
       }
       if (reward.vipDays) {
         names = [...names, "VIP"];
+      }
+      if (reward.flower) {
+        names = [...names, "Flower"];
       }
       return names;
     },
@@ -98,8 +116,6 @@ export const OpeningBox: React.FC<{
     (state) => state.context.state.rewardBoxes?.[name]?.reward,
   );
 
-  const isReady = openedAt.current + 3000 < Date.now() && !!reward;
-
   const open = () => {
     gameService.send("rewardBox.opened", { name });
     gameService.send("SAVE");
@@ -113,18 +129,18 @@ export const OpeningBox: React.FC<{
 
   const isOpened = !!gameState.context.state.rewardBoxes?.[name]?.spunAt;
 
-  if (isReady) {
+  if (isReady && reward) {
     return (
       <Panel>
         <ClaimReward
           reward={{
-            coins: reward.coins ?? 0,
+            coins: reward!.coins ?? 0,
             id: "rewardBox",
             createdAt: 0,
-            items: reward.items ?? {},
+            items: reward!.items ?? {},
             wearables: {},
-            sfl: 0,
-            vipDays: reward.vipDays ?? 0,
+            sfl: reward!.flower ?? 0,
+            vipDays: reward!.vipDays ?? 0,
           }}
           onClaim={onClaimed}
         />
@@ -157,9 +173,7 @@ export const OpeningBox: React.FC<{
       <div className="w-32 h-32 relative">
         <img
           src={ITEM_DETAILS[name].image}
-          className={classNames("w-full ", {
-            "animate-pulsate": isOpened,
-          })}
+          className={classNames("w-full ", { "animate-pulsate": isOpened })}
         />
         {isOpened &&
           currentCrows.current
@@ -172,7 +186,9 @@ export const OpeningBox: React.FC<{
                     ? coinsIcon
                     : name === "VIP"
                       ? vipIcon
-                      : ITEM_DETAILS[name]?.image
+                      : name === "Flower"
+                        ? flowerTokenIcon
+                        : ITEM_DETAILS[name]?.image
                 }
                 className={`w-8 absolute ${positions[index]} opacity-0 animate-pulse`}
                 style={{

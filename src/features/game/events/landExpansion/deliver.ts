@@ -3,6 +3,7 @@ import { trackActivity } from "features/game/types/bumpkinActivity";
 import { CONSUMABLES, COOKABLE_CAKES } from "features/game/types/consumables";
 import { getKeys } from "features/game/types/craftables";
 import {
+  BoostName,
   GameState,
   Inventory,
   InventoryItemName,
@@ -29,11 +30,9 @@ import { hasVipAccess } from "features/game/lib/vipAccess";
 import { getActiveCalendarEvent } from "features/game/types/calendar";
 import { isCollectibleBuilt } from "features/game/lib/collectibleBuilt";
 import { hasReputation, Reputation } from "features/game/lib/reputation";
-import { hasFeatureAccess } from "lib/flags";
-import {
-  getLoveRushStreaks,
-  getLoveRushDeliveryRewards,
-} from "features/game/types/loveRushDeliveries";
+
+import { CHAPTER_TICKET_BOOST_ITEMS } from "./completeNPCChore";
+import { isCollectible } from "./garbageSold";
 
 export const TICKET_REWARDS: Record<QuestNPCName, number> = {
   "pumpkin' pete": 1,
@@ -70,47 +69,20 @@ export function generateDeliveryTickets({
     amount += 2;
   }
 
-  if (
-    getCurrentSeason() === "Bull Run" &&
-    isWearableActive({ game, name: "Cowboy Hat" })
-  ) {
-    amount += 1;
-  }
+  const chapter = getCurrentSeason(now);
+  const chapterBoost = CHAPTER_TICKET_BOOST_ITEMS[chapter];
 
-  if (
-    getCurrentSeason() === "Bull Run" &&
-    isWearableActive({ game, name: "Cowboy Shirt" })
-  ) {
-    amount += 1;
-  }
-
-  if (
-    getCurrentSeason() === "Bull Run" &&
-    isWearableActive({ game, name: "Cowboy Trouser" })
-  ) {
-    amount += 1;
-  }
-
-  if (
-    getCurrentSeason() === "Winds of Change" &&
-    isWearableActive({ game, name: "Acorn Hat" })
-  ) {
-    amount += 1;
-  }
-
-  if (
-    getCurrentSeason() === "Winds of Change" &&
-    isCollectibleBuilt({ game, name: "Igloo" })
-  ) {
-    amount += 1;
-  }
-
-  if (
-    getCurrentSeason() === "Winds of Change" &&
-    isCollectibleBuilt({ game, name: "Hammock" })
-  ) {
-    amount += 1;
-  }
+  Object.values(chapterBoost).forEach((item) => {
+    if (isCollectible(item)) {
+      if (isCollectibleBuilt({ game, name: item })) {
+        amount += 1;
+      }
+    } else {
+      if (isWearableActive({ game, name: item })) {
+        amount += 1;
+      }
+    }
+  });
 
   const completedAt = game.npcs?.[npc]?.deliveryCompletedAt;
 
@@ -272,13 +244,9 @@ export function getOrderSellPrice<T>(
   game: GameState,
   order: Order,
   now: Date = new Date(),
-): T {
+): { reward: T; boostsUsed: BoostName[] } {
   let mul = 1;
-
-  // Michelin Stars - 5% bonus
-  if (game.bumpkin?.skills["Michelin Stars"]) {
-    mul += 0.05;
-  }
+  const boostsUsed: BoostName[] = [];
 
   if (
     order.from === "betty" &&
@@ -286,6 +254,7 @@ export function getOrderSellPrice<T>(
     order.reward.coins
   ) {
     mul += 0.3;
+    boostsUsed.push("Betty's Friend");
   }
 
   if (
@@ -294,6 +263,7 @@ export function getOrderSellPrice<T>(
     order.reward.coins
   ) {
     mul += 0.5;
+    boostsUsed.push("Victoria's Secretary");
   }
 
   if (
@@ -302,6 +272,7 @@ export function getOrderSellPrice<T>(
     order.reward.coins
   ) {
     mul += 0.2;
+    boostsUsed.push("Forge-Ward Profits");
   }
 
   // Fruity Profit - 50% Coins bonus if fruit
@@ -313,6 +284,7 @@ export function getOrderSellPrice<T>(
     const items = getKeys(order.items);
     if (items.some((name) => isFruit(name as PatchFruitName))) {
       mul += 0.5;
+      boostsUsed.push("Fruity Profit");
     }
   }
 
@@ -323,6 +295,7 @@ export function getOrderSellPrice<T>(
     order.from === "corale"
   ) {
     mul += 1;
+    boostsUsed.push("Fishy Fortune");
   }
 
   // Nom Nom - 10% bonus with food orders
@@ -330,6 +303,7 @@ export function getOrderSellPrice<T>(
     const items = getKeys(order.items);
     if (items.some((name) => name in CONSUMABLES && !(name in FISH))) {
       mul += 0.1;
+      boostsUsed.push("Nom Nom");
     }
   }
 
@@ -339,6 +313,7 @@ export function getOrderSellPrice<T>(
     isWearableActive({ name: "Chef Apron", game })
   ) {
     mul += 0.2;
+    boostsUsed.push("Chef Apron");
   }
 
   // Apply the faction crown boost if in the right faction
@@ -348,6 +323,7 @@ export function getOrderSellPrice<T>(
     isWearableActive({ game, name: FACTION_OUTFITS[factionName].crown })
   ) {
     mul += 0.25;
+    boostsUsed.push(FACTION_OUTFITS[factionName].crown);
   }
 
   const completedAt = game.npcs?.[order.from]?.deliveryCompletedAt;
@@ -366,10 +342,16 @@ export function getOrderSellPrice<T>(
   }
 
   if (order.reward.sfl) {
-    return new Decimal(order.reward.sfl ?? 0).mul(mul) as T;
+    return {
+      reward: new Decimal(order.reward.sfl ?? 0).mul(mul) as T,
+      boostsUsed,
+    };
   }
 
-  return ((order.reward.coins ?? 0) * mul) as T;
+  return {
+    reward: ((order.reward.coins ?? 0) * mul) as T,
+    boostsUsed,
+  };
 }
 
 export const GOBLINS_REQUIRING_REPUTATION: NPCName[] = [
@@ -445,6 +427,12 @@ export function deliverOrder({
         }
 
         game.coins = coins - amount;
+
+        bumpkin.activity = trackActivity(
+          "Coins Spent",
+          bumpkin.activity,
+          new Decimal(amount),
+        );
       } else if (name === "sfl") {
         const sfl = game.balance;
         const amount = order.items[name] || new Decimal(0);
@@ -475,14 +463,18 @@ export function deliverOrder({
     });
 
     if (order.reward.sfl) {
-      const sfl = getOrderSellPrice<Decimal>(game, order, new Date(createdAt));
+      const { reward: sfl } = getOrderSellPrice<Decimal>(
+        game,
+        order,
+        new Date(createdAt),
+      );
       game.balance = game.balance.add(sfl);
 
       bumpkin.activity = trackActivity("SFL Earned", bumpkin.activity, sfl);
     }
 
     if (order.reward.coins) {
-      const coinsReward = getOrderSellPrice<number>(
+      const { reward: coinsReward } = getOrderSellPrice<number>(
         game,
         order,
         new Date(createdAt),
@@ -530,30 +522,6 @@ export function deliverOrder({
         points: (npc.friendship?.points ?? 0) + DELIVERY_FRIENDSHIP_POINTS,
         giftClaimedAtPoints: npc.friendship?.giftClaimedAtPoints ?? 0,
         giftedAt: npc.friendship?.giftedAt,
-      };
-    }
-
-    // Handle Love Rush rewards during the Love Rush event
-    if (hasFeatureAccess(game, "LOVE_RUSH")) {
-      const { newStreak, currentStreak } = getLoveRushStreaks({
-        streaks: npc.streaks,
-        createdAt,
-      });
-
-      const { loveCharmReward } = getLoveRushDeliveryRewards({
-        currentStreak,
-        newStreak,
-        game,
-        npcName: order.from,
-      });
-
-      const loveCharmCount = game.inventory["Love Charm"] ?? new Decimal(0);
-
-      game.inventory["Love Charm"] = loveCharmCount.add(loveCharmReward);
-
-      npc.streaks = {
-        streak: newStreak,
-        lastClaimedAt: createdAt,
       };
     }
 

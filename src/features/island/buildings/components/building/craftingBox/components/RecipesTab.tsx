@@ -28,6 +28,9 @@ import { getKeys } from "features/game/types/decorations";
 import { CollectibleName } from "features/game/types/craftables";
 import { availableWardrobe } from "features/game/events/landExpansion/equip";
 import { getBoostedCraftingTime } from "features/game/events/landExpansion/startCrafting";
+import { COLLECTIBLE_BUFF_LABELS } from "features/game/types/collectibleItemBuffs";
+import lightningIcon from "assets/icons/lightning.png";
+import { InventoryItemName } from "features/game/types/game";
 
 const _state = (state: MachineState) => state.context.state;
 
@@ -63,7 +66,7 @@ export const RecipesTab: React.FC<Props> = ({
   }, [recipes, searchTerm]);
 
   const sillhouetteRecipes = useMemo(() => {
-    return Object.entries(RECIPES).reduce((acc, [name, recipe]) => {
+    return Object.entries(RECIPES(state)).reduce((acc, [name, recipe]) => {
       if (!recipes[name as RecipeItemName]) {
         acc[name as RecipeItemName] = recipe;
       }
@@ -77,10 +80,10 @@ export const RecipesTab: React.FC<Props> = ({
     // Removed placed items
     getKeys(updatedInventory).forEach((itemName) => {
       const placedCount =
-        (gameService.state.context.state.collectibles[
+        (gameService.getSnapshot().context.state.collectibles[
           itemName as CollectibleName
         ]?.length ?? 0) +
-        (gameService.state.context.state.home?.collectibles[
+        (gameService.getSnapshot().context.state.home?.collectibles[
           itemName as CollectibleName
         ]?.length ?? 0);
 
@@ -93,7 +96,9 @@ export const RecipesTab: React.FC<Props> = ({
   }, [inventory]);
 
   const remainingWardrobe = useMemo(() => {
-    const updatedWardrobe = availableWardrobe(gameService.state.context.state);
+    const updatedWardrobe = availableWardrobe(
+      gameService.getSnapshot().context.state,
+    );
 
     return updatedWardrobe;
   }, [wardrobe]);
@@ -144,7 +149,7 @@ export const RecipesTab: React.FC<Props> = ({
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
           {Object.values(filteredRecipes || {}).map((recipe) => {
             const canCraft = hasRequiredIngredients(recipe);
-            const boostedCraftTime = getBoostedCraftingTime({
+            const { seconds: boostedCraftTime } = getBoostedCraftingTime({
               game: state,
               time: recipe.time,
             });
@@ -283,6 +288,9 @@ export const RecipesTab: React.FC<Props> = ({
                   key={recipe.name}
                   className="flex flex-col p-2 bg-brown-200 rounded-lg border border-brown-400"
                 >
+                  <Label type="transparent" className="mb-1">
+                    {recipe.name}
+                  </Label>
                   <div className="flex items-start justify-between">
                     <div className="flex flex-col mr-2">
                       <div className="flex">
@@ -306,13 +314,14 @@ export const RecipesTab: React.FC<Props> = ({
                         </ButtonPanel>
                       </div>
                       <div className="flex mt-1">
-                        <img
-                          src={SUNNYSIDE.icons.stopwatch}
-                          className="w-3 h-3 mr-1"
-                          alt="Crafting time"
-                        />
                         <SquareIcon
-                          icon={SUNNYSIDE.icons.expression_confused}
+                          icon={
+                            COLLECTIBLE_BUFF_LABELS(state)[
+                              recipe.name as InventoryItemName
+                            ]?.length
+                              ? lightningIcon
+                              : SUNNYSIDE.icons.expression_confused
+                          }
                           width={7}
                         />
                       </div>

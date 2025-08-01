@@ -2,7 +2,7 @@ import { useSelector } from "@xstate/react";
 import React, { useContext, useEffect, useState } from "react";
 import Decimal from "decimal.js-light";
 
-import { GameState, Wardrobe } from "features/game/types/game";
+import { Wardrobe } from "features/game/types/game";
 
 import { Button } from "components/ui/Button";
 import { Box } from "components/ui/Box";
@@ -21,22 +21,11 @@ import { MachineState } from "features/game/lib/gameMachine";
 import { Label } from "components/ui/Label";
 import { WalletAddressLabel } from "components/ui/WalletAddressLabel";
 import { PIXEL_SCALE } from "features/game/lib/constants";
-import { canWithdrawBoostedWearable } from "features/game/types/wearableValidation";
 import { hasReputation, Reputation } from "features/game/lib/reputation";
 import { RequiredReputation } from "features/island/hud/components/reputation/Reputation";
-
-export const isCurrentObsession = (itemName: BumpkinItem, game: GameState) => {
-  const obsessionCompletedAt = game.npcs?.bert?.questCompletedAt;
-  const currentObsession = game.bertObsession;
-
-  if (!obsessionCompletedAt || !currentObsession) return false;
-  if (currentObsession.name !== itemName) return false;
-
-  return (
-    obsessionCompletedAt >= currentObsession.startDate &&
-    obsessionCompletedAt <= currentObsession.endDate
-  );
-};
+import { isFaceVerified } from "features/retreat/components/personhood/lib/faceRecognition";
+import { FaceRecognition } from "features/retreat/components/personhood/FaceRecognition";
+import { hasBoostRestriction } from "features/game/types/withdrawRestrictions";
 
 interface Props {
   onWithdraw: (ids: number[], amounts: number[]) => void;
@@ -106,7 +95,12 @@ export const WithdrawWearables: React.FC<Props> = ({ onWithdraw }) => {
   };
 
   const withdrawableItems = [...new Set([...getKeys(wardrobe)])]
-    .filter((item) => wardrobe[item] && !isCurrentObsession(item, state))
+    .filter((item) => wardrobe[item])
+    .filter((itemName) => {
+      const withdrawAt = BUMPKIN_RELEASES[itemName]?.withdrawAt;
+      const canWithdraw = !!withdrawAt && withdrawAt <= new Date();
+      return canWithdraw;
+    })
     .sort((a, b) => ITEM_IDS[a] - ITEM_IDS[b]);
 
   const selectedItems = getKeys(selected)
@@ -122,6 +116,10 @@ export const WithdrawWearables: React.FC<Props> = ({ onWithdraw }) => {
     return <RequiredReputation reputation={Reputation.Seedling} />;
   }
 
+  if (!isFaceVerified({ game: state })) {
+    return <FaceRecognition />;
+  }
+
   return (
     <>
       <div className="p-2 mb-2">
@@ -135,18 +133,17 @@ export const WithdrawWearables: React.FC<Props> = ({ onWithdraw }) => {
           {withdrawableItems.map((itemName) => {
             const wardrobeCount = wardrobe[itemName];
 
-            const withdrawAt = BUMPKIN_RELEASES[itemName]?.withdrawAt;
-            const canWithdraw = !!withdrawAt && withdrawAt <= new Date();
-            const isInUse = !canWithdrawBoostedWearable(itemName, state);
+            const { isRestricted } = hasBoostRestriction({
+              boostUsedAt: state.boostsUsedAt,
+              item: itemName,
+            });
 
             return (
               <Box
                 count={new Decimal(wardrobeCount ?? 0)}
                 key={itemName}
                 onClick={() => onAdd(itemName)}
-                disabled={
-                  isInUse || !canWithdraw || selected[itemName] !== undefined
-                }
+                disabled={isRestricted || selected[itemName] !== undefined}
                 image={getImageUrl(ITEM_IDS[itemName])}
               />
             );

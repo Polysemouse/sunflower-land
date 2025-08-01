@@ -13,6 +13,8 @@ import { wallet } from "lib/blockchain/wallet";
 import { Context } from "features/game/GameProvider";
 import { useAppTranslation } from "lib/i18n/useAppTranslations";
 import { GameWallet } from "features/wallet/Wallet";
+import { isFaceVerified } from "features/retreat/components/personhood/lib/faceRecognition";
+import { FaceRecognition } from "features/retreat/components/personhood/FaceRecognition";
 
 const transferring = SUNNYSIDE.npcs.minting;
 export const TransferAccount: React.FC = () => {
@@ -32,10 +34,10 @@ export const TransferAccount: React.FC = () => {
     try {
       await transferAccount({
         receiver: receiver.address,
-        farmId: gameService.state.context.farmId,
+        farmId: gameService.getSnapshot().context.farmId,
         token: authState.context.user.rawToken as string,
         account: wallet.getAccount() as string,
-        nftId: gameService.state.context.nftId!,
+        nftId: gameService.getSnapshot().context.nftId!,
       });
       setState("success");
     } catch {
@@ -48,6 +50,10 @@ export const TransferAccount: React.FC = () => {
     window.location.href = window.location.pathname;
   };
 
+  if (!isFaceVerified({ game: gameService.getSnapshot().context.state })) {
+    return <FaceRecognition />;
+  }
+
   if (state === "success") {
     return (
       <div className="flex flex-col items-center">
@@ -56,14 +62,9 @@ export const TransferAccount: React.FC = () => {
           className="w-64 md-mt-2"
           alt="Sunflower-Land Farm Account NFT Image"
         />
-        <span
-          style={{
-            wordBreak: "break-word",
-          }}
-          className="text-center mb-2"
-        >
+        <span style={{ wordBreak: "break-word" }} className="text-center mb-2">
           {t("transfer.Account", {
-            farmID: gameService.state.context.farmId,
+            farmID: gameService.getSnapshot().context.farmId,
             receivingAddress: receiver.address,
           })}
         </span>

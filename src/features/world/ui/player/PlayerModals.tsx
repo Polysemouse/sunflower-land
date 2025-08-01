@@ -5,7 +5,6 @@ import levelIcon from "assets/icons/level_up.png";
 import giftIcon from "assets/icons/gift.png";
 import blossom_bonding from "assets/icons/skill_icons/Bonding.png";
 
-import { BumpkinParts } from "lib/utils/tokenUriBuilder";
 import { PIXEL_SCALE } from "features/game/lib/constants";
 import { getBumpkinLevel } from "features/game/lib/level";
 import { BumpkinLevel } from "features/bumpkins/components/BumpkinModal";
@@ -19,31 +18,16 @@ import { ReportPlayer } from "./ReportPlayer";
 import { PlayerGift } from "./PlayerGift";
 import { StreamReward } from "./StreamReward";
 import { ITEM_DETAILS } from "features/game/types/images";
+import { InnerPanel, OuterPanel } from "components/ui/Panel";
+import { isMobile } from "mobile-device-detect";
+import {
+  playerModalManager,
+  PlayerModalPlayer,
+} from "features/social/lib/playerModalManager";
 
-export type PlayerModalPlayer = {
-  id: number;
-  username?: string;
-  clothing: BumpkinParts;
-  experience: number;
-};
-
-class PlayerModalManager {
-  private listener?: (player: PlayerModalPlayer) => void;
-
-  public open(player: PlayerModalPlayer) {
-    if (this.listener) {
-      this.listener(player);
-    }
-  }
-
-  public listen(cb: (player: PlayerModalPlayer) => void) {
-    this.listener = cb;
-  }
-}
-
-export const playerModalManager = new PlayerModalManager();
-
-const PlayerDetails: React.FC<{ player: PlayerModalPlayer }> = ({ player }) => {
+const OldPlayerDetails: React.FC<{ player: PlayerModalPlayer }> = ({
+  player,
+}) => {
   const { t } = useAppTranslation();
   const [showLabel, setShowLabel] = useState(false);
 
@@ -61,7 +45,7 @@ const PlayerDetails: React.FC<{ player: PlayerModalPlayer }> = ({ player }) => {
   };
 
   return (
-    <>
+    <InnerPanel>
       <div className="flex items-center ml-1 mt-2 mb-4">
         <img
           src={levelIcon}
@@ -81,13 +65,13 @@ const PlayerDetails: React.FC<{ player: PlayerModalPlayer }> = ({ player }) => {
         <div
           className="flex-auto self-start text-right text-xs mr-3 f-10 font-secondary cursor-pointer"
           onClick={() => {
-            copyToClipboard(player?.id as unknown as string);
+            copyToClipboard(player?.farmId as unknown as string);
           }}
         >
           {player?.username && (
             <p className="text-xs mb-1">{player?.username}</p>
           )}
-          <p className="text-xs">{`#${player?.id}`}</p>
+          <p className="text-xs">{`#${player?.farmId}`}</p>
           {showLabel && (
             <div
               className="absolute right-2 text-xs pointer-events-none"
@@ -101,28 +85,31 @@ const PlayerDetails: React.FC<{ player: PlayerModalPlayer }> = ({ player }) => {
           )}
         </div>
       </div>
-    </>
+    </InnerPanel>
   );
 };
 
 interface Props {
   game: GameState;
   farmId: number;
+  isOpen?: boolean;
 }
 
-export const PlayerModals: React.FC<Props> = ({ game, farmId }) => {
+export const PlayerModals: React.FC<Props> = ({ game, farmId, isOpen }) => {
   const [tab, setTab] = useState<
-    "Player" | "Reward" | "Stream" | "Report" | "Airdrop"
+    "Player" | "Reward" | "Stream" | "Report" | "Airdrop" | "Activity"
   >("Player");
-  const [player, setPlayer] = useState<PlayerModalPlayer>();
+  const [player, setPlayer] = useState<PlayerModalPlayer | undefined>();
+  const [showPlayerModal, setShowPlayerModal] = useState(isOpen ?? false);
 
   useEffect(() => {
     playerModalManager.listen((npc) => {
       setPlayer(npc);
+      setShowPlayerModal(true);
       // Automatically set to Stream tab if player has Streamer Hat and is not current player
-      if (npc.clothing?.hat === "Streamer Hat" && farmId !== npc.id) {
+      if (npc.clothing?.hat === "Streamer Hat" && farmId !== npc.farmId) {
         setTab("Stream");
-      } else if (npc.clothing.shirt === "Gift Giver") {
+      } else if (npc.clothing?.shirt === "Gift Giver") {
         setTab("Reward");
       } else {
         setTab("Player");
@@ -134,7 +121,7 @@ export const PlayerModals: React.FC<Props> = ({ game, farmId }) => {
     if (!player) return;
 
     const handlePlayerLeave = (playerId: number) => {
-      if (playerId === player.id) {
+      if (playerId === player.farmId) {
         closeModal();
       }
     };
@@ -148,14 +135,21 @@ export const PlayerModals: React.FC<Props> = ({ game, farmId }) => {
         handlePlayerLeave(event.detail.playerId)) as EventListener);
   }, [player]);
 
-  const closeModal = () => setPlayer(undefined);
+  const closeModal = () => {
+    setShowPlayerModal(false);
+  };
 
-  const playerHasGift = player?.clothing.shirt === "Gift Giver";
-  const playerHasStreamReward = player?.clothing.hat === "Streamer Hat";
-  const notCurrentPlayer = farmId !== player?.id;
+  const playerHasGift = player?.clothing?.shirt === "Gift Giver";
+  const playerHasStreamReward = player?.clothing?.hat === "Streamer Hat";
+  const notCurrentPlayer = farmId !== player?.farmId;
 
   return (
-    <Modal show={!!player} onHide={closeModal}>
+    <Modal
+      show={showPlayerModal}
+      onHide={closeModal}
+      size="lg"
+      onExited={() => setPlayer(undefined)}
+    >
       <CloseButtonPanel
         onClose={closeModal}
         bumpkinParts={player?.clothing}
@@ -166,6 +160,14 @@ export const PlayerModals: React.FC<Props> = ({ game, farmId }) => {
             icon: SUNNYSIDE.icons.player,
             name: "Player",
           },
+          ...(isMobile && hasFeatureAccess(game, "SOCIAL_FARMING")
+            ? [
+                {
+                  icon: SUNNYSIDE.icons.expression_chat,
+                  name: "Activity",
+                },
+              ]
+            : []),
           ...(playerHasGift
             ? [
                 {
@@ -199,20 +201,27 @@ export const PlayerModals: React.FC<Props> = ({ game, farmId }) => {
               ]
             : []),
         ]}
+        container={OuterPanel}
       >
-        {tab === "Player" && (
-          <PlayerDetails player={player as PlayerModalPlayer} />
-        )}
+        {tab === "Player" && player && <OldPlayerDetails player={player} />}
         {tab === "Reward" && <PlayerGift />}
-        {tab === "Stream" && <StreamReward streamerId={player?.id as number} />}
-        {tab === "Report" && <ReportPlayer id={player?.id as number} />}
+        {tab === "Stream" && (
+          <StreamReward streamerId={player?.farmId as number} />
+        )}
+        {tab === "Report" && (
+          <InnerPanel>
+            <ReportPlayer id={player?.farmId as number} />
+          </InnerPanel>
+        )}
         {tab === "Airdrop" && (
-          <AirdropPlayer
-            id={player?.id as number}
-            // Noops
-            onClose={alert}
-            onSubMenuClick={alert}
-          />
+          <InnerPanel className="flex flex-col gap-1 max-h-[500px] overflow-y-auto scrollable">
+            <AirdropPlayer
+              id={player?.farmId as number}
+              // Noops
+              onClose={alert}
+              onSubMenuClick={alert}
+            />
+          </InnerPanel>
         )}
       </CloseButtonPanel>
     </Modal>

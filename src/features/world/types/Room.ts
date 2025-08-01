@@ -47,6 +47,7 @@ export interface Bud extends Schema {
 export interface Message extends Schema {
   text: string;
   farmId?: number;
+  username?: string;
   sessionId: string;
   sceneId: SceneId;
   sentAt: number;
@@ -86,6 +87,16 @@ export interface Dog extends Schema {
   isWalking: boolean;
 }
 
+export type PetalState = "active" | "inactive" | "solved" | "overloaded";
+
+export interface GiantFlower extends Schema {
+  puzzleSolvedAt?: number;
+  leftPetal?: PetalState;
+  rightPetal?: PetalState;
+  topPetal?: PetalState;
+  bottomPetal?: PetalState;
+}
+
 export interface PlazaRoomState extends Schema {
   mapWidth: number;
   mapHeight: number;
@@ -99,4 +110,5 @@ export interface PlazaRoomState extends Schema {
   actions: ArraySchema<Action>;
 
   dogs: MapSchema<Dog>;
+  giantFlower: GiantFlower;
 }

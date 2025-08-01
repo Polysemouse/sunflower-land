@@ -1,6 +1,6 @@
-import React, { useContext, useEffect, useState } from "react";
+import React, { useContext, useState } from "react";
 
-import worldMap from "assets/map/world_map_easter.png";
+import worldMap from "assets/map/world_map.png";
 
 import { Context } from "features/game/GameProvider";
 import { useAppTranslation } from "lib/i18n/useAppTranslations";
@@ -11,7 +11,6 @@ import { useSound } from "lib/utils/hooks/useSound";
 import { getBumpkinLevel } from "features/game/lib/level";
 import { Label } from "components/ui/Label";
 import { isMobile } from "mobile-device-detect";
-import { hasFeatureAccess } from "lib/flags";
 
 const showDebugBorders = false;
 
@@ -27,15 +26,10 @@ export const WorldMap: React.FC<{ onClose: () => void }> = ({ onClose }) => {
 
   const [reqLvl, setReqLvl] = useState(1);
 
-  useEffect(() => {
-    gameService.send("SAVE");
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
   const level = getBumpkinLevel(
-    gameService.state.context.state.bumpkin?.experience ?? 0,
+    gameService.getSnapshot().context.state.bumpkin?.experience ?? 0,
   );
-  const hasFaction = gameService.state.context.state.faction;
+  const hasFaction = gameService.getSnapshot().context.state.faction;
   const canTeleportToFactionHouse = level >= 7 && hasFaction;
 
   const getFactionHouseRoute = () => {
@@ -62,10 +56,7 @@ export const WorldMap: React.FC<{ onClose: () => void }> = ({ onClose }) => {
           type="danger"
           className="absolute bottom-2"
           icon={SUNNYSIDE.icons.lock}
-          style={{
-            left: "50%",
-            transform: "translateX(-50%)",
-          }}
+          style={{ left: "50%", transform: "translateX(-50%)" }}
         >
           <span className="text-xxs sm:text-sm">
             {t("world.intro.levelUpToTravel")}
@@ -450,56 +441,6 @@ export const WorldMap: React.FC<{ onClose: () => void }> = ({ onClose }) => {
           </span>
         )}
       </div>
-
-      {hasFeatureAccess(gameService.state.context.state, "EASTER") && (
-        <div
-          style={{
-            width: "35%",
-            height: "14%",
-            border: showDebugBorders ? "2px solid red" : "",
-            position: "absolute",
-            right: "35%",
-            bottom: "0%",
-          }}
-          className={`flex justify-center items-center ${
-            level >= 2 ? "cursor-pointer" : "cursor-not-allowed"
-          }`}
-          onClick={() => {
-            if (level < 5) return;
-            travel.play();
-            navigate("/world/easter_island");
-            onClose();
-          }}
-        >
-          {level < 2 ? (
-            isMobile ? (
-              <img
-                src={SUNNYSIDE.icons.lock}
-                className="h-4 sm:h-6 ml-1 img-highlight"
-                onClick={() => {
-                  setShowPopup(true);
-                  setReqLvl(2);
-                  setTimeout(() => {
-                    setShowPopup(false);
-                  }, 1300);
-                }}
-              />
-            ) : (
-              <Label
-                type="default"
-                icon={SUNNYSIDE.icons.lock}
-                className="text-sm"
-              >
-                {t("world.lvl.requirement", { lvl: 2 })}
-              </Label>
-            )
-          ) : (
-            <span className="map-text text-xxs sm:text-sm">
-              {"Easter Event"}
-            </span>
-          )}
-        </div>
-      )}
 
       {showPopup && (
         <Label

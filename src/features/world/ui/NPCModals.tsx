@@ -4,15 +4,11 @@ import { NPCName, NPC_WEARABLES, acknowledgeNPC } from "lib/npcs";
 import React, { useEffect, useState } from "react";
 import { Modal } from "components/ui/Modal";
 import { DeliveryPanel } from "./deliveries/DeliveryPanel";
-import { SceneId } from "../mmoMachine";
 
 import { Birdie } from "./npcs/Birdie";
-import { HayseedHankV2 } from "features/helios/components/hayseedHank/HayseedHankV2";
 import { PotionHouseShopItems } from "features/helios/components/potions/component/PotionHouseShopItems";
-import { Bert } from "./npcs/Bert";
 import { Finn } from "./npcs/Finn";
 import { Mayor } from "./npcs/Mayor";
-import { DecorationShopItems } from "features/helios/components/decorations/component/DecorationShopItems";
 import { Stylist } from "./stylist/Stylist";
 import { AuctionHouseModal } from "./AuctionHouseModal";
 import { translate } from "lib/i18n/translate";
@@ -33,14 +29,13 @@ import { CropsAndChickens } from "./portals/CropsAndChickens";
 import { ExampleDonations } from "./donations/ExampleDonations";
 import { NPCS_WITH_ALERTS } from "../containers/BumpkinContainer";
 import { HalloweenNPC } from "./npcs/HalloweenNPC";
-import { FlowerBounties } from "./flowerShop/FlowerBounties";
 import { Santa } from "./npcs/Santa";
 import { SolarForge } from "./infernos/SolarForge";
 import { WeatherShop } from "features/game/expansion/components/temperateSeason/WeatherShop";
-import { SFLBounties } from "./infernos/SFLBounties";
 import { ObsidianExchange } from "./infernos/ObsidianExchange";
 import { PortalChooser } from "./portals/PortalChooser";
 import { Rocketman } from "./npcs/Rocketman";
+import { MegaBountyBoard } from "./flowerShop/MegaBountyBoard";
 
 class NpcModalManager {
   private listener?: (npc: NPCName, isOpen: boolean) => void;
@@ -59,18 +54,13 @@ class NpcModalManager {
 export const npcModalManager = new NpcModalManager();
 
 interface Props {
-  scene: SceneId;
   id: number;
 }
 
-function getInitialNPC(scene: SceneId): NPCName | undefined {
-  return undefined;
-}
-
-export const NPCModals: React.FC<Props> = ({ scene, id }) => {
+export const NPCModals: React.FC<Props> = ({ id }) => {
   const { t } = useAppTranslation();
 
-  const [npc, setNpc] = useState<NPCName | undefined>(getInitialNPC(scene));
+  const [npc, setNpc] = useState<NPCName>();
 
   useEffect(() => {
     npcModalManager.listen((npc) => {
@@ -142,8 +132,7 @@ export const NPCModals: React.FC<Props> = ({ scene, id }) => {
         {npc === "luna" && <HalloweenNPC onClose={closeModal} />}
         {npc === "rocket man" && <Rocketman onClose={closeModal} />}
         {npc === "portaller" && <PortalNPCExample onClose={closeModal} />}
-        {npc === "poppy" && <FlowerBounties onClose={closeModal} />}
-        {npc === "frankie" && <DecorationShopItems onClose={closeModal} />}
+        {npc === "poppy" && <MegaBountyBoard onClose={closeModal} />}
         {npc === "stella" && <Stylist onClose={closeModal} />}
         {npc === "grubnuk" && <DeliveryPanel npc={npc} onClose={closeModal} />}
         {npc === "garth" && <PotionHouseShopItems onClose={closeModal} />}
@@ -151,8 +140,7 @@ export const NPCModals: React.FC<Props> = ({ scene, id }) => {
         {npc === "gorga" && <ObsidianExchange onClose={closeModal} />}
         {npc === "hopper" && <Hopper onClose={closeModal} />}
         {npc === "bailey" && <WeatherShop onClose={closeModal} />}
-        {npc === "gilda" && <SFLBounties onClose={closeModal} />}
-
+        {npc === "gilda" && <DeliveryPanel npc={npc} onClose={closeModal} />}
         {npc === "digby" && <Digby onClose={closeModal} />}
         {npc === "pharaoh" && <DeliveryPanel npc={npc} onClose={closeModal} />}
         {npc === "petro" && (
@@ -208,7 +196,6 @@ export const NPCModals: React.FC<Props> = ({ scene, id }) => {
           </CloseButtonPanel>
         )}
         {npc === "jafar" && <TreasureShop onClose={closeModal} />}
-        {npc === "hank" && <HayseedHankV2 onClose={closeModal} />}
         {npc === "gabi" && (
           <CloseButtonPanel
             onClose={closeModal}
@@ -238,7 +225,7 @@ export const NPCModals: React.FC<Props> = ({ scene, id }) => {
         {npc === "grimtooth" && (
           <DeliveryPanel npc={npc} onClose={closeModal} />
         )}
-        {npc === "bert" && <Bert onClose={closeModal} />}
+        {npc === "bert" && <DeliveryPanel npc={npc} onClose={closeModal} />}
         {npc === "timmy" && <DeliveryPanel npc={npc} onClose={closeModal} />}
         {npc === "old salty" && (
           <DeliveryPanel npc={npc} onClose={closeModal} />

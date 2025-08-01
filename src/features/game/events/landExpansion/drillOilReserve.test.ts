@@ -23,12 +23,9 @@ describe("drillOilReserve", () => {
             "1": {
               x: 1,
               y: 1,
-              height: 2,
-              width: 2,
               createdAt: 0,
               drilled: 0,
               oil: {
-                amount: 1,
                 drilledAt: 0,
               },
             },
@@ -51,12 +48,9 @@ describe("drillOilReserve", () => {
             "1": {
               x: 1,
               y: 1,
-              height: 2,
-              width: 2,
               createdAt: 0,
               drilled: 0,
               oil: {
-                amount: 1,
                 drilledAt: 0,
               },
             },
@@ -85,12 +79,9 @@ describe("drillOilReserve", () => {
             "1": {
               x: 1,
               y: 1,
-              height: 2,
-              width: 2,
               createdAt: now,
               drilled: 0,
               oil: {
-                amount: 1,
                 drilledAt: now - oneHour,
               },
             },
@@ -118,12 +109,9 @@ describe("drillOilReserve", () => {
           "1": {
             x: 1,
             y: 1,
-            height: 2,
-            width: 2,
             createdAt: now,
             drilled: 0,
             oil: {
-              amount: BASE_OIL_DROP_AMOUNT,
               drilledAt: 0,
             },
           },
@@ -164,12 +152,9 @@ describe("drillOilReserve", () => {
           "1": {
             x: 1,
             y: 1,
-            height: 2,
-            width: 2,
             createdAt: now,
             drilled: 0,
             oil: {
-              amount: BASE_OIL_DROP_AMOUNT,
               drilledAt: 0,
             },
           },
@@ -203,12 +188,9 @@ describe("drillOilReserve", () => {
           "1": {
             x: 1,
             y: 1,
-            height: 2,
-            width: 2,
             createdAt: now,
             drilled: 1,
             oil: {
-              amount: 10,
               drilledAt: 0,
             },
           },
@@ -219,13 +201,10 @@ describe("drillOilReserve", () => {
 
     const reserve = game.oilReserves["1"];
 
-    const baseAmountPlusBonus = BASE_OIL_DROP_AMOUNT + OIL_BONUS_DROP_AMOUNT;
-
     expect(reserve.oil.drilledAt).toBe(now);
     expect(reserve.drilled).toBe(2);
     expect(game.inventory["Oil Drill"]?.toNumber()).toBe(1);
     expect(game.inventory.Oil?.toNumber()).toEqual(BASE_OIL_DROP_AMOUNT);
-    expect(reserve.oil.amount).toEqual(baseAmountPlusBonus);
   });
 
   it("gives a +20 bonus on every third drill", () => {
@@ -246,12 +225,9 @@ describe("drillOilReserve", () => {
           "1": {
             x: 1,
             y: 1,
-            height: 2,
-            width: 2,
             createdAt: now,
             drilled: 1,
             oil: {
-              amount: 10,
               drilledAt: 0,
             },
           },
@@ -282,7 +258,6 @@ describe("drillOilReserve", () => {
     expect(reserve.drilled).toBe(3);
     expect(game.inventory["Oil Drill"]?.toNumber()).toBe(1);
     expect(game.inventory.Oil).toStrictEqual(expectedOil);
-    expect(reserve.oil.amount).toEqual(BASE_OIL_DROP_AMOUNT);
   });
 
   it("gives a +0.05 Bonus with Battle Fish", () => {
@@ -314,12 +289,9 @@ describe("drillOilReserve", () => {
           "1": {
             x: 1,
             y: 1,
-            height: 2,
-            width: 2,
             createdAt: now,
             drilled: 0,
             oil: {
-              amount: 10,
               drilledAt: 0,
             },
           },
@@ -328,9 +300,9 @@ describe("drillOilReserve", () => {
       createdAt: now,
     });
 
-    const reserve = game.oilReserves["1"];
-
-    expect(reserve.oil.amount).toEqual(BASE_OIL_DROP_AMOUNT + boost);
+    expect(game.inventory.Oil).toEqual(
+      new Decimal(BASE_OIL_DROP_AMOUNT + boost),
+    );
   });
 
   it("gives a +0.1 Bonus with Knight Chicken", () => {
@@ -362,12 +334,9 @@ describe("drillOilReserve", () => {
           "1": {
             x: 1,
             y: 1,
-            height: 2,
-            width: 2,
             createdAt: now,
             drilled: 0,
             oil: {
-              amount: 10,
               drilledAt: 0,
             },
           },
@@ -376,9 +345,9 @@ describe("drillOilReserve", () => {
       createdAt: now,
     });
 
-    const reserve = game.oilReserves["1"];
-
-    expect(reserve.oil.amount).toEqual(BASE_OIL_DROP_AMOUNT + boost);
+    expect(game.inventory.Oil).toEqual(
+      new Decimal(BASE_OIL_DROP_AMOUNT + boost),
+    );
   });
 
   it("gives a +2 boost with Oil Can equipped", () => {
@@ -398,12 +367,9 @@ describe("drillOilReserve", () => {
           "1": {
             x: 1,
             y: 1,
-            height: 2,
-            width: 2,
             createdAt: now,
             drilled: 0,
             oil: {
-              amount: 10,
               drilledAt: 0,
             },
           },
@@ -418,9 +384,7 @@ describe("drillOilReserve", () => {
       },
     });
 
-    const reserve = game.oilReserves["1"];
-
-    expect(reserve.oil.amount).toEqual(BASE_OIL_DROP_AMOUNT + 2);
+    expect(game.inventory.Oil).toEqual(new Decimal(BASE_OIL_DROP_AMOUNT + 2));
   });
 
   it("gives a +10 Bonus with Oil Overalls", () => {
@@ -448,12 +412,9 @@ describe("drillOilReserve", () => {
           "1": {
             x: 1,
             y: 1,
-            height: 2,
-            width: 2,
             createdAt: now,
             drilled: 0,
             oil: {
-              amount: 10,
               drilledAt: 0,
             },
           },
@@ -462,9 +423,9 @@ describe("drillOilReserve", () => {
       createdAt: now,
     });
 
-    const reserve = game.oilReserves["1"];
-
-    expect(reserve.oil.amount).toEqual(BASE_OIL_DROP_AMOUNT + boost);
+    expect(game.inventory.Oil).toEqual(
+      new Decimal(BASE_OIL_DROP_AMOUNT + boost),
+    );
   });
   it("gives a +1 Bonus with Oil Extraction", () => {
     const boost = 1;
@@ -483,12 +444,9 @@ describe("drillOilReserve", () => {
           "1": {
             x: 1,
             y: 1,
-            height: 2,
-            width: 2,
             createdAt: now,
             drilled: 0,
             oil: {
-              amount: 10,
               drilledAt: 0,
             },
           },
@@ -496,8 +454,9 @@ describe("drillOilReserve", () => {
       },
     });
 
-    const reserve = game.oilReserves["1"];
-    expect(reserve.oil.amount).toEqual(BASE_OIL_DROP_AMOUNT + boost);
+    expect(game.inventory.Oil).toEqual(
+      new Decimal(BASE_OIL_DROP_AMOUNT + boost),
+    );
   });
 
   it("gives a +12.15 Bonus with Battle Fish, Knight Chicken, Oil Overalls and Oil Can", () => {
@@ -546,12 +505,9 @@ describe("drillOilReserve", () => {
           "1": {
             x: 1,
             y: 1,
-            height: 2,
-            width: 2,
             createdAt: now,
             drilled: 0,
             oil: {
-              amount: 10,
               drilledAt: 0,
             },
           },
@@ -560,16 +516,16 @@ describe("drillOilReserve", () => {
       createdAt: now,
     });
 
-    const reserve = game.oilReserves["1"];
-
-    expect(reserve.oil.amount).toEqual(BASE_OIL_DROP_AMOUNT + boost);
+    expect(game.inventory.Oil).toEqual(
+      new Decimal(BASE_OIL_DROP_AMOUNT + boost),
+    );
   });
 
   describe("getDrilledAt", () => {
     it("replenishes oil twice as fast with Dev Wrench", () => {
       const now = Date.now();
 
-      const time = getDrilledAt({
+      const { time } = getDrilledAt({
         game: {
           ...TEST_FARM,
           bumpkin: {
@@ -589,7 +545,7 @@ describe("drillOilReserve", () => {
     it("replenishes oil in 20% less time with Oil Be Back", () => {
       const now = Date.now();
 
-      const time = getDrilledAt({
+      const { time } = getDrilledAt({
         game: {
           ...TEST_FARM,
           bumpkin: {

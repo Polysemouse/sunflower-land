@@ -8,6 +8,7 @@ import gemIcon from "assets/icons/gem.webp";
 import { formatNumber } from "lib/utils/formatNumber";
 import { SUNNYSIDE } from "assets/sunnyside";
 import classNames from "classnames";
+import { useVisiting } from "lib/utils/visitUtils";
 
 interface Props {
   sfl: Decimal;
@@ -17,11 +18,12 @@ interface Props {
 }
 
 export const Balances: React.FC<Props> = ({ sfl, coins, gems, onClick }) => {
+  const { isVisiting } = useVisiting();
   const [showFullBalance, setShowFullBalance] = useState(false);
 
   return (
     <>
-      <div className="flex flex-col absolute space-y-1 items-end z-50 right-3 top-3 !text-[28px] text-stroke">
+      <div className="flex flex-col space-y-1 items-end !text-[28px] text-stroke">
         <div
           className="flex cursor-pointer items-center space-x-3 relative"
           onClick={onClick}
@@ -49,15 +51,17 @@ export const Balances: React.FC<Props> = ({ sfl, coins, gems, onClick }) => {
               }}
             />
           </div>
-          <img
-            src={SUNNYSIDE.ui.add_button}
-            className="absolute"
-            style={{
-              width: 20,
-              right: -8,
-              top: -4,
-            }}
-          />
+          {!isVisiting && (
+            <img
+              src={SUNNYSIDE.ui.add_button}
+              className="absolute"
+              style={{
+                width: 20,
+                right: -8,
+                top: -4,
+              }}
+            />
+          )}
         </div>
         {/* FLOWER */}
         <div

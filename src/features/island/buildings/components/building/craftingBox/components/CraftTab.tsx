@@ -21,7 +21,13 @@ import { SUNNYSIDE } from "assets/sunnyside";
 import { secondsToString } from "lib/utils/time";
 import { PIXEL_SCALE } from "features/game/lib/constants";
 import { SquareIcon } from "components/ui/SquareIcon";
-import { Recipe, RecipeIngredient } from "features/game/lib/crafting";
+import {
+  Recipe,
+  RECIPE_CRAFTABLES,
+  RecipeIngredient,
+  DOLLS,
+  RECIPES_REVISED,
+} from "features/game/lib/crafting";
 import {
   findMatchingRecipe,
   getBoostedCraftingTime,
@@ -33,51 +39,113 @@ import { ModalOverlay } from "components/ui/ModalOverlay";
 import { ButtonPanel, InnerPanel } from "components/ui/Panel";
 import { CollectibleName, getKeys } from "features/game/types/craftables";
 import { availableWardrobe } from "features/game/events/landExpansion/equip";
+import { CROPS } from "features/game/types/crops";
+import { ANIMAL_RESOURCES, COMMODITIES } from "features/game/types/resources";
+import { BEDS } from "features/game/types/beds";
+import { FLOWERS } from "features/game/types/flowers";
+import { SELLABLE_TREASURE } from "features/game/types/treasure";
+import { hasFeatureAccess } from "lib/flags";
+import { getInstantGems } from "features/game/events/landExpansion/speedUpRecipe";
+import fastForward from "assets/icons/fast_forward.png";
+import { ConfirmationModal } from "components/ui/ConfirmationModal";
+import { gameAnalytics } from "lib/gameAnalytics";
 
 const VALID_CRAFTING_RESOURCES: InventoryItemName[] = [
-  "Basic Bed",
-  "Bee Box",
-  "Blue Pansy",
-  "Carrot",
-  "Celestial Frostbloom",
-  "Coral",
-  "Crimsteel",
-  "Crimstone",
-  "Cushion",
-  "Feather",
-  "Gold",
-  "Hardened Leather",
-  "Honey",
-  "Iron",
-  "Kelp Fibre",
-  "Leather",
-  "Merino Cushion",
-  "Merino Wool",
-  "Ocean's Treasure",
-  "Oil",
-  "Pearl",
-  "Pirate Bounty",
+  // Crops
+  "Sunflower",
   "Potato",
+  "Pumpkin",
+  "Carrot",
+  "Radish",
+  "Turnip",
+
+  // Fruits
+  "Tomato",
+  "Lunara",
+  "Duskberry",
+  "Celestine",
+
+  // Resources
+  "Wood",
+  "Stone",
+  "Iron",
+  "Gold",
+  "Crimstone",
+  "Obsidian",
+  "Oil",
+  "Wild Mushroom",
+  "Honey",
+  "Feather",
+  "Leather",
+  "Wool",
+  "Merino Wool",
+
+  // Beds
+  "Basic Bed",
+  "Sturdy Bed",
+
+  // Flowers
+  "Red Pansy",
+  "Yellow Pansy",
+  "Blue Pansy",
+  "White Pansy",
+  "Celestial Frostbloom",
   "Primula Enigma",
   "Prism Petal",
-  "Pumpkin",
-  "Radish",
-  "Red Pansy",
+
+  // Treasure
+  "Coral",
+  "Pearl",
+  "Pirate Bounty",
+  "Seaweed",
+  "Vase",
+
+  // Crafting Box
+  "Bee Box",
+  "Crimsteel",
+  "Cushion",
+  "Hardened Leather",
+  "Kelp Fibre",
+  "Merino Cushion",
+  "Ocean's Treasure",
   "Royal Bedding",
   "Royal Ornament",
-  "Seaweed",
-  "Stone",
-  "Sturdy Bed",
-  "Sunflower",
   "Synthetic Fabric",
   "Timber",
-  "Vase",
-  "White Pansy",
-  "Wild Mushroom",
-  "Wood",
-  "Wool",
-  "Yellow Pansy",
+
+  ...getKeys(DOLLS),
 ];
+
+const validCraftingResourcesSorted = (): InventoryItemName[] => {
+  const crops: InventoryItemName[] = [];
+  const resources: InventoryItemName[] = [];
+  const beds: InventoryItemName[] = [];
+  const flowers: InventoryItemName[] = [];
+  const treasures: InventoryItemName[] = [];
+  const craftingBox: InventoryItemName[] = [];
+  const others: InventoryItemName[] = [];
+
+  VALID_CRAFTING_RESOURCES.forEach((item) => {
+    if (item in CROPS) crops.push(item);
+    else if (item in { ...COMMODITIES, ...ANIMAL_RESOURCES })
+      resources.push(item);
+    else if (item in BEDS) beds.push(item);
+    else if (item in FLOWERS) flowers.push(item);
+    else if (item in SELLABLE_TREASURE) treasures.push(item);
+    else if (item in RECIPE_CRAFTABLES) craftingBox.push(item);
+    else others.push(item);
+  });
+
+  return [
+    ...crops,
+    ...resources,
+    ...beds,
+    ...flowers,
+    ...treasures,
+    ...craftingBox,
+    ...others,
+  ];
+};
 
 const VALID_CRAFTING_WEARABLES: BumpkinItem[] = ["Basic Hair", "Farmer Pants"];
 
@@ -97,6 +165,7 @@ export const CraftTab: React.FC<Props> = ({
   const { t } = useTranslation();
 
   const state = useSelector(gameService, _state);
+  const hasNewCraftingAccess = hasFeatureAccess(state, "CRAFTING");
   const { inventory, wardrobe, craftingBox } = state;
   const {
     status: craftingStatus,
@@ -140,10 +209,10 @@ export const CraftTab: React.FC<Props> = ({
     // Removed placed items
     getKeys(updatedInventory).forEach((itemName) => {
       const placedCount =
-        (gameService.state.context.state.collectibles[
+        (gameService.getSnapshot().context.state.collectibles[
           itemName as CollectibleName
         ]?.length ?? 0) +
-        (gameService.state.context.state.home?.collectibles[
+        (gameService.getSnapshot().context.state.home?.collectibles[
           itemName as CollectibleName
         ]?.length ?? 0);
 
@@ -162,7 +231,9 @@ export const CraftTab: React.FC<Props> = ({
   }, [inventory, selectedItems]);
 
   const remainingWardrobe = useMemo(() => {
-    const updatedWardrobe = availableWardrobe(gameService.state.context.state);
+    const updatedWardrobe = availableWardrobe(
+      gameService.getSnapshot().context.state,
+    );
 
     selectedItems.forEach((item) => {
       const wearable = item?.wearable;
@@ -340,9 +411,7 @@ export const CraftTab: React.FC<Props> = ({
     setShowConfirmModal(false);
     if (craftingStatus === "pending") return;
 
-    gameService.send("crafting.started", {
-      ingredients: selectedItems,
-    });
+    gameService.send("crafting.started", { ingredients: selectedItems });
     if (!currentRecipe) gameService.send("SAVE");
   };
 
@@ -356,7 +425,19 @@ export const CraftTab: React.FC<Props> = ({
     setSelectedIngredient(null);
   };
 
+  const handleInstantCraft = (gems: number) => {
+    gameService.send("crafting.spedUp");
+    gameAnalytics.trackSink({
+      currency: "Gem",
+      amount: gems,
+      item: "Instant Craft",
+      type: "Fee",
+    });
+  };
+
   const isDisabled = isPending || isCrafting || isCraftingBoxEmpty;
+
+  const gems = getInstantGems({ readyAt: craftingReadyAt, game: state });
 
   return (
     <>
@@ -441,17 +522,19 @@ export const CraftTab: React.FC<Props> = ({
               selectedItems={selectedItems}
               inventory={inventory}
               wardrobe={wardrobe}
+              gems={gems}
+              onInstantCraft={handleInstantCraft}
+              hasNewCraftingAccess={hasNewCraftingAccess}
             />
           </div>
         </div>
       </div>
 
       <div className="flex space-x-3 mb-1 ml-1 mr-2">
-        <Label type="default">{t("resources")}</Label>
         {selectedIngredient && (
           <Label
-            type="chill"
-            className=""
+            type="formula"
+            className="ml-1"
             icon={
               selectedIngredient.collectible
                 ? ITEM_DETAILS[selectedIngredient.collectible].image
@@ -464,53 +547,79 @@ export const CraftTab: React.FC<Props> = ({
       </div>
       <div className="flex flex-col max-h-72 overflow-y-auto scrollable pr-1">
         <div className="flex flex-wrap">
-          {VALID_CRAFTING_RESOURCES.map((itemName) => {
-            const amount = remainingInventory[itemName] || new Decimal(0);
-            return (
-              <div
-                key={itemName}
-                draggable={!isPending && amount.greaterThan(0)}
-                onDragStart={(e) =>
-                  handleDragStart(e, { collectible: itemName })
-                }
-                className="flex"
-              >
-                <Box
-                  count={amount}
-                  image={ITEM_DETAILS[itemName]?.image}
-                  isSelected={selectedIngredient?.collectible === itemName}
-                  onClick={() =>
-                    handleIngredientSelect({ collectible: itemName })
+          {validCraftingResourcesSorted()
+            .filter(
+              (itemName) =>
+                (itemName !== "Toadstool Seat" && itemName !== "Crimson Cap") ||
+                hasNewCraftingAccess,
+            )
+            // If it is a doll, but they haven't discovered it yet, don't show it.
+            .filter(
+              (itemName) =>
+                !(itemName in RECIPES_REVISED) ||
+                (itemName in RECIPES_REVISED &&
+                  itemName in state.craftingBox.recipes),
+            )
+            .map((itemName) => {
+              const amount = remainingInventory[itemName] || new Decimal(0);
+              return (
+                <div
+                  key={itemName}
+                  draggable={!isPending && amount.greaterThan(0)}
+                  onDragStart={(e) =>
+                    handleDragStart(e, { collectible: itemName })
                   }
-                  disabled={isPending || isCrafting}
-                />
-              </div>
-            );
-          })}
+                  className="flex"
+                >
+                  <Box
+                    count={amount}
+                    image={ITEM_DETAILS[itemName]?.image}
+                    isSelected={selectedIngredient?.collectible === itemName}
+                    onClick={() =>
+                      handleIngredientSelect({ collectible: itemName })
+                    }
+                    disabled={isPending || isCrafting}
+                  />
+                </div>
+              );
+            })}
+          <Box image={SUNNYSIDE.icons.expression_confused} />
         </div>
-        <Label type="default" className="mb-1 ml-1 mt-1">
-          {t("wearables")}
-        </Label>
-        <div className="flex flex-wrap">
-          {VALID_CRAFTING_WEARABLES.map((itemName) => {
-            const amount = remainingWardrobe[itemName] || 0;
-            return (
-              <div
-                key={itemName}
-                draggable={!isPending && amount > 0}
-                onDragStart={(e) => handleDragStart(e, { wearable: itemName })}
-                className="flex"
-              >
-                <Box
-                  count={new Decimal(amount)}
-                  image={getImageUrl(ITEM_IDS[itemName])}
-                  isSelected={selectedIngredient?.wearable === itemName}
-                  onClick={() => handleIngredientSelect({ wearable: itemName })}
-                  disabled={isPending || isCrafting}
-                />
-              </div>
-            );
-          })}
+        {!hasNewCraftingAccess && (
+          <>
+            <Label type="default" className="mb-1 ml-1 mt-1">
+              {t("wearables")}
+            </Label>
+            <div className="flex flex-wrap">
+              {VALID_CRAFTING_WEARABLES.map((itemName) => {
+                const amount = remainingWardrobe[itemName] || 0;
+                return (
+                  <div
+                    key={itemName}
+                    draggable={!isPending && amount > 0}
+                    onDragStart={(e) =>
+                      handleDragStart(e, { wearable: itemName })
+                    }
+                    className="flex"
+                  >
+                    <Box
+                      count={new Decimal(amount)}
+                      image={getImageUrl(ITEM_IDS[itemName])}
+                      isSelected={selectedIngredient?.wearable === itemName}
+                      onClick={() =>
+                        handleIngredientSelect({ wearable: itemName })
+                      }
+                      disabled={isPending || isCrafting}
+                    />
+                  </div>
+                );
+              })}
+            </div>
+          </>
+        )}
+        <div className="flex items-center  mt-1 mx-1">
+          <img src={SUNNYSIDE.icons.expression_confused} className="h-4 mr-1" />
+          <p className="text-xs">{t("crafting.undiscovered")}</p>
         </div>
       </div>
 
@@ -526,9 +635,7 @@ export const CraftTab: React.FC<Props> = ({
               src={SUNNYSIDE.icons.close}
               className="cursor-pointer"
               onClick={() => setShowConfirmModal(false)}
-              style={{
-                width: `${PIXEL_SCALE * 9}px`,
-              }}
+              style={{ width: `${PIXEL_SCALE * 9}px` }}
             />
           </div>
 
@@ -669,7 +776,7 @@ const RecipeLabelContent: React.FC<{
     return <span>{t("instant")}</span>;
   }
 
-  const boostedCraftTime = getBoostedCraftingTime({
+  const { seconds: boostedCraftTime } = getBoostedCraftingTime({
     game: state,
     time: recipe.time,
   });
@@ -747,6 +854,9 @@ const CraftButton: React.FC<{
   selectedItems: (RecipeIngredient | null)[];
   inventory: Inventory;
   wardrobe: Wardrobe;
+  gems: number;
+  onInstantCraft: (gems: number) => void;
+  hasNewCraftingAccess: boolean;
 }> = ({
   isCrafting,
   isPending,
@@ -757,8 +867,12 @@ const CraftButton: React.FC<{
   selectedItems,
   inventory,
   wardrobe,
+  gems,
+  onInstantCraft,
+  hasNewCraftingAccess,
 }) => {
   const { t } = useTranslation();
+  const [showConfirmation, setShowConfirmation] = useState(false);
 
   const hasRequiredIngredients = useMemo(() => {
     return selectedItems.every((ingredient) => {
@@ -784,9 +898,35 @@ const CraftButton: React.FC<{
 
   if (isCrafting || isPending) {
     return (
-      <Button className="mt-2 whitespace-nowrap" disabled={true}>
-        {t("crafting")}
-      </Button>
+      <div className="flex flex-col sm:flex-row items-center justify-center gap-1 mt-2">
+        <Button disabled={true}>{t("crafting")}</Button>
+        {hasNewCraftingAccess && (
+          <Button
+            disabled={!inventory.Gem?.gte(gems) || isPending}
+            onClick={() => setShowConfirmation(true)}
+          >
+            <div className="flex items-center justify-center gap-1">
+              <img src={fastForward} className="h-5" />
+              <span className="text-sm flex items-center">{gems}</span>
+              <img src={ITEM_DETAILS["Gem"].image} className="h-5" />
+            </div>
+          </Button>
+        )}
+        <ConfirmationModal
+          show={showConfirmation}
+          onHide={() => setShowConfirmation(false)}
+          onCancel={() => setShowConfirmation(false)}
+          onConfirm={() => {
+            onInstantCraft(gems);
+            setShowConfirmation(false);
+          }}
+          messages={[
+            t("instantCook.confirmationMessage"),
+            t("instantCook.costMessage", { gems }),
+          ]}
+          confirmButtonLabel={t("instantCook.finish")}
+        />
+      </div>
     );
   }
 

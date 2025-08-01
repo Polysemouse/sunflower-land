@@ -1,8 +1,5 @@
-import { GameState } from "features/game/types/game";
-import {
-  ResourceName,
-  RESOURCE_DIMENSIONS,
-} from "features/game/types/resources";
+import { GameState, Tree } from "features/game/types/game";
+import { ResourceName } from "features/game/types/resources";
 import Decimal from "decimal.js-light";
 import { produce } from "immer";
 
@@ -29,25 +26,49 @@ export function placeTree({
 }: Options): GameState {
   return produce(state, (game) => {
     const available = (game.inventory.Tree || new Decimal(0)).minus(
-      Object.keys(game.trees).length,
+      Object.values(game.trees).filter(
+        (tree) => tree.x !== undefined && tree.y !== undefined,
+      ).length,
     );
 
     if (available.lt(1)) {
       throw new Error("No trees available");
     }
 
-    game.trees = {
-      ...game.trees,
-      [action.id as unknown as number]: {
-        createdAt: createdAt,
+    const existingTree = Object.entries(game.trees).find(
+      ([_, tree]) => tree.x === undefined && tree.y === undefined,
+    );
+
+    if (existingTree) {
+      const [id, tree] = existingTree;
+      const updatedTree = {
+        ...tree,
         x: action.coordinates.x,
         y: action.coordinates.y,
-        ...RESOURCE_DIMENSIONS["Tree"],
-        wood: {
-          amount: 1,
-          choppedAt: 0,
-        },
-      },
+      };
+
+      if (updatedTree.wood && updatedTree.removedAt) {
+        const existingProgress =
+          updatedTree.removedAt - updatedTree.wood.choppedAt;
+        updatedTree.wood.choppedAt = createdAt - existingProgress;
+        delete updatedTree.removedAt;
+      }
+
+      game.trees[id] = updatedTree;
+
+      return game;
+    }
+
+    const tree: Tree = {
+      createdAt,
+      x: action.coordinates.x,
+      y: action.coordinates.y,
+      wood: { choppedAt: 0 },
+    };
+
+    game.trees = {
+      ...game.trees,
+      [action.id]: tree,
     };
 
     return game;

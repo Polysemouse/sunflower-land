@@ -10,10 +10,13 @@ import { Bumpkin } from "features/game/types/game";
 import { BuildingImageWrapper } from "../BuildingImageWrapper";
 import { useNavigate } from "react-router";
 import { HomeBumpkins } from "../house/HomeBumpkins";
+import { DailyReward } from "features/game/expansion/components/dailyReward/DailyReward";
+import { useVisiting } from "lib/utils/visitUtils";
 
 export const TownCenter: React.FC<BuildingProps> = ({ isBuilt }) => {
   const { gameService, showAnimations } = useContext(Context);
   const [gameState] = useActor(gameService);
+  const { isVisiting } = useVisiting();
 
   const navigate = useNavigate();
 
@@ -21,7 +24,12 @@ export const TownCenter: React.FC<BuildingProps> = ({ isBuilt }) => {
 
   const handleClick = () => {
     if (isBuilt) {
-      navigate("/home");
+      if (isVisiting) {
+        navigate(`/visit/${gameState.context.farmId}/home`);
+      } else {
+        navigate("/home");
+      }
+
       // Add future on click actions here
       return;
     }
@@ -59,6 +67,16 @@ export const TownCenter: React.FC<BuildingProps> = ({ isBuilt }) => {
           }}
         />
       </BuildingImageWrapper>
+
+      <div
+        className="absolute"
+        style={{
+          left: `${PIXEL_SCALE * 16}px`,
+          top: `${PIXEL_SCALE * 14}px`,
+        }}
+      >
+        <DailyReward />
+      </div>
 
       <div
         className="absolute w-full"

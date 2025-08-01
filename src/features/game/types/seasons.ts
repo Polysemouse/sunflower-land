@@ -8,9 +8,12 @@ import clashOfFactionsBanner from "assets/decorations/banners/clash_of_factions_
 import pharaohsTreasureBanner from "assets/decorations/banners/pharaohs_treasure_banner.webp";
 import bullsRunBanner from "assets/decorations/banners/bull_run_banner.webp";
 import windsOfChangeBanner from "assets/decorations/banners/winds-of-change_banner_loop.gif";
+import greatBloomBanner from "assets/decorations/banners/great_bloom_banner.png";
+import betterTogetherBanner from "assets/decorations/banners/better_together_banner.webp";
 import { BeachBountySeasonalArtefact } from "./treasure";
 import { getKeys } from "./decorations";
 import { ChapterFish } from "./fishing";
+import { getObjectEntries } from "../expansion/lib/utils";
 
 export type SeasonName =
   | "Solar Flare"
@@ -22,7 +25,8 @@ export type SeasonName =
   | "Pharaoh's Treasure"
   | "Bull Run"
   | "Winds of Change"
-  | "Great Bloom";
+  | "Great Bloom"
+  | "Better Together";
 
 type SeasonDates = { startDate: Date; endDate: Date };
 
@@ -65,7 +69,11 @@ export const SEASONS: Record<SeasonName, SeasonDates> = {
   },
   "Great Bloom": {
     startDate: new Date("2025-05-01T00:00:00.000Z"),
-    endDate: new Date("2025-08-01T00:00:00.000Z"),
+    endDate: new Date("2025-08-04T00:00:00.000Z"),
+  },
+  "Better Together": {
+    startDate: new Date("2025-08-04T00:00:00.000Z"),
+    endDate: new Date("2025-11-03T00:00:00.000Z"),
   },
 };
 
@@ -81,19 +89,10 @@ export type SeasonalTicket =
   | "Amber Fossil"
   | "Horseshoe"
   | "Timeshard"
-  | "Geniseed";
+  | "Geniseed"
+  | "Bracelet";
 
-export type SeasonalBanner =
-  | "Solar Flare Banner"
-  | "Dawn Breaker Banner"
-  | "Witches' Eve Banner"
-  | "Catch the Kraken Banner"
-  | "Spring Blossom Banner"
-  | "Clash of Factions Banner"
-  | "Pharaoh's Treasure Banner"
-  | "Bull Run Banner"
-  | "Winds of Change Banner"
-  | "Great Bloom Banner";
+export type SeasonalBanner = `${SeasonName} Banner`;
 
 export const SEASONAL_BANNERS: Record<SeasonalBanner, SeasonName> = {
   "Solar Flare Banner": "Solar Flare",
@@ -106,6 +105,7 @@ export const SEASONAL_BANNERS: Record<SeasonalBanner, SeasonName> = {
   "Bull Run Banner": "Bull Run",
   "Winds of Change Banner": "Winds of Change",
   "Great Bloom Banner": "Great Bloom",
+  "Better Together Banner": "Better Together",
 };
 
 export const SEASON_TICKET_NAME: Record<SeasonName, SeasonalTicket> = {
@@ -119,6 +119,7 @@ export const SEASON_TICKET_NAME: Record<SeasonName, SeasonalTicket> = {
   "Bull Run": "Horseshoe",
   "Winds of Change": "Timeshard",
   "Great Bloom": "Geniseed",
+  "Better Together": "Bracelet",
 };
 
 export const SEASON_ARTEFACT_NAME: Record<
@@ -134,9 +135,8 @@ export const SEASON_ARTEFACT_NAME: Record<
   "Pharaoh's Treasure": "Scarab",
   "Bull Run": "Cow Skull",
   "Winds of Change": "Ancient Clock",
-
-  // TODO: Add Great Bloom artefact
-  "Great Bloom": "Scarab",
+  "Great Bloom": "Broken Pillar",
+  "Better Together": "Coprolite",
 };
 
 export const CHAPTER_MARVEL_FISH: Record<SeasonName, ChapterFish> = {
@@ -149,9 +149,10 @@ export const CHAPTER_MARVEL_FISH: Record<SeasonName, ChapterFish> = {
   "Pharaoh's Treasure": "Lemon Shark",
   "Bull Run": "Longhorn Cowfish",
   "Winds of Change": "Jellyfish",
+  "Great Bloom": "Pink Dolphin",
 
-  // TODO: Add Great Bloom fish
-  "Great Bloom": "Jellyfish",
+  // TODO: Add Better Together fish
+  "Better Together": "Jellyfish",
 };
 
 export function getChapterMarvelFish(now = new Date()): ChapterFish {
@@ -227,9 +228,8 @@ export function getSeasonalBannerImage() {
     "Pharaoh's Treasure Banner": pharaohsTreasureBanner,
     "Bull Run Banner": bullsRunBanner,
     "Winds of Change Banner": windsOfChangeBanner,
-
-    // TODO: Add Great Bloom banner
-    "Great Bloom Banner": solarFlareBanner,
+    "Great Bloom Banner": greatBloomBanner,
+    "Better Together Banner": betterTogetherBanner,
   };
   return banners[getSeasonalBanner()];
 }
@@ -239,8 +239,8 @@ function getPreviousSeason(now = new Date()): SeasonName {
   const startDateOfCurrentSeason = SEASONS[currentSeason].startDate;
 
   // Find the season where the end date matches the start date of the current season
-  const previousSeason = Object.entries(SEASONS).find(
-    ([_, { endDate }]) =>
+  const previousSeason = getObjectEntries(SEASONS).find(
+    ([, { endDate }]) =>
       endDate.getTime() === startDateOfCurrentSeason.getTime(),
   );
 
@@ -248,7 +248,7 @@ function getPreviousSeason(now = new Date()): SeasonName {
     throw new Error("No previous banner found");
   }
 
-  return previousSeason[0] as SeasonName;
+  return previousSeason[0];
 }
 
 export function getPreviousSeasonalBanner(now = new Date()): SeasonalBanner {

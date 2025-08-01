@@ -7,6 +7,7 @@ import { PIXEL_SCALE } from "features/game/lib/constants";
 
 import { SUNNYSIDE } from "assets/sunnyside";
 import chest from "assets/icons/chest.png";
+import shopIcon from "assets/icons/shop.png";
 
 import { isMobile } from "mobile-device-detect";
 
@@ -24,7 +25,6 @@ import { ITEM_DETAILS } from "features/game/types/images";
 import { getRemoveAction } from "../collectibles/MovableComponent";
 import { InventoryItemName } from "features/game/types/game";
 import { RemoveKuebikoModal } from "../collectibles/RemoveKuebikoModal";
-import { hasRemoveRestriction } from "features/game/types/removeables";
 import { BudName } from "features/game/types/buds";
 import { PlaceableLocation } from "features/game/types/collectibles";
 import { HudContainer } from "components/ui/HudContainer";
@@ -32,6 +32,10 @@ import { RemoveHungryCaterpillarModal } from "../collectibles/RemoveHungryCaterp
 import { useSound } from "lib/utils/hooks/useSound";
 import { useAppTranslation } from "lib/i18n/useAppTranslations";
 import { RoundButton } from "components/ui/RoundButton";
+import { CraftDecorationsModal } from "./components/decorations/CraftDecorationsModal";
+import { hasFeatureAccess } from "lib/flags";
+import { hasRemoveRestriction } from "features/game/types/removeables";
+import { RemoveAllConfirmation } from "../collectibles/RemoveAllConfirmation";
 
 const compareBalance = (prev: Decimal, next: Decimal) => {
   return prev.eq(next);
@@ -50,17 +54,20 @@ const compareBlockBucks = (prev: Decimal, next: Decimal) => {
 const selectMovingItem = (state: MachineState) => state.context.moving;
 const isIdle = (state: MachineState) => state.matches({ editing: "idle" });
 
-const LandscapingHudComponent: React.FC<{
-  location: PlaceableLocation;
-}> = ({ location }) => {
+const LandscapingHudComponent: React.FC<{ location: PlaceableLocation }> = ({
+  location,
+}) => {
   const { t } = useAppTranslation();
   const { gameService } = useContext(Context);
 
   const [showRemoveConfirmation, setShowRemoveConfirmation] = useState(false);
-
+  const [showRemoveAllConfirmation, setShowRemoveAllConfirmation] =
+    useState(false);
+  const [showDecorations, setShowDecorations] = useState(false);
   const button = useSound("button");
 
-  const child = gameService.state.children.landscaping as MachineInterpreter;
+  const child = gameService.getSnapshot().children
+    .landscaping as MachineInterpreter;
 
   const balance = useSelector(
     gameService,
@@ -80,17 +87,24 @@ const LandscapingHudComponent: React.FC<{
     compareBlockBucks,
   );
 
+  // TODO: Remove this once the feature flag is removed
+  const hasLandscapingAccess = useSelector(gameService, (state) =>
+    hasFeatureAccess(state.context.state, "LANDSCAPING"),
+  );
+
   const selectedItem = useSelector(child, selectMovingItem);
   const idle = useSelector(child, isIdle);
 
   const showRemove =
-    isMobile && selectedItem && getRemoveAction(selectedItem.name);
+    isMobile &&
+    selectedItem &&
+    getRemoveAction(selectedItem.name, hasLandscapingAccess);
   const [isRestricted, restrictionReason] = showRemove
-    ? hasRemoveRestriction(
-        selectedItem.name,
-        selectedItem.id,
-        gameService.state.context.state,
-      )
+    ? hasRemoveRestriction({
+        name: selectedItem.name,
+        state: gameService.getSnapshot().context.state,
+        id: selectedItem.id,
+      })
     : [false, "No restriction"];
 
   useEffect(() => {
@@ -98,7 +112,10 @@ const LandscapingHudComponent: React.FC<{
   }, [selectedItem]);
 
   const remove = () => {
-    const action = getRemoveAction(selectedItem?.name as InventoryItemName);
+    const action = getRemoveAction(
+      selectedItem?.name as InventoryItemName,
+      hasLandscapingAccess,
+    );
     if (!action) {
       return;
     }
@@ -115,9 +132,22 @@ const LandscapingHudComponent: React.FC<{
     }
   };
 
+  const removeAll = () => {
+    if (showRemoveAllConfirmation) {
+      child.send("REMOVE_ALL", {
+        event: "items.removed",
+        location,
+      });
+      setShowRemoveAllConfirmation(false);
+    } else {
+      setShowRemoveAllConfirmation(true);
+    }
+  };
   return (
     <HudContainer>
-      <Balances sfl={balance} coins={coins} gems={gems ?? new Decimal(0)} />
+      <div className="absolute right-0 top-0 p-2.5">
+        <Balances sfl={balance} coins={coins} gems={gems ?? new Decimal(0)} />
+      </div>
 
       <>
         {idle && (
@@ -149,6 +179,46 @@ const LandscapingHudComponent: React.FC<{
                   }}
                 />
               </RoundButton>
+              {hasLandscapingAccess && (
+                <RoundButton className="mb-3.5" onClick={removeAll}>
+                  <img
+                    src={ITEM_DETAILS["Rusty Shovel"].image}
+                    className="absolute group-active:translate-y-[2px]"
+                    style={{
+                      top: `${PIXEL_SCALE * 5}px`,
+                      left: `${PIXEL_SCALE * 5}px`,
+                      width: `${PIXEL_SCALE * 13}px`,
+                    }}
+                  />
+                </RoundButton>
+              )}
+
+              {location === "farm" &&
+                hasFeatureAccess(
+                  gameService.getSnapshot().context.state,
+                  "LANDSCAPING_SHOP",
+                ) && (
+                  <>
+                    <RoundButton
+                      className="mb-3.5"
+                      onClick={() => setShowDecorations(true)}
+                    >
+                      <img
+                        src={shopIcon}
+                        className="absolute group-active:translate-y-[2px]"
+                        style={{
+                          top: `${PIXEL_SCALE * 2}px`,
+                          left: `${PIXEL_SCALE * 3.7}px`,
+                          width: `${PIXEL_SCALE * 14}px`,
+                        }}
+                      />
+                    </RoundButton>
+                    <CraftDecorationsModal
+                      show={showDecorations}
+                      onHide={() => setShowDecorations(false)}
+                    />
+                  </>
+                )}
 
               <Chest
                 onPlaceChestItem={(selected) => {
@@ -183,6 +253,13 @@ const LandscapingHudComponent: React.FC<{
             onRemove={() => remove()}
           />
         )}
+      {showRemoveAllConfirmation && (
+        <RemoveAllConfirmation
+          onClose={() => setShowRemoveAllConfirmation(false)}
+          onRemove={() => removeAll()}
+          location={location}
+        />
+      )}
       {showRemove && (
         <div
           className="absolute flex z-50 flex-col"
@@ -201,13 +278,15 @@ const LandscapingHudComponent: React.FC<{
             }}
           >
             <Label type="danger">
-              {isRestricted ? restrictionReason : t("remove")}
+              {isRestricted && !hasLandscapingAccess
+                ? restrictionReason
+                : t("remove")}
             </Label>
           </div>
 
           <RoundButton
-            onClick={() => !isRestricted && remove()}
-            disabled={isRestricted}
+            onClick={() => (!isRestricted || hasLandscapingAccess) && remove()}
+            disabled={isRestricted && !hasLandscapingAccess}
           >
             {showRemoveConfirmation ? (
               <img
@@ -230,7 +309,7 @@ const LandscapingHudComponent: React.FC<{
                     top: `${PIXEL_SCALE * 4.5}px`,
                   }}
                 />
-                {isRestricted && (
+                {isRestricted && !hasLandscapingAccess && (
                   <img
                     src={SUNNYSIDE.icons.cancel}
                     className="absolute right-0 top-0 w-1/2 object-contain group-active:translate-y-[2px]"
@@ -272,10 +351,7 @@ const Chest: React.FC<{
         <Label
           type="default"
           className="text-xxs absolute -top-1.5 -right-0.5 group-active:translate-y-[2px]"
-          style={{
-            padding: "0 2.5",
-            height: "24px",
-          }}
+          style={{ padding: "0 2.5", height: "24px" }}
         >
           {getKeys(chestItems).reduce(
             (acc, key) => acc + (chestItems[key]?.toNumber() ?? 0),

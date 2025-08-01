@@ -23,9 +23,8 @@ export const SEASONAL_ARTEFACT: Record<
   "Spring Blossom": "Scarab",
   "Clash of Factions": "Scarab",
   "Winds of Change": "Ancient Clock",
-
-  // TODO: Add Great Bloom artefact
-  "Great Bloom": "Scarab",
+  "Great Bloom": "Broken Pillar",
+  "Better Together": "Coprolite",
 };
 
 export const DIGGING_FORMATIONS = {
@@ -306,7 +305,7 @@ export function siteHasExpired({
 }
 
 /**
- * When the archaelogy site resets
+ * When the archaeology site resets
  * TODO - change to daily after testing
  */
 export function secondsTillDesertStorm() {
@@ -356,6 +355,19 @@ export function getArtefactsFound({ game }: { game: GameState }) {
   return game.desert.digging.grid.flat().filter((hole) => {
     return getKeys(hole.items)[0] === SEASONAL_ARTEFACT[getCurrentSeason()];
   }).length;
+}
+
+export function hasClaimedReward({ game }: { game: GameState }) {
+  const streak = game.desert.digging.streak ?? {
+    count: 0,
+    collectedAt: 0,
+    totalClaimed: 0,
+  };
+
+  return (
+    new Date().toISOString().substring(0, 10) ===
+    new Date(streak.collectedAt).toISOString().substring(0, 10)
+  );
 }
 
 export function getTreasureCount({ game }: { game: GameState }) {
