@@ -14,6 +14,9 @@ import {
   GameEvent,
   PlayingEvent,
   GameEventName,
+  VISITING_EVENTS,
+  VisitingEvent,
+  LOCAL_VISITING_EVENTS,
 } from "../events";
 
 import {
@@ -106,9 +109,7 @@ import { config } from "features/wallet/WalletProvider";
 import { depositFlower } from "lib/blockchain/DepositFlower";
 import { NetworkOption } from "features/island/hud/components/deposit/DepositFlower";
 import { blessingIsReady } from "./blessings";
-import { getBumpkinLevel } from "./level";
-import { hasFeatureAccess } from "lib/flags";
-import { COMPETITION_POINTS } from "../types/competitions";
+import { hasReadNews } from "features/farming/mail/components/News";
 
 // Run at startup in case removed from query params
 const portalName = new URLSearchParams(window.location.search).get("portal");
@@ -302,6 +303,7 @@ export type BlockchainEvent =
   | PostEffectEvent
   | { type: "EXPAND" }
   | { type: "SAVE_SUCCESS" }
+  | { type: "SAVE_ERROR" }
   | { type: "UPGRADE" }
   | { type: "CLOSE" }
   | { type: "RANDOMISE" }
@@ -314,7 +316,7 @@ const playingEventHandler = (eventName: string) => {
     [eventName]: [
       {
         target: "hoarding",
-        cond: (context: Context, event: PlayingEvent) => {
+        cond: (context: Context, event: PlayingEvent | VisitingEvent) => {
           const { valid } = checkProgress({
             state: context.state as GameState,
             action: event,
@@ -323,48 +325,58 @@ const playingEventHandler = (eventName: string) => {
 
           return !valid;
         },
-        actions: assign((context: Context, event: PlayingEvent) => {
-          const { maxedItem } = checkProgress({
-            state: context.state as GameState,
-            action: event,
-            farmId: context.farmId,
-          });
+        actions: assign(
+          (context: Context, event: PlayingEvent | VisitingEvent) => {
+            const { maxedItem } = checkProgress({
+              state: context.state as GameState,
+              action: event,
+              farmId: context.farmId,
+            });
 
-          return { maxedItem };
-        }),
+            return { maxedItem };
+          },
+        ),
       },
       {
-        actions: assign((context: Context, event: PlayingEvent) => {
-          const result = processEvent({
-            state: context.state,
-            action: event,
-            announcements: context.announcements,
-            farmId: context.farmId,
-            visitorState: context.visitorState,
-          });
+        actions: assign(
+          (context: Context, event: PlayingEvent | VisitingEvent) => {
+            const result = processEvent({
+              state: context.state,
+              action: event,
+              announcements: context.announcements,
+              farmId: context.farmId,
+              visitorState: context.visitorState,
+            });
 
-          const actions = [
-            ...context.actions,
-            {
-              ...event,
-              createdAt: new Date(),
-            },
-          ];
+            let actions = [
+              ...context.actions,
+              {
+                ...event,
+                createdAt: new Date(),
+              },
+            ];
 
-          if (Array.isArray(result)) {
-            const [state, visitorState] = result;
+            // Filter out any local only actions so we don't persist them
+            actions = actions.filter(
+              (action) =>
+                !Object.keys(LOCAL_VISITING_EVENTS).includes(action.type),
+            );
+
+            if (Array.isArray(result)) {
+              const [state, visitorState] = result;
+              return {
+                state,
+                actions,
+                visitorState,
+              };
+            }
+
             return {
-              state,
+              state: result,
               actions,
-              visitorState,
             };
-          }
-
-          return {
-            state: result,
-            actions,
-          };
-        }),
+          },
+        ),
       },
     ],
   };
@@ -373,6 +385,15 @@ const playingEventHandler = (eventName: string) => {
 // // For each game event, convert it to an XState event + handler
 const GAME_EVENT_HANDLERS: TransitionsConfig<Context, BlockchainEvent> =
   Object.keys(PLAYING_EVENTS).reduce(
+    (events, eventName) => ({
+      ...events,
+      ...playingEventHandler(eventName),
+    }),
+    {},
+  );
+
+const VISITING_EVENT_HANDLERS: TransitionsConfig<Context, BlockchainEvent> =
+  Object.keys(VISITING_EVENTS).reduce(
     (events, eventName) => ({
       ...events,
       ...playingEventHandler(eventName),
@@ -677,6 +698,7 @@ export type BlockchainState = {
     | "randomising"
     | "competition"
     | "cheers"
+    | "news"
     | "roninWelcomePack"
     | "roninAirdrop"
     | "jinAirdrop"
@@ -739,6 +761,7 @@ export const saveGame = async (
 };
 
 const handleSuccessfulSave = (context: Context, event: any) => {
+  const isVisiting = !!context.visitorId;
   // Actions that occurred since the server request
   const recentActions = context.actions.filter(
     (action) => action.createdAt.getTime() > event.data.saveAt.getTime(),
@@ -746,7 +769,8 @@ const handleSuccessfulSave = (context: Context, event: any) => {
 
   if (recentActions.length === 0) {
     return {
-      state: event.data.farm,
+      state: isVisiting ? context.state : event.data.farm,
+      visitorState: context.visitorState,
       saveQueued: false,
       actions: [],
       announcements: event.data.announcements,
@@ -1008,7 +1032,7 @@ export function startGame(authContext: AuthContext) {
         visiting: {
           on: {
             ...VISIT_EFFECT_EVENT_HANDLERS,
-            ...playingEventHandler("clutter.collected"),
+            ...VISITING_EVENT_HANDLERS,
             SAVE: {
               target: "autosaving",
             },
@@ -1214,61 +1238,23 @@ export function startGame(authContext: AuthContext) {
             },
             {
               target: "competition",
-              cond: (context: Context) => {
-                if (!hasFeatureAccess(context.state, "PEGGYS_COOKOFF"))
-                  return false;
-
-                const hasStarted =
-                  Date.now() > COMPETITION_POINTS.PEGGYS_COOKOFF.startAt;
-
-                if (!hasStarted) return false;
-
-                const level = getBumpkinLevel(
-                  context.state.bumpkin?.experience ?? 0,
-                );
-
-                if (level <= 5) return false;
-
-                const competition =
-                  context.state.competitions.progress.PEGGYS_COOKOFF;
-
-                // Show the competition introduction if they have not started it yet
-                return !competition;
-              },
+              cond: () => false,
+            },
+            {
+              target: "news",
+              cond: () => !hasReadNews(),
             },
             {
               target: "cheers",
               cond: (context) => {
-                if (!hasFeatureAccess(context.state, "CHEERS")) return false;
-
                 const now = Date.now();
 
                 const today = new Date(now).toISOString().split("T")[0];
-                const yesterday = new Date(now - 24 * 60 * 60 * 1000)
-                  .toISOString()
-                  .split("T")[0];
 
-                if (
-                  context.state.socialFarming.cheers?.freeCheersClaimedAt >=
+                return (
+                  context.state.socialFarming.cheers?.freeCheersClaimedAt <
                   new Date(today).getTime()
-                ) {
-                  return false;
-                }
-
-                const dayFreeCheersClaimed = new Date(
-                  context.state.socialFarming.cheers?.freeCheersClaimedAt,
-                )
-                  .toISOString()
-                  .split("T")[0];
-
-                const cheersUsedYesterday =
-                  dayFreeCheersClaimed === yesterday
-                    ? context.state.socialFarming.cheers?.cheersUsed
-                    : 0;
-
-                const newCheerCount = 3 - cheersUsedYesterday;
-
-                return newCheerCount > 0;
+                );
               },
             },
 
@@ -1728,7 +1714,9 @@ export function startGame(authContext: AuthContext) {
               },
               {
                 target: "calendarEvent",
-                cond: (_, event) => {
+                cond: (context, event) => {
+                  if (context.visitorState) return false;
+
                   const game = event.data.farm;
 
                   const activeEvent = getActiveCalendarEvent({
@@ -2277,6 +2265,13 @@ export function startGame(authContext: AuthContext) {
             },
           },
         },
+        news: {
+          on: {
+            ACKNOWLEDGE: {
+              target: "notifying",
+            },
+          },
+        },
         gems: {
           on: {
             ACKNOWLEDGE: {
@@ -2361,6 +2356,10 @@ export function startGame(authContext: AuthContext) {
               actions: assign((context: Context, event: any) =>
                 handleSuccessfulSave(context, event),
               ),
+            },
+            SAVE_ERROR: {
+              target: "error",
+              actions: "assignErrorMessage",
             },
           },
         },

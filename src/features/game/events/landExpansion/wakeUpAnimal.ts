@@ -17,6 +17,11 @@ const DEFAULT_TOY: DollName = "Gilded Doll";
 export function getAnimalToy({ animal }: { animal: Animal }): DollName {
   const level = getAnimalLevel(animal.experience, animal.type);
 
+  // Every 5 levels, require a gilded doll
+  if (level % 5 === 0 && level > 0) {
+    return "Gilded Doll";
+  }
+
   if (animal.type === "Chicken") {
     if (level < 6) {
       return "Doll";
@@ -74,6 +79,12 @@ export function wakeAnimal({
 
     if (createdAt > animal.awakeAt) {
       throw new Error("Animal not asleep");
+    }
+
+    const level = getAnimalLevel(animal.experience, animal.type);
+
+    if (level >= 15) {
+      throw new Error("Animal is too old to wake up");
     }
 
     const toy = getAnimalToy({ animal });

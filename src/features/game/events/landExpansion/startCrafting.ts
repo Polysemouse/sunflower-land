@@ -1,11 +1,10 @@
 import Decimal from "decimal.js-light";
 import { Recipe, RecipeIngredient, Recipes } from "features/game/lib/crafting";
-import { CollectibleName } from "features/game/types/craftables";
 import { BoostName, GameState } from "features/game/types/game";
 import { produce } from "immer";
-import { availableWardrobe } from "./equip";
 import { isWearableActive } from "features/game/lib/wearables";
 import { updateBoostUsed } from "features/game/types/updateBoostUsed";
+import { getCountAndType } from "features/island/hud/components/inventory/utils/inventory";
 
 export type StartCraftingAction = {
   type: "crafting.started";
@@ -32,6 +31,11 @@ export function getBoostedCraftingTime({
   if (isWearableActive({ name: "Sol & Luna", game })) {
     seconds *= 0.5;
     boostsUsed.push("Sol & Luna");
+  }
+
+  if (isWearableActive({ name: "Architect Ruler", game })) {
+    seconds *= 0.75;
+    boostsUsed.push("Architect Ruler");
   }
 
   return { seconds, boostsUsed };
@@ -79,13 +83,12 @@ export function startCrafting({
           const inventoryCount =
             copy.inventory[ingredient.collectible] ?? new Decimal(0);
 
-          const placedCount =
-            (copy.collectibles[ingredient.collectible as CollectibleName]
-              ?.length ?? 0) +
-            (copy.home?.collectibles[ingredient.collectible as CollectibleName]
-              ?.length ?? 0);
+          const { count: availableCollectibleCount } = getCountAndType(
+            copy,
+            ingredient.collectible,
+          );
 
-          if (inventoryCount.sub(placedCount).lt(1)) {
+          if (availableCollectibleCount.lt(1)) {
             throw new Error(
               "You do not have the ingredients to craft this item",
             );
@@ -95,10 +98,12 @@ export function startCrafting({
 
         if (ingredient.wearable) {
           const wardrobeCount = copy.wardrobe[ingredient.wearable] ?? 0;
-          const available = availableWardrobe(copy);
-          const availableWardrobeCount = available[ingredient.wearable] ?? 0;
+          const { count: availableWardrobeCount } = getCountAndType(
+            copy,
+            ingredient.wearable,
+          );
 
-          if (availableWardrobeCount < 1) {
+          if (availableWardrobeCount.lt(1)) {
             throw new Error(
               "You do not have the ingredients to craft this item",
             );

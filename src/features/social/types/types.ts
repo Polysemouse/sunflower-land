@@ -1,5 +1,6 @@
 import { Equipped } from "features/game/types/bumpkin";
 import { FactionName, IslandType } from "features/game/types/game";
+import { MonumentName } from "features/game/types/monuments";
 
 export type ParticipantInfo = {
   id: number;
@@ -12,7 +13,8 @@ export type InteractionType =
   | "follow"
   | "milestone"
   | "announcement"
-  | "cheer";
+  | "cheer"
+  | "help";
 
 export type Interaction = {
   type: InteractionType;
@@ -29,25 +31,28 @@ export type Milestone = Interaction & {
   followers?: number[];
 };
 
+export type ActiveProjects = Partial<
+  Record<MonumentName, { receivedCheers: number; requiredCheers: number }>
+>;
+
 export type Player = {
   data?: {
     id: number;
     following: number[];
-    followingCount: number;
     followedBy: number[];
-    followedByCount: number;
     username: string;
     level: number;
     farmCreatedAt: number;
     marketValue: number;
     island: IslandType;
-    dailyStreak: number;
-    totalDeliveries: number;
     isVip: boolean;
     clothing: Equipped;
     faction?: FactionName;
     lastUpdatedAt: number;
     socialPoints: number;
+    projects: ActiveProjects;
+    youHelpedThemCount: number;
+    theyHelpedYouCount: number;
   };
 };
 

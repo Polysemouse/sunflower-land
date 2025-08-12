@@ -25,7 +25,11 @@ import { RESOURCE_DIMENSIONS } from "features/game/types/resources";
 import { produce } from "immer";
 import cloneDeep from "lodash.clonedeep";
 import { updateBoostUsed } from "features/game/types/updateBoostUsed";
-import { canUseYieldBoostAOE, setAOELastUsed } from "features/game/lib/aoe";
+import {
+  canUseYieldBoostAOE,
+  isCollectibleOnFarm,
+  setAOELastUsed,
+} from "features/game/lib/aoe";
 
 export type LandExpansionMineGoldAction = {
   type: "goldRock.mined";
@@ -80,6 +84,11 @@ const getBoostedTime = ({
   if (isCollectibleActive({ name: "Ore Hourglass", game })) {
     totalSeconds = totalSeconds * 0.5;
     boostsUsed.push("Ore Hourglass");
+  }
+
+  if (isWearableActive({ name: "Pickaxe Shark", game })) {
+    totalSeconds = totalSeconds * 0.85;
+    boostsUsed.push("Pickaxe Shark");
   }
 
   if (game.bumpkin.skills["Midas Sprint"]) {
@@ -164,7 +173,7 @@ export function getGoldDropAmount({
 
   // If within Emerald Turtle AOE: +0.5
   if (
-    isCollectibleBuilt({ name: "Emerald Turtle", game }) &&
+    isCollectibleOnFarm({ name: "Emerald Turtle", game }) &&
     rock &&
     rock.x !== undefined &&
     rock.y !== undefined

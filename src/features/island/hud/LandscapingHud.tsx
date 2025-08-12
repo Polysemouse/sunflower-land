@@ -8,6 +8,8 @@ import { PIXEL_SCALE } from "features/game/lib/constants";
 import { SUNNYSIDE } from "assets/sunnyside";
 import chest from "assets/icons/chest.png";
 import shopIcon from "assets/icons/shop.png";
+import flipped from "assets/icons/flipped.webp";
+import flipIcon from "assets/icons/flip.webp";
 
 import { isMobile } from "mobile-device-detect";
 
@@ -20,9 +22,12 @@ import { Label } from "components/ui/Label";
 import { PlaceableController } from "features/farming/hud/components/PlaceableController";
 import { LandscapingChest } from "./components/LandscapingChest";
 import { getChestItems } from "./components/inventory/utils/inventory";
-import { getKeys } from "features/game/types/craftables";
+import { CollectibleName, getKeys } from "features/game/types/craftables";
 import { ITEM_DETAILS } from "features/game/types/images";
-import { getRemoveAction } from "../collectibles/MovableComponent";
+import {
+  getRemoveAction,
+  isCollectible,
+} from "../collectibles/MovableComponent";
 import { InventoryItemName } from "features/game/types/game";
 import { RemoveKuebikoModal } from "../collectibles/RemoveKuebikoModal";
 import { BudName } from "features/game/types/buds";
@@ -33,9 +38,8 @@ import { useSound } from "lib/utils/hooks/useSound";
 import { useAppTranslation } from "lib/i18n/useAppTranslations";
 import { RoundButton } from "components/ui/RoundButton";
 import { CraftDecorationsModal } from "./components/decorations/CraftDecorationsModal";
-import { hasFeatureAccess } from "lib/flags";
-import { hasRemoveRestriction } from "features/game/types/removeables";
 import { RemoveAllConfirmation } from "../collectibles/RemoveAllConfirmation";
+import { BuildingName } from "features/game/types/buildings";
 
 const compareBalance = (prev: Decimal, next: Decimal) => {
   return prev.eq(next);
@@ -87,35 +91,25 @@ const LandscapingHudComponent: React.FC<{ location: PlaceableLocation }> = ({
     compareBlockBucks,
   );
 
-  // TODO: Remove this once the feature flag is removed
-  const hasLandscapingAccess = useSelector(gameService, (state) =>
-    hasFeatureAccess(state.context.state, "LANDSCAPING"),
-  );
-
   const selectedItem = useSelector(child, selectMovingItem);
   const idle = useSelector(child, isIdle);
 
   const showRemove =
+    isMobile && selectedItem && getRemoveAction(selectedItem.name);
+
+  const showFlip =
     isMobile &&
     selectedItem &&
-    getRemoveAction(selectedItem.name, hasLandscapingAccess);
-  const [isRestricted, restrictionReason] = showRemove
-    ? hasRemoveRestriction({
-        name: selectedItem.name,
-        state: gameService.getSnapshot().context.state,
-        id: selectedItem.id,
-      })
-    : [false, "No restriction"];
+    isCollectible(
+      selectedItem.name as CollectibleName | BuildingName | "Chicken" | "Bud",
+    );
 
   useEffect(() => {
     setShowRemoveConfirmation(false);
   }, [selectedItem]);
 
   const remove = () => {
-    const action = getRemoveAction(
-      selectedItem?.name as InventoryItemName,
-      hasLandscapingAccess,
-    );
+    const action = getRemoveAction(selectedItem?.name as InventoryItemName);
     if (!action) {
       return;
     }
@@ -143,6 +137,41 @@ const LandscapingHudComponent: React.FC<{ location: PlaceableLocation }> = ({
       setShowRemoveAllConfirmation(true);
     }
   };
+
+  const flip = () => {
+    if (
+      selectedItem &&
+      isCollectible(
+        selectedItem.name as CollectibleName | BuildingName | "Chicken" | "Bud",
+      )
+    ) {
+      child.send("FLIP", {
+        id: selectedItem.id,
+        name: selectedItem.name,
+        location,
+      });
+    }
+  };
+
+  const isFlipped = useSelector(gameService, (state) => {
+    if (
+      !selectedItem ||
+      !isCollectible(
+        selectedItem.name as CollectibleName | BuildingName | "Chicken" | "Bud",
+      )
+    )
+      return false;
+    const collectibles =
+      location === "home"
+        ? state.context.state.home.collectibles
+        : state.context.state.collectibles;
+    return (
+      collectibles[selectedItem.name as CollectibleName]?.find(
+        (collectible) => collectible.id === selectedItem.id,
+      )?.flipped ?? false
+    );
+  });
+
   return (
     <HudContainer>
       <div className="absolute right-0 top-0 p-2.5">
@@ -179,46 +208,40 @@ const LandscapingHudComponent: React.FC<{ location: PlaceableLocation }> = ({
                   }}
                 />
               </RoundButton>
-              {hasLandscapingAccess && (
-                <RoundButton className="mb-3.5" onClick={removeAll}>
-                  <img
-                    src={ITEM_DETAILS["Rusty Shovel"].image}
-                    className="absolute group-active:translate-y-[2px]"
-                    style={{
-                      top: `${PIXEL_SCALE * 5}px`,
-                      left: `${PIXEL_SCALE * 5}px`,
-                      width: `${PIXEL_SCALE * 13}px`,
-                    }}
-                  />
-                </RoundButton>
-              )}
+              <RoundButton className="mb-3.5" onClick={removeAll}>
+                <img
+                  src={ITEM_DETAILS["Rusty Shovel"].image}
+                  className="absolute group-active:translate-y-[2px]"
+                  style={{
+                    top: `${PIXEL_SCALE * 5}px`,
+                    left: `${PIXEL_SCALE * 5}px`,
+                    width: `${PIXEL_SCALE * 13}px`,
+                  }}
+                />
+              </RoundButton>
 
-              {location === "farm" &&
-                hasFeatureAccess(
-                  gameService.getSnapshot().context.state,
-                  "LANDSCAPING_SHOP",
-                ) && (
-                  <>
-                    <RoundButton
-                      className="mb-3.5"
-                      onClick={() => setShowDecorations(true)}
-                    >
-                      <img
-                        src={shopIcon}
-                        className="absolute group-active:translate-y-[2px]"
-                        style={{
-                          top: `${PIXEL_SCALE * 2}px`,
-                          left: `${PIXEL_SCALE * 3.7}px`,
-                          width: `${PIXEL_SCALE * 14}px`,
-                        }}
-                      />
-                    </RoundButton>
-                    <CraftDecorationsModal
-                      show={showDecorations}
-                      onHide={() => setShowDecorations(false)}
+              {location === "farm" && (
+                <>
+                  <RoundButton
+                    className="mb-3.5"
+                    onClick={() => setShowDecorations(true)}
+                  >
+                    <img
+                      src={shopIcon}
+                      className="absolute group-active:translate-y-[2px]"
+                      style={{
+                        top: `${PIXEL_SCALE * 2}px`,
+                        left: `${PIXEL_SCALE * 3.7}px`,
+                        width: `${PIXEL_SCALE * 14}px`,
+                      }}
                     />
-                  </>
-                )}
+                  </RoundButton>
+                  <CraftDecorationsModal
+                    show={showDecorations}
+                    onHide={() => setShowDecorations(false)}
+                  />
+                </>
+              )}
 
               <Chest
                 onPlaceChestItem={(selected) => {
@@ -240,6 +263,52 @@ const LandscapingHudComponent: React.FC<{ location: PlaceableLocation }> = ({
           </>
         )}
       </>
+
+      {showFlip && (
+        <div
+          className="absolute flex z-50 flex-col"
+          style={{
+            marginRight: `${PIXEL_SCALE * 2}px`,
+            width: `${PIXEL_SCALE * 22}px`,
+            left: `${PIXEL_SCALE * 3.5}px`,
+            bottom: `${PIXEL_SCALE * 5}px`,
+          }}
+          onClick={flip}
+        >
+          <div
+            className="absolute"
+            style={{
+              bottom: `${PIXEL_SCALE * 24}px`,
+              left: `${PIXEL_SCALE * 2.5}px`,
+            }}
+          >
+            <Label type="default">{t("flip.mobile.label")}</Label>
+          </div>
+          <img className="w-full" src={SUNNYSIDE.icons.disc} />
+          {isFlipped ? (
+            <img
+              className="absolute"
+              src={flipped}
+              style={{
+                width: `${PIXEL_SCALE * 14}px`,
+                right: `${PIXEL_SCALE * 4}px`,
+                top: `${PIXEL_SCALE * 4.5}px`,
+              }}
+            />
+          ) : (
+            <img
+              className="absolute"
+              src={flipIcon}
+              style={{
+                width: `${PIXEL_SCALE * 15}px`,
+                right: `${PIXEL_SCALE * 3.5}px`,
+                top: `${PIXEL_SCALE * 4.5}px`,
+              }}
+            />
+          )}
+        </div>
+      )}
+
       {showRemoveConfirmation && selectedItem?.name === "Kuebiko" && (
         <RemoveKuebikoModal
           onClose={() => setShowRemoveConfirmation(false)}
@@ -273,21 +342,14 @@ const LandscapingHudComponent: React.FC<{ location: PlaceableLocation }> = ({
           <div
             className="absolute"
             style={{
-              bottom: `${PIXEL_SCALE * 25}px`,
+              bottom: `${PIXEL_SCALE * 23}px`,
               right: `${PIXEL_SCALE * -2}px`,
             }}
           >
-            <Label type="danger">
-              {isRestricted && !hasLandscapingAccess
-                ? restrictionReason
-                : t("remove")}
-            </Label>
+            <Label type="danger">{t("remove")}</Label>
           </div>
 
-          <RoundButton
-            onClick={() => (!isRestricted || hasLandscapingAccess) && remove()}
-            disabled={isRestricted && !hasLandscapingAccess}
-          >
+          <RoundButton onClick={remove}>
             {showRemoveConfirmation ? (
               <img
                 className="absolute group-active:translate-y-[2px]"
@@ -309,13 +371,6 @@ const LandscapingHudComponent: React.FC<{ location: PlaceableLocation }> = ({
                     top: `${PIXEL_SCALE * 4.5}px`,
                   }}
                 />
-                {isRestricted && !hasLandscapingAccess && (
-                  <img
-                    src={SUNNYSIDE.icons.cancel}
-                    className="absolute right-0 top-0 w-1/2 object-contain group-active:translate-y-[2px]"
-                    alt="restricted"
-                  />
-                )}
               </>
             )}
           </RoundButton>

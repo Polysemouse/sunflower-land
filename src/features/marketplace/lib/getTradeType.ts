@@ -15,6 +15,9 @@ export const ITEM_TRADE_TYPES: {
   wearables: Record<BumpkinItem, TradeType>;
 } = {
   collectibles: {
+    "Giant Orange": "instant",
+    "Giant Apple": "instant",
+    "Giant Banana": "instant",
     "Baby Cow": "instant",
     "Baby Sheep": "instant",
     "Janitor Chicken": "instant",
@@ -61,6 +64,7 @@ export const ITEM_TRADE_TYPES: {
     "Nurse Sheep": "instant",
     "Love Chicken": "instant",
     "Pink Dolphin": "instant",
+    Poseidon: "instant",
     "Bronze Love Box": "instant",
     "Silver Love Box": "instant",
     "Gold Love Box": "instant",
@@ -1106,6 +1110,10 @@ export const ITEM_TRADE_TYPES: {
     Trash: "instant",
     Dung: "instant",
     Weed: "instant",
+    Anthill: "instant",
+    Rat: "instant",
+    Snail: "instant",
+    "Pest Net": "instant",
   },
   wearables: {
     "New Years Crown": "instant",

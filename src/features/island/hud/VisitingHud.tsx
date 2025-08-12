@@ -1,13 +1,11 @@
-import React, { useContext } from "react";
+import React, { useContext, useState } from "react";
 
 import { Balances } from "components/Balances";
 import { useActor, useSelector } from "@xstate/react";
 import { Context } from "features/game/GameProvider";
 
-import { Inventory } from "./components/inventory/Inventory";
-import { InnerPanel } from "components/ui/Panel";
+import { InnerPanel, OuterPanel } from "components/ui/Panel";
 import { BumpkinProfile } from "./components/BumpkinProfile";
-import { InventoryItemName } from "features/game/types/game";
 import { Settings } from "./components/Settings";
 import { PIXEL_SCALE } from "features/game/lib/constants";
 import Decimal from "decimal.js-light";
@@ -18,36 +16,59 @@ import { HudContainer } from "components/ui/HudContainer";
 import { useNavigate } from "react-router";
 import { MachineState } from "features/game/lib/gameMachine";
 import { NPCIcon } from "../bumpkin/components/NPC";
-import cheer from "assets/icons/cheer.webp";
 import { Label } from "components/ui/Label";
-import { getTrashBinItems, useCleanFarm } from "../clutter/Clutter";
-import { TRASH_BIN_DAILY_LIMIT } from "features/game/events/landExpansion/collectClutter";
-import garbageBin from "assets/sfts/garbage_bin.webp";
-import socialPointsIcon from "assets/icons/social_score.webp";
 
-const _cheers = (state: MachineState) => {
-  return state.context.visitorState?.inventory["Cheer"] ?? new Decimal(0);
-};
+import socialPointsIcon from "assets/icons/social_score.webp";
+import loadingIcon from "assets/icons/timer.gif";
+import saveIcon from "assets/icons/save.webp";
+import choreIcon from "assets/icons/chores.webp";
+import { VisitorGuide } from "./components/VisitorGuide";
+import { Modal } from "components/ui/Modal";
+import { CloseButtonPanel } from "features/game/components/CloseablePanel";
+import {
+  getHelpRequired,
+  hasHelpedFarmToday,
+} from "features/game/types/monuments";
+import { hasHitHelpLimit } from "features/game/events/landExpansion/increaseHelpLimit";
+
 const _socialPoints = (state: MachineState) => {
   return state.context.state.socialFarming?.points ?? 0;
 };
+const _autosaving = (state: MachineState) => state.matches("autosaving");
 
 /**
  * Heads up display - a concept used in games for the small overlaid display of information.
  * Balances, Inventory, actions etc.
  */
 export const VisitingHud: React.FC = () => {
-  const { gameService, shortcutItem, selectedItem, fromRoute } =
-    useContext(Context);
+  const { gameService, fromRoute } = useContext(Context);
+
   const [gameState] = useActor(gameService);
-  const cheers = useSelector(gameService, _cheers);
+
+  const hasHelpedToday = hasHelpedFarmToday({
+    game: gameState.context.visitorState!,
+    farmId: gameState.context.farmId,
+  });
+
+  const [showVisitorGuide, setShowVisitorGuide] = useState(() => {
+    const hasHitLimit = hasHitHelpLimit({
+      game: gameState.context.visitorState!,
+    });
+
+    if (hasHitLimit) {
+      return true;
+    }
+
+    // Check if user has already acknowledged the visitor guide
+    const hasAcknowledged =
+      localStorage.getItem("visitorGuideAcknowledged") === "true";
+    return !hasAcknowledged;
+  });
   const socialPoints = useSelector(gameService, _socialPoints);
+  const saving = useSelector(gameService, _autosaving);
 
   const { t } = useAppTranslation();
   const navigate = useNavigate();
-  useCleanFarm();
-
-  const trashBinItems = getTrashBinItems(gameState);
 
   const handleEndVisit = () => {
     navigate(fromRoute ?? "/");
@@ -57,30 +78,52 @@ export const VisitingHud: React.FC = () => {
   const displayId =
     gameState.context.state.username ?? gameState.context.farmId;
 
+  const helpRequired = getHelpRequired({
+    game: gameState.context.state,
+  });
+
+  const handleCloseVisitorGuide = () => {
+    // Store acknowledgment in local storage
+    localStorage.setItem("visitorGuideAcknowledged", "true");
+    setShowVisitorGuide(false);
+    gameService.send("SAVE");
+  };
+
   return (
     <HudContainer>
+      <Modal show={showVisitorGuide} onHide={handleCloseVisitorGuide}>
+        <CloseButtonPanel
+          bumpkinParts={gameState.context.state.bumpkin?.equipped}
+          container={OuterPanel}
+        >
+          <VisitorGuide onClose={handleCloseVisitorGuide} />
+        </CloseButtonPanel>
+      </Modal>
+
       {!gameState.matches("landToVisitNotFound") && (
-        <InnerPanel className="fixed px-2 pt-1 pb-2 bottom-2 left-1/2 -translate-x-1/2 z-50 flex flex-row">
-          <div className="flex flex-col p-0.5">
+        <InnerPanel className="absolute px-2 pt-1 pb-2 bottom-2 left-1/2 -translate-x-1/2 z-50 flex flex-row">
+          <div className="flex flex-col p-0.5 items-center justify-center">
             <div className="flex items-center space-x-1">
               <NPCIcon
                 parts={gameState.context.state.bumpkin?.equipped}
                 width={20}
               />
-              <span className="text-xs whitespace-nowrap">
+              <span className="text-xs">
                 {t("visiting.farmId", { farmId: displayId })}
               </span>
             </div>
-            <div className="flex items-center space-x-1">
-              <img src={cheer} style={{ width: `16px`, margin: `2px` }} />
-              <span className="text-xxs">{`${cheers.toString()} Cheers Available`}</span>
-            </div>
           </div>
           <div className="w-px h-[36px] bg-gray-300 mx-3 self-center" />
-          <div className="flex flex-col sm:flex-row items-center space-x-1">
-            <span className="text-md">{`${trashBinItems}/${TRASH_BIN_DAILY_LIMIT}`}</span>
-            <img src={garbageBin} style={{ width: `20px`, margin: `2px` }} />
-          </div>
+          {hasHelpedToday ? (
+            <div className="flex justify-center items-center flex-grow">
+              <img src={SUNNYSIDE.icons.confirm} className="w-5" />
+            </div>
+          ) : (
+            <div className="flex flex-col sm:flex-row items-center space-x-1">
+              <span className="text-md">{`${helpRequired}`}</span>
+              <img src={choreIcon} style={{ width: `20px`, margin: `2px` }} />
+            </div>
+          )}
         </InnerPanel>
       )}
       <div className="absolute right-0 top-0 p-2.5">
@@ -90,16 +133,27 @@ export const VisitingHud: React.FC = () => {
           gems={gameState.context.state.inventory["Gem"] ?? new Decimal(0)}
         />
       </div>
+
       <div className="absolute right-0 top-16 p-2.5">
-        <Inventory
-          state={gameState.context.state}
-          shortcutItem={shortcutItem}
-          selectedItem={selectedItem as InventoryItemName}
-          isFarming={false}
-          isFullUser={false}
-          hideActions
-        />
+        <RoundButton
+          onClick={(e) => {
+            e.stopPropagation();
+            e.preventDefault();
+            setShowVisitorGuide(true);
+          }}
+        >
+          <img
+            src={choreIcon}
+            className="absolute group-active:translate-y-[2px]"
+            style={{
+              top: `${PIXEL_SCALE * 4}px`,
+              left: `${PIXEL_SCALE * 4}px`,
+              width: `${PIXEL_SCALE * 14}px`,
+            }}
+          />
+        </RoundButton>
       </div>
+
       <BumpkinProfile />
       <div className="absolute p-2 left-0 top-24 flex flex-col space-y-2.5">
         <Label type="chill" icon={socialPointsIcon}>
@@ -109,17 +163,38 @@ export const VisitingHud: React.FC = () => {
         </Label>
       </div>
       <div className="absolute bottom-0 p-2 right-0 flex flex-col space-y-2.5">
+        <RoundButton
+          onClick={(e) => {
+            e.stopPropagation();
+            e.preventDefault();
+            gameService.send("SAVE");
+          }}
+        >
+          {saving ? (
+            <img
+              src={loadingIcon}
+              className="absolute group-active:translate-y-[2px]"
+              style={{
+                top: `${PIXEL_SCALE * 5}px`,
+                left: `${PIXEL_SCALE * 7}px`,
+                width: `${PIXEL_SCALE * 8}px`,
+              }}
+            />
+          ) : (
+            <img
+              src={saveIcon}
+              className="absolute group-active:translate-y-[2px]"
+              style={{
+                top: `${PIXEL_SCALE * 4}px`,
+                left: `${PIXEL_SCALE * 5}px`,
+                width: `${PIXEL_SCALE * 12}px`,
+              }}
+            />
+          )}
+        </RoundButton>
         <Settings isFarming={false} />
       </div>
-      <div
-        className="fixed z-50"
-        style={{
-          left: `${PIXEL_SCALE * 3}px`,
-          bottom: `${PIXEL_SCALE * 3}px`,
-          width: `${PIXEL_SCALE * 22}px`,
-          height: `${PIXEL_SCALE * 23}px`,
-        }}
-      >
+      <div className="absolute bottom-0 p-2.5 left-0 flex flex-col space-y-2.5">
         <RoundButton
           onClick={(e) => {
             e.stopPropagation();

@@ -53,7 +53,6 @@ import { getCurrentBiome } from "features/island/biomes/biomes";
 import { useVisiting } from "lib/utils/visitUtils";
 import { getObjectEntries } from "./lib/utils";
 import { Clutter } from "features/island/clutter/Clutter";
-import { hasFeatureAccess } from "lib/flags";
 
 export const LAND_WIDTH = 6;
 
@@ -84,6 +83,7 @@ type IslandElementArgs = {
   clutter: GameState["socialFarming"]["clutter"];
   isVisiting: boolean;
   landscaping: boolean;
+  loggedInFarmState: GameState;
 };
 
 const getIslandElements = ({
@@ -112,6 +112,7 @@ const getIslandElements = ({
   isVisiting,
   clutter,
   landscaping,
+  loggedInFarmState,
 }: IslandElementArgs) => {
   const mapPlacements: Array<JSX.Element> = [];
 
@@ -599,34 +600,8 @@ const getIslandElements = ({
       );
   }
 
-  {
-    clutter &&
-      (landscaping || isVisiting) &&
-      hasFeatureAccess(game, "CLUTTER") &&
-      mapPlacements.push(
-        ...getKeys(clutter.locations).flatMap((id) => {
-          const { x, y } = clutter.locations[id];
-
-          return (
-            <MapPlacement
-              key={`clutter-${id}`}
-              x={x}
-              y={y}
-              height={1}
-              width={1}
-              className={classNames({
-                "pointer-events-none opacity-50": !isVisiting,
-              })}
-            >
-              <Clutter
-                key={`clutter-${id}`}
-                id={id}
-                type={clutter.locations[id].type}
-              />
-            </MapPlacement>
-          );
-        }),
-      );
+  if (clutter && isVisiting) {
+    mapPlacements.push(<Clutter clutter={clutter} />);
   }
 
   {
@@ -708,6 +683,8 @@ const getIslandElements = ({
 };
 
 const selectGameState = (state: MachineState) => state.context.state;
+const _loggedInFarmState = (state: MachineState) =>
+  state.context.visitorState ?? state.context.state;
 const isLandscaping = (state: MachineState) => state.matches("landscaping");
 const isPaused = (state: MachineState) => !!state.context.paused;
 const _islandType = (state: MachineState) => state.context.state.island.type;
@@ -724,6 +701,7 @@ export const Land: React.FC = () => {
   const season = useSelector(gameService, _season);
   const showMarketplace = pathname.includes("marketplace");
   const showFlowerDashboard = pathname.includes("flower-dashboard");
+  const loggedInFarmState = useSelector(gameService, _loggedInFarmState);
 
   const {
     expansionConstruction,
@@ -865,6 +843,7 @@ export const Land: React.FC = () => {
                 isVisiting: visiting,
                 clutter: socialFarming?.clutter,
                 landscaping,
+                loggedInFarmState,
               }).sort((a, b) => {
                 if (a.props.canCollide === false) {
                   return -1;

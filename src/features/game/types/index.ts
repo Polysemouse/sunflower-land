@@ -1138,6 +1138,18 @@ export const KNOWN_IDS: Record<InventoryItemName, number> = {
   "Silver Cooking Trophy": 2312,
   "Bronze Cooking Trophy": 2313,
 
+  // Pests
+  Anthill: 2314,
+  Rat: 2315,
+  Snail: 2316,
+  "Pest Net": 2317,
+
+  Poseidon: 2318,
+
+  "Giant Orange": 2319,
+  "Giant Apple": 2320,
+  "Giant Banana": 2321,
+
   // Land Biomes
   "Basic Biome": 2400,
   "Spring Biome": 2401,

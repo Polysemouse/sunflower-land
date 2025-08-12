@@ -32,7 +32,6 @@ import {
 import { PlaceableLocation } from "features/game/types/collectibles";
 import { AnimalType } from "features/game/types/animals";
 import { getObjectEntries } from "../../lib/utils";
-import { hasFeatureAccess } from "lib/flags";
 
 export type Position = {
   width: number;
@@ -461,10 +460,6 @@ function detectAirdropCollision(state: GameState, boundingBox: BoundingBox) {
 }
 
 function detectGarbageCollision(state: GameState, boundingBox: BoundingBox) {
-  if (!hasFeatureAccess(state, "CLUTTER")) {
-    return false;
-  }
-
   if (!state.socialFarming?.clutter?.locations) return false;
   const { locations } = state.socialFarming.clutter;
 
@@ -622,8 +617,7 @@ export function detectCollision({
     detectLandCornerCollision(expansions, position) ||
     detectChickenCollision(state, position) ||
     detectMushroomCollision(state, position) ||
-    detectAirdropCollision(state, position) ||
-    detectGarbageCollision(state, position)
+    detectAirdropCollision(state, position)
   );
 }
 
@@ -632,7 +626,6 @@ export type AOEItemName =
   | "Emerald Turtle"
   | "Tin Turtle"
   | "Sir Goldensnout"
-  | "Bale"
   | "Scary Mike"
   | "Laurie the Chuckle Crow"
   | "Queen Cornelia"
@@ -720,10 +713,6 @@ export function isWithinAOE(
       return (
         dxRect >= -1 && dxRect <= width && dyRect <= 1 && dyRect >= -height
       );
-    }
-
-    case "Bale": {
-      return false;
     }
 
     case "Queen Cornelia": {

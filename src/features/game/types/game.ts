@@ -1510,6 +1510,57 @@ export type BoostName =
 
 export type BoostUsedAt = Partial<Record<BoostName, number>>;
 
+type ClutterCoordinates = {
+  type: ClutterName;
+} & Coordinates;
+
+type ClutterCollection = {
+  collectedAt: number;
+  type: ClutterName;
+};
+
+type DailyCollection = {
+  pointGivenAt?: number;
+  clutter: { [clutterId: string]: ClutterCollection };
+};
+
+type VillageProject = {
+  cheers: number;
+  winnerId?: number;
+  helpedAt?: number; // Local only field
+};
+
+export type HelpedFarm = {
+  count: number;
+  helpedAt: number;
+
+  streak?: {
+    updatedAt: number;
+    count: number;
+  };
+};
+
+export type SocialFarming = {
+  points: number;
+  weeklyPoints: {
+    points: number;
+    week: string;
+  };
+  villageProjects: Partial<Record<MonumentName, VillageProject>>;
+  cheersGiven: {
+    date: string;
+    projects: Partial<Record<MonumentName, number[]>>;
+    farms: number[];
+  };
+  cheers: { freeCheersClaimedAt: number };
+  helpIncrease?: { boughtAt: number[] };
+  helped?: { [farmId: number]: HelpedFarm };
+  clutter?: {
+    spawnedAt: number;
+    locations: { [clutterId: string]: ClutterCoordinates };
+  };
+};
+
 export interface GameState {
   home: Home;
   bank: Bank;
@@ -1796,46 +1847,8 @@ export interface GameState {
   };
   blessing: Blessing;
 
-  monuments?: Partial<Record<MonumentName, { createdAt: number }>>;
-
   aoe: AOE;
-  socialFarming: {
-    points: number;
-    villageProjects: Partial<Record<MonumentName, { cheers: number }>>;
-    cheersGiven: {
-      date: string;
-      projects: Partial<Record<MonumentName, number[]>>;
-      farms: number[];
-    };
-    cheers: {
-      cheersUsed: number;
-      freeCheersClaimedAt: number;
-    };
-    dailyCollections?: Record<
-      number,
-      {
-        pointGivenAt?: number;
-        clutter: Record<
-          string,
-          {
-            collectedAt: number;
-            type: ClutterName;
-          }
-        >;
-      }
-    >;
-    clutter?: {
-      spawnedAt: number;
-      locations: Record<
-        string,
-        {
-          type: ClutterName;
-          x: number;
-          y: number;
-        }
-      >;
-    };
-  };
+  socialFarming: SocialFarming;
 }
 
 export type AOE = Partial<

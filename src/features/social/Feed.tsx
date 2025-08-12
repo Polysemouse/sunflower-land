@@ -16,6 +16,8 @@ import { InteractionBubble } from "./components/InteractionBubble";
 import { getRelativeTime } from "lib/utils/time";
 
 import promote from "assets/icons/promote.webp";
+import followIcon from "assets/icons/follow.webp";
+
 import { MachineState } from "features/game/lib/gameMachine";
 import { Context } from "features/game/GameProvider";
 import { useSelector } from "@xstate/react";
@@ -36,6 +38,10 @@ import { Loading } from "features/auth/components";
 import { FollowsIndicator } from "./components/FollowsIndicator";
 import { FollowList } from "./components/FollowList";
 import { useFeed } from "./FeedContext";
+import { useOnMachineTransition } from "lib/utils/hooks/useOnMachineTransition";
+import { Button } from "components/ui/Button";
+import socialPointsIcon from "assets/icons/social_score.webp";
+import { discoveryModalManager } from "./lib/discoveryModalManager";
 
 type Props = {
   type: "world" | "local";
@@ -71,10 +77,12 @@ export const Feed: React.FC<Props> = ({
   server,
   type,
 }) => {
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
   const { gameService } = useContext(Context);
   const { authService } = useContext(AuthProvider.Context);
 
   const [showFollowing, setShowFollowing] = useState(false);
+  const feedRef = useRef<HTMLDivElement>(null);
 
   const username = useSelector(gameService, _username);
   const token = useSelector(authService, _token);
@@ -92,6 +100,27 @@ export const Feed: React.FC<Props> = ({
     mutate,
   } = useFeedInteractions(token, farmId, type === "world");
   const { setUnreadCount, lastAcknowledged, clearUnread } = useFeed();
+
+  // Handle clicks outside the feed to close it
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        showFeed &&
+        feedRef.current &&
+        !feedRef.current.contains(event.target as Node)
+      ) {
+        handleCloseFeed();
+      }
+    };
+
+    if (showFeed) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [showFeed]);
 
   // Find number of unread and set unread count when the feed loads
   useEffect(() => {
@@ -141,6 +170,13 @@ export const Feed: React.FC<Props> = ({
     },
   });
 
+  useOnMachineTransition(
+    gameService,
+    "followingFarm",
+    "followingFarmSuccess",
+    mutate,
+  );
+
   const handleInteractionClick = (interaction: Interaction) => {
     setShowFeed(false);
     playerModalManager.open({
@@ -158,9 +194,20 @@ export const Feed: React.FC<Props> = ({
     });
   };
 
+  const handleFollowClick = (id: number) => {
+    gameService.send("farm.followed", {
+      effect: {
+        type: "farm.followed",
+        followedId: id,
+      },
+    });
+  };
+
   const handleCloseFeed = (): void => {
     setShowFeed(false);
-    setShowFollowing(false);
+    setTimeout(() => {
+      setShowFollowing(false);
+    }, 500);
   };
 
   const showMobileFeed = showFeed && isMobile;
@@ -171,14 +218,15 @@ export const Feed: React.FC<Props> = ({
   return (
     <InnerPanel
       className={classNames(
-        `fixed ${isMobile ? "w-[75%]" : "w-[300px]"} inset-safe-area m-2 z-30 transition-transform duration-200`,
+        `fixed ${isMobile ? "w-[75%]" : "w-[320px]"} inset-safe-area m-2 z-30 transition-transform duration-200`,
         {
           "translate-x-0": showDesktopFeed || showMobileFeed,
-          "-translate-x-[320px]": hideDesktopFeed,
+          "-translate-x-[330px]": hideDesktopFeed,
           // Account for the margin
           "-translate-x-[110%]": hideMobileFeed,
         },
       )}
+      divRef={feedRef}
     >
       <div className="flex flex-col gap-2 h-full w-full">
         <div className="sticky top-0 flex flex-col z-10 bg-[#e4a672]">
@@ -208,7 +256,7 @@ export const Feed: React.FC<Props> = ({
               onClick={handleCloseFeed}
             />
           </div>
-          <div className="flex items-center justify-between gap-1 w-full">
+          <div className="flex items-center justify-between gap-1 w-full mb-2">
             <div
               className="flex ml-1.5 items-center gap-1 text-xs underline cursor-pointer"
               onClick={() => {
@@ -232,10 +280,29 @@ export const Feed: React.FC<Props> = ({
               className="ml-1"
             />
           </div>
+          <div className="flex items-center justify-between gap-1 w-full">
+            <div
+              className="flex ml-1.5 items-center gap-1 text-xs underline cursor-pointer"
+              onClick={() => {
+                setShowFollowing(false);
+                setShowFeed(false);
+                discoveryModalManager.open();
+              }}
+            >
+              <img
+                src={socialPointsIcon}
+                className="w-4 mt-1 whitespace-nowrap"
+              />
+              {t("leaderboard")}
+            </div>
+          </div>
         </div>
 
         {showFollowing && (
-          <div className="flex flex-col gap-2 -mt-2 overflow-hidden overflow-y-auto scrollable">
+          <div
+            ref={scrollContainerRef}
+            className="flex flex-col gap-2 -mt-2 overflow-hidden overflow-y-auto scrollable"
+          >
             <FollowList
               loggedInFarmId={farmId}
               token={token}
@@ -243,7 +310,8 @@ export const Feed: React.FC<Props> = ({
               networkList={following}
               networkCount={following.length}
               showLabel={false}
-              type="following"
+              networkType="following"
+              scrollContainerRef={scrollContainerRef}
               navigateToPlayer={handleFollowingClick}
             />
           </div>
@@ -252,9 +320,11 @@ export const Feed: React.FC<Props> = ({
         {!showFollowing && (
           <FeedContent
             feed={feed}
+            following={following ?? []}
             username={username ?? `#${farmId}`}
             isLoadingInitialData={isLoadingInitialData}
             isLoadingMore={isLoadingMore}
+            onFollowClick={handleFollowClick}
             hasMore={hasMore}
             loadMore={loadMore}
             onInteractionClick={handleInteractionClick}
@@ -267,19 +337,23 @@ export const Feed: React.FC<Props> = ({
 
 type FeedContentProps = {
   feed: Interaction[];
+  following: number[];
   username: string;
   isLoadingInitialData: boolean;
   isLoadingMore: boolean;
   hasMore: boolean | undefined;
   onInteractionClick: (interaction: Interaction) => void;
+  onFollowClick: (id: number) => void;
   loadMore: () => void;
 };
 
 const FeedContent: React.FC<FeedContentProps> = ({
   feed,
+  following,
   username,
   isLoadingInitialData,
   onInteractionClick,
+  onFollowClick,
   isLoadingMore,
   hasMore,
   loadMore,
@@ -307,9 +381,18 @@ const FeedContent: React.FC<FeedContentProps> = ({
       (loaderRef as any).current = node;
       // Callback refs, like the one from `useInView`, is a function that takes the node as an argument
       intersectionRef(node);
+      return undefined;
     },
     [intersectionRef],
   );
+
+  const handleFollowClick = (
+    e: React.MouseEvent<HTMLButtonElement>,
+    id: number,
+  ) => {
+    e.stopPropagation();
+    onFollowClick(id);
+  };
 
   if (isLoadingInitialData) {
     return <FeedSkeleton />;
@@ -340,6 +423,7 @@ const FeedContent: React.FC<FeedContentProps> = ({
             interaction.type === "announcement"
               ? undefined
               : () => onInteractionClick(interaction);
+          const isFollowing = following.includes(interaction.sender.id);
 
           return (
             <div
@@ -387,6 +471,18 @@ const FeedContent: React.FC<FeedContentProps> = ({
                     >
                       {interaction.message}
                     </div>
+                  </div>
+                  <div className="flex items-center justify-end flex-grow cursor-pointer">
+                    {interaction.type === "follow" && !isFollowing && (
+                      <Button
+                        className="text-xs flex h-10 w-10 justify-center items-center"
+                        onClick={(e) =>
+                          handleFollowClick(e, interaction.sender.id)
+                        }
+                      >
+                        <img src={followIcon} className="w-6 object-contain" />
+                      </Button>
+                    )}
                   </div>
                 </div>
               </InteractionBubble>

@@ -47,9 +47,14 @@ import {
   getActiveGuardian,
 } from "features/game/types/calendar";
 import { RESOURCE_DIMENSIONS } from "features/game/types/resources";
-import { canUseTimeBoostAOE, setAOEAvailableAt } from "features/game/lib/aoe";
+import {
+  canUseTimeBoostAOE,
+  isCollectibleOnFarm,
+  setAOEAvailableAt,
+} from "features/game/lib/aoe";
 import cloneDeep from "lodash.clonedeep";
 import { updateBoostUsed } from "features/game/types/updateBoostUsed";
+import { getObjectEntries } from "features/game/expansion/lib/utils";
 
 export type LandExpansionPlantAction = {
   type: "seed.planted";
@@ -139,9 +144,10 @@ export function isPlotFertile({
   });
 
   const cropPosition =
-    getKeys(crops)
-      .sort((a, b) => (crops[a].createdAt > crops[b].createdAt ? 1 : -1))
-      .findIndex((plotId) => plotId === plotIndex) + 1;
+    getObjectEntries(crops)
+      .filter(([, plot]) => plot.x !== undefined && plot.y !== undefined)
+      .sort(([a], [b]) => (crops[a].createdAt > crops[b].createdAt ? 1 : -1))
+      .findIndex(([plotId]) => plotId === plotIndex) + 1;
   return cropPosition <= cropsWellCanWater;
 }
 
@@ -367,6 +373,10 @@ export const getCropPlotTime = ({
     boostsUsed.push("Giant Zucchini");
   }
 
+  if (isCollectibleBuilt({ name: "Giant Turnip", game }) && crop === "Turnip") {
+    seconds = seconds * 0.5;
+  }
+
   const isSunshower = getActiveCalendarEvent({ game }) === "sunshower";
 
   if (isSunshower) {
@@ -383,7 +393,7 @@ export const getCropPlotTime = ({
   // If within Basic Scarecrow AOE: 20% reduction
   // This must be at the end of the function as it relies on the seconds variable
   if (
-    isCollectibleBuilt({ name: "Basic Scarecrow", game }) &&
+    isCollectibleOnFarm({ name: "Basic Scarecrow", game }) &&
     isBasicCrop(crop) &&
     plot &&
     plot.x !== undefined &&

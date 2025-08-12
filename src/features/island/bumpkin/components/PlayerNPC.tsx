@@ -8,7 +8,6 @@ import { useSelector } from "@xstate/react";
 import { SUNNYSIDE } from "assets/sunnyside";
 import { PIXEL_SCALE } from "features/game/lib/constants";
 import { getBumpkinLevel } from "features/game/lib/level";
-import { PlayerModals } from "features/world/ui/player/PlayerModals";
 import { useVisiting } from "lib/utils/visitUtils";
 import { Context as AuthContext } from "features/auth/lib/Provider";
 import {
@@ -18,6 +17,7 @@ import {
 import { hasFeatureAccess } from "lib/flags";
 import { PlayerModal } from "features/social/PlayerModal";
 import { AuthMachineState } from "features/auth/lib/authMachine";
+import { Discovery } from "features/social/Discovery";
 
 const _showHelper = (state: MachineState) =>
   // First Mashed Potato
@@ -39,6 +39,11 @@ export const PlayerNPC: React.FC<NPCProps> = ({ parts: bumpkinParts }) => {
   const { isVisiting } = useVisiting();
   const context = gameService.getSnapshot().context;
   const loggedInFarmId = context.visitorId ?? context.farmId;
+
+  const hasAirdropAccess = hasFeatureAccess(
+    context.visitorState ?? context.state,
+    "AIRDROP_PLAYER",
+  );
 
   const handleClick = () => {
     if (isVisiting) {
@@ -77,19 +82,12 @@ export const PlayerNPC: React.FC<NPCProps> = ({ parts: bumpkinParts }) => {
       )}
 
       <NPCModal isOpen={open} onClose={() => setOpen(false)} />
-      {hasFeatureAccess(context.state, "SOCIAL_FARMING") ? (
-        <PlayerModal
-          game={context.state}
-          loggedInFarmId={loggedInFarmId}
-          token={token}
-        />
-      ) : (
-        <PlayerModals
-          game={context.state}
-          farmId={loggedInFarmId}
-          isOpen={open}
-        />
-      )}
+      <PlayerModal
+        loggedInFarmId={loggedInFarmId}
+        token={token}
+        hasAirdropAccess={hasAirdropAccess}
+      />
+      <Discovery />
     </>
   );
 };

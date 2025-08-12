@@ -163,11 +163,11 @@ describe("buyMonument", () => {
     });
   });
 
-  it("does not allow a monument to be bought twice in the same day", () => {
+  it("adds monument to village projects", () => {
     const state = buyMonument({
       state: {
         ...GAME_STATE,
-        coins: 0,
+        coins: 4000,
         inventory: {
           Gem: new Decimal(1000),
           "Basic Land": new Decimal(10),
@@ -181,23 +181,12 @@ describe("buyMonument", () => {
       },
     });
 
-    expect(state.collectibles["Big Banana"]?.[0]?.coordinates).toEqual({
-      x: 0,
-      y: 5,
+    expect(state.socialFarming.villageProjects["Big Banana"]).toEqual({
+      cheers: 0,
     });
-
-    expect(() =>
-      buyMonument({
-        state: state,
-        action: {
-          type: "monument.bought",
-          name: "Big Banana",
-        },
-      }),
-    ).toThrow("Monument already bought today");
   });
 
-  it("does not allow a love charm monument to be bought twice", () => {
+  it("does not allow a monument to be bought twice", () => {
     const state = buyMonument({
       state: {
         ...GAME_STATE,

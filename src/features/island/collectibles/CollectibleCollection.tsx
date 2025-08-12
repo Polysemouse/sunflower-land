@@ -365,6 +365,8 @@ import { BabyCow } from "./components/BabyCow";
 import { BabySheep } from "./components/BabySheep";
 import { JanitorChicken } from "./components/JanitorChicken";
 import { VenusBumpkinTrap } from "./components/VenusBumpkinTrap";
+import { Poseidon } from "./components/Poseidon";
+import { Project } from "./components/Project";
 
 export const COLLECTIBLE_COMPONENTS: Record<
   CollectibleName | "Bud",
@@ -649,6 +651,7 @@ export const COLLECTIBLE_COMPONENTS: Record<
   "Battle Fish": BattleFish,
   "Lemon Shark": LemonShark,
   "Longhorn Cowfish": LonghornCowfish,
+  Poseidon: Poseidon,
 
   "Kraken Tentacle": KrakenTentacle,
 
@@ -1304,6 +1307,9 @@ export const COLLECTIBLE_COMPONENTS: Record<
     <Bed {...props} name="Pirate Bed" />
   ),
   "Royal Bed": (props: CollectibleProps) => <Bed {...props} name="Royal Bed" />,
+  "Double Bed": (props: CollectibleProps) => (
+    <Bed {...props} name="Double Bed" />
+  ),
   "Cow Scratcher": (props: CollectibleProps) => (
     <ImageStyle
       {...props}
@@ -2419,6 +2425,51 @@ export const COLLECTIBLE_COMPONENTS: Record<
       alt="Giant Yam"
     />
   ),
+  "Giant Orange": (props: CollectibleProps) => (
+    <ImageStyle
+      {...props}
+      divStyle={{
+        width: `${PIXEL_SCALE * 28}px`,
+        bottom: `${PIXEL_SCALE * 0}px`,
+        left: `${PIXEL_SCALE * 2}px`,
+      }}
+      imgStyle={{
+        width: `${PIXEL_SCALE * 28}px`,
+      }}
+      image={ITEM_DETAILS["Giant Orange"].image}
+      alt="Giant Orange"
+    />
+  ),
+  "Giant Apple": (props: CollectibleProps) => (
+    <ImageStyle
+      {...props}
+      divStyle={{
+        width: `${PIXEL_SCALE * 26}px`,
+        bottom: `${PIXEL_SCALE * 0}px`,
+        left: `${PIXEL_SCALE * 3}px`,
+      }}
+      imgStyle={{
+        width: `${PIXEL_SCALE * 26}px`,
+      }}
+      image={ITEM_DETAILS["Giant Apple"].image}
+      alt="Giant Apple"
+    />
+  ),
+  "Giant Banana": (props: CollectibleProps) => (
+    <ImageStyle
+      {...props}
+      divStyle={{
+        width: `${PIXEL_SCALE * 32}px`,
+        bottom: `${PIXEL_SCALE * 0}px`,
+        left: `${PIXEL_SCALE * 0}px`,
+      }}
+      imgStyle={{
+        width: `${PIXEL_SCALE * 32}px`,
+      }}
+      image={ITEM_DETAILS["Giant Banana"].image}
+      alt="Giant Banana"
+    />
+  ),
   "Heart Air Balloon": (props: CollectibleProps) => (
     <ImageStyle
       {...props}
@@ -2600,39 +2651,7 @@ export const COLLECTIBLE_COMPONENTS: Record<
     />
   ),
   "Big Apple": (props: CollectibleProps) => (
-    <Monument
-      {...props}
-      divStyle={{
-        width: `${PIXEL_SCALE * 32}px`,
-        bottom: `${PIXEL_SCALE * 3}px`,
-        left: `${PIXEL_SCALE * 3}px`,
-      }}
-      imgStyle={{
-        width: `${PIXEL_SCALE * 26}px`,
-      }}
-      image={ITEM_DETAILS["Big Apple"].image}
-      alt="Big Apple"
-      project="Big Apple"
-    />
-  ),
-  "Big Orange": (props: CollectibleProps) => (
-    <Monument
-      {...props}
-      divStyle={{
-        width: `${PIXEL_SCALE * 32}px`,
-        bottom: `${PIXEL_SCALE * 2}px`,
-        left: `${PIXEL_SCALE * 2}px`,
-      }}
-      imgStyle={{
-        width: `${PIXEL_SCALE * 28}px`,
-      }}
-      image={ITEM_DETAILS["Big Orange"].image}
-      alt="Big Orange"
-      project="Big Orange"
-    />
-  ),
-  "Big Banana": (props: CollectibleProps) => (
-    <Monument
+    <Project
       {...props}
       divStyle={{
         width: `${PIXEL_SCALE * 32}px`,
@@ -2640,9 +2659,38 @@ export const COLLECTIBLE_COMPONENTS: Record<
         left: `${PIXEL_SCALE * 0}px`,
       }}
       imgStyle={{
-        width: `${PIXEL_SCALE * 32}px`,
+        width: `${PIXEL_SCALE * 28}px`,
       }}
-      image={ITEM_DETAILS["Big Banana"].image}
+      alt="Big Apple"
+      project="Big Apple"
+    />
+  ),
+  "Big Orange": (props: CollectibleProps) => (
+    <Project
+      {...props}
+      divStyle={{
+        width: `${PIXEL_SCALE * 32}px`,
+        bottom: `${PIXEL_SCALE * 2}px`,
+        left: `${PIXEL_SCALE * 0}px`,
+      }}
+      imgStyle={{
+        width: `${PIXEL_SCALE * 28}px`,
+      }}
+      alt="Big Orange"
+      project="Big Orange"
+    />
+  ),
+  "Big Banana": (props: CollectibleProps) => (
+    <Project
+      {...props}
+      divStyle={{
+        width: `${PIXEL_SCALE * 32}px`,
+        bottom: `${PIXEL_SCALE * 2}px`,
+        left: `${PIXEL_SCALE * 0}px`,
+      }}
+      imgStyle={{
+        width: `${PIXEL_SCALE * 28}px`,
+      }}
       alt="Big Banana"
       project="Big Banana"
     />
@@ -2658,7 +2706,6 @@ export const COLLECTIBLE_COMPONENTS: Record<
       imgStyle={{
         width: `${PIXEL_SCALE * 46}px`,
       }}
-      image={ITEM_DETAILS["Farmer's Monument"].image}
       alt="Farmer's Monument"
       project="Farmer's Monument"
     />
@@ -2674,7 +2721,6 @@ export const COLLECTIBLE_COMPONENTS: Record<
       imgStyle={{
         width: `${PIXEL_SCALE * 42}px`,
       }}
-      image={ITEM_DETAILS["Miner's Monument"].image}
       alt="Miner's Monument"
       project="Miner's Monument"
     />
@@ -2690,7 +2736,6 @@ export const COLLECTIBLE_COMPONENTS: Record<
       imgStyle={{
         width: `${PIXEL_SCALE * 43}px`,
       }}
-      image={ITEM_DETAILS["Woodcutter's Monument"].image}
       alt="Woodcutter's Monument"
       project="Woodcutter's Monument"
     />
@@ -2706,55 +2751,51 @@ export const COLLECTIBLE_COMPONENTS: Record<
       imgStyle={{
         width: `${PIXEL_SCALE * 47}px`,
       }}
-      image={ITEM_DETAILS["Teamwork Monument"].image}
       alt="Teamwork Monument"
       project="Teamwork Monument"
     />
   ),
   "Basic Cooking Pot": (props: CollectibleProps) => (
-    <Monument
+    <Project
       {...props}
       divStyle={{
-        width: `${PIXEL_SCALE * 48}px`,
+        width: `${PIXEL_SCALE * 32}px`,
         bottom: `${PIXEL_SCALE * 0}px`,
         left: `${PIXEL_SCALE * 0}px`,
       }}
       imgStyle={{
         width: `${PIXEL_SCALE * 27}px`,
       }}
-      image={ITEM_DETAILS["Basic Cooking Pot"].image}
       alt="Basic Cooking Pot"
       project="Basic Cooking Pot"
     />
   ),
   "Expert Cooking Pot": (props: CollectibleProps) => (
-    <Monument
+    <Project
       {...props}
       divStyle={{
-        width: `${PIXEL_SCALE * 48}px`,
+        width: `${PIXEL_SCALE * 32}px`,
         bottom: `${PIXEL_SCALE * 0}px`,
         left: `${PIXEL_SCALE * 0}px`,
       }}
       imgStyle={{
         width: `${PIXEL_SCALE * 32}px`,
       }}
-      image={ITEM_DETAILS["Expert Cooking Pot"].image}
       alt="Expert Cooking Pot"
       project="Expert Cooking Pot"
     />
   ),
   "Advanced Cooking Pot": (props: CollectibleProps) => (
-    <Monument
+    <Project
       {...props}
       divStyle={{
-        width: `${PIXEL_SCALE * 48}px`,
+        width: `${PIXEL_SCALE * 32}px`,
         bottom: `${PIXEL_SCALE * 0}px`,
         left: `${PIXEL_SCALE * 0}px`,
       }}
       imgStyle={{
         width: `${PIXEL_SCALE * 34}px`,
       }}
-      image={ITEM_DETAILS["Advanced Cooking Pot"].image}
       alt="Advanced Cooking Pot"
       project="Advanced Cooking Pot"
     />
@@ -2877,21 +2918,6 @@ export const COLLECTIBLE_COMPONENTS: Record<
       }}
       image={ITEM_DETAILS["Fruit Tune Box"].image}
       alt="Fruit Tune Box"
-    />
-  ),
-  "Double Bed": (props: CollectibleProps) => (
-    <ImageStyle
-      {...props}
-      divStyle={{
-        width: `${PIXEL_SCALE * 24}px`,
-        bottom: `${PIXEL_SCALE * 0}px`,
-        left: `${PIXEL_SCALE * 4}px`,
-      }}
-      imgStyle={{
-        width: `${PIXEL_SCALE * 24}px`,
-      }}
-      image={ITEM_DETAILS["Double Bed"].image}
-      alt="Double Bed"
     />
   ),
   "Giant Artichoke": (props: CollectibleProps) => (
@@ -3288,26 +3314,6 @@ export const READONLY_COLLECTIBLES: Record<
           }}
         />
       </div>
-    </div>
-  ),
-  Bale: () => (
-    <div
-      className="absolute bottom-0"
-      style={{
-        width: `${PIXEL_SCALE * 28}px`,
-        top: `${PIXEL_SCALE * -5}px`,
-        left: `${PIXEL_SCALE * -3}px`,
-      }}
-    >
-      <img
-        src={ITEM_DETAILS["Bale"].image}
-        className=" absolute w-full"
-        style={{
-          width: `${PIXEL_SCALE * 28}px`,
-          left: `${PIXEL_SCALE * 3}px`,
-          top: `${PIXEL_SCALE * 5}px`,
-        }}
-      />
     </div>
   ),
   "Nyon Statue": () => (

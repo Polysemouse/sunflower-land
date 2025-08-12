@@ -191,6 +191,7 @@ export type CraftableCollectible = {
   coins?: number;
   from?: Date;
   to?: Date;
+  level?: number;
 };
 
 export const HELIOS_BLACKSMITH_ITEMS: (
@@ -426,7 +427,7 @@ export const POTION_HOUSE_ITEMS: Record<PotionHouseItemName, PotionHouseItem> =
   };
 
 export const POTION_HOUSE_EXOTIC_CROPS: Record<
-  ExoticCropName,
+  Exclude<ExoticCropName, "Giant Orange" | "Giant Apple" | "Giant Banana">,
   PotionHouseItem
 > = {
   "Black Magic": {

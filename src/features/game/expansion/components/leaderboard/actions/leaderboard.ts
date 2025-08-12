@@ -209,6 +209,7 @@ export async function fetchLeaderboardData(
       factionsLeaderboard,
       kingdomLeaderboard,
       emblemsLeaderboard,
+      socialPointsLeaderboard,
     ] = await Promise.all([
       getLeaderboard<TicketLeaderboard>({
         farmId: Number(farmId),
@@ -227,6 +228,10 @@ export async function fetchLeaderboardData(
         farmId: Number(farmId),
         leaderboardName: "emblems",
       }),
+      getLeaderboard<TicketLeaderboard>({
+        farmId: Number(farmId),
+        leaderboardName: "socialPoints",
+      }),
     ]);
 
     return {
@@ -234,7 +239,39 @@ export async function fetchLeaderboardData(
       factions: factionsLeaderboard,
       kingdom: kingdomLeaderboard,
       emblems: emblemsLeaderboard,
+      socialPoints: socialPointsLeaderboard,
     };
+  } catch (error) {
+    // eslint-disable-next-line no-console
+    console.error("error", error);
+    return null;
+  }
+}
+
+type SocialLeaderboardRank = RankData & { username: string };
+
+type SocialLeaderboards = {
+  lastUpdated: number;
+  allTime: {
+    topTen: SocialLeaderboardRank[];
+    farmRankingDetails: SocialLeaderboardRank[];
+  };
+  weekly: {
+    topTen: SocialLeaderboardRank[];
+    farmRankingDetails: SocialLeaderboardRank[];
+  };
+};
+
+export async function fetchSocialLeaderboardData(
+  farmId: number,
+): Promise<SocialLeaderboards | null> {
+  try {
+    const data = await getLeaderboard<SocialLeaderboards>({
+      farmId: Number(farmId),
+      leaderboardName: "socialPoints",
+    });
+
+    return data ?? null;
   } catch (error) {
     // eslint-disable-next-line no-console
     console.error("error", error);

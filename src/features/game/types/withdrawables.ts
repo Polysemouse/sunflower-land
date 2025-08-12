@@ -384,6 +384,10 @@ export const BUMPKIN_RELEASES: Partial<Record<BumpkinItem, Releases>> = {
     tradeAt: SEASONS["Great Bloom"].endDate,
     withdrawAt: SEASONS["Great Bloom"].endDate,
   },
+  "Flower Mask": {
+    tradeAt: SEASONS["Great Bloom"].endDate,
+    withdrawAt: SEASONS["Great Bloom"].endDate,
+  },
   "Amberfall Suit": {
     tradeAt: SEASONS["Great Bloom"].endDate,
     withdrawAt: SEASONS["Great Bloom"].endDate,
@@ -453,6 +457,10 @@ export const BUMPKIN_RELEASES: Partial<Record<BumpkinItem, Releases>> = {
     withdrawAt: new Date("2025-07-07T00:00:00Z"),
   },
   "Recycle Shirt": {
+    tradeAt: SEASONS["Better Together"].endDate,
+    withdrawAt: SEASONS["Better Together"].endDate,
+  },
+  "Pickaxe Shark": {
     tradeAt: SEASONS["Better Together"].endDate,
     withdrawAt: SEASONS["Better Together"].endDate,
   },
@@ -1115,10 +1123,9 @@ export const INVENTORY_RELEASES: Partial<Record<InventoryItemName, Releases>> =
       tradeAt: SEASONS["Better Together"].endDate,
       withdrawAt: SEASONS["Better Together"].endDate,
     },
-    "Double Bed": {
-      tradeAt: SEASONS["Better Together"].endDate,
-      withdrawAt: SEASONS["Better Together"].endDate,
-    },
+    // Double bed is not tradeable - explicitly set her to avoid accidental trade
+    "Double Bed": undefined,
+    "Teamwork Monument": undefined,
     "Giant Artichoke": {
       tradeAt: SEASONS["Better Together"].endDate,
       withdrawAt: SEASONS["Better Together"].endDate,

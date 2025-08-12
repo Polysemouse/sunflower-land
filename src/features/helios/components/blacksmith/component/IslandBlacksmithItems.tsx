@@ -1,5 +1,5 @@
 import React, { useContext, useState } from "react";
-import { useActor, useSelector } from "@xstate/react";
+import { useActor } from "@xstate/react";
 
 import { Box } from "components/ui/Box";
 
@@ -22,14 +22,15 @@ import Decimal from "decimal.js-light";
 import { useAppTranslation } from "lib/i18n/useAppTranslations";
 import { COLLECTIBLE_BUFF_LABELS } from "features/game/types/collectibleItemBuffs";
 import {
-  LOVE_CHARM_MONUMENTS,
   MonumentName,
+  REQUIRED_CHEERS,
+  REWARD_ITEMS,
   WORKBENCH_MONUMENTS,
 } from "features/game/types/monuments";
 import { GameState } from "features/game/types/game";
 import { Label } from "components/ui/Label";
-import { secondsToString } from "lib/utils/time";
-import { hasFeatureAccess } from "lib/flags";
+import helpIcon from "assets/icons/help.webp";
+import { getBumpkinLevel } from "features/game/lib/level";
 
 const VALID_EQUIPMENT: HeliosBlacksmithItem[] = [
   "Basic Scarecrow",
@@ -44,6 +45,9 @@ const VALID_EQUIPMENT: HeliosBlacksmithItem[] = [
   "Macaw",
   "Squirrel",
   "Butterfly",
+];
+
+const PROJECTS: HeliosBlacksmithItem[] = [
   "Basic Cooking Pot",
   "Expert Cooking Pot",
   "Advanced Cooking Pot",
@@ -64,42 +68,21 @@ const DecorationLabel = ({
 }) => {
   const { t } = useAppTranslation();
 
-  const monumentCreatedAt =
-    gameState.monuments?.[selectedName as MonumentName]?.createdAt ?? 0;
-
   const isMonument = selectedName in WORKBENCH_MONUMENTS;
-  const isLoveCharmMonument = selectedName in LOVE_CHARM_MONUMENTS;
-  const now = new Date();
-  const tomorrow = new Date(
-    Date.UTC(
-      now.getUTCFullYear(),
-      now.getUTCMonth(),
-      now.getUTCDate() + 1,
-      0,
-      0,
-      0,
-      0,
-    ),
-  );
 
-  const hasBuiltLoveCharmMonument = () => {
-    return (
-      isLoveCharmMonument &&
-      !!gameState.monuments?.[selectedName as MonumentName]
-    );
+  const hasBuiltMonument = () => {
+    return !!gameState.inventory[selectedName as MonumentName]?.gt(0);
   };
 
-  const isCoolingDown = () => {
-    return (
-      !isLoveCharmMonument &&
-      Math.floor(monumentCreatedAt / (1000 * 60 * 60 * 24)) >=
-        Math.floor(Date.now() / (1000 * 60 * 60 * 24))
-    );
-  };
-
-  if (hasBuiltLoveCharmMonument()) {
+  if (hasBuiltMonument()) {
     return (
       <div className="flex justify-center">
+        <Label type="transparent" icon={helpIcon} className="mb-0.5">
+          {t("monument.requiredHelp", {
+            amount: REQUIRED_CHEERS[selectedName as MonumentName],
+          })}
+        </Label>
+
         <Label type="success" icon={SUNNYSIDE.icons.confirm}>
           {t("already.built")}
         </Label>
@@ -107,36 +90,22 @@ const DecorationLabel = ({
     );
   }
 
-  if (isCoolingDown()) {
-    return (
-      <div className="flex justify-center">
-        <Label type="danger" className="font-secondary">
-          {`${t("megastore.limit", {
-            time: secondsToString((tomorrow.getTime() - Date.now()) / 1000, {
-              length: "short",
-            }),
-          })}`}
-        </Label>
-      </div>
-    );
-  }
+  if (isMonument) {
+    const reward = REWARD_ITEMS[selectedName as MonumentName];
 
-  if (isLoveCharmMonument) {
     return (
-      <div className="flex justify-center">
-        <Label type="default">
-          {t("season.megastore.crafting.limit", {
-            limit: 0,
+      <div className="flex items-center flex-col space-y-1">
+        <Label type="transparent" icon={helpIcon} className="mb-1">
+          {t("monument.requiredHelp", {
+            amount: REQUIRED_CHEERS[selectedName as MonumentName],
           })}
         </Label>
-      </div>
-    );
-  }
-
-  if (isMonument) {
-    return (
-      <div className="flex justify-center">
-        <Label type="default">{t("megastore.limit", { time: "1day" })}</Label>
+        {reward && (
+          <Label type="warning" icon={ITEM_DETAILS[reward.item].image}>
+            {reward.amount > 1 && `${reward.amount} `}
+            {reward.item}
+          </Label>
+        )}
       </div>
     );
   }
@@ -154,12 +123,6 @@ export const IslandBlacksmithItems: React.FC = () => {
       context: { state },
     },
   ] = useActor(gameService);
-  const monumentCreatedAt = useSelector(
-    gameService,
-    (state) =>
-      state.context.state.monuments?.[selectedName as MonumentName]
-        ?.createdAt ?? 0,
-  );
 
   const { inventory, coins } = state;
 
@@ -174,6 +137,10 @@ export const IslandBlacksmithItems: React.FC = () => {
     );
 
   const lessCoins = () => coins < (selectedItem?.coins ?? 0);
+
+  const hasLevel =
+    !selectedItem?.level ||
+    getBumpkinLevel(state.bumpkin?.experience ?? 0) >= selectedItem?.level;
 
   const craft = () => {
     if (selectedName in WORKBENCH_MONUMENTS) {
@@ -217,23 +184,8 @@ export const IslandBlacksmithItems: React.FC = () => {
     shortcutItem(selectedName);
   };
 
-  const isLoveCharmMonument = selectedName in LOVE_CHARM_MONUMENTS;
-
-  const hasBuiltLoveCharmMonument = () => {
-    return (
-      isLoveCharmMonument &&
-      !!gameService.state.context.state.monuments?.[
-        selectedName as MonumentName
-      ]
-    );
-  };
-
-  const isCoolingDown = () => {
-    return (
-      !isLoveCharmMonument &&
-      Math.floor(monumentCreatedAt / (1000 * 60 * 60 * 24)) >=
-        Math.floor(Date.now() / (1000 * 60 * 60 * 24))
-    );
+  const hasBuiltMonument = () => {
+    return !!state.inventory[selectedName as MonumentName]?.gt(0);
   };
 
   return (
@@ -250,6 +202,7 @@ export const IslandBlacksmithItems: React.FC = () => {
           requirements={{
             resources: selectedItem?.ingredients ?? {},
             coins: selectedItem?.coins ?? 0,
+            level: selectedItem?.level ?? 0,
           }}
           actionView={
             isAlreadyCrafted ? (
@@ -269,8 +222,8 @@ export const IslandBlacksmithItems: React.FC = () => {
                     disabled={
                       lessIngredients() ||
                       lessCoins() ||
-                      hasBuiltLoveCharmMonument() ||
-                      isCoolingDown()
+                      hasBuiltMonument() ||
+                      !hasLevel
                     }
                     onClick={craft}
                   >
@@ -285,11 +238,43 @@ export const IslandBlacksmithItems: React.FC = () => {
       content={
         <div className="flex flex-col">
           <div className="flex flex-wrap">
-            {VALID_EQUIPMENT.filter(
-              (equipment) =>
-                !(equipment in WORKBENCH_MONUMENTS) ||
-                hasFeatureAccess(state, "MONUMENTS"),
-            ).map((name: HeliosBlacksmithItem) => {
+            {VALID_EQUIPMENT.map((name: HeliosBlacksmithItem) => {
+              return (
+                <Box
+                  isSelected={selectedName === name}
+                  key={name}
+                  onClick={() => setSelectedName(name)}
+                  image={ITEM_DETAILS[name].image}
+                  count={inventory[name]}
+                  overlayIcon={
+                    <img
+                      src={SUNNYSIDE.icons.stopwatch}
+                      id="confirm"
+                      alt="confirm"
+                      className="object-contain absolute"
+                      style={{
+                        width: `${PIXEL_SCALE * 8}px`,
+                        top: `${PIXEL_SCALE * -4}px`,
+                        right: `${PIXEL_SCALE * -4}px`,
+                      }}
+                    />
+                  }
+                />
+              );
+            })}
+          </div>
+
+          <div className="flex justify-between items-center my-2">
+            <Label type="default">{t("craft.with.friends")}</Label>
+            <img src={helpIcon} alt="help" className=" h-6 mr-2" />
+          </div>
+
+          <p className="text-xs mb-1 font-secondary mx-1">
+            {t("workbench.helpRequired")}
+          </p>
+
+          <div className="flex flex-wrap">
+            {PROJECTS.map((name: HeliosBlacksmithItem) => {
               return (
                 <Box
                   isSelected={selectedName === name}

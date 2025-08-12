@@ -968,18 +968,27 @@ import teamworkMonument from "assets/monuments/chapters_monument_teamwork.webp";
 import basicCookingPot from "assets/monuments/basic_cooking_pot.webp";
 import expertCookingPot from "assets/monuments/expert_cooking_pot.webp";
 import advancedCookingPot from "assets/monuments/advanced_cooking_pot.webp";
-import bigOrange from "assets/monuments/big_orange.webp";
-import bigApple from "assets/monuments/big_apple.webp";
-import bigBanana from "assets/monuments/big_banana.webp";
+import giantOrange from "assets/monuments/big_orange.webp";
+import giantApple from "assets/monuments/big_apple.webp";
+import giantBanana from "assets/monuments/big_banana.webp";
+
+import bigOrange from "assets/monuments/big_orange_stage_1.webp";
+import bigApple from "assets/monuments/big_apple_stage_1.webp";
+import bigBanana from "assets/monuments/big_banana_stage_1.webp";
 
 import trash from "assets/clutter/trash.webp";
 import dung from "assets/clutter/dung.webp";
 import weed from "assets/clutter/weed.webp";
+import anthill from "assets/clutter/anthill.webp";
+import rat from "assets/clutter/rat.webp";
+import snail from "assets/clutter/snail.webp";
+import pestNet from "assets/clutter/pest_net.webp";
 
 import babyCow from "assets/sfts/baby_cow.webp";
 import babySheep from "assets/sfts/baby_sheep.webp";
 import janitorChicken from "assets/animals/chickens/janitor_chicken.webp";
 import venusBumpkinTrap from "assets/flowers/venus_bumpkin_trap.webp";
+import poseidon from "assets/sfts/poseidon_fish.webp";
 
 import { COUPONS, EASTER_EGG, FERTILISERS, InventoryItemName } from "./game";
 
@@ -5697,5 +5706,37 @@ export const ITEM_DETAILS: Items = {
   "Venus Bumpkin Trap": {
     image: venusBumpkinTrap,
     description: translate("description.venusBumpkinTrap"),
+  },
+  Anthill: {
+    image: anthill,
+    description: translate("description.anthill"),
+  },
+  Rat: {
+    image: rat,
+    description: translate("description.rat"),
+  },
+  Snail: {
+    image: snail,
+    description: translate("description.snail"),
+  },
+  "Pest Net": {
+    image: pestNet,
+    description: translate("description.pestNet"),
+  },
+  Poseidon: {
+    image: poseidon,
+    description: translate("description.poseidon"),
+  },
+  "Giant Orange": {
+    image: giantOrange,
+    description: translate("description.giantOrange"),
+  },
+  "Giant Apple": {
+    image: giantApple,
+    description: translate("description.giantApple"),
+  },
+  "Giant Banana": {
+    image: giantBanana,
+    description: translate("description.giantBanana"),
   },
 };

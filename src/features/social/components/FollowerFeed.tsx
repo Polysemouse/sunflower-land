@@ -292,7 +292,7 @@ export const FollowerFeed: React.FC<Props> = ({
     >
       <div
         id="scroll-container"
-        className="flex flex-col max-h-[70%] h-[270px] sm:max-h-none sm:h-auto sm:flex-grow gap-1 overflow-y-auto mb-1"
+        className="flex flex-col max-h-[70%] h-[260px] sm:max-h-none sm:h-auto sm:flex-grow gap-1 overflow-y-auto mb-1"
         ref={scrollContainerRef}
       >
         <div className="sticky -top-0.5 bg-brown-200 z-10 pb-1 pt-1 flex justify-between">
@@ -314,12 +314,12 @@ export const FollowerFeed: React.FC<Props> = ({
           />
         </div>
 
-        <div className="flex flex-col gap-1 -mt-2">
+        <div className="flex flex-col gap-1">
           {interactions.length > 3 && (
             <div
               ref={setRefs}
               id="loading-more"
-              className="text-xs flex justify-center py-1 h-5"
+              className="text-xs flex justify-center py-1 h-6"
             >
               {hasMore ? <Loading dotsOnly /> : t("playerModal.noMoreMessages")}
             </div>

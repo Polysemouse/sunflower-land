@@ -24,6 +24,14 @@ export const STATIC_OFFLINE_FARM: GameState = {
     expiresAt: Date.now() + 31 * 24 * 60 * 60 * 1000,
   },
   inventory: {
+    "Black Magic": new Decimal(1),
+    "Farmer's Monument": new Decimal(1),
+    "Giant Orange": new Decimal(1),
+    "Giant Apple": new Decimal(1),
+    "Giant Banana": new Decimal(1),
+    "Giant Carrot": new Decimal(1),
+    "Basic Cooking Pot": new Decimal(1),
+    "Teamwork Monument": new Decimal(1),
     "Gold Cooking Trophy": new Decimal(1),
     Doll: new Decimal(10),
     "Petting Hand": new Decimal(1),
@@ -45,8 +53,10 @@ export const STATIC_OFFLINE_FARM: GameState = {
     "Maneki Neko": new Decimal(1),
     "Nyon Statue": new Decimal(1),
     Observatory: new Decimal(1),
-    "Super Totem": new Decimal(1),
-    "Time Warp Totem": new Decimal(1),
+    "Super Totem": new Decimal(5),
+    "Time Warp Totem": new Decimal(5),
+    "Harvest Hourglass": new Decimal(5),
+    "Gourmet Hourglass": new Decimal(5),
     Wardrobe: new Decimal(1),
     "Wicker Man": new Decimal(1),
     Manor: new Decimal(1),
@@ -192,7 +202,12 @@ export const STATIC_OFFLINE_FARM: GameState = {
     },
   },
   lavaPits: {
-    "1": { createdAt: 0, x: -4, y: -6 },
+    "1": {
+      createdAt: 0,
+      startedAt: Date.now() - 1000 * (60 * 60 * 48),
+      x: -4,
+      y: -6,
+    },
   },
 
   fruitPatches: {
@@ -346,7 +361,7 @@ export const STATIC_OFFLINE_FARM: GameState = {
 
   home: {
     collectibles: {
-      "Magic Bean": [
+      "Big Apple": [
         {
           id: "1",
           createdAt: Date.now(),
@@ -1005,7 +1020,39 @@ export const STATIC_OFFLINE_FARM: GameState = {
   },
   desert: {
     digging: {
-      grid: [],
+      streak: {
+        count: 0,
+        collectedAt: Date.now() - 1000 * 60 * 60 * 1,
+        totalClaimed: 0,
+      },
+      grid: [
+        [
+          {
+            x: 0,
+            y: 0,
+            dugAt: 0,
+            items: { Coprolite: 1 },
+            tool: "Sand Shovel",
+          },
+        ],
+        [
+          {
+            x: 1,
+            y: 0,
+            dugAt: 0,
+            items: { Coprolite: 1 },
+            tool: "Sand Shovel",
+          },
+
+          {
+            x: 2,
+            y: 0,
+            dugAt: 0,
+            items: { Coprolite: 1 },
+            tool: "Sand Shovel",
+          },
+        ],
+      ],
       patterns: [],
     },
   },
@@ -1125,6 +1172,10 @@ export const STATIC_OFFLINE_FARM: GameState = {
   },
   aoe: {},
   socialFarming: {
+    weeklyPoints: {
+      points: 0,
+      week: "2025-08-04",
+    },
     points: 0,
     villageProjects: {},
     cheersGiven: {
@@ -1133,7 +1184,6 @@ export const STATIC_OFFLINE_FARM: GameState = {
       farms: [],
     },
     cheers: {
-      cheersUsed: 0,
       freeCheersClaimedAt: 0,
     },
     clutter: {

@@ -153,6 +153,7 @@ export class BeachScene extends BaseScene {
     this.load.image("cow_skull", "world/cow_skull.webp");
     this.load.image("ancient_clock", "world/ancient_clock.png");
     this.load.image("broken_pillar", "world/broken_pillar.webp");
+    this.load.image("coprolite", "world/coprolite.webp");
     this.load.image("sand", "world/sand.webp");
 
     this.load.image("shovel_select", "world/shovel_select_new.webp");
@@ -1328,7 +1329,7 @@ export class BeachScene extends BaseScene {
   public handleDigbyWarnings = () => {
     if (!this.currentPlayer) return;
 
-    if (this.percentageTreasuresFound >= 100) {
+    if (this.percentageTreasuresFound >= 100 && !this.hasClaimedStreakReward) {
       if (this.alreadyNotifiedOfClaim) return;
 
       this.npcs.digby?.speak(translate("digby.claimPrize"));
