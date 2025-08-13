@@ -6,7 +6,9 @@ import backgroundDark from "public/crops-and-chickens/background/crops_and_chick
 import { useIsZoomOut } from "./hooks/useIsZoomOut";
 import { ZOOM_OUT_SCALE } from "./CropsAndChickensConstants";
 
-export const CropsAndChickensBackground: React.FC = ({ children }) => {
+export const CropsAndChickensBackground: React.FC<React.PropsWithChildren> = ({
+  children,
+}) => {
   const { isDarkMode } = useIsDarkMode();
   const { isZoomOut } = useIsZoomOut();
 

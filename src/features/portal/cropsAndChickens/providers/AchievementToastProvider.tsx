@@ -30,7 +30,9 @@ export const useAchievementToast = () => {
   return context;
 };
 
-const AchievementToastProvider: React.FC = ({ children }) => {
+const AchievementToastProvider: React.FC<React.PropsWithChildren> = ({
+  children,
+}) => {
   const { t } = useAppTranslation();
 
   const touchDevice = isTouchDevice();
