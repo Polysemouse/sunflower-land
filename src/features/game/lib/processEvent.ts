@@ -20,6 +20,7 @@ import { BumpkinItem, ITEM_IDS } from "../types/bumpkin";
 import { MaxedItem } from "./gameMachine";
 import { SEASON_TICKET_NAME } from "../types/seasons";
 import { OFFCHAIN_ITEMS } from "./offChainItems";
+import { PET_RESOURCES } from "../types/pets";
 
 export const MAX_INVENTORY_ITEMS: Inventory = {
   ...getKeys(EXOTIC_CROPS).reduce(
@@ -339,6 +340,15 @@ export const MAX_INVENTORY_ITEMS: Inventory = {
   Squirrel: new Decimal(5),
   Butterfly: new Decimal(5),
   Macaw: new Decimal(5),
+
+  // Pet resources all 300
+  ...getKeys(PET_RESOURCES).reduce(
+    (acc, name) => ({
+      ...acc,
+      [name]: new Decimal(300),
+    }),
+    {},
+  ),
 };
 /**
  * Add wearable into array if it requires a hoard limit
@@ -620,11 +630,13 @@ export function checkProgress({ state, action, farmId }: ProcessEventArgs): {
   const { inventory, wardrobe } = newState;
   const auctionBid = newState.auctioneer.bid?.ingredients ?? {};
 
-  const listedItems = getActiveListedItems(newState);
-  const listedInventoryItemNames = getKeys(listedItems).filter(
+  const { collectibles: listedCollectibles, wearables: listedWearables } =
+    getActiveListedItems(newState);
+
+  const listedInventoryItemNames = getKeys(listedCollectibles).filter(
     (name) => name in KNOWN_IDS,
   ) as InventoryItemName[];
-  const listedWardrobeItemNames = getKeys(listedItems).filter(
+  const listedWardrobeItemNames = getKeys(listedWearables).filter(
     (name) => name in ITEM_IDS,
   ) as BumpkinItem[];
 
@@ -636,7 +648,7 @@ export function checkProgress({ state, action, farmId }: ProcessEventArgs): {
     .every((name) => {
       const inventoryAmount = inventory[name] ?? new Decimal(0);
       const auctionAmount = auctionBid[name] ?? new Decimal(0);
-      const listingAmount = listedItems[name] ?? new Decimal(0);
+      const listingAmount = listedCollectibles[name] ?? new Decimal(0);
 
       const previousInventoryAmount =
         newState.previousInventory[name] || new Decimal(0);
@@ -664,7 +676,7 @@ export function checkProgress({ state, action, farmId }: ProcessEventArgs): {
     .concat(listedWardrobeItemNames)
     .every((name) => {
       const wardrobeAmount = wardrobe[name] ?? 0;
-      const listedAmount = listedItems[name] ?? 0;
+      const listedAmount = listedWearables[name] ?? 0;
 
       const previousWardrobeAmount = newState.previousWardrobe[name] || 0;
 

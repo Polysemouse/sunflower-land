@@ -153,7 +153,7 @@ export const Monument: React.FC<MonumentProps> = (input) => {
 
   let image = PROJECT_IMAGES[input.project].empty;
 
-  if (projectPercentage >= 100) {
+  if (isProjectComplete) {
     image = PROJECT_IMAGES[input.project].ready;
   } else if (projectPercentage >= 20) {
     image = PROJECT_IMAGES[input.project].halfway;
@@ -219,19 +219,21 @@ export const Monument: React.FC<MonumentProps> = (input) => {
                   </div>
                 </div>
               )}
-              <div
-                className="absolute bottom-2 left-1/2"
-                style={{
-                  width: `${PIXEL_SCALE * 20}px`,
-                }}
-              >
-                <ProgressBar
-                  type="quantity"
-                  percentage={projectPercentage}
-                  formatLength="full"
-                  className="ml-1 -translate-x-1/2"
-                />
-              </div>
+              {!isProjectComplete && (
+                <div
+                  className="absolute bottom-2 left-1/2"
+                  style={{
+                    width: `${PIXEL_SCALE * 20}px`,
+                  }}
+                >
+                  <ProgressBar
+                    type="quantity"
+                    percentage={projectPercentage}
+                    formatLength="full"
+                    className="ml-1 -translate-x-1/2"
+                  />
+                </div>
+              )}
             </>
           )}
         </PopoverButton>

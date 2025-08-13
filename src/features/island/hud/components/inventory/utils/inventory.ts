@@ -1,6 +1,7 @@
 import Decimal from "decimal.js-light";
 import { availableWardrobe } from "features/game/events/landExpansion/equip";
 import { isCollectible } from "features/game/events/landExpansion/garbageSold";
+import { getObjectEntries } from "features/game/expansion/lib/utils";
 import {
   BuildingName,
   BUILDINGS_DIMENSIONS,
@@ -16,7 +17,10 @@ import {
   Inventory,
   InventoryItemName,
 } from "features/game/types/game";
-import { MarketplaceTradeableName } from "features/game/types/marketplace";
+import {
+  CollectionName,
+  MarketplaceTradeableName,
+} from "features/game/types/marketplace";
 import {
   RESOURCE_STATE_ACCESSORS,
   RESOURCE_DIMENSIONS,
@@ -30,29 +34,40 @@ const PLACEABLE_DIMENSIONS = {
   ...RESOURCE_DIMENSIONS,
 };
 
-export const getActiveListedItems = (
-  state: GameState,
-): Record<MarketplaceTradeableName, number> => {
-  if (!state.trades.listings)
-    return {} as Record<MarketplaceTradeableName, number>;
+type ListedItems = Record<
+  CollectionName,
+  Partial<Record<MarketplaceTradeableName, number>>
+>;
 
-  return Object.values(state.trades.listings).reduce(
+export const getActiveListedItems = (state: GameState): ListedItems => {
+  if (!state.trades.listings) {
+    return {
+      wearables: {},
+      collectibles: {},
+      buds: {},
+      resources: {},
+    };
+  }
+
+  return Object.values(state.trades.listings).reduce<ListedItems>(
     (acc, listing) => {
       if (listing.boughtAt && listing.buyerId) return acc;
 
-      Object.entries(listing.items).forEach(([itemName, quantity]) => {
-        const name = itemName as MarketplaceTradeableName;
+      getObjectEntries(listing.items).forEach(([itemName, quantity]) => {
+        const amount = quantity ?? 0;
+        const collection = listing.collection ?? "collectibles";
 
-        if (acc[name]) {
-          acc[name] += quantity as number;
-        } else {
-          acc[name] = quantity as number;
-        }
+        acc[collection][itemName] = (acc[collection][itemName] ?? 0) + amount;
       });
 
       return acc;
     },
-    {} as Record<MarketplaceTradeableName, number>,
+    {
+      wearables: {},
+      collectibles: {},
+      buds: {},
+      resources: {},
+    },
   );
 };
 
@@ -163,5 +178,5 @@ export function getCountAndType(
     itemType = "wearable";
   }
 
-  return { count, itemType };
+  return { count: setPrecision(count, 2), itemType };
 }

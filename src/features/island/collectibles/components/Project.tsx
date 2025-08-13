@@ -335,7 +335,7 @@ const ProjectModal: React.FC<{
 }> = ({ project, onClose, onComplete, cheers, state }) => {
   const { t } = useAppTranslation();
 
-  const { gameService, gameState } = useGame();
+  const { gameService } = useGame();
 
   const [showConfirmInsta, setShowConfirmInsta] = useState(false);
 
@@ -362,7 +362,7 @@ const ProjectModal: React.FC<{
   }
 
   const instaGrowPrice = INSTA_GROW_PRICES[project] ?? 0;
-  const obsidian = gameState.context.state.inventory.Obsidian ?? new Decimal(0);
+  const obsidian = state.inventory.Obsidian ?? new Decimal(0);
   const hasObsidian = obsidian.gte(instaGrowPrice);
 
   if (showConfirmInsta) {
@@ -488,6 +488,7 @@ export const Project: React.FC<ProjectProps> = (input) => {
     gameService,
     _hasCheeredToday(input.project),
   );
+  const state = useSelector(gameService, (state) => state.context.state);
 
   const requiredCheers = REQUIRED_CHEERS[input.project];
   const projectPercentage = Math.round((projectCheers / requiredCheers) * 100);
@@ -520,7 +521,7 @@ export const Project: React.FC<ProjectProps> = (input) => {
       project: input.project,
     });
 
-    if (isHelpComplete({ game: gameService.getSnapshot().context.state })) {
+    if (isHelpComplete({ game: state })) {
       setShowHelped(true);
     }
   };
@@ -536,18 +537,18 @@ export const Project: React.FC<ProjectProps> = (input) => {
 
   let image = PROJECT_IMAGES[input.project].empty;
 
-  if (projectPercentage >= 100) {
+  if (isProjectComplete) {
     image = PROJECT_IMAGES[input.project].ready;
   } else if (projectPercentage >= 20) {
     image = PROJECT_IMAGES[input.project].halfway;
   }
 
+  const isCookingPot = input.name.endsWith("Pot");
+
   return (
     <>
       <Modal show={showHelped}>
-        <CloseButtonPanel
-          bumpkinParts={gameService.state.context.state.bumpkin.equipped}
-        >
+        <CloseButtonPanel bumpkinParts={state.bumpkin.equipped}>
           <FarmHelped onClose={() => setShowHelped(false)} />
         </CloseButtonPanel>
       </Modal>
@@ -600,12 +601,24 @@ export const Project: React.FC<ProjectProps> = (input) => {
             className="ml-1 -translate-x-1/2"
           />
         </div>
+
+        {isProjectComplete && (
+          <img
+            src={SUNNYSIDE.icons.expression_alerted}
+            className={`absolute -top-4 left-1/2 -translate-x-1/2 ready pointer-events-none`}
+            style={{
+              width: `${PIXEL_SCALE * 4}px`,
+              marginLeft: `${PIXEL_SCALE * (isCookingPot ? -2 : -4)}px`,
+              marginTop: `${PIXEL_SCALE * (isCookingPot ? 2 : -2)}px`,
+            }}
+          />
+        )}
       </>
 
       <Modal show={showDetails} onHide={() => setShowDetails(false)}>
         <CloseButtonPanel container={OuterPanel}>
           <ProjectModal
-            state={gameService.getSnapshot().context.state}
+            state={state}
             project={input.project}
             onClose={() => setShowDetails(false)}
             onComplete={handleComplete}
