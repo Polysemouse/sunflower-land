@@ -72,6 +72,21 @@ describe("mineCrimstone", () => {
     ).toThrow("Crimstone does not exist");
   });
 
+  it("throws an error if crimstone is not placed", () => {
+    expect(() =>
+      mineCrimstone({
+        state: {
+          ...GAME_STATE,
+          bumpkin: GAME_STATE.bumpkin,
+          crimstones: {
+            0: { ...GAME_STATE.crimstones[0], x: undefined, y: undefined },
+          },
+        },
+        action: { type: "crimstoneRock.mined", index: 0 },
+      }),
+    ).toThrow("Crimstone rock is not placed");
+  });
+
   it("throws an error if crimstone is not ready", () => {
     const payload = {
       state: {
@@ -238,6 +253,42 @@ describe("mineCrimstone", () => {
       });
 
       expect(time).toEqual(now - CRIMSTONE_RECOVERY_TIME * 0.15 * 1000);
+    });
+
+    it("crimstone replenishes faster with Fireside Alchemist, Crimstone Amulet and Mole Shrine", () => {
+      const now = Date.now();
+
+      const { time } = getMinedAt({
+        game: {
+          ...GAME_STATE,
+          bumpkin: {
+            ...GAME_STATE.bumpkin,
+            skills: {
+              "Fireside Alchemist": 1,
+            },
+            equipped: {
+              ...GAME_STATE.bumpkin.equipped,
+              necklace: "Crimstone Amulet",
+            },
+          },
+          collectibles: {
+            "Mole Shrine": [
+              {
+                coordinates: { x: 0, y: 0 },
+                createdAt: now,
+                id: "12",
+                readyAt: now,
+              },
+            ],
+          },
+        },
+        createdAt: now,
+      });
+
+      const expectedCooldownTime =
+        CRIMSTONE_RECOVERY_TIME - CRIMSTONE_RECOVERY_TIME * 0.8 * 0.85 * 0.75;
+
+      expect(time).toEqual(now - expectedCooldownTime * 1000);
     });
   });
 });

@@ -11,16 +11,22 @@ import { MachineState } from "features/game/lib/gameMachine";
 import Decimal from "decimal.js-light";
 import { DepletedIron } from "./components/DepletedIron";
 import { DepletingIron } from "./components/DepletingIron";
-import { canMine } from "features/game/expansion/lib/utils";
+import { canMine } from "features/game/lib/resourceNodes";
 import { RecoveredIron } from "./components/RecoveredIron";
 import { useSound } from "lib/utils/hooks/useSound";
 import { getIronDropAmount } from "features/game/events/landExpansion/ironMine";
+import { IronRockName } from "features/game/types/resources";
 
 const HITS = 3;
 const tool = "Stone Pickaxe";
 
-const HasTool = (inventory: Partial<Record<InventoryItemName, Decimal>>) => {
-  return (inventory[tool] ?? new Decimal(0)).gte(1);
+const HasTool = (
+  inventory: Partial<Record<InventoryItemName, Decimal>>,
+  ironRock: Rock,
+) => {
+  const requiredToolAmount = ironRock.multiplier ?? 1;
+  if (requiredToolAmount <= 0) return true;
+  return (inventory[tool] ?? new Decimal(0)).gte(requiredToolAmount);
 };
 
 const selectInventory = (state: MachineState) => state.context.state.inventory;
@@ -66,26 +72,26 @@ export const Iron: React.FC<Props> = ({ id }) => {
     };
   }, []);
 
+  const state = useSelector(gameService, selectGame);
   const resource = useSelector(
     gameService,
     (state) => state.context.state.iron[id],
     compareResource,
   );
+  const ironRockName = (resource.name ?? "Iron Rock") as IronRockName;
   const inventory = useSelector(
     gameService,
     selectInventory,
     (prev, next) =>
-      HasTool(prev) === HasTool(next) &&
+      HasTool(prev, resource) === HasTool(next, resource) &&
       (prev.Logger ?? new Decimal(0)).equals(next.Logger ?? new Decimal(0)),
   );
 
-  const state = useSelector(gameService, selectGame);
-
   const skills = useSelector(gameService, selectSkills, compareSkills);
 
-  const hasTool = HasTool(inventory);
+  const hasTool = HasTool(inventory, resource);
   const timeLeft = getTimeLeft(resource.stone.minedAt, IRON_RECOVERY_TIME);
-  const mined = !canMine(resource, IRON_RECOVERY_TIME);
+  const mined = !canMine(resource, ironRockName);
 
   useUiRefresher({ active: mined });
 
@@ -144,7 +150,13 @@ export const Iron: React.FC<Props> = ({ id }) => {
       {/* Resource ready to collect */}
       {!mined && (
         <div ref={divRef} className="absolute w-full h-full" onClick={strike}>
-          <RecoveredIron hasTool={hasTool} touchCount={touchCount} />
+          <RecoveredIron
+            hasTool={hasTool}
+            touchCount={touchCount}
+            ironRockName={ironRockName}
+            requiredToolAmount={new Decimal(resource.multiplier ?? 1)}
+            inventory={inventory}
+          />
         </div>
       )}
 
@@ -152,7 +164,7 @@ export const Iron: React.FC<Props> = ({ id }) => {
       {collecting && <DepletingIron resourceAmount={harvested.current} />}
 
       {/* Depleted resource */}
-      {mined && <DepletedIron timeLeft={timeLeft} />}
+      {mined && <DepletedIron timeLeft={timeLeft} name={ironRockName} />}
     </div>
   );
 };

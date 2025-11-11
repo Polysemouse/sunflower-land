@@ -2,15 +2,13 @@ import { FiniteResource, GameState } from "features/game/types/game";
 import { ResourceName } from "features/game/types/resources";
 import Decimal from "decimal.js-light";
 import { produce } from "immer";
+import { Coordinates } from "features/game/expansion/components/MapPlacement";
 
 export type PlaceSunstoneAction = {
   type: "sunstone.placed";
   name: ResourceName;
   id: string;
-  coordinates: {
-    x: number;
-    y: number;
-  };
+  coordinates: Coordinates;
 };
 
 type Options = {
@@ -51,8 +49,8 @@ export function placeSunstone({
         const existingProgress =
           updatedSunstone.removedAt - updatedSunstone.stone.minedAt;
         updatedSunstone.stone.minedAt = createdAt - existingProgress;
-        delete updatedSunstone.removedAt;
       }
+      delete updatedSunstone.removedAt;
 
       game.sunstones[id] = updatedSunstone;
 

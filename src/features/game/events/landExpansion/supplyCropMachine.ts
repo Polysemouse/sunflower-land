@@ -9,7 +9,10 @@ import {
 import cloneDeep from "lodash.clonedeep";
 import { produce } from "immer";
 import { updateBoostUsed } from "features/game/types/updateBoostUsed";
-import { isCollectibleBuilt } from "features/game/lib/collectibleBuilt";
+import {
+  isTemporaryCollectibleActive,
+  isCollectibleBuilt,
+} from "features/game/lib/collectibleBuilt";
 
 export type AddSeedsInput = {
   type: CropSeedName;
@@ -128,6 +131,11 @@ export function calculateCropTime(
   if (isCollectibleBuilt({ game: state, name: "Groovy Gramophone" })) {
     milliSeconds = milliSeconds * 0.5;
     boostUsed.push("Groovy Gramophone");
+  }
+
+  if (isTemporaryCollectibleActive({ name: "Tortoise Shrine", game: state })) {
+    milliSeconds = milliSeconds * 0.9;
+    boostUsed.push("Tortoise Shrine");
   }
 
   return {
@@ -323,7 +331,11 @@ export function supplyCropMachine({
       throw new Error("You do not have a Bumpkin");
     }
 
-    if (!stateCopy.buildings["Crop Machine"]?.[0]) {
+    if (
+      !stateCopy.buildings["Crop Machine"]?.some(
+        (building) => !!building.coordinates,
+      )
+    ) {
       throw new Error("Crop Machine does not exist");
     }
 

@@ -2,9 +2,67 @@ import Decimal from "decimal.js-light";
 import { claimProduce } from "./claimProduce";
 import { INITIAL_FARM } from "features/game/lib/constants";
 import { ANIMAL_SLEEP_DURATION } from "./feedAnimal";
+import { GameState } from "features/game/types/game";
 
 describe("claimProduce", () => {
   const now = Date.now();
+  const GAME_STATE: GameState = {
+    ...INITIAL_FARM,
+    buildings: {
+      "Hen House": [
+        {
+          id: "henHouse",
+          readyAt: 0,
+          createdAt: 0,
+          coordinates: { x: 0, y: 0 },
+        },
+      ],
+      Barn: [
+        {
+          id: "barn",
+          readyAt: 0,
+          createdAt: 0,
+          coordinates: { x: 0, y: 0 },
+        },
+      ],
+    },
+  };
+
+  it("throws an error if building does not exist", () => {
+    expect(() =>
+      claimProduce({
+        state: {
+          ...GAME_STATE,
+          inventory: {
+            Egg: new Decimal(1),
+          },
+          buildings: {},
+          henHouse: {
+            ...GAME_STATE.henHouse,
+            animals: {
+              xyz: {
+                id: "xyz",
+                type: "Chicken",
+                createdAt: 0,
+                state: "ready",
+                experience: 60,
+                asleepAt: 0,
+                awakeAt: 0,
+                lovedAt: 0,
+                item: "Petting Hand",
+              },
+            },
+          },
+        },
+        createdAt: now,
+        action: {
+          type: "produce.claimed",
+          animal: "Chicken",
+          id: "xyz",
+        },
+      }),
+    ).toThrow("Building does not exist");
+  });
 
   it("claims produce from a chicken and receives an egg", () => {
     const chickenId = "xyz";
@@ -12,12 +70,12 @@ describe("claimProduce", () => {
     const state = claimProduce({
       createdAt: now,
       state: {
-        ...INITIAL_FARM,
+        ...GAME_STATE,
         inventory: {
           Egg: new Decimal(1),
         },
         henHouse: {
-          ...INITIAL_FARM.henHouse,
+          ...GAME_STATE.henHouse,
           animals: {
             [chickenId]: {
               id: chickenId,
@@ -52,9 +110,9 @@ describe("claimProduce", () => {
       claimProduce({
         createdAt: now,
         state: {
-          ...INITIAL_FARM,
+          ...GAME_STATE,
           henHouse: {
-            ...INITIAL_FARM.henHouse,
+            ...GAME_STATE.henHouse,
             animals: {
               [chickenId]: {
                 id: chickenId,
@@ -84,7 +142,7 @@ describe("claimProduce", () => {
 
     const newState = claimProduce({
       state: {
-        ...INITIAL_FARM,
+        ...GAME_STATE,
         inventory: {
           "Chicken Coop": new Decimal(1),
         },
@@ -99,7 +157,7 @@ describe("claimProduce", () => {
           ],
         },
         henHouse: {
-          ...INITIAL_FARM.henHouse,
+          ...GAME_STATE.henHouse,
           animals: {
             [chickenId]: {
               id: chickenId,
@@ -127,7 +185,7 @@ describe("claimProduce", () => {
 
     const newState = claimProduce({
       state: {
-        ...INITIAL_FARM,
+        ...GAME_STATE,
         inventory: {
           "Rich Chicken": new Decimal(1),
         },
@@ -142,7 +200,7 @@ describe("claimProduce", () => {
           ],
         },
         henHouse: {
-          ...INITIAL_FARM.henHouse,
+          ...GAME_STATE.henHouse,
           animals: {
             [chickenId]: {
               id: chickenId,
@@ -170,7 +228,7 @@ describe("claimProduce", () => {
 
     const newState = claimProduce({
       state: {
-        ...INITIAL_FARM,
+        ...GAME_STATE,
         inventory: {
           "Undead Rooster": new Decimal(1),
         },
@@ -185,7 +243,7 @@ describe("claimProduce", () => {
           ],
         },
         henHouse: {
-          ...INITIAL_FARM.henHouse,
+          ...GAME_STATE.henHouse,
           animals: {
             [chickenId]: {
               id: chickenId,
@@ -213,7 +271,7 @@ describe("claimProduce", () => {
 
     const newState = claimProduce({
       state: {
-        ...INITIAL_FARM,
+        ...GAME_STATE,
         inventory: {
           "Ayam Cemani": new Decimal(1),
         },
@@ -228,7 +286,7 @@ describe("claimProduce", () => {
           ],
         },
         henHouse: {
-          ...INITIAL_FARM.henHouse,
+          ...GAME_STATE.henHouse,
           animals: {
             [chickenId]: {
               id: chickenId,
@@ -256,16 +314,16 @@ describe("claimProduce", () => {
 
     const newState = claimProduce({
       state: {
-        ...INITIAL_FARM,
+        ...GAME_STATE,
         bumpkin: {
-          ...INITIAL_FARM.bumpkin,
+          ...GAME_STATE.bumpkin,
           equipped: {
-            ...INITIAL_FARM.bumpkin?.equipped,
+            ...GAME_STATE.bumpkin?.equipped,
             hat: "Cattlegrim",
           },
         },
         henHouse: {
-          ...INITIAL_FARM.henHouse,
+          ...GAME_STATE.henHouse,
           animals: {
             [chickenId]: {
               id: chickenId,
@@ -293,7 +351,7 @@ describe("claimProduce", () => {
     const state = claimProduce({
       createdAt: now,
       state: {
-        ...INITIAL_FARM,
+        ...GAME_STATE,
         inventory: {
           "Janitor Chicken": new Decimal(1),
         },
@@ -308,10 +366,10 @@ describe("claimProduce", () => {
           ],
         },
         henHouse: {
-          ...INITIAL_FARM.henHouse,
+          ...GAME_STATE.henHouse,
           animals: {
             "0": {
-              ...INITIAL_FARM.henHouse.animals["0"],
+              ...GAME_STATE.henHouse.animals["0"],
               state: "ready",
               experience: 60,
             },
@@ -335,16 +393,16 @@ describe("claimProduce", () => {
 
     const newState = claimProduce({
       state: {
-        ...INITIAL_FARM,
+        ...GAME_STATE,
         bumpkin: {
-          ...INITIAL_FARM.bumpkin,
+          ...GAME_STATE.bumpkin,
           equipped: {
-            ...INITIAL_FARM.bumpkin?.equipped,
+            ...GAME_STATE.bumpkin?.equipped,
             hat: "Cattlegrim",
           },
         },
         barn: {
-          ...INITIAL_FARM.barn,
+          ...GAME_STATE.barn,
           animals: {
             [cowId]: {
               id: cowId,
@@ -373,16 +431,16 @@ describe("claimProduce", () => {
 
     const newState = claimProduce({
       state: {
-        ...INITIAL_FARM,
+        ...GAME_STATE,
         bumpkin: {
-          ...INITIAL_FARM.bumpkin,
+          ...GAME_STATE.bumpkin,
           equipped: {
-            ...INITIAL_FARM.bumpkin?.equipped,
+            ...GAME_STATE.bumpkin?.equipped,
             coat: "Milk Apron",
           },
         },
         barn: {
-          ...INITIAL_FARM.barn,
+          ...GAME_STATE.barn,
           animals: {
             [cowId]: {
               id: cowId,
@@ -411,16 +469,16 @@ describe("claimProduce", () => {
 
     const newState = claimProduce({
       state: {
-        ...INITIAL_FARM,
+        ...GAME_STATE,
         bumpkin: {
-          ...INITIAL_FARM.bumpkin,
+          ...GAME_STATE.bumpkin,
           equipped: {
-            ...INITIAL_FARM.bumpkin?.equipped,
+            ...GAME_STATE.bumpkin?.equipped,
             necklace: "Cowbell Necklace",
           },
         },
         barn: {
-          ...INITIAL_FARM.barn,
+          ...GAME_STATE.barn,
           animals: {
             [cowId]: {
               id: cowId,
@@ -449,16 +507,16 @@ describe("claimProduce", () => {
 
     const newState = claimProduce({
       state: {
-        ...INITIAL_FARM,
+        ...GAME_STATE,
         bumpkin: {
-          ...INITIAL_FARM.bumpkin,
+          ...GAME_STATE.bumpkin,
           equipped: {
-            ...INITIAL_FARM.bumpkin?.equipped,
+            ...GAME_STATE.bumpkin?.equipped,
             hat: "Cattlegrim",
           },
         },
         barn: {
-          ...INITIAL_FARM.barn,
+          ...GAME_STATE.barn,
           animals: {
             [sheepId]: {
               id: sheepId,
@@ -487,7 +545,7 @@ describe("claimProduce", () => {
 
     const newState = claimProduce({
       state: {
-        ...INITIAL_FARM,
+        ...GAME_STATE,
         inventory: {
           Bale: new Decimal(1),
         },
@@ -502,7 +560,7 @@ describe("claimProduce", () => {
           ],
         },
         henHouse: {
-          ...INITIAL_FARM.henHouse,
+          ...GAME_STATE.henHouse,
           animals: {
             [chickenId]: {
               id: chickenId,
@@ -531,17 +589,17 @@ describe("claimProduce", () => {
 
     const newState = claimProduce({
       state: {
-        ...INITIAL_FARM,
+        ...GAME_STATE,
         inventory: {},
         bumpkin: {
-          ...INITIAL_FARM.bumpkin,
+          ...GAME_STATE.bumpkin,
           equipped: {
-            ...INITIAL_FARM.bumpkin?.equipped,
+            ...GAME_STATE.bumpkin?.equipped,
             suit: "Chicken Suit",
           },
         },
         henHouse: {
-          ...INITIAL_FARM.henHouse,
+          ...GAME_STATE.henHouse,
           animals: {
             [chickenId]: {
               id: chickenId,
@@ -569,12 +627,12 @@ describe("claimProduce", () => {
 
     const newState = claimProduce({
       state: {
-        ...INITIAL_FARM,
+        ...GAME_STATE,
         inventory: {
           "Barn Manager": new Decimal(1),
         },
         henHouse: {
-          ...INITIAL_FARM.henHouse,
+          ...GAME_STATE.henHouse,
           animals: {
             [chickenId]: {
               id: chickenId,
@@ -603,12 +661,12 @@ describe("claimProduce", () => {
 
     const newState = claimProduce({
       state: {
-        ...INITIAL_FARM,
+        ...GAME_STATE,
         inventory: {
           "Barn Manager": new Decimal(1),
         },
         barn: {
-          ...INITIAL_FARM.barn,
+          ...GAME_STATE.barn,
           animals: {
             [cowId]: {
               id: cowId,
@@ -637,12 +695,12 @@ describe("claimProduce", () => {
 
     const newState = claimProduce({
       state: {
-        ...INITIAL_FARM,
+        ...GAME_STATE,
         inventory: {
           "Barn Manager": new Decimal(1),
         },
         barn: {
-          ...INITIAL_FARM.barn,
+          ...GAME_STATE.barn,
           animals: {
             [sheepId]: {
               id: sheepId,
@@ -666,12 +724,55 @@ describe("claimProduce", () => {
     expect(newState.inventory["Merino Wool"]).toEqual(new Decimal(1.1));
   });
 
+  it("gives +0.1 Wool for sheep when Astronaut Sheep is placed", () => {
+    const sheepId = "123";
+
+    const newState = claimProduce({
+      state: {
+        ...GAME_STATE,
+        inventory: {
+          "Astronaut Sheep": new Decimal(1),
+        },
+        collectibles: {
+          "Astronaut Sheep": [
+            {
+              id: "astro-1",
+              createdAt: now,
+              coordinates: { x: 0, y: 0 },
+              readyAt: now,
+            },
+          ],
+        },
+        barn: {
+          ...GAME_STATE.barn,
+          animals: {
+            [sheepId]: {
+              id: sheepId,
+              type: "Sheep",
+              createdAt: 0,
+              state: "ready",
+              experience: 240,
+              asleepAt: 0,
+              lovedAt: 0,
+              item: "Petting Hand",
+              awakeAt: 0,
+            },
+          },
+        },
+      },
+      action: { type: "produce.claimed", animal: "Sheep", id: sheepId },
+      createdAt: now,
+    });
+
+    expect(newState.inventory.Wool).toEqual(new Decimal(1.1));
+  });
+
   it("gives +0.25 Leather for cows when player has Moo-ver placed", () => {
     const cowId = "123";
 
     const newState = claimProduce({
       state: {
-        ...INITIAL_FARM,
+        ...GAME_STATE,
         inventory: {},
         collectibles: {
           "Moo-ver": [
@@ -684,7 +785,7 @@ describe("claimProduce", () => {
           ],
         },
         barn: {
-          ...INITIAL_FARM.barn,
+          ...GAME_STATE.barn,
           animals: {
             [cowId]: {
               id: cowId,
@@ -712,17 +813,17 @@ describe("claimProduce", () => {
 
     const newState = claimProduce({
       state: {
-        ...INITIAL_FARM,
+        ...GAME_STATE,
         inventory: {},
         bumpkin: {
-          ...INITIAL_FARM.bumpkin,
+          ...GAME_STATE.bumpkin,
           equipped: {
-            ...INITIAL_FARM.bumpkin?.equipped,
+            ...GAME_STATE.bumpkin?.equipped,
             onesie: "Black Sheep Onesie",
           },
         },
         barn: {
-          ...INITIAL_FARM.barn,
+          ...GAME_STATE.barn,
           animals: {
             [sheepID]: {
               id: sheepID,
@@ -750,17 +851,17 @@ describe("claimProduce", () => {
 
     const newState = claimProduce({
       state: {
-        ...INITIAL_FARM,
+        ...GAME_STATE,
         inventory: {},
         bumpkin: {
-          ...INITIAL_FARM.bumpkin,
+          ...GAME_STATE.bumpkin,
           equipped: {
-            ...INITIAL_FARM.bumpkin?.equipped,
+            ...GAME_STATE.bumpkin?.equipped,
             shirt: "Merino Jumper",
           },
         },
         barn: {
-          ...INITIAL_FARM.barn,
+          ...GAME_STATE.barn,
           animals: {
             [sheepID]: {
               id: sheepID,
@@ -788,7 +889,7 @@ describe("claimProduce", () => {
 
     const newState = claimProduce({
       state: {
-        ...INITIAL_FARM,
+        ...GAME_STATE,
         inventory: {
           "Barn Manager": new Decimal(1),
           "Rich Chicken": new Decimal(1),
@@ -822,7 +923,7 @@ describe("claimProduce", () => {
           ],
         },
         henHouse: {
-          ...INITIAL_FARM.henHouse,
+          ...GAME_STATE.henHouse,
           animals: {
             [chickenId]: {
               id: chickenId,
@@ -850,7 +951,7 @@ describe("claimProduce", () => {
 
     const newState = claimProduce({
       state: {
-        ...INITIAL_FARM,
+        ...GAME_STATE,
         buds: {
           1: {
             aura: "No Aura",
@@ -862,7 +963,7 @@ describe("claimProduce", () => {
           },
         },
         barn: {
-          ...INITIAL_FARM.barn,
+          ...GAME_STATE.barn,
           animals: {
             [cowId]: {
               id: cowId,
@@ -890,7 +991,7 @@ describe("claimProduce", () => {
     const state = claimProduce({
       createdAt: now,
       state: {
-        ...INITIAL_FARM,
+        ...GAME_STATE,
         inventory: {
           "Speed Chicken": new Decimal(1),
           Hay: new Decimal(1),
@@ -906,10 +1007,10 @@ describe("claimProduce", () => {
           ],
         },
         henHouse: {
-          ...INITIAL_FARM.henHouse,
+          ...GAME_STATE.henHouse,
           animals: {
             "0": {
-              ...INITIAL_FARM.henHouse.animals["0"],
+              ...GAME_STATE.henHouse.animals["0"],
               state: "ready",
               experience: 60,
             },
@@ -932,7 +1033,7 @@ describe("claimProduce", () => {
     const state = claimProduce({
       createdAt: now,
       state: {
-        ...INITIAL_FARM,
+        ...GAME_STATE,
         inventory: {
           "El Pollo Veloz": new Decimal(1),
           Hay: new Decimal(1),
@@ -948,10 +1049,10 @@ describe("claimProduce", () => {
           ],
         },
         henHouse: {
-          ...INITIAL_FARM.henHouse,
+          ...GAME_STATE.henHouse,
           animals: {
             "0": {
-              ...INITIAL_FARM.henHouse.animals["0"],
+              ...GAME_STATE.henHouse.animals["0"],
               state: "ready",
               experience: 60,
             },
@@ -975,7 +1076,7 @@ describe("claimProduce", () => {
     const state = claimProduce({
       createdAt: now,
       state: {
-        ...INITIAL_FARM,
+        ...GAME_STATE,
         inventory: {
           "Speed Chicken": new Decimal(1),
           Hay: new Decimal(1),
@@ -997,10 +1098,10 @@ describe("claimProduce", () => {
           ],
         },
         henHouse: {
-          ...INITIAL_FARM.henHouse,
+          ...GAME_STATE.henHouse,
           animals: {
             "0": {
-              ...INITIAL_FARM.henHouse.animals["0"],
+              ...GAME_STATE.henHouse.animals["0"],
               state: "ready",
               experience: 60,
             },
@@ -1023,15 +1124,15 @@ describe("claimProduce", () => {
     const state = claimProduce({
       createdAt: now,
       state: {
-        ...INITIAL_FARM,
+        ...GAME_STATE,
         inventory: {
           Wrangler: new Decimal(1),
         },
         henHouse: {
-          ...INITIAL_FARM.henHouse,
+          ...GAME_STATE.henHouse,
           animals: {
             "0": {
-              ...INITIAL_FARM.henHouse.animals["0"],
+              ...GAME_STATE.henHouse.animals["0"],
               state: "ready",
               experience: 60,
             },
@@ -1054,19 +1155,19 @@ describe("claimProduce", () => {
     const state = claimProduce({
       createdAt: now,
       state: {
-        ...INITIAL_FARM,
+        ...GAME_STATE,
         bumpkin: {
-          ...INITIAL_FARM.bumpkin,
+          ...GAME_STATE.bumpkin,
           equipped: {
-            ...INITIAL_FARM.bumpkin?.equipped,
+            ...GAME_STATE.bumpkin?.equipped,
             necklace: "Dream Scarf",
           },
         },
         barn: {
-          ...INITIAL_FARM.barn,
+          ...GAME_STATE.barn,
           animals: {
             "0": {
-              ...INITIAL_FARM.barn.animals["0"],
+              ...GAME_STATE.barn.animals["0"],
               state: "ready",
               type: "Sheep",
               experience: 60,
@@ -1090,7 +1191,7 @@ describe("claimProduce", () => {
     const state = claimProduce({
       createdAt: now,
       state: {
-        ...INITIAL_FARM,
+        ...GAME_STATE,
         collectibles: {
           Mammoth: [
             {
@@ -1102,16 +1203,16 @@ describe("claimProduce", () => {
           ],
         },
         bumpkin: {
-          ...INITIAL_FARM.bumpkin,
+          ...GAME_STATE.bumpkin,
           equipped: {
-            ...INITIAL_FARM.bumpkin?.equipped,
+            ...GAME_STATE.bumpkin?.equipped,
           },
         },
         barn: {
-          ...INITIAL_FARM.barn,
+          ...GAME_STATE.barn,
           animals: {
             "0": {
-              ...INITIAL_FARM.barn.animals["0"],
+              ...GAME_STATE.barn.animals["0"],
               state: "ready",
               type: "Cow",
               experience: 60,
@@ -1135,15 +1236,15 @@ describe("claimProduce", () => {
     const state = claimProduce({
       createdAt: now,
       state: {
-        ...INITIAL_FARM,
+        ...GAME_STATE,
         inventory: {
           Wrangler: new Decimal(1),
         },
         barn: {
-          ...INITIAL_FARM.barn,
+          ...GAME_STATE.barn,
           animals: {
             "0": {
-              ...INITIAL_FARM.barn.animals["0"],
+              ...GAME_STATE.barn.animals["0"],
               state: "ready",
               type: "Cow",
               experience: 60,
@@ -1167,7 +1268,7 @@ describe("claimProduce", () => {
     const state = claimProduce({
       createdAt: now,
       state: {
-        ...INITIAL_FARM,
+        ...GAME_STATE,
         inventory: {
           Wrangler: new Decimal(1),
           "Speed Chicken": new Decimal(1),
@@ -1183,10 +1284,10 @@ describe("claimProduce", () => {
           ],
         },
         henHouse: {
-          ...INITIAL_FARM.henHouse,
+          ...GAME_STATE.henHouse,
           animals: {
             "0": {
-              ...INITIAL_FARM.henHouse.animals["0"],
+              ...GAME_STATE.henHouse.animals["0"],
               state: "ready",
               experience: 60,
             },
@@ -1210,7 +1311,7 @@ describe("claimProduce", () => {
     const state = claimProduce({
       createdAt: now,
       state: {
-        ...INITIAL_FARM,
+        ...GAME_STATE,
         inventory: {
           Wrangler: new Decimal(1),
           "Speed Chicken": new Decimal(1),
@@ -1235,10 +1336,10 @@ describe("claimProduce", () => {
           ],
         },
         henHouse: {
-          ...INITIAL_FARM.henHouse,
+          ...GAME_STATE.henHouse,
           animals: {
             "0": {
-              ...INITIAL_FARM.henHouse.animals["0"],
+              ...GAME_STATE.henHouse.animals["0"],
               state: "ready",
               experience: 60,
             },
@@ -1265,22 +1366,22 @@ describe("claimProduce", () => {
     const state = claimProduce({
       createdAt: now,
       state: {
-        ...INITIAL_FARM,
+        ...GAME_STATE,
         inventory: {
           Wrangler: new Decimal(1),
         },
         bumpkin: {
-          ...INITIAL_FARM.bumpkin,
+          ...GAME_STATE.bumpkin,
           equipped: {
-            ...INITIAL_FARM.bumpkin?.equipped,
+            ...GAME_STATE.bumpkin?.equipped,
             necklace: "Dream Scarf",
           },
         },
         barn: {
-          ...INITIAL_FARM.barn,
+          ...GAME_STATE.barn,
           animals: {
             "0": {
-              ...INITIAL_FARM.barn.animals["0"],
+              ...GAME_STATE.barn.animals["0"],
               type: "Sheep",
               state: "ready",
               experience: 60,
@@ -1305,18 +1406,18 @@ describe("claimProduce", () => {
     const state = claimProduce({
       createdAt: now,
       state: {
-        ...INITIAL_FARM,
+        ...GAME_STATE,
         bumpkin: {
-          ...INITIAL_FARM.bumpkin,
+          ...GAME_STATE.bumpkin,
           skills: {
             Buckaroo: 1,
           },
         },
         barn: {
-          ...INITIAL_FARM.barn,
+          ...GAME_STATE.barn,
           animals: {
             "0": {
-              ...INITIAL_FARM.barn.animals["0"],
+              ...GAME_STATE.barn.animals["0"],
               state: "ready",
               experience: 360,
               multiplier: 2,
@@ -1340,7 +1441,7 @@ describe("claimProduce", () => {
 
     const newState = claimProduce({
       state: {
-        ...INITIAL_FARM,
+        ...GAME_STATE,
         inventory: {
           "Barn Manager": new Decimal(1),
           "Rich Chicken": new Decimal(1),
@@ -1374,7 +1475,7 @@ describe("claimProduce", () => {
           ],
         },
         henHouse: {
-          ...INITIAL_FARM.henHouse,
+          ...GAME_STATE.henHouse,
           animals: {
             [chickenId]: {
               id: chickenId,
@@ -1402,7 +1503,7 @@ describe("claimProduce", () => {
     const state = claimProduce({
       createdAt: now,
       state: {
-        ...INITIAL_FARM,
+        ...GAME_STATE,
         inventory: {
           "El Pollo Veloz": new Decimal(1),
           Wrangler: new Decimal(1),
@@ -1418,10 +1519,10 @@ describe("claimProduce", () => {
           ],
         },
         henHouse: {
-          ...INITIAL_FARM.henHouse,
+          ...GAME_STATE.henHouse,
           animals: {
             "0": {
-              ...INITIAL_FARM.henHouse.animals["0"],
+              ...GAME_STATE.henHouse.animals["0"],
               state: "ready",
               experience: 60,
             },
@@ -1447,7 +1548,7 @@ describe("claimProduce", () => {
     const state = claimProduce({
       createdAt: now,
       state: {
-        ...INITIAL_FARM,
+        ...GAME_STATE,
         inventory: {
           "Farm Dog": new Decimal(1),
         },
@@ -1462,10 +1563,10 @@ describe("claimProduce", () => {
           ],
         },
         barn: {
-          ...INITIAL_FARM.barn,
+          ...GAME_STATE.barn,
           animals: {
             "0": {
-              ...INITIAL_FARM.barn.animals["0"],
+              ...GAME_STATE.barn.animals["0"],
               state: "ready",
               type: "Sheep",
               experience: 60,
@@ -1489,7 +1590,7 @@ describe("claimProduce", () => {
     const state = claimProduce({
       createdAt: now,
       state: {
-        ...INITIAL_FARM,
+        ...GAME_STATE,
         inventory: {
           "Farm Dog": new Decimal(1),
           Wrangler: new Decimal(1),
@@ -1506,10 +1607,10 @@ describe("claimProduce", () => {
           ],
         },
         barn: {
-          ...INITIAL_FARM.barn,
+          ...GAME_STATE.barn,
           animals: {
             "0": {
-              ...INITIAL_FARM.barn.animals["0"],
+              ...GAME_STATE.barn.animals["0"],
               state: "ready",
               type: "Sheep",
               experience: 60,
@@ -1535,16 +1636,16 @@ describe("claimProduce", () => {
 
     const newState = claimProduce({
       state: {
-        ...INITIAL_FARM,
+        ...GAME_STATE,
         bumpkin: {
-          ...INITIAL_FARM.bumpkin,
+          ...GAME_STATE.bumpkin,
           equipped: {
-            ...INITIAL_FARM.bumpkin?.equipped,
+            ...GAME_STATE.bumpkin?.equipped,
             onesie: "White Sheep Onesie",
           },
         },
         barn: {
-          ...INITIAL_FARM.barn,
+          ...GAME_STATE.barn,
           animals: {
             [sheepId]: {
               id: sheepId,
@@ -1572,7 +1673,7 @@ describe("claimProduce", () => {
     const state = claimProduce({
       createdAt: now,
       state: {
-        ...INITIAL_FARM,
+        ...GAME_STATE,
         inventory: {
           "Alien Chicken": new Decimal(1),
         },
@@ -1587,10 +1688,10 @@ describe("claimProduce", () => {
           ],
         },
         henHouse: {
-          ...INITIAL_FARM.henHouse,
+          ...GAME_STATE.henHouse,
           animals: {
             "0": {
-              ...INITIAL_FARM.henHouse.animals["0"],
+              ...GAME_STATE.henHouse.animals["0"],
               state: "ready",
               experience: 240,
             },
@@ -1607,7 +1708,7 @@ describe("claimProduce", () => {
     const state = claimProduce({
       createdAt: now,
       state: {
-        ...INITIAL_FARM,
+        ...GAME_STATE,
         inventory: {
           "Toxic Tuft": new Decimal(1),
         },
@@ -1622,10 +1723,10 @@ describe("claimProduce", () => {
           ],
         },
         barn: {
-          ...INITIAL_FARM.barn,
+          ...GAME_STATE.barn,
           animals: {
             "0": {
-              ...INITIAL_FARM.barn.animals["0"],
+              ...GAME_STATE.barn.animals["0"],
               type: "Sheep",
               state: "ready",
               experience: 240,
@@ -1643,7 +1744,7 @@ describe("claimProduce", () => {
     const state = claimProduce({
       createdAt: now,
       state: {
-        ...INITIAL_FARM,
+        ...GAME_STATE,
         inventory: {
           Mootant: new Decimal(1),
         },
@@ -1658,10 +1759,10 @@ describe("claimProduce", () => {
           ],
         },
         barn: {
-          ...INITIAL_FARM.barn,
+          ...GAME_STATE.barn,
           animals: {
             "0": {
-              ...INITIAL_FARM.barn.animals["0"],
+              ...GAME_STATE.barn.animals["0"],
               type: "Cow",
               state: "ready",
               experience: 360,
@@ -1679,12 +1780,12 @@ describe("claimProduce", () => {
     const state = claimProduce({
       createdAt: now,
       state: {
-        ...INITIAL_FARM,
+        ...GAME_STATE,
         henHouse: {
-          ...INITIAL_FARM.henHouse,
+          ...GAME_STATE.henHouse,
           animals: {
             "0": {
-              ...INITIAL_FARM.henHouse.animals["0"],
+              ...GAME_STATE.henHouse.animals["0"],
               state: "ready",
               reward: {
                 items: [
@@ -1708,12 +1809,12 @@ describe("claimProduce", () => {
     const state = claimProduce({
       createdAt: now,
       state: {
-        ...INITIAL_FARM,
+        ...GAME_STATE,
         henHouse: {
-          ...INITIAL_FARM.henHouse,
+          ...GAME_STATE.henHouse,
           animals: {
             "0": {
-              ...INITIAL_FARM.henHouse.animals["0"],
+              ...GAME_STATE.henHouse.animals["0"],
               state: "ready",
               reward: {
                 items: [
@@ -1738,18 +1839,18 @@ describe("claimProduce", () => {
     const state = claimProduce({
       createdAt: now,
       state: {
-        ...INITIAL_FARM,
+        ...GAME_STATE,
         bumpkin: {
-          ...INITIAL_FARM.bumpkin,
+          ...GAME_STATE.bumpkin,
           skills: {
             "Abundant Harvest": 1,
           },
         },
         henHouse: {
-          ...INITIAL_FARM.henHouse,
+          ...GAME_STATE.henHouse,
           animals: {
             "0": {
-              ...INITIAL_FARM.henHouse.animals["0"],
+              ...GAME_STATE.henHouse.animals["0"],
               type: "Chicken",
               state: "ready",
               experience: 120,
@@ -1767,18 +1868,18 @@ describe("claimProduce", () => {
     const state = claimProduce({
       createdAt: now,
       state: {
-        ...INITIAL_FARM,
+        ...GAME_STATE,
         bumpkin: {
-          ...INITIAL_FARM.bumpkin,
+          ...GAME_STATE.bumpkin,
           skills: {
             "Abundant Harvest": 1,
           },
         },
         barn: {
-          ...INITIAL_FARM.barn,
+          ...GAME_STATE.barn,
           animals: {
             "0": {
-              ...INITIAL_FARM.barn.animals["0"],
+              ...GAME_STATE.barn.animals["0"],
               type: "Sheep",
               state: "ready",
               experience: 120,
@@ -1796,18 +1897,18 @@ describe("claimProduce", () => {
     const state = claimProduce({
       createdAt: now,
       state: {
-        ...INITIAL_FARM,
+        ...GAME_STATE,
         bumpkin: {
-          ...INITIAL_FARM.bumpkin,
+          ...GAME_STATE.bumpkin,
           skills: {
             "Abundant Harvest": 1,
           },
         },
         barn: {
-          ...INITIAL_FARM.barn,
+          ...GAME_STATE.barn,
           animals: {
             "0": {
-              ...INITIAL_FARM.barn.animals["0"],
+              ...GAME_STATE.barn.animals["0"],
               type: "Cow",
               state: "ready",
               experience: 180,
@@ -1824,9 +1925,9 @@ describe("claimProduce", () => {
     const state = claimProduce({
       createdAt: now,
       state: {
-        ...INITIAL_FARM,
+        ...GAME_STATE,
         bumpkin: {
-          ...INITIAL_FARM.bumpkin,
+          ...GAME_STATE.bumpkin,
           skills: {
             "Bale Economy": 1,
           },
@@ -1842,10 +1943,10 @@ describe("claimProduce", () => {
           ],
         },
         barn: {
-          ...INITIAL_FARM.barn,
+          ...GAME_STATE.barn,
           animals: {
             "0": {
-              ...INITIAL_FARM.barn.animals["0"],
+              ...GAME_STATE.barn.animals["0"],
               type: "Cow",
               state: "ready",
               experience: 180,
@@ -1862,9 +1963,9 @@ describe("claimProduce", () => {
     const state = claimProduce({
       createdAt: now,
       state: {
-        ...INITIAL_FARM,
+        ...GAME_STATE,
         bumpkin: {
-          ...INITIAL_FARM.bumpkin,
+          ...GAME_STATE.bumpkin,
           skills: {
             "Bale Economy": 1,
           },
@@ -1880,10 +1981,10 @@ describe("claimProduce", () => {
           ],
         },
         barn: {
-          ...INITIAL_FARM.barn,
+          ...GAME_STATE.barn,
           animals: {
             "0": {
-              ...INITIAL_FARM.barn.animals["0"],
+              ...GAME_STATE.barn.animals["0"],
               type: "Sheep",
               state: "ready",
               experience: 180,
@@ -1895,5 +1996,150 @@ describe("claimProduce", () => {
     });
 
     expect(state.inventory.Wool).toEqual(new Decimal(1.1));
+  });
+
+  it("reduces the sleep time by 25% if a Collie Shrine is placed and ready", () => {
+    const state = claimProduce({
+      state: {
+        ...INITIAL_FARM,
+        buildings: {
+          Barn: [
+            {
+              id: "barn",
+              readyAt: now,
+              createdAt: now,
+              coordinates: { x: 0, y: 0 },
+            },
+          ],
+        },
+        barn: {
+          level: 3,
+          animals: {
+            "0": {
+              ...INITIAL_FARM.barn.animals["0"],
+              state: "ready",
+              type: "Sheep",
+              experience: 60,
+            },
+          },
+        },
+        collectibles: {
+          "Collie Shrine": [
+            {
+              id: "collie",
+              readyAt: now,
+              createdAt: now,
+              coordinates: { x: 0, y: 0 },
+            },
+          ],
+        },
+      },
+      action: {
+        type: "produce.claimed",
+        animal: "Sheep",
+        id: "0",
+      },
+      createdAt: now,
+    });
+
+    expect(state.barn.animals["0"].awakeAt).toEqual(
+      now + ANIMAL_SLEEP_DURATION * 0.75,
+    );
+  });
+  it("does not reduce the sleep time of chickens by 25% if a Collie Shrine is placed and ready", () => {
+    const state = claimProduce({
+      state: {
+        ...INITIAL_FARM,
+        buildings: {
+          "Hen House": [
+            {
+              id: "henHouse",
+              readyAt: now,
+              createdAt: now,
+              coordinates: { x: 0, y: 0 },
+            },
+          ],
+        },
+        henHouse: {
+          level: 3,
+          animals: {
+            "0": {
+              ...INITIAL_FARM.henHouse.animals["0"],
+              state: "ready",
+              type: "Chicken",
+              experience: 60,
+            },
+          },
+        },
+        collectibles: {
+          "Collie Shrine": [
+            {
+              id: "collie",
+              readyAt: now,
+              createdAt: now,
+              coordinates: { x: 0, y: 0 },
+            },
+          ],
+        },
+      },
+      action: {
+        type: "produce.claimed",
+        animal: "Chicken",
+        id: "0",
+      },
+      createdAt: now,
+    });
+
+    expect(state.henHouse.animals["0"].awakeAt).toEqual(
+      now + ANIMAL_SLEEP_DURATION,
+    );
+  });
+  it("reduces the sleep time of chickens by 25% if a Bantam Shrine is placed and ready", () => {
+    const state = claimProduce({
+      state: {
+        ...INITIAL_FARM,
+        buildings: {
+          "Hen House": [
+            {
+              id: "henHouse",
+              readyAt: now,
+              createdAt: now,
+              coordinates: { x: 0, y: 0 },
+            },
+          ],
+        },
+        henHouse: {
+          level: 3,
+          animals: {
+            "0": {
+              ...INITIAL_FARM.henHouse.animals["0"],
+              state: "ready",
+              type: "Chicken",
+              experience: 60,
+            },
+          },
+        },
+        collectibles: {
+          "Bantam Shrine": [
+            {
+              id: "bantam",
+              readyAt: now,
+              createdAt: now,
+              coordinates: { x: 0, y: 0 },
+            },
+          ],
+        },
+      },
+      action: {
+        type: "produce.claimed",
+        animal: "Chicken",
+        id: "0",
+      },
+      createdAt: now,
+    });
+
+    expect(state.henHouse.animals["0"].awakeAt).toEqual(
+      now + ANIMAL_SLEEP_DURATION * 0.75,
+    );
   });
 });

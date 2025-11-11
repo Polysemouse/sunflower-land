@@ -16,7 +16,10 @@ import {
   trackActivity,
 } from "features/game/types/bumpkinActivity";
 import { GREENHOUSE_CROP_TIME_SECONDS } from "./harvestGreenHouse";
-import { isCollectibleBuilt } from "features/game/lib/collectibleBuilt";
+import {
+  isTemporaryCollectibleActive,
+  isCollectibleBuilt,
+} from "features/game/lib/collectibleBuilt";
 import { getCropTime } from "./plant";
 import { getFruitTime } from "./fruitPlanted";
 import { Resource } from "features/game/lib/getBudYieldBoosts";
@@ -115,10 +118,7 @@ export const getGreenhouseCropTime = ({
     boostsUsed.push(...cropBoostsUsed);
   } else {
     const { multiplier: baseMultiplier, boostsUsed: fruitBoostsUsed } =
-      getFruitTime({
-        game,
-        name: PLANT_TO_SEED[crop] as GreenHouseFruitSeedName,
-      });
+      getFruitTime({ game });
     seconds *= baseMultiplier;
     boostsUsed.push(...fruitBoostsUsed);
   }
@@ -128,6 +128,11 @@ export const getGreenhouseCropTime = ({
     boostsUsed.push("Turbo Sprout");
   }
 
+  if (isTemporaryCollectibleActive({ name: "Tortoise Shrine", game })) {
+    seconds *= 0.75;
+    boostsUsed.push("Tortoise Shrine");
+  }
+
   if (game.bumpkin.skills["Rice and Shine"]) {
     seconds *= 0.95;
     boostsUsed.push("Rice and Shine");
@@ -135,14 +140,20 @@ export const getGreenhouseCropTime = ({
 
   // Olive Express: 10% reduction
   if (crop === "Olive" && game.bumpkin.skills["Olive Express"]) {
-    seconds = seconds * 0.9;
+    seconds *= 0.9;
     boostsUsed.push("Olive Express");
   }
 
   // Rice Rocket: 10% reduction
   if (crop === "Rice" && game.bumpkin.skills["Rice Rocket"]) {
-    seconds = seconds * 0.9;
+    seconds *= 0.9;
     boostsUsed.push("Rice Rocket");
+  }
+
+  // Vine Velocity: 10% reduction
+  if (crop === "Grape" && game.bumpkin.skills["Vine Velocity"]) {
+    seconds *= 0.9;
+    boostsUsed.push("Vine Velocity");
   }
 
   return { seconds, boostsUsed };
@@ -193,7 +204,9 @@ export function plantGreenhouse({
 }: Options): GameState {
   return produce(state, (game) => {
     // Requires Greenhouse exists
-    if (!game.buildings.Greenhouse) {
+    if (
+      !game.buildings.Greenhouse?.some((building) => !!building.coordinates)
+    ) {
       throw new Error("Greenhouse does not exist");
     }
 

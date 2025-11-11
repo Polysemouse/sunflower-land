@@ -1,17 +1,19 @@
 import Decimal from "decimal.js-light";
 import { Decoration, getKeys } from "./decorations";
-import { GameState, HelpedFarm, InventoryItemName } from "./game";
-import { FARM_GARBAGE } from "./clutter";
+import { GameState, InventoryItemName } from "./game";
+import { ClutterName } from "./clutter";
+import { PetName, PetNFTName } from "./pets";
+import { isCollectibleBuilt } from "../lib/collectibleBuilt";
 
-type LoveCharmMonumentName =
+type HelpLimitMonumentName =
   | "Farmer's Monument"
   | "Miner's Monument"
   | "Woodcutter's Monument";
 
-type MegastoreMonumentName = "Teamwork Monument";
+type MegastoreMonumentName = "Teamwork Monument" | "Cornucopia";
 
 export type WorkbenchMonumentName =
-  | LoveCharmMonumentName
+  | HelpLimitMonumentName
   | "Big Orange"
   | "Big Apple"
   | "Big Banana"
@@ -19,8 +21,8 @@ export type WorkbenchMonumentName =
   | "Expert Cooking Pot"
   | "Advanced Cooking Pot";
 
-type LoveCharmMonument = Omit<Decoration, "name"> & {
-  name: LoveCharmMonumentName;
+type HelpLimitMonument = Omit<Decoration, "name"> & {
+  name: HelpLimitMonumentName;
   level?: number;
 };
 
@@ -34,7 +36,7 @@ export type LandscapingMonument = Omit<Decoration, "name"> & {
 };
 
 export type Monument =
-  | LoveCharmMonument
+  | HelpLimitMonument
   | LandscapingMonument
   | MegastoreMonument;
 
@@ -48,11 +50,17 @@ export const MEGASTORE_MONUMENTS: Record<
     coins: 0,
     ingredients: {},
   },
+  Cornucopia: {
+    name: "Cornucopia",
+    description: "",
+    coins: 0,
+    ingredients: {},
+  },
 };
 
-export const LOVE_CHARM_MONUMENTS: Record<
-  LoveCharmMonumentName,
-  LoveCharmMonument
+export const HELP_LIMIT_MONUMENTS: Record<
+  HelpLimitMonumentName,
+  HelpLimitMonument
 > = {
   "Farmer's Monument": {
     name: "Farmer's Monument",
@@ -83,11 +91,16 @@ export const LOVE_CHARM_MONUMENTS: Record<
   },
 };
 
+export const MONUMENTS = {
+  ...HELP_LIMIT_MONUMENTS,
+  ...MEGASTORE_MONUMENTS,
+};
+
 export const WORKBENCH_MONUMENTS: Record<
   WorkbenchMonumentName,
   LandscapingMonument
 > = {
-  ...LOVE_CHARM_MONUMENTS,
+  ...HELP_LIMIT_MONUMENTS,
   "Big Orange": {
     name: "Big Orange",
     description: "",
@@ -134,7 +147,7 @@ export const WORKBENCH_MONUMENTS: Record<
 
 export type MonumentName =
   | WorkbenchMonumentName
-  | LoveCharmMonumentName
+  | HelpLimitMonumentName
   | MegastoreMonumentName;
 
 export const REQUIRED_CHEERS: Record<MonumentName, number> = {
@@ -148,16 +161,20 @@ export const REQUIRED_CHEERS: Record<MonumentName, number> = {
   "Woodcutter's Monument": 1000,
   "Miner's Monument": 10000,
   "Teamwork Monument": 100,
+  Cornucopia: 1000,
 };
 
-export const REWARD_ITEMS: Partial<
-  Record<
-    MonumentName,
-    {
-      item: InventoryItemName;
-      amount: number;
-    }
-  >
+export type VillageProjectName = Exclude<
+  WorkbenchMonumentName,
+  HelpLimitMonumentName
+>;
+
+export const REWARD_ITEMS: Record<
+  VillageProjectName,
+  {
+    item: InventoryItemName;
+    amount: number;
+  }
 > = {
   "Big Orange": {
     item: "Giant Orange",
@@ -185,80 +202,237 @@ export const REWARD_ITEMS: Partial<
   },
 };
 
+export function isMonumentComplete({
+  game,
+  monument,
+}: {
+  game: GameState;
+  monument: MonumentName;
+}) {
+  return (
+    (game.socialFarming.villageProjects?.[monument]?.cheers ?? 0) >=
+    REQUIRED_CHEERS[monument]
+  );
+}
+
 export function isHelpComplete({ game }: { game: GameState }) {
-  return getHelpRequired({ game }) <= 0;
+  return getHelpRequired({ game }).totalCount <= 0;
 }
 
 // Returns a count of help tasks needed on the farm
 export function getHelpRequired({ game }: { game: GameState }) {
-  const clutter = getKeys(game.socialFarming.clutter?.locations ?? {}).filter(
-    (id) => {
-      const type = game.socialFarming.clutter?.locations[id].type;
+  const villageProjects = game.socialFarming.villageProjects;
+  const collectibles = game.collectibles;
+  const homeCollectibles = game.home.collectibles;
+  const clutterLocations = game.socialFarming.clutter?.locations;
+  const pets = game.pets;
 
-      // There are no garbage items left
-      return type && type in FARM_GARBAGE;
+  // Reduce clutter to get a count of each type
+  const clutter = getKeys(clutterLocations ?? {}).reduce(
+    (acc, id) => {
+      const type = clutterLocations?.[id]?.type as ClutterName;
+      acc[type] = (acc[type] ?? 0) + 1;
+      return acc;
+    },
+    {} as Record<ClutterName, number>,
+  );
+
+  const { pendingLandProjects, pendingHomeProjects } = getKeys(
+    villageProjects,
+  ).reduce<{
+    pendingLandProjects: MonumentName[];
+    pendingHomeProjects: MonumentName[];
+  }>(
+    (acc, monument) => {
+      const canBeHelped =
+        !villageProjects[monument]?.helpedAt &&
+        (villageProjects[monument]?.cheers ?? 0) < REQUIRED_CHEERS[monument];
+
+      if (!canBeHelped) return acc;
+
+      const isProjectPlacedOnLand = !!collectibles[monument]?.some(
+        (item) => !!item.coordinates,
+      );
+      const isProjectPlacedInHome = !!homeCollectibles[monument]?.some(
+        (item) => !!item.coordinates,
+      );
+
+      if (isProjectPlacedOnLand) {
+        acc.pendingLandProjects = [...acc.pendingLandProjects, monument];
+
+        return acc;
+      }
+
+      if (isProjectPlacedInHome) {
+        acc.pendingHomeProjects = [...acc.pendingHomeProjects, monument];
+
+        return acc;
+      }
+
+      return acc;
+    },
+    { pendingLandProjects: [], pendingHomeProjects: [] },
+  );
+
+  const { pendingLandCommonPets, pendingHomeCommonPets } = getKeys(
+    pets?.common ?? {},
+  ).reduce<{
+    pendingLandCommonPets: PetName[];
+    pendingHomeCommonPets: PetName[];
+  }>(
+    (acc, name) => {
+      const pet = pets?.common?.[name];
+
+      if (!pet) return acc;
+
+      if (pet.visitedAt) return acc;
+
+      const isPetPlacedOnLand = !!collectibles[name]?.some(
+        (item) => !!item.coordinates,
+      );
+      const isPetPlacedOnHome = !!homeCollectibles[name]?.some(
+        (item) => !!item.coordinates,
+      );
+
+      if (isPetPlacedOnLand) {
+        acc.pendingLandCommonPets = [...acc.pendingLandCommonPets, name];
+
+        return acc;
+      }
+
+      if (isPetPlacedOnHome) {
+        acc.pendingHomeCommonPets = [...acc.pendingHomeCommonPets, name];
+
+        return acc;
+      }
+
+      return acc;
+    },
+    {
+      pendingLandCommonPets: [],
+      pendingHomeCommonPets: [],
     },
   );
 
-  const pendingProjects = getKeys(game.socialFarming.villageProjects).filter(
-    (project) => {
-      const hasHelped = !!game.socialFarming.villageProjects[project]?.helpedAt;
+  const { pendingLandNftPets, pendingHomeNftPets } = getKeys(
+    pets?.nfts ?? {},
+  ).reduce<{
+    pendingLandNftPets: PetNFTName[];
+    pendingHomeNftPets: PetNFTName[];
+  }>(
+    (acc, id) => {
+      const pet = pets?.nfts?.[id];
+      if (!pet) return acc;
 
-      const isComplete =
-        REQUIRED_CHEERS[project] <=
-        (game.socialFarming.villageProjects[project]?.cheers ?? 0);
+      if (pet.visitedAt) return acc;
 
-      const isProjectPlaced =
-        game.collectibles?.[project]?.some((item) => !!item.coordinates) ??
-        false;
+      if (pet.location === "farm") {
+        acc.pendingLandNftPets = [...acc.pendingLandNftPets, pet.name];
 
-      if (!isProjectPlaced) return;
+        return acc;
+      }
 
-      return !hasHelped && !isComplete;
+      if (pet.location === "home") {
+        acc.pendingHomeNftPets = [...acc.pendingHomeNftPets, pet.name];
+
+        return acc;
+      }
+
+      return acc;
     },
+    { pendingLandNftPets: [], pendingHomeNftPets: [] },
   );
 
-  return clutter.length + pendingProjects.length;
+  const totalPendingPets =
+    pendingLandCommonPets.length +
+    pendingHomeCommonPets.length +
+    pendingLandNftPets.length +
+    pendingHomeNftPets.length;
+
+  const totalClutter = Object.values(clutter).reduce(
+    (acc, count: number) => acc + count,
+    0,
+  );
+
+  return {
+    totalCount:
+      totalClutter +
+      pendingLandProjects.length +
+      pendingHomeProjects.length +
+      totalPendingPets,
+    tasks: {
+      farm: {
+        count:
+          totalClutter +
+          pendingLandProjects.length +
+          pendingLandCommonPets.length +
+          pendingLandNftPets.length,
+        projects: pendingLandProjects,
+        clutter: clutter,
+        pets: [...pendingLandCommonPets, ...pendingLandNftPets],
+      },
+      home: {
+        count:
+          pendingHomeProjects.length +
+          pendingHomeCommonPets.length +
+          pendingHomeNftPets.length,
+        projects: pendingHomeProjects,
+        pets: [...pendingHomeCommonPets, ...pendingHomeNftPets],
+      },
+    },
+  };
 }
 
-export function hasHelpedFarmToday({
+export const HELP_LIMIT = 5;
+
+export function getHelpLimit({
   game,
-  farmId,
+  now = new Date(),
 }: {
   game: GameState;
-  farmId: number;
+  now?: Date;
 }) {
-  const helpedAt = game.socialFarming?.helped?.[farmId]?.helpedAt ?? 0;
+  let limit = HELP_LIMIT;
 
-  return (
-    new Date(helpedAt).toISOString().slice(0, 10) ===
-    new Date().toISOString().slice(0, 10)
-  );
+  const monuments = {
+    ...HELP_LIMIT_MONUMENTS,
+  };
+
+  getKeys(monuments).forEach((monument) => {
+    if (
+      isMonumentComplete({ game, monument }) &&
+      isCollectibleBuilt({ name: monument, game })
+    ) {
+      limit += 1;
+    }
+  });
+
+  if (
+    isCollectibleBuilt({ name: "Teamwork Monument", game }) &&
+    isMonumentComplete({ game, monument: "Teamwork Monument" })
+  ) {
+    limit += 1;
+  }
+
+  // Get all the increases for the current UTC date
+  const increases =
+    game.socialFarming?.helpIncrease?.boughtAt.filter(
+      (date) =>
+        new Date(date).toISOString().split("T")[0] ===
+        now.toISOString().split("T")[0],
+    )?.length ?? 0;
+
+  return limit + increases;
 }
 
-/**
- * If the last help was older than the previous day, the streak expires and returns 0.
- */
-export function getHelpStreak({
-  farm,
-  now = Date.now(),
+export function hasHitHelpLimit({
+  game,
+  totalHelpedToday,
 }: {
-  farm?: HelpedFarm;
-  now?: number;
+  game: GameState;
+  totalHelpedToday: number;
 }) {
-  if (!farm?.streak?.updatedAt) return 0;
-
-  const streakDate = new Date(farm.streak.updatedAt);
-  const currentDate = new Date(now);
-
-  // Calculate the difference in days
-  const timeDiff = currentDate.getTime() - streakDate.getTime();
-  const daysDiff = Math.floor(timeDiff / (1000 * 3600 * 24));
-
-  // Streak expires if it's 2 or more days old (older than previous day)
-  if (daysDiff >= 2) return 0;
-
-  return farm.streak.count;
+  return totalHelpedToday >= getHelpLimit({ game });
 }
 
 export const RAFFLE_REWARDS: Partial<

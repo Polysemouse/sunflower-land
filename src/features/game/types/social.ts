@@ -1,11 +1,12 @@
 import { InventoryItemName } from "./game";
 
-export type TwitterPostName = `WEEKLY` | `FARM` | `FLOWER`;
+export type TwitterPostName = `WEEKLY` | `FARM`;
 
 export const TWITTER_HASHTAGS: Record<TwitterPostName, string> = {
   WEEKLY: "#SunflowerLandWeekly",
   FARM: "#SunflowerLandFarm",
-  FLOWER: "#SunflowerLandFlower",
+  // FLOWER: "#SunflowerLandFlower", Sunsetted 7th October
+  // RONIN: "#FlowerOnRonin",
 };
 
 export type TwitterReward = {
@@ -18,9 +19,6 @@ export const TWITTER_REWARDS: Record<TwitterPostName, TwitterReward> = {
   },
   FARM: {
     items: { "Love Charm": 10 },
-  },
-  FLOWER: {
-    items: { "Love Charm": 50 },
   },
 };
 

@@ -35,9 +35,12 @@ import { EXTERIOR_ISLAND_BG } from "features/barn/BarnInside";
 import { getCurrentBiome } from "features/island/biomes/biomes";
 import { useVisiting } from "lib/utils/visitUtils";
 import { VisitingHud } from "features/island/hud/VisitingHud";
-
-const selectGameState = (state: MachineState) => state.context.state;
-const isLandscaping = (state: MachineState) => state.matches("landscaping");
+import { getObjectEntries } from "features/game/expansion/lib/utils";
+import { PlayerModal } from "features/social/PlayerModal";
+import { hasFeatureAccess } from "lib/flags";
+import { AuthMachineState } from "features/auth/lib/authMachine";
+import { Context as AuthContext } from "features/auth/lib/Provider";
+import { PetNFT } from "features/island/pets/PetNFT";
 
 const BACKGROUND_IMAGE: Record<IslandType, string> = {
   basic: SUNNYSIDE.land.tent_inside,
@@ -54,22 +57,60 @@ function acknowledgeIntro() {
   return localStorage.setItem("home.intro", new Date().toISOString());
 }
 
+const _landscaping = (state: MachineState) => state.matches("landscaping");
+const _bumpkin = (state: MachineState) => state.context.state.bumpkin;
+const _buds = (state: MachineState) => state.context.state.buds ?? {};
+const _petNFTs = (state: MachineState) => state.context.state.pets?.nfts ?? {};
+const _island = (state: MachineState) => state.context.state.island;
+const _homeCollectiblePositions = (state: MachineState) => {
+  return {
+    collectibles: state.context.state.home.collectibles,
+    positions: getObjectEntries(state.context.state.home.collectibles)
+      .flatMap(([name, value]) => value?.map((item) => ({ name, item })))
+      .filter(
+        (collectible): collectible is NonNullable<typeof collectible> =>
+          !!(collectible && collectible.item.coordinates !== undefined),
+      )
+      .map(({ name, item }) => ({
+        id: item.id,
+        x: item.coordinates!.x,
+        y: item.coordinates!.y,
+        flipped: item.flipped,
+        name,
+      })),
+  };
+};
+const _token = (state: AuthMachineState) => state.context.user.rawToken ?? "";
+
 export const Home: React.FC = () => {
   const { isVisiting } = useVisiting();
   const [showIntro, setShowIntro] = useState(!hasReadIntro() && !isVisiting);
 
-  const { gameService, showTimers } = useContext(Context);
+  const { gameService } = useContext(Context);
+  const { authService } = useContext(AuthContext);
 
   const { t } = useAppTranslation();
 
+  const context = gameService.getSnapshot().context;
+  const loggedInFarmId = context.visitorId ?? context.farmId;
+
+  const hasAirdropAccess = hasFeatureAccess(
+    context.visitorState ?? context.state,
+    "AIRDROP_PLAYER",
+  );
+
   // memorize game grid and only update it when the stringified value changes
 
-  const state = useSelector(gameService, selectGameState);
-  const landscaping = useSelector(gameService, isLandscaping);
-
-  const { bumpkin, home } = state;
-
-  const buds = state.buds ?? {};
+  const landscaping = useSelector(gameService, _landscaping);
+  const bumpkin = useSelector(gameService, _bumpkin);
+  const buds = useSelector(gameService, _buds);
+  const petNFTs = useSelector(gameService, _petNFTs);
+  const island = useSelector(gameService, _island);
+  const { collectibles, positions: homeCollectiblePositions } = useSelector(
+    gameService,
+    _homeCollectiblePositions,
+  );
+  const token = useSelector(authService, _token);
 
   const [scrollIntoView] = useScrollIntoView();
   const [showPainting, setShowPainting] = useState(false);
@@ -79,15 +120,14 @@ export const Home: React.FC = () => {
     scrollIntoView(Section.GenesisBlock, "auto");
   }, []);
 
-  const collectibles = home.collectibles;
-
   const gameGridValue = getGameGrid({
-    crops: {},
-    collectibles: home.collectibles,
+    cropPositions: [],
+    collectiblePositions: [],
   });
   const gameGrid = useMemo(() => {
     return gameGridValue;
-  }, [JSON.stringify(gameGridValue)]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [homeCollectiblePositions]);
 
   const mapPlacements: Array<JSX.Element> = [];
 
@@ -117,18 +157,17 @@ export const Home: React.FC = () => {
                 height={height}
                 width={width}
                 z={NON_COLLIDING_OBJECTS.includes(name) ? 0 : 1}
+                enableOnVisitClick
               >
                 <Collectible
                   location="home"
                   name={name}
                   id={id}
-                  readyAt={readyAt}
-                  createdAt={createdAt}
-                  showTimers={showTimers}
+                  readyAt={readyAt ?? 0}
+                  createdAt={createdAt ?? 0}
                   x={coordinates!.x}
                   y={coordinates!.y}
                   grid={gameGrid}
-                  game={state}
                   flipped={collectible.flipped}
                 />
               </MapPlacement>
@@ -138,23 +177,51 @@ export const Home: React.FC = () => {
   );
 
   mapPlacements.push(
-    ...getKeys(buds)
-      .filter(
-        (budId) => !!buds[budId].coordinates && buds[budId].location === "home",
-      )
-      .flatMap((id) => {
-        const { x, y } = buds[id]!.coordinates!;
+    ...Object.entries(buds)
+      .filter(([, bud]) => !!bud.coordinates && bud.location === "home")
+      .flatMap(([id, bud]) => {
+        const { x, y } = bud.coordinates!;
 
         return (
-          <MapPlacement key={`bud-${id}`} x={x} y={y} height={1} width={1}>
-            <Bud id={String(id)} x={x} y={y} />
+          <MapPlacement
+            key={`bud-${id}`}
+            x={x}
+            y={y}
+            height={1}
+            width={1}
+            enableOnVisitClick
+          >
+            <Bud id={id} x={x} y={y} />
           </MapPlacement>
         );
       }),
   );
 
-  const bounds = HOME_BOUNDS[state.island.type];
-  const currentBiome = getCurrentBiome(state.island);
+  mapPlacements.push(
+    ...Object.entries(petNFTs)
+      .filter(
+        ([, petNFT]) => !!petNFT.coordinates && petNFT.location === "home",
+      )
+      .flatMap(([id, petNFT]) => {
+        const { x, y } = petNFT.coordinates!;
+
+        return (
+          <MapPlacement
+            key={`petNFT-${id}`}
+            x={x}
+            y={y}
+            height={2}
+            width={2}
+            enableOnVisitClick
+          >
+            <PetNFT id={id} x={x} y={y} />
+          </MapPlacement>
+        );
+      }),
+  );
+
+  const bounds = HOME_BOUNDS[island.type];
+  const currentBiome = getCurrentBiome(island);
 
   return (
     <>
@@ -220,7 +287,7 @@ export const Home: React.FC = () => {
               {landscaping && <Placeable location="home" />}
 
               <img
-                src={BACKGROUND_IMAGE[state.island.type]}
+                src={BACKGROUND_IMAGE[island.type]}
                 id={Section.GenesisBlock}
                 className="relative z-0"
                 style={{
@@ -248,7 +315,7 @@ export const Home: React.FC = () => {
                 <>
                   {!isVisiting && (
                     <div className="absolute -top-16 left-0 w-full">
-                      <InteriorBumpkins game={state} />
+                      <InteriorBumpkins />
                     </div>
                   )}
                   <Button
@@ -282,6 +349,11 @@ export const Home: React.FC = () => {
             onClose={() => setShowPainting(false)}
           />
         </Modal>
+        <PlayerModal
+          loggedInFarmId={loggedInFarmId}
+          token={token}
+          hasAirdropAccess={hasAirdropAccess}
+        />
       </>
     </>
   );

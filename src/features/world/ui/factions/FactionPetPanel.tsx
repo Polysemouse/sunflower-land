@@ -51,7 +51,6 @@ import bumpkinEmblem from "assets/icons/bumpkin_emblem.webp";
 import sunflorianEmblem from "assets/icons/sunflorian_emblem.webp";
 import nightshadeEmblem from "assets/icons/nightshade_emblem.webp";
 import xpIcon from "assets/icons/xp.png";
-import { hasFeatureAccess } from "lib/flags";
 import { DOLLS } from "features/game/lib/crafting";
 
 const FACTION_EMBLEM_ICONS: Record<FactionName, string> = {
@@ -121,7 +120,7 @@ interface Props {
 
 export type PetState = "sleeping" | "hungry" | "happy";
 
-export const FACTION_PET_REFRESH_INTERVAL = 10 * 1000;
+export const FACTION_PET_REFRESH_INTERVAL = 60 * 1000;
 
 const _autosaving = (state: MachineState) => state.matches("autosaving");
 const _farmId = (state: MachineState) => state.context.farmId;
@@ -188,10 +187,11 @@ export const FactionPetPanel: React.FC<Props> = ({ onClose }) => {
 
   const selectedRequest = pet.requests[selectedRequestIdx] as FactionPetRequest;
 
-  const handleFeed = () => {
+  const handleFeed = (amount = 1) => {
     gameService.send({
       type: "factionPet.fed",
       requestIndex: selectedRequestIdx,
+      amount,
     });
     if (!autosaving) gameService.send("SAVE");
 
@@ -200,6 +200,7 @@ export const FactionPetPanel: React.FC<Props> = ({ onClose }) => {
       pet.requests[selectedRequestIdx],
     );
     setFedXP((prev) => prev + totalXP);
+    handleRefresh(); // update pet xp upon feeding
     setShowConfirm(false);
   };
 
@@ -229,22 +230,32 @@ export const FactionPetPanel: React.FC<Props> = ({ onClose }) => {
   const secondsTillWeekEnd =
     (getFactionWeekEndTime({ date: new Date() }) - now) / 1000;
   const fulfilled = selectedRequest.dailyFulfilled?.[day] ?? 0;
-  const selectedRequestReward = calculatePoints(
-    fulfilled,
-    PET_FED_REWARDS_KEY[selectedRequestIdx as DifficultyIndex],
-  );
+  const selectedRequestReward = (amount = 1) =>
+    calculatePoints(
+      fulfilled,
+      PET_FED_REWARDS_KEY[selectedRequestIdx as DifficultyIndex],
+      amount,
+    );
   const { goalXP } = collectivePet ?? { goalXP: 0 };
 
-  const canFulfillRequest = (
-    inventory[selectedRequest.food] ?? new Decimal(0)
-  ).gte(selectedRequest.quantity);
+  const canFulfillRequest = (amount = 1) =>
+    (inventory[selectedRequest.food] ?? new Decimal(0)).gte(
+      selectedRequest.quantity * amount,
+    );
 
-  const boost = getKingdomPetBoost(
-    gameService.getSnapshot().context.state,
-    selectedRequestReward,
-  )[0];
+  const boost = (amount = 1) =>
+    getKingdomPetBoost(
+      gameService.getSnapshot().context.state,
+      selectedRequestReward(amount),
+    )[0];
 
-  const boostedMarks = selectedRequestReward + boost;
+  const boostedMarks = (amount = 1) =>
+    selectedRequestReward(amount) + boost(amount);
+
+  const singularReward = selectedRequestReward();
+  const singularBoost = boost();
+  const singularBoostedMarks = singularReward + singularBoost;
+  const singularCanFulfillRequest = canFulfillRequest();
 
   const isContributingMemberForThisWeek = pet.requests.every(
     (request) => getKeys(request.dailyFulfilled).length > 0,
@@ -296,7 +307,7 @@ export const FactionPetPanel: React.FC<Props> = ({ onClose }) => {
                 mobileReversePanelOrder
                 content={
                   <div className="flex flex-col space-y-2 w-full">
-                    <div className="flex flex-wrap justify-between items-center">
+                    <div className="flex flex-wrap justify-between items-center gap-1">
                       <Label
                         type="default"
                         className={classNames({
@@ -334,93 +345,83 @@ export const FactionPetPanel: React.FC<Props> = ({ onClose }) => {
                       {t("faction.pet.gatherResources")}
                     </p>
                     <div className="flex w-full flex-wrap justify-between gap-2 pl-0.5 pb-2">
-                      {pet.requests
-                        .filter(
-                          (request) =>
-                            hasFeatureAccess(
-                              gameService.getSnapshot().context.state,
-                              "CRAFTING",
-                            ) || !(request.food in DOLLS),
-                        )
-                        .map((request, idx) => {
-                          const fulfilled = request.dailyFulfilled[day] ?? 0;
-                          const points = calculatePoints(
-                            fulfilled,
-                            PET_FED_REWARDS_KEY[idx as DifficultyIndex],
-                          );
-                          const isDoll = request.food in DOLLS;
+                      {pet.requests.map((request, idx) => {
+                        const fulfilled = request.dailyFulfilled[day] ?? 0;
+                        const points = calculatePoints(
+                          fulfilled,
+                          PET_FED_REWARDS_KEY[idx as DifficultyIndex],
+                        );
+                        const isDoll = request.food in DOLLS;
 
-                          const boost = getKingdomPetBoost(
-                            gameService.getSnapshot().context.state,
-                            points,
-                          )[0];
+                        const boost = getKingdomPetBoost(
+                          gameService.getSnapshot().context.state,
+                          points,
+                        )[0];
 
-                          const boostedMarks = points + boost;
+                        const boostedMarks = points + boost;
 
-                          return (
-                            <OuterPanel
-                              key={JSON.stringify(request)}
-                              className={classNames(
-                                "flex relative flex-col flex-1 items-center p-2 cursor-pointer hover:bg-brown-300",
-                                { "img-highlight": selectedRequestIdx === idx },
-                              )}
-                              onClick={() => setSelectedRequestIdx(idx)}
-                            >
-                              <div className="flex flex-1 justify-center items-center mb-4 w-full relative">
-                                <SquareIcon
-                                  width={24}
-                                  icon={
-                                    ITEM_DETAILS[
-                                      request.food as InventoryItemName
-                                    ].image
-                                  }
-                                />
-                                <Label
-                                  icon={ITEM_DETAILS["Mark"].image}
-                                  secondaryIcon={
-                                    boost
-                                      ? SUNNYSIDE.icons.lightning
-                                      : undefined
-                                  }
-                                  type="warning"
-                                  className="absolute h-6"
-                                  iconWidth={10}
+                        return (
+                          <OuterPanel
+                            key={JSON.stringify(request)}
+                            className={classNames(
+                              "flex relative flex-col flex-1 items-center p-2 cursor-pointer hover:bg-brown-300",
+                              { "img-highlight": selectedRequestIdx === idx },
+                            )}
+                            onClick={() => setSelectedRequestIdx(idx)}
+                          >
+                            <div className="flex flex-1 justify-center items-center mb-4 w-full relative">
+                              <SquareIcon
+                                width={24}
+                                icon={
+                                  ITEM_DETAILS[
+                                    request.food as InventoryItemName
+                                  ].image
+                                }
+                              />
+                              <Label
+                                icon={ITEM_DETAILS["Mark"].image}
+                                secondaryIcon={
+                                  boost ? SUNNYSIDE.icons.lightning : undefined
+                                }
+                                type="warning"
+                                className="absolute h-6"
+                                iconWidth={10}
+                                style={{
+                                  width: "calc(100% + 10px)",
+                                  bottom: "-24px",
+                                  left: "-4px",
+                                }}
+                              >
+                                <span className={boost ? "pl-1.5" : ""}>
+                                  {formatNumber(boostedMarks)}
+                                </span>
+                              </Label>
+                            </div>
+                            {selectedRequestIdx === idx && (
+                              <div id="select-box">
+                                <img
+                                  className="absolute pointer-events-none"
+                                  src={SUNNYSIDE.ui.selectBoxTL}
                                   style={{
-                                    width: "calc(100% + 10px)",
-                                    bottom: "-24px",
-                                    left: "-4px",
+                                    top: `${PIXEL_SCALE * -3}px`,
+                                    left: `${PIXEL_SCALE * -3}px`,
+                                    width: `${PIXEL_SCALE * 8}px`,
                                   }}
-                                >
-                                  <span className={boost ? "pl-1.5" : ""}>
-                                    {formatNumber(boostedMarks)}
-                                  </span>
-                                </Label>
+                                />
+                                <img
+                                  className="absolute pointer-events-none"
+                                  src={SUNNYSIDE.ui.selectBoxTR}
+                                  style={{
+                                    top: `${PIXEL_SCALE * -3}px`,
+                                    right: `${PIXEL_SCALE * -3}px`,
+                                    width: `${PIXEL_SCALE * 8}px`,
+                                  }}
+                                />
                               </div>
-                              {selectedRequestIdx === idx && (
-                                <div id="select-box">
-                                  <img
-                                    className="absolute pointer-events-none"
-                                    src={SUNNYSIDE.ui.selectBoxTL}
-                                    style={{
-                                      top: `${PIXEL_SCALE * -3}px`,
-                                      left: `${PIXEL_SCALE * -3}px`,
-                                      width: `${PIXEL_SCALE * 8}px`,
-                                    }}
-                                  />
-                                  <img
-                                    className="absolute pointer-events-none"
-                                    src={SUNNYSIDE.ui.selectBoxTR}
-                                    style={{
-                                      top: `${PIXEL_SCALE * -3}px`,
-                                      right: `${PIXEL_SCALE * -3}px`,
-                                      width: `${PIXEL_SCALE * 8}px`,
-                                    }}
-                                  />
-                                </div>
-                              )}
-                            </OuterPanel>
-                          );
-                        })}
+                            )}
+                          </OuterPanel>
+                        );
+                      })}
                     </div>
                     {!!collectivePet?.streak && collectivePet.streak > 0 && (
                       <div className="flex items-center space-x-1">
@@ -444,20 +445,22 @@ export const FactionPetPanel: React.FC<Props> = ({ onClose }) => {
                         <BoostInfoPanel
                           feature="pet"
                           show={showBoostInfo}
-                          baseAmount={selectedRequestReward}
+                          baseAmount={singularReward}
                           onClick={() => setShowBoostInfo(false)}
                         />
                         <Label
                           onClick={() => setShowBoostInfo(!showBoostInfo)}
                           icon={ITEM_DETAILS["Mark"].image}
                           secondaryIcon={
-                            boost ? SUNNYSIDE.icons.lightning : undefined
+                            singularBoost
+                              ? SUNNYSIDE.icons.lightning
+                              : undefined
                           }
                           type="warning"
                           className="m-1 cursor-pointer"
                         >
-                          <span className={boost ? "pl-1.5" : ""}>
-                            {`${formatNumber(boostedMarks)} ${t("marks")}`}
+                          <span className={singularBoost ? "pl-1.5" : ""}>
+                            {`${formatNumber(singularBoostedMarks)} ${t("marks")}`}
                           </span>
                         </Label>
                       </div>
@@ -487,10 +490,20 @@ export const FactionPetPanel: React.FC<Props> = ({ onClose }) => {
                         requirement={new Decimal(selectedRequest.quantity)}
                       />
                     </div>
-                    <Button
-                      disabled={!canFulfillRequest}
-                      onClick={() => setShowConfirm(true)}
-                    >{`${t("deliver")} ${selectedRequest.quantity}`}</Button>
+                    <div className="flex flex-row sm:flex-col gap-1 w-full">
+                      <Button
+                        disabled={!singularCanFulfillRequest}
+                        onClick={() => handleFeed()}
+                      >
+                        {`${t("deliver")} ${selectedRequest.quantity}`}
+                      </Button>
+                      <Button
+                        disabled={!canFulfillRequest(10)}
+                        onClick={() => setShowConfirm(true)}
+                      >
+                        {`${t("deliver")} ${selectedRequest.quantity * 10}`}
+                      </Button>
+                    </div>
                   </div>
                 }
               />
@@ -500,7 +513,7 @@ export const FactionPetPanel: React.FC<Props> = ({ onClose }) => {
                 <div className="space-y-3">
                   <span className="text-xs sm:text-sm">
                     {t("faction.donation.confirm", {
-                      factionPoints: formatNumber(boostedMarks),
+                      factionPoints: formatNumber(boostedMarks(10)),
                     })}
                   </span>
                   <div className="flex flex-col space-y-1">
@@ -514,7 +527,7 @@ export const FactionPetPanel: React.FC<Props> = ({ onClose }) => {
                           {selectedRequest.food}
                         </span>
                       </div>
-                      <span className="text-xs">{`${selectedRequest.quantity}`}</span>
+                      <span className="text-xs">{`${selectedRequest.quantity * 10}`}</span>
                     </div>
                   </div>
                 </div>
@@ -522,7 +535,7 @@ export const FactionPetPanel: React.FC<Props> = ({ onClose }) => {
                   <Button onClick={() => setShowConfirm(false)}>
                     {t("cancel")}
                   </Button>
-                  <Button onClick={handleFeed}>{t("confirm")}</Button>
+                  <Button onClick={() => handleFeed(10)}>{t("confirm")}</Button>
                 </div>
               </InnerPanel>
             )}

@@ -12,6 +12,7 @@ import walletIcon from "assets/icons/wallet.png";
 import gift from "assets/icons/gift.png";
 import increaseArrow from "assets/icons/increase_arrow.png";
 import water from "assets/icons/water.png";
+
 import { SUNNYSIDE } from "assets/sunnyside";
 import { Button } from "components/ui/Button";
 import { useLocation, useNavigate } from "react-router";
@@ -392,7 +393,7 @@ export const FlowerDashboard = () => {
                   className="text-xxs absolute top-1 right-1 underline cursor-pointer"
                   onClick={() => {
                     window.open(
-                      `https://docs.sunflower-land.com/getting-started/usdflower-erc20#team-revenue`,
+                      `https://docs.sunflower-land.com/getting-started/usdflower-erc20`,
                       "_blank",
                     );
                   }}

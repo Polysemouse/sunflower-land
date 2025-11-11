@@ -1,7 +1,6 @@
-import { TRADE_LIMITS } from "features/game/actions/tradeLimits";
-import { BuffLabel, KNOWN_IDS, KNOWN_ITEMS } from "features/game/types";
-import { BumpkinItem, ITEM_IDS, ITEM_NAMES } from "features/game/types/bumpkin";
-import { GameState, InventoryItemName } from "features/game/types/game";
+import { BuffLabel, KNOWN_ITEMS } from "features/game/types";
+import { ITEM_NAMES } from "features/game/types/bumpkin";
+import { GameState } from "features/game/types/game";
 import { getItemBuffs } from "features/game/types/getItemBuffs";
 import { ITEM_DETAILS } from "features/game/types/images";
 import {
@@ -12,6 +11,8 @@ import {
 import { budImageDomain } from "features/island/collectibles/components/Bud";
 import { OPEN_SEA_WEARABLES } from "metadata/metadata";
 import { translate } from "lib/i18n/translate";
+import { PetNFTName } from "features/game/types/pets";
+import { getPetImageForMarketplace } from "features/island/pets/lib/petShared";
 
 export type TradeableDisplay = {
   name: MarketplaceTradeableName;
@@ -55,6 +56,18 @@ export function getTradeableDisplay({
     };
   }
 
+  if (type === "pets") {
+    const name = `Pet #${id}` as PetNFTName;
+
+    return {
+      name,
+      description: translate("description.pet.generic"),
+      image: getPetImageForMarketplace(id),
+      type,
+      buffs: getItemBuffs({ state, item: name, collection: "pets" }),
+    };
+  }
+
   // Collectibles + Resources
   const name = KNOWN_ITEMS[id];
   const details = ITEM_DETAILS[name];
@@ -66,24 +79,4 @@ export function getTradeableDisplay({
     buffs: getItemBuffs({ state, item: name, collection: "collectibles" }),
     type,
   };
-}
-
-export function getCollectionName(
-  itemName: MarketplaceTradeableName,
-): CollectionName {
-  if (itemName in TRADE_LIMITS) return "resources";
-
-  if ((itemName as InventoryItemName) in KNOWN_IDS) {
-    return "collectibles";
-  }
-
-  if ((itemName as BumpkinItem) in ITEM_IDS) {
-    return "wearables";
-  }
-
-  if (itemName.startsWith("Bud")) {
-    return "buds";
-  }
-
-  throw new Error("Unknown collection");
 }

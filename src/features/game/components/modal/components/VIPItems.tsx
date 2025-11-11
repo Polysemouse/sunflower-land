@@ -15,7 +15,6 @@ import xpIcon from "assets/icons/xp.png";
 import vipIcon from "assets/icons/vip.webp";
 import blueVipIcon from "assets/icons/blue_vip.webp";
 import purpleVipIcon from "assets/icons/purple_vip.webp";
-import flowerIcon from "assets/icons/flower_token.webp";
 
 import trophyIcon from "assets/icons/trophy.png";
 import shopIcon from "assets/icons/shop.png";
@@ -213,7 +212,7 @@ export const VIPItems: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
             </Label>
           </div>
           <a
-            href="https://docs.sunflower-land.com/player-guides/seasons#seasonal-banners"
+            href="https://docs.sunflower-land.com/roadmap/chapters"
             className="text-xxs underline"
             target="_blank"
             rel="noreferrer"
@@ -330,18 +329,14 @@ export const VIPItems: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
               }),
               icon: increaseArrow,
             },
-            { text: t("vip.benefit.cheers"), icon: ITEM_DETAILS.Cheer.image },
             { text: t("vip.benefit.competition"), icon: trophyIcon },
-            ...(getCurrentSeason() === "Winds of Change"
+            ...(getCurrentSeason() === "Paw Prints"
               ? [
                   {
-                    text: t("vip.benefit.windOfChange"),
-                    icon: ITEM_DETAILS.Broccoli.image,
+                    text: t("vip.benefit.bonusPetEnergy"),
+                    icon: SUNNYSIDE.icons.lightning,
                   },
                 ]
-              : []),
-            ...(getCurrentSeason() === "Great Bloom"
-              ? [{ text: t("vip.benefit.greatBloom"), icon: flowerIcon }]
               : []),
           ].map((item, index) => (
             <div className="flex items-center min-h-[25px]" key={index}>

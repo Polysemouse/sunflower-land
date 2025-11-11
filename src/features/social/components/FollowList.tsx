@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useSocial } from "../hooks/useSocial";
 import { Label } from "components/ui/Label";
 import { FollowDetailPanel } from "./FollowDetailPanel";
 import { Button } from "components/ui/Button";
@@ -8,12 +7,12 @@ import { Equipped } from "features/game/types/bumpkin";
 import { useFollowNetwork } from "../hooks/useFollowNetwork";
 import { useInView } from "react-intersection-observer";
 import { Loading } from "features/auth/components";
-import { useGame } from "features/game/GameProvider";
-import { getHelpStreak } from "features/game/types/monuments";
+import { Detail } from "../actions/getFollowNetworkDetails";
 
 type Props = {
   loggedInFarmId: number;
   token: string;
+  searchResults?: Detail[];
   networkFarmId: number;
   networkList: number[];
   networkCount: number;
@@ -28,22 +27,16 @@ export const FollowList: React.FC<Props> = ({
   loggedInFarmId,
   token,
   networkFarmId,
-  networkList,
   networkCount,
   playerLoading,
   showLabel = true,
   networkType,
   scrollContainerRef,
+  searchResults = [],
   navigateToPlayer,
 }) => {
-  useSocial({
-    farmId: networkFarmId,
-    following: networkList,
-  });
   const { t } = useTranslation();
   const [isScrollable, setIsScrollable] = useState(false);
-  const { gameService } = useGame();
-
   // Intersection observer to load more details when the loader is in view
   const { ref: intersectionRef, inView } = useInView({
     root: scrollContainerRef.current,
@@ -121,43 +114,33 @@ export const FollowList: React.FC<Props> = ({
   if (networkCount === 0) {
     return (
       <div className="flex flex-col gap-1 pl-1 mb-1">
-        <div className="sticky top-0 bg-brown-200 z-10 pb-1">
-          {showLabel && (
+        {showLabel && (
+          <div className="sticky top-0 bg-brown-200 z-10 pb-1">
             <Label type="default">
               {t(`playerModal.${networkType}`, { count: networkCount })}
             </Label>
-          )}
-        </div>
+          </div>
+        )}
+
         <div className="text-xs">{t(`playerModal.no.${networkType}`)}</div>
       </div>
     );
   }
 
+  const data = searchResults.length > 0 ? searchResults : network;
+
   return (
     <div className="flex flex-col pr-0.5">
-      <div className="sticky -top-1 bg-brown-200 z-10 pb-1 pt-1">
-        {showLabel && (
+      {showLabel && (
+        <div className="sticky -top-1 bg-brown-200 z-10 pb-1 pt-1">
           <Label type="default">
             {t(`playerModal.${networkType}`, { count: networkCount })}
           </Label>
-        )}
-      </div>
+        </div>
+      )}
+
       <div className="flex flex-col gap-1">
-        {network.map((detail) => {
-          const friendStreak = getHelpStreak({
-            farm: gameService.state.context.state.socialFarming.helped?.[
-              detail.id
-            ],
-          });
-
-          const helpedToday =
-            gameService.getSnapshot().context.state.socialFarming.helped?.[
-              detail.id
-            ]?.helpedAt ?? 0;
-          const hasHelpedToday =
-            new Date(helpedToday).toISOString().split("T")[0] ===
-            new Date().toISOString().split("T")[0];
-
+        {data.map((detail) => {
           return (
             <FollowDetailPanel
               key={`flw-${detail.id}`}
@@ -169,13 +152,14 @@ export const FollowList: React.FC<Props> = ({
               navigateToPlayer={navigateToPlayer}
               hasCookingPot={detail.hasCookingPot}
               socialPoints={detail.socialPoints ?? 0}
-              haveHelpedToday={hasHelpedToday}
-              haveTheyHelpedYouToday={detail.helpedYouToday ?? false}
-              friendStreak={friendStreak}
+              helpedThemToday={detail.helpedThemToday}
+              helpedYouToday={detail.helpedYouToday}
+              helpStreak={detail.helpStreak}
             />
           );
         })}
       </div>
+
       <div
         ref={intersectionRef}
         className="text-xs flex justify-center py-1 h-5"

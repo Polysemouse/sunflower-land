@@ -17,13 +17,13 @@ import { getRelativeTime } from "lib/utils/time";
 
 import promote from "assets/icons/promote.webp";
 import followIcon from "assets/icons/follow.webp";
+import helpIcon from "assets/icons/help.webp";
 
 import { MachineState } from "features/game/lib/gameMachine";
 import { Context } from "features/game/GameProvider";
 import { useSelector } from "@xstate/react";
 import { isMobile } from "mobile-device-detect";
 import { useAppTranslation } from "lib/i18n/useAppTranslations";
-import { capitalize } from "lib/utils/capitalize";
 import { useFeedInteractions } from "./hooks/useFeedInteractions";
 import { AuthMachineState } from "features/auth/lib/authMachine";
 import * as AuthProvider from "features/auth/lib/Provider";
@@ -42,6 +42,11 @@ import { useOnMachineTransition } from "lib/utils/hooks/useOnMachineTransition";
 import { Button } from "components/ui/Button";
 import socialPointsIcon from "assets/icons/social_score.webp";
 import { discoveryModalManager } from "./lib/discoveryModalManager";
+import { FeedFilters } from "./components/FeedFilters";
+import { getFilter, storeFilter } from "./lib/persistFilter";
+import { HelpInfoPopover } from "./components/HelpInfoPopover";
+import { SearchBar } from "./components/SearchBar";
+import { Detail } from "./actions/getFollowNetworkDetails";
 
 type Props = {
   type: "world" | "local";
@@ -50,8 +55,10 @@ type Props = {
   setShowFeed: (showFeed: boolean) => void;
 };
 
-const _username = (state: MachineState) => state.context.state.username;
-const _farmId = (state: MachineState) => state.context.farmId;
+const _username = (state: MachineState) =>
+  (state.context.visitorState ?? state.context.state).username;
+const _farmId = (state: MachineState) =>
+  state.context.visitorId ?? state.context.farmId;
 const _token = (state: AuthMachineState) =>
   state.context.user.rawToken as string;
 
@@ -71,6 +78,12 @@ const mergeUpdates = (
   ];
 };
 
+export type FeedFilter = "all" | "help" | "chat" | "cheer" | "follow";
+export type FeedFilterOption = {
+  value: FeedFilter;
+  label: string;
+};
+
 export const Feed: React.FC<Props> = ({
   showFeed,
   setShowFeed,
@@ -83,6 +96,8 @@ export const Feed: React.FC<Props> = ({
 
   const [showFollowing, setShowFollowing] = useState(false);
   const feedRef = useRef<HTMLDivElement>(null);
+  const [selectedFilter, setSelectedFilter] = useState<FeedFilter>(getFilter());
+  const [searchResults, setSearchResults] = useState<Detail[]>([]);
 
   const username = useSelector(gameService, _username);
   const token = useSelector(authService, _token);
@@ -98,7 +113,7 @@ export const Feed: React.FC<Props> = ({
     hasMore,
     loadMore,
     mutate,
-  } = useFeedInteractions(token, farmId, type === "world");
+  } = useFeedInteractions(token, farmId, selectedFilter, type === "world");
   const { setUnreadCount, lastAcknowledged, clearUnread } = useFeed();
 
   // Handle clicks outside the feed to close it
@@ -137,13 +152,11 @@ export const Feed: React.FC<Props> = ({
     if (showFeed) {
       clearUnread(0);
     }
-  }, [showFeed, setUnreadCount]);
+  }, [showFeed]);
 
-  useLayoutEffect(() => {
-    if (showFeed && !isLoadingInitialData) {
-      mutate();
-    }
-  }, [showFeed, isLoadingInitialData, mutate]);
+  useEffect(() => {
+    storeFilter(selectedFilter);
+  }, [selectedFilter]);
 
   useSocial({
     farmId,
@@ -177,6 +190,13 @@ export const Feed: React.FC<Props> = ({
     mutate,
   );
 
+  useOnMachineTransition(
+    gameService,
+    "followingFarmVisiting",
+    "followingFarmVisitingSuccess",
+    mutate,
+  );
+
   const handleInteractionClick = (interaction: Interaction) => {
     setShowFeed(false);
     playerModalManager.open({
@@ -205,9 +225,6 @@ export const Feed: React.FC<Props> = ({
 
   const handleCloseFeed = (): void => {
     setShowFeed(false);
-    setTimeout(() => {
-      setShowFollowing(false);
-    }, 500);
   };
 
   const showMobileFeed = showFeed && isMobile;
@@ -240,9 +257,7 @@ export const Feed: React.FC<Props> = ({
                   onClick={() => setShowFollowing(false)}
                 />
               )}
-              <Label type="default">
-                {t("social.feed", { type: capitalize(type) })}
-              </Label>
+              <Label type="default">{t("feed")}</Label>
               {server && <span className="text-xxs">{server}</span>}
             </div>
             <img
@@ -274,10 +289,11 @@ export const Feed: React.FC<Props> = ({
               {t("myProfile")}
             </div>
             <FollowsIndicator
+              showSingleBumpkin
               count={following.length}
               onClick={() => setShowFollowing(!showFollowing)}
               type="following"
-              className="ml-1"
+              className="ml-1 -mr-3.5"
             />
           </div>
           <div className="flex items-center justify-between gap-1 w-full">
@@ -286,7 +302,7 @@ export const Feed: React.FC<Props> = ({
               onClick={() => {
                 setShowFollowing(false);
                 setShowFeed(false);
-                discoveryModalManager.open();
+                discoveryModalManager.open("leaderboard");
               }}
             >
               <img
@@ -295,26 +311,60 @@ export const Feed: React.FC<Props> = ({
               />
               {t("leaderboard")}
             </div>
+            <div
+              className="flex ml-1.5 mr-1 items-center gap-1 text-xs underline cursor-pointer whitespace-nowrap"
+              onClick={() => {
+                setShowFollowing(false);
+                setShowFeed(false);
+                discoveryModalManager.open("search");
+              }}
+            >
+              {t("playerSearch.searchPlayer")}
+              <img src={SUNNYSIDE.icons.search} className="w-4" />
+            </div>
           </div>
         </div>
+        {!showFollowing && (
+          <FeedFilters
+            options={[
+              { value: "all", label: "All" },
+              {
+                value: "help",
+                label: "Helped",
+              },
+              { value: "chat", label: "Chat" },
+              {
+                value: "cheer",
+                label: "Cheered",
+              },
+              { value: "follow", label: "Follows" },
+            ]}
+            value={selectedFilter}
+            onChange={(value) => setSelectedFilter(value)}
+          />
+        )}
 
         {showFollowing && (
-          <div
-            ref={scrollContainerRef}
-            className="flex flex-col gap-2 -mt-2 overflow-hidden overflow-y-auto scrollable"
-          >
-            <FollowList
-              loggedInFarmId={farmId}
-              token={token}
-              networkFarmId={farmId}
-              networkList={following}
-              networkCount={following.length}
-              showLabel={false}
-              networkType="following"
-              scrollContainerRef={scrollContainerRef}
-              navigateToPlayer={handleFollowingClick}
-            />
-          </div>
+          <>
+            <SearchBar context="following" onSearchResults={setSearchResults} />
+            <div
+              ref={scrollContainerRef}
+              className="flex flex-col gap-2 overflow-hidden overflow-y-auto scrollable"
+            >
+              <FollowList
+                loggedInFarmId={farmId}
+                token={token}
+                searchResults={searchResults}
+                networkFarmId={farmId}
+                networkList={following}
+                networkCount={following.length}
+                showLabel={false}
+                networkType="following"
+                scrollContainerRef={scrollContainerRef}
+                navigateToPlayer={handleFollowingClick}
+              />
+            </div>
+          </>
         )}
 
         {!showFollowing && (
@@ -328,10 +378,54 @@ export const Feed: React.FC<Props> = ({
             hasMore={hasMore}
             loadMore={loadMore}
             onInteractionClick={handleInteractionClick}
+            filter={selectedFilter}
           />
         )}
       </div>
     </InnerPanel>
+  );
+};
+
+const HelpIconWithPopover: React.FC<{
+  helpedThemToday: boolean;
+}> = ({ helpedThemToday }) => {
+  const [showPopover, setShowPopover] = useState(false);
+
+  return (
+    <div
+      className="relative flex h-8 w-10 cursor-pointer items-center justify-center"
+      onPointerOver={(e) => {
+        if (e.pointerType === "mouse") {
+          setShowPopover(true);
+        }
+      }}
+      onPointerOut={(e) => {
+        if (e.pointerType === "mouse") {
+          setShowPopover(false);
+        }
+      }}
+      onPointerDown={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+
+        setShowPopover(!showPopover);
+        setTimeout(() => {
+          setShowPopover(false);
+        }, 1500);
+      }}
+      onClickCapture={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+      }}
+    >
+      <img src={helpIcon} className="w-5 h-5" />
+      <HelpInfoPopover
+        className="absolute right-0 -top-6 z-20 w-max text-black"
+        showPopover={showPopover}
+        onHide={() => setShowPopover(false)}
+        helpedThemToday={helpedThemToday}
+      />
+    </div>
   );
 };
 
@@ -342,6 +436,7 @@ type FeedContentProps = {
   isLoadingInitialData: boolean;
   isLoadingMore: boolean;
   hasMore: boolean | undefined;
+  filter: FeedFilter;
   onInteractionClick: (interaction: Interaction) => void;
   onFollowClick: (id: number) => void;
   loadMore: () => void;
@@ -357,10 +452,13 @@ const FeedContent: React.FC<FeedContentProps> = ({
   isLoadingMore,
   hasMore,
   loadMore,
+  filter,
 }) => {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const loaderRef = useRef<HTMLDivElement>(null);
   const { t } = useAppTranslation();
+
+  const [canPaginate, setCanPaginate] = useState(false);
 
   // Intersection observer to load more interactions when the loader is in view
   const { ref: intersectionRef, inView } = useInView({
@@ -369,8 +467,23 @@ const FeedContent: React.FC<FeedContentProps> = ({
     threshold: 0.1,
   });
 
+  useLayoutEffect(() => {
+    const el = scrollContainerRef.current;
+    if (!el) return;
+    // tiny buffer so off-by-1 doesn’t trigger
+    setCanPaginate(el.scrollHeight > el.clientHeight + 2);
+  }, [feed.length, filter]);
+
   useEffect(() => {
-    if (inView && hasMore && !isLoadingMore) {
+    if (scrollContainerRef.current) {
+      scrollContainerRef.current.scrollTo({
+        top: 0,
+      });
+    }
+  }, [filter]);
+
+  useEffect(() => {
+    if (inView && hasMore && !isLoadingMore && canPaginate) {
       loadMore();
     }
   }, [inView, hasMore, isLoadingMore, loadMore, scrollContainerRef]);
@@ -424,6 +537,7 @@ const FeedContent: React.FC<FeedContentProps> = ({
               ? undefined
               : () => onInteractionClick(interaction);
           const isFollowing = following.includes(interaction.sender.id);
+          const isAtMaxFollowing = !isFollowing && following.length >= 5000;
 
           return (
             <div
@@ -454,7 +568,7 @@ const FeedContent: React.FC<FeedContentProps> = ({
                       />
                     )}
                   </div>
-                  <div className="flex flex-col gap-1">
+                  <div className="flex flex-col w-full gap-1">
                     <span className="flex items-center gap-1">
                       {interaction.type === "announcement" ? (
                         <img src={promote} />
@@ -463,40 +577,54 @@ const FeedContent: React.FC<FeedContentProps> = ({
                       )}
                       {`${getRelativeTime(interaction.createdAt)}`}
                     </span>
-                    <div
-                      className="text-xs break-words"
-                      style={{
-                        lineHeight: 1,
-                      }}
-                    >
-                      {interaction.message}
+                    <div className="flex justify-between items-center w-full">
+                      <div
+                        className="text-xs break-words w-full"
+                        style={{
+                          lineHeight: 1,
+                        }}
+                      >
+                        {interaction.message}
+                      </div>
+                      {!!interaction.helpedThemToday && (
+                        <HelpIconWithPopover
+                          helpedThemToday={interaction.helpedThemToday}
+                        />
+                      )}
                     </div>
                   </div>
-                  <div className="flex items-center justify-end flex-grow cursor-pointer">
-                    {interaction.type === "follow" && !isFollowing && (
-                      <Button
-                        className="text-xs flex h-10 w-10 justify-center items-center"
-                        onClick={(e) =>
-                          handleFollowClick(e, interaction.sender.id)
-                        }
-                      >
-                        <img src={followIcon} className="w-6 object-contain" />
-                      </Button>
-                    )}
-                  </div>
+                  {!isAtMaxFollowing && (
+                    <div className="flex items-center justify-end flex-grow cursor-pointer">
+                      {interaction.type === "follow" && !isFollowing && (
+                        <Button
+                          className="text-xs flex h-10 w-10 justify-center items-center"
+                          onClick={(e) =>
+                            handleFollowClick(e, interaction.sender.id)
+                          }
+                        >
+                          <img
+                            src={followIcon}
+                            className="w-6 object-contain"
+                          />
+                        </Button>
+                      )}
+                    </div>
+                  )}
                 </div>
               </InteractionBubble>
             </div>
           );
         })}
       </div>
-      <div
-        ref={setRefs}
-        id="loading-more"
-        className="text-xs flex justify-center py-1 h-5"
-      >
-        {hasMore ? <Loading dotsOnly /> : t("playerModal.noMoreMessages")}
-      </div>
+      {canPaginate && (
+        <div
+          ref={setRefs}
+          id="loading-more"
+          className="text-xs flex justify-center py-1 h-6"
+        >
+          {hasMore ? <Loading dotsOnly /> : t("playerModal.noMoreMessages")}
+        </div>
+      )}
     </div>
   );
 };

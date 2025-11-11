@@ -10,7 +10,7 @@ import {
   Skills,
 } from "../../types/game";
 import {
-  isCollectibleActive,
+  isTemporaryCollectibleActive,
   isCollectibleBuilt,
 } from "features/game/lib/collectibleBuilt";
 import { produce } from "immer";
@@ -30,10 +30,11 @@ import {
   isCollectibleOnFarm,
   setAOELastUsed,
 } from "features/game/lib/aoe";
+import { canMine } from "features/game/lib/resourceNodes";
 
 export type LandExpansionStoneMineAction = {
   type: "stoneRock.mined";
-  index: number;
+  index: string;
 };
 
 type Options = {
@@ -48,11 +49,6 @@ type GetMinedAtArgs = {
   game: GameState;
 };
 
-export function canMine(rock: Rock, now: number = Date.now()) {
-  const recoveryTime = STONE_RECOVERY_TIME;
-  return now - rock.stone.minedAt >= recoveryTime * 1000;
-}
-
 function getBoostedTime({ skills, game }: GetMinedAtArgs): {
   boostedTime: number;
   boostsUsed: BoostName[];
@@ -65,11 +61,11 @@ function getBoostedTime({ skills, game }: GetMinedAtArgs): {
     boostsUsed.push("Speed Miner");
   }
 
-  const superTotem = isCollectibleActive({
+  const superTotem = isTemporaryCollectibleActive({
     name: "Super Totem",
     game,
   });
-  const timeWarpTotem = isCollectibleActive({
+  const timeWarpTotem = isTemporaryCollectibleActive({
     name: "Time Warp Totem",
     game,
   });
@@ -80,9 +76,14 @@ function getBoostedTime({ skills, game }: GetMinedAtArgs): {
     else if (timeWarpTotem) boostsUsed.push("Time Warp Totem");
   }
 
-  if (isCollectibleActive({ name: "Ore Hourglass", game })) {
+  if (isTemporaryCollectibleActive({ name: "Ore Hourglass", game })) {
     totalSeconds = totalSeconds * 0.5;
     boostsUsed.push("Ore Hourglass");
+  }
+
+  if (isTemporaryCollectibleActive({ name: "Badger Shrine", game })) {
+    totalSeconds = totalSeconds * 0.75;
+    boostsUsed.push("Badger Shrine");
   }
 
   const buff = STONE_RECOVERY_TIME - totalSeconds;
@@ -106,19 +107,22 @@ export function getMinedAt({ skills, createdAt, game }: GetMinedAtArgs): {
   return { time: createdAt - boostedTime, boostsUsed };
 }
 
-export function getRequiredPickaxeAmount(gameState: GameState) {
+export function getRequiredPickaxeAmount(gameState: GameState, id: string) {
   const boostsUsed: BoostName[] = [];
+
   if (isCollectibleBuilt({ name: "Quarry", game: gameState })) {
     boostsUsed.push("Quarry");
     return { amount: new Decimal(0), boostsUsed };
   }
 
-  return { amount: new Decimal(1), boostsUsed };
+  const multiplier = gameState.stones[id]?.multiplier ?? 1;
+  return { amount: new Decimal(1).mul(multiplier), boostsUsed };
 }
 type GetStoneDropAmountArgs = {
   game: GameState;
   rock: Rock;
   createdAt: number;
+  id: string;
   criticalDropGenerator?: (name: CriticalHitName) => boolean;
 };
 /**
@@ -129,6 +133,7 @@ export function getStoneDropAmount({
   rock,
   createdAt,
   criticalDropGenerator = () => false,
+  id,
 }: GetStoneDropAmountArgs): {
   amount: Decimal;
   boostsUsed: BoostName[];
@@ -141,6 +146,7 @@ export function getStoneDropAmount({
     aoe,
   } = game;
   const updatedAoe = cloneDeep(aoe);
+  const multiplier = rock.multiplier ?? 1;
 
   let amount = 1;
   const boostsUsed: BoostName[] = [];
@@ -282,12 +288,28 @@ export function getStoneDropAmount({
     boostsUsed.push(FACTION_ITEMS[factionName].secondaryTool);
   }
 
+  if (isTemporaryCollectibleActive({ name: "Legendary Shrine", game })) {
+    amount += 1;
+    boostsUsed.push("Legendary Shrine");
+  }
+
   const { yieldBoost, budUsed } = getBudYieldBoosts(buds, "Stone");
   amount += yieldBoost;
   if (budUsed) boostsUsed.push(budUsed);
 
   if (game.island.type === "volcano") {
     amount += 0.1;
+  }
+
+  amount *= multiplier;
+
+  // Add yield boost for upgraded stones
+  if (rock.tier === 2) {
+    amount += 0.5;
+  }
+
+  if (rock.tier === 3) {
+    amount += 2.5;
   }
 
   return {
@@ -314,13 +336,17 @@ export function mineStone({
       throw new Error("You do not have a Bumpkin!");
     }
 
-    if (!canMine(rock, createdAt)) {
+    if (rock.x === undefined && rock.y === undefined) {
+      throw new Error("Rock is not placed");
+    }
+
+    if (!canMine(rock, rock.name ?? "Stone Rock", createdAt)) {
       throw new Error("Rock is still recovering");
     }
 
     const toolAmount = stateCopy.inventory["Pickaxe"] || new Decimal(0);
     const { amount: requiredToolAmount, boostsUsed: pickaxeBoostsUsed } =
-      getRequiredPickaxeAmount(stateCopy);
+      getRequiredPickaxeAmount(stateCopy, action.index);
 
     if (toolAmount.lessThan(requiredToolAmount)) {
       throw new Error("Not enough pickaxes");
@@ -342,6 +368,7 @@ export function mineStone({
           createdAt,
           criticalDropGenerator: (name) =>
             !!(rock.stone.criticalHit?.[name] ?? 0),
+          id: action.index,
         });
     stateCopy.aoe = aoe;
 
@@ -365,7 +392,11 @@ export function mineStone({
     stateCopy.inventory.Stone = amountInInventory.add(stoneMined);
     delete rock.stone.amount;
 
-    bumpkin.activity = trackActivity("Stone Mined", bumpkin.activity);
+    bumpkin.activity = trackActivity(
+      "Stone Mined",
+      bumpkin.activity,
+      new Decimal(rock?.multiplier ?? 1),
+    );
 
     stateCopy.boostsUsedAt = updateBoostUsed({
       game: stateCopy,

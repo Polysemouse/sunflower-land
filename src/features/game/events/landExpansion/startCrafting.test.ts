@@ -1,7 +1,9 @@
+/* eslint-disable no-var */
 import Decimal from "decimal.js-light";
 import { GameState } from "features/game/types/game";
 import { startCrafting, StartCraftingAction } from "./startCrafting";
 import { INITIAL_FARM } from "features/game/lib/constants";
+import { prng } from "lib/prng";
 
 describe("startCrafting", () => {
   let gameState: GameState;
@@ -55,8 +57,8 @@ describe("startCrafting", () => {
 
   it("if recipes exists - sets the crafting status to crafting", () => {
     gameState.craftingBox.recipes = {
-      "Dirt Path": {
-        name: "Dirt Path",
+      Doll: {
+        name: "Doll",
         type: "collectible",
         ingredients: [
           null,
@@ -95,6 +97,36 @@ describe("startCrafting", () => {
 
   it("throws an error if the player doesn't have a Crafting Box", () => {
     gameState.buildings["Crafting Box"] = [];
+
+    const action: StartCraftingAction = {
+      type: "crafting.started",
+      ingredients: [
+        { collectible: "Wood" },
+        { collectible: "Wood" },
+        { collectible: "Stone" },
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+      ],
+    };
+
+    expect(() => startCrafting({ state: gameState, action })).toThrow(
+      "You do not have a Crafting Box",
+    );
+  });
+
+  it("throws an error if the Crafting Box is not placed", () => {
+    gameState.buildings["Crafting Box"] = [
+      {
+        id: "123",
+        coordinates: undefined,
+        createdAt: 0,
+        readyAt: 0,
+      },
+    ];
 
     const action: StartCraftingAction = {
       type: "crafting.started",
@@ -183,8 +215,8 @@ describe("startCrafting", () => {
 
   it("if recipes exists - throws if the player doesn't have the ingredients", () => {
     gameState.craftingBox.recipes = {
-      "Dirt Path": {
-        name: "Dirt Path",
+      Doll: {
+        name: "Doll",
         type: "collectible",
         ingredients: [
           null,
@@ -226,8 +258,8 @@ describe("startCrafting", () => {
     gameState.inventory.Stone = new Decimal(1);
 
     gameState.craftingBox.recipes = {
-      "Dirt Path": {
-        name: "Dirt Path",
+      Doll: {
+        name: "Doll",
         type: "collectible",
         ingredients: [
           null,
@@ -318,123 +350,72 @@ describe("startCrafting", () => {
     );
   });
 
-  it("if recipes exists - does not allow crafting when the wearable is worn", () => {
-    gameState.craftingBox.recipes = {
-      "Farmer Overalls": {
-        name: "Farmer Overalls",
-        type: "wearable",
-        ingredients: [
-          null,
-          null,
-          null,
-          null,
-          { wearable: "Farmer Pants" },
-          null,
-          { collectible: "Leather" },
-          null,
-          { collectible: "Leather" },
-        ],
-        time: 0,
-      },
-    };
+  it("applies a 10% chance to instantly craft a recipe when Fox Shrine is active", () => {
+    do {
+      var seed = Math.random() * (2 ** 31 - 1);
+      var { value: prngValue, nextSeed } = prng(seed);
+    } while (prngValue * 100 >= 10);
+    const now = Date.now();
 
-    gameState.inventory["Leather"] = new Decimal(2);
-    gameState.wardrobe = {};
-    gameState.wardrobe["Farmer Pants"] = 1;
-
-    gameState.farmHands = {
-      bumpkins: {},
-    };
-    gameState.farmHands.bumpkins = {
-      "0": {
-        equipped: {
-          background: "Farm Background",
-          hair: "Buzz Cut",
-          body: "Beige Farmer Potion",
-          pants: "Farmer Pants",
-          shoes: "Black Farmer Boots",
-          tool: "Axe",
+    const state = startCrafting({
+      state: {
+        ...gameState,
+        craftingBox: {
+          ...gameState.craftingBox,
+          recipes: {
+            "Basic Bed": {
+              name: "Basic Bed",
+              type: "collectible",
+              ingredients: [
+                { collectible: "Cushion" },
+                { collectible: "Cushion" },
+                { collectible: "Cushion" },
+                { collectible: "Timber" },
+                { collectible: "Cushion" },
+                { collectible: "Timber" },
+                { collectible: "Timber" },
+                { collectible: "Timber" },
+                { collectible: "Timber" },
+              ],
+              seed,
+              time: 8 * 60 * 60 * 1000,
+            },
+          },
+        },
+        collectibles: {
+          "Fox Shrine": [
+            {
+              id: "123",
+              coordinates: { x: 0, y: 0 },
+              createdAt: now,
+              readyAt: now,
+            },
+          ],
+        },
+        inventory: {
+          Cushion: new Decimal(4),
+          Timber: new Decimal(5),
+          "Fox Shrine": new Decimal(1),
         },
       },
-    };
-
-    const action: StartCraftingAction = {
-      type: "crafting.started",
-      ingredients: [
-        null,
-        null,
-        null,
-        null,
-        { wearable: "Farmer Pants" },
-        null,
-        { collectible: "Leather" },
-        null,
-        { collectible: "Leather" },
-      ],
-    };
-
-    expect(() => startCrafting({ state: { ...gameState }, action })).toThrow(
-      "You do not have the ingredients to craft this item",
-    );
-  });
-
-  it("if recipes exists - allows crafting when the wearable is worn and there is a spare", () => {
-    gameState.craftingBox.recipes = {
-      "Farmer Overalls": {
-        name: "Farmer Overalls",
-        type: "wearable",
+      action: {
+        type: "crafting.started",
         ingredients: [
-          null,
-          null,
-          null,
-          null,
-          { wearable: "Farmer Pants" },
-          null,
-          { collectible: "Leather" },
-          null,
-          { collectible: "Leather" },
+          { collectible: "Cushion" },
+          { collectible: "Cushion" },
+          { collectible: "Cushion" },
+          { collectible: "Timber" },
+          { collectible: "Cushion" },
+          { collectible: "Timber" },
+          { collectible: "Timber" },
+          { collectible: "Timber" },
+          { collectible: "Timber" },
         ],
-        time: 0,
       },
-    };
+      createdAt: now,
+    });
 
-    gameState.inventory["Leather"] = new Decimal(2);
-    gameState.wardrobe = {};
-    gameState.wardrobe["Farmer Pants"] = 2;
-
-    gameState.farmHands = {
-      bumpkins: {},
-    };
-    gameState.farmHands.bumpkins = {
-      "0": {
-        equipped: {
-          background: "Farm Background",
-          hair: "Buzz Cut",
-          body: "Beige Farmer Potion",
-          pants: "Farmer Pants",
-          shoes: "Black Farmer Boots",
-          tool: "Axe",
-        },
-      },
-    };
-
-    const action: StartCraftingAction = {
-      type: "crafting.started",
-      ingredients: [
-        null,
-        null,
-        null,
-        null,
-        { wearable: "Farmer Pants" },
-        null,
-        { collectible: "Leather" },
-        null,
-        { collectible: "Leather" },
-      ],
-    };
-
-    const newState = startCrafting({ state: { ...gameState }, action });
-    expect(newState.inventory["Leather"]).toStrictEqual(new Decimal(0));
-    expect(newState.wardrobe["Farmer Pants"]).toBe(1);
+    expect(state.craftingBox.readyAt).toBe(now);
+    expect(state.craftingBox.recipes["Basic Bed"]?.seed).toBe(nextSeed);
   });
 });

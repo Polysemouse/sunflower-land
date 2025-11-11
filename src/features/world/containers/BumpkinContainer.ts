@@ -47,6 +47,12 @@ export class BumpkinContainer extends Phaser.GameObjects.Container {
   public label: Label | undefined;
   public backfx: Phaser.GameObjects.Sprite | undefined;
   public frontfx: Phaser.GameObjects.Sprite | undefined;
+  public backParticles:
+    | Phaser.GameObjects.Particles.ParticleEmitter
+    | undefined;
+  public frontParticles:
+    | Phaser.GameObjects.Particles.ParticleEmitter
+    | undefined;
 
   public clothing: Player["clothing"];
   public username: string | undefined;
@@ -541,6 +547,20 @@ export class BumpkinContainer extends Phaser.GameObjects.Container {
 
         this.createBackAuraAnimation();
         this.backfx.play(this.backAuraAnimationKey as string, true);
+
+        this.backParticles = container.scene.add.particles(
+          0,
+          -3.5,
+          this.backAuraKey as string,
+          {
+            lifespan: 1000,
+            alpha: { start: 1, end: 0 },
+            anim: this.backAuraAnimationKey as string,
+            frequency: 500,
+            follow: container,
+            emitting: false,
+          },
+        );
       } else {
         const backauraLoader = container.scene.load.spritesheet(
           this.backAuraKey,
@@ -569,6 +589,20 @@ export class BumpkinContainer extends Phaser.GameObjects.Container {
 
             this.createBackAuraAnimation();
             this.backfx.play(this.backAuraAnimationKey as string, true);
+
+            this.backParticles = container.scene.add.particles(
+              0,
+              -3.5,
+              this.backAuraKey as string,
+              {
+                lifespan: 1000,
+                alpha: { start: 1, end: 0 },
+                anim: this.backAuraAnimationKey as string,
+                frequency: 500,
+                follow: container,
+                emitting: false,
+              },
+            );
           },
         );
       }
@@ -583,6 +617,19 @@ export class BumpkinContainer extends Phaser.GameObjects.Container {
 
         this.createFrontAuraAnimation();
         this.frontfx.play(this.frontAuraAnimationKey as string, true);
+
+        this.frontParticles = container.scene.add.particles(
+          0,
+          1.5,
+          this.frontAuraKey as string,
+          {
+            lifespan: 1000,
+            alpha: { start: 1, end: 0 },
+            anim: this.frontAuraAnimationKey as string,
+            frequency: 500,
+            follow: container,
+          },
+        );
       } else {
         const frontauraLoader = container.scene.load.spritesheet(
           this.frontAuraKey,
@@ -611,6 +658,19 @@ export class BumpkinContainer extends Phaser.GameObjects.Container {
 
             this.createFrontAuraAnimation();
             this.frontfx.play(this.frontAuraAnimationKey as string, true);
+
+            this.frontParticles = container.scene.add.particles(
+              0,
+              1.5,
+              this.frontAuraKey as string,
+              {
+                lifespan: 1000,
+                alpha: { start: 1, end: 0 },
+                anim: this.frontAuraAnimationKey as string,
+                frequency: 500,
+                follow: container,
+              },
+            );
           },
         );
       }
@@ -625,11 +685,23 @@ export class BumpkinContainer extends Phaser.GameObjects.Container {
 
     this.frontfx = undefined;
 
+    if (this.frontParticles?.active) {
+      this.frontParticles.destroy();
+    }
+
+    this.frontParticles = undefined;
+
     if (this.backfx?.active) {
       this.backfx.destroy();
     }
 
     this.backfx = undefined;
+
+    if (this.backParticles?.active) {
+      this.backParticles.destroy();
+    }
+
+    this.backParticles = undefined;
   }
 
   public faceRight() {
@@ -845,6 +917,14 @@ export class BumpkinContainer extends Phaser.GameObjects.Container {
         console.log("Bumpkin Container: Error playing walk animation: ", e);
       }
     }
+
+    if (this.frontParticles?.active) {
+      this.frontParticles.emitting = true;
+    }
+
+    if (this.backParticles?.active) {
+      this.backParticles.emitting = true;
+    }
   }
 
   public idle() {
@@ -859,6 +939,14 @@ export class BumpkinContainer extends Phaser.GameObjects.Container {
         // eslint-disable-next-line no-console
         console.log("Bumpkin Container: Error playing idle animation: ", e);
       }
+    }
+
+    if (this.frontParticles?.active) {
+      this.frontParticles.emitting = false;
+    }
+
+    if (this.backParticles?.active) {
+      this.backParticles.emitting = false;
     }
   }
 
@@ -901,12 +989,7 @@ export class BumpkinContainer extends Phaser.GameObjects.Container {
     if (this.shadow?.active) {
       this.shadow?.destroy();
     }
-    if (this.frontfx?.active) {
-      this.frontfx?.destroy();
-    }
-    if (this.backfx?.active) {
-      this.backfx?.destroy();
-    }
+    this.removeAura();
     if (this.icon?.active) {
       this.icon?.destroy();
     }

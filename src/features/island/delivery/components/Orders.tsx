@@ -352,6 +352,7 @@ export const DeliveryOrders: React.FC<Props> = ({
 
   const skip = () => {
     setShowSkipDialog(false);
+    onSelect(undefined);
     gameService.send("order.skipped", { id: previewOrder?.id });
     gameService.send("SAVE");
   };
@@ -434,7 +435,8 @@ export const DeliveryOrders: React.FC<Props> = ({
         <div className="p-1">
           <div className="flex justify-between gap-1 flex-wrap w-full">
             <Label type="default">{t("deliveries")}</Label>
-            {getActiveCalendarEvent({ game: state }) === "doubleDelivery" && (
+            {getActiveCalendarEvent({ calendar: state.calendar }) ===
+              "doubleDelivery" && (
               <Label type="vibrant" icon={lightning}>
                 {t("double.rewards.deliveries")}
               </Label>
@@ -628,7 +630,7 @@ export const DeliveryOrders: React.FC<Props> = ({
               className="absolute -inset-2 bg-repeat"
               style={{
                 height: `${PIXEL_SCALE * 80}px`,
-                backgroundImage: `url(${getImageUrl(ITEM_IDS[NPC_WEARABLES[previewOrder.from].background])})`,
+                backgroundImage: `url(${getImageUrl(ITEM_IDS[NPC_WEARABLES[previewOrder.from].background!])})`,
                 backgroundSize: "100%",
               }}
             />
@@ -776,7 +778,8 @@ export const DeliveryOrders: React.FC<Props> = ({
                 </div>
               </div>
               <div className="mb-1">
-                {getActiveCalendarEvent({ game: state }) === "doubleDelivery" &&
+                {getActiveCalendarEvent({ calendar: state.calendar }) ===
+                  "doubleDelivery" &&
                   !hasClaimedBonus && (
                     <Label type="vibrant" icon={lightning}>
                       {t("2x.rewards")}

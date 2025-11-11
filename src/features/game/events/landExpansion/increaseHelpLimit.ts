@@ -1,12 +1,6 @@
 import { produce } from "immer";
 import Decimal from "decimal.js-light";
 import { GameState, Inventory } from "features/game/types/game";
-import { getKeys } from "features/game/lib/crafting";
-import {
-  LOVE_CHARM_MONUMENTS,
-  REQUIRED_CHEERS,
-  MEGASTORE_MONUMENTS,
-} from "features/game/types/monuments";
 
 export type IncreaseHelpLimitAction = {
   type: "helpLimit.increased";
@@ -21,55 +15,9 @@ type Options = {
 
 export const HELP_LIMIT_COST: Inventory = {
   Iron: new Decimal(1),
-  Leather: new Decimal(1),
-  Wool: new Decimal(1),
+  Wool: new Decimal(3),
   Feather: new Decimal(3),
 };
-
-export const HELP_LIMIT = 5;
-
-export function getHelpedToday({ game }: { game: GameState }) {
-  const today = new Date().toISOString().split("T")[0];
-
-  return getKeys(game.socialFarming.helped ?? {}).filter((farmId) => {
-    const helpedAt = game.socialFarming.helped![farmId]?.helpedAt ?? 0;
-    return new Date(helpedAt).toISOString().split("T")[0] === today;
-  }).length;
-}
-
-export function getHelpLimit({
-  game,
-  now = new Date(),
-}: {
-  game: GameState;
-  now?: Date;
-}) {
-  let limit = HELP_LIMIT;
-
-  const monuments = {
-    ...LOVE_CHARM_MONUMENTS,
-    ...MEGASTORE_MONUMENTS,
-  };
-
-  getKeys(monuments).forEach((monument) => {
-    if (
-      (game.socialFarming.villageProjects?.[monument]?.cheers ?? 0) >=
-      REQUIRED_CHEERS[monument]
-    ) {
-      limit += 1;
-    }
-  });
-
-  // Get all the increases for the current UTC date
-  const increases =
-    game.socialFarming?.helpIncrease?.boughtAt.filter(
-      (date) =>
-        new Date(date).toISOString().split("T")[0] ===
-        now.toISOString().split("T")[0],
-    )?.length ?? 0;
-
-  return limit + increases;
-}
 
 export function increaseHelpLimit({
   state,
@@ -102,8 +50,4 @@ export function increaseHelpLimit({
       boughtAt: helpLimits,
     };
   });
-}
-
-export function hasHitHelpLimit({ game }: { game: GameState }) {
-  return getHelpedToday({ game }) >= getHelpLimit({ game });
 }

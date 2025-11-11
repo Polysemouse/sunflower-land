@@ -56,6 +56,7 @@ describe("collectLavaPit", () => {
               x: 0,
               y: 0,
               startedAt: now,
+              readyAt: now + 72 * 60 * 60 * 1000,
               createdAt: 0,
             },
           },
@@ -135,5 +136,33 @@ describe("collectLavaPit", () => {
     });
 
     expect(result.inventory.Obsidian).toEqual(new Decimal(1.5));
+  });
+
+  it("gives +0.15 obsidian with magma stone", () => {
+    const result = collectLavaPit({
+      state: {
+        ...INITIAL_FARM,
+        bumpkin: {
+          ...INITIAL_FARM.bumpkin,
+        },
+        collectibles: {
+          "Magma Stone": [
+            {
+              id: "1",
+              coordinates: { x: 0, y: 0 },
+              readyAt: now,
+              createdAt: now,
+            },
+          ],
+        },
+        lavaPits: {
+          1: { x: 0, y: 0, startedAt: 0, createdAt: 0 },
+        },
+      },
+      action: { type: "lavaPit.collected", id: "1" },
+      createdAt: now,
+    });
+
+    expect(result.inventory.Obsidian).toEqual(new Decimal(1.15));
   });
 });

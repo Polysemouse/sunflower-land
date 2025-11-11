@@ -11,6 +11,12 @@ import { useAppTranslation } from "lib/i18n/useAppTranslations";
 import { NoticeboardItems } from "features/world/ui/kingdom/KingdomNoticeboard";
 import { ITEM_DETAILS } from "features/game/types/images";
 import { TranslationKeys } from "lib/i18n/dictionaries/types";
+import lightningIcon from "assets/icons/lightning.png";
+import flowerIcon from "assets/icons/flower_token.webp";
+import redPansyIcon from "assets/flowers/red_pansy.webp";
+import { SEASON_TICKET_NAME, SeasonName } from "features/game/types/seasons";
+import { SEASONAL_MUTANTS } from "features/island/hud/components/codex/components/SeasonalMutants";
+import { CHAPTER_GRAPHICS } from "features/island/hud/components/codex/pages/Season";
 
 export function hasReadNews() {
   const readAt = localStorage.getItem("newsReadAt");
@@ -229,7 +235,181 @@ export const BetterTogether: React.FC<NewsComponentProps> = ({ onClose }) => {
   );
 };
 
+export const Pets: React.FC<NewsComponentProps> = ({ onClose }) => {
+  const { t } = useAppTranslation();
+
+  return (
+    <>
+      <div className="flex  cursor-pointer mb-2 items-center" onClick={onClose}>
+        <img src={SUNNYSIDE.icons.arrow_left} className="h-6 mr-2" />
+        <p className="text-xs underline">{t("news.pets.backButton")}</p>
+      </div>
+      <NoticeboardItems
+        items={[
+          {
+            icon: SUNNYSIDE.icons.expression_confused,
+            text: t("news.pets.one"),
+          },
+          {
+            icon: SUNNYSIDE.icons.heart,
+            text: t("news.pets.two"),
+          },
+          {
+            icon: lightningIcon,
+            text: t("news.pets.three"),
+          },
+        ]}
+      />
+      <img
+        src={SUNNYSIDE.announcement.pets}
+        className="w-full mb-2 rounded-sm my-2"
+      />
+      <NoticeboardItems
+        items={[
+          {
+            icon: SUNNYSIDE.icons.stressed,
+            text: t("news.pets.four"),
+          },
+          {
+            icon: flowerIcon,
+            text: t("news.pets.five"),
+          },
+        ]}
+      />
+      <a
+        href="https://github.com/sunflower-land/sunflower-land/discussions/5657"
+        target="_blank"
+        className="m-2 underline text-xs"
+        rel="noreferrer"
+      >
+        {t("read.more")}
+      </a>
+    </>
+  );
+};
+
+export const ObsidianUpdates: React.FC<NewsComponentProps> = ({ onClose }) => {
+  const { t } = useAppTranslation();
+
+  return (
+    <>
+      <div className="flex  cursor-pointer mb-2 items-center" onClick={onClose}>
+        <img src={SUNNYSIDE.icons.arrow_left} className="h-6 mr-2" />
+        <p className="text-xs underline">{t("news.obsidian.backButton")}</p>
+      </div>
+      <NoticeboardItems
+        items={[
+          {
+            icon: SUNNYSIDE.tools.hammer,
+            text: t("news.obsidian.one"),
+          },
+          {
+            icon: redPansyIcon,
+            text: t("news.obsidian.two"),
+          },
+          {
+            icon: lightningIcon,
+            text: t("news.obsidian.three"),
+          },
+        ]}
+      />
+      <img
+        src={SUNNYSIDE.announcement.obsidian_updates}
+        className="w-full mb-2 rounded-sm my-2"
+      />
+      <NoticeboardItems
+        items={[
+          {
+            icon: ITEM_DETAILS.Obsidian.image,
+            text: t("news.obsidian.four"),
+          },
+          {
+            icon: ITEM_DETAILS["Lava Pit"].image,
+            text: t("news.obsidian.five"),
+          },
+        ]}
+      />
+      <a
+        href="https://github.com/sunflower-land/sunflower-land/discussions/5891"
+        target="_blank"
+        className="m-2 underline text-xs"
+        rel="noreferrer"
+      >
+        {t("read.more")}
+      </a>
+    </>
+  );
+};
+
+const Chapter: React.FC<NewsComponentProps & { chapter: SeasonName }> = ({
+  onClose,
+  chapter,
+}) => {
+  const { t } = useAppTranslation();
+
+  const ticket = SEASON_TICKET_NAME[chapter];
+  const mutant = SEASONAL_MUTANTS[chapter]?.fish;
+  const banner = CHAPTER_GRAPHICS[chapter];
+
+  return (
+    <>
+      <div className="flex  cursor-pointer mb-2 items-center" onClick={onClose}>
+        <img src={SUNNYSIDE.icons.arrow_left} className="h-6 mr-2" />
+        <p className="text-xs underline">
+          {t("news.chapter.backButton", { chapter })}
+        </p>
+      </div>
+      <NoticeboardItems
+        items={[
+          {
+            icon: ITEM_DETAILS[ticket].image,
+            text: t("news.chapter.ticket", { ticket }),
+          },
+          {
+            icon: shopIcon,
+            text: t("news.chapter.megastore", { ticket }),
+          },
+          {
+            icon: SUNNYSIDE.icons.stopwatch,
+            text: t("news.chapter.auction", { ticket }),
+          },
+          {
+            icon: mutant ? ITEM_DETAILS[mutant].image : SUNNYSIDE.icons.fish,
+            text: t("news.chapter.mutants", { ticket }),
+          },
+        ]}
+      />
+      <img src={banner} className="w-full mb-2 rounded-sm my-2" />
+    </>
+  );
+};
+
+const PawPrints: React.FC<NewsComponentProps> = ({ onClose }) => {
+  return <Chapter onClose={onClose} chapter="Paw Prints" />;
+};
+
 const NEWS_ITEMS: NewsItem[] = [
+  {
+    title: "news.pawprints.title",
+    description: "news.pawprints.description",
+    image: CHAPTER_GRAPHICS["Paw Prints"],
+    component: PawPrints,
+    date: new Date("2025-11-03"),
+  },
+  {
+    title: "news.pets.title",
+    description: "news.pets.description",
+    image: SUNNYSIDE.announcement.pets,
+    component: Pets,
+    date: new Date("2025-11-04"),
+  },
+  {
+    title: "news.obsidian.title",
+    description: "news.obsidian.description",
+    image: SUNNYSIDE.announcement.obsidian_updates,
+    component: ObsidianUpdates,
+    date: new Date("2025-11-04"),
+  },
   {
     title: "news.betterTogether.title",
     description: "news.betterTogether.description",
@@ -270,21 +450,18 @@ const NEWS_ITEMS: NewsItem[] = [
     title: "news.flower.launch",
     description: "news.flower.launch.description",
     image: SUNNYSIDE.announcement.flowerBanner,
-    link: "https://docs.sunflower-land.com/getting-started/usdflower-erc20",
     date: new Date("2025-05-14"),
   },
   {
     title: "news.greatBloom",
     description: "news.greatBloom.description",
     image: SUNNYSIDE.announcement.loveRush,
-    link: "https://docs.sunflower-land.com/getting-started/usdflower-erc20",
     date: new Date("2025-05-01"),
   },
   {
     title: "news.ronin.network",
     description: "news.ronin.network.description",
     image: SUNNYSIDE.announcement.roninBanner,
-    link: "https://docs.sunflower-land.com/getting-started/usdflower-erc20",
     date: new Date("2025-04-01"),
   },
 ];

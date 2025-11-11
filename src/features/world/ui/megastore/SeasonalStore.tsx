@@ -59,7 +59,10 @@ export const getItemBuffLabel = (
     return BUMPKIN_ITEM_BUFF_LABELS[item.wearable];
   }
 
-  return COLLECTIBLE_BUFF_LABELS(state)[item.collectible];
+  return COLLECTIBLE_BUFF_LABELS[item.collectible]?.({
+    skills: state.bumpkin.skills,
+    collectibles: state.collectibles,
+  });
 };
 export const getItemDescription = (item: SeasonalStoreItem | null): string => {
   if (!item) return "";
@@ -151,7 +154,7 @@ export const SeasonalStore: React.FC<{
       </div>
       <div
         className={classNames("flex flex-col p-2 pt-1", {
-          ["max-h-[400px] overflow-y-auto scrollable "]: !readonly,
+          ["max-h-[400px] overflow-y-auto scrollable"]: !readonly,
         })}
       >
         <span className="text-xs pb-1">

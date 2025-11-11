@@ -1,38 +1,19 @@
 import { syncProgress, SyncProgressParams } from "lib/blockchain/Game";
 import { GameState, InventoryItemName, Wardrobe } from "./game";
 import {
-  mintAuctionCollectible,
-  mintAuctionWearable,
-  MintBidParams,
-} from "lib/blockchain/Auction";
-import {
   WithdrawBudsParams,
   withdrawBudsTransaction,
   WithdrawFlowerParams,
   withdrawFlowerTransaction,
   WithdrawItemsParams,
   withdrawItemsTransaction,
+  WithdrawPetsParams,
+  withdrawPetsTransaction,
   WithdrawWearablesParams,
   withdrawWearablesTransaction,
 } from "lib/blockchain/Withdrawals";
 import { sync } from "../actions/sync";
-import { mintAuctionItemRequest } from "../actions/mintAuctionItem";
-import {
-  AcceptOfferParams,
-  acceptOfferTransaction,
-  ListingPurchasedParams,
-  listingPurchasedTransaction,
-} from "lib/blockchain/Marketplace";
 import { postEffect } from "../actions/effect";
-
-export type BidMintedTransaction = {
-  event: "transaction.bidMinted";
-  createdAt: number;
-  data: {
-    bid: GameState["auctioneer"]["bid"];
-    params: MintBidParams;
-  };
-};
 
 export type BudWithdrawnTransaction = {
   event: "transaction.budWithdrawn";
@@ -40,6 +21,15 @@ export type BudWithdrawnTransaction = {
   data: {
     buds: GameState["buds"];
     params: WithdrawBudsParams;
+  };
+};
+
+export type PetWithdrawnTransaction = {
+  event: "transaction.petWithdrawn";
+  createdAt: number;
+  data: {
+    pets: GameState["pets"];
+    params: WithdrawPetsParams;
   };
 };
 
@@ -69,15 +59,6 @@ export type ProgressSyncedTransaction = {
   };
 };
 
-export type AcceptOfferTransaction = {
-  event: "transaction.offerAccepted";
-  createdAt: number;
-  data: {
-    params: AcceptOfferParams;
-    buds: GameState["buds"];
-  };
-};
-
 export type FlowerWithdrawnTransaction = {
   event: "transaction.flowerWithdrawn";
   createdAt: number;
@@ -87,23 +68,12 @@ export type FlowerWithdrawnTransaction = {
   };
 };
 
-export type ListingPurchasedTransaction = {
-  event: "transaction.listingPurchased";
-  createdAt: number;
-  data: {
-    buds: GameState["buds"];
-    params: ListingPurchasedParams;
-  };
-};
-
 export type GameTransaction =
   | ProgressSyncedTransaction
   | WearablesWithdrawnTransaction
   | ItemsWithdrawnTransaction
   | BudWithdrawnTransaction
-  | BidMintedTransaction
-  | AcceptOfferTransaction
-  | ListingPurchasedTransaction
+  | PetWithdrawnTransaction
   | FlowerWithdrawnTransaction;
 
 export type TransactionName = Extract<
@@ -203,25 +173,14 @@ export type TransactionHandler = {
 };
 
 export const ONCHAIN_TRANSACTIONS: TransactionHandler = {
-  "transaction.offerAccepted": (data) => acceptOfferTransaction(data.params),
-  "transaction.listingPurchased": (data) =>
-    listingPurchasedTransaction(data.params),
   "transaction.budWithdrawn": (data) => withdrawBudsTransaction(data.params),
+  "transaction.petWithdrawn": (data) => withdrawPetsTransaction(data.params),
   "transaction.itemsWithdrawn": (data) => withdrawItemsTransaction(data.params),
   "transaction.progressSynced": (data) => syncProgress(data.params),
   "transaction.wearablesWithdrawn": (data) =>
     withdrawWearablesTransaction(data.params),
   "transaction.flowerWithdrawn": (data) =>
     withdrawFlowerTransaction(data.params),
-
-  // Minting a bid has 2 separate contract methods
-  "transaction.bidMinted": (data) => {
-    if (data.bid?.collectible) {
-      return mintAuctionCollectible(data.params);
-    }
-
-    return mintAuctionWearable(data.params);
-  },
 };
 
 export type SignatureHandler = {
@@ -236,11 +195,9 @@ type TransactionRequest = Record<
 >;
 
 export const TRANSACTION_SIGNATURES: TransactionRequest = {
-  "transaction.offerAccepted": () => ({}) as any, // uses new effect flow
-  "transaction.listingPurchased": () => ({}) as any, // uses new effect flow
   "transaction.progressSynced": sync,
-  "transaction.bidMinted": mintAuctionItemRequest,
   "transaction.budWithdrawn": postEffect,
+  "transaction.petWithdrawn": postEffect,
   "transaction.itemsWithdrawn": postEffect,
   "transaction.wearablesWithdrawn": postEffect,
   "transaction.flowerWithdrawn": postEffect,

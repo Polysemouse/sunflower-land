@@ -194,7 +194,6 @@ describe("upgradeFarm", () => {
         .flat()
         .map((b) => b.coordinates),
     ).not.toContain({ x: expect.any(Number), y: expect.any(Number) });
-    expect(state.chickens).toEqual({});
     expect(state.fishing.wharf).toEqual({});
     expect(state.mushrooms).toEqual({
       mushrooms: {},
@@ -453,6 +452,9 @@ describe("upgradeFarm", () => {
         stone: expect.any(Object),
         x: 3,
         y: 9,
+        name: "Gold Rock",
+        multiplier: 1,
+        tier: 1,
       },
     });
 
@@ -462,6 +464,9 @@ describe("upgradeFarm", () => {
         stone: expect.any(Object),
         x: 5,
         y: 8,
+        name: "Iron Rock",
+        multiplier: 1,
+        tier: 1,
       },
     });
 
@@ -654,6 +659,9 @@ describe("upgradeFarm", () => {
         stone: expect.any(Object),
         x: 3,
         y: 9,
+        name: "Gold Rock",
+        multiplier: 1,
+        tier: 1,
       },
     });
 
@@ -663,6 +671,9 @@ describe("upgradeFarm", () => {
         stone: expect.any(Object),
         x: 5,
         y: 8,
+        name: "Iron Rock",
+        multiplier: 1,
+        tier: 1,
       },
     });
 
@@ -854,6 +865,9 @@ describe("upgradeFarm", () => {
         stone: expect.any(Object),
         x: 2,
         y: 9,
+        name: "Gold Rock",
+        multiplier: 1,
+        tier: 1,
       },
     });
 
@@ -863,6 +877,9 @@ describe("upgradeFarm", () => {
         stone: expect.any(Object),
         x: 5,
         y: 7,
+        name: "Iron Rock",
+        multiplier: 1,
+        tier: 1,
       },
     });
 
@@ -910,47 +927,6 @@ describe("upgradeFarm", () => {
 
     expect(state.island.upgradedAt).toEqual(createdAt);
     expect(state.island.previousExpansions).toEqual(16);
-  });
-
-  it("removes all temporary collectibles", () => {
-    const now = Date.now();
-
-    const state = upgrade({
-      action: {
-        type: "farm.upgraded",
-      },
-      state: {
-        ...INITIAL_FARM,
-        inventory: {
-          "Basic Land": new Decimal(16),
-          Gold: new Decimal(15),
-          "Time Warp Totem": new Decimal(1),
-          "Super Totem": new Decimal(1),
-        },
-        collectibles: {
-          "Time Warp Totem": [
-            {
-              id: "1",
-              readyAt: now + 1 * 60 * 60 * 1000,
-              createdAt: now + 1 * 60 * 60 * 1000,
-              coordinates: { x: 0, y: 0 },
-            },
-          ],
-          "Super Totem": [
-            {
-              id: "1",
-              readyAt: now + 1 * 60 * 60 * 1000,
-              createdAt: now + 1 * 60 * 60 * 1000,
-              coordinates: { x: 1, y: 2 },
-            },
-          ],
-        },
-      },
-      createdAt: now,
-    });
-
-    expect(state.inventory["Time Warp Totem"]).toEqual(new Decimal(0));
-    expect(state.inventory["Super Totem"]).toEqual(new Decimal(0));
   });
 
   it("does not give extra sunstones", () => {
@@ -1195,5 +1171,51 @@ describe("upgradeFarm", () => {
     });
 
     expect(state.island.biome).toBeUndefined();
+  });
+
+  it("Does not remove temporary collectibles on upgrade", () => {
+    const now = Date.now();
+
+    const state = upgrade({
+      action: {
+        type: "farm.upgraded",
+      },
+      state: {
+        ...INITIAL_FARM,
+        inventory: {
+          ...INITIAL_FARM.inventory,
+          "Basic Land": new Decimal(9),
+          Gold: new Decimal(15),
+          "Fire Pit": new Decimal(1),
+          "Crop Plot": new Decimal(31),
+          Tree: new Decimal(9),
+          "Stone Rock": new Decimal(7),
+          "Iron Rock": new Decimal(4),
+          "Gold Rock": new Decimal(2),
+          "Super Totem": new Decimal(2),
+        },
+        collectibles: {
+          "Super Totem": [
+            {
+              id: "1",
+              readyAt: now,
+              createdAt: now,
+              coordinates: { x: 0, y: 0 },
+            },
+          ],
+        },
+      },
+      createdAt: now,
+    });
+
+    expect(state.collectibles["Super Totem"]).toEqual([
+      {
+        id: "1",
+        readyAt: now,
+        createdAt: now,
+        coordinates: { x: 0, y: 0 },
+      },
+    ]);
+    expect(state.inventory["Super Totem"]).toEqual(new Decimal(2));
   });
 });

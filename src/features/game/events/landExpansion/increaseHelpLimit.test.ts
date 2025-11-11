@@ -1,5 +1,6 @@
 import Decimal from "decimal.js-light";
-import { getHelpLimit, increaseHelpLimit } from "./increaseHelpLimit";
+import { increaseHelpLimit } from "./increaseHelpLimit";
+import { getHelpLimit } from "features/game/types/monuments";
 import { INITIAL_FARM } from "features/game/lib/constants";
 
 describe("increaseHelpLimit", () => {
@@ -32,8 +33,8 @@ describe("increaseHelpLimit", () => {
     });
 
     expect(state.inventory.Iron).toEqual(new Decimal(4));
-    expect(state.inventory.Leather).toEqual(new Decimal(4));
-    expect(state.inventory.Wool).toEqual(new Decimal(4));
+    expect(state.inventory.Leather).toEqual(new Decimal(5));
+    expect(state.inventory.Wool).toEqual(new Decimal(2));
     expect(state.inventory.Feather).toEqual(new Decimal(10));
   });
 

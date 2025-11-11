@@ -27,7 +27,6 @@ import { Loading } from "features/auth/components";
 import { useAppTranslation } from "lib/i18n/useAppTranslations";
 import { MachineState } from "features/game/lib/gameMachine";
 import { useSelector } from "@xstate/react";
-import { GaslessWidget } from "features/announcements/AnnouncementWidgets";
 
 const _transaction = (state: MachineState) => state.context.state.transaction;
 const compareTransaction = (prev?: GameTransaction, next?: GameTransaction) => {
@@ -64,7 +63,6 @@ export const TransactionCountdown: React.FC = () => {
         <Panel>
           <Transaction onClose={() => setShowTransaction(false)} />
         </Panel>
-        <GaslessWidget />
       </Modal>
       <ButtonPanel onClick={() => setShowTransaction(true)} className="flex">
         <TransactionWidget
@@ -211,9 +209,7 @@ const WALLET_ACTIONS: Record<TransactionName, WalletAction> = {
   "transaction.itemsWithdrawn": "withdrawItems",
   "transaction.wearablesWithdrawn": "withdrawItems",
   "transaction.budWithdrawn": "withdrawItems",
-  "transaction.bidMinted": "sync",
-  "transaction.listingPurchased": "marketplace",
-  "transaction.offerAccepted": "marketplace",
+  "transaction.petWithdrawn": "withdrawItems",
   "transaction.progressSynced": "sync",
 };
 
@@ -248,7 +244,14 @@ export const Transaction: React.FC<Props> = ({ onClose, isBlocked }) => {
 
   return (
     <>
-      <GameWallet action={walletAction}>
+      <GameWallet
+        action={walletAction}
+        enforceChainId={
+          "chainId" in transaction.data.params
+            ? transaction.data.params.chainId
+            : undefined
+        }
+      >
         <TransactionProgress isBlocked={isBlocked} onClose={onClose} />
       </GameWallet>
     </>
@@ -256,13 +259,11 @@ export const Transaction: React.FC<Props> = ({ onClose, isBlocked }) => {
 };
 
 const EVENT_TO_NAME: Record<TransactionName, string> = {
-  "transaction.bidMinted": "Mint auction item",
   "transaction.budWithdrawn": "Withdraw bud",
+  "transaction.petWithdrawn": "Withdraw pet",
   "transaction.itemsWithdrawn": "Withdraw items",
   "transaction.progressSynced": "Store on chain",
   "transaction.wearablesWithdrawn": "Withdraw wearables",
-  "transaction.offerAccepted": "Accept offer",
-  "transaction.listingPurchased": "Purchase listing",
   "transaction.flowerWithdrawn": "Withdraw flower",
 };
 
@@ -342,6 +343,7 @@ export const TransactionProgress: React.FC<Props> = ({
         effect: {
           type: "withdraw.flower",
           amount: flowerTransaction.data.amount,
+          chainId: flowerTransaction.data.params.chainId,
         },
       },
     });

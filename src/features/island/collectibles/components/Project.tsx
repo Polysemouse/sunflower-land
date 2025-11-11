@@ -6,12 +6,7 @@ import { PIXEL_SCALE } from "features/game/lib/constants";
 import helpIcon from "assets/icons/help.webp";
 import { Context, useGame } from "features/game/GameProvider";
 import { ProgressBar } from "components/ui/ProgressBar";
-import {
-  ButtonPanel,
-  InnerPanel,
-  OuterPanel,
-  Panel,
-} from "components/ui/Panel";
+import { ButtonPanel, InnerPanel, OuterPanel } from "components/ui/Panel";
 import { Button } from "components/ui/Button";
 import { Modal } from "components/ui/Modal";
 import { ITEM_DETAILS } from "features/game/types/images";
@@ -22,12 +17,12 @@ import { useSelector } from "@xstate/react";
 import Decimal from "decimal.js-light";
 import classNames from "classnames";
 import {
-  hasHelpedFarmToday,
   isHelpComplete,
   MonumentName,
   RAFFLE_REWARDS,
   REQUIRED_CHEERS,
   REWARD_ITEMS,
+  VillageProjectName,
 } from "features/game/types/monuments";
 import chest from "assets/icons/chest.png";
 import { Box } from "components/ui/Box";
@@ -59,6 +54,10 @@ import bigAppleThree from "assets/monuments/big_apple_stage_3.webp";
 import bigBananaOne from "assets/monuments/big_banana_stage_1.webp";
 import bigBananaTwo from "assets/monuments/big_banana_stage_2.webp";
 import bigBananaThree from "assets/monuments/big_banana_stage_3.webp";
+
+import cornucopiaOne from "assets/monuments/cornucopia_monument_stage1.webp";
+import cornucopiaTwo from "assets/monuments/cornucopia_monument_stage2.webp";
+import cornucopiaThree from "assets/monuments/cornucopia_monument_stage3.webp";
 
 import { getPlayer } from "features/social/actions/getPlayer";
 import { useAuth } from "features/auth/lib/Provider";
@@ -131,62 +130,16 @@ export const PROJECT_IMAGES: Record<
     halfway: bigBananaTwo,
     ready: bigBananaThree,
   },
-};
-
-export const CheerModal: React.FC<{
-  project: MonumentName;
-  cheers: number;
-  username: string;
-  onClose: () => void;
-  onCheer: () => void;
-  cheersAvailable: Decimal;
-}> = ({ project, cheers, username, onClose, onCheer, cheersAvailable }) => {
-  const { t } = useAppTranslation();
-
-  const hasCheersAvailable = cheersAvailable.gt(0);
-
-  return (
-    <Panel>
-      <div className="flex justify-between sm:flex-row flex-col space-y-1">
-        <Label
-          type="default"
-          icon={ITEM_DETAILS[project].image}
-          className="ml-1"
-        >
-          {t("cheer.village.project")}
-        </Label>
-        <Label type="info" icon={helpIcon} className="ml-2 sm:ml-0">
-          {t("kingdomChores.progress", {
-            progress: `${cheers}/${REQUIRED_CHEERS[project]}`,
-          })}
-        </Label>
-      </div>
-      <div className="p-2 text-xs flex flex-col gap-2">
-        <span>
-          {t("cheer.village.project.description.charm", {
-            project,
-            username,
-          })}
-        </span>
-        <span>
-          {t("cheer.village.project.confirm", {
-            project,
-          })}
-        </span>
-      </div>
-      <div className="flex space-x-1">
-        <Button onClick={onClose}>{t("cancel")}</Button>
-        <Button onClick={onCheer} disabled={!hasCheersAvailable}>
-          {t("cheer")}
-        </Button>
-      </div>
-    </Panel>
-  );
+  Cornucopia: {
+    empty: cornucopiaOne,
+    halfway: cornucopiaTwo,
+    ready: cornucopiaThree,
+  },
 };
 
 const ProjectComplete: React.FC<{
   state: GameState;
-  project: MonumentName;
+  project: VillageProjectName;
   onClose: () => void;
   onComplete: () => void;
   cheers: number;
@@ -328,7 +281,7 @@ const ProjectComplete: React.FC<{
 
 const ProjectModal: React.FC<{
   state: GameState;
-  project: MonumentName;
+  project: VillageProjectName;
   onClose: () => void;
   onComplete: () => void;
   cheers: number;
@@ -447,14 +400,9 @@ export const _hasCheeredToday =
     const today = new Date().toISOString().split("T")[0];
 
     if (state.context.visitorState) {
-      const hasHelpedToday = hasHelpedFarmToday({
-        game: state.context.visitorState,
-        farmId: state.context.farmId,
-      });
+      const hasHelpedToday = state.context.hasHelpedPlayerToday ?? false;
 
-      if (hasHelpedToday) {
-        return true;
-      }
+      if (hasHelpedToday) return true;
 
       if (
         state.context.state?.socialFarming.villageProjects[project]?.helpedAt
@@ -475,7 +423,7 @@ export const _hasCheeredToday =
   };
 
 type ProjectProps = React.ComponentProps<typeof ImageStyle> & {
-  project: MonumentName;
+  project: VillageProjectName;
 };
 
 export const Project: React.FC<ProjectProps> = (input) => {
@@ -487,6 +435,10 @@ export const Project: React.FC<ProjectProps> = (input) => {
   const hasCheeredProjectToday = useSelector(
     gameService,
     _hasCheeredToday(input.project),
+  );
+  const totalHelpedToday = useSelector(
+    gameService,
+    (state) => state.context.totalHelpedToday ?? 0,
   );
   const state = useSelector(gameService, (state) => state.context.state);
 
@@ -519,9 +471,14 @@ export const Project: React.FC<ProjectProps> = (input) => {
   const handleHelpProject = async () => {
     gameService.send("project.helped", {
       project: input.project,
+      totalHelpedToday: totalHelpedToday ?? 0,
     });
 
-    if (isHelpComplete({ game: state })) {
+    if (
+      isHelpComplete({
+        game: gameService.getSnapshot().context.state,
+      })
+    ) {
       setShowHelped(true);
     }
   };
@@ -554,7 +511,11 @@ export const Project: React.FC<ProjectProps> = (input) => {
       </Modal>
 
       <>
-        <div className="absolute" style={input.divStyle} onClick={onClick}>
+        <div
+          className="absolute flex justify-center"
+          style={input.divStyle}
+          onClick={onClick}
+        >
           <img src={image} style={input.imgStyle} alt={input.alt} />
         </div>
 

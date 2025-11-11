@@ -1,7 +1,7 @@
 import Decimal from "decimal.js-light";
 import { INVENTORY_LIMIT } from "features/game/lib/constants";
 import { getBumpkinLevel } from "features/game/lib/level";
-import { CollectibleName, getKeys } from "features/game/types/craftables";
+import { getKeys } from "features/game/types/craftables";
 import { GameState, InventoryItemName } from "features/game/types/game";
 import { ITEM_DETAILS } from "features/game/types/images";
 import React, { useState } from "react";
@@ -23,7 +23,17 @@ import { IngredientsPopover } from "../IngredientsPopover";
 import { BuffLabel } from "features/game/types";
 import { isSeed } from "features/game/types/seeds";
 import { getCurrentBiome } from "features/island/biomes/biomes";
-import { EXPIRY_COOLDOWNS } from "features/game/lib/collectibleBuilt";
+import {
+  EXPIRY_COOLDOWNS,
+  TemporaryCollectibleName,
+} from "features/game/lib/collectibleBuilt";
+import {
+  RESOURCES_UPGRADES_TO,
+  ADVANCED_RESOURCES,
+  RESOURCES,
+  UpgradedResourceName,
+  RESOURCE_STATE_ACCESSORS,
+} from "features/game/types/resources";
 
 /**
  * The props for the details for items.
@@ -234,8 +244,14 @@ export const CraftingRequirements: React.FC<Props> = ({
 
   const getBoost = () => {
     if (!boost) return <></>;
+    let expiry: number | undefined;
 
-    const expiry = EXPIRY_COOLDOWNS[details.item as CollectibleName];
+    const isTemporaryCollectible = (
+      item: InventoryItemName,
+    ): item is TemporaryCollectibleName => item in EXPIRY_COOLDOWNS;
+    if (details.item && isTemporaryCollectible(details.item)) {
+      expiry = EXPIRY_COOLDOWNS[details.item];
+    }
 
     return (
       <div className="flex flex-wrap sm:flex-col gap-x-3 sm:gap-x-0 gap-y-1 mb-2 items-center">
@@ -256,9 +272,16 @@ export const CraftingRequirements: React.FC<Props> = ({
           ),
         )}
         {expiry && (
-          <Label type="formula" icon={SUNNYSIDE.icons.stopwatch}>
-            {secondsToString(expiry / 1000, { length: "short" })}
-          </Label>
+          <>
+            <Label type="info" icon={SUNNYSIDE.icons.stopwatch}>
+              {t("shrine.expiryLabel", {
+                time: secondsToString(expiry / 1000, { length: "short" }),
+              })}
+            </Label>
+            <Label type="danger" className="text-center">
+              {t("shrine.activated.uponPurchase")}
+            </Label>
+          </>
         )}
       </div>
     );
@@ -281,19 +304,53 @@ export const CraftingRequirements: React.FC<Props> = ({
               ingredients={getKeys(requirements.resources ?? {})}
               onClick={() => setShowIngredients(false)}
             />
-            {getKeys(requirements.resources).map((ingredientName, index) => (
-              <RequirementLabel
-                key={index}
-                type="item"
-                item={ingredientName}
-                balance={gameState.inventory[ingredientName] ?? new Decimal(0)}
-                requirement={
-                  new Decimal(
-                    (requirements.resources ?? {})[ingredientName] ?? 0,
-                  )
-                }
-              />
-            ))}
+            {getKeys(requirements.resources).map((ingredientName, index) => {
+              // If ingredient is a node, require it to be placed
+              let balance =
+                gameState.inventory[ingredientName] ?? new Decimal(0);
+
+              if (ingredientName in RESOURCES) {
+                const stateAccessor =
+                  RESOURCE_STATE_ACCESSORS[
+                    ingredientName as UpgradedResourceName
+                  ];
+                const nodes = Object.values(
+                  stateAccessor(gameState) ?? {},
+                ).filter((resource) => {
+                  if (
+                    ingredientName in RESOURCES_UPGRADES_TO ||
+                    ingredientName in ADVANCED_RESOURCES
+                  ) {
+                    // If node is upgradeable, check if it has the same name as the current item
+                    if ("name" in resource) {
+                      return resource.name === ingredientName;
+                    }
+
+                    // If it has no name, it probably means it's a base resource
+                    return ingredientName in RESOURCES_UPGRADES_TO;
+                  }
+
+                  return true;
+                });
+                balance = new Decimal(
+                  nodes.filter((node) => node.removedAt === undefined).length,
+                );
+              }
+
+              return (
+                <RequirementLabel
+                  key={index}
+                  type="item"
+                  item={ingredientName}
+                  balance={balance}
+                  requirement={
+                    new Decimal(
+                      (requirements.resources ?? {})[ingredientName] ?? 0,
+                    )
+                  }
+                />
+              );
+            })}
           </div>
         )}
 
@@ -375,7 +432,7 @@ export const CraftingRequirements: React.FC<Props> = ({
         {getBoost()}
         {getRequirements()}
       </div>
-      {actionView}
+      {requirements && actionView}
     </div>
   );
 };

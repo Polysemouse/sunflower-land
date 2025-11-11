@@ -14,6 +14,7 @@ import classNames from "classnames";
 import { useCountdown } from "lib/utils/hooks/useCountdown";
 import { TimerDisplay } from "./AuctionDetails";
 import { useAppTranslation } from "lib/i18n/useAppTranslations";
+import { getAuctionItemType } from "./lib/getAuctionItemType";
 
 const VALID_NUMBER = new RegExp(/^\d*\.?\d*$/);
 const INPUT_MAX_CHAR = 10;
@@ -156,6 +157,8 @@ export const DraftBid: React.FC<Props> = ({
     );
   }
 
+  const item = getAuctionItemType(auction);
+
   return (
     <>
       <div className="p-2 relative">
@@ -297,7 +300,7 @@ export const DraftBid: React.FC<Props> = ({
 
         <div className="text-xxs text-center underline mb-3  hover:text-blue-500">
           <a
-            href="https://docs.sunflower-land.com/player-guides/auctions"
+            href="https://docs.sunflower-land.com/support/terms-of-service"
             target="_blank"
             rel="noopener noreferrer"
             className="text-xxs text-center underline mb-3  hover:text-blue-500"
@@ -311,11 +314,7 @@ export const DraftBid: React.FC<Props> = ({
           <p className="text-sm mb-2">
             {`At the end of the auction, the top ${
               auction.supply
-            } bids will mint the ${
-              auction.type === "collectible"
-                ? auction.collectible
-                : auction.wearable
-            }.`}
+            } bids will mint the ${item}.`}
           </p>
         </div>
 
@@ -329,7 +328,7 @@ export const DraftBid: React.FC<Props> = ({
         </div>
         <div>
           <a
-            href="https://docs.sunflower-land.com/player-guides/auctions"
+            href="https://docs.sunflower-land.com/support/terms-of-service"
             target="_blank"
             rel="noopener noreferrer"
             className="text-xxs text-center underline mb-3  hover:text-blue-500"

@@ -28,7 +28,8 @@ export type BuildingName =
   | Home
   | "Crop Machine"
   | "Barn"
-  | "Crafting Box";
+  | "Crafting Box"
+  | "Pet House";
 
 export type Ingredient = {
   item: InventoryItemName;
@@ -46,7 +47,6 @@ export type BuildingBluePrint = {
 export type PlaceableName =
   | CollectibleName
   | BuildingName
-  | "Chicken"
   | "Bud"
   | ResourceName;
 
@@ -443,6 +443,14 @@ export const BUILDINGS: Record<BuildingName, BuildingBluePrint[]> = {
       ],
     },
   ],
+  "Pet House": [
+    {
+      unlocksAtLevel: 0,
+      ingredients: [],
+      coins: 0,
+      constructionSeconds: 2 * 60 * 60,
+    },
+  ],
 };
 
 export type Dimensions = { width: number; height: number };
@@ -471,4 +479,5 @@ export const BUILDINGS_DIMENSIONS: Record<BuildingName, Dimensions> = {
   "Crop Machine": { width: 5, height: 4 },
   Barn: { width: 4, height: 4 },
   "Crafting Box": { width: 3, height: 2 },
+  "Pet House": { width: 3, height: 2 },
 };

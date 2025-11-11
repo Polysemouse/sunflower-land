@@ -2,7 +2,6 @@ import { produce } from "immer";
 
 import { removeBuilding } from "./removeBuilding";
 import { removeBeehive } from "./removeBeehive";
-import { removeChicken } from "./removeChicken";
 import { removeCollectible } from "./removeCollectible";
 import { removeCrimstone } from "./removeCrimstone";
 import { removeFlowerBed } from "./removeFlowerBed";
@@ -15,7 +14,7 @@ import { removePlot } from "./removePlot";
 import { removeStone } from "./removeStone";
 import { removeSunstone } from "./removeSunstone";
 import { removeTree } from "./removeTree";
-import { removeBud } from "./removeBud";
+import { removeNFT } from "./removeNFT";
 import { getObjectEntries } from "features/game/expansion/lib/utils";
 import { PlaceableLocation } from "features/game/types/collectibles";
 import { GameState } from "features/game/types/game";
@@ -70,11 +69,33 @@ export function removeAll({
       .filter(([, bud]) => bud.location === action.location)
       .forEach(([id]) => {
         try {
-          stateCopy = removeBud({
+          stateCopy = removeNFT({
             state: stateCopy,
             action: {
-              type: "bud.removed",
+              type: "nft.removed",
               id,
+              nft: "Bud",
+              location: action.location,
+            },
+            createdAt,
+          });
+        } catch (e) {
+          // Ignore errors
+        }
+      });
+
+    const pets = stateCopy.pets?.nfts ?? {};
+    Object.entries(pets)
+      .filter(([, bud]) => bud.location === action.location)
+      .forEach(([id]) => {
+        try {
+          stateCopy = removeNFT({
+            state: stateCopy,
+            action: {
+              type: "nft.removed",
+              id,
+              nft: "Pet",
+              location: action.location,
             },
             createdAt,
           });
@@ -127,19 +148,6 @@ export function removeAll({
               // Ignore errors
             }
           });
-        }
-      });
-
-      //   Remove Chicken
-      const chickens = stateCopy.chickens;
-      Object.keys(chickens).forEach((id) => {
-        try {
-          stateCopy = removeChicken({
-            state: stateCopy,
-            action: { type: "chicken.removed", id },
-          });
-        } catch (e) {
-          // Ignore errors
         }
       });
 

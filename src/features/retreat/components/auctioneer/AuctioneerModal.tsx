@@ -1,8 +1,9 @@
-import React, { useContext, useEffect } from "react";
+import React, { useContext, useEffect, useState } from "react";
 import { Modal } from "components/ui/Modal";
 
 import { Panel } from "components/ui/Panel";
 import { AuctioneerContent } from "./AuctioneerContent";
+import { AuctionHistory } from "./AuctionHistory";
 import { useActor, useInterpret } from "@xstate/react";
 import { SUNNYSIDE } from "assets/sunnyside";
 import {
@@ -14,12 +15,12 @@ import * as AuthProvider from "features/auth/lib/Provider";
 import { CloseButtonPanel } from "features/game/components/CloseablePanel";
 import { NPC_WEARABLES } from "lib/npcs";
 import { PIXEL_SCALE } from "features/game/lib/constants";
-import { ModalContext } from "features/game/components/modal/ModalProvider";
 import { useAppTranslation } from "lib/i18n/useAppTranslations";
 import { Loading } from "features/auth/components";
 import { hasReputation } from "features/game/lib/reputation";
 import { Reputation } from "features/game/lib/reputation";
 import { RequiredReputation } from "features/island/hud/components/reputation/Reputation";
+import choreIcon from "assets/icons/chores.webp";
 
 interface Props {
   gameState: GameState;
@@ -42,10 +43,11 @@ export const AuctioneerModal: React.FC<Props> = ({
   deviceTrackerId,
   linkedAddress,
 }) => {
-  const { openModal } = useContext(ModalContext);
   const { t } = useAppTranslation();
   const { authService } = useContext(AuthProvider.Context);
   const [authState] = useActor(authService);
+
+  const [tab, setTab] = useState(0);
 
   const auctionService = useInterpret(createAuctioneerMachine({ onUpdate }), {
     context: {
@@ -93,11 +95,19 @@ export const AuctioneerModal: React.FC<Props> = ({
     <Modal show={isOpen} onHide={closeModal}>
       <CloseButtonPanel
         onClose={onClose}
-        tabs={[{ icon: SUNNYSIDE.icons.stopwatch, name: t("auction.title") }]}
+        currentTab={tab}
+        setCurrentTab={setTab}
+        tabs={[
+          { icon: SUNNYSIDE.icons.stopwatch, name: t("auction.title") },
+          {
+            icon: choreIcon,
+            name: t("auction.results"),
+          },
+        ]}
         bumpkinParts={NPC_WEARABLES["hammerin harry"]}
         secondaryAction={
           <a
-            href="https://docs.sunflower-land.com/player-guides/auctions"
+            href="https://docs.sunflower-land.com/getting-started/crypto-and-digital-collectibles"
             className="mx-auto text-xxs underline text-center"
             target="_blank"
             rel="noreferrer"
@@ -114,24 +124,27 @@ export const AuctioneerModal: React.FC<Props> = ({
           </a>
         }
       >
-        <div
-          style={{
-            minHeight: "200px",
-          }}
-        >
-          <div className="flex flex-col">
-            {!hasAuctionAccess && (
-              <div className="pt-2 pl-2">
-                <RequiredReputation reputation={Reputation.Grower} />
-              </div>
-            )}
-            <AuctioneerContent
-              auctionService={auctionService}
-              gameState={gameState}
-              onMint={onMint}
-            />
+        {tab === 0 && (
+          <div
+            style={{
+              minHeight: "200px",
+            }}
+          >
+            <div className="flex flex-col">
+              {!hasAuctionAccess && (
+                <div className="pt-2 pl-2">
+                  <RequiredReputation reputation={Reputation.Grower} />
+                </div>
+              )}
+              <AuctioneerContent
+                auctionService={auctionService}
+                gameState={gameState}
+                onMint={onMint}
+              />
+            </div>
           </div>
-        </div>
+        )}
+        {tab === 1 && <AuctionHistory />}
       </CloseButtonPanel>
     </Modal>
   );

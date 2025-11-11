@@ -35,7 +35,8 @@ export type BumpkinBody =
   | "Pale Potion"
   | "Squirrel Monkey Potion"
   | "Mermaid Potion"
-  | "Elf Potion";
+  | "Elf Potion"
+  | "Moonseeker Potion";
 
 export type BumpkinHair =
   | "Royal Braids"
@@ -63,7 +64,9 @@ export type BumpkinHair =
   | "Silver Streaks"
   | "Brown Rancher Hair"
   | "Paint Splattered Hair"
-  | "Brush Back Hair";
+  | "Brush Back Hair"
+  | "Frizzy Bob Cut"
+  | "Two-toned Layered";
 
 export type BumpkinShirt =
   | "Pixel Perfect Hoodie"
@@ -138,7 +141,9 @@ export type BumpkinShirt =
   | "Love Charm Shirt"
   | "Paint Splattered Shirt"
   | "Diamond Patterned Vest"
-  | "Recycle Shirt";
+  | "Recycle Shirt"
+  | "AU3"
+  | "Pet Specialist Shirt";
 
 export type BumpkinCoat =
   | "Chef Apron"
@@ -158,6 +163,8 @@ export type BumpkinTool =
   | "Parsnip"
   | "Golden Spatula"
   | "Hammer"
+  | "Cleaver Knife"
+  | "Lunar Weapon"
   | "Ancient War Hammer"
   | "Ancient Goblin Sword"
   | "Pirate Scimitar"
@@ -207,7 +214,9 @@ export type BumpkinTool =
   | "Paint Spray Can"
   | "Chemist Potion"
   | "Architect Ruler"
-  | "Onion Leek";
+  | "Onion Leek"
+  | "Halloween Deathscythe"
+  | "Moonseeker Hand Puppet";
 
 export type BumpkinShoe =
   | "Black Farmer Boots"
@@ -247,8 +256,10 @@ export type BumpkinNecklace =
   | "Nightshade Medallion"
   | "Sunflorian Medallion"
   | "Dream Scarf"
+  | "Training Whistle"
   | "Cowbell Necklace"
-  | "Obsidian Necklace";
+  | "Obsidian Necklace"
+  | "Trick and Treat";
 
 export type BumpkinHat =
   | "Painter's Cap"
@@ -302,6 +313,7 @@ export type BumpkinHat =
   | "Normal Fish Hat"
   | "Tiki Mask"
   | "Seedling Hat"
+  | "Golden Seedling"
   | "Deep Sea Helm"
   | "Companion Cap"
   | "Blossom Dumbo"
@@ -348,7 +360,9 @@ export type BumpkinHat =
   | "Coin Head"
   | "Slime Hat"
   | "Garbage Bin Hat"
-  | "Turd Topper";
+  | "Turd Topper"
+  | "Sweet Devil Horns"
+  | "Pet Specialist Hat";
 
 export type BumpkinPant =
   | "Farmer Overalls"
@@ -388,7 +402,8 @@ export type BumpkinPant =
   | "Cowgirl Skirt"
   | "Fossil Pants"
   | "Bunny Pants"
-  | "Paint Splattered Overalls";
+  | "Paint Splattered Overalls"
+  | "Pet Specialist Pants";
 
 export type BumpkinDress =
   | "Royal Dress"
@@ -432,7 +447,8 @@ export type BumpkinSecondaryTool =
   | "Blossom Ward"
   | "Autumn's Embrace"
   | "Frozen Heart"
-  | "Oil Gallon";
+  | "Oil Gallon"
+  | "Jack O'Sweets";
 
 // Goes over clothes + head
 export type BumpkinOnesie =
@@ -459,7 +475,8 @@ export type BumpkinOnesie =
   | "Love Bear Onesie"
   | "Dino Onesie"
   | "Red Pepper Onesie"
-  | "Raccoon Onesie";
+  | "Raccoon Onesie"
+  | "Frank Onesie";
 
 // Goes over clothes
 export type BumpkinSuit =
@@ -478,7 +495,9 @@ export type BumpkinSuit =
   | "Bloomwarden Suit"
   | "Embersteel Suit"
   | "Amberfall Suit"
-  | "Glacierguard Suit";
+  | "Glacierguard Suit"
+  | "Research Uniform"
+  | "Sweet Devil Dress";
 
 export type BumpkinWings =
   | "Angel Wings"
@@ -499,7 +518,9 @@ export type BumpkinWings =
   | "Glacial Plume"
   | "Golden Wings"
   | "Oracle Syringe"
-  | "Slime Wings";
+  | "Slime Wings"
+  | "Underworld Stimpack"
+  | "Sweet Devil Wings";
 
 export type BumpkinBeard =
   | "Wise Beard"
@@ -507,7 +528,11 @@ export type BumpkinBeard =
   | "Santa Beard"
   | "Moustache";
 
-export type BumpkinAura = "Coin Aura" | "Love Puff Aura" | "Slime Aura";
+export type BumpkinAura =
+  | "Coin Aura"
+  | "Love Puff Aura"
+  | "Slime Aura"
+  | "Wisp Aura";
 
 export type BumpkinItem =
   | BumpkinBody
@@ -1030,6 +1055,30 @@ export const ITEM_IDS: Record<BumpkinItem, number> = {
   "Lava Swimwear": 481,
   "Wooly Dress": 482,
   "Raccoon Onesie": 483,
+  "Golden Seedling": 484,
+
+  // Halloween 2025 Event Wearables
+  "Moonseeker Potion": 485,
+  "Frizzy Bob Cut": 486,
+  "Two-toned Layered": 487,
+  "Halloween Deathscythe": 488,
+  "Moonseeker Hand Puppet": 489,
+  "Sweet Devil Horns": 490,
+  "Trick and Treat": 491,
+  "Jack O'Sweets": 492,
+  "Frank Onesie": 493,
+  "Research Uniform": 494,
+  "Sweet Devil Dress": 495,
+  "Underworld Stimpack": 496,
+  "Sweet Devil Wings": 497,
+  "Wisp Aura": 498,
+  "Lunar Weapon": 499,
+  "Cleaver Knife": 500,
+  "Training Whistle": 501,
+  AU3: 502,
+  "Pet Specialist Shirt": 503,
+  "Pet Specialist Pants": 504,
+  "Pet Specialist Hat": 505,
 };
 
 // The reverse of above
@@ -1062,13 +1111,13 @@ export type Wallet = {
 };
 
 export type Equipped = {
-  background: BumpkinBackground;
-  hair: BumpkinHair;
-  body: BumpkinBody;
+  background?: BumpkinBackground;
+  hair?: BumpkinHair;
+  body?: BumpkinBody;
   shirt?: BumpkinShirt;
   pants?: BumpkinPant;
-  shoes: BumpkinShoe;
-  tool: BumpkinTool;
+  shoes?: BumpkinShoe;
+  tool?: BumpkinTool;
   necklace?: BumpkinNecklace;
   coat?: BumpkinCoat;
   hat?: BumpkinHat;
@@ -1097,6 +1146,7 @@ export const BUMPKIN_ITEMS_IDS = Object.values(ITEM_IDS);
 
 export const BUMPKIN_ITEM_PART: Record<BumpkinItem, keyof Wallet> = {
   "Festival of Colors Background": "background",
+  "Golden Seedling": "hat",
   "Painter's Cap": "hat",
   "Royal Braids": "hair",
   "Soybean Onesie": "onesie",
@@ -1332,7 +1382,7 @@ export const BUMPKIN_ITEM_PART: Record<BumpkinItem, keyof Wallet> = {
   "Fishing Spear": "tool",
   "Flip Flops": "shoes",
   Wellies: "shoes",
-  "Saw Fish": "tool",
+  "Saw Fish": "secondaryTool",
   "Skinning Knife": "tool",
   "Sunflower Rod": "tool",
   "Tackle Box": "tool",
@@ -1574,6 +1624,27 @@ export const BUMPKIN_ITEM_PART: Record<BumpkinItem, keyof Wallet> = {
   "Lava Swimwear": "dress",
   "Wooly Dress": "dress",
   "Raccoon Onesie": "onesie",
+  "Moonseeker Potion": "body",
+  "Frizzy Bob Cut": "hair",
+  "Two-toned Layered": "hair",
+  "Halloween Deathscythe": "tool",
+  "Moonseeker Hand Puppet": "tool",
+  "Sweet Devil Horns": "hat",
+  "Trick and Treat": "necklace",
+  "Jack O'Sweets": "secondaryTool",
+  "Frank Onesie": "onesie",
+  "Research Uniform": "suit",
+  "Sweet Devil Dress": "suit",
+  "Underworld Stimpack": "wings",
+  "Sweet Devil Wings": "wings",
+  "Wisp Aura": "aura",
+  "Lunar Weapon": "tool",
+  "Cleaver Knife": "tool",
+  "Training Whistle": "necklace",
+  AU3: "shirt",
+  "Pet Specialist Shirt": "shirt",
+  "Pet Specialist Pants": "pants",
+  "Pet Specialist Hat": "hat",
 };
 
 /**Copied from BE just for hoarding checks */

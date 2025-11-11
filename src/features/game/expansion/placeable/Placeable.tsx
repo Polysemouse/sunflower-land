@@ -1,4 +1,10 @@
-import React, { useContext, useEffect, useRef, useState } from "react";
+import React, {
+  useCallback,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import { useActor } from "@xstate/react";
 import { Context } from "features/game/GameProvider";
 import { GRID_WIDTH_PX, PIXEL_SCALE } from "features/game/lib/constants";
@@ -15,7 +21,6 @@ import {
   CollectibleName,
 } from "features/game/types/craftables";
 import { READONLY_COLLECTIBLES } from "features/island/collectibles/CollectibleCollection";
-import { Chicken } from "features/island/chickens/Chicken";
 
 import { Section } from "lib/utils/hooks/useScrollIntoView";
 import { SUNNYSIDE } from "assets/sunnyside";
@@ -23,23 +28,24 @@ import { READONLY_RESOURCE_COMPONENTS } from "features/island/resources/Resource
 import { getGameGrid } from "./lib/makeGrid";
 import { READONLY_BUILDINGS } from "features/island/buildings/components/building/BuildingComponents";
 import { ZoomContext } from "components/ZoomProvider";
-import { isBudName } from "features/game/types/buds";
 import { PlaceableLocation } from "features/game/types/collectibles";
 import { RESOURCE_DIMENSIONS } from "features/game/types/resources";
 import { useAppTranslation } from "lib/i18n/useAppTranslations";
-import { GameState, TemperateSeasonName } from "features/game/types/game";
+import { GameState } from "features/game/types/game";
 import { DIRT_PATH_VARIANTS } from "features/island/lib/alternateArt";
 import { getCurrentBiome, LandBiomeName } from "features/island/biomes/biomes";
+import {
+  getSortedCollectiblePositions,
+  getSortedResourcePositions,
+} from "../lib/utils";
 
 export const PLACEABLES = (state: GameState) => {
   const island: GameState["island"] = state.island;
-  const season: TemperateSeasonName = state.season.season;
   const biome: LandBiomeName = getCurrentBiome(island);
 
   return {
-    Chicken: () => <Chicken x={0} y={0} id="123" />, // Temp id for placing, when placed action will assign a random UUID and the temp one will be overridden.
     ...READONLY_COLLECTIBLES,
-    ...READONLY_RESOURCE_COMPONENTS(island, season),
+    ...READONLY_RESOURCE_COMPONENTS(),
     ...READONLY_BUILDINGS(state),
     "Dirt Path": () => (
       <img
@@ -97,11 +103,12 @@ export const getInitialCoordinates = (origin?: Coordinates) => {
 interface Props {
   location: PlaceableLocation;
 }
+
 export const Placeable: React.FC<Props> = ({ location }) => {
   const { scale } = useContext(ZoomContext);
 
   const nodeRef = useRef(null);
-  const { gameService } = useContext(Context);
+  const { gameService, showTimers } = useContext(Context);
 
   const { island, season } = gameService.getSnapshot().context.state;
 
@@ -112,37 +119,60 @@ export const Placeable: React.FC<Props> = ({ location }) => {
     .landscaping as MachineInterpreter;
 
   const [machine, send] = useActor(child);
-  const { placeable, collisionDetected, origin } = machine.context;
+  const { placeable, collisionDetected, origin, coordinates } = machine.context;
 
-  const grid = getGameGrid(gameState.context.state);
+  const cropPositions = getSortedResourcePositions(
+    gameState.context.state.crops,
+  );
+  const collectiblePositions = getSortedCollectiblePositions(
+    gameState.context.state.collectibles,
+  );
+  const grid = getGameGrid({ cropPositions, collectiblePositions });
 
   const { t } = useAppTranslation();
 
   let dimensions = { width: 0, height: 0 };
-  if (isBudName(placeable)) {
+  if (placeable?.name === "Bud") {
     dimensions = { width: 1, height: 1 };
-  } else if (placeable) {
+  } else if (placeable?.name === "Pet") {
+    dimensions = { width: 2, height: 2 };
+  } else if (placeable?.name) {
     dimensions = {
       ...BUILDINGS_DIMENSIONS,
       ...COLLECTIBLES_DIMENSIONS,
       ...ANIMAL_DIMENSIONS,
       ...RESOURCE_DIMENSIONS,
-    }[placeable];
+    }[placeable.name];
   }
 
-  const detect = ({ x, y }: Coordinates) => {
-    const collisionDetected = detectCollision({
-      state: gameService.getSnapshot().context.state,
-      position: { x, y, width: dimensions.width, height: dimensions.height },
-      location,
-      name: placeable as CollectibleName,
-    });
+  const detect = useCallback(
+    ({ x, y }: Coordinates) => {
+      const collisionDetected = detectCollision({
+        state: gameService.getSnapshot().context.state,
+        position: { x, y, width: dimensions.width, height: dimensions.height },
+        location,
+        name: placeable?.name as CollectibleName,
+      });
 
-    send({ type: "UPDATE", coordinates: { x, y }, collisionDetected });
-  };
+      send({ type: "UPDATE", coordinates: { x, y }, collisionDetected });
+    },
+    [
+      dimensions.height,
+      dimensions.width,
+      gameService,
+      location,
+      placeable,
+      send,
+    ],
+  );
 
   const [DEFAULT_POSITION_X, DEFAULT_POSITION_Y] =
     getInitialCoordinates(origin);
+
+  const [position, setPosition] = useState<Coordinates>({
+    x: DEFAULT_POSITION_X,
+    y: DEFAULT_POSITION_Y,
+  });
 
   useEffect(() => {
     if (!placeable) return;
@@ -153,7 +183,45 @@ export const Placeable: React.FC<Props> = ({ location }) => {
       x: Math.round(startingX / GRID_WIDTH_PX),
       y: Math.round(-startingY / GRID_WIDTH_PX),
     });
-  }, [placeable]);
+    setPosition({ x: startingX, y: startingY });
+  }, [placeable, origin, detect]);
+
+  // Arrow/WASD keyboard movement to move the ghost placeable on the grid
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (!placeable) return;
+
+      // Only while placing; ignore if typing in inputs
+      if (document.activeElement?.tagName === "INPUT") return;
+
+      let deltaX = 0;
+      let deltaY = 0;
+
+      if (e.key === "ArrowUp" || e.key === "w") {
+        deltaY = 1;
+      } else if (e.key === "ArrowDown" || e.key === "s") {
+        deltaY = -1;
+      } else if (e.key === "ArrowLeft" || e.key === "a") {
+        deltaX = -1;
+      } else if (e.key === "ArrowRight" || e.key === "d") {
+        deltaX = 1;
+      } else {
+        return;
+      }
+
+      const nextGrid = { x: coordinates.x + deltaX, y: coordinates.y + deltaY };
+      detect(nextGrid);
+      setPosition({
+        x: nextGrid.x * GRID_WIDTH_PX,
+        y: -nextGrid.y * GRID_WIDTH_PX,
+      });
+      setShowHint(false);
+      e.preventDefault();
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [placeable, coordinates.x, coordinates.y, detect]);
 
   useEffect(() => {
     setShowHint(true);
@@ -163,9 +231,12 @@ export const Placeable: React.FC<Props> = ({ location }) => {
     return null;
   }
 
-  const Collectible = isBudName(placeable)
-    ? PLACEABLES(gameState.context.state)["Bud"]
-    : PLACEABLES(gameState.context.state)[placeable];
+  const Collectible =
+    placeable?.name === "Bud"
+      ? PLACEABLES(gameState.context.state)["Bud"]
+      : placeable?.name === "Pet"
+        ? PLACEABLES(gameState.context.state)["PetNFT"]
+        : PLACEABLES(gameState.context.state)[placeable.name];
 
   return (
     <>
@@ -173,7 +244,7 @@ export const Placeable: React.FC<Props> = ({ location }) => {
         id="bg-overlay "
         className=" bg-black opacity-40 fixed inset-0"
         style={{
-          zIndex: 1999,
+          zIndex: 99,
           height: "200%",
           right: "-1000px",
           left: "-1000px",
@@ -182,10 +253,9 @@ export const Placeable: React.FC<Props> = ({ location }) => {
           bottom: "1000px",
         }}
       />
-      <div className="fixed left-1/2 top-1/2" style={{ zIndex: 2000 }}>
+      <div className="fixed left-1/2 top-1/2" style={{ zIndex: 100 }}>
         <Draggable
           key={`${origin?.x}-${origin?.y}`}
-          defaultPosition={{ x: DEFAULT_POSITION_X, y: DEFAULT_POSITION_Y }}
           nodeRef={nodeRef}
           grid={[GRID_WIDTH_PX * scale.get(), GRID_WIDTH_PX * scale.get()]}
           scale={scale.get()}
@@ -198,6 +268,7 @@ export const Placeable: React.FC<Props> = ({ location }) => {
             const y = Math.round(-data.y / GRID_WIDTH_PX);
 
             detect({ x, y });
+            setPosition({ x: data.x, y: data.y });
             setShowHint(false);
           }}
           onStop={(_, data) => {
@@ -208,6 +279,7 @@ export const Placeable: React.FC<Props> = ({ location }) => {
 
             send("DROP");
           }}
+          position={position}
         >
           <div
             ref={nodeRef}
@@ -253,10 +325,15 @@ export const Placeable: React.FC<Props> = ({ location }) => {
                 island={island}
                 season={season.season}
                 grid={grid}
-                game={gameState.context.state}
-                id={isBudName(placeable) ? placeable.split("-")[1] : "123"}
+                showTimers={showTimers}
+                skills={gameState.context.state.bumpkin.skills}
+                id={
+                  placeable?.name === "Bud" || placeable?.name === "Pet"
+                    ? placeable.id
+                    : "123"
+                }
                 location="farm"
-                name={placeable as CollectibleName}
+                name={placeable?.name as CollectibleName}
               />
             </div>
           </div>

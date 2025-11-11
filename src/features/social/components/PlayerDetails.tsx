@@ -13,6 +13,8 @@ import cheer from "assets/icons/cheer.webp";
 import socialPointsIcon from "assets/icons/social_score.webp";
 import followIcon from "assets/icons/follow.webp";
 import unfollowIcon from "assets/icons/unfollow.webp";
+import helpIcon from "assets/icons/help.webp";
+import helpedIcon from "assets/icons/helped.webp";
 
 import { NPCIcon } from "features/island/bumpkin/components/NPC";
 import { PIXEL_SCALE } from "features/game/lib/constants";
@@ -45,8 +47,9 @@ import { getKeys } from "features/game/lib/crafting";
 import { ProgressBar } from "components/ui/ProgressBar";
 import { Popover, PopoverButton, PopoverPanel } from "@headlessui/react";
 import { BumpkinParts } from "lib/utils/tokenUriBuilder";
-import { getHelpStreak } from "features/game/types/monuments";
 import { hasVipAccess } from "features/game/lib/vipAccess";
+import { HelpInfoPopover } from "./HelpInfoPopover";
+import { CopySvg } from "components/ui/CopyField";
 
 const ISLAND_ICONS: Record<IslandType, string> = {
   basic: basicIsland,
@@ -107,12 +110,13 @@ export const PlayerDetails: React.FC<Props> = ({
   const { t } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
-  const { isVisiting } = useVisiting();
+  const { isVisiting, visitedFarmId } = useVisiting();
 
   const player = data?.data;
 
   const cheersAvailable = useSelector(gameService, _cheersAvailable);
   const [showCheerModal, setShowCheerModal] = useState(false);
+  const [showPopover, setShowPopover] = useState(false);
 
   useOnMachineTransition(
     gameService,
@@ -128,7 +132,6 @@ export const PlayerDetails: React.FC<Props> = ({
 
   useSocial({
     farmId: loggedInFarmId,
-    following: player?.followedBy ?? [],
     callbacks: {
       onFollow: () => mutate(),
       onUnfollow: () => mutate(),
@@ -164,7 +167,9 @@ export const PlayerDetails: React.FC<Props> = ({
     if (!player) return;
 
     // Setting from route to navigate back to the correct page after visit
-    setFromRoute(location.pathname);
+    if (!isVisiting) {
+      setFromRoute(location.pathname);
+    }
 
     gameService.send("VISIT", { landId: player.id });
     navigate(`/visit/${player.id}`);
@@ -174,7 +179,8 @@ export const PlayerDetails: React.FC<Props> = ({
     gameService.send("farm.cheered", {
       effect: {
         type: "farm.cheered",
-        farmId: player?.id,
+        cheeredFarmId: player?.id,
+        visitedFarmId: visitedFarmId,
       },
     });
     setShowCheerModal(false);
@@ -206,12 +212,7 @@ export const PlayerDetails: React.FC<Props> = ({
 
     return projectBProgress - projectAProgress;
   });
-
-  const friendStreak = getHelpStreak({
-    farm: gameService.state.context.state.socialFarming.helped?.[
-      player?.id ?? 0
-    ],
-  });
+  const isAtMaxFollowing = !iAmFollowing && player?.following?.length >= 5000;
 
   return (
     <div className="flex gap-1 w-full max-h-[400px]">
@@ -289,8 +290,6 @@ export const PlayerDetails: React.FC<Props> = ({
                     <div className="absolute -top-2 -right-2 z-10">
                       {player?.id && (
                         <OnlineStatus
-                          playerId={player?.id}
-                          loggedInFarmId={loggedInFarmId}
                           lastUpdatedAt={player?.lastUpdatedAt ?? 0}
                         />
                       )}
@@ -338,7 +337,17 @@ export const PlayerDetails: React.FC<Props> = ({
                 )}
               </div>
               <div className="flex items-center justify-between">
-                <span>{`#${player?.id}`}</span>
+                <div className="flex items-center gap-1.5">
+                  <span>{`#${player?.id}`}</span>
+                  <span
+                    className="cursor-pointer scale-[1.5]"
+                    onPointerDown={() => {
+                      navigator.clipboard.writeText(`${player?.id}`);
+                    }}
+                  >
+                    <CopySvg height={10} />
+                  </span>
+                </div>
                 <span>{t("playerModal.since", { date: startDate })}</span>
               </div>
             </div>
@@ -369,35 +378,43 @@ export const PlayerDetails: React.FC<Props> = ({
                 <img src={flowerIcon} className="w-4 h-4 ml-1 mt-0.5" />
               </div>
             </div>
-            {!isVisiting && (
-              <Button
-                className="flex w-fit h-9 justify-between items-center gap-1 -mt-2.5 align-top"
-                disabled={isSelf}
-                onClick={visitFarm}
-              >
-                <div className="flex items-center px-1">
-                  <img
-                    src={SUNNYSIDE.icons.search}
-                    className="flex justify-center items-center w-4 h-4"
-                  />
-                </div>
-              </Button>
-            )}
+            <Button
+              className="flex w-fit h-9 justify-between items-center gap-1 -mt-2.5 align-top"
+              disabled={isSelf}
+              onClick={visitFarm}
+            >
+              <div className="flex items-center px-1">
+                <img
+                  src={SUNNYSIDE.icons.search}
+                  className="flex justify-center items-center w-4 h-4"
+                />
+              </div>
+            </Button>
           </div>
         </InnerPanel>
 
-        <InnerPanel className="flex flex-col items-center w-full">
+        <InnerPanel className="relative flex flex-col items-center w-full">
           <div className="flex flex-col gap-1 px-1 w-full ml-1 pt-0">
-            <div className="flex items-center justify-between">
+            {isAtMaxFollowing && (
+              <Label type="danger" className="-ml-1 -mb-2">
+                {t("playerModal.maxFollowing")}
+              </Label>
+            )}
+            <div className="flex items-center justify-between relative">
               <FollowsIndicator
                 count={data?.data?.followedBy?.length ?? 0}
                 onClick={onFollowersClick}
                 type="followers"
               />
-
               <Button
                 className="flex w-fit h-9 justify-between items-center gap-1 mt-1 mr-0.5"
-                disabled={playerLoading || followLoading || !!error || isSelf}
+                disabled={
+                  playerLoading ||
+                  followLoading ||
+                  !!error ||
+                  isSelf ||
+                  isAtMaxFollowing
+                }
                 onClick={onFollow}
               >
                 <div className="flex items-center px-1">
@@ -416,37 +433,79 @@ export const PlayerDetails: React.FC<Props> = ({
               </Button>
             </div>
           </div>
-          <div className="flex flex-col gap-1 p-1 mb-1 w-full">
-            <div className="text-xs">
-              {player?.youHelpedThemCount === 1
-                ? t("playerModal.youHelpedThemCount.singular", {
-                    count: player?.youHelpedThemCount,
-                  })
-                : t("playerModal.youHelpedThemCount.plural", {
-                    count: player?.youHelpedThemCount,
-                  })}
-            </div>
-            <div className="text-xs">
-              {player?.theyHelpedYouCount === 1
-                ? t("playerModal.theyHelpedYouCount.singular", {
-                    count: player?.theyHelpedYouCount,
-                  })
-                : t("playerModal.theyHelpedYouCount.plural", {
-                    count: player?.theyHelpedYouCount,
-                  })}
-            </div>
-          </div>
-          {friendStreak > 0 && (
-            <div className="flex justify-start w-full">
-              <Label
-                type="vibrant"
-                className="ml-2"
-                icon={SUNNYSIDE.icons.heart}
-              >
-                {t("friendStreak", { days: friendStreak })}
-              </Label>
+          {!isSelf && (
+            <div className="flex flex-col gap-1 p-1 mb-1 w-full">
+              <div className="text-xs cursor-pointer">
+                {player?.youHelpedThemCount === 1
+                  ? t("playerModal.youHelpedThemCount.singular", {
+                      count: player?.youHelpedThemCount,
+                    })
+                  : t("playerModal.youHelpedThemCount.plural", {
+                      count: player?.youHelpedThemCount,
+                    })}
+              </div>
+              <div className="text-xs cursor-pointer">
+                {player?.theyHelpedYouCount === 1
+                  ? t("playerModal.theyHelpedYouCount.singular", {
+                      count: player?.theyHelpedYouCount,
+                    })
+                  : t("playerModal.theyHelpedYouCount.plural", {
+                      count: player?.theyHelpedYouCount,
+                    })}
+              </div>
             </div>
           )}
+          <div className="flex w-full justify-between px-1 gap-1 mb-1">
+            {(player.helpedThemToday || player.helpedYouToday) && (
+              <div
+                className="flex items-center gap-1 relative cursor-pointer overflow-visible"
+                onPointerOver={(e) => {
+                  if (e.pointerType === "mouse") {
+                    setShowPopover(true);
+                  }
+                }}
+                onPointerOut={(e) => {
+                  if (e.pointerType === "mouse") {
+                    setShowPopover(false);
+                  }
+                }}
+                onPointerDown={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+
+                  setShowPopover(!showPopover);
+                  setTimeout(() => {
+                    setShowPopover(false);
+                  }, 1500);
+                }}
+              >
+                {player.helpedThemToday && (
+                  <img src={helpIcon} className="w-5 h-5" />
+                )}
+                {player.helpedYouToday && (
+                  <img src={helpedIcon} className="w-5 h-5" />
+                )}
+                <HelpInfoPopover
+                  className="absolute left-5 -top-10 z-20 w-max"
+                  showPopover={showPopover}
+                  onHide={() => setShowPopover(false)}
+                  helpedThemToday={player.helpedThemToday}
+                  helpedYouToday={player.helpedYouToday}
+                />
+              </div>
+            )}
+            {player.helpStreak > 0 && (
+              <div className="flex">
+                <Label
+                  type="vibrant"
+                  className="ml-2"
+                  icon={SUNNYSIDE.icons.heart}
+                >
+                  {t("friendStreak", { days: player.helpStreak })}
+                </Label>
+              </div>
+            )}
+          </div>
         </InnerPanel>
 
         <InnerPanel className="flex flex-1 flex-col gap-1 max-h-[121px] overflow-y-auto scrollable">

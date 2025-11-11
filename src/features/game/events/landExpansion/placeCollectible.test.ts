@@ -1,8 +1,9 @@
 import Decimal from "decimal.js-light";
 import { TEST_FARM } from "../../lib/constants";
 import { CollectibleName } from "../../types/craftables";
-import { GameState } from "../../types/game";
+import { GameState, ShakeItem } from "../../types/game";
 import { placeCollectible } from "./placeCollectible";
+import { Pet, PetName } from "features/game/types/pets";
 
 const date = Date.now();
 const GAME_STATE: GameState = TEST_FARM;
@@ -40,7 +41,7 @@ describe("Place Collectible", () => {
           location: "farm",
         },
       }),
-    ).toThrow("This collectible is already placed");
+    ).toThrow("You can't place an item that is not on the inventory");
   });
 
   it("Requires a collectible is on the inventory to be placed", () => {
@@ -101,8 +102,6 @@ describe("Place Collectible", () => {
             {
               id: "123",
               coordinates: { x: 1, y: 1 },
-              createdAt: date,
-              readyAt: date,
             },
           ],
         },
@@ -124,14 +123,39 @@ describe("Place Collectible", () => {
     expect(state.collectibles["Scarecrow"]?.[0]).toEqual({
       id: expect.any(String),
       coordinates: { x: 1, y: 1 },
-      readyAt: date,
-      createdAt: date,
     });
     expect(state.collectibles["Scarecrow"]?.[1]).toEqual({
       id: expect.any(String),
       coordinates: { x: 0, y: 0 },
-      readyAt: date,
-      createdAt: date,
+    });
+  });
+
+  it("adds monument to village projects", () => {
+    const state = placeCollectible({
+      state: {
+        ...GAME_STATE,
+        inventory: {
+          "Teamwork Monument": new Decimal(1),
+        },
+        collectibles: {},
+        buildings: {},
+        trees: {},
+        stones: {},
+      },
+      action: {
+        id: "123",
+        type: "collectible.placed",
+        name: "Teamwork Monument",
+        coordinates: {
+          x: 0,
+          y: 0,
+        },
+        location: "farm",
+      },
+    });
+
+    expect(state.socialFarming.villageProjects["Teamwork Monument"]).toEqual({
+      cheers: 0,
     });
   });
 
@@ -159,5 +183,154 @@ describe("Place Collectible", () => {
         },
       }),
     ).toThrow("You cannot place this item");
+  });
+  it("should use existing data from land if placing in home", () => {
+    const dateNow = Date.now();
+    const state = placeCollectible({
+      state: {
+        ...GAME_STATE,
+        island: {
+          type: "volcano",
+        },
+        inventory: {
+          "Maneki Neko": new Decimal(1),
+        },
+        collectibles: {
+          "Maneki Neko": [
+            {
+              id: "123",
+              removedAt: dateNow,
+              readyAt: dateNow,
+              createdAt: dateNow,
+              shakenAt: dateNow,
+            },
+          ],
+        },
+      },
+      action: {
+        id: "123",
+        type: "collectible.placed",
+        name: "Maneki Neko",
+        coordinates: {
+          x: 5,
+          y: 5,
+        },
+        location: "home",
+      },
+      createdAt: dateNow,
+    });
+
+    expect(state.home.collectibles["Maneki Neko"]).toEqual<ShakeItem[]>([
+      {
+        id: "123",
+        readyAt: dateNow,
+        createdAt: dateNow,
+        shakenAt: dateNow,
+        coordinates: {
+          x: 5,
+          y: 5,
+        },
+      },
+    ]);
+    expect(state.collectibles["Maneki Neko"]).toEqual<ShakeItem[]>([]);
+  });
+
+  it("Places a pet", () => {
+    const dateNow = Date.now();
+    const state = placeCollectible({
+      state: {
+        ...GAME_STATE,
+        inventory: {
+          Barkley: new Decimal(1),
+        },
+        collectibles: {},
+      },
+      action: {
+        id: "123",
+        type: "collectible.placed",
+        name: "Barkley",
+        coordinates: {
+          x: 5,
+          y: 5,
+        },
+        location: "farm",
+      },
+      createdAt: dateNow,
+    });
+
+    expect(state.pets?.common).toEqual<Partial<Record<PetName, Pet>>>({
+      Barkley: {
+        name: "Barkley",
+        experience: 0,
+        energy: 0,
+        requests: {
+          food: [],
+          fedAt: dateNow,
+        },
+        pettedAt: dateNow,
+      },
+    });
+  });
+
+  it("Places a pet", () => {
+    const dateNow = Date.now();
+    const state = placeCollectible({
+      state: {
+        ...GAME_STATE,
+        inventory: {
+          Barkley: new Decimal(1),
+          Meowchi: new Decimal(1),
+        },
+        collectibles: {},
+        pets: {
+          common: {
+            Barkley: {
+              name: "Barkley",
+              experience: 0,
+              energy: 0,
+              requests: {
+                food: ["Pumpkin Cake", "Pumpkin Soup", "Antipasto"],
+                fedAt: dateNow,
+              },
+              pettedAt: dateNow,
+            },
+          },
+        },
+      },
+      action: {
+        id: "123",
+        type: "collectible.placed",
+        name: "Meowchi",
+        coordinates: {
+          x: 5,
+          y: 5,
+        },
+        location: "farm",
+      },
+      createdAt: dateNow,
+    });
+
+    expect(state.pets?.common).toEqual<Partial<Record<PetName, Pet>>>({
+      Barkley: {
+        name: "Barkley",
+        experience: 0,
+        energy: 0,
+        requests: {
+          food: ["Pumpkin Cake", "Pumpkin Soup", "Antipasto"],
+          fedAt: dateNow,
+        },
+        pettedAt: dateNow,
+      },
+      Meowchi: {
+        name: "Meowchi",
+        experience: 0,
+        energy: 0,
+        requests: {
+          food: [],
+          fedAt: dateNow,
+        },
+        pettedAt: dateNow,
+      },
+    });
   });
 });

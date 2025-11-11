@@ -89,7 +89,12 @@ export type SeasonalDecorationName =
   | "Rookie Rook"
   | "Silver Sentinel"
   | "Silver Stallion"
-  | "Paper Reed";
+  | "Paper Reed"
+  | "Paw Prints Rug"
+  | "Pet Bed"
+  | "Pet Bowls"
+  | "Moon Fox Statue"
+  | "Giant Acorn";
 
 export type EventDecorationName =
   | "Jelly Lamp"
@@ -171,7 +176,18 @@ export type EventDecorationName =
   | "Blue Slime Balloon"
   | "Gold Cooking Trophy"
   | "Silver Cooking Trophy"
-  | "Bronze Cooking Trophy";
+  | "Bronze Cooking Trophy"
+  | "Bronze Friends Trophy"
+  | "Silver Friends Trophy"
+  | "Gold Friends Trophy"
+  | "Cerberus"
+  | "Witch's Cauldron"
+  | "Raveyard"
+  | "Haunted House"
+  | "Mimic Egg"
+  | "Haunted Tomb"
+  | "Guillotine"
+  | "Vampire Coffin";
 
 export type TileName =
   | "Black Tile"
@@ -213,6 +229,27 @@ export const DECORATION_TEMPLATES = {
     isWithdrawable: () => false,
   },
   "Bronze Cooking Trophy": {
+    dimensions: {
+      width: 1,
+      height: 1,
+    },
+    isWithdrawable: () => false,
+  },
+  "Bronze Friends Trophy": {
+    dimensions: {
+      width: 1,
+      height: 1,
+    },
+    isWithdrawable: () => false,
+  },
+  "Silver Friends Trophy": {
+    dimensions: {
+      width: 1,
+      height: 1,
+    },
+    isWithdrawable: () => false,
+  },
+  "Gold Friends Trophy": {
     dimensions: {
       width: 1,
       height: 1,
@@ -1132,6 +1169,10 @@ export const DECORATION_DIMENSIONS: Record<DecorationName, Dimensions> = {
     width: 1,
     height: 1,
   },
+  "Moon Fox Statue": {
+    width: 2,
+    height: 3,
+  },
   Cetus: {
     width: 3,
     height: 2,
@@ -1167,6 +1208,10 @@ export const DECORATION_DIMENSIONS: Record<DecorationName, Dimensions> = {
   "Large Rug": {
     width: 4,
     height: 4,
+  },
+  "Paw Prints Rug": {
+    width: 3,
+    height: 3,
   },
   "Golden Fence": {
     width: 1,
@@ -1256,6 +1301,18 @@ export const DECORATION_DIMENSIONS: Record<DecorationName, Dimensions> = {
     width: 1,
     height: 1,
   },
+  "Giant Acorn": {
+    width: 2,
+    height: 1,
+  },
+  "Pet Bowls": {
+    width: 2,
+    height: 1,
+  },
+  "Pet Bed": {
+    width: 2,
+    height: 1,
+  },
   "Red Slime Balloon": {
     width: 1,
     height: 2,
@@ -1271,6 +1328,38 @@ export const DECORATION_DIMENSIONS: Record<DecorationName, Dimensions> = {
   "Giant Orange": { width: 2, height: 1 },
   "Giant Apple": { width: 2, height: 1 },
   "Giant Banana": { width: 2, height: 1 },
+  Cerberus: {
+    width: 2,
+    height: 2,
+  },
+  "Witch's Cauldron": {
+    width: 2,
+    height: 2,
+  },
+  Raveyard: {
+    width: 1,
+    height: 2,
+  },
+  "Haunted House": {
+    width: 6,
+    height: 5,
+  },
+  "Mimic Egg": {
+    width: 1,
+    height: 2,
+  },
+  "Haunted Tomb": {
+    width: 1,
+    height: 2,
+  },
+  Guillotine: {
+    width: 2,
+    height: 2,
+  },
+  "Vampire Coffin": {
+    width: 2,
+    height: 2,
+  },
 };
 
 export type Decoration = {

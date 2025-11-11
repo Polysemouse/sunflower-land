@@ -1,10 +1,14 @@
 import Decimal from "decimal.js-light";
 import { CRIMSTONE_RECOVERY_TIME } from "features/game/lib/constants";
 import { trackActivity } from "features/game/types/bumpkinActivity";
-import { BoostName, FiniteResource, GameState, Rock } from "../../types/game";
+import { canMine } from "features/game/lib/resourceNodes";
+import { BoostName, FiniteResource, GameState } from "../../types/game";
 import { isWearableActive } from "features/game/lib/wearables";
 import { produce } from "immer";
-import { isCollectibleBuilt } from "features/game/lib/collectibleBuilt";
+import {
+  isTemporaryCollectibleActive,
+  isCollectibleBuilt,
+} from "features/game/lib/collectibleBuilt";
 import { updateBoostUsed } from "features/game/types/updateBoostUsed";
 
 export type MineCrimstoneAction = {
@@ -18,32 +22,45 @@ type Options = {
   createdAt?: number;
 };
 
-export function canMine(rock: Rock, now: number = Date.now()) {
-  const recoveryTime = CRIMSTONE_RECOVERY_TIME;
-  return now - rock.stone.minedAt > recoveryTime * 1000;
-}
-
 type GetMinedAtArgs = {
   createdAt: number;
   game: GameState;
 };
 
-export function getMinedAt({ createdAt, game }: GetMinedAtArgs): {
-  time: number;
+function getBoostedTime({ game }: GetMinedAtArgs): {
+  boostedTime: number;
   boostsUsed: BoostName[];
 } {
-  let time = createdAt;
+  let totalSeconds = CRIMSTONE_RECOVERY_TIME;
   const boostsUsed: BoostName[] = [];
 
   if (isWearableActive({ name: "Crimstone Amulet", game })) {
-    time -= CRIMSTONE_RECOVERY_TIME * 0.2 * 1000;
+    totalSeconds = totalSeconds * 0.8;
     boostsUsed.push("Crimstone Amulet");
   }
 
   if (game.bumpkin.skills["Fireside Alchemist"]) {
-    time -= CRIMSTONE_RECOVERY_TIME * 0.15 * 1000;
+    totalSeconds = totalSeconds * 0.85;
     boostsUsed.push("Fireside Alchemist");
   }
+
+  if (isTemporaryCollectibleActive({ name: "Mole Shrine", game })) {
+    totalSeconds = totalSeconds * 0.75;
+    boostsUsed.push("Mole Shrine");
+  }
+
+  const buff = CRIMSTONE_RECOVERY_TIME - totalSeconds;
+
+  return { boostedTime: buff * 1000, boostsUsed };
+}
+
+export function getMinedAt({ createdAt, game }: GetMinedAtArgs): {
+  time: number;
+  boostsUsed: BoostName[];
+} {
+  const { boostedTime, boostsUsed } = getBoostedTime({ game, createdAt });
+
+  const time = createdAt - boostedTime;
 
   return { time, boostsUsed };
 }
@@ -105,7 +122,11 @@ export function mineCrimstone({
       throw new Error("You do not have a Bumpkin!");
     }
 
-    if (!canMine(rock, createdAt)) {
+    if (rock.x === undefined && rock.y === undefined) {
+      throw new Error("Crimstone rock is not placed");
+    }
+
+    if (!canMine(rock, "Crimstone Rock", createdAt)) {
       throw new Error("Rock is still recovering");
     }
 

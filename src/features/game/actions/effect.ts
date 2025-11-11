@@ -16,6 +16,7 @@ type EffectName =
   | "faceRecognition.started"
   | "faceRecognition.completed"
   | "flower.depositStarted"
+  | "sfl.depositStarted"
   | "telegram.linked"
   | "telegram.joined"
   | "twitter.followed"
@@ -36,7 +37,10 @@ type EffectName =
   | "moderation.unmuted"
   | "blessing.offered"
   | "blessing.seeked"
+  | "roninPack.claimed"
+  | "twitter.roninPosted"
   | "nft.assigned"
+  | "admin.NFTAssigned"
   | "marketplace.bulkListingsCancelled"
   | "marketplace.bulkOffersCancelled"
   | "farm.followed"
@@ -44,9 +48,14 @@ type EffectName =
   | "message.sent"
   | "farm.cheered"
   | "project.completed"
-  | "farm.helped";
+  | "farm.helped"
+  | "pet.wakeUp"
+  | "auction.claimed"
+  | "auction.bidPlaced"
+  | "auction.bidCancelled"
+  | "marketplace.buyBulkResources";
 
-type VisitEffectName = "farm.helped";
+type VisitEffectName = "farm.helped" | "farm.cheered" | "farm.followed";
 
 // IMPORTANT: If your effect does not go via a state in the state machine then exclude it here!
 // Create a type that excludes the events that are not individual state machine states
@@ -76,6 +85,7 @@ export type StateMachineStateName =
   | "startingFaceRecognition"
   | "completingFaceRecognition"
   | "depositingFlower"
+  | "depositingSFL"
   | "linkingTelegram"
   | "joiningTelegram"
   | "followingTwitter"
@@ -88,6 +98,7 @@ export type StateMachineStateName =
   | "claimingBlockchainBox"
   | "offeringBlessing"
   | "seekingBlessing"
+  | "claimingRoninPack"
   | "marketplaceBulkListingsCancelling"
   | "marketplaceBulkOffersCancelling"
   | "linkingWallet"
@@ -95,12 +106,17 @@ export type StateMachineStateName =
   | "cheeringFarm"
   | "followingFarm"
   | "completingProject"
-  | "helpingFarm";
+  | "helpingFarm"
+  | "claimingAuction"
+  | "wakingPet"
+  | "auctionBidding"
+  | "auctionCancelling"
+  | "marketplaceBuyingBulkResources";
 
 export type StateMachineVisitStateName =
-  | "cheeringVillageProject"
-  | "cleaningFarm"
-  | "helpingFarm";
+  | "helpingFarm"
+  | "cheeringFarmVisiting"
+  | "followingFarmVisiting";
 
 export type StateNameWithStatus =
   | `${StateMachineStateName}Success`
@@ -123,10 +139,13 @@ export const STATE_MACHINE_EFFECTS: Record<
   "faceRecognition.started": "startingFaceRecognition",
   "faceRecognition.completed": "completingFaceRecognition",
   "flower.depositStarted": "depositingFlower",
+  "sfl.depositStarted": "depositingSFL",
   "telegram.linked": "linkingTelegram",
   "telegram.joined": "joiningTelegram",
   "twitter.followed": "followingTwitter",
   "twitter.posted": "postingTwitter",
+  "roninPack.claimed": "claimingRoninPack",
+  "twitter.roninPosted": "postingTwitter",
   "gems.bought": "buyingGems",
   "vip.bought": "buyingVIP",
   "username.assigned": "assigningUsername",
@@ -139,10 +158,16 @@ export const STATE_MACHINE_EFFECTS: Record<
   "marketplace.bulkOffersCancelled": "marketplaceBulkOffersCancelling",
   "wallet.linked": "linkingWallet",
   "nft.assigned": "assigningNFT",
+  "admin.NFTAssigned": "assigningNFT",
   "farm.cheered": "cheeringFarm",
   "farm.followed": "followingFarm",
   "project.completed": "completingProject",
   "farm.helped": "helpingFarm",
+  "auction.claimed": "claimingAuction",
+  "pet.wakeUp": "wakingPet",
+  "auction.bidPlaced": "auctionBidding",
+  "auction.bidCancelled": "auctionCancelling",
+  "marketplace.buyBulkResources": "marketplaceBuyingBulkResources",
 };
 
 export const STATE_MACHINE_VISIT_EFFECTS: Record<
@@ -150,6 +175,8 @@ export const STATE_MACHINE_VISIT_EFFECTS: Record<
   StateMachineVisitStateName
 > = {
   "farm.helped": "helpingFarm",
+  "farm.cheered": "cheeringFarmVisiting",
+  "farm.followed": "followingFarmVisiting",
 };
 
 export interface Effect {

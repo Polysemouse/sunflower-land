@@ -30,7 +30,7 @@ import { FactionShopCollectibleName } from "./factionShop";
 import { BEDS } from "./beds";
 import { SeasonalCollectibleName } from "./megastore";
 import { MonumentName } from "./monuments";
-import { PetName } from "./pets";
+import { PetName, PetShrineName } from "./pets";
 
 export { FLAGS };
 
@@ -219,7 +219,9 @@ export type CollectibleName =
   | BedName
   | SeasonalCollectibleName
   | MonumentName
-  | PetName;
+  | PetName
+  | PetShrineName
+  | "Obsidian Shrine";
 
 export type ToolName =
   | "Axe"
@@ -1052,10 +1054,28 @@ export const COLLECTIBLES_DIMENSIONS: Record<CollectibleName, Dimensions> = {
   "Golden Bonsai": { width: 1, height: 1 },
 
   // Pets
-  Barkley: { width: 2, height: 2 },
-  Meowchi: { width: 2, height: 2 },
-  Twizzle: { width: 2, height: 2 },
-  Burro: { width: 2, height: 2 },
+  Barkley: { width: 1, height: 1 },
+  Meowchi: { width: 1, height: 1 },
+  Twizzle: { width: 1, height: 1 },
+  Burro: { width: 1, height: 1 },
+  Mudhorn: { width: 1, height: 1 },
+  Nibbles: { width: 1, height: 1 },
+  Waddles: { width: 1, height: 1 },
+  Ramsey: { width: 2, height: 2 },
+  Biscuit: { width: 1, height: 1 },
+  Cloudy: { width: 1, height: 1 },
+  Butters: { width: 1, height: 1 },
+  Smokey: { width: 1, height: 1 },
+  Flicker: { width: 1, height: 1 },
+  Pippin: { width: 1, height: 1 },
+  Pinto: { width: 1, height: 1 },
+  Roan: { width: 1, height: 1 },
+  Stallion: { width: 1, height: 1 },
+  Bison: { width: 1, height: 1 },
+  Oxen: { width: 1, height: 1 },
+  Peanuts: { width: 1, height: 1 },
+  Pip: { width: 1, height: 1 },
+  Skipper: { width: 1, height: 1 },
 
   // Flags
   ...flagsDimension,
@@ -1186,6 +1206,7 @@ export const COLLECTIBLES_DIMENSIONS: Record<CollectibleName, Dimensions> = {
   "Pharaoh's Treasure Banner": { width: 1, height: 2 },
   "Lifetime Farmer Banner": { width: 1, height: 2 },
   "Better Together Banner": { width: 1, height: 2 },
+  "Paw Prints Banner": { width: 1, height: 2 },
 
   // Dawn Breaker SFTs
   "Mushroom House": { height: 3, width: 2 },
@@ -1230,6 +1251,7 @@ export const COLLECTIBLES_DIMENSIONS: Record<CollectibleName, Dimensions> = {
   "Radiant Ray": { width: 2, height: 1 },
   "Phantom Barracuda": { width: 2, height: 1 },
   "Gilded Swordfish": { width: 2, height: 1 },
+  "Super Star": { width: 2, height: 1 },
   "Crimson Carp": { width: 2, height: 1 },
   "Battle Fish": { width: 2, height: 1 },
   "Lemon Shark": { width: 2, height: 1 },
@@ -1373,6 +1395,18 @@ export const COLLECTIBLES_DIMENSIONS: Record<CollectibleName, Dimensions> = {
   "Boar Shrine": { width: 1, height: 1 },
   "Hound Shrine": { width: 1, height: 1 },
   "Stag Shrine": { width: 1, height: 1 },
+  "Legendary Shrine": { width: 1, height: 1 },
+  "Obsidian Shrine": { width: 1, height: 1 },
+  "Mole Shrine": { width: 1, height: 1 },
+  "Bear Shrine": { width: 1, height: 1 },
+  "Tortoise Shrine": { width: 1, height: 1 },
+  "Moth Shrine": { width: 1, height: 1 },
+  "Sparrow Shrine": { width: 1, height: 1 },
+  "Toucan Shrine": { width: 1, height: 1 },
+  "Collie Shrine": { width: 1, height: 1 },
+  "Badger Shrine": { width: 1, height: 1 },
+  "Bantam Shrine": { width: 1, height: 1 },
+  "Trading Shrine": { width: 1, height: 1 },
 
   // Animal Season
   "Cow Scratcher": { width: 1, height: 2 },
@@ -1472,10 +1506,29 @@ export const COLLECTIBLES_DIMENSIONS: Record<CollectibleName, Dimensions> = {
   "Giant Onion": { width: 1, height: 2 },
   "Giant Turnip": { width: 2, height: 2 },
   "Groovy Gramophone": { width: 1, height: 1 },
+  "Paw Prints Rug": { width: 3, height: 3 },
+  "Pet Bowls": { width: 2, height: 1 },
+  "Pet Bed": { width: 2, height: 1 },
+  "Giant Acorn": { width: 2, height: 1 },
+  "Moon Fox Statue": { width: 2, height: 3 },
   "Baby Cow": { width: 1, height: 1 },
   "Baby Sheep": { width: 1, height: 1 },
   "Janitor Chicken": { width: 1, height: 1 },
   "Venus Bumpkin Trap": { width: 1, height: 1 },
+  "Black Hole Flower": { width: 1, height: 1 },
+  "Sleepy Chicken": { width: 1, height: 2 },
+  "Astronaut Cow": { width: 1, height: 1 },
+  "Astronaut Sheep": { width: 1, height: 1 },
+  "Petnip Plant": { width: 2, height: 1 },
+  "Pet Kennel": { width: 2, height: 2 },
+  "Pet Toys": { width: 1, height: 1 },
+  "Pet Playground": { width: 2, height: 2 },
+  "Fish Bowl": { width: 2, height: 1 },
+  "Giant Gold Bone": { width: 2, height: 1 },
+  "Lunar Temple": { width: 3, height: 3 },
+  "Magma Stone": { width: 1, height: 2 },
+  Cornucopia: { width: 3, height: 2 },
+  "Messy Bed": { width: 1, height: 1 },
 };
 
 export const ANIMAL_DIMENSIONS: Record<"Chicken", Dimensions> = {

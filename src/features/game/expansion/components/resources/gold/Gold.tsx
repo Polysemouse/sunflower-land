@@ -12,15 +12,21 @@ import Decimal from "decimal.js-light";
 import { DepletedGold } from "./components/DepletedGold";
 import { DepletingGold } from "./components/DepletingGold";
 import { RecoveredGold } from "./components/RecoveredGold";
-import { canMine } from "features/game/expansion/lib/utils";
+import { canMine } from "features/game/lib/resourceNodes";
 import { useSound } from "lib/utils/hooks/useSound";
 import { getGoldDropAmount } from "features/game/events/landExpansion/mineGold";
+import { GoldRockName } from "features/game/types/resources";
 
 const HITS = 3;
 const tool = "Iron Pickaxe";
 
-const HasTool = (inventory: Partial<Record<InventoryItemName, Decimal>>) => {
-  return (inventory[tool] ?? new Decimal(0)).gte(1);
+const HasTool = (
+  inventory: Partial<Record<InventoryItemName, Decimal>>,
+  goldRock: Rock,
+) => {
+  const requiredToolAmount = goldRock.multiplier ?? 1;
+  if (requiredToolAmount <= 0) return true;
+  return (inventory[tool] ?? new Decimal(0)).gte(requiredToolAmount);
 };
 
 const selectInventory = (state: MachineState) => state.context.state.inventory;
@@ -75,14 +81,15 @@ export const Gold: React.FC<Props> = ({ id }) => {
     gameService,
     selectInventory,
     (prev, next) =>
-      HasTool(prev) === HasTool(next) &&
+      HasTool(prev, resource) === HasTool(next, resource) &&
       (prev.Logger ?? new Decimal(0)).equals(next.Logger ?? new Decimal(0)),
   );
   const skills = useSelector(gameService, selectSkills, compareSkills);
   const state = useSelector(gameService, selectGame);
-  const hasTool = HasTool(inventory);
+  const hasTool = HasTool(inventory, resource);
+  const goldRockName = (resource.name ?? "Gold Rock") as GoldRockName;
   const timeLeft = getTimeLeft(resource.stone.minedAt, GOLD_RECOVERY_TIME);
-  const mined = !canMine(resource, GOLD_RECOVERY_TIME);
+  const mined = !canMine(resource, goldRockName);
 
   useUiRefresher({ active: mined });
 
@@ -141,7 +148,13 @@ export const Gold: React.FC<Props> = ({ id }) => {
       {/* Resource ready to collect */}
       {!mined && (
         <div ref={divRef} className="absolute w-full h-full" onClick={strike}>
-          <RecoveredGold hasTool={hasTool} touchCount={touchCount} />
+          <RecoveredGold
+            hasTool={hasTool}
+            touchCount={touchCount}
+            goldRockName={goldRockName}
+            requiredToolAmount={new Decimal(resource.multiplier ?? 1)}
+            inventory={inventory}
+          />
         </div>
       )}
 
@@ -149,7 +162,7 @@ export const Gold: React.FC<Props> = ({ id }) => {
       {collecting && <DepletingGold resourceAmount={harvested.current} />}
 
       {/* Depleted resource */}
-      {mined && <DepletedGold timeLeft={timeLeft} />}
+      {mined && <DepletedGold timeLeft={timeLeft} name={goldRockName} />}
     </div>
   );
 };

@@ -1,4 +1,4 @@
-import React, { useContext, useState } from "react";
+import React, { useContext, useRef, useState } from "react";
 import { SUNNYSIDE } from "assets/sunnyside";
 import { Label } from "components/ui/Label";
 import { InnerPanel } from "components/ui/Panel";
@@ -14,6 +14,7 @@ import grassBg from "assets/ui/3x3_bg.png";
 import brownBg from "assets/brand/brown_background.png";
 import lockIcon from "assets/icons/lock.png";
 import crownIcon from "assets/icons/vip.webp";
+import petNFTEggMarketplace from "assets/pets/pet-nft-egg-marketplace.webp";
 
 import { InventoryItemName } from "features/game/types/game";
 import { isTradeResource } from "features/game/actions/tradeLimits";
@@ -32,6 +33,11 @@ import { NoticeboardItems } from "features/world/ui/kingdom/KingdomNoticeboard";
 import classNames from "classnames";
 import { pixelGreenBorderStyle } from "features/game/lib/style";
 import { useGame } from "features/game/GameProvider";
+import { getPetLevel, getPetNFTReleaseDate } from "features/game/types/pets";
+import { getPetTraits } from "features/pets/data/getPetTraits";
+import { PetTraits } from "features/pets/data/types";
+import { Bud } from "lib/buds/types";
+import { getBudTraits } from "features/game/types/budBuffs";
 
 const formatDate = (date: Date) => {
   return date.toLocaleDateString("en-US", {
@@ -41,6 +47,38 @@ const formatDate = (date: Date) => {
   });
 };
 
+const getNFTTraits = (
+  display?: TradeableDisplay,
+): {
+  revealDate: Date | undefined;
+  tradeDate: Date | undefined;
+  traits: PetTraits | Bud | undefined;
+} => {
+  if (!display || (display.type !== "pets" && display.type !== "buds")) {
+    return { revealDate: undefined, traits: undefined, tradeDate: undefined };
+  }
+
+  const id = Number(display.name.split("#")[1]);
+
+  if (Number.isNaN(id)) {
+    return { revealDate: undefined, traits: undefined, tradeDate: undefined };
+  }
+
+  if (display.type === "buds") {
+    return {
+      revealDate: undefined,
+      traits: getBudTraits(id),
+      tradeDate: undefined,
+    };
+  }
+
+  return {
+    revealDate: getPetNFTReleaseDate(id, Date.now()),
+    traits: getPetTraits(id),
+    tradeDate: new Date("2025-11-10T00:00:00Z"),
+  };
+};
+
 export const TradeableImage: React.FC<{
   display: TradeableDisplay;
   supply?: number;
@@ -48,11 +86,27 @@ export const TradeableImage: React.FC<{
   const { t } = useAppTranslation();
   const params = useParams();
   const isResource = isTradeResource(display.name as InventoryItemName);
+  // Track the URL we currently render so we can mutate it if the image fails to load.
+  const imageSrcRef = useRef<string>(display.image);
+  // Remember the most recent prop value; when the user navigates to a new item we reset the image.
+  const lastDisplayImageRef = useRef<string>(display.image);
+  if (lastDisplayImageRef.current !== display.image) {
+    imageSrcRef.current = display.image;
+    lastDisplayImageRef.current = display.image;
+  }
+  // Pets have a dedicated egg artwork fallback while other tradeables keep their default imagery.
+  const fallbackImage =
+    display.type === "pets" ? petNFTEggMarketplace : undefined;
 
   const isBumpkinBackground = display.name.includes("Background");
   const useBrownBackground = params.collection === "wearables" || isResource;
   const itemBackground = useBrownBackground ? brownBg : grassBg;
-  const background = display.type === "buds" ? display.image : itemBackground;
+  const background =
+    display.type === "buds" || display.type === "pets"
+      ? display.image
+      : itemBackground;
+  const showFullImage =
+    isBumpkinBackground || display.type === "buds" || display.type === "pets";
 
   const [isPortrait, setIsPortrait] = React.useState(false);
 
@@ -64,24 +118,25 @@ export const TradeableImage: React.FC<{
   return (
     <InnerPanel className="w-full flex relative mb-1" style={{ padding: 0 }}>
       <div className="flex flex-wrap absolute top-2 right-2">
-        {/* {tradeable && (
-      <Label
-        type="formula"
-        icon={increaseArrow}
-        className="mr-2"
-      >{`42% (7D)`}</Label>
-    )} */}
-
         {supply && !isResource ? (
           <Label type="default">{t("marketplace.supply", { supply })}</Label>
         ) : null}
       </div>
 
       <img
-        src={isBumpkinBackground ? display.image : background}
+        src={showFullImage ? imageSrcRef.current : background}
         className="w-full rounded-sm"
+        onError={(e) => {
+          // Swap to the fallback only once to avoid infinite error loops.
+          if (!fallbackImage || imageSrcRef.current === fallbackImage) {
+            return;
+          }
+
+          imageSrcRef.current = fallbackImage;
+          e.currentTarget.src = fallbackImage;
+        }}
       />
-      {!isBumpkinBackground && display.type !== "buds" && (
+      {!showFullImage && (
         <img
           src={display.image}
           className={`absolute ${isPortrait ? "h-1/2" : "w-1/3"}`}
@@ -123,6 +178,8 @@ export const TradeableDescription: React.FC<{
   const isCollectible = display.type === "collectibles";
   const isResource = isTradeResource(display.name as InventoryItemName);
 
+  const { revealDate, traits, tradeDate } = getNFTTraits(display);
+
   return (
     <InnerPanel className="mb-1">
       <div className="p-2">
@@ -144,16 +201,61 @@ export const TradeableDescription: React.FC<{
             ) : (
               isCollectible && <Label type="default">{t("collectible")}</Label>
             )}
-            {display.buffs.map((buff) => (
-              <Label
-                key={buff.shortDescription}
-                icon={buff.boostTypeIcon}
-                secondaryIcon={buff.boostedItemIcon}
-                type={buff.labelType}
-              >
-                {buff.shortDescription}
+            {display.type === "pets"
+              ? !revealDate &&
+                display.buffs.map((buff) => (
+                  <Label
+                    key={buff.shortDescription}
+                    icon={buff.boostTypeIcon}
+                    secondaryIcon={buff.boostedItemIcon}
+                    type={buff.labelType}
+                  >
+                    {buff.shortDescription}
+                  </Label>
+                ))
+              : display.buffs.map((buff) => (
+                  <Label
+                    key={buff.shortDescription}
+                    icon={buff.boostTypeIcon}
+                    secondaryIcon={buff.boostedItemIcon}
+                    type={buff.labelType}
+                  >
+                    {buff.shortDescription}
+                  </Label>
+                ))}
+            {tradeable?.collection === "pets" && !revealDate && (
+              <Label type="info">
+                {t("marketplace.pet.level", {
+                  level: getPetLevel(tradeable.experience ?? 0).level,
+                })}
               </Label>
-            ))}
+            )}
+            {(display?.type === "pets" || display?.type === "buds") &&
+              (revealDate ? (
+                <Label type="default">
+                  {t("marketplace.pet.reveal.date", {
+                    date: formatDate(revealDate),
+                  })}
+                </Label>
+              ) : traits ? (
+                <div className="flex flex-row flex-wrap gap-1">
+                  {Object.values(traits).map((trait) => (
+                    <Label key={trait} type="default">
+                      {trait}
+                    </Label>
+                  ))}
+                </div>
+              ) : (
+                <Label type="danger">{t("marketplace.pet.comingSoon")}</Label>
+              ))}
+
+            {tradeDate && (
+              <Label type="formula">
+                {t("marketplace.pet.trade.date", {
+                  date: formatDate(tradeDate),
+                })}
+              </Label>
+            )}
           </div>
         </div>
         {tradeable?.expiresAt && (

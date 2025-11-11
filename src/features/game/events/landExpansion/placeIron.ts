@@ -1,16 +1,22 @@
 import { GameState, Rock } from "features/game/types/game";
-import { ResourceName } from "features/game/types/resources";
-import Decimal from "decimal.js-light";
+import {
+  IronRockName,
+  RESOURCE_MULTIPLIER,
+  UpgradedResourceName,
+  ADVANCED_RESOURCES,
+} from "features/game/types/resources";
 import { produce } from "immer";
+import {
+  findExistingUnplacedNode,
+  getAvailableNodes,
+} from "features/game/lib/resourceNodes";
+import { Coordinates } from "features/game/expansion/components/MapPlacement";
 
 export type PlaceIronAction = {
   type: "iron.placed";
-  name: ResourceName;
+  name: IronRockName;
   id: string;
-  coordinates: {
-    x: number;
-    y: number;
-  };
+  coordinates: Coordinates;
 };
 
 type Options = {
@@ -25,19 +31,19 @@ export function placeIron({
   createdAt = Date.now(),
 }: Options): GameState {
   return produce(state, (game) => {
-    const available = (game.inventory["Iron Rock"] || new Decimal(0)).minus(
-      Object.values(game.iron).filter(
-        (iron) => iron.x !== undefined && iron.y !== undefined,
-      ).length,
-    );
+    const available = getAvailableNodes(game, "iron");
 
     if (available.lt(1)) {
       throw new Error("No iron available");
     }
 
-    const existingIron = Object.entries(game.iron).find(
-      ([_, iron]) => iron.x === undefined && iron.y === undefined,
-    );
+    const nodeStateAccessor = game.iron;
+
+    const existingIron = findExistingUnplacedNode({
+      nodeStateAccessor,
+      nodeToFind: action.name,
+      baseNode: "Iron Rock",
+    });
 
     if (existingIron) {
       const [id, iron] = existingIron;
@@ -51,8 +57,8 @@ export function placeIron({
         const existingProgress =
           updatedIron.removedAt - updatedIron.stone.minedAt;
         updatedIron.stone.minedAt = createdAt - existingProgress;
-        delete updatedIron.removedAt;
       }
+      delete updatedIron.removedAt;
 
       game.iron[id] = updatedIron;
 
@@ -66,6 +72,9 @@ export function placeIron({
       stone: {
         minedAt: 0,
       },
+      tier: ADVANCED_RESOURCES[action.name as UpgradedResourceName]?.tier ?? 1,
+      name: action.name,
+      multiplier: RESOURCE_MULTIPLIER[action.name],
     };
 
     game.iron = {

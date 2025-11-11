@@ -14,6 +14,7 @@ const CAN_WITHDRAW_AND_TRADE: Releases = {
 };
 
 export const BUMPKIN_RELEASES: Partial<Record<BumpkinItem, Releases>> = {
+  "New Years Crown": CAN_WITHDRAW_AND_TRADE,
   "Painter's Cap": CAN_WITHDRAW_AND_TRADE,
   "Festival of Colors Background": CAN_WITHDRAW_AND_TRADE,
   "Chef Apron": CAN_WITHDRAW_AND_TRADE,
@@ -173,7 +174,6 @@ export const BUMPKIN_RELEASES: Partial<Record<BumpkinItem, Releases>> = {
   "Fishing Spear": CAN_WITHDRAW_AND_TRADE,
   "Flip Flops": CAN_WITHDRAW_AND_TRADE,
   Wellies: CAN_WITHDRAW_AND_TRADE,
-  "Saw Fish": CAN_WITHDRAW_AND_TRADE,
   "Skinning Knife": CAN_WITHDRAW_AND_TRADE,
   "Tackle Box": CAN_WITHDRAW_AND_TRADE,
   "Infernal Rod": CAN_WITHDRAW_AND_TRADE,
@@ -308,7 +308,6 @@ export const BUMPKIN_RELEASES: Partial<Record<BumpkinItem, Releases>> = {
     tradeAt: new Date("2025-01-01"),
     withdrawAt: new Date("2025-01-01"),
   },
-
   Sickle: {
     tradeAt: SEASONS["Winds of Change"].endDate,
     withdrawAt: SEASONS["Winds of Change"].endDate,
@@ -376,6 +375,7 @@ export const BUMPKIN_RELEASES: Partial<Record<BumpkinItem, Releases>> = {
     tradeAt: new Date("2025-05-01"),
     withdrawAt: new Date("2025-05-01"),
   },
+
   "Bloomwarden Suit": {
     tradeAt: SEASONS["Great Bloom"].endDate,
     withdrawAt: SEASONS["Great Bloom"].endDate,
@@ -428,73 +428,154 @@ export const BUMPKIN_RELEASES: Partial<Record<BumpkinItem, Releases>> = {
     tradeAt: SEASONS["Great Bloom"].endDate,
     withdrawAt: SEASONS["Great Bloom"].endDate,
   },
+
   "Paint Splattered Hair": {
-    tradeAt: new Date("2025-07-07T00:00:00Z"),
-    withdrawAt: new Date("2025-07-07T00:00:00Z"),
+    tradeAt: new Date("2025-07-08"),
+    withdrawAt: new Date("2025-07-08"),
   },
   "Paint Splattered Shirt": {
-    tradeAt: new Date("2025-07-07T00:00:00Z"),
-    withdrawAt: new Date("2025-07-07T00:00:00Z"),
+    tradeAt: new Date("2025-07-08"),
+    withdrawAt: new Date("2025-07-08"),
   },
   "Paint Splattered Overalls": {
-    tradeAt: new Date("2025-07-07T00:00:00Z"),
-    withdrawAt: new Date("2025-07-07T00:00:00Z"),
+    tradeAt: new Date("2025-07-08"),
+    withdrawAt: new Date("2025-07-08"),
   },
   "Paint Spray Can": {
-    tradeAt: new Date("2025-07-07T00:00:00Z"),
-    withdrawAt: new Date("2025-07-07T00:00:00Z"),
+    tradeAt: new Date("2025-07-08"),
+    withdrawAt: new Date("2025-07-08"),
   },
   "Slime Hat": {
-    tradeAt: new Date("2025-07-07T00:00:00Z"),
-    withdrawAt: new Date("2025-07-07T00:00:00Z"),
+    tradeAt: new Date("2025-07-08"),
+    withdrawAt: new Date("2025-07-08"),
   },
   "Slime Wings": {
-    tradeAt: new Date("2025-07-07T00:00:00Z"),
-    withdrawAt: new Date("2025-07-07T00:00:00Z"),
+    tradeAt: new Date("2025-07-08"),
+    withdrawAt: new Date("2025-07-08"),
   },
   "Slime Aura": {
-    tradeAt: new Date("2025-07-07T00:00:00Z"),
-    withdrawAt: new Date("2025-07-07T00:00:00Z"),
+    tradeAt: new Date("2025-07-08"),
+    withdrawAt: new Date("2025-07-08"),
   },
+
+  "Coin Aura": {
+    tradeAt: new Date("2025-09-22"),
+    withdrawAt: new Date("2025-09-22"),
+  },
+
   "Recycle Shirt": {
     tradeAt: SEASONS["Better Together"].endDate,
-    withdrawAt: SEASONS["Better Together"].endDate,
+    withdrawAt: new Date("2025-12-03T00:00:00Z"),
   },
   "Pickaxe Shark": {
     tradeAt: SEASONS["Better Together"].endDate,
-    withdrawAt: SEASONS["Better Together"].endDate,
+    withdrawAt: new Date("2025-12-03T00:00:00Z"),
   },
   "Garbage Bin Hat": {
     tradeAt: SEASONS["Better Together"].endDate,
-    withdrawAt: SEASONS["Better Together"].endDate,
+    withdrawAt: new Date("2025-12-03T00:00:00Z"),
   },
   "Turd Topper": {
     tradeAt: SEASONS["Better Together"].endDate,
-    withdrawAt: SEASONS["Better Together"].endDate,
+    withdrawAt: new Date("2025-12-03T00:00:00Z"),
   },
   "Architect Ruler": {
     tradeAt: SEASONS["Better Together"].endDate,
-    withdrawAt: SEASONS["Better Together"].endDate,
+    withdrawAt: new Date("2025-12-03T00:00:00Z"),
   },
-  "Onion Leek": {
-    tradeAt: SEASONS["Better Together"].endDate,
-    withdrawAt: SEASONS["Better Together"].endDate,
-  },
+  "Onion Leek": undefined, // Not used
   "Oil Gallon": {
-    tradeAt: SEASONS["Better Together"].endDate,
-    withdrawAt: SEASONS["Better Together"].endDate,
+    tradeAt: new Date("2025-10-20T00:00:00Z"),
+    withdrawAt: new Date("2025-12-03T00:00:00Z"),
   },
   "Lava Swimwear": {
-    tradeAt: SEASONS["Better Together"].endDate,
-    withdrawAt: SEASONS["Better Together"].endDate,
+    tradeAt: new Date("2025-10-20T00:00:00Z"),
+    withdrawAt: new Date("2025-12-03T00:00:00Z"),
   },
-  "Wooly Dress": {
-    tradeAt: SEASONS["Better Together"].endDate,
-    withdrawAt: SEASONS["Better Together"].endDate,
-  },
+  "Wooly Dress": undefined, // Not used
   "Raccoon Onesie": {
     tradeAt: SEASONS["Better Together"].endDate,
-    withdrawAt: SEASONS["Better Together"].endDate,
+    withdrawAt: new Date("2025-12-03T00:00:00Z"),
+  },
+  "Rocket Onesie": {
+    tradeAt: new Date("2025-09-12"),
+    withdrawAt: new Date("2025-09-12"),
+    // writing a manual date so that it shows up in what's new section
+  },
+
+  // Paw Prints
+  "Pet Specialist Shirt": {
+    tradeAt: SEASONS["Paw Prints"].endDate,
+    withdrawAt: new Date("2026-03-04T00:00:00Z"),
+  },
+  "Pet Specialist Pants": {
+    tradeAt: SEASONS["Paw Prints"].endDate,
+    withdrawAt: new Date("2026-03-04T00:00:00Z"),
+  },
+  "Pet Specialist Hat": {
+    tradeAt: SEASONS["Paw Prints"].endDate,
+    withdrawAt: new Date("2026-03-04T00:00:00Z"),
+  },
+  "Saw Fish": {
+    tradeAt: SEASONS["Paw Prints"].endDate,
+    withdrawAt: new Date("2026-03-04T00:00:00Z"),
+  },
+
+  "Moonseeker Potion": {
+    tradeAt: new Date("2025-11-06"),
+    withdrawAt: new Date("2025-11-06"),
+  },
+  "Frizzy Bob Cut": {
+    tradeAt: new Date("2025-11-06"),
+    withdrawAt: new Date("2025-11-06"),
+  },
+  "Two-toned Layered": {
+    tradeAt: new Date("2025-11-06"),
+    withdrawAt: new Date("2025-11-06"),
+  },
+  "Halloween Deathscythe": {
+    tradeAt: new Date("2025-11-06"),
+    withdrawAt: new Date("2025-11-06"),
+  },
+  "Moonseeker Hand Puppet": {
+    tradeAt: new Date("2025-11-06"),
+    withdrawAt: new Date("2025-11-06"),
+  },
+  "Sweet Devil Horns": {
+    tradeAt: new Date("2025-11-06"),
+    withdrawAt: new Date("2025-11-06"),
+  },
+  "Trick and Treat": {
+    tradeAt: new Date("2025-11-06"),
+    withdrawAt: new Date("2025-11-06"),
+  },
+  "Jack O'Sweets": {
+    tradeAt: new Date("2025-11-06"),
+    withdrawAt: new Date("2025-11-06"),
+  },
+  "Frank Onesie": {
+    tradeAt: new Date("2025-11-06"),
+    withdrawAt: new Date("2025-11-06"),
+  },
+  "Research Uniform": {
+    tradeAt: new Date("2025-11-06"),
+    withdrawAt: new Date("2025-11-06"),
+  },
+  "Sweet Devil Dress": {
+    tradeAt: new Date("2025-11-06"),
+    withdrawAt: new Date("2025-11-06"),
+  },
+  "Underworld Stimpack": {
+    tradeAt: new Date("2025-11-06"),
+    withdrawAt: new Date("2025-11-06"),
+  },
+  "Sweet Devil Wings": {
+    tradeAt: new Date("2025-11-06"),
+    withdrawAt: new Date("2025-11-06"),
+  },
+  "Wisp Aura": {
+    tradeAt: new Date("2025-11-06"),
+    withdrawAt: new Date("2025-11-06"),
   },
 };
 
@@ -816,6 +897,39 @@ export const INVENTORY_RELEASES: Partial<Record<InventoryItemName, Releases>> =
     Clock: CAN_WITHDRAW_AND_TRADE,
     Vinny: CAN_WITHDRAW_AND_TRADE,
 
+    Cerberus: {
+      tradeAt: new Date("2025-11-06"),
+      withdrawAt: new Date("2025-11-06"),
+    },
+    "Witch's Cauldron": {
+      tradeAt: new Date("2025-11-06"),
+      withdrawAt: new Date("2025-11-06"),
+    },
+    Raveyard: {
+      tradeAt: new Date("2025-11-06"),
+      withdrawAt: new Date("2025-11-06"),
+    },
+    "Haunted House": {
+      tradeAt: new Date("2025-11-06"),
+      withdrawAt: new Date("2025-11-06"),
+    },
+    "Mimic Egg": {
+      tradeAt: new Date("2025-11-06"),
+      withdrawAt: new Date("2025-11-06"),
+    },
+    "Haunted Tomb": {
+      tradeAt: new Date("2025-11-06"),
+      withdrawAt: new Date("2025-11-06"),
+    },
+    Guillotine: {
+      tradeAt: new Date("2025-11-06"),
+      withdrawAt: new Date("2025-11-06"),
+    },
+    "Vampire Coffin": {
+      tradeAt: new Date("2025-11-06"),
+      withdrawAt: new Date("2025-11-06"),
+    },
+
     // Upcoming launches
     "Moo-ver": {
       tradeAt: new Date("2024-12-13"),
@@ -860,39 +974,39 @@ export const INVENTORY_RELEASES: Partial<Record<InventoryItemName, Releases>> =
     },
     "Christmas Stocking": {
       tradeAt: new Date("2024-12-28"),
-      withdrawAt: new Date("2025-11-01"),
+      withdrawAt: new Date("2025-01-01"),
     },
     "Golden Christmas Stocking": {
       tradeAt: new Date("2024-12-28"),
-      withdrawAt: new Date("2025-11-01"),
+      withdrawAt: new Date("2025-01-01"),
     },
     "Cozy Fireplace": {
       tradeAt: new Date("2024-12-28"),
-      withdrawAt: new Date("2025-11-01"),
+      withdrawAt: new Date("2025-01-01"),
     },
     "Christmas Rug": {
       tradeAt: new Date("2024-12-28"),
-      withdrawAt: new Date("2025-11-01"),
+      withdrawAt: new Date("2025-01-01"),
     },
     "Christmas Candle": {
       tradeAt: new Date("2024-12-28"),
-      withdrawAt: new Date("2025-11-01"),
+      withdrawAt: new Date("2025-01-01"),
     },
     "Santa Penguin": {
       tradeAt: new Date("2024-12-28"),
-      withdrawAt: new Date("2025-11-01"),
+      withdrawAt: new Date("2025-01-01"),
     },
     "Penguin Pool": {
       tradeAt: new Date("2024-12-28"),
-      withdrawAt: new Date("2025-11-01"),
+      withdrawAt: new Date("2025-01-01"),
     },
     Snowman: {
       tradeAt: new Date("2024-12-28"),
-      withdrawAt: new Date("2025-11-01"),
+      withdrawAt: new Date("2025-01-01"),
     },
     "Festive Toy Train": {
       tradeAt: new Date("2024-12-28"),
-      withdrawAt: new Date("2025-11-01"),
+      withdrawAt: new Date("2025-01-01"),
     },
     "Golden Cow": {
       tradeAt: new Date("2024-12-23"),
@@ -938,6 +1052,18 @@ export const INVENTORY_RELEASES: Partial<Record<InventoryItemName, Releases>> =
       tradeAt: SEASONS["Winds of Change"].endDate,
       withdrawAt: SEASONS["Winds of Change"].endDate,
     },
+    "Summer Duckling": {
+      tradeAt: SEASONS["Winds of Change"].endDate,
+      withdrawAt: SEASONS["Winds of Change"].endDate,
+    },
+    "Winter Duckling": {
+      tradeAt: SEASONS["Winds of Change"].endDate,
+      withdrawAt: SEASONS["Winds of Change"].endDate,
+    },
+    "Autumn Duckling": {
+      tradeAt: SEASONS["Winds of Change"].endDate,
+      withdrawAt: SEASONS["Winds of Change"].endDate,
+    },
     Igloo: {
       tradeAt: SEASONS["Winds of Change"].endDate,
       withdrawAt: SEASONS["Winds of Change"].endDate,
@@ -964,7 +1090,6 @@ export const INVENTORY_RELEASES: Partial<Record<InventoryItemName, Releases>> =
     },
     "Golden Sheep": {
       tradeAt: new Date("2025-04-08"),
-
       withdrawAt: SEASONS["Winds of Change"].endDate,
     },
     "Barn Blueprint": {
@@ -983,6 +1108,7 @@ export const INVENTORY_RELEASES: Partial<Record<InventoryItemName, Releases>> =
     "Nightshade Emblem": {
       tradeAt: new Date("2021-01-01"),
     },
+
     "Frozen Cow": {
       tradeAt: SEASONS["Winds of Change"].startDate,
       withdrawAt: SEASONS["Winds of Change"].endDate,
@@ -1006,6 +1132,44 @@ export const INVENTORY_RELEASES: Partial<Record<InventoryItemName, Releases>> =
     Jin: {
       tradeAt: new Date("2025-08-20T00:00:00Z"),
       withdrawAt: new Date("2025-08-20T00:00:00Z"),
+    },
+
+    "Carrot House": {
+      tradeAt: new Date("2025-05-01T00:00:00Z"),
+      withdrawAt: new Date("2025-05-01T00:00:00Z"),
+    },
+    "Orange Bunny Lantern": {
+      tradeAt: new Date("2025-05-01T00:00:00Z"),
+      withdrawAt: new Date("2025-05-01T00:00:00Z"),
+    },
+    "White Bunny Lantern": {
+      tradeAt: new Date("2025-05-01T00:00:00Z"),
+      withdrawAt: new Date("2025-05-01T00:00:00Z"),
+    },
+    "Orange Tunnel Bunny": {
+      tradeAt: new Date("2025-05-01T00:00:00Z"),
+      withdrawAt: new Date("2025-05-01T00:00:00Z"),
+    },
+
+    "Pink Dolphin": {
+      tradeAt: SEASONS["Great Bloom"].startDate,
+      withdrawAt: SEASONS["Great Bloom"].endDate,
+    },
+    "Love Chicken": {
+      tradeAt: SEASONS["Great Bloom"].startDate,
+      withdrawAt: SEASONS["Great Bloom"].endDate,
+    },
+    "Dr Cow": {
+      tradeAt: SEASONS["Great Bloom"].startDate,
+      withdrawAt: SEASONS["Great Bloom"].endDate,
+    },
+    "Nurse Sheep": {
+      tradeAt: SEASONS["Great Bloom"].startDate,
+      withdrawAt: SEASONS["Great Bloom"].endDate,
+    },
+    Lunalist: {
+      tradeAt: SEASONS["Great Bloom"].startDate,
+      withdrawAt: SEASONS["Great Bloom"].endDate,
     },
     Quarry: {
       tradeAt: new Date("2025-07-01T00:00:00Z"),
@@ -1064,98 +1228,188 @@ export const INVENTORY_RELEASES: Partial<Record<InventoryItemName, Releases>> =
       withdrawAt: SEASONS["Great Bloom"].endDate,
     },
     "Floating Toy": {
-      tradeAt: new Date("2025-07-07T00:00:00Z"),
-      withdrawAt: new Date("2025-07-07T00:00:00Z"),
+      tradeAt: new Date("2025-07-08"),
+      withdrawAt: new Date("2025-07-08"),
     },
     "Paint Buckets": {
-      tradeAt: new Date("2025-07-07T00:00:00Z"),
-      withdrawAt: new Date("2025-07-07T00:00:00Z"),
+      tradeAt: new Date("2025-07-08"),
+      withdrawAt: new Date("2025-07-08"),
     },
     "Rainbow Well": {
-      tradeAt: new Date("2025-07-07T00:00:00Z"),
-      withdrawAt: new Date("2025-07-07T00:00:00Z"),
+      tradeAt: new Date("2025-07-08"),
+      withdrawAt: new Date("2025-07-08"),
     },
     "Rainbow Flower": {
-      tradeAt: new Date("2025-07-07T00:00:00Z"),
-      withdrawAt: new Date("2025-07-07T00:00:00Z"),
+      tradeAt: new Date("2025-07-08"),
+      withdrawAt: new Date("2025-07-08"),
     },
     "Pony Toy": {
-      tradeAt: new Date("2025-07-07T00:00:00Z"),
-      withdrawAt: new Date("2025-07-07T00:00:00Z"),
+      tradeAt: new Date("2025-07-08"),
+      withdrawAt: new Date("2025-07-08"),
     },
     "Red Slime Balloon": {
-      tradeAt: new Date("2025-07-07T00:00:00Z"),
-      withdrawAt: new Date("2025-07-07T00:00:00Z"),
+      tradeAt: new Date("2025-07-08"),
+      withdrawAt: new Date("2025-07-08"),
     },
     "Blue Slime Balloon": {
-      tradeAt: new Date("2025-07-07T00:00:00Z"),
-      withdrawAt: new Date("2025-07-07T00:00:00Z"),
+      tradeAt: new Date("2025-07-08"),
+      withdrawAt: new Date("2025-07-08"),
     },
     "Floor Mirror": {
       tradeAt: SEASONS["Better Together"].endDate,
-      withdrawAt: SEASONS["Better Together"].endDate,
+      withdrawAt: new Date("2025-12-03T00:00:00Z"),
     },
     "Long Rug": {
       tradeAt: SEASONS["Better Together"].endDate,
-      withdrawAt: SEASONS["Better Together"].endDate,
+      withdrawAt: new Date("2025-12-03T00:00:00Z"),
     },
     "Garbage Bin": {
       tradeAt: SEASONS["Better Together"].endDate,
-      withdrawAt: SEASONS["Better Together"].endDate,
+      withdrawAt: new Date("2025-12-03T00:00:00Z"),
     },
     Wheelbarrow: {
       tradeAt: SEASONS["Better Together"].endDate,
-      withdrawAt: SEASONS["Better Together"].endDate,
+      withdrawAt: new Date("2025-12-03T00:00:00Z"),
     },
     "Snail King": {
       tradeAt: SEASONS["Better Together"].endDate,
-      withdrawAt: SEASONS["Better Together"].endDate,
+      withdrawAt: new Date("2025-12-03T00:00:00Z"),
     },
     "Reelmaster's Chair": {
       tradeAt: SEASONS["Better Together"].endDate,
-      withdrawAt: SEASONS["Better Together"].endDate,
+      withdrawAt: new Date("2025-12-03T00:00:00Z"),
     },
     "Rat King": {
       tradeAt: SEASONS["Better Together"].endDate,
-      withdrawAt: SEASONS["Better Together"].endDate,
+      withdrawAt: new Date("2025-12-03T00:00:00Z"),
     },
     "Fruit Tune Box": {
       tradeAt: SEASONS["Better Together"].endDate,
-      withdrawAt: SEASONS["Better Together"].endDate,
+      withdrawAt: new Date("2025-12-03T00:00:00Z"),
     },
     // Double bed is not tradeable - explicitly set her to avoid accidental trade
     "Double Bed": undefined,
     "Teamwork Monument": undefined,
     "Giant Artichoke": {
       tradeAt: SEASONS["Better Together"].endDate,
-      withdrawAt: SEASONS["Better Together"].endDate,
+      withdrawAt: new Date("2025-12-03T00:00:00Z"),
     },
     "Rocket Statue": {
-      tradeAt: SEASONS["Better Together"].endDate,
-      withdrawAt: SEASONS["Better Together"].endDate,
+      tradeAt: new Date("2025-10-20T00:00:00Z"),
+      withdrawAt: new Date("2025-12-03T00:00:00Z"),
     },
     "Ant Queen": {
-      tradeAt: SEASONS["Better Together"].endDate,
-      withdrawAt: SEASONS["Better Together"].endDate,
+      tradeAt: new Date("2025-10-20T00:00:00Z"),
+      withdrawAt: new Date("2025-12-03T00:00:00Z"),
     },
     "Jurassic Droplet": {
-      tradeAt: SEASONS["Better Together"].endDate,
-      withdrawAt: SEASONS["Better Together"].endDate,
+      tradeAt: new Date("2025-10-20T00:00:00Z"),
+      withdrawAt: new Date("2025-12-03T00:00:00Z"),
     },
     "Giant Onion": {
-      tradeAt: SEASONS["Better Together"].endDate,
-      withdrawAt: SEASONS["Better Together"].endDate,
+      tradeAt: new Date("2025-10-20T00:00:00Z"),
+      withdrawAt: new Date("2025-12-03T00:00:00Z"),
     },
     "Giant Turnip": {
-      tradeAt: SEASONS["Better Together"].endDate,
-      withdrawAt: SEASONS["Better Together"].endDate,
+      tradeAt: new Date("2025-10-20T00:00:00Z"),
+      withdrawAt: new Date("2025-12-03T00:00:00Z"),
     },
     "Groovy Gramophone": {
-      tradeAt: SEASONS["Better Together"].endDate,
-      withdrawAt: SEASONS["Better Together"].endDate,
+      tradeAt: new Date("2025-10-20T00:00:00Z"),
+      withdrawAt: new Date("2025-12-03T00:00:00Z"),
     },
     "Wheat Whiskers": {
       tradeAt: SEASONS["Better Together"].endDate,
-      withdrawAt: SEASONS["Better Together"].endDate,
+      withdrawAt: new Date("2025-12-03T00:00:00Z"),
     },
+    "Janitor Chicken": {
+      tradeAt: SEASONS["Better Together"].endDate,
+      withdrawAt: new Date("2025-12-03T00:00:00Z"),
+    },
+    Poseidon: {
+      tradeAt: SEASONS["Better Together"].endDate,
+      withdrawAt: new Date("2025-12-03T00:00:00Z"),
+    },
+    "Venus Bumpkin Trap": {
+      tradeAt: SEASONS["Better Together"].endDate,
+      withdrawAt: new Date("2025-12-03T00:00:00Z"),
+    },
+    "Baby Cow": {
+      tradeAt: SEASONS["Better Together"].endDate,
+      withdrawAt: new Date("2025-12-03T00:00:00Z"),
+    },
+    "Baby Sheep": {
+      tradeAt: SEASONS["Better Together"].endDate,
+      withdrawAt: new Date("2025-12-03T00:00:00Z"),
+    },
+    "Black Hole Flower": {
+      tradeAt: SEASONS["Paw Prints"].endDate,
+      withdrawAt: new Date("2026-03-04T00:00:00Z"),
+    },
+    "Sleepy Chicken": {
+      tradeAt: SEASONS["Paw Prints"].endDate,
+      withdrawAt: new Date("2026-03-04T00:00:00Z"),
+    },
+    "Astronaut Cow": {
+      tradeAt: SEASONS["Paw Prints"].endDate,
+      withdrawAt: new Date("2026-03-04T00:00:00Z"),
+    },
+    "Astronaut Sheep": {
+      tradeAt: SEASONS["Paw Prints"].endDate,
+      withdrawAt: new Date("2026-03-04T00:00:00Z"),
+    },
+    "Paw Prints Rug": {
+      tradeAt: SEASONS["Paw Prints"].endDate,
+      withdrawAt: new Date("2026-03-04T00:00:00Z"),
+    },
+    "Pet Bed": {
+      tradeAt: SEASONS["Paw Prints"].endDate,
+      withdrawAt: new Date("2026-03-04T00:00:00Z"),
+    },
+    "Pet Bowls": {
+      tradeAt: SEASONS["Paw Prints"].endDate,
+      withdrawAt: new Date("2026-03-04T00:00:00Z"),
+    },
+    "Moon Fox Statue": {
+      tradeAt: SEASONS["Paw Prints"].endDate,
+      withdrawAt: new Date("2026-03-04T00:00:00Z"),
+    },
+    "Giant Acorn": {
+      tradeAt: SEASONS["Paw Prints"].endDate,
+      withdrawAt: new Date("2026-03-04T00:00:00Z"),
+    },
+    "Petnip Plant": {
+      tradeAt: SEASONS["Paw Prints"].endDate,
+      withdrawAt: new Date("2026-03-04T00:00:00Z"),
+    },
+    "Pet Kennel": {
+      tradeAt: SEASONS["Paw Prints"].endDate,
+      withdrawAt: new Date("2026-03-04T00:00:00Z"),
+    },
+    "Pet Toys": {
+      tradeAt: SEASONS["Paw Prints"].endDate,
+      withdrawAt: new Date("2026-03-04T00:00:00Z"),
+    },
+    "Pet Playground": {
+      tradeAt: SEASONS["Paw Prints"].endDate,
+      withdrawAt: new Date("2026-03-04T00:00:00Z"),
+    },
+    "Fish Bowl": {
+      tradeAt: SEASONS["Paw Prints"].endDate,
+      withdrawAt: new Date("2026-03-04T00:00:00Z"),
+    },
+    "Giant Gold Bone": {
+      tradeAt: SEASONS["Paw Prints"].endDate,
+      withdrawAt: new Date("2026-03-04T00:00:00Z"),
+    },
+    "Lunar Temple": {
+      tradeAt: SEASONS["Paw Prints"].endDate,
+      withdrawAt: new Date("2026-03-04T00:00:00Z"),
+    },
+    "Magma Stone": {
+      tradeAt: SEASONS["Paw Prints"].endDate,
+      withdrawAt: new Date("2026-03-04T00:00:00Z"),
+    },
+    Cornucopia: undefined,
+    "Messy Bed": undefined,
   };

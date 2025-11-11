@@ -43,9 +43,11 @@ const SFTDetailPopoverBuffsImplementation = ({
 }) => {
   const { gameService } = useContext(Context);
 
-  const buff = COLLECTIBLE_BUFF_LABELS(gameService.getSnapshot().context.state)[
-    name
-  ];
+  const state = gameService.getSnapshot().context.state;
+  const buff = COLLECTIBLE_BUFF_LABELS[name]?.({
+    skills: state.bumpkin.skills,
+    collectibles: state.collectibles,
+  });
 
   if (!buff) return null;
 
@@ -112,10 +114,12 @@ export const SFTDetailPopoverTradeDetails = ({
           <span>{`${t("marketplace.price", { price: formatNumber(tradeable.floor, { decimalPlaces: 2 }) })} FLOWER`}</span>
         </Label>
       )}
-      {tradeable.supply !== 0 && (
+      {tradeable.supply !== undefined && tradeable.supply > 0 && (
         <Label type="transparent" className="text-xs">
           <span className="text-xs -ml-1">
-            {t("marketplace.supply", { supply: tradeable.supply })}
+            {t("marketplace.supply", {
+              supply: formatNumber(tradeable.supply, { decimalPlaces: 0 }),
+            })}
           </span>
         </Label>
       )}

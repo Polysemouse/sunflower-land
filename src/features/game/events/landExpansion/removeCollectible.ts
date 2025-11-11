@@ -4,8 +4,7 @@ import { GameState, PlacedItem, PlacedLamp } from "features/game/types/game";
 
 import { PlaceableLocation } from "features/game/types/collectibles";
 import { produce } from "immer";
-import { HourglassType } from "features/island/collectibles/components/Hourglass";
-import { HOURGLASSES } from "./burnCollectible";
+import { LIMITED_ITEMS } from "./burnCollectible";
 
 export enum REMOVE_COLLECTIBLE_ERRORS {
   INVALID_COLLECTIBLE = "This collectible does not exist",
@@ -86,11 +85,7 @@ export function removeCollectible({
       }
     }
 
-    if (
-      HOURGLASSES.includes(action.name as HourglassType) ||
-      action.name === "Time Warp Totem" ||
-      action.name === "Super Totem"
-    ) {
+    if (LIMITED_ITEMS.includes(action.name)) {
       const collectible: PlacedItem = collectibleToRemove;
       if (collectible) {
         throw new Error(REMOVE_COLLECTIBLE_ERRORS.LIMITED_ITEM_IN_USE);

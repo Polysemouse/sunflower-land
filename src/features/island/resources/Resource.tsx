@@ -20,8 +20,6 @@ import { Beehive } from "features/game/expansion/components/resources/beehive/Be
 import { FlowerBed } from "../flowers/FlowerBed";
 import { Sunstone } from "features/game/expansion/components/resources/sunstone/Sunstone";
 import { OilReserve } from "features/game/expansion/components/resources/oilReserve/OilReserve";
-import { GameState, TemperateSeasonName } from "features/game/types/game";
-
 import { LavaPit } from "features/game/expansion/components/lavaPit/LavaPit";
 import { TREE_VARIANTS } from "../lib/alternateArt";
 import { getCurrentBiome } from "../biomes/biomes";
@@ -37,11 +35,16 @@ export interface ResourceProps {
 }
 
 // Used for placing
-export const READONLY_RESOURCE_COMPONENTS: (
-  island: GameState["island"],
-  season: TemperateSeasonName,
-) => Record<ResourceName, React.FC<ResourceProps>> = (island, season) => {
+export const READONLY_RESOURCE_COMPONENTS = (): Record<
+  ResourceName,
+  () => JSX.Element
+> => {
+  const { gameService } = useContext(Context);
+  const state = gameService.getSnapshot().context.state;
+  const season = state.season.season;
+  const island = state.island;
   const currentBiome = getCurrentBiome(island);
+
   return {
     "Crop Plot": () => (
       <div
@@ -62,6 +65,7 @@ export const READONLY_RESOURCE_COMPONENTS: (
     ),
     "Gold Rock": () => (
       <div
+        className="relative pointer-events-none"
         style={{
           width: `${PIXEL_SCALE * 14}px`,
           top: `${PIXEL_SCALE * 3}px`,
@@ -70,7 +74,6 @@ export const READONLY_RESOURCE_COMPONENTS: (
       >
         <img
           src={ITEM_DETAILS["Gold Rock"].image}
-          className="relative pointer-events-none"
           style={{
             width: `${PIXEL_SCALE * 14}px`,
             top: `${PIXEL_SCALE * 3}px`,
@@ -82,7 +85,7 @@ export const READONLY_RESOURCE_COMPONENTS: (
     "Iron Rock": () => (
       <img
         src={ITEM_DETAILS["Iron Rock"].image}
-        className="relative"
+        className="relative pointer-events-none"
         style={{
           width: `${PIXEL_SCALE * 14}px`,
           top: `${PIXEL_SCALE * 3}px`,
@@ -93,11 +96,33 @@ export const READONLY_RESOURCE_COMPONENTS: (
     "Stone Rock": () => (
       <img
         src={ITEM_DETAILS["Stone Rock"].image}
-        className="relative"
+        className="relative pointer-events-none"
         style={{
           width: `${PIXEL_SCALE * 14}px`,
-          top: `${PIXEL_SCALE * 3}px`,
-          left: `${PIXEL_SCALE * 1}px`,
+          top: `${PIXEL_SCALE * 4.52}px`,
+          left: `${PIXEL_SCALE * 1.38}px`,
+        }}
+      />
+    ),
+    "Fused Stone Rock": () => (
+      <img
+        src={ITEM_DETAILS["Fused Stone Rock"].image}
+        className="relative pointer-events-none"
+        style={{
+          width: `${PIXEL_SCALE * 15}px`,
+          top: `${PIXEL_SCALE}px`,
+          left: `${PIXEL_SCALE * 0.238}px`,
+        }}
+      />
+    ),
+    "Reinforced Stone Rock": () => (
+      <img
+        src={ITEM_DETAILS["Reinforced Stone Rock"].image}
+        className="relative pointer-events-none"
+        style={{
+          width: `${PIXEL_SCALE * 15}px`,
+          top: `${PIXEL_SCALE * -0.523}px`,
+          left: `${PIXEL_SCALE * 0.62}px`,
         }}
       />
     ),
@@ -123,11 +148,11 @@ export const READONLY_RESOURCE_COMPONENTS: (
     ),
     Tree: () => (
       <img
-        src={TREE_VARIANTS[currentBiome][season]}
-        className="relative"
+        src={TREE_VARIANTS(currentBiome, season, "Tree")}
+        className="relative pointer-events-none"
         style={{
           width: `${PIXEL_SCALE * 26}px`,
-          bottom: `${PIXEL_SCALE * 3}px`,
+          bottom: `${PIXEL_SCALE * 2}px`,
           left: `${PIXEL_SCALE * 3}px`,
         }}
       />
@@ -188,6 +213,72 @@ export const READONLY_RESOURCE_COMPONENTS: (
         className="absolute h-auto w-full"
       />
     ),
+    "Ancient Tree": () => (
+      <img
+        src={TREE_VARIANTS(currentBiome, season, "Ancient Tree")}
+        className="relative pointer-events-none"
+        style={{
+          width: `${PIXEL_SCALE * 26}px`,
+          bottom: `${PIXEL_SCALE * 2}px`,
+          left: `${PIXEL_SCALE * 3}px`,
+        }}
+      />
+    ),
+    "Sacred Tree": () => (
+      <img
+        src={TREE_VARIANTS(currentBiome, season, "Sacred Tree")}
+        className="relative pointer-events-none"
+        style={{
+          width: `${PIXEL_SCALE * 26}px`,
+          bottom: `${PIXEL_SCALE * 2}px`,
+          left: `${PIXEL_SCALE * 3}px`,
+        }}
+      />
+    ),
+    "Refined Iron Rock": () => (
+      <img
+        src={ITEM_DETAILS["Refined Iron Rock"].image}
+        className="relative pointer-events-none"
+        style={{
+          width: `${PIXEL_SCALE * 15}px`,
+          top: `${PIXEL_SCALE * 3}px`,
+          left: `${PIXEL_SCALE * 1}px`,
+        }}
+      />
+    ),
+    "Tempered Iron Rock": () => (
+      <img
+        src={ITEM_DETAILS["Tempered Iron Rock"].image}
+        className="relative pointer-events-none"
+        style={{
+          width: `${PIXEL_SCALE * 15}px`,
+          top: `${PIXEL_SCALE * 1}px`,
+          left: `${PIXEL_SCALE * 1}px`,
+        }}
+      />
+    ),
+    "Pure Gold Rock": () => (
+      <img
+        src={ITEM_DETAILS["Pure Gold Rock"].image}
+        className="relative pointer-events-none"
+        style={{
+          width: `${PIXEL_SCALE * 15}px`,
+          top: `${PIXEL_SCALE * 3}px`,
+          left: `${PIXEL_SCALE * 1}px`,
+        }}
+      />
+    ),
+    "Prime Gold Rock": () => (
+      <img
+        src={ITEM_DETAILS["Prime Gold Rock"].image}
+        className="relative pointer-events-none"
+        style={{
+          width: `${PIXEL_SCALE * 15}px`,
+          top: `${PIXEL_SCALE * 1}px`,
+          left: `${PIXEL_SCALE * 1}px`,
+        }}
+      />
+    ),
   };
 };
 
@@ -208,6 +299,14 @@ export const RESOURCE_COMPONENTS: Record<
   "Sunstone Rock": Sunstone,
   "Oil Reserve": OilReserve,
   "Lava Pit": LavaPit,
+  "Fused Stone Rock": Stone,
+  "Reinforced Stone Rock": Stone,
+  "Ancient Tree": Tree,
+  "Sacred Tree": Tree,
+  "Refined Iron Rock": Iron,
+  "Tempered Iron Rock": Iron,
+  "Pure Gold Rock": Gold,
+  "Prime Gold Rock": Gold,
 };
 
 const isLandscaping = (state: MachineState) => state.matches("landscaping");

@@ -8,6 +8,7 @@ import {
   mineStone,
 } from "./stoneMine";
 import { TEST_BUMPKIN } from "features/game/lib/bumpkinData";
+import { EXPIRY_COOLDOWNS } from "features/game/lib/collectibleBuilt";
 
 const GAME_STATE: GameState = {
   ...INITIAL_FARM,
@@ -43,7 +44,7 @@ describe("mineStone", () => {
         createdAt: Date.now(),
         action: {
           type: "stoneRock.mined",
-          index: 0,
+          index: "0",
         },
       }),
     ).toThrow("Not enough pickaxes");
@@ -62,10 +63,36 @@ describe("mineStone", () => {
         createdAt: Date.now(),
         action: {
           type: "stoneRock.mined",
-          index: 3,
+          index: "3",
         },
       }),
     ).toThrow("Stone does not exist");
+  });
+
+  it("throws an error if stone is not placed", () => {
+    expect(() =>
+      mineStone({
+        state: {
+          ...GAME_STATE,
+          bumpkin: TEST_BUMPKIN,
+          inventory: {
+            Pickaxe: new Decimal(2),
+          },
+          stones: {
+            0: {
+              ...GAME_STATE.stones[0],
+              x: undefined,
+              y: undefined,
+            },
+          },
+        },
+        createdAt: Date.now(),
+        action: {
+          type: "stoneRock.mined",
+          index: "0",
+        },
+      }),
+    ).toThrow("Rock is not placed");
   });
 
   it("throws an error if stone is not ready", () => {
@@ -80,7 +107,7 @@ describe("mineStone", () => {
       createdAt: Date.now(),
       action: {
         type: "stoneRock.mined",
-        index: 0,
+        index: "0",
       } as LandExpansionStoneMineAction,
     };
     const game = mineStone(payload);
@@ -107,8 +134,7 @@ describe("mineStone", () => {
       createdAt: Date.now(),
       action: {
         type: "stoneRock.mined",
-
-        index: 0,
+        index: "0",
       } as LandExpansionStoneMineAction,
     };
 
@@ -130,8 +156,7 @@ describe("mineStone", () => {
       createdAt: Date.now(),
       action: {
         type: "stoneRock.mined",
-
-        index: 0,
+        index: "0",
       } as LandExpansionStoneMineAction,
     });
 
@@ -140,7 +165,7 @@ describe("mineStone", () => {
       createdAt: Date.now(),
       action: {
         type: "stoneRock.mined",
-        index: 1,
+        index: "1",
       } as LandExpansionStoneMineAction,
     });
 
@@ -160,8 +185,7 @@ describe("mineStone", () => {
       createdAt: Date.now(),
       action: {
         type: "stoneRock.mined",
-
-        index: 0,
+        index: "0",
       } as LandExpansionStoneMineAction,
     };
     let game = mineStone(payload);
@@ -201,7 +225,7 @@ describe("mineStone", () => {
       createdAt: Date.now(),
       action: {
         type: "stoneRock.mined",
-        index: 0,
+        index: "0",
       } as LandExpansionStoneMineAction,
     });
 
@@ -230,7 +254,7 @@ describe("mineStone", () => {
       createdAt: Date.now(),
       action: {
         type: "stoneRock.mined",
-        index: 0,
+        index: "0",
       } as LandExpansionStoneMineAction,
       bonusDropAmount: () => 0,
     };
@@ -265,7 +289,7 @@ describe("mineStone", () => {
       createdAt: now,
       action: {
         type: "stoneRock.mined",
-        index: 0,
+        index: "0",
       } as LandExpansionStoneMineAction,
       bonusDropAmount: () => 0,
     };
@@ -310,7 +334,7 @@ describe("mineStone", () => {
       createdAt: now,
       action: {
         type: "stoneRock.mined",
-        index: 0,
+        index: "0",
       } as LandExpansionStoneMineAction,
       bonusDropAmount: () => 0,
     };
@@ -351,7 +375,7 @@ describe("mineStone", () => {
       createdAt: now,
       action: {
         type: "stoneRock.mined",
-        index: 0,
+        index: "0",
       } as LandExpansionStoneMineAction,
       bonusDropAmount: () => 0,
     };
@@ -405,7 +429,7 @@ describe("mineStone", () => {
       createdAt: now,
       action: {
         type: "stoneRock.mined",
-        index: 0,
+        index: "0",
       } as LandExpansionStoneMineAction,
       bonusDropAmount: () => 0,
     };
@@ -437,8 +461,7 @@ describe("mineStone", () => {
       createdAt: Date.now(),
       action: {
         type: "stoneRock.mined",
-
-        index: 0,
+        index: "0",
       } as LandExpansionStoneMineAction,
     });
 
@@ -468,8 +491,7 @@ describe("mineStone", () => {
       createdAt: Date.now(),
       action: {
         type: "stoneRock.mined",
-
-        index: 0,
+        index: "0",
       } as LandExpansionStoneMineAction,
     });
 
@@ -499,8 +521,7 @@ describe("mineStone", () => {
       createdAt: Date.now(),
       action: {
         type: "stoneRock.mined",
-
-        index: 0,
+        index: "0",
       } as LandExpansionStoneMineAction,
     });
 
@@ -534,8 +555,7 @@ describe("mineStone", () => {
       createdAt: Date.now(),
       action: {
         type: "stoneRock.mined",
-
-        index: 0,
+        index: "0",
       } as LandExpansionStoneMineAction,
     });
 
@@ -568,8 +588,7 @@ describe("mineStone", () => {
       createdAt: Date.now(),
       action: {
         type: "stoneRock.mined",
-
-        index: 0,
+        index: "0",
       } as LandExpansionStoneMineAction,
     });
 
@@ -603,8 +622,7 @@ describe("mineStone", () => {
       createdAt: Date.now(),
       action: {
         type: "stoneRock.mined",
-
-        index: 0,
+        index: "0",
       } as LandExpansionStoneMineAction,
     });
 
@@ -632,8 +650,7 @@ describe("mineStone", () => {
       createdAt: Date.now(),
       action: {
         type: "stoneRock.mined",
-
-        index: 0,
+        index: "0",
       } as LandExpansionStoneMineAction,
     });
 
@@ -663,7 +680,7 @@ describe("mineStone", () => {
       },
       action: {
         type: "stoneRock.mined",
-        index: 0,
+        index: "0",
       } as LandExpansionStoneMineAction,
       createdAt: Date.now(),
     });
@@ -689,6 +706,7 @@ describe("mineStone", () => {
           y: 0,
         },
         createdAt: Date.now(),
+        id: "0",
         criticalDropGenerator: () => false,
       });
 
@@ -710,6 +728,7 @@ describe("mineStone", () => {
           y: 0,
         },
         createdAt: Date.now(),
+        id: "0",
         criticalDropGenerator: () => false,
       });
 
@@ -729,6 +748,7 @@ describe("mineStone", () => {
           y: 0,
         },
         createdAt: Date.now(),
+        id: "0",
         criticalDropGenerator: (name) => name === "Native",
       });
 
@@ -753,8 +773,7 @@ describe("mineStone", () => {
         createdAt,
         action: {
           type: "stoneRock.mined",
-
-          index: 0,
+          index: "0",
         } as LandExpansionStoneMineAction,
       });
 
@@ -777,8 +796,7 @@ describe("mineStone", () => {
         createdAt,
         action: {
           type: "stoneRock.mined",
-
-          index: 0,
+          index: "0",
         } as LandExpansionStoneMineAction,
       });
 
@@ -787,7 +805,7 @@ describe("mineStone", () => {
         createdAt,
         action: {
           type: "stoneRock.mined",
-          index: 1,
+          index: "1",
         } as LandExpansionStoneMineAction,
       });
 
@@ -975,7 +993,7 @@ describe("mineStone", () => {
       },
       action: {
         type: "stoneRock.mined",
-        index: 0,
+        index: "0",
       } as LandExpansionStoneMineAction,
       createdAt: Date.now(),
     });
@@ -1003,11 +1021,57 @@ describe("mineStone", () => {
       },
       action: {
         type: "stoneRock.mined",
-        index: 0,
+        index: "0",
       },
       createdAt: Date.now(),
     });
 
     expect(state.inventory.Pickaxe).toEqual(new Decimal(1));
+  });
+
+  it("applies the Badger Shrine boost", () => {
+    const now = Date.now();
+    const { time } = getMinedAt({
+      game: {
+        ...INITIAL_FARM,
+        collectibles: {
+          "Badger Shrine": [
+            {
+              id: "123",
+              createdAt: now,
+              coordinates: { x: 1, y: 1 },
+              readyAt: now,
+            },
+          ],
+        },
+      },
+      createdAt: now,
+      skills: {},
+    });
+
+    expect(time).toEqual(now - STONE_RECOVERY_TIME * 0.25 * 1000);
+  });
+
+  it("does not apply the Badger Shrine boost if expired", () => {
+    const now = Date.now();
+    const { time } = getMinedAt({
+      game: {
+        ...INITIAL_FARM,
+        collectibles: {
+          "Badger Shrine": [
+            {
+              id: "123",
+              createdAt: now - EXPIRY_COOLDOWNS["Badger Shrine"],
+              coordinates: { x: 1, y: 1 },
+              readyAt: now,
+            },
+          ],
+        },
+      },
+      createdAt: now,
+      skills: {},
+    });
+
+    expect(time).toEqual(now);
   });
 });

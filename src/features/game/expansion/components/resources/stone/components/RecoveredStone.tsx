@@ -1,4 +1,6 @@
 import React, { useContext, useEffect, useRef, useState } from "react";
+import classNames from "classnames";
+import Decimal from "decimal.js-light";
 
 import Spritesheet, {
   SpriteSheetInstance,
@@ -8,27 +10,37 @@ import { PIXEL_SCALE } from "features/game/lib/constants";
 
 import { Bar } from "components/ui/ProgressBar";
 import { InnerPanel } from "components/ui/Panel";
-import classNames from "classnames";
 import { ZoomContext } from "components/ZoomProvider";
 import { SUNNYSIDE } from "assets/sunnyside";
 import { useAppTranslation } from "lib/i18n/useAppTranslations";
 import { useSound } from "lib/utils/hooks/useSound";
+import { READONLY_RESOURCE_COMPONENTS } from "features/island/resources/Resource";
+import { StoneRockName } from "features/game/types/resources";
+import { InventoryItemName } from "features/game/types/game";
 
 const tool = "Pickaxe";
 
 const STRIKE_SHEET_FRAME_WIDTH = 112;
 const STRIKE_SHEET_FRAME_HEIGHT = 48;
+const ADVANCED_STRIKE_SHEET_FRAME_WIDTH = 288 / 6;
+const ADVANCED_STRIKE_SHEET_FRAME_HEIGHT = 27;
 
 interface Props {
   hasTool: boolean;
   touchCount: number;
   showHelper: boolean;
+  stoneRockName: StoneRockName;
+  requiredToolAmount: Decimal;
+  inventory: Partial<Record<InventoryItemName, Decimal>>;
 }
 
 const RecoveredStoneComponent: React.FC<Props> = ({
   hasTool,
   touchCount,
   showHelper,
+  stoneRockName,
+  requiredToolAmount,
+  inventory,
 }) => {
   const { scale } = useContext(ZoomContext);
   const [showSpritesheet, setShowSpritesheet] = useState(false);
@@ -38,6 +50,8 @@ const RecoveredStoneComponent: React.FC<Props> = ({
   const { t } = useAppTranslation();
 
   const { play: miningAudio } = useSound("mining");
+
+  const Image = READONLY_RESOURCE_COMPONENTS()[stoneRockName];
 
   useEffect(() => {
     // prevent performing react state update on an unmounted component
@@ -63,6 +77,22 @@ const RecoveredStoneComponent: React.FC<Props> = ({
   const handleMouseLeave = () => {
     setShowEquipTool(false);
   };
+
+  const isBaseStone = stoneRockName === "Stone Rock" || !stoneRockName;
+
+  const strikeSheetFrameWidth = isBaseStone
+    ? STRIKE_SHEET_FRAME_WIDTH
+    : ADVANCED_STRIKE_SHEET_FRAME_WIDTH;
+  const strikeSheetFrameHeight = isBaseStone
+    ? STRIKE_SHEET_FRAME_HEIGHT
+    : ADVANCED_STRIKE_SHEET_FRAME_HEIGHT;
+
+  const bottomPos = isBaseStone
+    ? `${PIXEL_SCALE * -13}px`
+    : `${PIXEL_SCALE * 0.333}px`;
+  const rightPos = isBaseStone
+    ? `${PIXEL_SCALE * -63}px`
+    : `${PIXEL_SCALE * -16.14}px`;
 
   return (
     <div
@@ -90,17 +120,7 @@ const RecoveredStoneComponent: React.FC<Props> = ({
         )}
 
         {/* static resource node image */}
-        {!showSpritesheet && (
-          <img
-            src={SUNNYSIDE.resource.stone_small}
-            className={"absolute pointer-events-none opacity-100"}
-            style={{
-              width: `${PIXEL_SCALE * 14}px`,
-              bottom: `${PIXEL_SCALE * 3}px`,
-              right: `${PIXEL_SCALE * 1}px`,
-            }}
-          />
-        )}
+        {!showSpritesheet && <Image />}
 
         {/* spritesheet */}
         {showSpritesheet && (
@@ -108,22 +128,22 @@ const RecoveredStoneComponent: React.FC<Props> = ({
             className="pointer-events-none"
             style={{
               position: "absolute",
-              width: `${STRIKE_SHEET_FRAME_WIDTH * PIXEL_SCALE}px`,
-              height: `${STRIKE_SHEET_FRAME_HEIGHT * PIXEL_SCALE}px`,
+              width: `${strikeSheetFrameWidth * PIXEL_SCALE}px`,
+              height: `${strikeSheetFrameHeight * PIXEL_SCALE}px`,
               imageRendering: "pixelated",
 
               // Adjust the base of resource node to be perfectly aligned to
               // on a grid point.
-              bottom: `${PIXEL_SCALE * -13}px`,
-              right: `${PIXEL_SCALE * -63}px`,
+              bottom: bottomPos,
+              right: rightPos,
             }}
             getInstance={(spritesheet) => {
               strikeGif.current = spritesheet;
               spritesheet.goToAndPlay(0);
             }}
-            image={SUNNYSIDE.resource.stoneStrikeSheet}
-            widthFrame={STRIKE_SHEET_FRAME_WIDTH}
-            heightFrame={STRIKE_SHEET_FRAME_HEIGHT}
+            image={SUNNYSIDE.resource.rocks.strikeSheet[stoneRockName]}
+            widthFrame={strikeSheetFrameWidth}
+            heightFrame={strikeSheetFrameHeight}
             zoomScale={scale}
             fps={24}
             steps={6}
@@ -151,7 +171,9 @@ const RecoveredStoneComponent: React.FC<Props> = ({
           <InnerPanel className="absolute whitespace-nowrap w-fit z-50">
             <div className="text-xs mx-1 p-1">
               <span>
-                {t("craft")} {tool.toLowerCase()}
+                {t("craft")}{" "}
+                {requiredToolAmount.sub(inventory[tool] ?? 0).toString()}{" "}
+                {tool.toLowerCase()}
               </span>
             </div>
           </InnerPanel>

@@ -10,9 +10,9 @@ import {
 import { produce } from "immer";
 import { ComposterName } from "features/game/types/composters";
 import { getReadyAt } from "./startComposter";
-import { getBoostedAwakeAt } from "features/game/lib/animals";
 import { RECIPES } from "features/game/lib/crafting";
 import { getBoostedCraftingTime } from "./startCrafting";
+import { Coordinates } from "features/game/expansion/components/MapPlacement";
 
 export enum PLACE_BUILDING_ERRORS {
   NO_BUMPKIN = "You do not have a Bumpkin!",
@@ -24,10 +24,7 @@ export type PlaceBuildingAction = {
   type: "building.placed";
   name: BuildingName;
   id: string;
-  coordinates: {
-    x: number;
-    y: number;
-  };
+  coordinates: Coordinates;
 };
 
 type Options = {
@@ -50,18 +47,23 @@ export function placeBuilding({
 
     const buildingInventory =
       stateCopy.inventory[action.name] || new Decimal(0);
-    const placed = stateCopy.buildings[action.name] || [];
+    const placedBuildings = stateCopy.buildings[action.name] || [];
     const hasUnplacedBuildings = buildingInventory
       .minus(1)
       .greaterThanOrEqualTo(
-        placed.filter((building) => building.coordinates).length,
+        placedBuildings.filter((building) => building.coordinates).length,
       );
 
     if (!hasUnplacedBuildings) {
       throw new Error(PLACE_BUILDING_ERRORS.NO_UNPLACED_BUILDINGS);
     }
 
-    const existingBuilding = placed.find((building) => !building.coordinates);
+    const existingBuilding = placedBuildings.find(
+      (building) => !building.coordinates,
+    );
+
+    const isSecondBuilding =
+      placedBuildings.filter((building) => building.coordinates).length >= 1;
 
     if (existingBuilding) {
       // Assign the coordinates to the building
@@ -115,7 +117,7 @@ export function placeBuilding({
       }
 
       // Greenhouse
-      if (action.name === "Greenhouse") {
+      if (action.name === "Greenhouse" && !isSecondBuilding) {
         const { greenhouse } = stateCopy;
         Object.values(greenhouse.pots).forEach((pot) => {
           if (pot.plant && existingBuilding.removedAt) {
@@ -127,40 +129,37 @@ export function placeBuilding({
       }
 
       // Henhouse & Barn
-      if (action.name === "Hen House" || action.name === "Barn") {
+      if (
+        (action.name === "Hen House" || action.name === "Barn") &&
+        !isSecondBuilding
+      ) {
         const buildingKey = action.name === "Hen House" ? "henHouse" : "barn";
         const { animals } = stateCopy[buildingKey];
 
         Object.values(animals).forEach((animal) => {
           if (existingBuilding.removedAt) {
-            const timeOffset = existingBuilding.removedAt - animal.asleepAt;
-            animal.asleepAt = createdAt - timeOffset;
-            const { awakeAt } = getBoostedAwakeAt({
-              animalType: animal.type,
-              createdAt: animal.asleepAt, // use asleepAt to calculate the new awakeAt
-              game: stateCopy,
-            });
-            animal.awakeAt = awakeAt;
+            const timeOffset = createdAt - existingBuilding.removedAt;
+            animal.asleepAt = animal.asleepAt + timeOffset;
+            animal.awakeAt = animal.awakeAt + timeOffset;
+            animal.lovedAt = animal.lovedAt + timeOffset;
           }
         });
       }
 
-      if (action.name === "Crafting Box") {
+      if (action.name === "Crafting Box" && !isSecondBuilding) {
         const { craftingBox } = stateCopy;
         if (existingBuilding.removedAt && craftingBox.item) {
           const timeOffset = existingBuilding.removedAt - craftingBox.startedAt;
           craftingBox.startedAt = createdAt - timeOffset;
-          const { seconds: recipeTime } = craftingBox.item.collectible
+          const collectible = craftingBox.item.collectible;
+          const { seconds: recipeTime } = collectible
             ? getBoostedCraftingTime({
                 game: stateCopy,
-                time:
-                  RECIPES(stateCopy)[craftingBox.item.collectible]?.time ?? 0,
+                time: RECIPES[collectible]?.time ?? 0,
+                createdAt,
               })
-            : getBoostedCraftingTime({
-                game: stateCopy,
-                time: RECIPES(stateCopy)[craftingBox.item.wearable]?.time ?? 0,
-              });
-          craftingBox.readyAt = createdAt + recipeTime;
+            : { seconds: 0 };
+          craftingBox.readyAt = craftingBox.startedAt + recipeTime;
         }
       }
 
@@ -180,7 +179,7 @@ export function placeBuilding({
       ...stateCopy,
       buildings: {
         ...stateCopy.buildings,
-        [action.name]: [...placed, newBuilding],
+        [action.name]: [...placedBuildings, newBuilding],
       },
     };
   });

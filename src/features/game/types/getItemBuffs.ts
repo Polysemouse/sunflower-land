@@ -5,7 +5,9 @@ import { BumpkinItem } from "./bumpkin";
 import { BUMPKIN_ITEM_BUFF_LABELS } from "./bumpkinItemBuffs";
 import { COLLECTIBLE_BUFF_LABELS } from "./collectibleItemBuffs";
 import { GameState, InventoryItemName } from "./game";
+import { getPetBuffs } from "./getPetBuffs";
 import { CollectionName, MarketplaceTradeableName } from "./marketplace";
+import { isPetNFTRevealed, PetNFTName } from "./pets";
 
 export function getItemBuffs({
   state,
@@ -22,6 +24,13 @@ export function getItemBuffs({
     return getBudBuffs(id);
   }
 
+  if (collection === "pets") {
+    const id = Number((item as PetNFTName).split("#")[1]);
+    const petBuffs = isPetNFTRevealed(id, Date.now()) ? getPetBuffs(id) : [];
+
+    return petBuffs;
+  }
+
   if (collection === "wearables") {
     const buff = BUMPKIN_ITEM_BUFF_LABELS[item as BumpkinItem];
 
@@ -29,7 +38,10 @@ export function getItemBuffs({
   }
 
   if (collection === "collectibles") {
-    const buff = COLLECTIBLE_BUFF_LABELS(state)[item as InventoryItemName];
+    const buff = COLLECTIBLE_BUFF_LABELS[item as InventoryItemName]?.({
+      skills: state.bumpkin.skills,
+      collectibles: state.collectibles,
+    });
 
     return buff ? buff : [];
   }

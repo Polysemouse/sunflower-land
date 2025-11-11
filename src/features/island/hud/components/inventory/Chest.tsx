@@ -7,7 +7,7 @@ import {
   TemperateSeasonName,
 } from "features/game/types/game";
 import { CollectibleName, getKeys } from "features/game/types/craftables";
-import { getChestBuds, getChestItems } from "./utils/inventory";
+import { getChestBuds, getChestItems, getChestPets } from "./utils/inventory";
 import Decimal from "decimal.js-light";
 import { Button } from "components/ui/Button";
 
@@ -17,7 +17,7 @@ import { SplitScreenView } from "components/ui/SplitScreenView";
 import { PIXEL_SCALE } from "features/game/lib/constants";
 import { InventoryItemDetails } from "components/ui/layouts/InventoryItemDetails";
 
-import { Bud, BudName, isBudName } from "features/game/types/buds";
+import { Bud } from "features/game/types/buds";
 import { CONFIG } from "lib/config";
 import { BudDetails } from "components/ui/layouts/BudDetails";
 import classNames from "classnames";
@@ -48,9 +48,16 @@ import {
 } from "features/game/events/landExpansion/upgradeBuilding";
 import { LandBiomeName } from "features/island/biomes/biomes";
 import { getCurrentBiome } from "features/island/biomes/biomes";
-import { WORKBENCH_MONUMENTS } from "features/game/types/monuments";
 import { DOLLS } from "features/game/lib/crafting";
-import { PETS } from "features/game/types/pets";
+import { isPetNFTRevealed, PET_TYPES, PetNFTs } from "features/game/types/pets";
+import {
+  LandscapingPlaceable,
+  LandscapingPlaceableType,
+} from "features/game/expansion/placeable/landscapingMachine";
+import { PetNFTDetails } from "components/ui/layouts/PetNFTDetails";
+import { getPetImage } from "features/island/pets/lib/petShared";
+import { NFTName } from "features/game/events/landExpansion/placeNFT";
+import { MONUMENTS, REWARD_ITEMS } from "features/game/types/monuments";
 
 const imageDomain = CONFIG.NETWORK === "mainnet" ? "buds" : "testnet-buds";
 
@@ -69,7 +76,9 @@ export const ITEM_ICONS: (
   "Smoothie Shack": SUNNYSIDE.icons.smoothieIcon,
   Toolshed: SUNNYSIDE.icons.toolshedIcon,
   Warehouse: SUNNYSIDE.icons.warehouseIcon,
-  Tree: TREE_VARIANTS[biome][season],
+  Tree: TREE_VARIANTS(biome, season, "Tree"),
+  "Ancient Tree": TREE_VARIANTS(biome, season, "Ancient Tree"),
+  "Sacred Tree": TREE_VARIANTS(biome, season, "Sacred Tree"),
   "Dirt Path": DIRT_PATH_VARIANTS[biome],
   Greenhouse: SUNNYSIDE.icons.greenhouseIcon,
   Bush: BUSH_VARIANTS[biome][season],
@@ -77,12 +86,13 @@ export const ITEM_ICONS: (
 });
 
 interface PanelContentProps {
-  selectedChestItem: InventoryItemName | `Bud-${number}`;
+  selectedChestItem?: LandscapingPlaceableType;
   closeModal: () => void;
   state: GameState;
   buds: Record<number, Bud>;
-  onPlace?: (name: InventoryItemName) => void;
-  onPlaceBud?: (bud: BudName) => void;
+  pets: PetNFTs;
+  onPlace?: (name: LandscapingPlaceable) => void;
+  onPlaceNFT?: (id: string, nft: NFTName) => void;
   isSaving?: boolean;
 }
 
@@ -94,26 +104,29 @@ export type TimeBasedConsumables =
 const PanelContent: React.FC<PanelContentProps> = ({
   isSaving,
   onPlace,
-  onPlaceBud,
+  onPlaceNFT,
   selectedChestItem,
   closeModal,
   state,
   buds,
+  pets,
 }) => {
   const { t } = useAppTranslation();
 
   const [confirmationModal, showConfirmationModal] = useState(false);
 
+  if (!selectedChestItem) return null;
+
   const handlePlace = () => {
     if (
-      selectedChestItem === "Gnome" ||
-      selectedChestItem in EXPIRY_COOLDOWNS
+      selectedChestItem.name === "Gnome" ||
+      selectedChestItem.name in EXPIRY_COOLDOWNS
     ) {
       showConfirmationModal(true);
     } else {
-      isBudName(selectedChestItem)
-        ? onPlaceBud && onPlaceBud(selectedChestItem)
-        : onPlace && onPlace(selectedChestItem);
+      selectedChestItem.name === "Bud" || selectedChestItem.name === "Pet"
+        ? onPlaceNFT && onPlaceNFT(selectedChestItem.id, selectedChestItem.name)
+        : onPlace && onPlace(selectedChestItem.name);
       closeModal();
     }
   };
@@ -132,12 +145,12 @@ const PanelContent: React.FC<PanelContentProps> = ({
     };
 
     return t(hourglassCondition[hourglass], {
-      selectedChestItem,
+      selectedChestItem: selectedChestItem.name,
     });
   };
 
-  if (isBudName(selectedChestItem)) {
-    const budId = Number(selectedChestItem.split("-")[1]);
+  if (selectedChestItem.name === "Bud") {
+    const budId = Number(selectedChestItem.id);
     const bud = buds[budId];
 
     return (
@@ -150,6 +163,31 @@ const PanelContent: React.FC<PanelContentProps> = ({
               {isSaving ? t("saving") : t("place.map")}
             </Button>
           )
+        }
+      />
+    );
+  }
+
+  if (selectedChestItem.name === "Pet") {
+    const petId = Number(selectedChestItem.id);
+    const petData = pets[petId];
+    const isRevealed = isPetNFTRevealed(petId, Date.now());
+
+    return (
+      <PetNFTDetails
+        petId={petId}
+        petName={petData.name}
+        actionView={
+          <div className="flex flex-col gap-y-2">
+            {!isRevealed && (
+              <Label type="danger">{t("landscape.petNFT.notHatched")}</Label>
+            )}
+            {onPlace && (
+              <Button onClick={handlePlace} disabled={isSaving || !isRevealed}>
+                {isSaving ? t("saving") : t("place.map")}
+              </Button>
+            )}
+          </div>
         }
       />
     );
@@ -179,7 +217,7 @@ const PanelContent: React.FC<PanelContentProps> = ({
       <InventoryItemDetails
         game={state}
         details={{
-          item: selectedChestItem,
+          item: selectedChestItem.name,
         }}
         properties={{
           showOpenSeaLink: true,
@@ -196,20 +234,20 @@ const PanelContent: React.FC<PanelContentProps> = ({
         show={confirmationModal}
         onHide={() => showConfirmationModal(false)}
         messages={
-          selectedChestItem === "Gnome"
+          selectedChestItem.name === "Gnome"
             ? [redGnomeBoostInstruction()]
             : [
                 getResourceNodeCondition(
-                  selectedChestItem as TimeBasedConsumables,
+                  selectedChestItem.name as TimeBasedConsumables,
                 ),
                 t("landscape.confirmation.hourglass.one", {
-                  selectedChestItem,
+                  selectedChestItem: selectedChestItem.name,
                 }),
                 t("landscape.confirmation.hourglass.two", {
-                  selectedChestItem,
+                  selectedChestItem: selectedChestItem.name,
                 }),
-                selectedChestItem === "Time Warp Totem" ||
-                selectedChestItem === "Super Totem" ? (
+                selectedChestItem.name === "Time Warp Totem" ||
+                selectedChestItem.name === "Super Totem" ? (
                   <Label type="danger" icon={SUNNYSIDE.icons.cancel}>
                     {t("landscape.timeWarpTotem.nonStack")}
                   </Label>
@@ -220,7 +258,7 @@ const PanelContent: React.FC<PanelContentProps> = ({
         }
         onCancel={() => showConfirmationModal(false)}
         onConfirm={() => {
-          onPlace && onPlace(selectedChestItem);
+          onPlace && onPlace(selectedChestItem.name);
           closeModal();
           showConfirmationModal(false);
         }}
@@ -232,11 +270,11 @@ const PanelContent: React.FC<PanelContentProps> = ({
 
 interface Props {
   state: GameState;
-  selected: InventoryItemName | BudName;
-  onSelect: (name: InventoryItemName | BudName) => void;
+  selected?: LandscapingPlaceableType;
+  onSelect: (item: LandscapingPlaceableType) => void;
   closeModal: () => void;
-  onPlace?: (name: InventoryItemName) => void;
-  onPlaceBud?: (bud: BudName) => void;
+  onPlace?: (name: LandscapingPlaceable) => void;
+  onPlaceNFT?: (id: string, nft: NFTName) => void;
   onDepositClick?: () => void;
   isSaving?: boolean;
 }
@@ -248,11 +286,12 @@ export const Chest: React.FC<Props> = ({
   closeModal,
   isSaving,
   onPlace,
-  onPlaceBud,
+  onPlaceNFT,
   onDepositClick,
 }: Props) => {
   const divRef = useRef<HTMLDivElement>(null);
   const buds = getChestBuds(state);
+  const petsNFTs = getChestPets(state.pets?.nfts ?? {});
 
   const chestMap = getChestItems(state);
   const { t } = useAppTranslation();
@@ -266,24 +305,34 @@ export const Chest: React.FC<Props> = ({
       {} as Record<CollectibleName, Decimal>,
     );
 
-  const getSelectedChestItems = (): InventoryItemName | BudName => {
-    if (isBudName(selected)) {
-      const budId = Number(selected.split("-")[1]);
+  const getSelectedChestItems = (): LandscapingPlaceableType | undefined => {
+    if (selected?.name === "Bud") {
+      const budId = Number(selected.id);
       const bud = buds[budId];
       if (bud) return selected;
-      if (getKeys(buds)[0]) return `Bud-${getKeys(buds)[0]}` as BudName;
-      return getKeys(collectibles)[0];
+      if (getKeys(buds)[0])
+        return { name: "Bud", id: String(getKeys(buds)[0]) };
+      return { name: getKeys(collectibles)[0] };
+    }
+
+    if (selected?.name === "Pet") {
+      const petId = Number(selected.id);
+      const pet = petsNFTs[petId];
+      if (pet) return selected;
+      if (getKeys(petsNFTs)[0])
+        return { name: "Pet", id: String(getKeys(petsNFTs)[0]) };
+      return { name: getKeys(collectibles)[0] };
     }
 
     // select first item in collectibles if the original selection is not in collectibles when they are all placed by the player
-    const collectible = collectibles[selected as CollectibleName];
+    const collectible = collectibles[selected?.name as CollectibleName];
     if (collectible) return selected;
-    return getKeys(collectibles)[0];
+    return { name: getKeys(collectibles)[0] };
   };
 
   const selectedChestItem = getSelectedChestItems();
 
-  const handleItemClick = (item: InventoryItemName | BudName) => {
+  const handleItemClick = (item: LandscapingPlaceableType) => {
     onSelect(item);
   };
 
@@ -321,25 +370,40 @@ export const Chest: React.FC<Props> = ({
   // Sort collectibles by type
   const resources = getKeys(collectibles).filter((name) => name in RESOURCES);
   const buildings = getKeys(collectibles).filter((name) => name in BUILDINGS);
-  const boosts = getKeys(collectibles)
-    .filter(
-      (name) =>
-        name in COLLECTIBLE_BUFF_LABELS(state) &&
-        (COLLECTIBLE_BUFF_LABELS(state)[name] ?? []).length > 0,
-    )
-    .filter((name) => !resources.includes(name) && !buildings.includes(name));
+  const monuments = getKeys(collectibles).filter((name) => name in MONUMENTS);
+  const villageProjects = getKeys(collectibles).filter(
+    (name) => name in REWARD_ITEMS,
+  );
+
   const banners = getKeys(collectibles).filter((name) => name in BANNERS);
   const beds = getKeys(collectibles).filter((name) => name in BEDS);
   const weatherItems = getKeys(collectibles).filter(
     (name) => name in WEATHER_SHOP_ITEM_COSTS,
   );
-  const monuments = getKeys(collectibles).filter(
-    (name) => name in WORKBENCH_MONUMENTS,
-  );
 
   const dolls = getKeys(collectibles).filter((name) => name in DOLLS);
 
-  const pets = getKeys(collectibles).filter((name) => name in PETS);
+  const pets = getKeys(collectibles).filter((name) => name in PET_TYPES);
+
+  const boosts = getKeys(collectibles)
+    .filter(
+      (name) =>
+        name in COLLECTIBLE_BUFF_LABELS &&
+        (
+          COLLECTIBLE_BUFF_LABELS[name]?.({
+            skills: state.bumpkin.skills,
+            collectibles: state.collectibles,
+          }) ?? []
+        ).length > 0,
+    )
+    .filter(
+      (name) =>
+        !resources.includes(name) &&
+        !buildings.includes(name) &&
+        !monuments.includes(name) &&
+        !villageProjects.includes(name) &&
+        !beds.includes(name),
+    );
 
   const decorations = getKeys(collectibles).filter(
     (name) =>
@@ -351,7 +415,8 @@ export const Chest: React.FC<Props> = ({
       !weatherItems.includes(name) &&
       !monuments.includes(name) &&
       !dolls.includes(name) &&
-      !pets.includes(name),
+      !pets.includes(name) &&
+      !villageProjects.includes(name),
   );
 
   const ITEM_GROUPS: {
@@ -359,6 +424,11 @@ export const Chest: React.FC<Props> = ({
     label: TranslationKeys;
     icon: string;
   }[] = [
+    {
+      items: pets,
+      label: "pets",
+      icon: SUNNYSIDE.icons.expression_confused,
+    },
     {
       items: resources,
       label: "resource.nodes",
@@ -395,6 +465,11 @@ export const Chest: React.FC<Props> = ({
       icon: ITEM_DETAILS["Farmer's Monument"].image,
     },
     {
+      items: villageProjects,
+      label: "villageProjects",
+      icon: ITEM_DETAILS["Big Orange"].image,
+    },
+    {
       items: dolls,
       label: "dolls",
       icon: ITEM_DETAILS["Doll"].image,
@@ -403,11 +478,6 @@ export const Chest: React.FC<Props> = ({
       items: decorations,
       label: "decorations",
       icon: ITEM_DETAILS["Basic Bear"].image,
-    },
-    {
-      items: pets,
-      label: "pets",
-      icon: SUNNYSIDE.icons.expression_confused,
     },
   ];
 
@@ -423,9 +493,10 @@ export const Chest: React.FC<Props> = ({
           selectedChestItem={selectedChestItem}
           closeModal={closeModal}
           onPlace={onPlace}
-          onPlaceBud={onPlaceBud}
+          onPlaceNFT={onPlaceNFT}
           isSaving={isSaving}
           buds={buds}
+          pets={petsNFTs}
         />
       }
       content={
@@ -445,9 +516,14 @@ export const Chest: React.FC<Props> = ({
 
                   return (
                     <Box
-                      isSelected={selectedChestItem === `Bud-${budId}`}
+                      isSelected={
+                        selectedChestItem?.name === "Bud" &&
+                        selectedChestItem?.id === String(budId)
+                      }
                       key={`Bud-${budId}`}
-                      onClick={() => handleItemClick(`Bud-${budId}`)}
+                      onClick={() =>
+                        handleItemClick({ name: "Bud", id: String(budId) })
+                      }
                       image={`https://${imageDomain}.sunflower-land.com/images/${budId}.webp`}
                       iconClassName={classNames(
                         "scale-[1.8] origin-bottom absolute",
@@ -463,7 +539,35 @@ export const Chest: React.FC<Props> = ({
               </div>
             </div>
           )}
-
+          {!!Object.values(petsNFTs).length && (
+            <div className="flex flex-col pl-2 mb-2 w-full" key="Buds">
+              <Label
+                type="default"
+                className="my-1"
+                icon={SUNNYSIDE.icons.heart}
+              >
+                {`Pet NFTs`}
+              </Label>
+              <div className="flex mb-2 flex-wrap -ml-1.5">
+                {getKeys(petsNFTs).map((petId) => {
+                  const petImage = getPetImage("happy", Number(petId));
+                  return (
+                    <Box
+                      isSelected={
+                        selectedChestItem?.name === "Pet" &&
+                        selectedChestItem?.id === String(petId)
+                      }
+                      key={`Pet #${petId}`}
+                      onClick={() =>
+                        handleItemClick({ name: "Pet", id: String(petId) })
+                      }
+                      image={petImage}
+                    />
+                  );
+                })}
+              </div>
+            </div>
+          )}
           {/* {Object.values(collectibles) && (
             <div className="flex flex-col pl-2 mb-2 w-full" key="Collectibles">
               <p className="mb-2">Collectibles</p>
@@ -481,7 +585,6 @@ export const Chest: React.FC<Props> = ({
               </div>
             </div>
           )} */}
-
           {ITEM_GROUPS.map(({ items, label, icon }) => (
             <ItemGroup
               key={label}
@@ -495,7 +598,6 @@ export const Chest: React.FC<Props> = ({
               divRef={divRef}
             />
           ))}
-
           {onDepositClick && (
             <div className="flex w-full ml-1 my-1">
               <p
@@ -520,8 +622,8 @@ interface ItemGroupProps {
   label: string;
   icon: string;
   chestMap: Record<string, Decimal>;
-  selectedChestItem: string;
-  onItemClick: (item: InventoryItemName | BudName) => void;
+  selectedChestItem?: LandscapingPlaceableType;
+  onItemClick: (item: LandscapingPlaceableType) => void;
   state: GameState;
   divRef: React.RefObject<HTMLDivElement>;
 }
@@ -536,7 +638,7 @@ const ItemGroup: React.FC<ItemGroupProps> = ({
   state,
   divRef,
 }) => {
-  if (items.length === 0) return null;
+  if (items.length === 0 || !selectedChestItem) return null;
 
   const biome = getCurrentBiome(state.island);
 
@@ -558,9 +660,9 @@ const ItemGroup: React.FC<ItemGroupProps> = ({
           return (
             <Box
               count={chestMap[item]}
-              isSelected={selectedChestItem === item}
+              isSelected={selectedChestItem?.name === item}
               key={item}
-              onClick={() => onItemClick(item)}
+              onClick={() => onItemClick({ name: item })}
               image={image}
               parentDivRef={divRef}
             />

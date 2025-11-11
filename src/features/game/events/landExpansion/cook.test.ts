@@ -36,6 +36,32 @@ describe("cook", () => {
     ).toThrow(`Required building does not exist`);
   });
 
+  it("does not cook if building is not placed", () => {
+    expect(() =>
+      cook({
+        state: {
+          ...GAME_STATE,
+          buildings: {
+            "Fire Pit": [
+              {
+                coordinates: { x: 2, y: 3 },
+                readyAt: 1660563190206,
+                createdAt: 1660563160206,
+                id: "64eca77c-10fb-4088-a71f-3743b2ef6b16",
+              },
+            ],
+          },
+        },
+        action: {
+          type: "recipe.cooked",
+          item: "Boiled Eggs",
+          buildingId: "123",
+        },
+        createdAt,
+      }),
+    ).toThrow(`Required building does not exist`);
+  });
+
   it("does not cook if there are no available slots", () => {
     expect(() =>
       cook({
@@ -1163,6 +1189,56 @@ describe("getReadyAt", () => {
     const nextRecipeReadyAt = building?.crafting?.[1]?.readyAt;
 
     expect(nextRecipeReadyAt).toEqual(currentRecipeReadyAt + cookTimeMs * 0.5);
+  });
+
+  it("applies the Boar Shrine boost", () => {
+    const cookTimeMs = COOKABLES["Boiled Eggs"].cookingSeconds * 1000;
+
+    const { createdAt: time } = getReadyAt({
+      buildingId: "1",
+      item: "Boiled Eggs",
+      createdAt,
+      game: {
+        ...TEST_FARM,
+        collectibles: {
+          "Boar Shrine": [
+            {
+              coordinates: { x: 1, y: 1 },
+              createdAt,
+              id: "1",
+              readyAt: createdAt,
+            },
+          ],
+        },
+      },
+    });
+
+    expect(time).toEqual(createdAt + cookTimeMs * 0.8);
+  });
+
+  it("does not apply the Boar Shrine boost if expired", () => {
+    const cookTimeMs = COOKABLES["Boiled Eggs"].cookingSeconds * 1000;
+
+    const { createdAt: time } = getReadyAt({
+      buildingId: "1",
+      item: "Boiled Eggs",
+      createdAt,
+      game: {
+        ...TEST_FARM,
+        collectibles: {
+          "Boar Shrine": [
+            {
+              coordinates: { x: 1, y: 1 },
+              createdAt: createdAt - EXPIRY_COOLDOWNS["Boar Shrine"],
+              id: "1",
+              readyAt: createdAt,
+            },
+          ],
+        },
+      },
+    });
+
+    expect(time).toEqual(createdAt + cookTimeMs);
   });
 });
 

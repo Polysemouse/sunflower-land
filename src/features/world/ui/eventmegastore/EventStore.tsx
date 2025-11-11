@@ -4,12 +4,12 @@ import { ModalOverlay } from "components/ui/ModalOverlay";
 import { useAppTranslation } from "lib/i18n/useAppTranslations";
 import React, { useState, useEffect } from "react";
 import {
-  COLORS_EVENT_ITEMS,
+  HALLOWEEN_EVENT_ITEMS,
   EventStoreCollectible,
   EventStoreItem,
   EventStoreTier,
   EventStoreWearable,
-} from "features/game/types/festivalOfColors";
+} from "features/game/types/halloweenShop";
 
 import { ItemsList } from "./eventmegastore_components/ItemsList";
 import { ItemDetail } from "./eventmegastore_components/ItemDetail";
@@ -60,7 +60,10 @@ export const getItemBuffLabel = (
     return BUMPKIN_ITEM_BUFF_LABELS[item.wearable];
   }
 
-  return COLLECTIBLE_BUFF_LABELS(state)[item.collectible];
+  return COLLECTIBLE_BUFF_LABELS[item.collectible]?.({
+    skills: state.bumpkin.skills,
+    collectibles: state.collectibles,
+  });
 };
 export const getItemDescription = (item: EventStoreItem | null): string => {
   if (!item) return "";
@@ -91,7 +94,7 @@ export const EventStore: React.FC<Props> = ({ readonly, state }) => {
 
   const { t } = useAppTranslation();
 
-  const EVENTMEGASTORE = COLORS_EVENT_ITEMS;
+  const EVENTMEGASTORE = HALLOWEEN_EVENT_ITEMS;
 
   // Basic-Epic
   const basicAllItems = EVENTMEGASTORE.basic.items;

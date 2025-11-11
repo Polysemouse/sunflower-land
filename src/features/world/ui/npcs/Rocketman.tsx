@@ -25,6 +25,7 @@ import {
 } from "features/game/events/landExpansion/exchangeFLOWER";
 import { isFaceVerified } from "features/retreat/components/personhood/lib/faceRecognition";
 import { FaceRecognition } from "features/retreat/components/personhood/FaceRecognition";
+import { hasVipAccess } from "features/game/lib/vipAccess";
 
 interface Props {
   onClose: () => void;
@@ -112,7 +113,7 @@ const RocketmanNoticeboard: React.FC = () => {
         className="mr-1"
         onClick={() => {
           window.open(
-            "https://docs.sunflower-land.com/getting-started/usdflower-erc20/schedule",
+            "https://docs.sunflower-land.com/getting-started/usdflower-erc20",
             "_blank",
           );
         }}
@@ -152,6 +153,25 @@ export const FlowerExchange: React.FC<FlowerExchangeProps> = ({ onClose }) => {
 
   if (!isFaceVerified({ game: state })) {
     return <FaceRecognition />;
+  }
+
+  const isVIP = hasVipAccess({ game: state });
+  if (!isVIP) {
+    return (
+      <div className="p-1">
+        <Label type="danger" icon={flowerIcon}>
+          {t("goblinTrade.vipRequired")}
+        </Label>
+        <p className="text-sm  my-2">{t("rocketman.vip")}</p>
+        <Button
+          onClick={() => {
+            onClose();
+          }}
+        >
+          {t("close")}
+        </Button>
+      </div>
+    );
   }
 
   if (showConfirmation) {

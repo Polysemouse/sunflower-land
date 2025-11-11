@@ -13,6 +13,7 @@ import { balancesToInventory } from "lib/utils/visitUtils";
 import { toWei } from "web3-utils";
 
 import chest from "assets/icons/chest.png";
+import petNFTEgg from "assets/icons/pet_nft_egg.png";
 
 import { getKeys } from "features/game/types/craftables";
 import { ITEM_DETAILS } from "features/game/types/images";
@@ -36,6 +37,8 @@ import { getImageUrl } from "lib/utils/getImageURLS";
 import { MachineState } from "features/game/lib/gameMachine";
 import { Context as GameContext } from "features/game/GameProvider";
 import { GameWallet } from "features/wallet/Wallet";
+import { getPetsBalance } from "lib/blockchain/Pets";
+import { getPetImage } from "features/island/pets/lib/petShared";
 
 const imageDomain = CONFIG.NETWORK === "mainnet" ? "buds" : "testnet-buds";
 
@@ -69,7 +72,7 @@ export function transferInventoryItem(
   }));
 }
 
-type Status = "loading" | "loaded" | "error";
+export type Status = "loading" | "loaded" | "error";
 
 interface Props {
   farmAddress: string;
@@ -77,7 +80,12 @@ interface Props {
   onDeposit: (
     args: Pick<
       DepositArgs,
-      "itemIds" | "itemAmounts" | "wearableIds" | "wearableAmounts" | "budIds"
+      | "itemIds"
+      | "itemAmounts"
+      | "wearableIds"
+      | "wearableAmounts"
+      | "budIds"
+      | "petIds"
     >,
   ) => void;
   onClose?: () => void;
@@ -116,9 +124,11 @@ const DepositOptions: React.FC<Props> = ({
   const [inventoryBalance, setInventoryBalance] = useState<Inventory>({});
   const [wardrobeBalance, setWardrobeBalance] = useState<Wardrobe>({});
   const [budBalance, setBudBalance] = useState<number[]>([]);
+  const [petsBalance, setPetsBalance] = useState<number[]>([]);
   const [inventoryToDeposit, setInventoryToDeposit] = useState<Inventory>({});
   const [wearablesToDeposit, setWearablesToDeposit] = useState<Wardrobe>({});
   const [budsToDeposit, setBudsToDeposit] = useState<number[]>([]);
+  const [petsToDeposit, setPetsToDeposit] = useState<number[]>([]);
 
   useEffect(() => {
     if (status !== "loading") return;
@@ -144,16 +154,22 @@ const DepositOptions: React.FC<Props> = ({
           wallet.getAccount() as `0x${string}`,
         );
 
-        const [inventoryBalance, wearableBalance, budBalance] =
+        const petsBalanceFn = getPetsBalance(
+          wallet.getAccount() as `0x${string}`,
+        );
+
+        const [inventoryBalance, wearableBalance, budBalance, petsBalance] =
           await Promise.all([
             inventoryBalanceFn,
             wearableBalanceFn,
             budBalanceFn,
+            petsBalanceFn,
           ]);
 
         setInventoryBalance(balancesToInventory(inventoryBalance));
         setWardrobeBalance(wearableBalance);
         setBudBalance(budBalance);
+        setPetsBalance(petsBalance);
 
         setStatus("loaded");
         // Notify parent that we're done loading
@@ -202,6 +218,16 @@ const DepositOptions: React.FC<Props> = ({
     setBudsToDeposit((prev) => prev.filter((bud) => bud !== budId));
   };
 
+  const onAddPet = (petId: number) => {
+    setPetsBalance((prev) => prev.filter((pet) => pet !== petId));
+    setPetsToDeposit((prev) => [...prev, petId]);
+  };
+
+  const onRemovePet = (petId: number) => {
+    setPetsBalance((prev) => [...prev, petId]);
+    setPetsToDeposit((prev) => prev.filter((pet) => pet !== petId));
+  };
+
   const onRemoveWearable = (itemName: BumpkinItem) => {
     // Transfer from inventory to selected
     setWardrobeBalance((prev) => ({
@@ -237,6 +263,7 @@ const DepositOptions: React.FC<Props> = ({
       wearableIds,
       wearableAmounts,
       budIds: budsToDeposit,
+      petIds: petsToDeposit,
     });
 
     onClose && onClose();
@@ -261,17 +288,24 @@ const DepositOptions: React.FC<Props> = ({
   const hasItemsToDeposit = selectedItems.length > 0;
   const hasWearablesToDeposit = selectedWearables.length > 0;
   const hasBudsToDeposit = budsToDeposit.length > 0;
+  const hasPetsToDeposit = petsToDeposit.length > 0;
   const hasItemsInInventory = depositableItems.length > 0;
   const hasItemsInWardrobe = depositableWearables.length > 0;
   const hasBuds = budBalance.length > 0;
+  const hasPets = petsBalance.length > 0;
   const emptyWallet =
     getKeys(wardrobeBalance).length === 0 &&
     getKeys(inventoryBalance).length === 0 &&
     budBalance.length === 0 &&
-    budsToDeposit.length === 0;
+    budsToDeposit.length === 0 &&
+    petsBalance.length === 0 &&
+    petsToDeposit.length === 0;
 
   const hasAnythingToDeposit =
-    hasItemsToDeposit || hasWearablesToDeposit || hasBudsToDeposit;
+    hasItemsToDeposit ||
+    hasWearablesToDeposit ||
+    hasBudsToDeposit ||
+    hasPetsToDeposit;
 
   return (
     <>
@@ -346,6 +380,28 @@ const DepositOptions: React.FC<Props> = ({
                             onClick={() => onAddBud(budId)}
                             image={`https://${imageDomain}.sunflower-land.com/images/${budId}.webp`}
                             iconClassName="scale-[1.8] origin-bottom absolute"
+                          />
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+                {hasPets && (
+                  <div>
+                    <Label className="mb-2" type="default" icon={petNFTEgg}>
+                      {t("petNFTs")}
+                    </Label>
+                    <div
+                      className="flex flex-wrap h-fit -ml-1.5 overflow-y-auto scrollable pr-1"
+                      style={{ maxHeight: "200px" }}
+                    >
+                      {petsBalance.map((petId) => {
+                        return (
+                          <Box
+                            key={`pet-${petId}`}
+                            onClick={() => onAddPet(petId)}
+                            // TODO: Update with pet image
+                            image={getPetImage("happy", petId)}
                           />
                         );
                       })}
@@ -428,6 +484,20 @@ const DepositOptions: React.FC<Props> = ({
                           })}
                         </div>
                       )}
+                      {hasPetsToDeposit && (
+                        <div className="flex flex-wrap h-fit -ml-1.5">
+                          {petsToDeposit.map((petId) => {
+                            return (
+                              <Box
+                                key={`pet-${petId}`}
+                                onClick={() => onRemovePet(petId)}
+                                // TODO: Update with pet image
+                                image={getPetImage("happy", petId)}
+                              />
+                            );
+                          })}
+                        </div>
+                      )}
                     </div>
                   </div>
                 )}
@@ -437,7 +507,7 @@ const DepositOptions: React.FC<Props> = ({
               <a
                 target="_blank"
                 className="underline text-xxs hover:text-blue-500"
-                href={`https://docs.sunflower-land.com/economy/depositing-and-custody#cant-see-the-items-you-deposited`}
+                href={`https://docs.sunflower-land.com/getting-started/crypto-and-digital-collectibles`}
                 rel="noreferrer"
               >
                 {t("deposit.depositDidNotArrive")}
@@ -448,7 +518,10 @@ const DepositOptions: React.FC<Props> = ({
             onClick={handleDeposit}
             className="w-full"
             disabled={
-              !hasWearablesToDeposit && !hasItemsToDeposit && !hasBudsToDeposit
+              !hasWearablesToDeposit &&
+              !hasItemsToDeposit &&
+              !hasBudsToDeposit &&
+              !hasPetsToDeposit
             }
           >
             {t("deposit.sendToFarm")}
@@ -500,6 +573,7 @@ export const DepositGameItemsModal: React.FC<DepositModalProps> = ({
 
 const _farmAddress = (state: MachineState) => state.context.farmAddress ?? "";
 const _linkedWallet = (state: MachineState) => state.context.linkedWallet ?? "";
+
 export const DepositWrapper: React.FC<{ onClose: () => void }> = ({
   onClose,
 }) => {

@@ -5,7 +5,8 @@ import { produce } from "immer";
 import { isWearableActive } from "features/game/lib/wearables";
 import { updateBoostUsed } from "features/game/types/updateBoostUsed";
 import { getCountAndType } from "features/island/hud/components/inventory/utils/inventory";
-import { isCollectibleActive } from "features/game/lib/collectibleBuilt";
+import { isTemporaryCollectibleActive } from "features/game/lib/collectibleBuilt";
+import { prng } from "lib/prng";
 
 export type StartCraftingAction = {
   type: "crafting.started";
@@ -21,12 +22,27 @@ type Options = {
 export function getBoostedCraftingTime({
   game,
   time,
+  seed,
+  createdAt = Date.now(),
 }: {
   game: GameState;
   time: number;
+  seed?: number;
+  createdAt?: number;
 }) {
   let seconds = time;
   const boostsUsed: BoostName[] = [];
+  const { value: prngValue, nextSeed } = prng(seed ?? createdAt);
+
+  if (isTemporaryCollectibleActive({ name: "Fox Shrine", game })) {
+    boostsUsed.push("Fox Shrine");
+    if (prngValue * 100 < 10 && seed !== undefined) {
+      seconds *= 0;
+      return { seconds, boostsUsed, nextSeed };
+    } else {
+      seconds *= 0.75;
+    }
+  }
 
   // Sol & Luna 50% Crafting Speed
   if (isWearableActive({ name: "Sol & Luna", game })) {
@@ -39,12 +55,19 @@ export function getBoostedCraftingTime({
     boostsUsed.push("Architect Ruler");
   }
 
-  if (isCollectibleActive({ name: "Fox Shrine", game })) {
-    seconds *= 0.75;
-    boostsUsed.push("Fox Shrine");
+  if (
+    isTemporaryCollectibleActive({ name: "Time Warp Totem", game }) ||
+    isTemporaryCollectibleActive({ name: "Super Totem", game })
+  ) {
+    seconds *= 0.5;
+    if (isTemporaryCollectibleActive({ name: "Time Warp Totem", game })) {
+      boostsUsed.push("Time Warp Totem");
+    } else if (isTemporaryCollectibleActive({ name: "Super Totem", game })) {
+      boostsUsed.push("Super Totem");
+    }
   }
 
-  return { seconds, boostsUsed };
+  return { seconds, boostsUsed, nextSeed };
 }
 
 export function startCrafting({
@@ -60,7 +83,9 @@ export function startCrafting({
     }
 
     // Check if player has the Crafting Box
-    const isBuildingBuilt = (copy.buildings["Crafting Box"]?.length ?? 0) > 0;
+    const isBuildingBuilt = copy.buildings["Crafting Box"]?.some(
+      (building) => !!building.coordinates,
+    );
     if (!isBuildingBuilt) {
       throw new Error("You do not have a Crafting Box");
     }
@@ -119,9 +144,20 @@ export function startCrafting({
       }
     });
 
-    const { seconds: recipeTime, boostsUsed } = getBoostedCraftingTime({
+    const previousSeed =
+      recipe.type === "collectible"
+        ? copy.craftingBox.recipes[recipe.name]?.seed
+        : undefined;
+
+    const {
+      seconds: recipeTime,
+      boostsUsed,
+      nextSeed,
+    } = getBoostedCraftingTime({
       game: state,
       time: recipe.time,
+      seed: previousSeed,
+      createdAt,
     });
 
     copy.craftingBox = {
@@ -134,7 +170,7 @@ export function startCrafting({
           : { wearable: recipe.name },
       recipes: {
         ...copy.craftingBox.recipes,
-        [recipe.name]: recipe,
+        [recipe.name]: { ...recipe, seed: nextSeed },
       },
     };
 

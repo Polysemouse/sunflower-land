@@ -11,6 +11,8 @@ import { CompletingFaceRecognitionSuccess } from "./CompletingFaceRecognitionSuc
 import { TwitterFollowedSuccess } from "./TwitterFollowedSuccess";
 import { TwitterPostedSuccess } from "./TwitterPostedSuccess";
 import { Loading } from "features/auth/components";
+import { RoninClaimedSuccess } from "../onChainAirdrops/ClaimRoninPack";
+import { BulkPurchaseSuccess } from "./BulkPurchaseSuccess";
 
 const SuccessSkip: React.FC = () => {
   const { gameService } = useGame();
@@ -35,6 +37,7 @@ export const EFFECT_SUCCESS_COMPONENTS: Partial<
   completingFaceRecognitionSuccess: <CompletingFaceRecognitionSuccess />,
   followingTwitterSuccess: <TwitterFollowedSuccess />,
   postingTwitterSuccess: <TwitterPostedSuccess />,
+  roninAirdrop: <RoninClaimedSuccess />,
   marketplaceBulkListingsCancellingSuccess: (
     <BulkRemoveSuccess
       type="listings"
@@ -44,8 +47,8 @@ export const EFFECT_SUCCESS_COMPONENTS: Partial<
   marketplaceBulkOffersCancellingSuccess: (
     <BulkRemoveSuccess type="offers" effect="marketplaceBulkOffersCancelling" />
   ),
+  marketplaceBuyingBulkResourcesSuccess: <BulkPurchaseSuccess />,
   seekingBlessingSuccess: <SuccessSkip />,
-  cleaningFarmSuccess: <SuccessSkip />,
 };
 
 function camelToDotCase(str: string): string {

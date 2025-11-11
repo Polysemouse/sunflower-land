@@ -8,7 +8,7 @@ import powerup from "assets/icons/level_up.png";
 import factionPoint from "assets/icons/faction_point.webp";
 import vip from "assets/icons/vip.webp";
 import recipeIcon from "assets/decorations/page.png";
-import { CollectibleName, getKeys } from "features/game/types/craftables";
+import { getKeys } from "features/game/types/craftables";
 import { ITEM_DETAILS } from "features/game/types/images";
 import { SUNNYSIDE } from "assets/sunnyside";
 import { BumpkinItem, ITEM_IDS } from "features/game/types/bumpkin";
@@ -33,9 +33,7 @@ import { ButtonPanel } from "components/ui/Panel";
 import { OPEN_SEA_WEARABLES } from "metadata/metadata";
 import { RECIPES } from "features/game/lib/crafting";
 
-const _bumpkin = (state: MachineState) => state.context.state.bumpkin;
 const _game = (state: MachineState) => state.context.state;
-const _buds = (state: MachineState) => state.context.state.buds;
 
 interface ClaimRewardProps {
   reward: IAirdrop;
@@ -53,13 +51,11 @@ export const ClaimReward: React.FC<ClaimRewardProps> = ({
   const { t } = useAppTranslation();
   const itemNames = getKeys(airdrop.items);
   const { showAnimations, gameService } = useContext(Context);
-  const bumpkin = useSelector(gameService, _bumpkin);
   const game = useSelector(gameService, _game);
-  const buds = useSelector(gameService, _buds);
 
   useEffect(() => {
     if (showAnimations) confetti();
-  }, []);
+  }, [showAnimations]);
 
   return (
     <>
@@ -134,8 +130,10 @@ export const ClaimReward: React.FC<ClaimRewardProps> = ({
 
           {itemNames.length > 0 &&
             itemNames.map((name) => {
-              const buff =
-                COLLECTIBLE_BUFF_LABELS(game)[name as CollectibleName];
+              const buff = COLLECTIBLE_BUFF_LABELS[name]?.({
+                skills: game.bumpkin.skills,
+                collectibles: game.collectibles,
+              });
               return (
                 <ButtonPanel
                   className="flex items-start cursor-context-menu hover:brightness-100"
@@ -268,7 +266,7 @@ export const ClaimReward: React.FC<ClaimRewardProps> = ({
                     <div className="flex flex-wrap items-center">
                       <Label type="default" className="mb-1 mr-2">
                         {t("crafting.recipe", {
-                          recipe: RECIPES(game)[recipe]!.name,
+                          recipe: RECIPES[recipe].name,
                         })}
                       </Label>
                       {!game.inventory["Crafting Box"] && (

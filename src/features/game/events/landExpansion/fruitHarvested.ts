@@ -1,5 +1,8 @@
 import Decimal from "decimal.js-light";
-import { isCollectibleBuilt } from "features/game/lib/collectibleBuilt";
+import {
+  isCollectibleBuilt,
+  isTemporaryCollectibleActive,
+} from "features/game/lib/collectibleBuilt";
 import {
   getBudYieldBoosts,
   Resource,
@@ -295,7 +298,14 @@ export function getFruitYield({
     boostsUsed.push("Generous Orchard");
   }
 
-  if (getActiveCalendarEvent({ game }) === "bountifulHarvest") {
+  if (isTemporaryCollectibleActive({ name: "Legendary Shrine", game })) {
+    amount += 1;
+    boostsUsed.push("Legendary Shrine");
+  }
+
+  if (
+    getActiveCalendarEvent({ calendar: game.calendar }) === "bountifulHarvest"
+  ) {
     amount += 1;
     const { activeGuardian } = getActiveGuardian({
       game,
@@ -325,6 +335,10 @@ export function harvestFruit({
 
     if (!patch) {
       throw new Error("Fruit patch does not exist");
+    }
+
+    if (patch.x === undefined && patch.y === undefined) {
+      throw new Error("Fruit patch is not placed");
     }
 
     if (!patch.fruit) {

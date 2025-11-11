@@ -26,7 +26,7 @@ import { TextInput } from "components/ui/TextInput";
 const TWITTER_POST_DESCRIPTIONS: Record<TwitterPostName, TranslationKeys> = {
   FARM: "twitter.post.farm",
   WEEKLY: "twitter.post.weekly",
-  FLOWER: "twitter.post.flower",
+  // RONIN: "twitter.post.ronin",
 };
 
 export const Twitter: React.FC<{ onClose: () => void }> = ({ onClose }) => (
@@ -54,7 +54,7 @@ const TwitterRewards: React.FC = () => {
   return (
     <InnerPanel className="p-2  mt-1">
       <div className="flex gap-1 items-center mb-2">
-        <Label type="vibrant">{t("twitter.share.earn")}</Label>
+        <Label type="default">{t("twitter.share.earn")}</Label>
         {twitter?.isAuthorised && (
           <Label type="success" className="mr-2">
             {t("twitter.connected")}
@@ -129,13 +129,23 @@ const TwitterPost: React.FC<{ name: TwitterPostName; onClose: () => void }> = ({
   const [showConfirm, setShowConfirm] = useState(false);
 
   const { t } = useAppTranslation();
+  const claim = () => {
+    gameService.send("twitter.posted", {
+      effect: {
+        type: "twitter.posted",
+        url,
+      },
+    });
+
+    onClose();
+  };
 
   const twitter = gameState.context.state.twitter;
 
   if (!twitter?.isAuthorised) {
     return (
       <InnerPanel className="p-1  mt-1">
-        <Label type="vibrant" className="mb-2">
+        <Label type="default" className="mb-2">
           {t("twitter.share.earn")}
         </Label>
         <Button
@@ -157,7 +167,7 @@ const TwitterPost: React.FC<{ name: TwitterPostName; onClose: () => void }> = ({
   if (!twitter.followedAt) {
     return (
       <InnerPanel className="p-1  mt-1">
-        <Label type="vibrant" className="mb-2">
+        <Label type="default" className="mb-2">
           {t("twitter.share.earn")}
         </Label>
         <div className="flex flex-wrap">
@@ -217,19 +227,7 @@ const TwitterPost: React.FC<{ name: TwitterPostName; onClose: () => void }> = ({
         )}
         <div className="flex gap-1">
           <Button onClick={() => setShowConfirm(false)}>{t("back")}</Button>
-          <Button
-            disabled={!url || tweetUsed}
-            onClick={() => {
-              gameService.send("twitter.posted", {
-                effect: {
-                  type: "twitter.posted",
-                  url,
-                },
-                authToken: authState.context.user.rawToken as string,
-              });
-              onClose();
-            }}
-          >
+          <Button disabled={!url || tweetUsed} onClick={claim}>
             {t("twitter.verify.button")}
           </Button>
         </div>
@@ -239,10 +237,14 @@ const TwitterPost: React.FC<{ name: TwitterPostName; onClose: () => void }> = ({
 
   const Component = TWITTER_COMPONENTS[name];
 
+  const inCooldown = cooldown > 0;
   // Stage 2 - testing only
   return (
     <InnerPanel className="p-2  mt-1">
-      <Component />
+      <Component
+        onClose={onClose}
+        onVerify={inCooldown ? undefined : () => setShowConfirm(true)}
+      />
 
       {cooldown > 0 && (
         <>
@@ -253,24 +255,14 @@ const TwitterPost: React.FC<{ name: TwitterPostName; onClose: () => void }> = ({
           </p>
         </>
       )}
-      <div className="flex">
-        <Button className="mr-1" onClick={onClose}>
-          {t("back")}
-        </Button>
-        <Button
-          disabled={cooldown > 0 || hasCompleted}
-          onClick={() => {
-            setShowConfirm(true);
-          }}
-        >
-          {t("twitter.verify.button")}
-        </Button>
-      </div>
     </InnerPanel>
   );
 };
 
-const TwitterFarm: React.FC = () => {
+const TwitterFarm: React.FC<{ onClose: () => void; onVerify?: () => void }> = ({
+  onClose,
+  onVerify,
+}) => {
   const { gameState } = useGame();
   const { t } = useAppTranslation();
 
@@ -284,7 +276,7 @@ const TwitterFarm: React.FC = () => {
   return (
     <>
       <div className="flex  gap-1">
-        <Label type="vibrant" className="mr-2">
+        <Label type="default" className="mr-2">
           {t("twitter.farm.share")}
         </Label>
         <div className="flex flex-wrap justify-between">
@@ -315,22 +307,41 @@ const TwitterFarm: React.FC = () => {
         {t("twitter.farm.instructions.1", { hashtag: TWITTER_HASHTAGS.FARM })}
       </p>
       <p className="text-xs mx-1 mb-2">{t("twitter.farm.instructions.2")}</p>
+
+      <div className="flex">
+        <Button className="mr-1" onClick={onClose}>
+          {t("back")}
+        </Button>
+        {onVerify && (
+          <Button disabled={hasCompleted} onClick={onVerify}>
+            {t("twitter.verify.button")}
+          </Button>
+        )}
+      </div>
     </>
   );
 };
 
-const TwitterWeekly: React.FC = () => {
-  return <TwitterBanner type="progress" postName="WEEKLY" />;
-};
-
-const TwitterFlower: React.FC = () => {
-  return <TwitterBanner type="flower" postName="FLOWER" />;
+const TwitterWeekly: React.FC<{
+  onClose: () => void;
+  onVerify?: () => void;
+}> = ({ onClose, onVerify }) => {
+  return (
+    <TwitterBanner
+      type="progress"
+      postName="WEEKLY"
+      onClose={onClose}
+      onVerify={onVerify}
+    />
+  );
 };
 
 const TwitterBanner: React.FC<{
   type: "progress" | "flower";
   postName: TwitterPostName;
-}> = ({ type, postName }) => {
+  onClose: () => void;
+  onVerify?: () => void;
+}> = ({ type, postName, onClose, onVerify }) => {
   const { authService } = useContext(AuthProvider.Context);
   const [authState] = useActor(authService);
   const { gameState } = useGame();
@@ -383,7 +394,7 @@ const TwitterBanner: React.FC<{
   return (
     <>
       <div className="flex  gap-1">
-        <Label type="vibrant">{t("twitter.weekly.share")}</Label>
+        <Label type="default">{t("twitter.weekly.share")}</Label>
         <div className="flex flex-wrap justify-between">
           {hasCompleted ? (
             <Label type="success" className="mr-2">
@@ -427,12 +438,25 @@ const TwitterBanner: React.FC<{
         })}
       </p>
       <p className="text-xs mx-1 mb-2">{t("twitter.weekly.instructions.2")}</p>
+
+      <div className="flex">
+        <Button className="mr-1" onClick={onClose}>
+          {t("back")}
+        </Button>
+        {onVerify && (
+          <Button disabled={hasCompleted} onClick={onVerify}>
+            {t("twitter.verify.button")}
+          </Button>
+        )}
+      </div>
     </>
   );
 };
 
-const TWITTER_COMPONENTS: Record<TwitterPostName, React.FC> = {
+const TWITTER_COMPONENTS: Record<
+  TwitterPostName,
+  React.FC<{ onClose: () => void; onVerify?: () => void }>
+> = {
   FARM: TwitterFarm,
   WEEKLY: TwitterWeekly,
-  FLOWER: TwitterFlower,
 };

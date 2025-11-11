@@ -2,7 +2,11 @@ import { useSelector } from "@xstate/react";
 import React, { useContext, useEffect, useState } from "react";
 import Decimal from "decimal.js-light";
 
-import { Inventory, InventoryItemName } from "features/game/types/game";
+import {
+  BoostName,
+  Inventory,
+  InventoryItemName,
+} from "features/game/types/game";
 import { ITEM_DETAILS } from "features/game/types/images";
 import { KNOWN_IDS } from "features/game/types";
 import { getItemUnit } from "features/game/lib/conversion";
@@ -28,6 +32,10 @@ import { RequiredReputation } from "features/island/hud/components/reputation/Re
 import { isFaceVerified } from "features/retreat/components/personhood/lib/faceRecognition";
 import { FaceRecognition } from "features/retreat/components/personhood/FaceRecognition";
 import { hasBoostRestriction } from "features/game/types/withdrawRestrictions";
+import { InfoPopover } from "features/island/common/InfoPopover";
+import { secondsToString } from "lib/utils/time";
+import { COLLECTIBLE_BUFF_LABELS } from "features/game/types/collectibleItemBuffs";
+import { getChestItems } from "features/island/hud/components/inventory/utils/inventory";
 
 interface Props {
   onWithdraw: (ids: number[], amounts: string[]) => void;
@@ -78,6 +86,8 @@ export const WithdrawItems: React.FC<Props> = ({
   const [inventory, setInventory] = useState<Inventory>({});
   const [selected, setSelected] = useState<Inventory>({});
 
+  const [showInfo, setShowInfo] = useState("");
+
   useEffect(() => {
     const bankItems = getBankItems(state);
     setInventory(bankItems);
@@ -112,12 +122,99 @@ export const WithdrawItems: React.FC<Props> = ({
     };
   };
 
+  const hasMoreOffChainItems = (itemName: InventoryItemName) => {
+    const inventoryCount = inventory[itemName] ?? new Decimal(0);
+    const currentAmount = getChestItems(state)[itemName] ?? new Decimal(0);
+    const onChainAmount = state.previousInventory[itemName] ?? new Decimal(0);
+
+    // No items available to select, but there are more off-chain items
+    return inventoryCount.lessThanOrEqualTo(0) && currentAmount > onChainAmount;
+  };
+
+  const getRestrictionStatus = (itemName: BoostName) => {
+    const { isRestricted, cooldownTimeLeft } = hasBoostRestriction({
+      boostUsedAt: state.boostsUsedAt,
+      item: itemName,
+    });
+    return { isRestricted, cooldownTimeLeft };
+  };
+
+  // Precompute/cached values for sorting to avoid repeated expensive calls
+  const withdrawableItemCache = React.useMemo(() => {
+    const cache: {
+      [key in InventoryItemName]?: {
+        cooldownMs: number;
+        isOnCooldown: boolean;
+        hasMoreOffChain: boolean;
+        hasBuff: boolean;
+      };
+    } = {};
+
+    getKeys(inventory).forEach((itemName) => {
+      const { cooldownTimeLeft } = getRestrictionStatus(itemName);
+      const isOnCooldown = cooldownTimeLeft > 0;
+      const hasMoreOffChain = hasMoreOffChainItems(itemName);
+      const hasBuff = !!COLLECTIBLE_BUFF_LABELS[itemName]?.({
+        skills: state.bumpkin.skills,
+        collectibles: state.collectibles,
+      })?.length;
+
+      cache[itemName] = {
+        cooldownMs: cooldownTimeLeft,
+        isOnCooldown,
+        hasMoreOffChain,
+        hasBuff,
+      };
+    });
+
+    return cache;
+    // Only depends on inventory and state
+  }, [inventory, state]);
+
+  const sortWithdrawableItems = (
+    itemA: InventoryItemName,
+    itemB: InventoryItemName,
+  ) => {
+    const a = withdrawableItemCache[itemA];
+    const b = withdrawableItemCache[itemB];
+
+    // Handle undefined cases first
+    if (!a && !b) return 0;
+    if (!a) return 1;
+    if (!b) return -1;
+
+    // 1. Items on cooldown come first, sorted by most cooldown time left
+    if (a.isOnCooldown && b.isOnCooldown) {
+      return b.cooldownMs - a.cooldownMs;
+    }
+    if (a.isOnCooldown !== b.isOnCooldown) {
+      return a.isOnCooldown ? -1 : 1;
+    }
+
+    // 2. Items that have more off-chain than on-chain copies
+    if (a.hasMoreOffChain !== b.hasMoreOffChain) {
+      return a.hasMoreOffChain ? -1 : 1;
+    }
+
+    // 3. Boosted items come before non-boosted items
+    if (a.hasBuff !== b.hasBuff) {
+      return a.hasBuff ? -1 : 1;
+    }
+
+    // 4. Otherwise, sort by item IDs
+    return KNOWN_IDS[itemA] - KNOWN_IDS[itemB];
+  };
+
   const withdrawableItems = getKeys(inventory)
     .filter((itemName) => {
       const withdrawAt = INVENTORY_RELEASES[itemName]?.withdrawAt;
       return !!withdrawAt && withdrawAt <= new Date();
     })
-    .sort((a, b) => KNOWN_IDS[a] - KNOWN_IDS[b]);
+    .filter(
+      (itemName) =>
+        hasMoreOffChainItems(itemName) || inventory[itemName]?.gt(0),
+    )
+    .sort((a, b) => sortWithdrawableItems(a, b) as number);
 
   const selectedItems = getKeys(selected)
     .filter((item) => selected[item]?.gt(0))
@@ -152,21 +249,55 @@ export const WithdrawItems: React.FC<Props> = ({
             // The inventory amount that is not placed
             const inventoryCount = inventory[itemName] ?? new Decimal(0);
 
+            const { isRestricted, cooldownTimeLeft } =
+              getRestrictionStatus(itemName);
+
+            const RestrictionCooldown = cooldownTimeLeft / 1000;
+            const isLocked =
+              isRestricted || inventoryCount.lessThanOrEqualTo(0);
+
+            const shouldShowPopover =
+              isRestricted || hasMoreOffChainItems(itemName);
+
+            const handleBoxClick = () => {
+              if (shouldShowPopover) {
+                setShowInfo((prev) => (prev === itemName ? "" : itemName));
+              }
+            };
+
             return (
-              <Box
-                count={inventoryCount}
+              <div
                 key={itemName}
-                disabled={
-                  inventoryCount.lessThanOrEqualTo(0) ||
-                  hasBoostRestriction({
-                    boostUsedAt: state.boostsUsedAt,
-                    item: itemName,
-                  }).isRestricted
-                }
-                onClick={() => onAdd(itemName)}
-                image={details.image}
-                canBeLongPressed={allowLongpressWithdrawal}
-              />
+                onClick={handleBoxClick}
+                className="flex relative text-center"
+              >
+                <InfoPopover
+                  className="absolute top-14 text-xxs sm:text-xs"
+                  showPopover={showInfo === itemName}
+                >
+                  {hasMoreOffChainItems(itemName)
+                    ? t("withdraw.requires.storeOnChain")
+                    : isRestricted &&
+                      t("withdraw.boostedItem.timeLeft", {
+                        time: secondsToString(RestrictionCooldown, {
+                          length: "medium",
+                          isShortFormat: true,
+                          removeTrailingZeros: true,
+                        }),
+                      })}
+                </InfoPopover>
+
+                <Box
+                  count={inventoryCount}
+                  key={itemName}
+                  disabled={isLocked}
+                  onClick={() => onAdd(itemName)}
+                  image={details.image}
+                  secondaryImage={
+                    shouldShowPopover ? SUNNYSIDE.icons.lock : undefined
+                  }
+                />
+              </div>
             );
           })}
           {/* Pad with empty boxes */}
@@ -219,7 +350,7 @@ export const WithdrawItems: React.FC<Props> = ({
           {t("withdraw.opensea")}{" "}
           <a
             className="underline hover:text-blue-500"
-            href="https://docs.sunflower-land.com/fundamentals/withdrawing"
+            href="https://docs.sunflower-land.com/getting-started/crypto-and-digital-collectibles"
             target="_blank"
             rel="noopener noreferrer"
           >

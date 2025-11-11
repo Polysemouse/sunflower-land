@@ -3,6 +3,7 @@ import cloneDeep from "lodash.clonedeep";
 import Decimal from "decimal.js-light";
 import { GameState, LavaPit } from "features/game/types/game";
 import { Coordinates } from "features/game/expansion/components/MapPlacement";
+import { getLavaPitTime } from "./startLavaPit";
 
 export type PlaceLavaPitAction = {
   type: "lavaPit.placed";
@@ -55,8 +56,10 @@ export function placeLavaPit({
       const existingProgress =
         updatedLavaPit.removedAt - updatedLavaPit.startedAt;
       updatedLavaPit.startedAt = createdAt - existingProgress;
-      delete updatedLavaPit.removedAt;
+      updatedLavaPit.readyAt =
+        updatedLavaPit.startedAt + getLavaPitTime({ game }).time;
     }
+    delete updatedLavaPit.removedAt;
 
     game.lavaPits[id] = updatedLavaPit;
 

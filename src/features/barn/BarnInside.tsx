@@ -33,6 +33,11 @@ import { MapPlacement } from "features/game/expansion/components/MapPlacement";
 import { ANIMAL_HOUSE_BOUNDS } from "features/game/expansion/placeable/lib/collisionDetection";
 import { LandBiomeName } from "features/island/biomes/biomes";
 import { getCurrentBiome } from "features/island/biomes/biomes";
+import { PlayerModal } from "features/social/PlayerModal";
+import { hasFeatureAccess } from "lib/flags";
+import { Context as AuthContext } from "features/auth/lib/Provider";
+import { AuthMachineState } from "features/auth/lib/authMachine";
+import { isBuildingDestroyed } from "features/island/buildings/components/building/Building";
 
 export const EXTERIOR_ISLAND_BG: Record<LandBiomeName, string> = {
   "Basic Biome": SUNNYSIDE.land.basic_building_bg,
@@ -43,6 +48,7 @@ export const EXTERIOR_ISLAND_BG: Record<LandBiomeName, string> = {
 
 const _barn = (state: MachineState) => state.context.state.barn;
 const _island = (state: MachineState) => state.context.state.island;
+const _token = (state: AuthMachineState) => state.context.user.rawToken ?? "";
 
 type BarnAnimal = Exclude<AnimalType, "Chicken">;
 
@@ -60,7 +66,16 @@ export const BarnInside: React.FC = () => {
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [selected, setSelected] = useState<Animal>();
   const [deal, setDeal] = useState<AnimalBounty>();
+  const { authService } = useContext(AuthContext);
+  const context = gameService.getSnapshot().context;
+  const loggedInFarmId = context.visitorId ?? context.farmId;
 
+  const hasAirdropAccess = hasFeatureAccess(
+    context.visitorState ?? context.state,
+    "AIRDROP_PLAYER",
+  );
+
+  const token = useSelector(authService, _token);
   const barn = useSelector(gameService, _barn);
   const island = useSelector(gameService, _island);
   const level = barn.level;
@@ -122,6 +137,21 @@ export const BarnInside: React.FC = () => {
     floorWidth,
   ]);
   const currentBiome = getCurrentBiome(island);
+
+  const validAnimalsCount = useMemo(() => {
+    if (!deal) return 0;
+    return organizedAnimals.filter((animal) => isValidDeal({ animal, deal }))
+      .length;
+  }, [organizedAnimals, deal]);
+
+  const calendarEvent = isBuildingDestroyed({
+    name: "Barn",
+    calendar: context.state.calendar,
+  });
+
+  if (calendarEvent) {
+    navigate("/");
+  }
 
   return (
     <>
@@ -282,8 +312,15 @@ export const BarnInside: React.FC = () => {
           onClose={() => {
             setDeal(undefined);
           }}
+          validAnimalsCount={validAnimalsCount}
         />
       )}
+
+      <PlayerModal
+        loggedInFarmId={loggedInFarmId}
+        token={token}
+        hasAirdropAccess={hasAirdropAccess}
+      />
     </>
   );
 };

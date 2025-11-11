@@ -3,6 +3,7 @@ import { LEVEL_EXPERIENCE } from "features/game/lib/level";
 import { INITIAL_BUMPKIN, TEST_FARM } from "../../lib/constants";
 import { GameState } from "../../types/game";
 import { placeBuilding } from "./placeBuilding";
+import { RECIPES } from "features/game/lib/crafting";
 
 const GAME_STATE: GameState = {
   ...TEST_FARM,
@@ -379,5 +380,173 @@ describe("Place building", () => {
     expect(state.henHouse.animals["123"].awakeAt).toEqual(
       dateNow - 60000 + 24 * 60 * 60 * 1000,
     );
+  });
+
+  it("adjusts the new lovedAt for henhouse", () => {
+    const state = placeBuilding({
+      state: {
+        ...GAME_STATE,
+        inventory: {
+          "Basic Land": new Decimal(10),
+          "Hen House": new Decimal(1),
+        },
+        buildings: {
+          "Hen House": [
+            {
+              id: "123",
+              createdAt: dateNow,
+              readyAt: dateNow,
+              removedAt: dateNow - 120000,
+            },
+          ],
+        },
+        henHouse: {
+          level: 1,
+          animals: {
+            "123": {
+              type: "Chicken",
+              id: "123",
+              state: "idle",
+              createdAt: dateNow - 180000,
+              experience: 1000,
+              asleepAt: dateNow - 180000,
+              awakeAt: dateNow - 180000 + 24 * 60 * 60 * 1000,
+              lovedAt: dateNow - 160000,
+              item: "Brush",
+            },
+          },
+        },
+      },
+      action: {
+        type: "building.placed",
+        name: "Hen House",
+        id: "123",
+        coordinates: { x: 0, y: 1 },
+      },
+      createdAt: dateNow,
+    });
+
+    expect(state.henHouse.animals["123"].lovedAt).toEqual(
+      dateNow - (160000 - 120000),
+    );
+  });
+
+  it("adjusts the new readyAt for crafting box", () => {
+    const state = placeBuilding({
+      state: {
+        ...GAME_STATE,
+        inventory: {
+          "Crafting Box": new Decimal(1),
+          "Basic Land": new Decimal(10),
+        },
+        buildings: {
+          "Crafting Box": [
+            {
+              id: "123",
+              createdAt: dateNow,
+              readyAt: dateNow,
+              removedAt: dateNow - 120000,
+            },
+          ],
+        },
+        craftingBox: {
+          item: {
+            collectible: "Doll",
+          },
+          startedAt: dateNow - 180000,
+          readyAt: dateNow - 180000 + (RECIPES["Doll"]?.time ?? 0),
+          status: "crafting",
+          recipes: {},
+        },
+      },
+      action: {
+        type: "building.placed",
+        name: "Crafting Box",
+        id: "123",
+        coordinates: { x: 0, y: 1 },
+      },
+      createdAt: dateNow,
+    });
+
+    expect(state.craftingBox.startedAt).toEqual(dateNow - 60000);
+    expect(state.craftingBox.readyAt).toEqual(
+      dateNow - 60000 + (RECIPES["Doll"]?.time ?? 0),
+    );
+  });
+
+  it("does not adjust the new readyAt for second instance of building", () => {
+    const state = placeBuilding({
+      state: {
+        ...GAME_STATE,
+        inventory: {
+          "Hen House": new Decimal(2),
+        },
+        buildings: {
+          "Hen House": [
+            {
+              id: "123",
+              readyAt: 0,
+              createdAt: 0,
+              coordinates: { x: 0, y: 0 },
+            },
+            {
+              id: "456",
+              readyAt: 0,
+              createdAt: 0,
+              removedAt: dateNow - 2 * 24 * 60 * 60 * 1000,
+            },
+          ],
+        },
+        henHouse: {
+          level: 1,
+          animals: {
+            123: {
+              id: "123",
+              type: "Chicken",
+              state: "idle",
+              createdAt: dateNow - 180000,
+              experience: 1000,
+              asleepAt: dateNow - 180000,
+              awakeAt: dateNow - 180000 + 24 * 60 * 60 * 1000,
+              lovedAt: 0,
+              item: "Brush",
+            },
+            456: {
+              id: "456",
+              type: "Chicken",
+              state: "idle",
+              createdAt: dateNow - 180000,
+              experience: 1000,
+              asleepAt: dateNow - 180000,
+              awakeAt: dateNow - 180000 + 24 * 60 * 60 * 1000,
+              lovedAt: 0,
+              item: "Brush",
+            },
+            789: {
+              id: "789",
+              type: "Chicken",
+              state: "idle",
+              createdAt: dateNow - 180000,
+              experience: 1000,
+              asleepAt: dateNow - 180000,
+              awakeAt: dateNow - 180000 + 24 * 60 * 60 * 1000,
+              lovedAt: 0,
+              item: "Brush",
+            },
+          },
+        },
+      },
+      action: {
+        type: "building.placed",
+        name: "Hen House",
+        id: "456",
+        coordinates: { x: 0, y: 3 },
+      },
+      createdAt: dateNow,
+    });
+
+    expect(state.henHouse.animals["123"].asleepAt).toEqual(dateNow - 180000);
+    expect(state.henHouse.animals["456"].asleepAt).toEqual(dateNow - 180000);
+    expect(state.henHouse.animals["789"].asleepAt).toEqual(dateNow - 180000);
   });
 });

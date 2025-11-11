@@ -7,7 +7,7 @@ import { useTranslation } from "react-i18next";
 import { Equipped } from "features/game/types/bumpkin";
 import { Label } from "components/ui/Label";
 import socialPointsIcon from "assets/icons/social_score.webp";
-import giftIcon from "assets/icons/gift.png";
+import potIcon from "assets/icons/pot.png";
 import helpIcon from "assets/icons/help.webp";
 import helpedIcon from "assets/icons/helped.webp";
 import { SUNNYSIDE } from "assets/sunnyside";
@@ -18,13 +18,13 @@ type Props = {
   playerId: number;
   clothing: Equipped;
   username: string;
-  haveHelpedToday: boolean;
-  haveTheyHelpedYouToday: boolean;
+  helpedThemToday: boolean;
+  helpedYouToday: boolean;
   socialPoints: number;
   lastOnlineAt: number;
   hasCookingPot: boolean;
   navigateToPlayer: (playerId: number) => void;
-  friendStreak: number;
+  helpStreak: number;
 };
 
 export const FollowDetailPanel: React.FC<Props> = ({
@@ -32,13 +32,13 @@ export const FollowDetailPanel: React.FC<Props> = ({
   playerId,
   clothing,
   username,
-  haveHelpedToday,
-  haveTheyHelpedYouToday,
+  helpedThemToday,
+  helpedYouToday,
   socialPoints,
   lastOnlineAt,
   hasCookingPot,
   navigateToPlayer,
-  friendStreak,
+  helpStreak,
 }: Props) => {
   const { t } = useTranslation();
   const lastOnline = getRelativeTime(lastOnlineAt, "short");
@@ -62,11 +62,7 @@ export const FollowDetailPanel: React.FC<Props> = ({
             <NPCIcon parts={clothing} />
           </div>
           <div className="absolute -top-1 -right-1">
-            <OnlineStatus
-              loggedInFarmId={loggedInFarmId}
-              playerId={playerId}
-              lastUpdatedAt={lastOnlineAt}
-            />
+            <OnlineStatus lastUpdatedAt={lastOnlineAt} />
           </div>
         </div>
         <div className="flex flex-col gap-0.5 w-full">
@@ -88,16 +84,14 @@ export const FollowDetailPanel: React.FC<Props> = ({
             )}
             <div className="flex items-center justify-between w-full">
               <div className="flex items-center gap-1 flex-wrap">
-                {haveHelpedToday && <img src={helpIcon} className="w-4 h-4" />}
-                {haveTheyHelpedYouToday && (
-                  <img src={helpedIcon} className="w-4 h-4" />
-                )}
-                {hasCookingPot && <img src={giftIcon} className="w-4 h-4" />}
+                {helpedThemToday && <img src={helpIcon} className="w-5 h-5" />}
+                {helpedYouToday && <img src={helpedIcon} className="w-5 h-5" />}
+                {hasCookingPot && <img src={potIcon} className="w-5 h-5" />}
               </div>
-              {friendStreak > 0 && (
+              {helpStreak > 0 && (
                 <Label type="vibrant" icon={SUNNYSIDE.icons.heart}>
                   {t("friendStreak.short", {
-                    days: friendStreak,
+                    days: helpStreak,
                   })}
                 </Label>
               )}

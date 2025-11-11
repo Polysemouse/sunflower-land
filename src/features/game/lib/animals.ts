@@ -22,7 +22,10 @@ import {
   GameState,
   InventoryItemName,
 } from "../types/game";
-import { isCollectibleBuilt } from "./collectibleBuilt";
+import {
+  isTemporaryCollectibleActive,
+  isCollectibleBuilt,
+} from "./collectibleBuilt";
 import { getBudYieldBoosts } from "./getBudYieldBoosts";
 import { isWearableActive } from "./wearables";
 
@@ -193,6 +196,21 @@ function getFeatherYieldBoosts(game: GameState): {
     boostsUsed.push("Fine Fibers");
   }
 
+  if (game.bumpkin.skills["Leathercraft Mastery"]) {
+    boost -= 0.35;
+    boostsUsed.push("Leathercraft Mastery");
+  }
+
+  if (game.bumpkin.skills["Featherweight"]) {
+    boost += 0.25;
+    boostsUsed.push("Featherweight");
+  }
+
+  if (game.bumpkin.skills["Merino Whisperer"]) {
+    boost -= 0.35;
+    boostsUsed.push("Merino Whisperer");
+  }
+
   return { amount: boost, boostsUsed };
 }
 
@@ -211,6 +229,11 @@ function getWoolYieldBoosts(game: GameState): {
   if (isWearableActive({ name: "White Sheep Onesie", game })) {
     boost += 0.25;
     boostsUsed.push("White Sheep Onesie");
+  }
+
+  if (isCollectibleBuilt({ name: "Astronaut Sheep", game })) {
+    boost += 0.1;
+    boostsUsed.push("Astronaut Sheep");
   }
 
   if (game.bumpkin.skills["Abundant Harvest"]) {
@@ -241,6 +264,21 @@ function getMerinoWoolYieldBoosts(game: GameState): {
   if (game.bumpkin.skills["Fine Fibers"]) {
     boost += 0.1;
     boostsUsed.push("Fine Fibers");
+  }
+
+  if (game.bumpkin.skills["Leathercraft Mastery"]) {
+    boost -= 0.35;
+    boostsUsed.push("Leathercraft Mastery");
+  }
+
+  if (game.bumpkin.skills["Featherweight"]) {
+    boost -= 0.35;
+    boostsUsed.push("Featherweight");
+  }
+
+  if (game.bumpkin.skills["Merino Whisperer"]) {
+    boost += 0.25;
+    boostsUsed.push("Merino Whisperer");
   }
 
   return { amount: boost, boostsUsed };
@@ -295,6 +333,21 @@ function getLeatherYieldBoosts(game: GameState): {
   if (game.bumpkin.skills["Fine Fibers"]) {
     boost += 0.1;
     boostsUsed.push("Fine Fibers");
+  }
+
+  if (game.bumpkin.skills["Leathercraft Mastery"]) {
+    boost += 0.25;
+    boostsUsed.push("Leathercraft Mastery");
+  }
+
+  if (game.bumpkin.skills["Featherweight"]) {
+    boost -= 0.35;
+    boostsUsed.push("Featherweight");
+  }
+
+  if (game.bumpkin.skills["Merino Whisperer"]) {
+    boost -= 0.35;
+    boostsUsed.push("Merino Whisperer");
   }
 
   return { amount: boost, boostsUsed };
@@ -496,6 +549,22 @@ export function getBoostedFoodQuantity({
     boostsUsed.push("Chonky Feed");
   }
 
+  if (
+    (animalType === "Sheep" || animalType === "Cow") &&
+    isTemporaryCollectibleActive({ name: "Collie Shrine", game })
+  ) {
+    baseFoodQuantity *= 0.95;
+    boostsUsed.push("Collie Shrine");
+  }
+
+  if (
+    animalType === "Chicken" &&
+    isTemporaryCollectibleActive({ name: "Bantam Shrine", game })
+  ) {
+    baseFoodQuantity *= 0.95;
+    boostsUsed.push("Bantam Shrine");
+  }
+
   return { foodQuantity: baseFoodQuantity, boostsUsed };
 }
 
@@ -568,6 +637,22 @@ export function getBoostedAwakeAt({
   if (bumpkin.skills["Restless Animals"]) {
     totalDuration *= 0.9;
     boostsUsed.push("Restless Animals");
+  }
+
+  if (
+    (isCow || isSheep) &&
+    isTemporaryCollectibleActive({ name: "Collie Shrine", game })
+  ) {
+    totalDuration *= 0.75;
+    boostsUsed.push("Collie Shrine");
+  }
+
+  if (
+    isChicken &&
+    isTemporaryCollectibleActive({ name: "Bantam Shrine", game })
+  ) {
+    totalDuration *= 0.75;
+    boostsUsed.push("Bantam Shrine");
   }
 
   // Add the boosted duration to the created time

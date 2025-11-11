@@ -87,7 +87,10 @@ export const getItemBuffLabel = (
     return BUMPKIN_ITEM_BUFF_LABELS[item.name];
   }
 
-  return COLLECTIBLE_BUFF_LABELS(state)[item.name];
+  return COLLECTIBLE_BUFF_LABELS[item.name]?.({
+    skills: state.bumpkin.skills,
+    collectibles: state.collectibles,
+  });
 };
 
 export const FactionShop: React.FC<Props> = ({ onClose }) => {

@@ -2,6 +2,7 @@ import Decimal from "decimal.js-light";
 import { availableWardrobe } from "features/game/events/landExpansion/equip";
 import { isCollectible } from "features/game/events/landExpansion/garbageSold";
 import { getObjectEntries } from "features/game/expansion/lib/utils";
+import { ResourceItem } from "features/game/expansion/placeable/lib/collisionDetection";
 import {
   BuildingName,
   BUILDINGS_DIMENSIONS,
@@ -16,16 +17,24 @@ import {
   GameState,
   Inventory,
   InventoryItemName,
+  Rock,
+  Tree,
 } from "features/game/types/game";
 import {
   CollectionName,
   MarketplaceTradeableName,
 } from "features/game/types/marketplace";
+import { PetNFTs } from "features/game/types/pets";
 import {
   RESOURCE_STATE_ACCESSORS,
   RESOURCE_DIMENSIONS,
   ResourceName,
+  ADVANCED_RESOURCES,
+  RESOURCE_MULTIPLIER,
+  UpgradeableResource,
+  RESOURCES_UPGRADES_TO,
 } from "features/game/types/resources";
+import { getCollectionName } from "features/marketplace/lib/getCollectionName";
 import { setPrecision } from "lib/utils/formatNumber";
 
 const PLACEABLE_DIMENSIONS = {
@@ -45,7 +54,7 @@ export const getActiveListedItems = (state: GameState): ListedItems => {
       wearables: {},
       collectibles: {},
       buds: {},
-      resources: {},
+      pets: {},
     };
   }
 
@@ -55,7 +64,7 @@ export const getActiveListedItems = (state: GameState): ListedItems => {
 
       getObjectEntries(listing.items).forEach(([itemName, quantity]) => {
         const amount = quantity ?? 0;
-        const collection = listing.collection ?? "collectibles";
+        const collection = listing.collection ?? getCollectionName(itemName);
 
         acc[collection][itemName] = (acc[collection][itemName] ?? 0) + amount;
       });
@@ -66,7 +75,7 @@ export const getActiveListedItems = (state: GameState): ListedItems => {
       wearables: {},
       collectibles: {},
       buds: {},
-      resources: {},
+      pets: {},
     },
   );
 };
@@ -95,16 +104,41 @@ export const getChestBuds = (
   );
 };
 
+export const getChestPets = (pets: PetNFTs): PetNFTs => {
+  return Object.fromEntries(
+    Object.entries(pets ?? {}).filter(([id, pet]) => !pet.coordinates),
+  );
+};
+
 export const getChestItems = (state: GameState): Inventory => {
   const availableItems = getKeys(state.inventory).reduce((acc, itemName) => {
     if (itemName in RESOURCE_STATE_ACCESSORS) {
       const stateAccessor =
         RESOURCE_STATE_ACCESSORS[itemName as Exclude<ResourceName, "Boulder">];
+      const nodes = Object.values(stateAccessor(state) ?? {}).filter(
+        (resource) => {
+          if (
+            itemName in RESOURCES_UPGRADES_TO ||
+            itemName in ADVANCED_RESOURCES
+          ) {
+            // If node is upgradeable, check if it has the same name as the current item
+            if ("name" in resource) {
+              return resource.name === itemName;
+            }
+
+            // If it has no name, it probably means it's a base resource
+            return itemName in RESOURCES_UPGRADES_TO;
+          }
+
+          return true;
+        },
+      );
+
       return {
         ...acc,
         [itemName]: new Decimal(
           state.inventory[itemName]?.minus(
-            Object.values(stateAccessor(state) ?? {}).filter(
+            nodes.filter(
               (resource) =>
                 resource.x !== undefined && resource.y !== undefined,
             ).length,
@@ -180,3 +214,22 @@ export function getCountAndType(
 
   return { count: setPrecision(count, 2), itemType };
 }
+
+export const isPlaceableCollectible = (
+  item: InventoryItemName,
+): item is CollectibleName => item in COLLECTIBLES_DIMENSIONS;
+
+export const isPlaceableBuilding = (
+  item: InventoryItemName,
+): item is BuildingName => item in BUILDINGS_DIMENSIONS;
+
+export const isPlaceableResource = (
+  item: InventoryItemName,
+): item is Exclude<ResourceName, "Boulder"> => item in RESOURCE_STATE_ACCESSORS;
+
+export const isTreeOrRock = (node: ResourceItem): node is Tree | Rock =>
+  "wood" in node || "stone" in node;
+
+export const isUpgradableResource = (
+  itemName: ResourceName,
+): itemName is UpgradeableResource => itemName in RESOURCE_MULTIPLIER;

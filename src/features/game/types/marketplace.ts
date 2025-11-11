@@ -3,6 +3,8 @@ import { GameState, InventoryItemName, IslandType } from "./game";
 import { KNOWN_ITEMS } from ".";
 import { TRADE_LIMITS } from "../actions/tradeLimits";
 import { hasVipAccess } from "../lib/vipAccess";
+import { isTemporaryCollectibleActive } from "../lib/collectibleBuilt";
+import { PetNFTName } from "./pets";
 
 // 10% tax on sales
 export const MARKETPLACE_TAX = 0.1;
@@ -10,22 +12,30 @@ export const MARKETPLACE_TAX = 0.1;
 // Give it 15 minutes to resolve (cannot cancel while it is being purchased)
 export const TRADE_INITIATION_MS = 15 * 60 * 1000;
 
-export type CollectionName =
-  | "collectibles"
-  | "wearables"
-  | "buds"
-  | "resources";
+export type CollectionName = "collectibles" | "wearables" | "buds" | "pets";
 
-export type Tradeable = {
-  id: number;
-  floor: number;
-  lastSalePrice: number;
-  supply: number;
-  collection: CollectionName;
-  isActive: boolean;
-  isVip: boolean;
-  expiresAt?: number;
-};
+export type Tradeable =
+  | {
+      id: number;
+      floor: number;
+      lastSalePrice: number;
+      isActive: boolean;
+      isVip: boolean;
+      supply: number | undefined;
+      collection: Exclude<CollectionName, "pets">;
+      expiresAt?: number;
+    }
+  | {
+      id: number;
+      floor: number;
+      lastSalePrice: number;
+      isActive: boolean;
+      isVip: boolean;
+      supply: number | undefined;
+      collection: Extract<CollectionName, "pets">;
+      expiresAt?: number;
+      experience?: number;
+    };
 
 export type Offer = {
   tradeId: string;
@@ -107,7 +117,6 @@ export type Marketplace = {
 type TrendingItem = {
   id: number;
   collection: CollectionName;
-  history: TradeHistory;
 };
 
 export type MarketplaceTrends = {
@@ -156,7 +165,8 @@ export type BudNFTName = `Bud #${number}`;
 export type MarketplaceTradeableName =
   | InventoryItemName
   | BumpkinItem
-  | BudNFTName;
+  | BudNFTName
+  | PetNFTName;
 
 export type PriceHistory = {
   dates: TradeHistoryDate[];
@@ -164,11 +174,8 @@ export type PriceHistory = {
   sevenDayPrice: number;
   oneDayChange: number;
   oneDayPrice: number;
-  thirtyDayChange: number;
-  thirtyDayPrice: number;
   oneDayPriceChange: number;
   sevenDayPriceChange: number;
-  thirtyDayPriceChange: number;
 };
 
 /**
@@ -234,24 +241,14 @@ export function getPriceHistory({
   const oneDayChange =
     oneDayPriceChange === 0 ? 0 : (oneDayPriceChange / oneDayPrice) * 100;
 
-  const thirtyDayPrice = dates[29].low;
-  const thirtyDayPriceChange = currentPrice - dates[29].low;
-  const thirtyDayChange =
-    thirtyDayPriceChange === 0
-      ? 0
-      : (thirtyDayPriceChange / thirtyDayPrice) * 100;
-
   return {
     dates,
     sevenDayChange,
     oneDayChange,
-    thirtyDayChange,
     oneDayPriceChange,
     sevenDayPriceChange,
-    thirtyDayPriceChange,
     oneDayPrice,
     sevenDayPrice,
-    thirtyDayPrice,
   };
 }
 
@@ -306,7 +303,11 @@ export function getResourceTax({ game }: { game: GameState }): number {
   let tax = ISLAND_RESOURCE_TAXES[game.island.type];
 
   if (hasVipAccess({ game })) {
-    tax = tax * 0.5;
+    tax *= 0.5;
+  }
+
+  if (isTemporaryCollectibleActive({ name: "Trading Shrine", game })) {
+    tax -= 2.5;
   }
 
   return tax;

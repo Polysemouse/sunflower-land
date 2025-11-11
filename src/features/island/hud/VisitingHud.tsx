@@ -1,4 +1,4 @@
-import React, { useContext, useState } from "react";
+import React, { useContext, useEffect, useState } from "react";
 
 import { Balances } from "components/Balances";
 import { useActor, useSelector } from "@xstate/react";
@@ -27,9 +27,12 @@ import { Modal } from "components/ui/Modal";
 import { CloseButtonPanel } from "features/game/components/CloseablePanel";
 import {
   getHelpRequired,
-  hasHelpedFarmToday,
+  hasHitHelpLimit,
 } from "features/game/types/monuments";
-import { hasHitHelpLimit } from "features/game/events/landExpansion/increaseHelpLimit";
+import { Feed } from "features/social/Feed";
+import { WorldFeedButton } from "features/social/components/WorldFeedButton";
+import classNames from "classnames";
+import { isMobile } from "mobile-device-detect";
 
 const _socialPoints = (state: MachineState) => {
   return state.context.state.socialFarming?.points ?? 0;
@@ -42,28 +45,28 @@ const _autosaving = (state: MachineState) => state.matches("autosaving");
  */
 export const VisitingHud: React.FC = () => {
   const { gameService, fromRoute } = useContext(Context);
-
   const [gameState] = useActor(gameService);
 
-  const hasHelpedToday = hasHelpedFarmToday({
-    game: gameState.context.visitorState!,
-    farmId: gameState.context.farmId,
+  const [initialHelpRequired, setInitialHelpRequired] = useState({
+    farm: 0,
+    home: 0,
   });
 
   const [showVisitorGuide, setShowVisitorGuide] = useState(() => {
     const hasHitLimit = hasHitHelpLimit({
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       game: gameState.context.visitorState!,
+      totalHelpedToday: gameState.context.totalHelpedToday ?? 0,
     });
 
-    if (hasHitLimit) {
-      return true;
-    }
+    if (hasHitLimit) return true;
 
     // Check if user has already acknowledged the visitor guide
     const hasAcknowledged =
       localStorage.getItem("visitorGuideAcknowledged") === "true";
     return !hasAcknowledged;
   });
+  const [showFeed, setShowFeed] = useState(false);
   const socialPoints = useSelector(gameService, _socialPoints);
   const saving = useSelector(gameService, _autosaving);
 
@@ -71,8 +74,19 @@ export const VisitingHud: React.FC = () => {
   const navigate = useNavigate();
 
   const handleEndVisit = () => {
-    navigate(fromRoute ?? "/");
     gameService.send("END_VISIT");
+
+    const target =
+      fromRoute &&
+      !fromRoute.includes("visit") &&
+      !fromRoute.includes("home") &&
+      !fromRoute.includes("barn") &&
+      !fromRoute.includes("hen-house") &&
+      !fromRoute.includes("greenhouse")
+        ? fromRoute
+        : "/";
+
+    navigate(target, { replace: true });
   };
 
   const displayId =
@@ -82,6 +96,13 @@ export const VisitingHud: React.FC = () => {
     game: gameState.context.state,
   });
 
+  useEffect(() => {
+    setInitialHelpRequired({
+      farm: helpRequired.tasks.farm.count,
+      home: helpRequired.tasks.home.count,
+    });
+  }, []);
+
   const handleCloseVisitorGuide = () => {
     // Store acknowledgment in local storage
     localStorage.setItem("visitorGuideAcknowledged", "true");
@@ -89,14 +110,30 @@ export const VisitingHud: React.FC = () => {
     gameService.send("SAVE");
   };
 
+  useEffect(() => {
+    window.addEventListener("popstate", handleEndVisit);
+
+    return () => {
+      window.removeEventListener("popstate", handleEndVisit);
+    };
+  }, []);
+
+  const showDesktopFeed = showFeed && !isMobile;
+  const hideDesktopFeed = !showFeed && !isMobile;
+
   return (
     <HudContainer>
+      <Feed type="world" showFeed={showFeed} setShowFeed={setShowFeed} />
       <Modal show={showVisitorGuide} onHide={handleCloseVisitorGuide}>
         <CloseButtonPanel
           bumpkinParts={gameState.context.state.bumpkin?.equipped}
           container={OuterPanel}
         >
-          <VisitorGuide onClose={handleCloseVisitorGuide} />
+          <VisitorGuide
+            onClose={handleCloseVisitorGuide}
+            farmHelpRequired={initialHelpRequired.farm}
+            homeHelpRequired={initialHelpRequired.home}
+          />
         </CloseButtonPanel>
       </Modal>
 
@@ -114,13 +151,13 @@ export const VisitingHud: React.FC = () => {
             </div>
           </div>
           <div className="w-px h-[36px] bg-gray-300 mx-3 self-center" />
-          {hasHelpedToday ? (
+          {gameState.context.hasHelpedPlayerToday ?? false ? (
             <div className="flex justify-center items-center flex-grow">
               <img src={SUNNYSIDE.icons.confirm} className="w-5" />
             </div>
           ) : (
             <div className="flex flex-col sm:flex-row items-center space-x-1">
-              <span className="text-md">{`${helpRequired}`}</span>
+              <span className="text-md">{`${helpRequired.totalCount}`}</span>
               <img src={choreIcon} style={{ width: `20px`, margin: `2px` }} />
             </div>
           )}
@@ -194,7 +231,16 @@ export const VisitingHud: React.FC = () => {
         </RoundButton>
         <Settings isFarming={false} />
       </div>
-      <div className="absolute bottom-0 p-2.5 left-0 flex flex-col space-y-2.5">
+      <div
+        className={classNames(
+          "absolute bottom-0 p-2.5 left-0 flex flex-col space-y-2.5 transition-transform",
+          {
+            "translate-x-0": hideDesktopFeed,
+            "translate-x-[320px]": showDesktopFeed,
+          },
+        )}
+      >
+        <WorldFeedButton showFeed={showFeed} setShowFeed={setShowFeed} />
         <RoundButton
           onClick={(e) => {
             e.stopPropagation();

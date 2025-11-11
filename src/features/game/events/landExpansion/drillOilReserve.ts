@@ -1,6 +1,6 @@
 import Decimal from "decimal.js-light";
 import {
-  isCollectibleActive,
+  isTemporaryCollectibleActive,
   isCollectibleBuilt,
 } from "features/game/lib/collectibleBuilt";
 import { isWearableActive } from "features/game/lib/wearables";
@@ -30,11 +30,6 @@ export function getOilDropAmount(game: GameState, reserve: OilReserve) {
 
   if ((reserve.drilled + 1) % 3 === 0) {
     amount = amount.add(OIL_BONUS_DROP_AMOUNT);
-  }
-
-  if (isCollectibleActive({ name: "Stag Shrine", game })) {
-    amount = amount.add(0.2);
-    boostsUsed.push("Stag Shrine");
   }
 
   if (isCollectibleBuilt({ name: "Battle Fish", game })) {
@@ -114,6 +109,11 @@ export function getDrilledAt({ createdAt, game }: getDrilledAtArgs): {
     boostsUsed.push("Oil Be Back");
   }
 
+  if (isTemporaryCollectibleActive({ name: "Stag Shrine", game })) {
+    totalSeconds = totalSeconds * 0.75;
+    boostsUsed.push("Stag Shrine");
+  }
+
   const buff = OIL_RESERVE_RECOVERY_TIME - totalSeconds;
 
   return { time: createdAt - buff * 1000, boostsUsed };
@@ -132,6 +132,10 @@ export function drillOilReserve({
 
     if (!oilReserve) {
       throw new Error(`Oil reserve #${action.id} not found`);
+    }
+
+    if (oilReserve.x === undefined && oilReserve.y === undefined) {
+      throw new Error("Oil reserve is not placed");
     }
 
     if (drillAmount.lessThan(requiredDrills)) {

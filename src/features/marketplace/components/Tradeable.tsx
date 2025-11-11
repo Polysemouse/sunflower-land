@@ -1,6 +1,7 @@
 import {
   CollectionName,
   getMarketPrice,
+  MarketplaceTradeableName,
 } from "features/game/types/marketplace";
 import React, { useContext, useState } from "react";
 import * as Auth from "features/auth/lib/Provider";
@@ -14,13 +15,8 @@ import { SaleHistory } from "./PriceHistory";
 import { TradeableOffers } from "./TradeableOffers";
 import { Context } from "features/game/GameProvider";
 import { KNOWN_ITEMS } from "features/game/types";
-import {
-  getBasketItems,
-  getChestBuds,
-  getChestItems,
-} from "features/island/hud/components/inventory/utils/inventory";
+import { getBasketItems } from "features/island/hud/components/inventory/utils/inventory";
 import { ITEM_NAMES } from "features/game/types/bumpkin";
-import { availableWardrobe } from "features/game/events/landExpansion/equip";
 import { TradeableHeader } from "./TradeableHeader";
 import { TradeableInfo, TradeableMobileInfo } from "./TradeableInfo";
 import { MyListings } from "./profile/MyListings";
@@ -38,7 +34,8 @@ import { MachineState } from "features/game/lib/gameMachine";
 
 const _trades = (state: MachineState) => state.context.state.trades;
 export const MAX_LIMITED_SALES = 1;
-export const MAX_LIMITED_PURCHASES = 3;
+export const MAX_LIMITED_PURCHASES = (item: MarketplaceTradeableName) =>
+  item === "Obsidian" ? 9 : 3;
 
 export const Tradeable: React.FC = () => {
   const { authService } = useContext(Auth.Context);
@@ -72,7 +69,7 @@ export const Tradeable: React.FC = () => {
     const name = KNOWN_ITEMS[Number(id)];
 
     if (name in COLLECTIBLES_DIMENSIONS) {
-      count = getChestItems(game)[name]?.toNumber() ?? 0;
+      count = game.inventory[name]?.toNumber() ?? 0;
     } else {
       count = getBasketItems(inventory)[name]?.toNumber() ?? 0;
     }
@@ -80,11 +77,15 @@ export const Tradeable: React.FC = () => {
 
   if (display.type === "wearables") {
     const name = ITEM_NAMES[Number(id)];
-    count = availableWardrobe(game)[name] ?? 0;
+    count = game.wardrobe[name] ?? 0;
   }
 
   if (display.type === "buds") {
-    count = getChestBuds(game)[Number(id)] ? 1 : 0;
+    count = game.buds?.[Number(id)] ? 1 : 0;
+  }
+
+  if (display.type === "pets") {
+    count = game.pets?.nfts?.[Number(id)] ? 1 : 0;
   }
 
   const {
@@ -121,7 +122,7 @@ export const Tradeable: React.FC = () => {
     (offer) => offer.items[display.name],
   ).length;
   const limitedPurchasesLeft = isLimited
-    ? MAX_LIMITED_PURCHASES - weeklyPurchasesCount - offersCount
+    ? MAX_LIMITED_PURCHASES(display.name) - weeklyPurchasesCount - offersCount
     : Infinity;
 
   if (error) throw error;
@@ -181,6 +182,7 @@ export const Tradeable: React.FC = () => {
           collection={collection as CollectionName}
           count={count}
           tradeable={tradeable}
+          display={display}
           onBack={onBack}
           reload={reload}
           onListClick={() => setShowListItem(true)}

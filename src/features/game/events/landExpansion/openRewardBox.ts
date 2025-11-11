@@ -3,6 +3,7 @@ import {
   RewardBoxName,
   RewardBoxReward,
   REWARD_BOXES,
+  getPetRewardPool,
 } from "features/game/types/rewardBoxes";
 import { produce } from "immer";
 import { CONFIG } from "lib/config";
@@ -17,16 +18,23 @@ function getReward({
   name: RewardBoxName;
   game: GameState;
 }): RewardBoxReward | undefined {
-  const rewards = REWARD_BOXES[name].rewards;
+  let rewards = REWARD_BOXES[name].rewards;
+
+  if (name === "Pet Egg") {
+    rewards = getPetRewardPool({ inventory: game.inventory });
+  }
 
   // TODO: If a player already has the reward, half the weight
 
-  const totalWeight = rewards.reduce((sum, reward) => sum + reward.weight, 0);
+  const totalWeight = rewards.reduce(
+    (sum, reward) => sum + reward.weighting,
+    0,
+  );
   let randomValue = Math.random() * totalWeight;
 
   let selectedReward: RewardBoxReward | undefined;
   for (const reward of rewards) {
-    randomValue -= reward.weight;
+    randomValue -= reward.weighting;
     if (randomValue <= 0) {
       selectedReward = reward;
       break;

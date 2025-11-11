@@ -2,7 +2,7 @@ import { useSelector } from "@xstate/react";
 import React, { useContext, useEffect, useState } from "react";
 import Decimal from "decimal.js-light";
 
-import { Wardrobe } from "features/game/types/game";
+import { BoostName, Wardrobe } from "features/game/types/game";
 
 import { Button } from "components/ui/Button";
 import { Box } from "components/ui/Box";
@@ -26,6 +26,9 @@ import { RequiredReputation } from "features/island/hud/components/reputation/Re
 import { isFaceVerified } from "features/retreat/components/personhood/lib/faceRecognition";
 import { FaceRecognition } from "features/retreat/components/personhood/FaceRecognition";
 import { hasBoostRestriction } from "features/game/types/withdrawRestrictions";
+import { InfoPopover } from "features/island/common/InfoPopover";
+import { secondsToString } from "lib/utils/time";
+import { BUMPKIN_ITEM_BUFF_LABELS } from "features/game/types/bumpkinItemBuffs";
 
 interface Props {
   onWithdraw: (ids: number[], amounts: number[]) => void;
@@ -42,16 +45,18 @@ export const WithdrawWearables: React.FC<Props> = ({ onWithdraw }) => {
   const [wardrobe, setWardrobe] = useState<Wardrobe>({});
   const [selected, setSelected] = useState<Wardrobe>({});
 
+  const [showInfo, setShowInfo] = useState("");
+
   useEffect(() => {
     let available = availableWardrobe(state);
 
     available = getKeys(available).reduce((acc, key) => {
       const currentAmount = available[key] ?? 0;
-      const onChainAMount = state.previousWardrobe[key] ?? 0;
+      const onChainAmount = state.previousWardrobe[key] ?? 0;
 
       return {
         ...acc,
-        [key]: Math.min(currentAmount, onChainAMount),
+        [key]: Math.min(currentAmount, onChainAmount),
       };
     }, {} as Wardrobe);
 
@@ -94,14 +99,93 @@ export const WithdrawWearables: React.FC<Props> = ({ onWithdraw }) => {
     });
   };
 
+  const getRestrictionStatus = (itemName: BoostName) => {
+    const { isRestricted, cooldownTimeLeft } = hasBoostRestriction({
+      boostUsedAt: state.boostsUsedAt,
+      item: itemName,
+    });
+    return { isRestricted, cooldownTimeLeft };
+  };
+
+  const hasMoreOffChainItems = (itemName: BumpkinItem) => {
+    const wardrobeCount = wardrobe[itemName] ?? 0;
+    const currentAmount = availableWardrobe(state)[itemName] ?? 0;
+    const onChainAmount = state.previousWardrobe[itemName] ?? 0;
+
+    // No items available to select, but there are more off-chain items
+    return wardrobeCount <= 0 && currentAmount > onChainAmount;
+  };
+
+  // Precompute/cached values for sorting to avoid repeated expensive calls
+  const withdrawableItemCache = React.useMemo(() => {
+    const cache: {
+      [key in BumpkinItem]?: {
+        cooldownMs: number;
+        isOnCooldown: boolean;
+        hasMoreOffChain: boolean;
+        hasBuff: boolean;
+      };
+    } = {};
+
+    getKeys(wardrobe).forEach((itemName) => {
+      const { cooldownTimeLeft } = getRestrictionStatus(itemName);
+      const isOnCooldown = cooldownTimeLeft > 0;
+      const hasMoreOffChain = hasMoreOffChainItems(itemName);
+      const hasBuff = !!BUMPKIN_ITEM_BUFF_LABELS[itemName]?.length;
+
+      cache[itemName] = {
+        cooldownMs: cooldownTimeLeft,
+        isOnCooldown,
+        hasMoreOffChain,
+        hasBuff,
+      };
+    });
+
+    return cache;
+  }, [wardrobe, state]);
+
+  const sortWithdrawableItems = (itemA: BumpkinItem, itemB: BumpkinItem) => {
+    const a = withdrawableItemCache[itemA];
+    const b = withdrawableItemCache[itemB];
+
+    // Handle undefined cases first
+    if (!a && !b) return 0;
+    if (!a) return 1;
+    if (!b) return -1;
+
+    // 1. Items on cooldown come first, sorted by most cooldown time left
+    if (a.isOnCooldown && b.isOnCooldown) {
+      return b.cooldownMs - a.cooldownMs;
+    }
+    if (a.isOnCooldown !== b.isOnCooldown) {
+      return a.isOnCooldown ? -1 : 1;
+    }
+
+    // 2. Items that have more off-chain than on-chain copies
+    if (a.hasMoreOffChain !== b.hasMoreOffChain) {
+      return a.hasMoreOffChain ? -1 : 1;
+    }
+
+    // 3. Boosted items come before non-boosted items
+    if (a.hasBuff !== b.hasBuff) {
+      return a.hasBuff ? -1 : 1;
+    }
+
+    // 4. Otherwise, sort by item IDs
+    return ITEM_IDS[itemA] - ITEM_IDS[itemB];
+  };
+
   const withdrawableItems = [...new Set([...getKeys(wardrobe)])]
-    .filter((item) => wardrobe[item])
     .filter((itemName) => {
       const withdrawAt = BUMPKIN_RELEASES[itemName]?.withdrawAt;
       const canWithdraw = !!withdrawAt && withdrawAt <= new Date();
       return canWithdraw;
     })
-    .sort((a, b) => ITEM_IDS[a] - ITEM_IDS[b]);
+    .filter(
+      (itemName) =>
+        hasMoreOffChainItems(itemName) || (wardrobe[itemName] ?? 0) > 0,
+    )
+    .sort((a, b) => sortWithdrawableItems(a, b));
 
   const selectedItems = getKeys(selected)
     .filter((item) => !!selected[item])
@@ -131,21 +215,56 @@ export const WithdrawWearables: React.FC<Props> = ({ onWithdraw }) => {
         </Label>
         <div className="flex flex-wrap h-fit -ml-1.5">
           {withdrawableItems.map((itemName) => {
-            const wardrobeCount = wardrobe[itemName];
+            const wardrobeCount = wardrobe[itemName] ?? 0;
 
-            const { isRestricted } = hasBoostRestriction({
-              boostUsedAt: state.boostsUsedAt,
-              item: itemName,
-            });
+            const { isRestricted, cooldownTimeLeft } =
+              getRestrictionStatus(itemName);
+
+            const RestrictionCooldown = cooldownTimeLeft / 1000;
+            const isLocked = isRestricted || wardrobeCount <= 0;
+
+            const shouldShowPopover =
+              isRestricted || hasMoreOffChainItems(itemName);
+
+            const handleBoxClick = () => {
+              if (shouldShowPopover) {
+                setShowInfo((prev) => (prev === itemName ? "" : itemName));
+              }
+            };
 
             return (
-              <Box
-                count={new Decimal(wardrobeCount ?? 0)}
+              <div
                 key={itemName}
-                onClick={() => onAdd(itemName)}
-                disabled={isRestricted || selected[itemName] !== undefined}
-                image={getImageUrl(ITEM_IDS[itemName])}
-              />
+                onClick={handleBoxClick}
+                className="flex relative text-center"
+              >
+                <InfoPopover
+                  className="absolute top-14 text-xxs sm:text-xs"
+                  showPopover={showInfo === itemName}
+                >
+                  {hasMoreOffChainItems(itemName)
+                    ? t("withdraw.requires.storeOnChain")
+                    : isRestricted &&
+                      t("withdraw.boostedItem.timeLeft", {
+                        time: secondsToString(RestrictionCooldown, {
+                          length: "medium",
+                          isShortFormat: true,
+                          removeTrailingZeros: true,
+                        }),
+                      })}
+                </InfoPopover>
+
+                <Box
+                  count={new Decimal(wardrobeCount ?? 0)}
+                  key={itemName}
+                  onClick={() => onAdd(itemName)}
+                  disabled={isLocked}
+                  image={getImageUrl(ITEM_IDS[itemName])}
+                  secondaryImage={
+                    shouldShowPopover ? SUNNYSIDE.icons.lock : undefined
+                  }
+                />
+              </div>
             );
           })}
           {/* Pad with empty boxes */}
@@ -197,7 +316,7 @@ export const WithdrawWearables: React.FC<Props> = ({ onWithdraw }) => {
           {t("withdraw.opensea")}{" "}
           <a
             className="underline hover:text-blue-500"
-            href="https://docs.sunflower-land.com/fundamentals/withdrawing"
+            href="https://docs.sunflower-land.com/getting-started/crypto-and-digital-collectibles"
             target="_blank"
             rel="noopener noreferrer"
           >

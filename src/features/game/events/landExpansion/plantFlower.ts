@@ -13,7 +13,7 @@ import {
 import { BoostName, GameState } from "features/game/types/game";
 import { translate } from "lib/i18n/translate";
 import {
-  isCollectibleActive,
+  isTemporaryCollectibleActive,
   isCollectibleBuilt,
 } from "features/game/lib/collectibleBuilt";
 import { produce } from "immer";
@@ -49,13 +49,18 @@ export const getFlowerTime = (
     boostsUsed.push("Flower Crown");
   }
 
+  if (isTemporaryCollectibleActive({ name: "Moth Shrine", game })) {
+    seconds *= 0.75;
+    boostsUsed.push("Moth Shrine");
+  }
+
   // If Flower Fox is built gives 10% speed boost
   if (isCollectibleBuilt({ name: "Flower Fox", game })) {
     seconds *= 0.9;
     boostsUsed.push("Flower Fox");
   }
 
-  if (isCollectibleActive({ name: "Blossom Hourglass", game })) {
+  if (isTemporaryCollectibleActive({ name: "Blossom Hourglass", game })) {
     seconds *= 0.75;
     boostsUsed.push("Blossom Hourglass");
   }
@@ -114,6 +119,10 @@ export function plantFlower({
 
     if (!flowerBed) {
       throw new Error(translate("harvestflower.noFlowerBed"));
+    }
+
+    if (flowerBed.x === undefined && flowerBed.y === undefined) {
+      throw new Error("Flower bed is not placed");
     }
 
     if (flowerBed.flower?.plantedAt) {

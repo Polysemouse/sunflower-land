@@ -1,17 +1,14 @@
 import { GameState, InventoryItemName, RecipeCraftableName } from "./game";
 import { FlowerName } from "./flowers";
 import { AnimalType } from "./animals";
-import {
-  DollName,
-  RecipeCollectibleName,
-  RecipeWearableName,
-} from "../lib/crafting";
-import { ResourceName } from "./resources";
+import { DollName, RecipeCollectibleName } from "../lib/crafting";
+import { ResourceName, UpgradedResourceName } from "./resources";
 import { FishName } from "./fishing";
 import { ExoticCropName } from "./beans";
 import { BeachBountyTreasure } from "./treasure";
 import { FullMoonFruit } from "./fruits";
 import { LandBiomeName } from "features/island/biomes/biomes";
+import { BumpkinItem } from "./bumpkin";
 
 export type CaughtEvent = `${InventoryItemName} Caught`;
 export type HarvestedEvent = `${FlowerName} Harvested`;
@@ -26,11 +23,11 @@ export type BountiedEvent = `${
   | RecipeCraftableName
   | DollName
   | "Mark"} Bountied`;
-export type CraftedEvent =
-  `${RecipeCollectibleName | RecipeWearableName} Crafted`;
+export type CraftedEvent = `${RecipeCollectibleName | BumpkinItem} Crafted`;
 
 export type ResourceBought = `${ResourceName} Bought`;
 export type BiomeBought = `${LandBiomeName} Bought`;
+export type ResourceNodeUpgradeEvent = `${UpgradedResourceName} Upgrade`;
 
 export type FarmActivityName =
   | CaughtEvent
@@ -40,7 +37,8 @@ export type FarmActivityName =
   | ResourceBought
   | BiomeBought
   | "Obsidian Exchanged"
-  | "FLOWER Exchanged";
+  | "FLOWER Exchanged"
+  | ResourceNodeUpgradeEvent;
 
 export function trackFarmActivity(
   activityName: FarmActivityName,
