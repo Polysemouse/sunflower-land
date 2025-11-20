@@ -35,6 +35,7 @@ import classNames from "classnames";
 
 import levelUp from "assets/icons/level_up.png";
 import xpIcon from "assets/icons/xp.png";
+import { Checkbox } from "components/ui/Checkbox";
 
 interface Props {
   show: boolean;
@@ -98,9 +99,20 @@ export const PetModal: React.FC<Props> = ({
     <Modal show={show} onHide={onClose}>
       <OuterPanel className="flex flex-col gap-1">
         <div className="flex items-center p-1 justify-between">
-          <Label type="default">
-            <span className="text-sm px-0.5 pb-0.5">{data.name}</span>
-          </Label>
+          <div className="flex flex-row gap-2 items-center">
+            <Label type="default">
+              <span className="text-sm px-0.5 pb-0.5">{data.name}</span>
+            </Label>
+            {isNFTPet && (
+              <div className="flex flex-row gap-2 items-center">
+                <Checkbox
+                  checked={!!data.walking}
+                  onChange={() => gameService.send("pet.walked", { petId })}
+                />
+                <p className="text-xs">{t("pets.follow")}</p>
+              </div>
+            )}
+          </div>
           <img
             onClick={onClose}
             src={SUNNYSIDE.icons.close}
@@ -113,7 +125,7 @@ export const PetModal: React.FC<Props> = ({
         {/* Pet Information Panel */}
         <InnerPanel>
           <div className="flex px-4 py-3 gap-4 w-full items-center">
-            <div className="flex justify-center w-1/4 items-center gap-2">
+            <div className="flex flex-col justify-center w-1/4 items-center gap-2">
               <img
                 src={image}
                 alt={data.name}

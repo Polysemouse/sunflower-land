@@ -11,6 +11,7 @@ import { SPAWNS } from "./lib/spawn";
 import { Moderation } from "features/game/lib/gameMachine";
 import { MAX_PLAYERS } from "./lib/availableRooms";
 import { NPCName } from "lib/npcs";
+import { Coordinates } from "features/game/expansion/components/MapPlacement";
 
 export type Scenes = {
   crops_and_chickens: Room<PlazaRoomState> | undefined;
@@ -160,6 +161,7 @@ export interface MMOContext {
   isVip: boolean;
   createdAt: number;
   islandType: IslandType;
+  playerCoordinates?: Coordinates;
 }
 
 export type MMOState = {
@@ -190,6 +192,10 @@ export type SwitchScene = {
   type: "SWITCH_SCENE";
   sceneId: SceneId;
   previousSceneId?: SceneId;
+  playerCoordinates: {
+    x: number;
+    y: number;
+  };
 };
 
 export type MMOEvent =
@@ -233,6 +239,7 @@ export const mmoMachine = createMachine<MMOContext, MMOEvent, MMOState>({
       kicked: [],
       muted: [],
     },
+    playerCoordinates: undefined,
   },
   states: {
     initialising: {
@@ -487,9 +494,14 @@ export const mmoMachine = createMachine<MMOContext, MMOEvent, MMOState>({
             sceneId: (_, event) => event.sceneId,
             previousSceneId: (context, event) =>
               event.previousSceneId ?? context.previousSceneId,
+            playerCoordinates: (_, event) => event.playerCoordinates,
           }),
           (context, event) =>
-            context.server?.send(0, { sceneId: event.sceneId }),
+            context.server?.send(0, {
+              sceneId: event.sceneId,
+              x: event.playerCoordinates.x,
+              y: event.playerCoordinates.y,
+            }),
         ],
         // If going into or leaving stream scene, we need to reload the server
         target: "connecting",
@@ -500,9 +512,14 @@ export const mmoMachine = createMachine<MMOContext, MMOEvent, MMOState>({
             sceneId: (_, event) => event.sceneId,
             previousSceneId: (context, event) =>
               event.previousSceneId ?? context.previousSceneId,
+            playerCoordinates: (_, event) => event.playerCoordinates,
           }),
           (context, event) =>
-            context.server?.send(0, { sceneId: event.sceneId }),
+            context.server?.send(0, {
+              sceneId: event.sceneId,
+              x: event.playerCoordinates.x,
+              y: event.playerCoordinates.y,
+            }),
         ],
         // TODO: If going into or leaving stream scene, we need to reload the server
         target: "joined",

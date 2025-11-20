@@ -551,6 +551,7 @@ import { BulkPlantAction, bulkPlant } from "./landExpansion/bulkPlant";
 import { bulkHarvest, BulkHarvestAction } from "./landExpansion/bulkHarvest";
 import { clearTrades, ClearTradesAction } from "./clearTrades";
 import { placeNFT, PlaceNFTAction } from "./landExpansion/placeNFT";
+import { walkPet, WalkPetAction } from "./pets/walkPet";
 
 export type PlayingEvent =
   | ObsidianExchangedAction
@@ -662,6 +663,7 @@ export type PlayingEvent =
   | ClaimFactionPrizeAction
   | FeedFactionPetAction
   | FeedPetAction
+  | WalkPetAction
   | FetchPetAction
   | BulkFeedPetsAction
   | NeglectPetAction
@@ -790,7 +792,7 @@ type Handlers<T> = {
     // Extract the correct event payload from the list of events
     action: Extract<GameEventName<T>, { type: Name }>;
     announcements?: Announcements;
-    farmId?: number;
+    farmId: number;
     visitorState?: GameState;
     createdAt: number;
   }) => GameState | [GameState, GameState];
@@ -907,6 +909,7 @@ export const PLAYING_EVENTS: Handlers<PlayingEvent> = {
   "factionShopItem.bought": buyFactionShopItem,
   "factionPet.fed": feedFactionPet,
   "pet.fed": feedPet,
+  "pet.walked": walkPet,
   "pet.fetched": fetchPet,
   "pets.bulkFeed": bulkFeedPets,
   "pet.neglected": neglectPet,

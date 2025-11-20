@@ -32,8 +32,10 @@ import { InventoryItemName } from "features/game/types/game";
 import { getChestItems } from "features/island/hud/components/inventory/utils/inventory";
 import { getObjectEntries } from "features/game/expansion/lib/utils";
 import Decimal from "decimal.js-light";
+import { KNOWN_IDS } from "features/game/types";
 
 const _state = (state: MachineState) => state.context.state;
+const _farmId = (state: MachineState) => state.context.farmId;
 
 interface Props {
   gameService: MachineInterpreter;
@@ -48,6 +50,7 @@ export const RecipesTab: React.FC<Props> = ({
   const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
 
   const state = useSelector(gameService, _state);
+  const farmId = useSelector(gameService, _farmId);
   const { craftingBox, inventory, wardrobe } = state;
   const { recipes, status: craftingStatus } = craftingBox;
 
@@ -148,6 +151,12 @@ export const RecipesTab: React.FC<Props> = ({
             const { seconds: boostedCraftTime } = getBoostedCraftingTime({
               game: state,
               time: recipe.time,
+              farmId,
+              itemId:
+                recipe.type === "collectible"
+                  ? KNOWN_IDS[recipe.name as InventoryItemName]
+                  : ITEM_IDS[recipe.name as BumpkinItem],
+              counter: state.farmActivity[`${recipe.name} Crafted`] ?? 0,
             });
 
             return (
@@ -285,7 +294,7 @@ export const RecipesTab: React.FC<Props> = ({
         {!searchTerm.trim() && (
           <>
             <Label type="default" className="my-2">
-              {t("Undiscovered")}
+              {t("undiscovered")}
             </Label>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
               {Object.values(sillhouetteRecipes || {}).map((recipe) => (

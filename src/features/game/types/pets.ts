@@ -60,25 +60,31 @@ export type CommonPetType =
   | "Hamster"
   | "Penguin";
 
-export type PetNFTType =
-  | "Ram"
-  | "Dragon"
-  | "Phoenix"
-  | "Griffin"
-  | "Warthog"
-  | "Wolf"
-  | "Bear";
+export const PET_NFT_TYPES = [
+  "Ram",
+  "Dragon",
+  "Phoenix",
+  "Griffin",
+  "Warthog",
+  "Wolf",
+  "Bear",
+] as const;
+
+export type PetNFTType = (typeof PET_NFT_TYPES)[number];
 
 export type PetType = CommonPetType | PetNFTType;
 
-export type PetCategoryName =
-  | "Guardian"
-  | "Hunter"
-  | "Voyager"
-  | "Beast"
-  | "Moonkin"
-  | "Snowkin"
-  | "Forager";
+export const PET_CATEGORY_NAMES = [
+  "Guardian",
+  "Hunter",
+  "Voyager",
+  "Beast",
+  "Moonkin",
+  "Snowkin",
+  "Forager",
+] as const;
+
+export type PetCategoryName = (typeof PET_CATEGORY_NAMES)[number];
 
 export type PetResourceName =
   | "Acorn"
@@ -107,6 +113,7 @@ export type Pet = {
   energy: number;
   experience: number;
   pettedAt: number;
+  cheeredAt?: number; // Used to determine if a pet has been cheered up
   dailySocialXP?: {
     [date: string]: number;
   };
@@ -121,6 +128,7 @@ export type PetNFT = Omit<Pet, "name"> & {
   coordinates?: Coordinates;
   location?: PlaceableLocation;
   traits?: PetTraits;
+  walking?: boolean;
 };
 
 export type PetNFTs = Record<number, PetNFT>;
@@ -673,9 +681,13 @@ export function isPetNeglected(
     return false;
   }
 
+  if (pet.experience <= 0) {
+    return false;
+  }
+
   const PET_NEGLECT_DAYS = isPetNFT(pet) ? 7 : 3;
 
-  const lastFedAt = pet.requests.fedAt;
+  const lastFedAt = Math.max(pet.requests.fedAt, pet.cheeredAt ?? 0); // To use cheeredAt or fedAt, whichever is more recent
   const lastFedAtDate = new Date(lastFedAt).toISOString().split("T")[0];
   const todayDate = new Date(createdAt).toISOString().split("T")[0];
   const daysSinceLastFedMs =
@@ -713,6 +725,7 @@ export function isPetOfTypeFed({
 
   const isPetOfTypeFed = petsOfType.some((pet) => {
     if (pet.id === id) return false;
+    if (pet.experience <= 0) return false;
     const lastFedAt = pet.requests.fedAt;
     const todayDate = new Date(now).toISOString().split("T")[0];
     const lastFedAtDate = new Date(lastFedAt).toISOString().split("T")[0];

@@ -32,12 +32,19 @@ type Props = {
 };
 
 const _inventory = (state: MachineState) => state.context.state.inventory;
+const _farmId = (state: MachineState) => state.context.farmId;
+const _farmActivity = (state: MachineState) => (name: PetResourceName) =>
+  state.context.state.farmActivity[`${name} Fetched`] ?? 0;
+const _state = (state: MachineState) => state.context.state;
 
 export const PetFetch: React.FC<Props> = ({ data, onShowRewards, onFetch }) => {
   const { t } = useAppTranslation();
   const { gameService } = useContext(Context);
 
   const inventory = useSelector(gameService, _inventory);
+  const farmId = useSelector(gameService, _farmId);
+  const farmActivity = useSelector(gameService, _farmActivity);
+  const state = useSelector(gameService, _state);
 
   const { level } = getPetLevel(data.experience);
   const fetches = [...getPetFetches(data).fetches].sort(
@@ -66,8 +73,9 @@ export const PetFetch: React.FC<Props> = ({ data, onShowRewards, onFetch }) => {
             petLevel: level,
             fetchResource: name,
             isPetNFT: isPetNFT(data),
-            seed: data.fetchSeeds?.[name],
-            createdAt: Date.now(),
+            farmId,
+            counter: farmActivity(name),
+            state,
           });
 
           const inventoryCount = inventory[name] ?? new Decimal(0);

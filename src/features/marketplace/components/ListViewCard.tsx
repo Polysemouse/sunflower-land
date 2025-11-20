@@ -19,6 +19,8 @@ import { CountLabel } from "components/ui/CountLabel";
 import classNames from "classnames";
 import { ListViewImage } from "./ListViewImage";
 import petNFTEggMarketplace from "assets/pets/pet-nft-egg-marketplace.webp";
+import { getPetLevel } from "features/game/types/pets";
+import { Label } from "components/ui/Label";
 
 type Props = {
   details: TradeableDisplay;
@@ -41,7 +43,7 @@ export const ListViewCard: React.FC<Props> = ({
   const { gameService } = useContext(Context);
   const usd = gameService.getSnapshot().context.prices.sfl?.usd ?? 0.0;
 
-  const { type, name, image, buffs } = details;
+  const { type, name, image, buffs, experience } = details;
   const { t } = useAppTranslation();
 
   const state = useSelector(gameService, _state);
@@ -104,7 +106,7 @@ export const ListViewCard: React.FC<Props> = ({
         </div>
 
         <div
-          className="px-2 py-2 flex-1 z-10 overflow-y-auto"
+          className="px-2 py-2 flex-1 z-10 overflow-y-auto scrollable"
           style={{
             background: "#fff0d4",
             borderTop: "1px solid #e4a672",
@@ -148,7 +150,21 @@ export const ListViewCard: React.FC<Props> = ({
             />
           ) : null}
 
-          <p className="text-xs mb-1 py-0.5 truncate text-[#181425]">{name}</p>
+          <div className="flex justify-between items-center gap-1">
+            <p className="text-xs mb-1 py-0.5 truncate text-[#181425]">
+              {name}
+            </p>
+
+            {type === "pets" && (
+              <Label type="info" className="mb-1">
+                <span className="text-xxs">
+                  {t("pets.level", {
+                    level: getPetLevel(experience ?? 0).level,
+                  })}
+                </span>
+              </Label>
+            )}
+          </div>
 
           {buffs.map((buff) => (
             <div key={buff.shortDescription} className="flex items-center">

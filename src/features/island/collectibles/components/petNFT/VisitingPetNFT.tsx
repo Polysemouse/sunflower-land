@@ -16,6 +16,7 @@ import { PIXEL_SCALE } from "features/game/lib/constants";
 import { FarmHelped } from "features/island/hud/components/FarmHelped";
 import { hasFeatureAccess } from "lib/flags";
 import { isHelpComplete } from "features/game/types/monuments";
+import useUiRefresher from "lib/utils/hooks/useUiRefresher";
 
 const _petNFTData = (id: string) => (state: MachineState) => {
   return state.context.state.pets?.nfts?.[Number(id)];
@@ -70,8 +71,6 @@ export const VisitingPetNFT: React.FC<{
     (state) => state.context.totalHelpedToday ?? 0,
   );
 
-  if (!petNFTData || !petNFTData.traits) return null;
-
   const isNeglected = isPetNeglected(petNFTData);
   const isNapping = isPetNapping(petNFTData);
 
@@ -92,10 +91,22 @@ export const VisitingPetNFT: React.FC<{
     }
   };
 
+  // Used to move the pet through different states (neglected, napping)
+  useUiRefresher({ active: !!petNFTData?.traits });
+
+  if (!petNFTData || !petNFTData.traits) return null;
+
   return (
-    <div className="relative">
+    <div
+      className="relative flex items-center justify-center"
+      style={{
+        width: `${PIXEL_SCALE * 32}px`,
+        height: `${PIXEL_SCALE * 32}px`,
+      }}
+    >
       <PetSprite
         id={Number(id)}
+        petType={petNFTData.traits.type}
         isNeglected={isNeglected}
         isNapping={isNapping}
         isTypeFed={isTypeFed}

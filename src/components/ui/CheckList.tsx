@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useState } from "react";
+import React, { useContext, useEffect, useState, type JSX } from "react";
 import { Button } from "./Button";
 import { CloseButtonPanel } from "features/game/components/CloseablePanel";
 import { SUNNYSIDE } from "assets/sunnyside";
@@ -223,7 +223,8 @@ export const Checklist: React.FC = () => {
     <>
       <div className="flex flex-col h-full overflow-hidden overflow-y-auto scrollable gap-y-0.5">
         <InnerPanel>
-          <div className="m-1 ml-2 mb-2">
+          <div className="flex justify-between items-center m-1 mb-2">
+            <Label type="default">{t("checkList.title")}</Label>
             <Label icon={SUNNYSIDE.icons.stopwatch} type="info">
               {t("checkList.resetsIn", {
                 time: secondsToString(secondsTillReset(), {
