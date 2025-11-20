@@ -21,7 +21,7 @@ export const CropsAndChickensPhaser: React.FC = () => {
 
   const [, setLoaded] = useState(false);
 
-  const game = useRef<Game>();
+  const game = useRef<Game>(null);
 
   const scene: SceneId = "crops_and_chickens";
 

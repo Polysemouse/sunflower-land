@@ -72,7 +72,7 @@ export const CropsAndChickensSettings: React.FC = () => {
   const settingButton = (
     index: number,
     onClick: () => void,
-    children: JSX.Element,
+    children: React.ReactNode,
   ) => {
     const rightMargin = 8;
 
