@@ -12,6 +12,7 @@ import { Save } from "./components/Save";
 import { Settings } from "./components/Settings";
 import { TravelButton } from "./components/deliveries/TravelButton";
 import { AuctionCountdown } from "features/retreat/components/auctioneer/AuctionCountdown";
+import { VersionUpdateWidget } from "./components/VersionUpdateWidget";
 import { HudContainer } from "components/ui/HudContainer";
 import { ModalContext } from "features/game/components/modal/ModalProvider";
 import { useAppTranslation } from "lib/i18n/useAppTranslations";
@@ -35,6 +36,7 @@ import {
   Player,
 } from "features/world/ui/moderationTools/ModerationTools";
 import { DesertDiggingDisplay } from "./components/DesertDiggingDisplay";
+import { RaffleWidget } from "features/retreat/components/auctioneer/RaffleWidget";
 /**
  * Heads up display - a concept used in games for the small overlaid display of information.
  * Balances, Inventory, actions etc.
@@ -150,8 +152,10 @@ const HudComponent: React.FC<Props> = ({
         >
           <TransactionCountdown />
           <StreamCountdown />
+          <RaffleWidget />
           <FloatingIslandCountdown />
           <AuctionCountdown />
+          <VersionUpdateWidget />
         </div>
 
         {/* Right side of the HUD*/}
@@ -196,6 +200,7 @@ const HudComponent: React.FC<Props> = ({
               onClose={depositDataLoaded ? handleDepositModal : undefined}
               tabs={[
                 {
+                  id: "deposit",
                   icon: chest,
                   name: t("deposit"),
                 },

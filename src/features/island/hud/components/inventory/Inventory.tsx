@@ -1,10 +1,9 @@
 import PubSub from "pubsub-js";
-import React, { useEffect, useState } from "react";
+import React, { useContext, useEffect, useState } from "react";
 import { Box } from "components/ui/Box";
 import { InventoryItemsModal } from "./InventoryItemsModal";
 import { ITEM_DETAILS } from "features/game/types/images";
 import { GameState, InventoryItemName } from "features/game/types/game";
-import { getShortcuts } from "features/farming/hud/lib/shortcuts";
 import { PIXEL_SCALE } from "features/game/lib/constants";
 import { CollectibleName } from "features/game/types/craftables";
 import { BasketButton } from "./BasketButton";
@@ -14,6 +13,12 @@ import {
   LandscapingPlaceableType,
 } from "features/game/expansion/placeable/landscapingMachine";
 import { NFTName } from "features/game/events/landExpansion/placeNFT";
+import { Context } from "features/game/GameProvider";
+import { PlaceableLocation } from "features/game/types/collectibles";
+import { ChestButton } from "./ChestButton";
+import { hasChestItemAndNoCollectiblesPlaced } from "./utils/inventory";
+import { useAppTranslation } from "lib/i18n/useAppTranslations";
+import { Label } from "components/ui/Label";
 
 interface Props {
   state: GameState;
@@ -26,6 +31,7 @@ interface Props {
   isFarming: boolean;
   isSaving?: boolean;
   hideActions: boolean;
+  location?: PlaceableLocation;
 }
 
 export const Inventory: React.FC<Props> = ({
@@ -39,8 +45,13 @@ export const Inventory: React.FC<Props> = ({
   onPlaceNFT,
   onDepositClick,
   hideActions,
+  location,
 }) => {
+  const { shortcuts } = useContext(Context);
+  const { t } = useAppTranslation();
   const [isOpen, setIsOpen] = useState(false);
+  const showPlaceFirstHelper =
+    location !== "petHouse" && hasChestItemAndNoCollectiblesPlaced(state);
 
   useEffect(() => {
     const eventSubscription = PubSub.subscribe("OPEN_INVENTORY", () => {
@@ -54,20 +65,13 @@ export const Inventory: React.FC<Props> = ({
 
   const [selectedChestItem, setSelectedChestItem] =
     useState<LandscapingPlaceableType>();
-  // [
-  //   ...buds,
-  //   ...getKeys(getChestItems(state)).sort(
-  //     (a, b) => KNOWN_IDS[a] - KNOWN_IDS[b],
-  //   ),
-  // ][0],
-
-  const shortcuts = getShortcuts();
 
   const handleBasketItemClick = (item: InventoryItemName) => {
     if (!shortcutItem) return;
 
     shortcutItem(item);
   };
+
   const getSecondaryImage = (item: InventoryItemName) => {
     const seed = SEEDS[item as SeedName];
     return seed?.yield
@@ -84,7 +88,19 @@ export const Inventory: React.FC<Props> = ({
           top: `${PIXEL_SCALE * (isFarming ? 58 : 31)}px`,
         }}
       >
-        <BasketButton onClick={() => setIsOpen(true)} />
+        {showPlaceFirstHelper && (
+          <Label type="vibrant" className="absolute top-[90px] right-[70px]">
+            {t("chest.placeFirst")}
+          </Label>
+        )}
+        {location !== "petHouse" ? (
+          <BasketButton
+            pulse={showPlaceFirstHelper}
+            onClick={() => setIsOpen(true)}
+          />
+        ) : (
+          <ChestButton onClick={() => setIsOpen(true)} />
+        )}
 
         {!hideActions && (
           <div
@@ -110,6 +126,7 @@ export const Inventory: React.FC<Props> = ({
       </div>
 
       <InventoryItemsModal
+        key={isOpen ? `open-${!!showPlaceFirstHelper}` : "closed"}
         show={isOpen}
         onHide={() => {
           setIsOpen(false);
@@ -125,6 +142,8 @@ export const Inventory: React.FC<Props> = ({
         isSaving={isSaving}
         isFarming={isFarming}
         isFullUser={isFullUser}
+        location={location}
+        defaultToChest={showPlaceFirstHelper}
       />
     </>
   );

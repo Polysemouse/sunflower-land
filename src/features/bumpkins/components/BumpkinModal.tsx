@@ -32,6 +32,11 @@ import { setImageWidth } from "lib/images";
 import { LegacyBadges } from "./LegacyBadges";
 import { getKeys } from "features/game/types/decorations";
 import { PowerSkills } from "features/island/hud/components/PowerSkills";
+import { isBuffActive } from "features/game/types/buffs";
+import { Label } from "components/ui/Label";
+import { secondsToString } from "lib/utils/time";
+import { useNow } from "lib/utils/hooks/useNow";
+import { PanelTabs } from "features/game/components/CloseablePanel";
 
 export type ViewState =
   | "home"
@@ -81,9 +86,10 @@ export const BumpkinLevel: React.FC<{ experience?: number }> = ({
     </div>
   );
 };
+type Tab = "info" | "equip" | "skills";
 
 interface Props {
-  initialTab: number;
+  initialTab: Tab;
   onClose: () => void;
   bumpkin: Bumpkin;
   inventory: Inventory;
@@ -141,10 +147,11 @@ export const BumpkinModal: React.FC<Props> = ({
     );
   }
 
-  const renderTabs = () => {
+  const renderTabs = (): PanelTabs<Tab>[] => {
     if (readonly) {
       return [
         {
+          id: "info",
           icon: SUNNYSIDE.icons.player,
           name: t("info"),
         },
@@ -153,14 +160,17 @@ export const BumpkinModal: React.FC<Props> = ({
 
     return [
       {
+        id: "info",
         icon: SUNNYSIDE.icons.player,
         name: t("info"),
       },
       {
+        id: "equip",
         icon: SUNNYSIDE.icons.wardrobe,
         name: t("equip"),
       },
       {
+        id: "skills",
         icon: SUNNYSIDE.badges.seedSpecialist,
         name: t("skills"),
       },
@@ -173,7 +183,7 @@ export const BumpkinModal: React.FC<Props> = ({
       setCurrentTab={setTab}
       onClose={onClose}
       tabs={renderTabs()}
-      container={tab === 2 ? OuterPanel : undefined}
+      container={tab === "skills" ? OuterPanel : undefined}
     >
       <div
         style={{
@@ -182,7 +192,7 @@ export const BumpkinModal: React.FC<Props> = ({
         }}
         className="scrollable"
       >
-        {tab === 0 && (
+        {tab === "info" && (
           <BumpkinInfo
             level={level}
             maxLevel={maxLevel}
@@ -194,7 +204,7 @@ export const BumpkinModal: React.FC<Props> = ({
           />
         )}
 
-        {tab === 1 && (
+        {tab === "equip" && (
           <BumpkinEquip
             equipment={bumpkin.equipped}
             onEquip={(equipment) => {
@@ -205,7 +215,7 @@ export const BumpkinModal: React.FC<Props> = ({
             }}
           />
         )}
-        {tab === 2 && <Skills readonly={readonly} />}
+        {tab === "skills" && <Skills readonly={readonly} />}
       </div>
     </CloseButtonPanel>
   );
@@ -229,6 +239,7 @@ export const BumpkinInfo: React.FC<{
   readonly,
 }) => {
   const { t } = useAppTranslation();
+  const now = useNow();
   const { bumpkin, inventory } = gameState;
   const BADGES = getKeys(LEGACY_BADGE_TREE);
 
@@ -251,6 +262,11 @@ export const BumpkinInfo: React.FC<{
 
     return null;
   }).filter(Boolean);
+
+  const isPowerHourActive = isBuffActive({
+    buff: "Power hour",
+    game: gameState,
+  });
 
   return (
     <div className="flex flex-wrap">
@@ -318,6 +334,23 @@ export const BumpkinInfo: React.FC<{
             </div>
             <div className="flex flex-wrap items-center mt-2">{badges}</div>
           </ButtonPanel>
+        )}
+
+        {isPowerHourActive && (
+          <div className="flex items-center">
+            <Label type="info" icon={SUNNYSIDE.icons.stopwatch}>
+              {`Power hour`}
+            </Label>
+            <span className="text-xs ml-2">
+              {secondsToString(
+                ((gameState.buffs?.["Power hour"]?.startedAt ?? 0) +
+                  (gameState.buffs?.["Power hour"]?.durationMS ?? 0) -
+                  now) /
+                  1000,
+                { length: "medium" },
+              )}
+            </span>
+          </div>
         )}
 
         <ButtonPanel

@@ -17,6 +17,8 @@ import {
   LandscapingPlaceableType,
 } from "features/game/expansion/placeable/landscapingMachine";
 import { NFTName } from "features/game/events/landExpansion/placeNFT";
+import { PanelTabs } from "features/game/components/CloseablePanel";
+import { PlaceableLocation } from "features/game/types/collectibles";
 
 interface Props {
   show: boolean;
@@ -24,6 +26,7 @@ interface Props {
   state: GameState;
   onPlace: (item: LandscapingPlaceable) => void;
   onPlaceNFT: (id: string, nft: NFTName) => void;
+  location: PlaceableLocation;
 }
 
 export const LandscapingChest: React.FC<Props> = ({
@@ -32,6 +35,7 @@ export const LandscapingChest: React.FC<Props> = ({
   state,
   onPlace,
   onPlaceNFT,
+  location,
 }) => {
   const { t } = useAppTranslation();
 
@@ -40,21 +44,28 @@ export const LandscapingChest: React.FC<Props> = ({
   const hasBiomes = getKeys(LAND_BIOMES).some((item) =>
     (state.inventory[item] ?? new Decimal(0)).gt(0),
   );
+
+  const chestTab: PanelTabs<"Chest" | "Biomes"> = {
+    icon: chest,
+    name: t("chest"),
+    id: "Chest",
+  };
+
+  const biomesTab: PanelTabs<"Chest" | "Biomes"> = {
+    icon: ITEM_DETAILS["Basic Biome"].image,
+    name: t("biomes"),
+    id: "Biomes",
+  };
+
+  const tabs: PanelTabs<"Chest" | "Biomes">[] = [
+    chestTab,
+    ...(hasBiomes && location === "farm" ? [biomesTab] : []),
+  ];
+
   return (
     <Modal size="lg" show={show} onHide={onHide}>
       <CloseButtonPanel
-        tabs={[
-          { icon: chest, name: t("chest"), id: "Chest" },
-          ...(hasBiomes
-            ? [
-                {
-                  icon: ITEM_DETAILS["Basic Biome"].image,
-                  name: t("biomes"),
-                  id: "Biomes",
-                },
-              ]
-            : []),
-        ]}
+        tabs={tabs}
         currentTab={currentTab}
         setCurrentTab={setCurrentTab}
         onClose={onHide}
@@ -69,6 +80,7 @@ export const LandscapingChest: React.FC<Props> = ({
             closeModal={onHide}
             onPlace={onPlace}
             onPlaceNFT={onPlaceNFT}
+            location={location}
           />
         )}
         {currentTab === "Biomes" && <Biomes state={state} />}

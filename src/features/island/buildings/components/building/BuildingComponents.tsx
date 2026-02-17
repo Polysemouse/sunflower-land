@@ -7,6 +7,7 @@ import { WorkBench } from "./workBench/WorkBench";
 import { Tent } from "./tent/Tent";
 import { WaterWell } from "./waterWell/WaterWell";
 import { ChickenHouse } from "./henHouse/HenHouse";
+import { FishMarket } from "./fishMarket/FishMarket";
 import { Bakery } from "./bakery/Bakery";
 import { Kitchen } from "./kitchen/Kitchen";
 import { Deli } from "./deli/Deli";
@@ -26,6 +27,7 @@ import {
   BAKERY_VARIANTS,
   DELI_VARIANTS,
   FIRE_PIT_VARIANTS,
+  FISH_MARKET_VARIANTS,
   HEN_HOUSE_VARIANTS,
   KITCHEN_VARIANTS,
   MARKET_VARIANTS,
@@ -110,15 +112,27 @@ export const BUILDING_COMPONENTS: Record<
   ),
   "Crafting Box": CraftingBox,
   "Pet House": PetHouse,
+  "Fish Market": FishMarket,
 };
 
-export const READONLY_BUILDINGS: (
-  gameState: GameState,
-) => Record<BuildingName, React.FC<BuildingProps>> = (gameState) => {
-  const island: GameState["island"] = gameState.island;
-  const season: TemperateSeasonName = gameState.season.season;
-  const henHouseLevel = gameState.henHouse.level;
-  const barnLevel = gameState.barn.level;
+type ReadonlyBuildingArgs = {
+  island: GameState["island"];
+  season: TemperateSeasonName;
+  henHouseLevel: number;
+  barnLevel: number;
+};
+
+export const READONLY_BUILDINGS: ({
+  island,
+  season,
+  henHouseLevel,
+  barnLevel,
+}: ReadonlyBuildingArgs) => Record<BuildingName, React.FC<BuildingProps>> = ({
+  island,
+  season,
+  henHouseLevel,
+  barnLevel,
+}) => {
   const biome = getCurrentBiome(island);
 
   return {
@@ -150,6 +164,13 @@ export const READONLY_BUILDINGS: (
     Market: () => (
       <img
         src={MARKET_VARIANTS[biome][season]}
+        className="absolute bottom-0"
+        style={{ width: `${PIXEL_SCALE * 48}px` }}
+      />
+    ),
+    "Fish Market": () => (
+      <img
+        src={FISH_MARKET_VARIANTS[season]}
         className="absolute bottom-0"
         style={{ width: `${PIXEL_SCALE * 48}px` }}
       />

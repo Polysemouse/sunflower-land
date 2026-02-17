@@ -8,10 +8,13 @@ import {
   Cookable,
   CookableName,
   DELI_COOKABLES,
+  isFishCookable,
 } from "features/game/types/consumables";
 import { CloseButtonPanel } from "features/game/components/CloseablePanel";
 import { OuterPanel } from "components/ui/Panel";
 import { BuildingProduct } from "features/game/types/game";
+import { CHAPTERS, getCurrentChapter } from "features/game/types/chapters";
+import { useNow } from "lib/utils/hooks/useNow";
 
 interface Props {
   isOpen: boolean;
@@ -33,9 +36,19 @@ export const DeliModal: React.FC<Props> = ({
   queue,
   readyRecipes,
 }) => {
-  const deliRecipes = Object.values(DELI_COOKABLES).sort(
-    (a, b) => a.experience - b.experience, // Sorts Foods based on their cooking time
-  );
+  const now = useNow({
+    live: true,
+    autoEndAt: CHAPTERS["Paw Prints"].endDate.getTime(),
+  });
+  const deliRecipes = Object.values(DELI_COOKABLES)
+    .filter((recipe) => {
+      if (getCurrentChapter(now) === "Paw Prints") return true;
+
+      return !isFishCookable(recipe.name);
+    })
+    .sort(
+      (a, b) => a.experience - b.experience, // Sorts Foods based on their cooking time
+    );
   const [selected, setSelected] = useState<Cookable>(
     deliRecipes.find((recipe) => recipe.name === itemInProgress) ||
       deliRecipes[0],
@@ -53,7 +66,7 @@ export const DeliModal: React.FC<Props> = ({
           background: "Farm Background",
           shoes: "Black Farmer Boots",
         }}
-        tabs={[{ icon: chefHat, name: "Deli" }]}
+        tabs={[{ id: "deli", icon: chefHat, name: "Deli" }]}
         onClose={onClose}
         container={OuterPanel}
       >

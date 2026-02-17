@@ -162,7 +162,6 @@ import { GoblinLantern } from "./components/GoblinLantern";
 import { DawnFlower } from "./components/DawnFlower";
 import { LaurieTheChuckleCrow } from "./components/LaurieTheChuckelCrow";
 import { FreyaFox } from "./components/FreyaFox";
-import { MoonFoxStatue } from "./components/MoonFoxStatue";
 import { WitchesEveBanner } from "./components/WitchesEveBanner";
 import { ElPolloVeloz } from "./components/ElPolloVeloz";
 import { Poppy } from "./components/Poppy";
@@ -371,6 +370,10 @@ import { BlackHoleFlower } from "./components/BlackHoleFlower";
 import { SleepyChicken } from "./components/SleepyChicken";
 import { AstronautCow } from "./components/AstronautCow";
 import { AstronautSheep } from "./components/AstronautSheep";
+import { MermaidCow } from "./components/MermaidCow";
+import { MermaidSheep } from "./components/MermaidSheep";
+import { SquidChicken } from "./components/SquidChicken";
+import { AnemoneFlower } from "./components/AnemoneFlower";
 import { Poseidon } from "./components/Poseidon";
 import { Project } from "./components/Project";
 import { PetShrine } from "./components/PetShrine";
@@ -378,6 +381,9 @@ import { ObsidianShrine } from "./components/ObsidianShrine";
 import { Pet } from "../pets/Pet";
 import { PetName, PET_TYPES } from "features/game/types/pets";
 import { PetNFT } from "./components/petNFT/PetNFT";
+import { Isopod } from "./components/Isopod";
+import { Nautilus } from "./components/Nautilus";
+import { Dollocaris } from "./components/Dollocaris";
 
 export const COLLECTIBLE_COMPONENTS: Record<
   CollectibleName | "Bud" | "PetNFT",
@@ -407,6 +413,10 @@ export const COLLECTIBLE_COMPONENTS: Record<
   "Sleepy Chicken": SleepyChicken,
   "Astronaut Cow": AstronautCow,
   "Astronaut Sheep": AstronautSheep,
+  "Mermaid Cow": MermaidCow,
+  "Mermaid Sheep": MermaidSheep,
+  "Squid Chicken": SquidChicken,
+  "Anemone Flower": AnemoneFlower,
   "Love Chicken": LoveChicken,
   "Dr Cow": DrCow,
   "Nurse Sheep": NurseSheep,
@@ -720,6 +730,9 @@ export const COLLECTIBLE_COMPONENTS: Record<
   "Phantom Barracuda": PhantomBarracuda,
   "Gilded Swordfish": GildedSwordfish,
   "Super Star": SuperStar,
+  "Giant Isopod": Isopod,
+  Nautilus: Nautilus,
+  Dollocaris: Dollocaris,
   "Crimson Carp": CrimsonCarp,
   "Battle Fish": BattleFish,
   "Lemon Shark": LemonShark,
@@ -745,6 +758,54 @@ export const COLLECTIBLE_COMPONENTS: Record<
   "Skill Shrimpy": SkillShrimpy,
   "Soil Krabby": SoilKrabby,
   Nana: Nana,
+  "Speckled Kissing Fish": () => (
+    <TemplateCollectible name="Speckled Kissing Fish" />
+  ),
+  "Dark Eyed Kissing Fish": () => (
+    <TemplateCollectible name="Dark Eyed Kissing Fish" />
+  ),
+  "Fisherman's Boat": () => <TemplateCollectible name="Fisherman's Boat" />,
+  "Sea Arch": () => <TemplateCollectible name="Sea Arch" />,
+  "Crabs and Fish Rug": () => <TemplateCollectible name="Crabs and Fish Rug" />,
+  "Fish Flags": () => <TemplateCollectible name="Fish Flags" />,
+  "Fish Drying Rack": () => <TemplateCollectible name="Fish Drying Rack" />,
+  "Yellow Submarine Trophy": () => (
+    <TemplateCollectible name="Yellow Submarine Trophy" />
+  ),
+  Oaken: () => <TemplateCollectible name="Oaken" />,
+  Meerkat: () => <TemplateCollectible name="Meerkat" />,
+  "Pearl Bed": () => <TemplateCollectible name="Pearl Bed" />,
+  "Crimstone Clam": () => <TemplateCollectible name="Crimstone Clam" />,
+  "Poseidon's Throne": (props: CollectibleProps) => (
+    <Monument
+      {...props}
+      divStyle={{
+        width: `${PIXEL_SCALE * 49}px`,
+        bottom: `${PIXEL_SCALE * 0}px`,
+        left: `${PIXEL_SCALE * -0.5}px`,
+      }}
+      imgStyle={{
+        width: `${PIXEL_SCALE * 49}px`,
+      }}
+      alt="Poseidon's Throne"
+      project="Poseidon's Throne"
+    />
+  ),
+  "Fish Kite": (props: CollectibleProps) => (
+    <ImageStyle
+      {...props}
+      divStyle={{
+        width: `${PIXEL_SCALE * 24}px`,
+        bottom: `${PIXEL_SCALE * 0}px`,
+        left: `${PIXEL_SCALE * 4}px`,
+      }}
+      imgStyle={{
+        width: `${PIXEL_SCALE * 24}px`,
+      }}
+      image={ITEM_DETAILS["Fish Kite"].image}
+      alt="Fish Kite"
+    />
+  ),
   "Crim Peckster": CrimPeckster,
   "Knight Chicken": KnightChicken,
   "Pharaoh Chicken": PharaohChicken,
@@ -2741,6 +2802,37 @@ export const COLLECTIBLE_COMPONENTS: Record<
       alt="Paw Prints Banner"
     />
   ),
+  "Crabs and Traps Banner": (props: CollectibleProps) => (
+    <ImageStyle
+      {...props}
+      divStyle={{
+        width: `${PIXEL_SCALE * 16}px`,
+        bottom: `${PIXEL_SCALE * 2}px`,
+        left: `${PIXEL_SCALE * 0}px`,
+      }}
+      imgStyle={{
+        width: `${PIXEL_SCALE * 16}px`,
+      }}
+      image={ITEM_DETAILS["Crabs and Traps Banner"].image}
+      alt="Crabs and Traps Banner"
+    />
+  ),
+  "Diving Helmet": (props: CollectibleProps) => (
+    <ImageStyle
+      {...props}
+      divStyle={{
+        width: `${PIXEL_SCALE * 18}px`,
+        bottom: `${PIXEL_SCALE * 0}px`,
+        left: `50%`,
+        transform: "translatex(-50%)",
+      }}
+      imgStyle={{
+        width: `${PIXEL_SCALE * 18}px`,
+      }}
+      image={ITEM_DETAILS["Diving Helmet"].image}
+      alt="Diving Helmet"
+    />
+  ),
   "Paw Prints Rug": (props: CollectibleProps) => (
     <ImageStyle
       {...props}
@@ -2801,7 +2893,21 @@ export const COLLECTIBLE_COMPONENTS: Record<
       alt="Giant Acorn"
     />
   ),
-  "Moon Fox Statue": MoonFoxStatue,
+  "Moon Fox Statue": (props: CollectibleProps) => (
+    <ImageStyle
+      {...props}
+      divStyle={{
+        width: `${PIXEL_SCALE * 31}px`,
+        bottom: `${PIXEL_SCALE * -2}px`,
+        left: `${PIXEL_SCALE * 0}px`,
+      }}
+      imgStyle={{
+        width: `${PIXEL_SCALE * 31}px`,
+      }}
+      image={ITEM_DETAILS["Moon Fox Statue"].image}
+      alt="Moon Fox Statue"
+    />
+  ),
   "Big Apple": (props: CollectibleProps) => (
     <Project
       {...props}
@@ -3093,7 +3199,7 @@ export const COLLECTIBLE_COMPONENTS: Record<
       divStyle={{
         width: `${PIXEL_SCALE * 22}px`,
         bottom: `${PIXEL_SCALE * 0}px`,
-        left: `${PIXEL_SCALE * -5}px`,
+        left: `${PIXEL_SCALE * -3}px`,
       }}
       imgStyle={{
         width: `${PIXEL_SCALE * 22}px`,
@@ -3445,6 +3551,171 @@ export const COLLECTIBLE_COMPONENTS: Record<
         width: `${PIXEL_SCALE * 42}px`,
       }}
       alt="Cornucopia"
+    />
+  ),
+  "Holiday Decorative Totem": (props: CollectibleProps) => (
+    <ImageStyle
+      {...props}
+      divStyle={{
+        width: `${PIXEL_SCALE * 18}px`,
+        bottom: `${PIXEL_SCALE * 0}px`,
+        left: `${PIXEL_SCALE * -1}px`,
+      }}
+      imgStyle={{
+        width: `${PIXEL_SCALE * 18}px`,
+      }}
+      image={ITEM_DETAILS["Holiday Decorative Totem"].image}
+      alt="Holiday Decorative Totem"
+    />
+  ),
+  "Red Holiday Ornament": (props: CollectibleProps) => (
+    <ImageStyle
+      {...props}
+      divStyle={{
+        width: `${PIXEL_SCALE * 31}px`,
+        bottom: `${PIXEL_SCALE * 0}px`,
+        left: `${PIXEL_SCALE * 0}px`,
+      }}
+      imgStyle={{
+        width: `${PIXEL_SCALE * 31}px`,
+      }}
+      image={ITEM_DETAILS["Red Holiday Ornament"].image}
+      alt="Red Holiday Ornament"
+    />
+  ),
+  "Green Holiday Ornament": (props: CollectibleProps) => (
+    <ImageStyle
+      {...props}
+      divStyle={{
+        width: `${PIXEL_SCALE * 30}px`,
+        bottom: `${PIXEL_SCALE * 0}px`,
+        left: `${PIXEL_SCALE * 1}px`,
+      }}
+      imgStyle={{
+        width: `${PIXEL_SCALE * 30}px`,
+      }}
+      image={ITEM_DETAILS["Green Holiday Ornament"].image}
+      alt="Green Holiday Ornament"
+    />
+  ),
+  "Gift Turtle": (props: CollectibleProps) => (
+    <ImageStyle
+      {...props}
+      divStyle={{
+        width: `${PIXEL_SCALE * 28}px`,
+        bottom: `${PIXEL_SCALE * 0}px`,
+        left: `${PIXEL_SCALE * 2}px`,
+      }}
+      imgStyle={{
+        width: `${PIXEL_SCALE * 28}px`,
+      }}
+      image={ITEM_DETAILS["Gift Turtle"].image}
+      alt="Gift Turtle"
+    />
+  ),
+  "Red Nose Reindeer": (props: CollectibleProps) => (
+    <ImageStyle
+      {...props}
+      divStyle={{
+        width: `${PIXEL_SCALE * 29}px`,
+        bottom: `${PIXEL_SCALE * 0}px`,
+        left: `${PIXEL_SCALE * 2}px`,
+      }}
+      imgStyle={{
+        width: `${PIXEL_SCALE * 29}px`,
+      }}
+      image={ITEM_DETAILS["Red Nose Reindeer"].image}
+      alt="Red Nose Reindeer"
+    />
+  ),
+  "Tuxedo Claus": (props: CollectibleProps) => (
+    <ImageStyle
+      {...props}
+      divStyle={{
+        width: `${PIXEL_SCALE * 37}px`,
+        bottom: `${PIXEL_SCALE * 0}px`,
+        left: `${PIXEL_SCALE * -3}px`,
+      }}
+      imgStyle={{
+        width: `${PIXEL_SCALE * 37}px`,
+      }}
+      image={ITEM_DETAILS["Tuxedo Claus"].image}
+      alt="Tuxedo Claus"
+    />
+  ),
+  "Winter Alpaca": (props: CollectibleProps) => (
+    <ImageStyle
+      {...props}
+      divStyle={{
+        width: `${PIXEL_SCALE * 32}px`,
+        bottom: `${PIXEL_SCALE * -2}px`,
+        left: `${PIXEL_SCALE * 0}px`,
+      }}
+      imgStyle={{
+        width: `${PIXEL_SCALE * 32}px`,
+      }}
+      image={ITEM_DETAILS["Winter Alpaca"].image}
+      alt="Winter Alpaca"
+    />
+  ),
+  "Penguin Surprise": (props: CollectibleProps) => (
+    <ImageStyle
+      {...props}
+      divStyle={{
+        width: `${PIXEL_SCALE * 51}px`,
+        bottom: `${PIXEL_SCALE * 0}px`,
+        left: `${PIXEL_SCALE * -2}px`,
+      }}
+      imgStyle={{
+        width: `${PIXEL_SCALE * 51}px`,
+      }}
+      image={ITEM_DETAILS["Penguin Surprise"].image}
+      alt="Penguin Surprise"
+    />
+  ),
+  "Frozen Meat": (props: CollectibleProps) => (
+    <ImageStyle
+      {...props}
+      divStyle={{
+        width: `${PIXEL_SCALE * 16}px`,
+        bottom: `${PIXEL_SCALE * 0}px`,
+        left: `${PIXEL_SCALE * 0}px`,
+      }}
+      imgStyle={{
+        width: `${PIXEL_SCALE * 16}px`,
+      }}
+      image={ITEM_DETAILS["Frozen Meat"].image}
+      alt="Frozen Meat"
+    />
+  ),
+  "Ho Ho oh oh…": (props: CollectibleProps) => (
+    <ImageStyle
+      {...props}
+      divStyle={{
+        width: `${PIXEL_SCALE * 32}px`,
+        bottom: `${PIXEL_SCALE * 0}px`,
+        left: `${PIXEL_SCALE * 0}px`,
+      }}
+      imgStyle={{
+        width: `${PIXEL_SCALE * 32}px`,
+      }}
+      image={ITEM_DETAILS["Ho Ho oh oh…"].image}
+      alt="Ho Ho oh oh…"
+    />
+  ),
+  "Squeaky Chicken": (props: CollectibleProps) => (
+    <ImageStyle
+      {...props}
+      divStyle={{
+        width: `${PIXEL_SCALE * 23}px`,
+        bottom: `${PIXEL_SCALE * 0}px`,
+        left: `${PIXEL_SCALE * -3}px`,
+      }}
+      imgStyle={{
+        width: `${PIXEL_SCALE * 23}px`,
+      }}
+      image={ITEM_DETAILS["Squeaky Chicken"].image}
+      alt="Squeaky Chicken"
     />
   ),
 };

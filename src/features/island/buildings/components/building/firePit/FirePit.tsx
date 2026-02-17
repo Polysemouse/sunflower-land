@@ -2,7 +2,7 @@ import React, { useContext, useState } from "react";
 
 import classNames from "classnames";
 import { FirePitModal } from "./FirePitModal";
-import { CookableName } from "features/game/types/consumables";
+import { CookableName, COOKABLES } from "features/game/types/consumables";
 import { ITEM_DETAILS } from "features/game/types/images";
 import { PIXEL_SCALE } from "features/game/lib/constants";
 import { BuildingImageWrapper } from "../BuildingImageWrapper";
@@ -29,12 +29,12 @@ type Props = {
   season: TemperateSeasonName;
 };
 
-const _mashedPotatoCooked = (state: MachineState) =>
-  state.context.state.bumpkin?.activity?.["Mashed Potato Cooked"];
+const _rhubarbTartCooked = (state: MachineState) =>
+  state.context.state.farmActivity["Rhubarb Tart Cooked"] ?? 0;
 const _experience = (state: MachineState) =>
   state.context.state.bumpkin?.experience;
-const _potatoCount = (state: MachineState) =>
-  state.context.state.inventory.Potato ?? new Decimal(0);
+const _rhubarbCount = (state: MachineState) =>
+  state.context.state.inventory.Rhubarb ?? new Decimal(0);
 const _season = (state: MachineState) => state.context.state.season.season;
 const _firePit = (id: string) => (state: MachineState) =>
   state.context.state.buildings["Fire Pit"]?.find((b) => b.id === id);
@@ -43,15 +43,20 @@ export const FirePit: React.FC<Props> = ({ buildingId, isBuilt, island }) => {
   const { gameService } = useContext(Context);
   const [showModal, setShowModal] = useState(false);
 
-  const mashedPotatoCooked = useSelector(gameService, _mashedPotatoCooked);
+  const rhubarbTartCooked = useSelector(gameService, _rhubarbTartCooked);
   const experience = useSelector(gameService, _experience);
-  const potatoCount = useSelector(gameService, _potatoCount);
+  const rhubarbCount = useSelector(gameService, _rhubarbCount);
   const season = useSelector(gameService, _season);
   const firePit = useSelector(gameService, _firePit(buildingId));
 
   const { cooking, queuedRecipes, readyRecipes } = useCookingState(
     firePit ?? {},
   );
+
+  const itemInProgress =
+    cooking?.name && cooking.name in COOKABLES
+      ? (cooking.name as CookableName)
+      : undefined;
 
   const { play: bakeryAudio } = useSound("bakery");
 
@@ -62,7 +67,7 @@ export const FirePit: React.FC<Props> = ({ buildingId, isBuilt, island }) => {
       buildingId,
     });
 
-    if (item === "Mashed Potato" && !mashedPotatoCooked) {
+    if (item === "Rhubarb Tart" && !rhubarbTartCooked) {
       gameAnalytics.trackMilestone({
         event: "Tutorial:Cooked:Completed",
       });
@@ -88,7 +93,8 @@ export const FirePit: React.FC<Props> = ({ buildingId, isBuilt, island }) => {
     }
   };
 
-  const showHelper = potatoCount.gte(8) && experience === 0 && !cooking;
+  const showHelper =
+    rhubarbCount.gte(3) && experience === 0 && !rhubarbTartCooked && !cooking;
 
   return (
     <>
@@ -184,7 +190,7 @@ export const FirePit: React.FC<Props> = ({ buildingId, isBuilt, island }) => {
         onClose={() => setShowModal(false)}
         onCook={handleCook}
         cooking={cooking}
-        itemInProgress={cooking?.name}
+        itemInProgress={itemInProgress}
         buildingId={buildingId}
         readyRecipes={readyRecipes}
       />

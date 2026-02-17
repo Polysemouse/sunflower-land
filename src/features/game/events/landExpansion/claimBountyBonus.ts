@@ -2,8 +2,9 @@ import Decimal from "decimal.js-light";
 import { getWeekKey, weekResetsAt } from "features/game/lib/factions";
 import { ANIMALS } from "features/game/types/animals";
 import { GameState } from "features/game/types/game";
-import { getSeasonalTicket } from "features/game/types/seasons";
+import { getChapterTicket } from "features/game/types/chapters";
 import { produce } from "immer";
+import { trackFarmActivity } from "features/game/types/farmActivity";
 
 export type ClaimBountyBonusAction = {
   type: "claim.bountyBoardBonus";
@@ -28,7 +29,11 @@ export const NO_BONUS_BOUNTIES_WEEK = [
   "2025-10-06", // Better Together Auction Week
   "2025-11-03", // Paw Prints Rest Week
   "2026-01-05", // Paw Prints Auction Week
+  "2026-02-02", // Crabs and Traps Rest Week
+  "2026-04-06", // Crabs and Traps Auction Week
 ];
+
+const TICKET_BONUS_AMOUNT = 50;
 
 export function claimBountyBonus({
   state,
@@ -78,10 +83,17 @@ export function claimBountyBonus({
     }
 
     // Claim bonus
-    inventory[getSeasonalTicket()] = (
-      inventory[getSeasonalTicket()] ?? new Decimal(0)
-    ).add(50);
+    const ticket = getChapterTicket(createdAt);
+    inventory[ticket] = (inventory[ticket] ?? new Decimal(0)).add(
+      TICKET_BONUS_AMOUNT,
+    );
     bounties.bonusClaimedAt = createdAt;
+
+    draft.farmActivity = trackFarmActivity(
+      `${ticket} Collected`,
+      draft.farmActivity,
+      new Decimal(TICKET_BONUS_AMOUNT),
+    );
 
     return draft;
   });

@@ -2,10 +2,7 @@ import { FLOWERS, FLOWER_SEEDS } from "features/game/types/flowers";
 import { BoostName, CriticalHitName, GameState } from "../../types/game";
 import Decimal from "decimal.js-light";
 import { updateBeehives } from "features/game/lib/updateBeehives";
-import { trackActivity } from "features/game/types/bumpkinActivity";
-
 import { translate } from "lib/i18n/translate";
-
 import { trackFarmActivity } from "features/game/types/farmActivity";
 import { produce } from "immer";
 import {
@@ -31,17 +28,17 @@ function getFlowerAmount({
 }: {
   game: GameState;
   criticalDrop: (name: CriticalHitName) => boolean;
-}): { amount: number; boostsUsed: BoostName[] } {
+}): { amount: number; boostsUsed: { name: BoostName; value: string }[] } {
   const { bumpkin } = game;
   let amount = 1;
-  const boostsUsed: BoostName[] = [];
+  const boostsUsed: { name: BoostName; value: string }[] = [];
 
   if (
     isCollectibleBuilt({ name: "Humming Bird", game }) &&
     criticalDrop("Humming Bird")
   ) {
     amount += 1;
-    boostsUsed.push("Humming Bird");
+    boostsUsed.push({ name: "Humming Bird", value: "+1" });
   }
 
   if (
@@ -49,7 +46,7 @@ function getFlowerAmount({
     criticalDrop("Butterfly")
   ) {
     amount += 1;
-    boostsUsed.push("Butterfly");
+    boostsUsed.push({ name: "Butterfly", value: "+1" });
   }
 
   if (
@@ -57,7 +54,7 @@ function getFlowerAmount({
     criticalDrop("Desert Rose")
   ) {
     amount += 1;
-    boostsUsed.push("Desert Rose");
+    boostsUsed.push({ name: "Desert Rose", value: "+1" });
   }
 
   if (
@@ -65,7 +62,7 @@ function getFlowerAmount({
     criticalDrop("Chicory")
   ) {
     amount += 1;
-    boostsUsed.push("Chicory");
+    boostsUsed.push({ name: "Chicory", value: "+1" });
   }
 
   if (
@@ -73,17 +70,17 @@ function getFlowerAmount({
     criticalDrop("Moth Shrine")
   ) {
     amount += 1;
-    boostsUsed.push("Moth Shrine");
+    boostsUsed.push({ name: "Moth Shrine", value: "+1" });
   }
 
   if (bumpkin.skills["Petalled Perk"] && criticalDrop("Petalled Perk")) {
     amount += 1;
-    boostsUsed.push("Petalled Perk");
+    boostsUsed.push({ name: "Petalled Perk", value: "+1" });
   }
 
   if (isTemporaryCollectibleActive({ name: "Legendary Shrine", game })) {
     amount += 1;
-    boostsUsed.push("Legendary Shrine");
+    boostsUsed.push({ name: "Legendary Shrine", value: "+1" });
   }
 
   return { amount, boostsUsed };
@@ -147,16 +144,9 @@ export function harvestFlower({
 
     delete flowerBed.flower;
 
-    bumpkin.activity = trackActivity(
-      `${flower.name} Harvested`,
-      bumpkin?.activity,
-      new Decimal(1),
-    );
-
     stateCopy.farmActivity = trackFarmActivity(
       `${flower.name} Harvested`,
       stateCopy.farmActivity,
-      1,
     );
 
     stateCopy.boostsUsedAt = updateBoostUsed({

@@ -1,6 +1,5 @@
 import { SUNNYSIDE } from "assets/sunnyside";
 import { CROP_LIFECYCLE } from "features/island/plots/lib/plant";
-import { BuffLabel } from ".";
 import { BumpkinItem } from "./bumpkin";
 
 import powerup from "assets/icons/level_up.png";
@@ -10,12 +9,13 @@ import chefHat from "assets/icons/chef_hat.png";
 import baits from "assets/composters/baits.png";
 import { ITEM_DETAILS } from "./images";
 import { translate } from "lib/i18n/translate";
-import { getCurrentSeason, getSeasonalTicket, SEASONS } from "./seasons";
+import { getChapterTicket, CHAPTERS, getCurrentChapter } from "./chapters";
 import { SEASON_ICONS } from "features/island/buildings/components/building/market/SeasonalSeeds";
 import { isCollectible } from "../events/landExpansion/garbageSold";
 import { TranslationKeys } from "lib/i18n/dictionaries/types";
 import { CHAPTER_TICKET_BOOST_ITEMS } from "../events/landExpansion/completeNPCChore";
 import { getObjectEntries } from "../expansion/lib/utils";
+import { BuffLabel } from ".";
 
 export const SPECIAL_ITEM_LABELS: Partial<Record<BumpkinItem, BuffLabel[]>> = {
   Halo: [
@@ -182,6 +182,14 @@ export const BUMPKIN_ITEM_BUFF_LABELS: Partial<
   "Corn Onesie": [
     {
       shortDescription: translate("bumpkinItemBuff.corn.onesie.boost"),
+      labelType: "success",
+      boostTypeIcon: powerup,
+      boostedItemIcon: CROP_LIFECYCLE["Basic Biome"].Corn.crop,
+    },
+  ],
+  "Corn Silk Hair": [
+    {
+      shortDescription: translate("description.cornSilkHair.boost"),
       labelType: "success",
       boostTypeIcon: powerup,
       boostedItemIcon: CROP_LIFECYCLE["Basic Biome"].Corn.crop,
@@ -860,8 +868,8 @@ export const BUMPKIN_ITEM_BUFF_LABELS: Partial<
   "Solflare Aegis": [
     {
       shortDescription: translate("description.solflareAegis.boost"),
-      labelType: "success",
-      boostTypeIcon: powerup,
+      labelType: "info",
+      boostTypeIcon: SUNNYSIDE.icons.stopwatch,
       boostedItemIcon: SEASON_ICONS["summer"],
     },
   ],
@@ -876,8 +884,8 @@ export const BUMPKIN_ITEM_BUFF_LABELS: Partial<
   "Frozen Heart": [
     {
       shortDescription: translate("description.frozenHeart.boost"),
-      labelType: "info",
-      boostTypeIcon: SUNNYSIDE.icons.stopwatch,
+      labelType: "success",
+      boostTypeIcon: powerup,
       boostedItemIcon: SEASON_ICONS["winter"],
     },
   ],
@@ -977,14 +985,14 @@ export const BUMPKIN_ITEM_BUFF_LABELS: Partial<
       boostedItemIcon: baits,
     },
   ],
-  "Lunar Weapon": [
+  "Luna's Crescent": [
     {
       shortDescription: translate("description.lunarWeapon.boost"),
       labelType: "info",
       boostTypeIcon: SUNNYSIDE.icons.stopwatch,
     },
   ],
-  "Cleaver Knife": [
+  "Master Chef's Cleaver": [
     {
       shortDescription: translate("description.cleaverKnife.boost.1"),
       labelType: "info",
@@ -1012,12 +1020,49 @@ export const BUMPKIN_ITEM_BUFF_LABELS: Partial<
       boostedItemIcon: SUNNYSIDE.resource.acorn,
     },
   ],
+  "Crimstone Spikes Hair": [
+    {
+      shortDescription: translate("description.crimstoneSpikesHair.boost"),
+      labelType: "success",
+      boostTypeIcon: powerup,
+      boostedItemIcon: ITEM_DETAILS.Crimstone.image,
+    },
+  ],
+  "Paw Aura": [
+    {
+      shortDescription: translate("description.pawAura.boost"),
+      labelType: "success",
+      boostTypeIcon: powerup,
+    },
+  ],
+  "Victoria's Apron": [
+    {
+      shortDescription: translate("description.victoriasApron.boost"),
+      labelType: "vibrant",
+      boostTypeIcon: lightning,
+    },
+  ],
+  "Beast Shoes": [
+    {
+      shortDescription: translate("description.beastShoes.boost"),
+      labelType: "success",
+      boostTypeIcon: powerup,
+    },
+  ],
+  "Walrus Onesie": [
+    {
+      shortDescription: translate("description.walrusOnesie.boost"),
+      labelType: "success",
+      boostTypeIcon: powerup,
+    },
+  ],
   ...SPECIAL_ITEM_LABELS,
   ...Object.fromEntries(
     getObjectEntries(CHAPTER_TICKET_BOOST_ITEMS)
-      .filter(([chapter]) => getCurrentSeason() === chapter)
+      .filter(([chapter]) => getCurrentChapter(Date.now()) === chapter)
       .flatMap(([chapter, items]) => {
-        const ticket = getSeasonalTicket(new Date(SEASONS[chapter].startDate));
+        const chapterStart = CHAPTERS[chapter].startDate.getTime();
+        const ticket = getChapterTicket(chapterStart);
         const translationKey =
           `description.bonus${ticket.replace(/\s+/g, "")}.boost` as TranslationKeys;
 

@@ -1,11 +1,9 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
-import { CloseButtonPanel } from "features/game/components/CloseablePanel";
-import React, {
-  useCallback,
-  useEffect,
-  useLayoutEffect,
-  useState,
-} from "react";
+import {
+  CloseButtonPanel,
+  PanelTabs,
+} from "features/game/components/CloseablePanel";
+import React, { useCallback, useEffect, useState } from "react";
 import { Modal } from "components/ui/Modal";
 import giftIcon from "assets/icons/gift.png";
 
@@ -41,10 +39,6 @@ export const RewardModal: React.FC = () => {
     }
   }, []);
 
-  useLayoutEffect(() => {
-    setInitialTab(rewardGiver?.clothing);
-  }, []);
-
   useEffect(() => {
     rewardModalManager.listen((npc) => {
       setRewardGiver(npc);
@@ -64,6 +58,23 @@ export const RewardModal: React.FC = () => {
   const hasGiftGiver = rewardGiver?.clothing?.shirt === "Gift Giver";
   const hasStreamerHat = rewardGiver?.clothing?.hat === "Streamer Hat";
 
+  const rewardTab: PanelTabs<Tab> = {
+    icon: giftIcon,
+    name: t("reward"),
+    id: "Reward",
+  };
+
+  const streamTab: PanelTabs<Tab> = {
+    icon: ITEM_DETAILS["Love Charm"].image,
+    name: t("stream"),
+    id: "Stream",
+  };
+
+  const tabs: PanelTabs<Tab>[] = [
+    ...(hasGiftGiver ? [rewardTab] : []),
+    ...(hasStreamerHat ? [streamTab] : []),
+  ];
+
   return (
     <>
       <Modal show={showRewardModal} onHide={closeModal} size="lg">
@@ -72,26 +83,7 @@ export const RewardModal: React.FC = () => {
           bumpkinParts={rewardGiver?.clothing}
           currentTab={tab}
           setCurrentTab={setTab}
-          tabs={[
-            ...(hasGiftGiver
-              ? [
-                  {
-                    icon: giftIcon,
-                    name: t("reward"),
-                    id: "Reward",
-                  },
-                ]
-              : []),
-            ...(hasStreamerHat
-              ? [
-                  {
-                    icon: ITEM_DETAILS["Love Charm"].image,
-                    name: t("stream"),
-                    id: "Stream",
-                  },
-                ]
-              : []),
-          ]}
+          tabs={tabs}
           container={OuterPanel}
         >
           <div className="max-h-[500px]">

@@ -60,6 +60,7 @@ export const CaptchaInfo: React.FC<{ collectedItem?: InventoryItemName }> = ({
           <CloseButtonPanel
             tabs={[
               {
+                id: "captchaInfo",
                 icon: book,
                 name: t("captcha.info.title"),
               },
@@ -120,6 +121,7 @@ const VerifyContent: React.FC<{ isVerified: boolean }> = ({ isVerified }) => {
           <img src={infoIcon} className="w-5 ml-1" />
           <AnimatedPanel
             show={showInfo}
+            onBackdropClick={() => setShowInfo(!showInfo)}
             onClick={() => setShowInfo(!showInfo)}
             className="top-5 right-2 w-52"
           >

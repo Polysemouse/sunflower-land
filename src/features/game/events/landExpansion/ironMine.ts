@@ -1,7 +1,5 @@
 import Decimal from "decimal.js-light";
-import { canMine } from "features/game/lib/resourceNodes";
-import { IRON_RECOVERY_TIME } from "../../lib/constants";
-import { trackActivity } from "../../types/bumpkinActivity";
+import { trackFarmActivity } from "features/game/types/farmActivity";
 import {
   AOE,
   BoostName,
@@ -22,7 +20,7 @@ import { FACTION_ITEMS } from "features/game/lib/factions";
 import { getBudYieldBoosts } from "features/game/lib/getBudYieldBoosts";
 import { isWearableActive } from "features/game/lib/wearables";
 import { COLLECTIBLES_DIMENSIONS } from "features/game/types/craftables";
-import { RESOURCE_DIMENSIONS } from "features/game/types/resources";
+import { RESOURCE_DIMENSIONS, RockName } from "features/game/types/resources";
 import { updateBoostUsed } from "features/game/types/updateBoostUsed";
 import cloneDeep from "lodash.clonedeep";
 import {
@@ -30,6 +28,9 @@ import {
   isCollectibleOnFarm,
   setAOELastUsed,
 } from "features/game/lib/aoe";
+import { prngChance } from "lib/prng";
+import { KNOWN_IDS } from "features/game/types";
+import { IRON_RECOVERY_TIME } from "features/game/lib/constants";
 
 export type LandExpansionIronMineAction = {
   type: "ironRock.mined";
@@ -39,16 +40,14 @@ export type LandExpansionIronMineAction = {
 type Options = {
   state: Readonly<GameState>;
   action: LandExpansionIronMineAction;
-  createdAt?: number;
+  createdAt: number;
+  farmId: number;
 };
 
-export enum MINE_ERRORS {
-  NO_PICKAXES = "No pickaxes left",
-  NO_IRON = "No iron",
-  STILL_RECOVERING = "Iron is still recovering",
-  EXPANSION_HAS_NO_IRON = "Expansion has no iron",
-  NO_EXPANSION = "Expansion does not exist",
-  NO_BUMPKIN = "You do not have a Bumpkin",
+// 8 hours
+export function canMine(rock: Rock, now: number = Date.now()) {
+  const recoveryTime = IRON_RECOVERY_TIME;
+  return now - rock.stone.minedAt >= recoveryTime * 1000;
 }
 
 type GetMinedAtArgs = {
@@ -62,10 +61,10 @@ const getBoostedTime = ({
   game: GameState;
 }): {
   boostedTime: number;
-  boostsUsed: BoostName[];
+  boostsUsed: { name: BoostName; value: string }[];
 } => {
   let totalSeconds = IRON_RECOVERY_TIME;
-  const boostsUsed: BoostName[] = [];
+  const boostsUsed: { name: BoostName; value: string }[] = [];
 
   const superTotemActive = isTemporaryCollectibleActive({
     name: "Super Totem",
@@ -77,23 +76,25 @@ const getBoostedTime = ({
   });
   if (superTotemActive || timeWarpTotemActive) {
     totalSeconds = totalSeconds * 0.5;
-    if (superTotemActive) boostsUsed.push("Super Totem");
-    else if (timeWarpTotemActive) boostsUsed.push("Time Warp Totem");
+    if (superTotemActive)
+      boostsUsed.push({ name: "Super Totem", value: "x0.5" });
+    else if (timeWarpTotemActive)
+      boostsUsed.push({ name: "Time Warp Totem", value: "x0.5" });
   }
 
   if (isTemporaryCollectibleActive({ name: "Ore Hourglass", game })) {
     totalSeconds = totalSeconds * 0.5;
-    boostsUsed.push("Ore Hourglass");
+    boostsUsed.push({ name: "Ore Hourglass", value: "x0.5" });
   }
 
   if (isTemporaryCollectibleActive({ name: "Mole Shrine", game })) {
     totalSeconds = totalSeconds * 0.75;
-    boostsUsed.push("Mole Shrine");
+    boostsUsed.push({ name: "Mole Shrine", value: "x0.75" });
   }
 
   if (game.bumpkin.skills["Iron Hustle"]) {
     totalSeconds = totalSeconds * 0.7;
-    boostsUsed.push("Iron Hustle");
+    boostsUsed.push({ name: "Iron Hustle", value: "x0.7" });
   }
 
   const buff = IRON_RECOVERY_TIME - totalSeconds;
@@ -106,7 +107,7 @@ const getBoostedTime = ({
  */
 export function getMinedAt({ createdAt, game }: GetMinedAtArgs): {
   time: number;
-  boostsUsed: BoostName[];
+  boostsUsed: { name: BoostName; value: string }[];
 } {
   const { boostedTime, boostsUsed } = getBoostedTime({ game });
 
@@ -120,59 +121,76 @@ export function getIronDropAmount({
   game,
   rock,
   createdAt,
-  criticalDropGenerator = () => false,
+  farmId,
+  counter,
+  itemId,
 }: {
   game: GameState;
   rock: Rock;
   createdAt: number;
-  criticalDropGenerator?: (name: CriticalHitName) => boolean;
-}): { amount: Decimal; aoe: AOE; boostsUsed: BoostName[] } {
+  farmId: number;
+  counter: number;
+  itemId: number;
+}): {
+  amount: Decimal;
+  aoe: AOE;
+  boostsUsed: { name: BoostName; value: string }[];
+} {
   const { aoe } = game;
   const updatedAoe = cloneDeep(aoe);
 
+  const getPrngChance = (chance: number, criticalHitName: CriticalHitName) =>
+    prngChance({
+      farmId,
+      itemId,
+      counter,
+      chance,
+      criticalHitName,
+    });
+
   let amount = 1;
-  const boostsUsed: BoostName[] = [];
+  const boostsUsed: { name: BoostName; value: string }[] = [];
 
   if (isCollectibleBuilt({ name: "Rocky the Mole", game })) {
     amount += 0.25;
-    boostsUsed.push("Rocky the Mole");
+    boostsUsed.push({ name: "Rocky the Mole", value: "+0.25" });
   }
 
   if (isCollectibleBuilt({ name: "Radiant Ray", game })) {
     amount += 0.1;
-    boostsUsed.push("Radiant Ray");
+    boostsUsed.push({ name: "Radiant Ray", value: "+0.1" });
   }
 
   if (isCollectibleBuilt({ name: "Iron Idol", game })) {
     amount += 1;
-    boostsUsed.push("Iron Idol");
+    boostsUsed.push({ name: "Iron Idol", value: "+1" });
   }
 
   if (isCollectibleBuilt({ name: "Iron Beetle", game })) {
     amount += 0.1;
-    boostsUsed.push("Iron Beetle");
+    boostsUsed.push({ name: "Iron Beetle", value: "+0.1" });
   }
 
   if (game.bumpkin.skills["Iron Bumpkin"]) {
     amount += 0.1;
-    boostsUsed.push("Iron Bumpkin");
+    boostsUsed.push({ name: "Iron Bumpkin", value: "+0.1" });
   }
 
   if (game.bumpkin.skills["Rocky Favor"]) {
     amount -= 0.5;
-    boostsUsed.push("Rocky Favor");
+    boostsUsed.push({ name: "Rocky Favor", value: "-0.5" });
   }
 
   if (game.bumpkin.skills["Ferrous Favor"]) {
     amount += 1;
-    boostsUsed.push("Ferrous Favor");
+    boostsUsed.push({ name: "Ferrous Favor", value: "+1" });
   }
 
-  if (criticalDropGenerator("Native")) {
+  if (getPrngChance(20, "Native")) {
     amount += 1;
+    boostsUsed.push({ name: "Native", value: "+1" });
   }
 
-  // If within Emerald Turtle AOE: +0.5
   if (
     isCollectibleOnFarm({ name: "Emerald Turtle", game }) &&
     rock &&
@@ -214,7 +232,7 @@ export function getIronDropAmount({
         setAOELastUsed(updatedAoe, "Emerald Turtle", { dx, dy }, createdAt);
         amount += 0.5;
       }
-      boostsUsed.push("Emerald Turtle");
+      boostsUsed.push({ name: "Emerald Turtle", value: "+0.5" });
     }
   }
 
@@ -228,15 +246,20 @@ export function getIronDropAmount({
     })
   ) {
     amount += 0.25;
-    boostsUsed.push(FACTION_ITEMS[factionName].secondaryTool);
+    boostsUsed.push({
+      name: FACTION_ITEMS[factionName].secondaryTool,
+      value: "+0.25",
+    });
   }
 
   const { yieldBoost, budUsed } = getBudYieldBoosts(game.buds ?? {}, "Iron");
   amount += yieldBoost;
-  if (budUsed) boostsUsed.push(budUsed);
+  if (budUsed)
+    boostsUsed.push({ name: budUsed, value: `+${yieldBoost.toString()}` });
 
   if (game.island.type === "volcano") {
     amount += 0.1;
+    boostsUsed.push({ name: "Volcano Bonus", value: "+0.1" });
   }
 
   const multiplier = rock.multiplier ?? 1;
@@ -244,10 +267,12 @@ export function getIronDropAmount({
 
   if (rock.tier === 2) {
     amount += 0.5;
+    boostsUsed.push({ name: "Tier 2 Bonus", value: "+0.5" });
   }
 
   if (rock.tier === 3) {
     amount += 2.5;
+    boostsUsed.push({ name: "Tier 3 Bonus", value: "+2.5" });
   }
 
   return {
@@ -260,35 +285,40 @@ export function getIronDropAmount({
 export function mineIron({
   state,
   action,
-  createdAt = Date.now(),
+  createdAt,
+  farmId,
 }: Options): GameState {
   return produce(state, (stateCopy) => {
     const { iron, bumpkin } = stateCopy;
 
     if (!bumpkin) {
-      throw new Error(MINE_ERRORS.NO_BUMPKIN);
+      throw new Error("You do not have a Bumpkin");
     }
 
     const ironRock = iron[action.index];
 
     if (!ironRock) {
-      throw new Error(MINE_ERRORS.NO_IRON);
+      throw new Error("No iron");
     }
 
     if (ironRock.x === undefined && ironRock.y === undefined) {
       throw new Error("Iron rock is not placed");
     }
 
-    if (!canMine(ironRock, ironRock.name ?? "Iron Rock", createdAt)) {
-      throw new Error(MINE_ERRORS.STILL_RECOVERING);
+    if (!canMine(ironRock, createdAt)) {
+      throw new Error("Iron is still recovering");
     }
 
     const toolAmount = stateCopy.inventory["Stone Pickaxe"] || new Decimal(0);
     const requiredToolAmount = ironRock.multiplier ?? 1;
 
     if (toolAmount.lessThan(requiredToolAmount)) {
-      throw new Error(MINE_ERRORS.NO_PICKAXES);
+      throw new Error("No pickaxes left");
     }
+
+    const ironName: RockName = ironRock.name ?? "Iron Rock";
+    const counter = stateCopy.farmActivity[`${ironName} Mined`] ?? 0;
+    const itemId = KNOWN_IDS[ironName];
 
     const {
       amount: ironMined,
@@ -304,8 +334,9 @@ export function mineIron({
           game: stateCopy,
           rock: ironRock,
           createdAt,
-          criticalDropGenerator: (name) =>
-            !!(ironRock.stone.criticalHit?.[name] ?? 0),
+          farmId,
+          counter,
+          itemId,
         });
 
     stateCopy.aoe = aoe;
@@ -316,19 +347,25 @@ export function mineIron({
       createdAt,
       game: stateCopy,
     });
+
     const { boostedTime, boostsUsed: boostedTimeBoostsUsed } = getBoostedTime({
       game: stateCopy,
     });
 
     ironRock.stone = {
       minedAt: time,
-      boostedTime: boostedTime,
+      boostedTime,
     };
 
-    bumpkin.activity = trackActivity(
+    stateCopy.farmActivity = trackFarmActivity(
       "Iron Mined",
-      bumpkin.activity,
+      stateCopy.farmActivity,
       new Decimal(ironRock.multiplier ?? 1),
+    );
+
+    stateCopy.farmActivity = trackFarmActivity(
+      `${ironName} Mined`,
+      stateCopy.farmActivity,
     );
 
     stateCopy.inventory["Stone Pickaxe"] = toolAmount.sub(requiredToolAmount);
@@ -344,6 +381,7 @@ export function mineIron({
       createdAt,
     });
     delete ironRock.stone.amount;
+    delete ironRock.stone.criticalHit;
 
     return stateCopy;
   });

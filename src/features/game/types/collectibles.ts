@@ -1,11 +1,11 @@
 import Decimal from "decimal.js-light";
 import { Inventory, Keys } from "./game";
 import { translate } from "lib/i18n/translate";
-import { SEASONS } from "./seasons";
+import { CHAPTERS } from "./chapters";
 import { ExoticCropName } from "./beans";
 
-export type PlaceableLocation = "farm" | "home";
-export const PLACEABLE_LOCATIONS: PlaceableLocation[] = ["farm", "home"];
+export const PLACEABLE_LOCATIONS = ["farm", "home", "petHouse"] as const;
+export type PlaceableLocation = (typeof PLACEABLE_LOCATIONS)[number];
 
 export type SeasonPassName =
   | "Dawn Breaker Banner"
@@ -118,7 +118,22 @@ export type SoldOutCollectibleName =
   | "Grain Grinder"
   | "Skill Shrimpy"
   | "Soil Krabby"
-  | "Nana";
+  | "Nana"
+  // Crabs and Traps
+  | "Speckled Kissing Fish"
+  | "Dark Eyed Kissing Fish"
+  | "Fisherman's Boat"
+  | "Sea Arch"
+  | "Crabs and Fish Rug"
+  | "Fish Flags"
+  | "Fish Drying Rack"
+  | "Yellow Submarine Trophy"
+  | "Oaken"
+  | "Meerkat"
+  | "Pearl Bed"
+  | "Crimstone Clam"
+  | "Poseidon's Throne"
+  | "Fish Kite";
 
 export type MegaStoreCollectibleName =
   | "Flower Cart"
@@ -379,24 +394,24 @@ export const TREASURE_COLLECTIBLE_ITEM: Record<
       Scarab: new Decimal(40),
     },
     description: translate("description.sunlit.citadel"),
-    from: SEASONS["Pharaoh's Treasure"].startDate,
-    to: SEASONS["Pharaoh's Treasure"].endDate,
+    from: CHAPTERS["Pharaoh's Treasure"].startDate,
+    to: CHAPTERS["Pharaoh's Treasure"].endDate,
   },
   "Baobab Tree": {
     ingredients: {
       Scarab: new Decimal(35),
     },
     description: translate("description.baobab.tree"),
-    from: SEASONS["Pharaoh's Treasure"].startDate,
-    to: SEASONS["Pharaoh's Treasure"].endDate,
+    from: CHAPTERS["Pharaoh's Treasure"].startDate,
+    to: CHAPTERS["Pharaoh's Treasure"].endDate,
   },
   Camel: {
     ingredients: {
       Scarab: new Decimal(200),
     },
     description: translate("description.camel"),
-    from: SEASONS["Pharaoh's Treasure"].startDate,
-    to: SEASONS["Pharaoh's Treasure"].endDate,
+    from: CHAPTERS["Pharaoh's Treasure"].startDate,
+    to: CHAPTERS["Pharaoh's Treasure"].endDate,
   },
   ...ARTEFACT_SHOP_KEYS,
 };

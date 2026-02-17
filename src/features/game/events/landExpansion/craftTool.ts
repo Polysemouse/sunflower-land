@@ -7,13 +7,14 @@ import {
   WORKBENCH_TOOLS,
   LOVE_ANIMAL_TOOLS,
 } from "features/game/types/tools";
-import { trackActivity } from "features/game/types/bumpkinActivity";
+import { trackFarmActivity } from "features/game/types/farmActivity";
 import cloneDeep from "lodash.clonedeep";
 
 import { GameState, IslandType } from "../../types/game";
 import { hasRequiredIslandExpansion } from "features/game/lib/hasRequiredIslandExpansion";
 import { getWeatherShop, WeatherShopItem } from "features/game/types/calendar";
 import { getObjectEntries } from "features/game/expansion/lib/utils";
+import { getBumpkinLevel } from "features/game/lib/level";
 
 type CraftableToolName = WorkbenchToolName | TreasureToolName | WeatherShopItem;
 
@@ -93,11 +94,13 @@ export function craftTool({ state, action }: Options) {
     throw new Error("Tool does not exist");
   }
 
-  if (tool.disabled) {
+  const { disabled, requiredIsland, requiredLevel, ingredients } = tool;
+
+  if (disabled) {
     throw new Error("Tool is disabled");
   }
 
-  if (!hasRequiredIslandExpansion(stateCopy.island.type, tool.requiredIsland)) {
+  if (!hasRequiredIslandExpansion(stateCopy.island.type, requiredIsland)) {
     throw new Error("You do not have the required island expansion");
   }
 
@@ -114,7 +117,11 @@ export function craftTool({ state, action }: Options) {
     throw new Error("Insufficient Coins");
   }
 
-  const toolIngredients = tool.ingredients(bumpkin.skills);
+  if (requiredLevel && getBumpkinLevel(bumpkin.experience) < requiredLevel) {
+    throw new Error("You do not have the required level");
+  }
+
+  const toolIngredients = ingredients(bumpkin.skills);
 
   const subtractedInventory = getObjectEntries(toolIngredients).reduce(
     (inventory, [ingredientName, ingredientAmount]) => {
@@ -134,16 +141,16 @@ export function craftTool({ state, action }: Options) {
 
   const oldAmount = stateCopy.inventory[action.tool] || new Decimal(0);
 
-  bumpkin.activity = trackActivity(
+  stateCopy.farmActivity = trackFarmActivity(
     `${action.tool} Crafted`,
-    bumpkin.activity,
+    stateCopy.farmActivity,
     new Decimal(amount),
   );
 
   stateCopy.coins = stateCopy.coins - price;
-  bumpkin.activity = trackActivity(
+  stateCopy.farmActivity = trackFarmActivity(
     "Coins Spent",
-    bumpkin.activity,
+    stateCopy.farmActivity,
     new Decimal(price),
   );
 
@@ -151,7 +158,11 @@ export function craftTool({ state, action }: Options) {
     ...subtractedInventory,
     [action.tool]: oldAmount.add(amount) as Decimal,
   };
-  stateCopy.stock[action.tool] = stateCopy.stock[action.tool]?.minus(amount);
+
+  const stock = stateCopy.stock[action.tool];
+  if (stock !== undefined) {
+    stateCopy.stock[action.tool] = stock.minus(amount);
+  }
 
   return stateCopy;
 }

@@ -2,12 +2,11 @@
 import React, { useContext, useEffect, useRef, useState } from "react";
 import { Game, AUTO } from "phaser";
 import { useSelector } from "@xstate/react";
-import NinePatchPlugin from "phaser3-rex-plugins/plugins/ninepatch-plugin.js";
+import NinePatch2Plugin from "phaser3-rex-plugins/plugins/ninepatch2-plugin.js";
 import VirtualJoystickPlugin from "phaser3-rex-plugins/plugins/virtualjoystick-plugin.js";
 import { PhaserNavMeshPlugin } from "phaser-navmesh";
 
 import * as AuthProvider from "features/auth/lib/Provider";
-import { Message } from "features/pumpkinPlaza/components/ChatUI";
 
 import { Kicked } from "./ui/moderationTools/components/Kicked";
 import {
@@ -65,8 +64,10 @@ import { WorldHud } from "features/island/hud/WorldHud";
 import { PlayerModal } from "features/social/PlayerModal";
 import { MachineState as GameMachineState } from "features/game/lib/gameMachine";
 import { RewardModal } from "features/social/RewardModal";
+import { WaveModal } from "features/social/WaveModal";
 import { Discovery } from "features/social/Discovery";
 import { SPAWNS } from "./lib/spawn";
+import { PlayerInteractionMenu } from "./ui/player/PlayerInteractionMenu";
 
 const _roomState = (state: MachineState) => state.value;
 const _scene = (state: MachineState) => state.context.sceneId;
@@ -84,6 +85,15 @@ type Player = {
   moderation?: Moderation;
   experience: number;
   sceneId: SceneId;
+};
+
+export type Message = {
+  farmId: number;
+  username: string;
+  sessionId: string;
+  text: string;
+  sceneId: SceneId;
+  sentAt: number;
 };
 
 export type ModerationEvent = {
@@ -166,7 +176,7 @@ export const PhaserComponent: React.FC<Props> = ({ mmoService, route }) => {
       pixelArt: true,
       plugins: {
         global: [
-          { key: "rexNinePatchPlugin", plugin: NinePatchPlugin, start: true },
+          { key: "rexNinePatch2Plugin", plugin: NinePatch2Plugin, start: true },
           {
             key: "rexVirtualJoystick",
             plugin: VirtualJoystickPlugin,
@@ -226,6 +236,13 @@ export const PhaserComponent: React.FC<Props> = ({ mmoService, route }) => {
       gameService.off(listener);
     };
   }, []);
+
+  // Keep game state in sync with React state (e.g. after completing a delivery)
+  useEffect(() => {
+    if (!game.current) return;
+    game.current.registry.set("gameState", state);
+    game.current.events.emit("gameStateUpdated");
+  }, [state]);
 
   // When server changes, update game registry
   useEffect(() => {
@@ -454,6 +471,7 @@ export const PhaserComponent: React.FC<Props> = ({ mmoService, route }) => {
         )}
 
         <CommunityToasts />
+        <PlayerInteractionMenu />
 
         {mmoState === "connecting" && (
           <Label
@@ -500,6 +518,7 @@ export const PhaserComponent: React.FC<Props> = ({ mmoService, route }) => {
       />
       <Discovery />
       <RewardModal />
+      <WaveModal />
       <CommunityModals />
       <InteractableModals id={loggedInFarmId} scene={scene} key={scene} />
       <Modal

@@ -34,8 +34,9 @@ import {
   NPC_DELIVERY_LEVELS,
   DeliveryNpcName,
 } from "features/island/delivery/lib/delivery";
-import { getSeasonalTicket } from "features/game/types/seasons";
+import { getChapterTicket } from "features/game/types/chapters";
 import { useAppTranslation } from "lib/i18n/useAppTranslations";
+import { useNow } from "lib/utils/hooks/useNow";
 import {
   BUMPKIN_FLOWER_BONUSES,
   DEFAULT_FLOWER_POINTS,
@@ -57,6 +58,8 @@ import { RequiredReputation } from "features/island/hud/components/reputation/Re
 import { hasReputation, Reputation } from "features/game/lib/reputation";
 import { MachineState } from "features/game/lib/gameMachine";
 import { getCountAndType } from "features/island/hud/components/inventory/utils/inventory";
+import { getChapterTaskPoints } from "features/game/types/tracks";
+import chapterPoints from "assets/icons/red_medal_short.webp";
 
 export const OrderCard: React.FC<{
   order: Order;
@@ -65,6 +68,7 @@ export const OrderCard: React.FC<{
   hasRequirementsCheck: (order: Order) => boolean;
 }> = ({ order, game, hasRequirementsCheck }) => {
   const { balance, coins } = game;
+  const now = useNow();
 
   const makeRewardAmountForLabel = (order: Order) => {
     if (order.reward.sfl !== undefined) {
@@ -83,7 +87,7 @@ export const OrderCard: React.FC<{
   const canDeliver = hasRequirementsCheck(order);
   const { t } = useAppTranslation();
 
-  const tickets = generateDeliveryTickets({ game, npc: order.from });
+  const tickets = generateDeliveryTickets({ game, npc: order.from, now });
 
   return (
     <>
@@ -136,44 +140,51 @@ export const OrderCard: React.FC<{
                 <SquareIcon icon={chest} width={7} />
                 <span className="text-xs ml-1">{t("reward")}</span>
               </div>
-              <Label type="warning" style={{ height: "25px" }}>
-                {order.reward.sfl !== undefined && (
-                  <div className="flex items-center mr-1">
-                    <span className="text-xs">
-                      {makeRewardAmountForLabel(order)}
-                    </span>
-                    <img src={token} className="h-4 w-auto ml-1" />
-                  </div>
-                )}
-                {order.reward.coins !== undefined && (
-                  <div className="flex items-center mr-1">
-                    <span className="text-xs">
-                      {makeRewardAmountForLabel(order)}
-                    </span>
-                    <img src={coinsImg} className="h-4 w-auto ml-1" />
-                  </div>
-                )}
-                {!!tickets && (
-                  <div className="flex items-center space-x-3 mr-1">
-                    <div className="flex items-center">
-                      <span className="text-xs mx-1">{tickets}</span>
+              <div className="flex items-center flex-wrap">
+                <Label type="warning" style={{ height: "25px" }}>
+                  {order.reward.sfl !== undefined && (
+                    <div className="flex items-center mr-1">
+                      <span className="text-xs">
+                        {makeRewardAmountForLabel(order)}
+                      </span>
+                      <img src={token} className="h-4 w-auto ml-1" />
+                    </div>
+                  )}
+                  {order.reward.coins !== undefined && (
+                    <div className="flex items-center mr-1">
+                      <span className="text-xs">
+                        {makeRewardAmountForLabel(order)}
+                      </span>
+                      <img src={coinsImg} className="h-4 w-auto ml-1" />
+                    </div>
+                  )}
+                  {!!tickets && (
+                    <div className="flex items-center space-x-3 mr-1">
+                      <div className="flex items-center">
+                        <span className="text-xs mx-1">{tickets}</span>
+                        <img
+                          src={ITEM_DETAILS[getChapterTicket(now)].image}
+                          className="h-4 w-auto"
+                        />
+                      </div>
+                    </div>
+                  )}
+                  {getKeys(order.reward.items ?? {}).map((item) => (
+                    <div className="flex items-center" key={item}>
+                      <span className="text-xs">{item}</span>
                       <img
-                        src={ITEM_DETAILS[getSeasonalTicket()].image}
-                        className="h-4 w-auto"
+                        src={ITEM_DETAILS[item].image}
+                        className="h-4 w-auto ml-1"
                       />
                     </div>
-                  </div>
+                  ))}
+                </Label>
+                {!!tickets && (
+                  <Label type={"vibrant"} icon={chapterPoints} className="ml-2">
+                    {`${getChapterTaskPoints({ task: "delivery", tickets: tickets })}`}
+                  </Label>
                 )}
-                {getKeys(order.reward.items ?? {}).map((item) => (
-                  <div className="flex items-center" key={item}>
-                    <span className="text-xs">{item}</span>
-                    <img
-                      src={ITEM_DETAILS[item].image}
-                      className="h-4 w-auto ml-1"
-                    />
-                  </div>
-                ))}
-              </Label>
+              </div>
             </div>
           </div>
         </div>
@@ -640,15 +651,18 @@ export const BumpkinDelivery: React.FC<Props> = ({ onClose, npc }) => {
   const { gameService } = useContext(Context);
   const [gameState] = useActor(gameService);
 
+  const now = useNow({ live: true, intervalMs: 60_000 });
+
   const game = gameState.context.state;
   const [showFlowers, setShowFlowers] = useState(false);
   const [gift, setGift] = useState<Airdrop>();
 
   const delivery = game.delivery.orders.find((order) => order.from === npc);
 
-  const { holiday } = getBumpkinHoliday({});
+  const { holiday } = getBumpkinHoliday({ now });
 
-  const isHoliday = holiday === new Date().toISOString().split("T")[0];
+  const today = new Date(now).toISOString().split("T")[0];
+  const isHoliday = holiday === today;
 
   const deliver = () => {
     gameService.send("order.delivered", {
@@ -695,9 +709,9 @@ export const BumpkinDelivery: React.FC<Props> = ({ onClose, npc }) => {
   const positive = useRandomItem(dialogue.positiveDelivery);
   const noOrder = useRandomItem(dialogue.noOrder);
 
-  const tickets = generateDeliveryTickets({ game, npc });
+  const tickets = generateDeliveryTickets({ game, npc, now });
 
-  const dateKey = new Date().toISOString().substring(0, 10);
+  const dateKey = new Date(now).toISOString().substring(0, 10);
 
   let message = intro;
 

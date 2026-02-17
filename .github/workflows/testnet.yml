@@ -25,7 +25,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "22"
 
       - name: Install Dependencies
         run: yarn install
@@ -86,6 +86,7 @@ jobs:
           VITE_WITHDRAW_PET_CONTRACT: "0x787B11842F600495606D4d3F4Df911Df9eecD1e5"
           VITE_DEPOSIT_V2_CONTRACT: "0x180f96d2FF1Be8C49eA10815216873606C3054D0"
           VITE_PET_CONTRACT: "0x03049Ccb68858d5Be158a137BD1e390A6DF63f0A"
+          VITE_META_PIXEL_ID: "3391375114350678"
 
           VITE_ALCHEMY_RPC: ${{ secrets.ALCHEMY_RPC }}
           VITE_ALCHEMY_KEY: ${{ secrets.ALCHEMY_KEY }}
@@ -100,6 +101,15 @@ jobs:
           VITE_FIREBASE_VAPID_KEY: ${{ secrets.FIREBASE_VAPID_KEY }}
           VITE_TELEGRAM_BOT: "sunflower_land_testnet_bot"
           VITE_TWITTER_CLIENT_ID: ${{ secrets.TWITTER_CLIENT_ID }}
+
+      - name: Write version metadata
+        run: |
+          cat <<EOF > dist/version.json
+          {
+            "releaseVersion": "${{ steps.get_version.outputs.VERSION }}",
+            "clientVersion": "${{ steps.date.outputs.date }}"
+          }
+          EOF
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:

@@ -51,7 +51,6 @@ describe("completeNPCChore", () => {
       ...TEST_FARM,
       bumpkin: {
         ...INITIAL_BUMPKIN,
-        activity: {},
       },
       choreBoard: {
         chores: {
@@ -71,10 +70,7 @@ describe("completeNPCChore", () => {
   it("completes the chore when requirements are met", () => {
     const state: GameState = {
       ...TEST_FARM,
-      bumpkin: {
-        ...INITIAL_BUMPKIN,
-        activity: { "Tree Chopped": 1 },
-      },
+      farmActivity: { "Tree Chopped": 1 },
       choreBoard: {
         chores: {
           "pumpkin' pete": CHORE,
@@ -95,10 +91,7 @@ describe("completeNPCChore", () => {
   it("completes the chore when requirements are met with initial progress", () => {
     const state: GameState = {
       ...TEST_FARM,
-      bumpkin: {
-        ...INITIAL_BUMPKIN,
-        activity: { "Tree Chopped": 2 },
-      },
+      farmActivity: { "Tree Chopped": 2 },
       choreBoard: {
         chores: {
           "pumpkin' pete": { ...CHORE, initialProgress: 1 },
@@ -119,10 +112,7 @@ describe("completeNPCChore", () => {
   it("provides rewards when completing the chore", () => {
     const state: GameState = {
       ...TEST_FARM,
-      bumpkin: {
-        ...INITIAL_BUMPKIN,
-        activity: { "Tree Chopped": 1 },
-      },
+      farmActivity: { "Tree Chopped": 1 },
       choreBoard: {
         chores: {
           "pumpkin' pete": CHORE,
@@ -141,10 +131,7 @@ describe("completeNPCChore", () => {
   it("increases NPC friendship points when completing the chore", () => {
     const state: GameState = {
       ...TEST_FARM,
-      bumpkin: {
-        ...INITIAL_BUMPKIN,
-        activity: { "Tree Chopped": 1 },
-      },
+      farmActivity: { "Tree Chopped": 1 },
       choreBoard: {
         chores: {
           "pumpkin' pete": CHORE,
@@ -163,10 +150,7 @@ describe("completeNPCChore", () => {
   it("provides normal ticket rewards", () => {
     const state: GameState = {
       ...TEST_FARM,
-      bumpkin: {
-        ...INITIAL_BUMPKIN,
-        activity: { "Tree Chopped": 1 },
-      },
+      farmActivity: { "Tree Chopped": 1 },
       choreBoard: {
         chores: {
           "pumpkin' pete": {
@@ -189,10 +173,7 @@ describe("completeNPCChore", () => {
   it("provides VIP ticket rewards", () => {
     const state: GameState = {
       ...TEST_FARM,
-      bumpkin: {
-        ...INITIAL_BUMPKIN,
-        activity: { "Tree Chopped": 1 },
-      },
+      farmActivity: { "Tree Chopped": 1 },
       inventory: {
         "Lifetime Farmer Banner": new Decimal(1),
       },
@@ -223,12 +204,12 @@ describe("completeNPCChore", () => {
       ...TEST_FARM,
       bumpkin: {
         ...INITIAL_BUMPKIN,
-        activity: { "Tree Chopped": 1 },
         equipped: {
           ...INITIAL_BUMPKIN.equipped,
           hat: "Cowboy Hat",
         },
       },
+      farmActivity: { "Tree Chopped": 1 },
       inventory: {},
       choreBoard: {
         chores: {
@@ -249,6 +230,36 @@ describe("completeNPCChore", () => {
     expect(newState.inventory["Horseshoe"]).toEqual(new Decimal(2));
   });
 
+  it("provides +1 ticket rewards for Fish Hook Hat at Crabs and Traps", () => {
+    const state: GameState = {
+      ...TEST_FARM,
+      farmActivity: { "Tree Chopped": 1 },
+      bumpkin: {
+        ...INITIAL_BUMPKIN,
+        equipped: {
+          ...INITIAL_BUMPKIN.equipped,
+          hat: "Fish Hook Hat",
+        },
+      },
+      choreBoard: {
+        chores: {
+          "pumpkin' pete": {
+            ...CHORE,
+            reward: { items: { Floater: 1 } },
+          },
+        },
+      },
+    };
+
+    const newState = completeNPCChore({
+      state,
+      action: { type: "chore.fulfilled", npcName: "pumpkin' pete" },
+      createdAt: new Date("2026-02-10").getTime(),
+    });
+
+    expect(newState.inventory.Floater).toEqual(new Decimal(2));
+  });
+
   it("provides +1 ticket rewards for Cowboy Shirt at Bull Run Season", () => {
     const mockDate = new Date(2024, 11, 11);
     jest.useFakeTimers();
@@ -257,12 +268,12 @@ describe("completeNPCChore", () => {
       ...TEST_FARM,
       bumpkin: {
         ...INITIAL_BUMPKIN,
-        activity: { "Tree Chopped": 1 },
         equipped: {
           ...INITIAL_BUMPKIN.equipped,
           shirt: "Cowboy Shirt",
         },
       },
+      farmActivity: { "Tree Chopped": 1 },
       inventory: {},
       choreBoard: {
         chores: {
@@ -291,12 +302,12 @@ describe("completeNPCChore", () => {
       ...TEST_FARM,
       bumpkin: {
         ...INITIAL_BUMPKIN,
-        activity: { "Tree Chopped": 1 },
         equipped: {
           ...INITIAL_BUMPKIN.equipped,
           pants: "Cowboy Trouser",
         },
       },
+      farmActivity: { "Tree Chopped": 1 },
       inventory: {},
       choreBoard: {
         chores: {
@@ -325,7 +336,6 @@ describe("completeNPCChore", () => {
       ...TEST_FARM,
       bumpkin: {
         ...INITIAL_BUMPKIN,
-        activity: { "Tree Chopped": 1 },
         equipped: {
           ...INITIAL_BUMPKIN.equipped,
           hat: "Cowboy Hat",
@@ -333,6 +343,7 @@ describe("completeNPCChore", () => {
           pants: "Cowboy Trouser",
         },
       },
+      farmActivity: { "Tree Chopped": 1 },
       inventory: {},
       choreBoard: {
         chores: {
@@ -361,12 +372,12 @@ describe("completeNPCChore", () => {
       ...TEST_FARM,
       bumpkin: {
         ...INITIAL_BUMPKIN,
-        activity: { "Tree Chopped": 1 },
         equipped: {
           ...INITIAL_BUMPKIN.equipped,
           pants: "Cowboy Trouser",
         },
       },
+      farmActivity: { "Tree Chopped": 1 },
       inventory: {},
       choreBoard: {
         chores: {
@@ -395,12 +406,12 @@ describe("completeNPCChore", () => {
       ...TEST_FARM,
       bumpkin: {
         ...INITIAL_BUMPKIN,
-        activity: { "Tree Chopped": 1 },
         equipped: {
           ...INITIAL_BUMPKIN.equipped,
           hat: "Acorn Hat",
         },
       },
+      farmActivity: { "Tree Chopped": 1 },
       inventory: {},
       choreBoard: {
         chores: {
@@ -428,12 +439,12 @@ describe("completeNPCChore", () => {
       ...TEST_FARM,
       bumpkin: {
         ...INITIAL_BUMPKIN,
-        activity: { "Tree Chopped": 1 },
         equipped: {
           ...INITIAL_BUMPKIN.equipped,
           hat: "Acorn Hat",
         },
       },
+      farmActivity: { "Tree Chopped": 1 },
       inventory: {},
       collectibles: {
         Igloo: [

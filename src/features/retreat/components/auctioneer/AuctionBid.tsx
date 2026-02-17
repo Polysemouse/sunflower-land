@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 
 import { ITEM_DETAILS } from "features/game/types/images";
 import token from "assets/icons/flower_token.webp";
@@ -13,6 +13,7 @@ import { useCountdown } from "lib/utils/hooks/useCountdown";
 import { useAppTranslation } from "lib/i18n/useAppTranslations";
 import { SUNNYSIDE } from "assets/sunnyside";
 import { getAuctionItemImage } from "./lib/getAuctionItemDisplay";
+import { useNow } from "lib/utils/hooks/useNow";
 
 const AUCTION_BUFFER_SECONDS = 30;
 
@@ -28,10 +29,11 @@ export const AuctionBid: React.FC<Props> = ({
 }) => {
   const readyAt = auction.endAt + AUCTION_BUFFER_SECONDS * 1000;
   const ready = useCountdown(readyAt);
+  const [cancelConfirm, setCancelConfirm] = useState(false);
   const image = getAuctionItemImage(auction);
-  const now = Date.now();
+  const now = useNow({ live: true, autoEndAt: readyAt });
   const canCancel = now < auction.endAt;
-  const canReveal = readyAt <= now;
+  const canReveal = now >= readyAt;
 
   const { t } = useAppTranslation();
 
@@ -72,13 +74,22 @@ export const AuctionBid: React.FC<Props> = ({
       <TimerDisplay time={ready} />
 
       {canCancel && (
-        <Button
-          className="mt-2"
-          disabled={!canCancel}
-          onClick={() => auctionService.send("CANCEL")}
-        >
-          {t("cancel")}
-        </Button>
+        <div className="flex flex-row items-center w-full gap-1 mt-2">
+          {cancelConfirm && (
+            <Button onClick={() => setCancelConfirm(false)}>
+              {t("auction.doNotCancel")}
+            </Button>
+          )}
+          <Button
+            onClick={() =>
+              cancelConfirm
+                ? auctionService.send("CANCEL")
+                : setCancelConfirm(true)
+            }
+          >
+            {t("auction.cancelBid")}
+          </Button>
+        </div>
       )}
 
       {canReveal && (

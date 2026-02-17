@@ -80,14 +80,6 @@ export const BoundaryError: React.FC<BoundaryErrorProps> = ({
     );
   }
 
-  const handleGetSupport = () => {
-    window.open(
-      "https://sunflower-land.help/",
-      "_blank",
-      "noopener,noreferrer",
-    );
-  };
-
   const handleAskOnDiscord = () => {
     window.open(
       "https://discord.gg/sunflowerland",
@@ -149,16 +141,54 @@ export const BoundaryError: React.FC<BoundaryErrorProps> = ({
           </p>
         </div>
       </div>
-      <div className="flex flex-col space-y-0.5 space-x-0 sm:flex-row sm:space-x-1 sm:space-y-0">
-        <Button onClick={handleGetSupport}>{t("error.contactSupport")}</Button>
-        <Button onClick={handleAskOnDiscord}>{t("error.askOnDiscord")}</Button>
-      </div>
+      <Button onClick={handleAskOnDiscord}>{t("error.askOnDiscord")}</Button>
     </div>
   ) : (
     <>
       <div className="p-2 py-1 space-y-2 mb-2">
         <h1 className="mb-1 text-base text-center">{t("error.wentWrong")}</h1>
         <p>{t("error.connection.one")}</p>
+
+        <div className="flex flex-col w-full mb-2 text-xs overflow-hidden space-y-1 ">
+          {farmId && (
+            <p className="select-all">
+              {t("farm")}
+              {": "}
+              {farmId}
+            </p>
+          )}
+          {error && (
+            <p className="select-all">
+              {t("error")}
+              {": "}
+              {error}
+            </p>
+          )}
+          <p className="select-all">
+            {t("date")}
+            {": "}
+            {date}
+          </p>
+          {transactionId && (
+            <p>
+              <span className="select-all">
+                {t("transaction.id")} {transactionId}
+              </span>
+            </p>
+          )}
+          {tsFileName && (
+            <p>
+              {t("error.file")}
+              {": "}
+              {tsFileName}
+            </p>
+          )}
+          <p>
+            {t("version")}
+            {": "}
+            {CONFIG.RELEASE_VERSION}
+          </p>
+        </div>
         <p
           onClick={() => setShowGetHelp(true)}
           className="underline text-xs cursor-pointer"

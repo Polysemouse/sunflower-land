@@ -21,7 +21,7 @@ import {
   makeAnimalBuildingKey,
 } from "features/game/lib/animals";
 import { isCollectibleBuilt } from "features/game/lib/collectibleBuilt";
-import { trackActivity } from "features/game/types/bumpkinActivity";
+import { trackFarmActivity } from "features/game/types/farmActivity";
 import { getKeys } from "features/game/types/decorations";
 import { isWearableActive } from "features/game/lib/wearables";
 import { updateBoostUsed } from "features/game/types/updateBoostUsed";
@@ -133,10 +133,7 @@ const handleFreeFeeding = ({
 
   animal.state = isReady ? "ready" : "happy";
 
-  copy.bumpkin.activity = trackActivity(
-    `${animalType} Fed`,
-    copy.bumpkin.activity,
-  );
+  copy.farmActivity = trackFarmActivity(`${animalType} Fed`, copy.farmActivity);
 
   return copy;
 };
@@ -163,21 +160,21 @@ export function handleFoodXP({
 
 export function getBarnDelightCost({ state }: { state: GameState }): {
   amount: number;
-  boostsUsed: BoostName[];
+  boostsUsed: { name: BoostName; value: string }[];
 } {
   let amount = 1;
-  const boostsUsed: BoostName[] = [];
+  const boostsUsed: { name: BoostName; value: string }[] = [];
 
   if (isWearableActive({ name: "Oracle Syringe", game: state })) {
     amount = 0;
-    boostsUsed.push("Oracle Syringe");
+    boostsUsed.push({ name: "Oracle Syringe", value: "Free" });
     // Early return to avoid other boosts
     return { amount, boostsUsed };
   }
 
   if (isWearableActive({ name: "Medic Apron", game: state })) {
     amount /= 2;
-    boostsUsed.push("Medic Apron");
+    boostsUsed.push({ name: "Medic Apron", value: "x0.5" });
   }
 
   return { amount, boostsUsed };
@@ -198,7 +195,7 @@ export function feedAnimal({
 
     const buildingKey = makeAnimalBuildingKey(buildingRequired);
     const animal = copy[buildingKey].animals[action.id];
-    const boostsUsed: BoostName[] = [];
+    const boostsUsed: { name: BoostName; value: string }[] = [];
 
     if (!animal) {
       throw new Error(
@@ -230,9 +227,9 @@ export function feedAnimal({
       copy.inventory["Barn Delight"] = barnDelightAmount.sub(barnDelightCost);
       animal.state = "idle";
 
-      copy.bumpkin.activity = trackActivity(
+      copy.farmActivity = trackFarmActivity(
         `${action.animal} Cured`,
-        copy.bumpkin.activity,
+        copy.farmActivity,
       );
 
       copy.boostsUsedAt = updateBoostUsed({
@@ -270,7 +267,7 @@ export function feedAnimal({
 
     // Handle Golden Egg Free Food
     if (action.animal === "Chicken" && hasGoldenEggPlaced) {
-      boostsUsed.push("Gold Egg");
+      boostsUsed.push({ name: "Gold Egg", value: "Free" });
       return handleFreeFeeding({
         animal,
         animalType: action.animal,
@@ -281,7 +278,7 @@ export function feedAnimal({
 
     // Handle Golden Cow Free Food
     if (action.animal === "Cow" && hasGoldenCowPlaced) {
-      boostsUsed.push("Golden Cow");
+      boostsUsed.push({ name: "Golden Cow", value: "Free" });
       return handleFreeFeeding({
         animal,
         animalType: action.animal,
@@ -292,7 +289,7 @@ export function feedAnimal({
 
     // Handle Golden Sheep Free Food
     if (action.animal === "Sheep" && hasGoldenSheepPlaced) {
-      boostsUsed.push("Golden Sheep");
+      boostsUsed.push({ name: "Golden Sheep", value: "Free" });
       return handleFreeFeeding({
         animal,
         animalType: action.animal,
@@ -347,9 +344,9 @@ export function feedAnimal({
       animal.state = "ready";
     }
 
-    copy.bumpkin.activity = trackActivity(
+    copy.farmActivity = trackFarmActivity(
       `${action.animal} Fed`,
-      copy.bumpkin.activity,
+      copy.farmActivity,
     );
 
     copy.boostsUsedAt = updateBoostUsed({

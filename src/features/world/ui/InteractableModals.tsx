@@ -15,7 +15,6 @@ import { Raffle } from "./chests/Raffle";
 import { FanArt } from "./FanArt";
 import { BankModal } from "features/game/components/bank/components/BankModal";
 import { GarbageCollectorModal } from "features/helios/components/garbageCollector/components/GarbageCollectorModal";
-import { WishingWellModal } from "features/game/components/bank/components/WishingWellModal";
 import { GoblinMarket } from "./market/GoblinMarket";
 import { VIPGift } from "./VIPGift";
 import { ChickenRescue } from "./portals/ChickenRescue";
@@ -33,7 +32,7 @@ import { DesertNoticeboard } from "./beach/DesertNoticeboard";
 import { PirateChestModal } from "./chests/PirateChest";
 import { ExampleDonations } from "./donations/ExampleDonations";
 import { WorldMap } from "features/island/hud/components/deliveries/WorldMap";
-import { Halloween } from "./portals/Halloween";
+import { HolidayPuzzles2025 } from "./portals/HolidayPuzzles2025";
 import { WeatherShop } from "features/game/expansion/components/temperateSeason/WeatherShop";
 import { PortalChooser } from "./portals/PortalChooser";
 import { EasterEggstravaganza } from "./portals/EasterEggstravaganza";
@@ -46,8 +45,10 @@ import { Blessings } from "features/loveIsland/blessings/Blessings";
 import { EventMegaStore } from "./eventmegastore/EventMegaStore";
 import { EventNoticeboard } from "./EventNoticeboard";
 import { PotionMaster } from "features/helios/components/potions/component/PotionHouseShopItems";
-import { PetShop } from "features/pets/PetShop";
+import { PetShop } from "features/pets/petShop/PetShop";
 import { LoveIslandNoticeboard } from "./loveRewardShop/LoveIslandNoticeboard";
+import { Rarecrows } from "./Rarecrows";
+import { ChapterRaffles } from "./chapterRaffles/ChapterRaffles";
 
 type InteractableName =
   | "guardian"
@@ -119,6 +120,7 @@ type InteractableName =
   | "nightshades_faction"
   | "sunflorians_faction"
   | "chicken_rescue"
+  | "rarecrows"
   | "crops_and_chickens"
   | "fruit_dash"
   | "festival_of_colors"
@@ -149,7 +151,9 @@ type InteractableName =
   | "petal_puzzle_prize"
   | "flower_exchange"
   | "event_store"
-  | "event_noticeboard";
+  | "event_noticeboard"
+  | "holiday_puzzle"
+  | "chapter_raffles";
 
 class InteractableModalManager {
   private listener?: (name: InteractableName, isOpen: boolean) => void;
@@ -176,8 +180,6 @@ function getInitialModal(scene: SceneId): InteractableName | undefined {
       scene === "sunflorian_house")
   )
     return "faction_intro";
-
-  return undefined;
 }
 
 interface Props {
@@ -237,6 +239,13 @@ export const InteractableModals: React.FC<Props> = ({ id, scene }) => {
       </Modal>
       <Modal show={interactable === "pet_shop"} onHide={closeModal}>
         <PetShop onClose={closeModal} />
+      </Modal>
+      <Modal show={interactable === "chapter_raffles"} onHide={closeModal}>
+        {" "}
+        <ChapterRaffles onClose={closeModal} />
+      </Modal>
+      <Modal show={interactable === "rarecrows"} onHide={closeModal}>
+        <Rarecrows onClose={closeModal} />
       </Modal>
       <Modal show={interactable === "desert_noticeboard"} onHide={closeModal}>
         <DesertNoticeboard onClose={closeModal} />
@@ -458,7 +467,7 @@ export const InteractableModals: React.FC<Props> = ({ id, scene }) => {
         <BudBox onClose={closeModal} setIsLoading={setIsLoading} />
       </Modal>
       <Modal show={interactable === "raffle"} onHide={closeModal}>
-        <Raffle />
+        <Raffle onClose={closeModal} />
       </Modal>
       <Modal show={interactable === "bank"} onHide={closeModal}>
         <BankModal onClose={closeModal} farmAddress="?" />
@@ -472,9 +481,7 @@ export const InteractableModals: React.FC<Props> = ({ id, scene }) => {
           <GarbageCollectorModal />
         </CloseButtonPanel>
       </Modal>
-      {interactable === "wishingWell" && (
-        <WishingWellModal onClose={closeModal} />
-      )}
+
       <Modal show={interactable === "plaza_statue"} onHide={closeModal}>
         <SpeakingModal
           onClose={closeModal}
@@ -567,12 +574,12 @@ export const InteractableModals: React.FC<Props> = ({ id, scene }) => {
         </CloseButtonPanel>
       </Modal>
 
-      <Modal show={interactable === "halloween"} onHide={closeModal}>
+      <Modal show={interactable === "holiday_puzzle"}>
         <CloseButtonPanel
           onClose={closeModal}
-          bumpkinParts={NPC_WEARABLES.luna}
+          bumpkinParts={NPC_WEARABLES.santa}
         >
-          <Halloween onClose={closeModal} />
+          <HolidayPuzzles2025 onClose={closeModal} />
         </CloseButtonPanel>
       </Modal>
 

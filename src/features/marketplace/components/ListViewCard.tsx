@@ -21,6 +21,8 @@ import { ListViewImage } from "./ListViewImage";
 import petNFTEggMarketplace from "assets/pets/pet-nft-egg-marketplace.webp";
 import { getPetLevel } from "features/game/types/pets";
 import { Label } from "components/ui/Label";
+import { useNow } from "lib/utils/hooks/useNow";
+import { getCurrentChapter } from "features/game/types/chapters";
 
 type Props = {
   details: TradeableDisplay;
@@ -30,7 +32,14 @@ type Props = {
   expiresAt?: number;
 };
 
-const _state = (state: MachineState) => state.context.state;
+const _inventoryCount = (name: InventoryItemName) => (state: MachineState) =>
+  state.context.state.inventory[name]?.toNumber() ?? 0;
+const _wardrobeCount = (name: BumpkinItem) => (state: MachineState) =>
+  state.context.state.wardrobe[name] ?? 0;
+const _budsCount = (itemId: number) => (state: MachineState) =>
+  state.context.state.buds?.[itemId] ? 1 : 0;
+const _petsCount = (itemId: number) => (state: MachineState) =>
+  state.context.state.pets?.nfts?.[itemId] ? 1 : 0;
 
 export const ListViewCard: React.FC<Props> = ({
   details,
@@ -43,12 +52,23 @@ export const ListViewCard: React.FC<Props> = ({
   const { gameService } = useContext(Context);
   const usd = gameService.getSnapshot().context.prices.sfl?.usd ?? 0.0;
 
-  const { type, name, image, buffs, experience } = details;
+  const { type, name, image, buffs, experience, translatedName } = details;
   const { t } = useAppTranslation();
-
-  const state = useSelector(gameService, _state);
+  const now = useNow();
 
   const itemId = getItemId({ name, collection: type });
+
+  const inventoryCount = useSelector(
+    gameService,
+    _inventoryCount(details.name as InventoryItemName),
+  );
+  const wardrobeCount = useSelector(
+    gameService,
+    _wardrobeCount(name as BumpkinItem),
+  );
+
+  const budsCount = useSelector(gameService, _budsCount(itemId));
+  const petsCount = useSelector(gameService, _petsCount(itemId));
 
   const isResources =
     isTradeResource(name as InventoryItemName) && type === "collectibles";
@@ -57,15 +77,13 @@ export const ListViewCard: React.FC<Props> = ({
   const getTotalCount = () => {
     switch (details.type) {
       case "collectibles":
-        return (
-          state.inventory[details.name as InventoryItemName]?.toNumber() || 0
-        );
+        return inventoryCount;
       case "buds":
-        return state.buds?.[itemId] ? 1 : 0;
+        return budsCount;
       case "pets":
-        return state.pets?.nfts?.[itemId] ? 1 : 0;
+        return petsCount;
       case "wearables":
-        return state.wardrobe[name as BumpkinItem] || 0;
+        return wardrobeCount;
 
       default:
         return 0;
@@ -118,9 +136,10 @@ export const ListViewCard: React.FC<Props> = ({
         >
           {price?.gt(0) && (
             <div className="absolute top-0 left-0">
-              <div className="flex items-center ">
+              <div className="flex items-center">
+                <div className="bg-[#fff0d4] opacity-70 absolute nft-marketplace-flower-price-backdrop w-[120%] h-[20px]" />
                 <img src={sfl} className="h-4 sm:h-5 mr-1" />
-                <p className="text-xs whitespace-nowrap">
+                <p className="text-xs font-normal whitespace-nowrap">
                   {isResources
                     ? t("marketplace.pricePerUnit", {
                         price: formatNumber(price, {
@@ -133,9 +152,12 @@ export const ListViewCard: React.FC<Props> = ({
                 </p>
               </div>
               {!isResources && (
-                <p className="text-xxs">
-                  {`$${new Decimal(usd).mul(price).toFixed(2)}`}
-                </p>
+                <div className="flex items-center relative">
+                  <div className="text-xxs relative">
+                    <div className="bg-[#fff0d4] opacity-70 absolute nft-marketplace-usd-price-backdrop w-[130%] h-[14px]" />
+                    {`$${new Decimal(usd).mul(price).toFixed(2)}`}
+                  </div>
+                </div>
               )}
             </div>
           )}
@@ -152,7 +174,7 @@ export const ListViewCard: React.FC<Props> = ({
 
           <div className="flex justify-between items-center gap-1">
             <p className="text-xs mb-1 py-0.5 truncate text-[#181425]">
-              {name}
+              {translatedName ?? name}
             </p>
 
             {type === "pets" && (
@@ -178,12 +200,12 @@ export const ListViewCard: React.FC<Props> = ({
             </div>
           ))}
 
-          {expiresAt && (
+          {expiresAt && getCurrentChapter(now) === "Paw Prints" && (
             <div className="flex items-center">
               <img src={SUNNYSIDE.icons.stopwatch} className="h-4 mr-1" />
               <p className="text-xs truncate pb-0.5">
                 {" "}
-                {`${secondsToString((expiresAt - Date.now()) / 1000, {
+                {`${secondsToString((expiresAt - now) / 1000, {
                   length: "short",
                 })} left`}
               </p>

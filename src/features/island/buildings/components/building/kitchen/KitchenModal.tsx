@@ -7,11 +7,14 @@ import { Recipes } from "../Recipes";
 import {
   Cookable,
   CookableName,
+  isFishCookable,
   KITCHEN_COOKABLES,
 } from "features/game/types/consumables";
 import { CloseButtonPanel } from "features/game/components/CloseablePanel";
 import { OuterPanel } from "components/ui/Panel";
 import { BuildingProduct } from "features/game/types/game";
+import { useNow } from "lib/utils/hooks/useNow";
+import { CHAPTERS, getCurrentChapter } from "features/game/types/chapters";
 
 interface Props {
   isOpen: boolean;
@@ -34,9 +37,19 @@ export const KitchenModal: React.FC<Props> = ({
   queue,
   readyRecipes,
 }) => {
-  const kitchenRecipes = Object.values(KITCHEN_COOKABLES).sort(
-    (a, b) => a.experience - b.experience, // Sorts Foods based on their cooking time
-  );
+  const now = useNow({
+    live: true,
+    autoEndAt: CHAPTERS["Paw Prints"].endDate.getTime(),
+  });
+  const kitchenRecipes = Object.values(KITCHEN_COOKABLES)
+    .filter((recipe) => {
+      if (getCurrentChapter(now) === "Paw Prints") return true;
+
+      return !isFishCookable(recipe.name);
+    })
+    .sort(
+      (a, b) => a.experience - b.experience, // Sorts Foods based on their cooking time
+    );
   const [selected, setSelected] = useState<Cookable>(
     kitchenRecipes.find((recipe) => recipe.name === itemInProgress) ||
       kitchenRecipes[0],
@@ -55,7 +68,7 @@ export const KitchenModal: React.FC<Props> = ({
             background: "Farm Background",
             shoes: "Black Farmer Boots",
           }}
-          tabs={[{ icon: chefHat, name: "Kitchen" }]}
+          tabs={[{ id: "kitchen", icon: chefHat, name: "Kitchen" }]}
           onClose={onClose}
           container={OuterPanel}
         >

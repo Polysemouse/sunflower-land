@@ -3,14 +3,27 @@ import { Decoration } from "./decorations";
 import { CraftableCollectible, PlaceableLocation } from "./collectibles";
 import { CookableName } from "./consumables";
 import { getObjectEntries } from "../expansion/lib/utils";
-import { InventoryItemName } from "./game";
+import { GameState, InventoryItemName } from "./game";
 import { Coordinates } from "../expansion/components/MapPlacement";
-import { COMPETITION_POINTS } from "./competitions";
 import { PetTraits } from "features/pets/data/types";
 import { CONFIG } from "lib/config";
 
 export const SOCIAL_PET_XP_PER_HELP = 5;
 export const SOCIAL_PET_DAILY_XP_LIMIT = 50;
+
+// Pet House capacity limits based on level
+// commonPets = max breeds allowed (1/4/7), nftPets = max NFT pets
+export const PET_HOUSE_CAPACITY: Record<
+  number,
+  { commonPets: number; nftPets: number }
+> = {
+  1: { commonPets: 3, nftPets: 1 },
+  2: { commonPets: 5, nftPets: 4 },
+  3: { commonPets: 7, nftPets: 7 },
+};
+
+// Pet NFT dimensions for collision detection and placement
+export const PET_NFT_DIMENSIONS = { width: 2, height: 2 };
 
 export type PetName =
   // Dogs
@@ -108,7 +121,7 @@ export type Pet = {
       [date: string]: number;
     };
   };
-  // fetches?: Partial<Record<PetResourceName, number>>; // Will be unused in the future
+  fetches?: Partial<Record<PetResourceName, number>>; // Used to track the number of times a pet has fetched a resource
   fetchSeeds?: Partial<Record<PetResourceName, number>>; // Store the next seed
   energy: number;
   experience: number;
@@ -393,7 +406,6 @@ export const PET_SHRINES: Record<PetShrineName, CraftableCollectible> = {
       Ribbon: new Decimal(10),
     },
     inventoryLimit: 1,
-    disabled: Date.now() < COMPETITION_POINTS.BUILDING_FRIENDSHIPS.endAt,
   },
   "Toucan Shrine": {
     description: "",
@@ -675,7 +687,7 @@ export function getPetLevel(currentTotalExperience: number) {
 
 export function isPetNeglected(
   pet: Pet | PetNFT | undefined,
-  createdAt: number = Date.now(),
+  createdAt: number,
 ) {
   if (!pet) {
     return false;
@@ -698,10 +710,7 @@ export function isPetNeglected(
 
 const PET_NAP_HOURS = 2;
 
-export function isPetNapping(
-  pet: Pet | PetNFT | undefined,
-  createdAt: number = Date.now(),
-) {
+export function isPetNapping(pet: Pet | PetNFT | undefined, createdAt: number) {
   if (!pet) return false;
   const pettedAt = pet.pettedAt;
   const hoursSincePetted = (createdAt - pettedAt) / (1000 * 60 * 60);
@@ -712,12 +721,12 @@ export function isPetOfTypeFed({
   nftPets,
   petType,
   id,
-  now = Date.now(),
+  now,
 }: {
   nftPets: PetNFTs;
   petType: PetNFTType;
   id: number; // This is the id of the pet to exclude from the check
-  now?: number;
+  now: number;
 }) {
   const petsOfType = Object.values(nftPets).filter(
     (pet) => pet.traits?.type === petType,
@@ -751,6 +760,11 @@ const MAINNET_PET_NFT_REVEAL_CONFIG: PetNFTRevealConfig[] = [
     revealAt: new Date("2026-01-13T00:00:00.000Z"),
     startId: 1001,
     endId: 1250,
+  },
+  {
+    revealAt: new Date("2026-04-12T00:00:00.000Z"),
+    startId: 1251,
+    endId: 1500,
   },
   {
     revealAt: new Date("2025-11-12T00:00:00.000Z"),
@@ -792,3 +806,71 @@ export function getPetNFTReleaseDate(petId: number, createdAt: number) {
 
   return revealAt;
 }
+
+// Breeds (types) of common pets currently placed in the pet house
+// excludeId: when moving an already-placed pet, exclude it from the list
+export const getPlacedCommonPetTypesInPetHouse = (
+  petHouse: GameState["petHouse"],
+  excludeId?: string,
+): PetType[] => {
+  const pets = petHouse?.pets ?? {};
+  const types = new Set<PetType>();
+  for (const [petName, items] of Object.entries(pets)) {
+    const hasPlaced = items.some(
+      (item) =>
+        item.coordinates && (excludeId == null || item.id !== excludeId),
+    );
+    if (hasPlaced) {
+      const petType = PET_TYPES[petName as PetName];
+      if (petType) types.add(petType);
+    }
+  }
+  return [...types];
+};
+
+// Count common pets with coordinates in petHouse.pets
+// excludeId: when moving an already-placed pet, exclude it from the count
+export const getPlacedCommonPetsCount = (
+  petHouse: GameState["petHouse"],
+  excludeId?: string,
+): number => {
+  const pets = petHouse?.pets ?? {};
+  return Object.values(pets)
+    .flat()
+    .filter(
+      (pet) => pet.coordinates && (excludeId == null || pet.id !== excludeId),
+    ).length;
+};
+
+// Count NFT pets with coordinates and location === "petHouse"
+// excludeNftId: when moving an already-placed NFT pet, exclude it from the count
+export const getPlacedNFTPetsCount = (
+  pets: GameState["pets"],
+  excludeNftId?: number,
+): number => {
+  const nfts = pets?.nfts ?? {};
+  return Object.values(nfts).filter(
+    (nft) =>
+      nft.coordinates &&
+      nft.location === "petHouse" &&
+      (excludeNftId == null || nft.id !== excludeNftId),
+  ).length;
+};
+
+// Types of NFT pets currently placed in the pet house (for one-per-type rule)
+// excludeNftId: when moving an already-placed NFT pet, exclude its type from the list
+export const getPlacedNFTPetTypesInPetHouse = (
+  pets: GameState["pets"],
+  excludeNftId?: number,
+): PetType[] => {
+  const nfts = pets?.nfts ?? {};
+  return Object.values(nfts)
+    .filter(
+      (nft) =>
+        nft.coordinates &&
+        nft.location === "petHouse" &&
+        (excludeNftId == null || nft.id !== excludeNftId),
+    )
+    .map((nft) => getPetType(nft))
+    .filter((type): type is PetType => type != null);
+};

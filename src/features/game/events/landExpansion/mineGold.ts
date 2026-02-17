@@ -1,9 +1,14 @@
 import Decimal from "decimal.js-light";
-import { canMine } from "features/game/lib/resourceNodes";
+import { canMine } from "features/game/expansion/lib/utils";
 import {
-  Position,
   isWithinAOE,
+  Position,
 } from "features/game/expansion/placeable/lib/collisionDetection";
+import {
+  isCollectibleOnFarm,
+  canUseYieldBoostAOE,
+  setAOELastUsed,
+} from "features/game/lib/aoe";
 import {
   isTemporaryCollectibleActive,
   isCollectibleBuilt,
@@ -12,60 +17,61 @@ import { GOLD_RECOVERY_TIME } from "features/game/lib/constants";
 import { FACTION_ITEMS } from "features/game/lib/factions";
 import { getBudYieldBoosts } from "features/game/lib/getBudYieldBoosts";
 import { isWearableActive } from "features/game/lib/wearables";
-import { trackActivity } from "features/game/types/bumpkinActivity";
+import { KNOWN_IDS } from "features/game/types";
 import { COLLECTIBLES_DIMENSIONS } from "features/game/types/craftables";
-import {
-  AOE,
-  BoostName,
-  CriticalHitName,
-  GameState,
-  Rock,
-} from "features/game/types/game";
+import { trackFarmActivity } from "features/game/types/farmActivity";
+import { GameState, BoostName, Rock, AOE } from "features/game/types/game";
 import { RESOURCE_DIMENSIONS } from "features/game/types/resources";
-import { produce } from "immer";
-import cloneDeep from "lodash.clonedeep";
 import { updateBoostUsed } from "features/game/types/updateBoostUsed";
-import {
-  canUseYieldBoostAOE,
-  isCollectibleOnFarm,
-  setAOELastUsed,
-} from "features/game/lib/aoe";
+import { produce } from "immer";
+import { prngChance } from "lib/prng";
+import cloneDeep from "lodash.clonedeep";
 
-export type LandExpansionMineGoldAction = {
+export type LandExpansionGoldMineAction = {
   type: "goldRock.mined";
   index: string;
 };
 
-type Options = {
-  state: Readonly<GameState>;
-  action: LandExpansionMineGoldAction;
-  createdAt?: number;
-};
-
-export enum EVENT_ERRORS {
-  NO_PICKAXES = "No iron pickaxes left",
-  NO_GOLD = "No gold",
-  STILL_RECOVERING = "Gold is still recovering",
-  EXPANSION_HAS_NO_GOLD = "Expansion has no gold",
-  NO_EXPANSION = "Expansion does not exist",
-  NO_BUMPKIN = "You do not have a Bumpkin",
-}
-
 type GetMinedAtArgs = {
   createdAt: number;
   game: GameState;
+  farmId: number;
+  itemId: number;
+  counter: number;
 };
 
 const getBoostedTime = ({
   game,
+  farmId,
+  itemId,
+  counter,
 }: {
   game: GameState;
+  farmId: number;
+  itemId: number;
+  counter: number;
 }): {
   boostedTime: number;
-  boostsUsed: BoostName[];
+  boostsUsed: { name: BoostName; value: string }[];
 } => {
   let totalSeconds = GOLD_RECOVERY_TIME;
-  const boostsUsed: BoostName[] = [];
+  const boostsUsed: { name: BoostName; value: string }[] = [];
+
+  if (
+    isWearableActive({ name: "Pickaxe Shark", game }) &&
+    prngChance({
+      farmId,
+      itemId,
+      counter,
+      chance: 10,
+      criticalHitName: "Pickaxe Shark",
+    })
+  ) {
+    return {
+      boostedTime: GOLD_RECOVERY_TIME * 1000,
+      boostsUsed: [{ name: "Pickaxe Shark", value: "Instant" }],
+    };
+  }
 
   const superTotemActive = isTemporaryCollectibleActive({
     name: "Super Totem",
@@ -75,35 +81,38 @@ const getBoostedTime = ({
     name: "Time Warp Totem",
     game,
   });
+
   if (superTotemActive || timeWarpTotemActive) {
     totalSeconds = totalSeconds * 0.5;
-    if (superTotemActive) boostsUsed.push("Super Totem");
-    else if (timeWarpTotemActive) boostsUsed.push("Time Warp Totem");
+    if (superTotemActive)
+      boostsUsed.push({ name: "Super Totem", value: "x0.5" });
+    else if (timeWarpTotemActive)
+      boostsUsed.push({ name: "Time Warp Totem", value: "x0.5" });
   }
 
   if (isTemporaryCollectibleActive({ name: "Ore Hourglass", game })) {
     totalSeconds = totalSeconds * 0.5;
-    boostsUsed.push("Ore Hourglass");
-  }
-
-  if (isTemporaryCollectibleActive({ name: "Mole Shrine", game })) {
-    totalSeconds = totalSeconds * 0.75;
-    boostsUsed.push("Mole Shrine");
+    boostsUsed.push({ name: "Ore Hourglass", value: "x0.5" });
   }
 
   if (isWearableActive({ name: "Pickaxe Shark", game })) {
     totalSeconds = totalSeconds * 0.85;
-    boostsUsed.push("Pickaxe Shark");
+    boostsUsed.push({ name: "Pickaxe Shark", value: "x0.85" });
+  }
+
+  if (isTemporaryCollectibleActive({ name: "Mole Shrine", game })) {
+    totalSeconds = totalSeconds * 0.75;
+    boostsUsed.push({ name: "Mole Shrine", value: "x0.75" });
   }
 
   if (game.bumpkin.skills["Midas Sprint"]) {
     totalSeconds = totalSeconds * 0.9;
-    boostsUsed.push("Midas Sprint");
+    boostsUsed.push({ name: "Midas Sprint", value: "x0.9" });
   }
 
   if (game.bumpkin.skills["Midas Rush"]) {
     totalSeconds = totalSeconds * 0.8;
-    boostsUsed.push("Midas Rush");
+    boostsUsed.push({ name: "Midas Rush", value: "x0.8" });
   }
 
   const buff = GOLD_RECOVERY_TIME - totalSeconds;
@@ -114,14 +123,32 @@ const getBoostedTime = ({
 /**
  * Set a mined in the past to make it replenish faster
  */
-export function getMinedAt({ createdAt, game }: GetMinedAtArgs): {
+export function getMinedAt({
+  createdAt,
+  game,
+  farmId,
+  itemId,
+  counter,
+}: GetMinedAtArgs): {
   time: number;
-  boostsUsed: BoostName[];
+  boostsUsed: { name: BoostName; value: string }[];
 } {
-  const { boostedTime, boostsUsed } = getBoostedTime({ game });
+  const { boostedTime, boostsUsed } = getBoostedTime({
+    game,
+    farmId,
+    itemId,
+    counter,
+  });
 
   return { time: createdAt - boostedTime, boostsUsed };
 }
+
+type Options = {
+  state: Readonly<GameState>;
+  action: LandExpansionGoldMineAction;
+  createdAt: number;
+  farmId: number;
+};
 
 /**
  * Sets the drop amount for the NEXT mine event on the rock
@@ -130,13 +157,21 @@ export function getGoldDropAmount({
   game,
   rock,
   createdAt,
-  criticalDropGenerator = () => false,
+  farmId,
+  itemId,
+  counter,
 }: {
   game: GameState;
   rock: Rock;
   createdAt: number;
-  criticalDropGenerator?: (name: CriticalHitName) => boolean;
-}): { amount: Decimal; boostsUsed: BoostName[]; aoe: AOE } {
+  farmId: number;
+  itemId: number;
+  counter: number;
+}): {
+  amount: Decimal;
+  boostsUsed: { name: BoostName; value: string }[];
+  aoe: AOE;
+} {
   const {
     inventory,
     bumpkin: { skills },
@@ -146,37 +181,45 @@ export function getGoldDropAmount({
   const updatedAoe = cloneDeep(aoe);
 
   let amount = 1;
-  const boostsUsed: BoostName[] = [];
+  const boostsUsed: { name: BoostName; value: string }[] = [];
   if (inventory["Gold Rush"]) {
     amount += 0.5;
-    boostsUsed.push("Gold Rush");
+    boostsUsed.push({ name: "Gold Rush", value: "+0.5" });
   }
 
   if (skills["Golden Touch"]) {
     amount += 0.5;
-    boostsUsed.push("Golden Touch");
+    boostsUsed.push({ name: "Golden Touch", value: "+0.5" });
   }
 
-  if (criticalDropGenerator("Native")) {
+  if (
+    prngChance({
+      farmId,
+      itemId,
+      counter,
+      chance: 20,
+      criticalHitName: "Native",
+    })
+  ) {
     amount += 1;
+    boostsUsed.push({ name: "Native", value: "+1" });
   }
 
   if (isCollectibleBuilt({ name: "Nugget", game })) {
     amount += 0.25;
-    boostsUsed.push("Nugget");
+    boostsUsed.push({ name: "Nugget", value: "+0.25" });
   }
 
   if (isCollectibleBuilt({ name: "Gilded Swordfish", game })) {
     amount += 0.1;
-    boostsUsed.push("Gilded Swordfish");
+    boostsUsed.push({ name: "Gilded Swordfish", value: "+0.1" });
   }
 
   if (isCollectibleBuilt({ name: "Gold Beetle", game })) {
     amount += 0.1;
-    boostsUsed.push("Gold Beetle");
+    boostsUsed.push({ name: "Gold Beetle", value: "+0.1" });
   }
 
-  // If within Emerald Turtle AOE: +0.5
   if (
     isCollectibleOnFarm({ name: "Emerald Turtle", game }) &&
     rock &&
@@ -218,7 +261,7 @@ export function getGoldDropAmount({
         setAOELastUsed(updatedAoe, "Emerald Turtle", { dx, dy }, createdAt);
         amount += 0.5;
       }
-      boostsUsed.push("Emerald Turtle");
+      boostsUsed.push({ name: "Emerald Turtle", value: "+0.5" });
     }
   }
 
@@ -232,24 +275,31 @@ export function getGoldDropAmount({
     })
   ) {
     amount += 0.25;
-    boostsUsed.push(FACTION_ITEMS[factionName].secondaryTool);
+    boostsUsed.push({
+      name: FACTION_ITEMS[factionName].secondaryTool,
+      value: "+0.25",
+    });
   }
 
   const { yieldBoost, budUsed } = getBudYieldBoosts(buds, "Gold");
   amount += yieldBoost;
-  if (budUsed) boostsUsed.push(budUsed);
+  if (budUsed)
+    boostsUsed.push({ name: budUsed, value: `+${yieldBoost.toString()}` });
 
   if (game.island.type === "volcano") {
     amount += 0.1;
+    boostsUsed.push({ name: "Volcano Bonus", value: "+0.1" });
   }
 
   const multiplier = rock.multiplier ?? 1;
   amount *= multiplier;
   if (rock.tier === 2) {
     amount += 0.5;
+    boostsUsed.push({ name: "Tier 2 Bonus", value: "+0.5" });
   }
   if (rock.tier === 3) {
     amount += 2.5;
+    boostsUsed.push({ name: "Tier 3 Bonus", value: "+2.5" });
   }
 
   return {
@@ -262,36 +312,45 @@ export function getGoldDropAmount({
 export function mineGold({
   state,
   action,
-  createdAt = Date.now(),
+  createdAt,
+  farmId,
 }: Options): GameState {
   return produce(state, (stateCopy) => {
-    const { bumpkin } = stateCopy;
-
+    const { gold, bumpkin, inventory } = stateCopy;
     const { index } = action;
+
     if (!bumpkin) {
-      throw new Error(EVENT_ERRORS.NO_BUMPKIN);
+      throw new Error("You do not have a Bumpkin");
     }
 
-    const goldRock = stateCopy.gold[index];
+    const goldRock = gold[index];
 
     if (!goldRock) {
-      throw new Error("No gold rock found.");
+      throw new Error("No gold");
     }
 
     if (goldRock.x === undefined && goldRock.y === undefined) {
       throw new Error("Gold rock is not placed");
     }
 
-    if (!canMine(goldRock, "Gold Rock", createdAt)) {
-      throw new Error(EVENT_ERRORS.STILL_RECOVERING);
+    if (!canMine(goldRock, GOLD_RECOVERY_TIME, createdAt)) {
+      throw new Error("Gold is still recovering");
     }
 
-    const toolAmount = stateCopy.inventory["Iron Pickaxe"] || new Decimal(0);
+    const toolAmount = inventory["Iron Pickaxe"] || new Decimal(0);
     const requiredToolAmount = goldRock.multiplier ?? 1;
 
     if (toolAmount.lessThan(requiredToolAmount)) {
-      throw new Error(EVENT_ERRORS.NO_PICKAXES);
+      throw new Error("No pickaxes left");
     }
+    const goldRockName = goldRock.name ?? "Gold Rock";
+    const counter = stateCopy.farmActivity[`${goldRockName} Mined`] ?? 0;
+    const itemId = KNOWN_IDS[goldRockName];
+    const prngObject = {
+      farmId,
+      itemId,
+      counter,
+    };
     const {
       amount: goldMined,
       aoe,
@@ -306,33 +365,42 @@ export function mineGold({
           game: stateCopy,
           rock: goldRock,
           createdAt,
-          criticalDropGenerator: (name) =>
-            !!(goldRock.stone.criticalHit?.[name] ?? 0),
+          ...prngObject,
         });
 
     stateCopy.aoe = aoe;
 
-    const amountInInventory = stateCopy.inventory.Gold || new Decimal(0);
-    const { time: minedAt, boostsUsed: minedAtBoostsUsed } = getMinedAt({
+    const amountInInventory = inventory.Gold || new Decimal(0);
+
+    const { time, boostsUsed: minedAtBoostsUsed } = getMinedAt({
       createdAt,
       game: stateCopy,
+      ...prngObject,
     });
+
     const { boostedTime, boostsUsed: boostedTimeBoostsUsed } = getBoostedTime({
       game: stateCopy,
+      ...prngObject,
     });
+
     goldRock.stone = {
-      minedAt,
+      minedAt: time,
       boostedTime,
     };
-    bumpkin.activity = trackActivity(
+
+    stateCopy.farmActivity = trackFarmActivity(
       "Gold Mined",
-      bumpkin.activity,
+      stateCopy.farmActivity,
       new Decimal(goldRock.multiplier ?? 1),
     );
 
-    stateCopy.inventory["Iron Pickaxe"] = toolAmount.sub(requiredToolAmount);
-    stateCopy.inventory.Gold = amountInInventory.add(goldMined);
-    delete goldRock.stone.amount;
+    stateCopy.farmActivity = trackFarmActivity(
+      `${goldRockName} Mined`,
+      stateCopy.farmActivity,
+    );
+
+    inventory["Iron Pickaxe"] = toolAmount.sub(requiredToolAmount);
+    inventory.Gold = amountInInventory.add(goldMined);
 
     stateCopy.boostsUsedAt = updateBoostUsed({
       game: stateCopy,
@@ -343,6 +411,9 @@ export function mineGold({
       ],
       createdAt,
     });
+
+    delete goldRock.stone.amount;
+    delete goldRock.stone.criticalHit;
 
     return stateCopy;
   });

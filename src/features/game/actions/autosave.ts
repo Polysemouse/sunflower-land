@@ -8,21 +8,8 @@ import { getSessionId } from "./loadSession";
 import Decimal from "decimal.js-light";
 import { SeedBoughtAction } from "../events/landExpansion/seedBought";
 import { GameState } from "../types/game";
-import { getObjectEntries } from "../expansion/lib/utils";
-import { hasFeatureAccess } from "lib/flags";
 import { AUTO_SAVE_INTERVAL } from "../expansion/Game";
-
-// Browser-friendly SHA-256 → hex
-export async function hashString(str: string): Promise<string> {
-  const encoder = new TextEncoder();
-  const data = encoder.encode(str); // UTF-8
-  const hashBuffer = await crypto.subtle.digest("SHA-256", data);
-  const hashArray = Array.from(new Uint8Array(hashBuffer));
-  const hashHex = hashArray
-    .map((b) => b.toString(16).padStart(2, "0"))
-    .join("");
-  return "sha256:" + hashHex;
-}
+import { getRecordHash } from "lib/stateHash";
 
 type StateHash = Record<keyof GameState, string>;
 
@@ -31,15 +18,9 @@ type StateHash = Record<keyof GameState, string>;
  * { balance: "sha256:1234567890", inventory: "sha256:1234567890", ... }
  */
 export async function getGameHash(gameState: GameState): Promise<StateHash> {
-  const hashes = {} as StateHash;
-
-  for (const [key, value] of getObjectEntries(gameState)) {
-    // TODO - sort keys or use object-hash for deeper checks and consistency
-    const stable = JSON.stringify(value);
-    hashes[key] = await hashString(stable);
-  }
-
-  return hashes;
+  return (await getRecordHash(
+    gameState as unknown as Record<string, unknown>,
+  )) as StateHash;
 }
 
 type Request = {
@@ -160,15 +141,11 @@ export async function autosave(request: Request, retries = 0) {
     await new Promise((res) => setTimeout(res, autosaveErrors * 5000));
   }
 
-  let stateHash: StateHash | undefined;
-
-  if (hasFeatureAccess(request.state, "API_PERFORMANCE")) {
-    // eslint-disable-next-line no-console
-    console.time("getGameHash");
-    stateHash = await getGameHash(request.state);
-    // eslint-disable-next-line no-console
-    console.timeEnd("getGameHash");
-  }
+  // eslint-disable-next-line no-console
+  console.time("getGameHash");
+  const stateHash = await getGameHash(request.state);
+  // eslint-disable-next-line no-console
+  console.timeEnd("getGameHash");
 
   const response = await autosaveRequest({
     ...request,
@@ -207,6 +184,10 @@ export async function autosave(request: Request, retries = 0) {
     throw new Error(ERRORS.AUTOSAVE_CLIENT_ERROR);
   }
 
+  if (response.status === 409) {
+    throw new Error(ERRORS.MULTIPLE_DEVICES_OPEN);
+  }
+
   if (response.status === 429) {
     throw new Error(ERRORS.TOO_MANY_REQUESTS);
   }
@@ -228,12 +209,10 @@ export async function autosave(request: Request, retries = 0) {
   farm.id = request.farmId;
 
   // Merge the changes over the previous
-  if (hasFeatureAccess(request.state, "API_PERFORMANCE")) {
-    farm = {
-      ...request.state,
-      ...farm,
-    };
-  }
+  farm = {
+    ...request.state,
+    ...farm,
+  };
 
   const game = makeGame(farm);
 

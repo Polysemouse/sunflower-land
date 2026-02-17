@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useState } from "react";
+import React, { useContext, useState } from "react";
 import { CloseButtonPanel } from "features/game/components/CloseablePanel";
 import { ITEM_IDS } from "features/game/types/bumpkin";
 import { BUMPKIN_ITEM_BUFF_LABELS } from "features/game/types/bumpkinItemBuffs";
@@ -105,13 +105,6 @@ export const FactionShop: React.FC<Props> = ({ onClose }) => {
   const [selectedItem, setSelectedItem] = useState<FactionShopItem | null>(
     null,
   );
-  const [isVisible, setIsVisible] = useState(false);
-
-  useEffect(() => {
-    if (selectedItem && !isVisible) {
-      setIsVisible(true);
-    }
-  }, [selectedItem, isVisible]);
 
   const handleClickItem = (item: FactionShopItem) => {
     setSelectedItem(item);
@@ -136,7 +129,7 @@ export const FactionShop: React.FC<Props> = ({ onClose }) => {
   return (
     <CloseButtonPanel
       bumpkinParts={NPC_WEARABLES["eldric"]}
-      tabs={[{ icon: shopIcon, name: t("faction.shop.title") }]}
+      tabs={[{ icon: shopIcon, name: t("faction.shop.title"), id: "shop" }]}
       onClose={onClose}
     >
       <div className="relative h-[450px] w-full">
@@ -177,7 +170,7 @@ export const FactionShop: React.FC<Props> = ({ onClose }) => {
           onBackdropClick={() => setSelectedItem(null)}
         >
           <ItemDetail
-            isVisible={isVisible}
+            isVisible={!!selectedItem}
             item={selectedItem}
             image={getItemImage(selectedItem)}
             buff={getItemBuffLabel(selectedItem, state)}

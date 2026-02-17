@@ -17,6 +17,7 @@ import { Label } from "components/ui/Label";
 import { SUNNYSIDE } from "assets/sunnyside";
 import { getRelativeTime, secondsToString } from "lib/utils/time";
 import useUiRefresher from "lib/utils/hooks/useUiRefresher";
+import { useNow } from "lib/utils/hooks/useNow";
 
 export const PortalLeaderboard: React.FC<{
   name: MinigameName;
@@ -40,16 +41,17 @@ export const PortalLeaderboard: React.FC<{
   useUiRefresher();
 
   const [data, setData] = useState<CompetitionLeaderboardResponse>();
+  const now = useNow({ live: true });
 
   const formatDate = (date: Date) => date.toISOString().substring(0, 10);
 
   // Default 7 days ago
   const from = startDate
     ? formatDate(startDate)
-    : formatDate(new Date(Date.now() - 7 * 24 * 60 * 60 * 1000));
+    : formatDate(new Date(now - 7 * 24 * 60 * 60 * 1000));
   const to = endDate
-    ? formatDate(new Date(Math.min(Date.now(), endDate.getTime())))
-    : formatDate(new Date());
+    ? formatDate(new Date(Math.min(now, endDate.getTime())))
+    : formatDate(new Date(now));
 
   const { t } = useAppTranslation();
   useEffect(() => {
@@ -68,8 +70,9 @@ export const PortalLeaderboard: React.FC<{
     load();
   }, []);
 
-  const isCompleted = endDate && endDate.getTime() < Date.now();
-  const secondsLeft = ((endDate ?? new Date()).getTime() - Date.now()) / 1000;
+  const isCompleted = endDate && now > 0 && endDate.getTime() < now;
+  const secondsLeft =
+    now > 0 ? ((endDate ?? new Date()).getTime() - now) / 1000 : 0;
   const secondsLeftDisplay = secondsToString(secondsLeft, { length: "medium" });
 
   const getHeader = () => {
@@ -136,7 +139,7 @@ export const PortalLeaderboard: React.FC<{
         )}
 
         <p className="font-secondary text-xs mt-1">
-          {t("last.updated")} {getRelativeTime(lastUpdated)}
+          {t("last.updated")} {getRelativeTime(lastUpdated, now)}
         </p>
       </div>
 

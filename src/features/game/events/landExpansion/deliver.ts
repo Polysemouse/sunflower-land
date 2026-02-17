@@ -1,5 +1,5 @@
 import Decimal from "decimal.js-light";
-import { trackActivity } from "features/game/types/bumpkinActivity";
+import { trackFarmActivity } from "features/game/types/farmActivity";
 import { CONSUMABLES, COOKABLE_CAKES } from "features/game/types/consumables";
 import { getKeys } from "features/game/types/craftables";
 import {
@@ -12,9 +12,9 @@ import {
 } from "features/game/types/game";
 import { BUMPKIN_GIFTS } from "features/game/types/gifts";
 import {
-  getCurrentSeason,
-  getSeasonalTicket,
-} from "features/game/types/seasons";
+  getCurrentChapter,
+  getChapterTicket,
+} from "features/game/types/chapters";
 import { NPCName } from "lib/npcs";
 import { getBumpkinHoliday } from "lib/utils/getSeasonWeek";
 import { isWearableActive } from "features/game/lib/wearables";
@@ -31,6 +31,8 @@ import { hasReputation, Reputation } from "features/game/lib/reputation";
 import { CHAPTER_TICKET_BOOST_ITEMS } from "./completeNPCChore";
 import { isCollectible } from "./garbageSold";
 import { getCountAndType } from "features/island/hud/components/inventory/utils/inventory";
+import { getChapterTaskPoints } from "features/game/types/tracks";
+import { handleChapterAnalytics } from "features/game/lib/trackAnalytics";
 
 export const TICKET_REWARDS: Record<QuestNPCName, number> = {
   "pumpkin' pete": 1,
@@ -51,11 +53,11 @@ const isFruit = (name: PatchFruitName) => name in PATCH_FRUIT;
 export function generateDeliveryTickets({
   game,
   npc,
-  now = new Date(),
+  now,
 }: {
   game: GameState;
   npc: NPCName;
-  now?: Date;
+  now: number;
 }) {
   let amount = TICKET_REWARDS[npc as QuestNPCName];
 
@@ -63,11 +65,11 @@ export function generateDeliveryTickets({
     return 0;
   }
 
-  if (hasVipAccess({ game, now: now.getTime() })) {
+  if (hasVipAccess({ game, now })) {
     amount += 2;
   }
 
-  const chapter = getCurrentSeason(now);
+  const chapter = getCurrentChapter(now);
   const chapterBoost = CHAPTER_TICKET_BOOST_ITEMS[chapter];
 
   Object.values(chapterBoost).forEach((item) => {
@@ -220,9 +222,9 @@ export function getOrderSellPrice<T>(
   game: GameState,
   order: Order,
   now: Date = new Date(),
-): { reward: T; boostsUsed: BoostName[] } {
+): { reward: T; boostsUsed: { name: BoostName; value: string }[] } {
   let mul = 1;
-  const boostsUsed: BoostName[] = [];
+  const boostsUsed: { name: BoostName; value: string }[] = [];
 
   if (
     order.from === "betty" &&
@@ -230,7 +232,7 @@ export function getOrderSellPrice<T>(
     order.reward.coins
   ) {
     mul += 0.3;
-    boostsUsed.push("Betty's Friend");
+    boostsUsed.push({ name: "Betty's Friend", value: "+30%" });
   }
 
   if (
@@ -239,7 +241,7 @@ export function getOrderSellPrice<T>(
     order.reward.coins
   ) {
     mul += 0.5;
-    boostsUsed.push("Victoria's Secretary");
+    boostsUsed.push({ name: "Victoria's Secretary", value: "+50%" });
   }
 
   if (
@@ -248,7 +250,7 @@ export function getOrderSellPrice<T>(
     order.reward.coins
   ) {
     mul += 0.2;
-    boostsUsed.push("Forge-Ward Profits");
+    boostsUsed.push({ name: "Forge-Ward Profits", value: "+20%" });
   }
 
   // Fruity Profit - 50% Coins bonus if fruit
@@ -260,7 +262,7 @@ export function getOrderSellPrice<T>(
     const items = getKeys(order.items);
     if (items.some((name) => isFruit(name as PatchFruitName))) {
       mul += 0.5;
-      boostsUsed.push("Fruity Profit");
+      boostsUsed.push({ name: "Fruity Profit", value: "+50%" });
     }
   }
 
@@ -271,7 +273,7 @@ export function getOrderSellPrice<T>(
     order.from === "corale"
   ) {
     mul += 1;
-    boostsUsed.push("Fishy Fortune");
+    boostsUsed.push({ name: "Fishy Fortune", value: "+100%" });
   }
 
   // Nom Nom - 10% bonus with food orders
@@ -279,7 +281,7 @@ export function getOrderSellPrice<T>(
     const items = getKeys(order.items);
     if (items.some((name) => name in CONSUMABLES && !(name in FISH))) {
       mul += 0.1;
-      boostsUsed.push("Nom Nom");
+      boostsUsed.push({ name: "Nom Nom", value: "+10%" });
     }
   }
 
@@ -289,7 +291,7 @@ export function getOrderSellPrice<T>(
     isWearableActive({ name: "Chef Apron", game })
   ) {
     mul += 0.2;
-    boostsUsed.push("Chef Apron");
+    boostsUsed.push({ name: "Chef Apron", value: "+20%" });
   }
 
   // Apply the faction crown boost if in the right faction
@@ -299,7 +301,10 @@ export function getOrderSellPrice<T>(
     isWearableActive({ game, name: FACTION_OUTFITS[factionName].crown })
   ) {
     mul += 0.25;
-    boostsUsed.push(FACTION_OUTFITS[factionName].crown);
+    boostsUsed.push({
+      name: FACTION_OUTFITS[factionName].crown,
+      value: "+25%",
+    });
   }
 
   const completedAt = game.npcs?.[order.from]?.deliveryCompletedAt;
@@ -385,7 +390,7 @@ export function deliverOrder({
     const tickets = generateDeliveryTickets({
       game,
       npc: order.from,
-      now: new Date(createdAt),
+      now: createdAt,
     });
     const isTicketOrder = tickets > 0;
 
@@ -404,9 +409,9 @@ export function deliverOrder({
 
         game.coins = coins - amount;
 
-        bumpkin.activity = trackActivity(
+        game.farmActivity = trackFarmActivity(
           "Coins Spent",
-          bumpkin.activity,
+          game.farmActivity,
           new Decimal(amount),
         );
       } else if (name === "sfl") {
@@ -446,7 +451,15 @@ export function deliverOrder({
       );
       game.balance = game.balance.add(sfl);
 
-      bumpkin.activity = trackActivity("SFL Earned", bumpkin.activity, sfl);
+      game.farmActivity = trackFarmActivity(
+        "SFL Earned",
+        game.farmActivity,
+        sfl,
+      );
+      game.farmActivity = trackFarmActivity(
+        "FLOWER Order Delivered",
+        game.farmActivity,
+      );
     }
 
     if (order.reward.coins) {
@@ -458,20 +471,49 @@ export function deliverOrder({
 
       game.coins = game.coins + coinsReward;
 
-      bumpkin.activity = trackActivity(
+      game.farmActivity = trackFarmActivity(
         "Coins Earned",
-        bumpkin.activity,
+        game.farmActivity,
         new Decimal(coinsReward),
+      );
+      game.farmActivity = trackFarmActivity(
+        "Coins Order Delivered",
+        game.farmActivity,
       );
     }
 
     if (tickets > 0) {
-      const seasonalTicket = getSeasonalTicket();
+      const chapterTicket = getChapterTicket(createdAt);
+      const chapter = getCurrentChapter(createdAt);
+      const pointsAwarded = getChapterTaskPoints({
+        task: "delivery",
+        tickets: tickets,
+      });
+      handleChapterAnalytics({
+        task: "delivery",
+        tickets: tickets,
+        farmActivity: game.farmActivity,
+        createdAt,
+      });
 
-      const count = game.inventory[seasonalTicket] || new Decimal(0);
+      const count = game.inventory[chapterTicket] || new Decimal(0);
       const amount = tickets || new Decimal(0);
 
-      game.inventory[seasonalTicket] = count.add(amount);
+      game.inventory[chapterTicket] = count.add(amount);
+      game.farmActivity = trackFarmActivity(
+        "Ticket Order Delivered",
+        game.farmActivity,
+      );
+      game.farmActivity = trackFarmActivity(
+        `${chapterTicket} Collected`,
+        game.farmActivity,
+        new Decimal(amount),
+      );
+      game.farmActivity = trackFarmActivity(
+        `${chapter} Points Earned`,
+        game.farmActivity,
+        new Decimal(pointsAwarded),
+      );
     }
 
     const rewardItems = order.reward.items ?? {};

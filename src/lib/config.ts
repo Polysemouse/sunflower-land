@@ -103,6 +103,8 @@ const FIREBASE_APP_ID = import.meta.env.VITE_FIREBASE_APP_ID as string;
 const TELEGRAM_BOT = import.meta.env.VITE_TELEGRAM_BOT as string;
 const TWITTER_CLIENT_ID = import.meta.env.VITE_TWITTER_CLIENT_ID as string;
 
+const META_PIXEL_ID = import.meta.env.VITE_META_PIXEL_ID as string;
+
 export const CONFIG = {
   DEQUIPPER_CONTRACT,
   NETWORK,
@@ -180,4 +182,6 @@ export const CONFIG = {
   FIREBASE_APP_ID,
   TELEGRAM_BOT,
   TWITTER_CLIENT_ID,
+
+  META_PIXEL_ID,
 };

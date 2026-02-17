@@ -28,7 +28,7 @@ import { OIL_RESERVE_RECOVERY_TIME } from "./drillOilReserve";
 // Preloaded crops that will appear on plots when they reveal
 const EXPANSION_CROPS: Record<number, CropName> = {
   4: "Sunflower",
-  5: "Potato", // We need Potatos at expansion 5 for cooking
+  5: "Rhubarb", // Spring-available crop for early cooking tutorial
   6: "Pumpkin",
   7: "Carrot",
   8: "Cabbage",
@@ -370,10 +370,13 @@ export const expansionRequirements = ({
   game,
 }: {
   game: GameState;
-}): { requirements: Requirements | undefined; boostsUsed: BoostName[] } => {
+}): {
+  requirements: Requirements | undefined;
+  boostsUsed: { name: BoostName; value: string }[];
+} => {
   const level = (game.inventory["Basic Land"]?.toNumber() ?? 0) + 1;
 
-  const boostsUsed: BoostName[] = [];
+  const boostsUsed: { name: BoostName; value: string }[] = [];
 
   const requirements = EXPANSION_REQUIREMENTS[game.island.type][level];
 
@@ -392,7 +395,7 @@ export const expansionRequirements = ({
       }),
       {},
     );
-    boostsUsed.push("Grinx's Hammer");
+    boostsUsed.push({ name: "Grinx's Hammer", value: "x0.5" });
   }
 
   return { requirements: { ...requirements, resources }, boostsUsed };

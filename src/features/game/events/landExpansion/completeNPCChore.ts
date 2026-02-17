@@ -8,18 +8,22 @@ import {
 import { produce } from "immer";
 import { NPCName } from "lib/npcs";
 import {
-  getCurrentSeason,
-  getSeasonalTicket,
-  SeasonName,
-} from "features/game/types/seasons";
+  getCurrentChapter,
+  getChapterTicket,
+  ChapterName,
+} from "features/game/types/chapters";
 import { isWearableActive } from "features/game/lib/wearables";
 import { hasVipAccess } from "features/game/lib/vipAccess";
 import { isCollectibleBuilt } from "features/game/lib/collectibleBuilt";
 import {
-  SeasonalTierItemName,
+  ChapterTierItemName,
   MegastoreKeys,
 } from "features/game/types/megastore";
 import { isCollectible } from "./garbageSold";
+import { trackFarmActivity } from "features/game/types/farmActivity";
+import { getChapterTaskPoints } from "features/game/types/tracks";
+import { FlowerBox } from "../landExpansion/buyChapterItem";
+import { handleChapterAnalytics } from "features/game/lib/trackAnalytics";
 
 export type CompleteNPCChoreAction = {
   type: "chore.fulfilled";
@@ -33,11 +37,11 @@ type Options = {
 };
 
 export const CHAPTER_TICKET_BOOST_ITEMS: Record<
-  SeasonName,
+  ChapterName,
   {
-    basic: Exclude<SeasonalTierItemName, MegastoreKeys>;
-    rare: Exclude<SeasonalTierItemName, MegastoreKeys>;
-    epic: Exclude<SeasonalTierItemName, MegastoreKeys>;
+    basic: Exclude<ChapterTierItemName, MegastoreKeys | FlowerBox | "Pet Egg">;
+    rare: Exclude<ChapterTierItemName, MegastoreKeys | FlowerBox | "Pet Egg">;
+    epic: Exclude<ChapterTierItemName, MegastoreKeys | FlowerBox | "Pet Egg">;
   }
 > = {
   "Solar Flare": {
@@ -97,11 +101,16 @@ export const CHAPTER_TICKET_BOOST_ITEMS: Record<
     epic: "Recycle Shirt",
   },
 
-  // TODO: Add Paw Prings items
   "Paw Prints": {
     basic: "Pet Specialist Hat",
     rare: "Pet Specialist Pants",
     epic: "Pet Specialist Shirt",
+  },
+  // TODO: Add Crabs and Traps items
+  "Crabs and Traps": {
+    basic: "Fish Hook Hat",
+    rare: "Fish Hook Vest",
+    epic: "Fish Hook Waders",
   },
 };
 
@@ -164,6 +173,40 @@ export function completeNPCChore({
     draft.npcs[npcName].friendship.points += 1;
     draft.npcs[npcName].friendship.updatedAt = createdAt;
 
+    draft.farmActivity = trackFarmActivity(
+      "Chore Completed",
+      draft.farmActivity,
+    );
+
+    const ticket = getChapterTicket(createdAt);
+    const amount = items[ticket] ?? 0;
+
+    if (amount > 0) {
+      const chapter = getCurrentChapter(createdAt);
+      const pointsAwarded = getChapterTaskPoints({
+        task: "chore",
+        tickets: amount,
+      });
+      handleChapterAnalytics({
+        task: "chore",
+        tickets: amount,
+        farmActivity: draft.farmActivity,
+        createdAt,
+      });
+
+      draft.farmActivity = trackFarmActivity(
+        `${ticket} Collected`,
+        draft.farmActivity,
+        new Decimal(amount),
+      );
+
+      draft.farmActivity = trackFarmActivity(
+        `${chapter} Points Earned`,
+        draft.farmActivity,
+        new Decimal(pointsAwarded),
+      );
+    }
+
     return draft;
   });
 }
@@ -177,15 +220,18 @@ export function generateChoreRewards({
   chore: NpcChore;
   now: Date;
 }) {
+  if (!chore) return {};
+
   const items = Object.assign({}, chore.reward.items) ?? {};
 
-  if (!items[getSeasonalTicket(now)]) return items;
-  let amount = items[getSeasonalTicket(now)] ?? 0;
+  const ticket = getChapterTicket(now.getTime());
+  if (!items[ticket]) return items;
+  let amount = items[ticket] ?? 0;
 
   if (hasVipAccess({ game, now: now.getTime() })) {
     amount += 2;
   }
-  const chapter = getCurrentSeason(now);
+  const chapter = getCurrentChapter(now.getTime());
   const chapterBoost = CHAPTER_TICKET_BOOST_ITEMS[chapter];
 
   Object.values(chapterBoost).forEach((item) => {
@@ -200,7 +246,7 @@ export function generateChoreRewards({
     }
   });
 
-  items[getSeasonalTicket(now)] = amount;
+  items[ticket] = amount;
 
   return items;
 }

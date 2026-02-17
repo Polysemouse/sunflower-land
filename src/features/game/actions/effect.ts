@@ -2,6 +2,7 @@ import { CONFIG } from "lib/config";
 import { ERRORS } from "lib/errors";
 import { GameState } from "../types/game";
 import { makeGame } from "../lib/transforms";
+import { getRecordHash } from "lib/stateHash";
 
 const API_URL = CONFIG.API_URL;
 
@@ -37,8 +38,6 @@ type EffectName =
   | "moderation.unmuted"
   | "blessing.offered"
   | "blessing.seeked"
-  | "roninPack.claimed"
-  | "twitter.roninPosted"
   | "nft.assigned"
   | "admin.NFTAssigned"
   | "marketplace.bulkListingsCancelled"
@@ -53,7 +52,12 @@ type EffectName =
   | "auction.claimed"
   | "auction.bidPlaced"
   | "auction.bidCancelled"
-  | "marketplace.buyBulkResources";
+  | "auctionRaffle.entered"
+  | "auctionRaffle.claimed"
+  | "marketplace.buyBulkResources"
+  | "leagues.updated"
+  | "liquidity.registered"
+  | "appInstall.generate";
 
 type VisitEffectName = "farm.helped" | "farm.cheered" | "farm.followed";
 
@@ -70,6 +74,7 @@ export type StateMachineEffectName = Exclude<
   | "moderation.unmuted"
   | "farm.unfollowed"
   | "message.sent"
+  | "liquidity.registered"
 >;
 
 export type StateMachineVisitEffectName = VisitEffectName;
@@ -98,7 +103,6 @@ export type StateMachineStateName =
   | "claimingBlockchainBox"
   | "offeringBlessing"
   | "seekingBlessing"
-  | "claimingRoninPack"
   | "marketplaceBulkListingsCancelling"
   | "marketplaceBulkOffersCancelling"
   | "linkingWallet"
@@ -111,7 +115,12 @@ export type StateMachineStateName =
   | "wakingPet"
   | "auctionBidding"
   | "auctionCancelling"
-  | "marketplaceBuyingBulkResources";
+  | "enteringAuctionRaffle"
+  | "claimingAuctionRaffle"
+  | "marketplaceBuyingBulkResources"
+  | "updatingLeagues"
+  | "generatingAppInstall"
+  | "pickingUpWaterTrap";
 
 export type StateMachineVisitStateName =
   | "helpingFarm"
@@ -144,8 +153,6 @@ export const STATE_MACHINE_EFFECTS: Record<
   "telegram.joined": "joiningTelegram",
   "twitter.followed": "followingTwitter",
   "twitter.posted": "postingTwitter",
-  "roninPack.claimed": "claimingRoninPack",
-  "twitter.roninPosted": "postingTwitter",
   "gems.bought": "buyingGems",
   "vip.bought": "buyingVIP",
   "username.assigned": "assigningUsername",
@@ -167,7 +174,11 @@ export const STATE_MACHINE_EFFECTS: Record<
   "pet.wakeUp": "wakingPet",
   "auction.bidPlaced": "auctionBidding",
   "auction.bidCancelled": "auctionCancelling",
+  "auctionRaffle.entered": "enteringAuctionRaffle",
+  "auctionRaffle.claimed": "claimingAuctionRaffle",
   "marketplace.buyBulkResources": "marketplaceBuyingBulkResources",
+  "leagues.updated": "updatingLeagues",
+  "appInstall.generate": "generatingAppInstall",
 };
 
 export const STATE_MACHINE_VISIT_EFFECTS: Record<
@@ -189,11 +200,16 @@ type Request = {
   token: string;
   transactionId: string;
   effect: Effect;
+  state?: GameState;
 };
 
 export async function postEffect(
   request: Request,
 ): Promise<{ gameState: GameState; data: any }> {
+  const stateHash = request.state
+    ? await getRecordHash(request.state as unknown as Record<string, unknown>)
+    : undefined;
+
   const response = await window.fetch(`${API_URL}/event/${request.farmId}`, {
     method: "POST",
     headers: {
@@ -208,6 +224,7 @@ export async function postEffect(
     body: JSON.stringify({
       event: request.effect,
       createdAt: new Date().toISOString(),
+      ...(stateHash ? { stateHash } : {}),
     }),
   });
 
@@ -227,8 +244,16 @@ export async function postEffect(
 
   const { gameState, data } = await response.json();
 
+  const mergedGameState = request.state
+    ? // Response may be pruned (diff); merge over the current client state
+      ({
+        ...request.state,
+        ...gameState,
+      } as GameState)
+    : (gameState as GameState);
+
   return {
-    gameState: makeGame(gameState),
+    gameState: makeGame(mergedGameState),
     data,
   };
 }

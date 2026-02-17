@@ -10,9 +10,12 @@ import { ReactionName } from "features/pumpkinPlaza/components/Reactions";
 import { getAnimationUrl } from "../lib/animations";
 import {
   FactionName,
+  GameState,
   InventoryItemName,
   IslandType,
+  Order,
 } from "features/game/types/game";
+import { hasOrderRequirements } from "features/island/delivery/components/Orders";
 import { BumpkinItem, ITEM_IDS } from "features/game/types/bumpkin";
 import { CONFIG } from "lib/config";
 import { formatNumber } from "lib/utils/formatNumber";
@@ -21,15 +24,9 @@ import { getTradeableDisplay } from "features/marketplace/lib/tradeables";
 
 const NAME_ALIASES: Partial<Record<NPCName, string>> = {
   "pumpkin' pete": "pete",
-  "hammerin harry": "auctioneer",
+  "hammerin harry": "auctions",
 };
-export const NPCS_WITH_ALERTS: Partial<Record<NPCName, boolean>> = {
-  "pumpkin' pete": true,
-  hank: true,
-  santa: true,
-  chase: true,
-  "rocket man": true,
-};
+export const NPCS_WITH_ALERTS: Partial<Record<NPCName, boolean>> = {};
 
 export class BumpkinContainer extends Phaser.GameObjects.Container {
   public sprite: Phaser.GameObjects.Sprite | undefined;
@@ -69,10 +66,13 @@ export class BumpkinContainer extends Phaser.GameObjects.Container {
 
   // Animation Keys
   private spriteKey: string | undefined;
+  private spriteKey2: string | undefined;
   private idleAnimationKey: string | undefined;
   private walkingAnimationKey: string | undefined;
   private digAnimationKey: string | undefined;
   private drillAnimationKey: string | undefined;
+  private waveAnimationKey: string | undefined;
+  private cheerAnimationKey: string | undefined;
   private backAuraKey: string | undefined;
   private frontAuraKey: string | undefined;
   private frontAuraAnimationKey: string | undefined;
@@ -96,6 +96,7 @@ export class BumpkinContainer extends Phaser.GameObjects.Container {
     isVip,
     createdAt,
     islandType,
+    showDeliveryIcon,
   }: {
     scene: Phaser.Scene;
     x: number;
@@ -114,6 +115,7 @@ export class BumpkinContainer extends Phaser.GameObjects.Container {
     isVip?: boolean;
     createdAt?: number;
     islandType?: IslandType;
+    showDeliveryIcon?: boolean;
   }) {
     super(scene, x, y);
     this.scene = scene;
@@ -146,9 +148,21 @@ export class BumpkinContainer extends Phaser.GameObjects.Container {
 
     if (name) {
       const text = NAME_ALIASES[name as NPCName] ?? name;
-      const label = new Label(this.scene, text.toUpperCase());
+      const labelType = name === "hammerin harry" ? "gold" : "grey";
+      const labelIconKey =
+        showDeliveryIcon && this.scene.textures.exists("delivery_icon")
+          ? "delivery_icon"
+          : undefined;
+      const label = new Label(
+        this.scene,
+        text.toUpperCase(),
+        labelType,
+        labelIconKey,
+      );
       this.add(label);
-      label.setPosition(label.width / 2, -16);
+
+      const width = label.width;
+      label.setPosition(width / 2, -16);
       if (
         !!NPCS_WITH_ALERTS[name as NPCName] &&
         !acknowledgedNPCs()[name as NPCName] &&
@@ -213,16 +227,37 @@ export class BumpkinContainer extends Phaser.GameObjects.Container {
     this.setPosition(x, y);
   }
 
+  /**
+   * Update delivery icon visibility based on current game state.
+   * Call when game state changes (e.g. after completing a delivery) so the icon is removed.
+   */
+  public updateDeliveryIconVisibility(npcName: NPCName): void {
+    const gameState = this.scene.registry.get("gameState") as
+      | GameState
+      | undefined;
+    if (!gameState?.delivery?.orders || !this.label) return;
+    const now = Date.now();
+    const order = gameState.delivery.orders.find(
+      (o: Order) => o.from === npcName && now >= o.readyAt && !o.completedAt,
+    );
+    const showDeliveryIcon =
+      !!order && hasOrderRequirements({ order, state: gameState });
+    this.label.setIconVisible(showDeliveryIcon);
+  }
+
   get directionFacing() {
     return this.direction;
   }
 
   private async loadSprites(scene: Phaser.Scene) {
     this.spriteKey = tokenUriBuilder(this.clothing);
+    this.spriteKey2 = `${this.spriteKey}-2`;
     this.idleAnimationKey = `${this.spriteKey}-bumpkin-idle`;
     this.walkingAnimationKey = `${this.spriteKey}-bumpkin-walking`;
     this.digAnimationKey = `${this.spriteKey}-bumpkin-dig`;
     this.drillAnimationKey = `${this.spriteKey}-bumpkin-drilling`;
+    this.waveAnimationKey = `${this.spriteKey}-bumpkin-wave`;
+    this.cheerAnimationKey = `${this.spriteKey}-bumpkin-cheer`; // Jump animation for now
 
     await buildNPCSheets({
       parts: this.clothing,
@@ -251,6 +286,7 @@ export class BumpkinContainer extends Phaser.GameObjects.Container {
 
       this.ready = true;
     } else {
+      // Set up base animations
       const url = getAnimationUrl(this.clothing, [
         "idle",
         "walking",
@@ -294,6 +330,31 @@ export class BumpkinContainer extends Phaser.GameObjects.Container {
           this.silhouette?.destroy();
         }
       });
+
+      // Load micro interactions animations
+      const url2 = getAnimationUrl(this.clothing, ["wave", "jump"]);
+      const secondaryLoader = scene.load.spritesheet(this.spriteKey2, url2, {
+        frameWidth: 96,
+        frameHeight: 64,
+      });
+
+      secondaryLoader.once(
+        `filecomplete-spritesheet-${this.spriteKey2}`,
+        () => {
+          if (!scene.textures.exists(this.spriteKey2 as string)) {
+            return;
+          }
+
+          // Ensure these animations exist once the secondary sheet is loaded
+          if (!this.scene?.anims.exists(this.waveAnimationKey as string)) {
+            this.createWaveAnimation(0, 13);
+          }
+
+          if (!this.scene?.anims.exists(this.cheerAnimationKey as string)) {
+            this.createCheerAnimation(14, 18);
+          }
+        },
+      );
     }
 
     scene.load.start();
@@ -385,6 +446,34 @@ export class BumpkinContainer extends Phaser.GameObjects.Container {
         end,
       }),
       repeat: -1,
+      frameRate: 10,
+    });
+  }
+
+  private createWaveAnimation(start: number, end: number) {
+    if (!this.scene || !this.scene.anims) return;
+
+    this.scene.anims.create({
+      key: this.waveAnimationKey,
+      frames: this.scene.anims.generateFrameNumbers(this.spriteKey2 as string, {
+        start,
+        end, // Only play half of the wave animation
+      }),
+      repeat: 0,
+      frameRate: 10,
+    });
+  }
+
+  private createCheerAnimation(start: number, end: number) {
+    if (!this.scene || !this.scene.anims) return;
+
+    this.scene.anims.create({
+      key: this.cheerAnimationKey,
+      frames: this.scene.anims.generateFrameNumbers(this.spriteKey2 as string, {
+        start,
+        end,
+      }),
+      repeat: 2,
       frameRate: 10,
     });
   }
@@ -798,7 +887,10 @@ export class BumpkinContainer extends Phaser.GameObjects.Container {
     }
   }
 
-  private _react(react: ReactionName | InventoryItemName, quantity?: number) {
+  private _react(
+    react: ReactionName | InventoryItemName | "Social Point",
+    quantity?: number,
+  ) {
     this.stopSpeaking();
 
     this.reaction.clear(true, true);
@@ -842,9 +934,20 @@ export class BumpkinContainer extends Phaser.GameObjects.Container {
     this.destroyReaction();
   }
 
-  public react(reaction: ReactionName | InventoryItemName, quantity?: number) {
+  public react(
+    reaction: ReactionName | InventoryItemName | "Social Point",
+    quantity?: number,
+  ) {
     if (this.scene.textures.exists(reaction)) {
       return this._react(reaction, quantity);
+    }
+
+    if (reaction === "Social Point") {
+      this.loadTexture(reaction, "world/social_score.webp", () => {
+        this._react(reaction, quantity);
+      });
+
+      return;
     }
 
     if (reaction in KNOWN_IDS) {
@@ -927,6 +1030,18 @@ export class BumpkinContainer extends Phaser.GameObjects.Container {
     }
   }
 
+  public isInteracting() {
+    const interactionAnimations = [
+      this.waveAnimationKey,
+      this.cheerAnimationKey,
+    ];
+
+    return (
+      this.sprite?.anims?.isPlaying &&
+      interactionAnimations.includes(this.sprite?.anims.getName() as string)
+    );
+  }
+
   public idle() {
     if (
       this.sprite?.anims &&
@@ -947,6 +1062,30 @@ export class BumpkinContainer extends Phaser.GameObjects.Container {
 
     if (this.backParticles?.active) {
       this.backParticles.emitting = false;
+    }
+  }
+
+  public wave() {
+    if (!this.scene || !this.sprite) return;
+
+    if (
+      this.waveAnimationKey &&
+      this.scene?.anims.exists(this.waveAnimationKey)
+    ) {
+      this.sprite.anims.play(this.waveAnimationKey, true);
+      return;
+    }
+  }
+
+  public cheer() {
+    if (!this.scene || !this.sprite) return;
+
+    if (
+      this.cheerAnimationKey &&
+      this.scene?.anims.exists(this.cheerAnimationKey)
+    ) {
+      this.sprite.anims.play(this.cheerAnimationKey, true);
+      return;
     }
   }
 

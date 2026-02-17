@@ -61,7 +61,7 @@ export type LandscapingDecorationName =
 
 export type ShopDecorationName = LandscapingDecorationName;
 
-export type SeasonalDecorationName =
+export type ChapterDecorationName =
   | "Blossombeard"
   | "Desert Gnome"
   | "Clementine"
@@ -93,8 +93,10 @@ export type SeasonalDecorationName =
   | "Paw Prints Rug"
   | "Pet Bed"
   | "Pet Bowls"
+  | "Squeaky Chicken"
   | "Moon Fox Statue"
-  | "Giant Acorn";
+  | "Giant Acorn"
+  | "Diving Helmet";
 
 export type EventDecorationName =
   | "Jelly Lamp"
@@ -187,7 +189,17 @@ export type EventDecorationName =
   | "Mimic Egg"
   | "Haunted Tomb"
   | "Guillotine"
-  | "Vampire Coffin";
+  | "Vampire Coffin"
+  | "Holiday Decorative Totem"
+  | "Red Holiday Ornament"
+  | "Green Holiday Ornament"
+  | "Gift Turtle"
+  | "Red Nose Reindeer"
+  | "Tuxedo Claus"
+  | "Winter Alpaca"
+  | "Penguin Surprise"
+  | "Frozen Meat"
+  | "Ho Ho oh oh…";
 
 export type TileName =
   | "Black Tile"
@@ -603,7 +615,7 @@ export type DecorationName =
   | EventDecorationName
   | DecorationTreasure
   | BoostTreasure
-  | SeasonalDecorationName
+  | ChapterDecorationName
   | PotionHouseDecorationName
   | InteriorDecorationName
   | TemplateDecorationName
@@ -612,6 +624,10 @@ export type DecorationName =
   | GiantFruit;
 
 export const DECORATION_DIMENSIONS: Record<DecorationName, Dimensions> = {
+  "Diving Helmet": {
+    width: 1,
+    height: 2,
+  },
   "Jelly Lamp": {
     width: 2,
     height: 2,
@@ -1309,6 +1325,10 @@ export const DECORATION_DIMENSIONS: Record<DecorationName, Dimensions> = {
     width: 2,
     height: 1,
   },
+  "Squeaky Chicken": {
+    width: 1,
+    height: 1,
+  },
   "Pet Bed": {
     width: 2,
     height: 1,
@@ -1357,6 +1377,46 @@ export const DECORATION_DIMENSIONS: Record<DecorationName, Dimensions> = {
     height: 2,
   },
   "Vampire Coffin": {
+    width: 2,
+    height: 2,
+  },
+  "Holiday Decorative Totem": {
+    width: 1,
+    height: 2,
+  },
+  "Red Holiday Ornament": {
+    width: 2,
+    height: 2,
+  },
+  "Green Holiday Ornament": {
+    width: 2,
+    height: 2,
+  },
+  "Gift Turtle": {
+    width: 2,
+    height: 2,
+  },
+  "Red Nose Reindeer": {
+    width: 2,
+    height: 2,
+  },
+  "Tuxedo Claus": {
+    width: 2,
+    height: 3,
+  },
+  "Winter Alpaca": {
+    width: 2,
+    height: 2,
+  },
+  "Penguin Surprise": {
+    width: 3,
+    height: 2,
+  },
+  "Frozen Meat": {
+    width: 1,
+    height: 1,
+  },
+  "Ho Ho oh oh…": {
     width: 2,
     height: 2,
   },

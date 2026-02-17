@@ -5,7 +5,7 @@ import {
   updateBeehives,
 } from "features/game/lib/updateBeehives";
 import { getKeys } from "features/game/types/craftables";
-import { trackActivity } from "features/game/types/bumpkinActivity";
+import { trackFarmActivity } from "features/game/types/farmActivity";
 import { isWearableActive } from "features/game/lib/wearables";
 import { produce } from "immer";
 import { isCollectibleBuilt } from "features/game/lib/collectibleBuilt";
@@ -65,26 +65,26 @@ export const getHoneyMultiplier = (game: GameState) => {
   const { bumpkin } = game;
 
   let multiplier = 1;
-  const boostsUsed: BoostName[] = [];
+  const boostsUsed: { name: BoostName; value: string }[] = [];
 
   if (isWearableActive({ name: "Bee Suit", game })) {
     multiplier += 0.1;
-    boostsUsed.push("Bee Suit");
+    boostsUsed.push({ name: "Bee Suit", value: "+0.1" });
   }
 
   if (isWearableActive({ name: "Honeycomb Shield", game })) {
     multiplier += 1;
-    boostsUsed.push("Honeycomb Shield");
+    boostsUsed.push({ name: "Honeycomb Shield", value: "+1" });
   }
 
   if (bumpkin.skills["Sweet Bonus"]) {
     multiplier += 0.1;
-    boostsUsed.push("Sweet Bonus");
+    boostsUsed.push({ name: "Sweet Bonus", value: "+0.1" });
   }
 
   if (isCollectibleBuilt({ name: "King of Bears", game })) {
     multiplier += 0.25;
-    boostsUsed.push("King of Bears");
+    boostsUsed.push({ name: "King of Bears", value: "+0.25" });
   }
 
   return { multiplier, boostsUsed };
@@ -93,7 +93,7 @@ export const getHoneyMultiplier = (game: GameState) => {
 const getTotalHoneyProduced = (
   game: GameState,
   honeyProduced: number,
-): { amount: number; boostsUsed: BoostName[] } => {
+): { amount: number; boostsUsed: { name: BoostName; value: string }[] } => {
   const { multiplier, boostsUsed } = getHoneyMultiplier(game);
 
   return { amount: honeyProduced * multiplier, boostsUsed };
@@ -154,9 +154,9 @@ export function harvestBeehive({
       createdAt,
     });
 
-    stateCopy.bumpkin.activity = trackActivity(
+    stateCopy.farmActivity = trackFarmActivity(
       `Honey Harvested`,
-      stateCopy.bumpkin?.activity,
+      stateCopy.farmActivity,
       new Decimal(totalHoneyProduced),
     );
 

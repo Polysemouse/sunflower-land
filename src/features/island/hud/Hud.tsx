@@ -11,6 +11,7 @@ import { DepositGameItemsModal } from "features/goblins/bank/components/DepositG
 import { placeEvent } from "features/game/expansion/placeable/landscapingMachine";
 import { TravelButton } from "./components/deliveries/TravelButton";
 import { AuctionCountdown } from "features/retreat/components/auctioneer/AuctionCountdown";
+import { VersionUpdateWidget } from "./components/VersionUpdateWidget";
 import { PlaceableLocation } from "features/game/types/collectibles";
 import { HudContainer } from "components/ui/HudContainer";
 import Decimal from "decimal.js-light";
@@ -26,6 +27,7 @@ import { WorldFeedButton } from "features/social/components/WorldFeedButton";
 import classNames from "classnames";
 import { isMobile } from "mobile-device-detect";
 import { Feed } from "features/social/Feed";
+import { RaffleWidget } from "features/retreat/components/auctioneer/RaffleWidget";
 
 const _farmAddress = (state: MachineState) => state.context.farmAddress;
 const _linkedWallet = (state: MachineState) => state.context.linkedWallet;
@@ -99,9 +101,11 @@ const HudComponent: React.FC<{
         <TravelButton />
       </div>
       <div className="absolute bottom-0 pb-2 pl-3 left-16 flex flex-col space-y-2.5">
+        <RaffleWidget />
         <TransactionCountdown />
         <StreamCountdown />
         <AuctionCountdown />
+        <VersionUpdateWidget />
       </div>
 
       {/* Right side of the HUD */}
@@ -138,6 +142,7 @@ const HudComponent: React.FC<{
           isSaving={autosaving}
           isFarming={isFarming}
           hideActions={false}
+          location={location}
         />
       </div>
 

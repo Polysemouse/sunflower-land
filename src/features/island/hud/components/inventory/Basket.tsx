@@ -1,4 +1,4 @@
-import React, { useRef } from "react";
+import React, { useRef, useState } from "react";
 import { Box } from "components/ui/Box";
 import { ITEM_DETAILS } from "features/game/types/images";
 import {
@@ -41,7 +41,7 @@ import { SEASONAL_SEEDS, SeedName, SEEDS } from "features/game/types/seeds";
 import { getFruitHarvests } from "features/game/events/landExpansion/utils";
 import { getFoodExpBoost } from "features/game/expansion/lib/boosts";
 import { PIXEL_SCALE } from "features/game/lib/constants";
-import { SELLABLE_TREASURE } from "features/game/types/treasure";
+import { SELLABLE_TREASURES } from "features/game/types/treasure";
 import {
   TREASURE_TOOLS,
   WORKBENCH_TOOLS,
@@ -72,6 +72,9 @@ import { SEASON_ICONS } from "features/island/buildings/components/building/mark
 import { getFlowerTime } from "features/game/events/landExpansion/plantFlower";
 import { CLUTTER } from "features/game/types/clutter";
 import { PET_RESOURCES } from "features/game/types/pets";
+import { useNow } from "lib/utils/hooks/useNow";
+import { PROCESSED_RESOURCES } from "features/game/types/processedFood";
+import { CRUSTACEANS_DESCRIPTIONS } from "features/game/types/crustaceans";
 
 interface Prop {
   gameState: GameState;
@@ -81,6 +84,8 @@ interface Prop {
 
 export const Basket: React.FC<Prop> = ({ gameState, selected, onSelect }) => {
   const divRef = useRef<HTMLDivElement>(null);
+  const now = useNow({ live: true });
+  const [showBoosts, setShowBoosts] = useState(false);
 
   const { t } = useAppTranslation();
 
@@ -116,7 +121,8 @@ export const Basket: React.FC<Prop> = ({ gameState, selected, onSelect }) => {
     selected in FLOWER_SEEDS ||
     selected in GREENHOUSE_SEEDS ||
     selected in GREENHOUSE_FRUIT_SEEDS;
-  const isFood = (selected: InventoryItemName) => selected in CONSUMABLES;
+  const isFood = (selected: InventoryItemName): selected is ConsumableName =>
+    selected in CONSUMABLES;
 
   const getHarvestTime = (seedName: SeedName) => {
     if (isFlowerSeed(seedName)) {
@@ -139,13 +145,22 @@ export const Basket: React.FC<Prop> = ({ gameState, selected, onSelect }) => {
     return getCropPlotTime({
       crop,
       game: gameState,
-      createdAt: Date.now(),
+      createdAt: now,
     }).time;
   };
 
   const harvestCounts = getFruitHarvests(gameState, selectedItem as SeedName);
 
+  const foodExpBoost = isFood(selectedItem)
+    ? getFoodExpBoost({
+        food: CONSUMABLES[selectedItem],
+        game: gameState,
+        createdAt: now,
+      })
+    : null;
+
   const handleItemClick = (item: InventoryItemName) => {
+    setShowBoosts(false);
     onSelect(item);
   };
 
@@ -175,6 +190,8 @@ export const Basket: React.FC<Prop> = ({ gameState, selected, onSelect }) => {
   const craftingResources = getItems(RECIPE_CRAFTABLES);
   const animalResources = getItems(ANIMAL_RESOURCES);
   const animalFeeds = getItems(ANIMAL_FOODS);
+  const processedFood = getItems(PROCESSED_RESOURCES);
+  const crustaceans = getItems(CRUSTACEANS_DESCRIPTIONS);
 
   // Sort all foods by Cooking Time and Building
   const foods = getItems(COOKABLES)
@@ -189,7 +206,7 @@ export const Basket: React.FC<Prop> = ({ gameState, selected, onSelect }) => {
   const fertilisers = getItems(FERTILISERS);
   const coupons = getItems(COUPONS).sort((a, b) => a.localeCompare(b));
   const easterEggs = getItems(EASTER_EGG);
-  const treasure = getItems(SELLABLE_TREASURE);
+  const treasure = getItems(SELLABLE_TREASURES);
   const exotics = getItems(EXOTIC_CROPS);
   const cropCompost = getItems(CROP_COMPOST);
   const fruitCompost = getItems(FRUIT_COMPOST);
@@ -267,12 +284,15 @@ export const Basket: React.FC<Prop> = ({ gameState, selected, onSelect }) => {
                     maxHarvest: harvestCounts[1],
                   }
                 : undefined,
-              xp: isFood(selectedItem)
-                ? getFoodExpBoost({
-                    food: CONSUMABLES[selectedItem as ConsumableName],
-                    game: gameState,
-                  }).boostedExp
+              xp: foodExpBoost?.boostedExp,
+              xpBoostsUsed: foodExpBoost?.boostsUsed,
+              baseXp: foodExpBoost
+                ? CONSUMABLES[selectedItem as ConsumableName].experience
                 : undefined,
+              ...(foodExpBoost && {
+                showBoosts,
+                setShowBoosts,
+              }),
               timeSeconds: isSeed(selectedItem)
                 ? getHarvestTime(selectedItem)
                 : undefined,
@@ -331,6 +351,16 @@ export const Basket: React.FC<Prop> = ({ gameState, selected, onSelect }) => {
             ITEM_DETAILS["Earthworm"].image,
           )}
           {itemsSection(t("fish"), fish, ITEM_DETAILS["Anchovy"].image)}
+          {itemsSection(
+            t("crustaceans"),
+            crustaceans,
+            ITEM_DETAILS["Crab"].image,
+          )}
+          {itemsSection(
+            t("processedResources"),
+            processedFood,
+            ITEM_DETAILS["Fish Flake"].image,
+          )}
           {itemsSection(
             t("foods"),
             [...foods, ...pirateCake],

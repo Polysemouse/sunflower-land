@@ -14,13 +14,13 @@ import { Context } from "features/game/GameProvider";
 import { MachineState } from "features/game/lib/gameMachine";
 import { Transition } from "@headlessui/react";
 import { PIXEL_SCALE } from "features/game/lib/constants";
-import useUiRefresher from "lib/utils/hooks/useUiRefresher";
+import { useNow } from "lib/utils/hooks/useNow";
 
 const _petNFTData = (id: string) => (state: MachineState) => {
   return state.context.state.pets?.nfts?.[Number(id)];
 };
 
-const _isTypeFed = (id: string) => (state: MachineState) => {
+const _isTypeFed = (id: string, now: number) => (state: MachineState) => {
   const petData = state.context.state.pets?.nfts?.[Number(id)];
   if (!petData) return false;
   if (!petData.traits) return false;
@@ -29,7 +29,7 @@ const _isTypeFed = (id: string) => (state: MachineState) => {
     nftPets: state.context.state.pets?.nfts ?? {},
     petType: petData.traits.type,
     id: Number(id),
-    now: Date.now(),
+    now,
   });
 
   return isTypeFed;
@@ -41,12 +41,14 @@ export const LandPetNFT: React.FC<{ id: string }> = ({ id }) => {
   const [showPetModal, setShowPetModal] = useState(false);
   const [showPositiveXpPopup, setShowPositiveXpPopup] = useState(false);
   const [showNegativeXpPopup, setShowNegativeXpPopup] = useState(false);
+  const now = useNow({ live: true });
 
-  const isNeglected = isPetNeglected(petNFTData);
-  const isNapping = isPetNapping(petNFTData);
-  const isTypeFed = useSelector(gameService, _isTypeFed(id));
+  const isNeglected = isPetNeglected(petNFTData, now);
+  const isNapping = isPetNapping(petNFTData, now);
+  const isTypeFed = useSelector(gameService, _isTypeFed(id, now));
 
-  const isRevealed = isPetNFTRevealed(Number(id), Date.now());
+  const isRevealed = isPetNFTRevealed(Number(id), now);
+
   const petType = getPetType(petNFTData);
 
   const handlePetClick = () => {
@@ -66,9 +68,6 @@ export const LandPetNFT: React.FC<{ id: string }> = ({ id }) => {
       setShowPetModal(true);
     }
   };
-
-  // Used to move the pet through different states (neglected, napping)
-  useUiRefresher({ active: !!petNFTData?.traits });
 
   if (!petNFTData || !petNFTData.traits) return null;
 

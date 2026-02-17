@@ -9,19 +9,21 @@ import Decimal from "decimal.js-light";
 import { Context } from "features/game/GameProvider";
 import { PIXEL_SCALE } from "features/game/lib/constants";
 import { SFLDiscount } from "features/game/lib/SFLDiscount";
-import { BumpkinItem, ITEM_IDS } from "features/game/types/bumpkin";
+import { BumpkinItem } from "features/game/types/bumpkin";
 import { getKeys } from "features/game/types/decorations";
 import { GameState, Inventory } from "features/game/types/game";
 import { ITEM_DETAILS } from "features/game/types/images";
-import { getSeasonalTicket } from "features/game/types/seasons";
+import { getChapterTicket } from "features/game/types/chapters";
 import {
   STYLIST_WEARABLES,
   StylistWearable,
 } from "features/game/types/stylist";
 import { gameAnalytics } from "lib/gameAnalytics";
 import { useAppTranslation } from "lib/i18n/useAppTranslations";
+import { useNow } from "lib/utils/hooks/useNow";
 import { secondsToString } from "lib/utils/time";
 import React, { useState, useContext, useEffect } from "react";
+import { getWearableImage } from "features/game/lib/getWearableImage";
 
 function isNotReady(
   name: BumpkinItem,
@@ -58,6 +60,8 @@ export const WardrobeWearables: React.FC = () => {
   const state = useSelector(gameService, (state) => state.context.state);
   const { inventory, coins, wardrobe } = state;
   const [isTimeout, setTimeout] = useState(false);
+  const now = useNow();
+  const ticket = getChapterTicket(now);
 
   const wearable = STYLIST_WEARABLES[selected] as StylistWearable; // Add type assertion to StylistWearable
 
@@ -88,10 +92,10 @@ export const WardrobeWearables: React.FC = () => {
       });
     }
 
-    if (wearable.ingredients[getSeasonalTicket()]) {
+    if (wearable.ingredients[ticket]) {
       gameAnalytics.trackSink({
         currency: "Seasonal Ticket",
-        amount: wearable.ingredients[getSeasonalTicket()]?.toNumber() ?? 1,
+        amount: wearable.ingredients[ticket]?.toNumber() ?? 1,
         item: selected,
         type: "Wearable",
       });
@@ -143,18 +147,14 @@ export const WardrobeWearables: React.FC = () => {
           <div className="flex flex-wrap">
             {getKeys(STYLIST_WEARABLES).map((item) => {
               const timeLimited = isNotReady(item, state).isNotReady;
+              const image = getWearableImage(item);
 
               return (
                 <Box
                   isSelected={selected === item}
                   key={item}
                   onClick={() => setSelected(item)}
-                  image={
-                    new URL(
-                      `/src/assets/wearables/${ITEM_IDS[item]}.webp`,
-                      import.meta.url,
-                    ).href
-                  }
+                  image={image}
                   count={new Decimal(wardrobe[item] ?? 0)}
                   showOverlay={timeLimited}
                   overlayIcon={

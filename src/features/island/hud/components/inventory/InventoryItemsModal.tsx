@@ -18,6 +18,8 @@ import {
   LandscapingPlaceableType,
 } from "features/game/expansion/placeable/landscapingMachine";
 import { NFTName } from "features/game/events/landExpansion/placeNFT";
+import { PanelTabs } from "features/game/components/CloseablePanel";
+import { PlaceableLocation } from "features/game/types/collectibles";
 
 interface Props {
   show: boolean;
@@ -33,6 +35,9 @@ interface Props {
   isSaving?: boolean;
   isFarming: boolean;
   isFullUser: boolean;
+  location?: PlaceableLocation;
+  /** When true, open with Chest tab selected (e.g. first-time place flow). */
+  defaultToChest?: boolean;
 }
 
 export type TabItems = Record<string, { items: object }>;
@@ -53,30 +58,51 @@ export const InventoryItemsModal: React.FC<Props> = ({
   isSaving,
   isFarming,
   isFullUser,
+  location,
+  defaultToChest,
 }) => {
   const { t } = useAppTranslation();
+  const initialTab: "Basket" | "Chest" | "Biomes" =
+    defaultToChest || location === "petHouse" ? "Chest" : "Basket";
   const [currentTab, setCurrentTab] = useState<"Basket" | "Chest" | "Biomes">(
-    "Basket",
+    initialTab,
   );
+
   const hasBiomes = getKeys(LAND_BIOMES).some((item) =>
     (state.inventory[item] ?? new Decimal(0)).gt(0),
   );
+
+  const basketTab: PanelTabs<"Basket" | "Chest" | "Biomes"> = {
+    icon: SUNNYSIDE.icons.basket,
+    name: t("basket"),
+    id: "Basket",
+  };
+
+  const chestTab: PanelTabs<"Basket" | "Chest" | "Biomes"> = {
+    icon: chest,
+    name: t("chest"),
+    id: "Chest",
+  };
+
+  const biomesTab: PanelTabs<"Basket" | "Chest" | "Biomes"> = {
+    icon: ITEM_DETAILS["Basic Biome"].image,
+    name: t("biomes"),
+    id: "Biomes",
+  };
+
+  const tabs: PanelTabs<"Basket" | "Chest" | "Biomes">[] = [];
+  if (location !== "petHouse") {
+    tabs.push(basketTab);
+  }
+  tabs.push(chestTab);
+  if (hasBiomes && location === "farm") {
+    tabs.push(biomesTab);
+  }
+
   return (
     <Modal size="lg" show={show} onHide={onHide}>
       <CloseButtonPanel
-        tabs={[
-          { icon: SUNNYSIDE.icons.basket, name: t("basket"), id: "Basket" },
-          { icon: chest, name: t("chest"), id: "Chest" },
-          ...(hasBiomes
-            ? [
-                {
-                  icon: ITEM_DETAILS["Basic Biome"].image,
-                  name: t("biomes"),
-                  id: "Biomes",
-                },
-              ]
-            : []),
-        ]}
+        tabs={tabs as PanelTabs<"Basket" | "Chest">[]}
         currentTab={currentTab}
         setCurrentTab={setCurrentTab}
         onClose={onHide}
@@ -99,6 +125,7 @@ export const InventoryItemsModal: React.FC<Props> = ({
             onPlaceNFT={isFarming ? onPlaceNFT : undefined}
             onDepositClick={isFullUser ? onDepositClick : undefined}
             isSaving={isSaving}
+            location={location}
           />
         )}
         {currentTab === "Biomes" && <Biomes state={state} />}

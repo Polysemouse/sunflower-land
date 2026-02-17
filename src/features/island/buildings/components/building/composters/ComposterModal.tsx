@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useState } from "react";
+import React, { useContext, useState } from "react";
 
 import { Modal } from "components/ui/Modal";
 import { Button } from "components/ui/Button";
@@ -44,6 +44,9 @@ import { SEASON_ICONS } from "../market/SeasonalSeeds";
 import { RecipeInfoPanel } from "../craftingBox/components/RecipeInfoPanel";
 import { secondsTillWeekReset } from "features/game/lib/factions";
 import { getFruitfulBlendBuff } from "features/game/events/landExpansion/fertiliseFruitPatch";
+import { useNow } from "lib/utils/hooks/useNow";
+import { useCountdown } from "lib/utils/hooks/useCountdown";
+import { BoostsDisplay } from "components/ui/layouts/BoostsDisplay";
 
 const WORM_OUTPUT: Record<ComposterName, { min: number; max: number }> = {
   "Compost Bin": { min: 2, max: 4 },
@@ -87,6 +90,11 @@ function getWormOutput({
   if (skills["Composting Revamp"]) {
     min -= 3;
     max -= 3;
+  }
+
+  if (isWearableActive({ name: "Saw Fish", game: state })) {
+    min += 1;
+    max += 1;
   }
 
   // If min/max somehow goes negative, show as 0
@@ -141,21 +149,7 @@ function hasRead() {
 }
 
 const Timer: React.FC<{ readyAt: number }> = ({ readyAt }) => {
-  const [secondsLeft, setSecondsLeft] = useState((readyAt - Date.now()) / 1000);
-
-  const active = readyAt >= Date.now();
-
-  useEffect(() => {
-    // Reset secondsLeft when readyAt changes (e.g., due to boost)
-    setSecondsLeft((readyAt - Date.now()) / 1000);
-
-    if (active) {
-      const interval = setInterval(() => {
-        setSecondsLeft((readyAt - Date.now()) / 1000);
-      }, 1000);
-      return () => clearInterval(interval);
-    }
-  }, [active, readyAt]);
+  const { totalSeconds: secondsLeft } = useCountdown(readyAt);
 
   return (
     <div className="flex items-center mb-2">
@@ -230,13 +224,17 @@ const ComposterModalContent: React.FC<{
 }> = ({ composterName, startComposter, readyAt, onCollect, onBoost }) => {
   const { gameService } = useContext(Context);
   const [showRequirements, setShowRequirements] = useState(false);
+  const [showBoosts, setShowBoosts] = useState(false);
 
   const { t } = useAppTranslation();
 
   const state = useSelector(gameService, (state) => state.context.state);
 
-  const { inventory, bumpkin, buildings } = state;
+  const now = useNow({ live: !!readyAt, autoEndAt: readyAt ?? 0 });
+  const composting = !!readyAt && readyAt >= now;
+  const isReady = readyAt && readyAt <= now;
 
+  const { inventory, bumpkin, buildings } = state;
   const { produce, worm } = composterDetails[composterName];
 
   const { resourceBoostMilliseconds } = getSpeedUpTime({
@@ -252,13 +250,13 @@ const ComposterModalContent: React.FC<{
   });
 
   const { min, max } = getWormOutput({ state, building: composterName });
-  const { timeToFinishMilliseconds } = getReadyAt({
+  const { timeToFinishMilliseconds, boostsUsed } = getReadyAt({
     gameState: state,
     composter: composterName,
   });
-
-  const composting = !!readyAt && readyAt > Date.now();
-  const isReady = readyAt && readyAt < Date.now();
+  const baseTimeToFinishMilliseconds =
+    composterDetails[composterName].timeToFinishMilliseconds;
+  const isCompostTimeBoosted = boostsUsed.length > 0;
 
   const produces = buildings[composterName]?.[0].producing?.items ?? {};
 
@@ -525,10 +523,7 @@ const ComposterModalContent: React.FC<{
               </div>
             </div>
           </div>
-          <div
-            className="border-t border-white w-full my-2 pt-2 flex-col"
-            onClick={() => setShowRequirements(!showRequirements)}
-          >
+          <div className="border-t border-white w-full my-2 pt-2 flex-col">
             <div className="relative w-[140px] h-0">
               <RecipeInfoPanel
                 show={showRequirements}
@@ -541,16 +536,40 @@ const ComposterModalContent: React.FC<{
                 }}
               />
             </div>
-
             <div className="flex justify-between">
               <Label type="default">{t("requirements")}</Label>
-              <RequirementLabel
-                type="time"
-                waitSeconds={timeToFinishMilliseconds / 1000}
-              />
+              <div
+                className="flex flex-row items-end cursor-pointer"
+                onClick={
+                  isCompostTimeBoosted
+                    ? () => setShowBoosts(!showBoosts)
+                    : undefined
+                }
+              >
+                {isCompostTimeBoosted && (
+                  <RequirementLabel
+                    type="time"
+                    waitSeconds={timeToFinishMilliseconds / 1000}
+                    boosted
+                  />
+                )}
+                <RequirementLabel
+                  type="time"
+                  waitSeconds={baseTimeToFinishMilliseconds / 1000}
+                  strikethrough={isCompostTimeBoosted}
+                />
+                <BoostsDisplay
+                  boosts={boostsUsed}
+                  show={showBoosts}
+                  state={state}
+                  onClick={() => setShowBoosts(!showBoosts)}
+                />
+              </div>
             </div>
-
-            <div className="flex justify-between gap-x-3 gap-y-2 flex-wrap mt-2">
+            <div
+              className="flex justify-between gap-x-3 gap-y-2 flex-wrap mt-2"
+              onClick={() => setShowRequirements((prev) => !prev)}
+            >
               {/* Item ingredients requirements */}
               {getKeys(requires).map((ingredientName, index) => (
                 <RequirementLabel
@@ -596,15 +615,11 @@ export const ComposterModal: React.FC<Props> = ({
   onCollect,
   onBoost,
 }) => {
-  const [tab, setTab] = useState(0);
-
+  type Tab = "composter" | "guide";
+  const [tab, setTab] = useState<Tab>(
+    showModal && !hasRead() ? "guide" : "composter",
+  );
   const { t } = useAppTranslation();
-
-  useEffect(() => {
-    if (showModal && !hasRead()) {
-      setTab(1);
-    }
-  }, [showModal]);
 
   return (
     <Modal show={showModal} onHide={() => setShowModal(false)}>
@@ -613,8 +628,9 @@ export const ComposterModal: React.FC<Props> = ({
           setShowModal(false);
         }}
         tabs={[
-          { icon: compost, name: "Composter" },
+          { id: "composter", icon: compost, name: "Composter" },
           {
+            id: "guide",
             icon: SUNNYSIDE.icons.expression_confused,
             name: t("guide"),
           },
@@ -622,7 +638,7 @@ export const ComposterModal: React.FC<Props> = ({
         currentTab={tab}
         setCurrentTab={setTab}
       >
-        {tab === 0 && (
+        {tab === "composter" && (
           <ComposterModalContent
             composterName={composterName}
             startComposter={startComposter}
@@ -631,7 +647,7 @@ export const ComposterModal: React.FC<Props> = ({
             onBoost={onBoost}
           />
         )}
-        {tab === 1 && (
+        {tab === "guide" && (
           <>
             <div className="p-2">
               <img
@@ -699,7 +715,7 @@ export const ComposterModal: React.FC<Props> = ({
             <Button
               className="text-xxs sm:text-sm mt-1 whitespace-nowrap"
               onClick={() => {
-                setTab(0);
+                setTab("composter");
                 acknowledgeRead();
               }}
             >

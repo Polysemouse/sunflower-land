@@ -6,7 +6,7 @@ import { SquareIcon } from "components/ui/SquareIcon";
 import { SUNNYSIDE } from "assets/sunnyside";
 import lightning from "assets/icons/lightning.png";
 
-import { BumpkinPart, ITEM_IDS } from "features/game/types/bumpkin";
+import { BumpkinPart } from "features/game/types/bumpkin";
 import { BumpkinParts } from "lib/utils/tokenUriBuilder";
 import {
   BUMPKIN_ITEM_BUFF_LABELS,
@@ -18,6 +18,7 @@ import {
   pixelBlueBorderStyle,
   pixelVibrantBorderStyle,
 } from "features/game/lib/style";
+import { getWearableImage } from "features/game/lib/getWearableImage";
 
 interface Props {
   bumpkinParts: BumpkinPart[];
@@ -43,13 +44,13 @@ export const BumpkinPartGroup: React.FC<Props> = ({
       {bumpkinParts.map((name) => {
         const bumpkinItem = equipped[name];
         const boostLabel = bumpkinItem
-          ? (BUMPKIN_ITEM_BUFF_LABELS[bumpkinItem] &&
+          ? ((BUMPKIN_ITEM_BUFF_LABELS[bumpkinItem] &&
               !SPECIAL_ITEM_LABELS[bumpkinItem]) ??
-            ""
+            "")
           : "";
 
         const specialItem = bumpkinItem
-          ? SPECIAL_ITEM_LABELS[bumpkinItem] ?? ""
+          ? (SPECIAL_ITEM_LABELS[bumpkinItem] ?? "")
           : "";
 
         const buffLabel = boostLabel || specialItem;
@@ -80,10 +81,7 @@ export const BumpkinPartGroup: React.FC<Props> = ({
             <img
               src={
                 bumpkinItem
-                  ? new URL(
-                      `/src/assets/wearables/${ITEM_IDS[bumpkinItem]}.webp`,
-                      import.meta.url,
-                    ).href
+                  ? getWearableImage(bumpkinItem)
                   : BUMPKIN_PART_SILHOUETTE[name]
               }
               className="h-10"

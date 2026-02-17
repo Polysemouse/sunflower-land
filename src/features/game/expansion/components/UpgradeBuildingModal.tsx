@@ -15,6 +15,7 @@ import { RequirementLabel } from "components/ui/RequirementsLabel";
 import Decimal from "decimal.js-light";
 import {
   BUILDING_UPGRADES,
+  BuildingUpgradeCost,
   UpgradableBuildingType,
   makeUpgradableBuildingKey,
 } from "features/game/events/landExpansion/upgradeBuilding";
@@ -24,6 +25,7 @@ import { isCollectibleBuilt } from "features/game/lib/collectibleBuilt";
 import { BARN_IMAGES } from "features/island/buildings/components/building/barn/Barn";
 import {
   HEN_HOUSE_VARIANTS,
+  PET_HOUSE_VARIANTS,
   WATER_WELL_VARIANTS,
 } from "features/island/lib/alternateArt";
 import { getSupportedPlots } from "features/game/events/landExpansion/plant";
@@ -56,12 +58,16 @@ export const UpgradeBuildingModal: React.FC<Props> = ({
 
   const maxLevel = getKeys(BUILDING_UPGRADES[buildingName]).length;
   const isMaxLevel = currentLevel === maxLevel;
-  const requirements = BUILDING_UPGRADES[buildingName][nextLevel];
+  const requirements = BUILDING_UPGRADES[buildingName][nextLevel] as
+    | BuildingUpgradeCost
+    | undefined;
   const buildingKey = makeUpgradableBuildingKey(buildingName);
   const building = state[buildingKey];
   const upgradeReadyAt = building?.upgradeReadyAt;
-  const isCurrentlyUpgrading = !!upgradeReadyAt && upgradeReadyAt > Date.now();
-  const upgradeCountdown = useCountdown(upgradeReadyAt ?? 0);
+  const { totalSeconds: secondsLeft, ...upgradeCountdown } = useCountdown(
+    upgradeReadyAt ?? 0,
+  );
+  const isCurrentlyUpgrading = !!upgradeReadyAt && secondsLeft > 0;
 
   const upgrade = () => {
     // Implement the upgrade logic here
@@ -72,7 +78,7 @@ export const UpgradeBuildingModal: React.FC<Props> = ({
     onClose();
   };
 
-  const hasRequiredLevel = () => {
+  const hasRequiredLevel = (requirements: BuildingUpgradeCost) => {
     const bumpkinLevel = getBumpkinLevel(state.bumpkin?.experience ?? 0);
 
     if (requirements.requiredLevel) {
@@ -82,9 +88,9 @@ export const UpgradeBuildingModal: React.FC<Props> = ({
     return true;
   };
 
-  const hasRequirements = () => {
+  const hasRequirements = (requirements: BuildingUpgradeCost) => {
     // Check if player has enough bumpkin level
-    if (!hasRequiredLevel()) {
+    if (!hasRequiredLevel(requirements)) {
       return false;
     }
 
@@ -124,6 +130,10 @@ export const UpgradeBuildingModal: React.FC<Props> = ({
       return WATER_WELL_VARIANTS[state.season.season][nextLevel];
     }
 
+    if (buildingName === "Pet House") {
+      return PET_HOUSE_VARIANTS[nextLevel];
+    }
+
     const biome: LandBiomeName = getCurrentBiome(state.island);
 
     return BARN_IMAGES[biome][state.season.season][nextLevel];
@@ -148,6 +158,9 @@ export const UpgradeBuildingModal: React.FC<Props> = ({
       }
       return t("upgrade.plusPlotFertility", { amount: nextLevelFertility });
     }
+    if (buildingName === "Pet House") {
+      return t("upgrade.petHouseCapacity");
+    }
     return t("upgrade.capacityIncrease", { amount: capacityIncrease });
   };
 
@@ -160,7 +173,7 @@ export const UpgradeBuildingModal: React.FC<Props> = ({
         onClose={onClose}
       >
         {/* Show max level content */}
-        {isMaxLevel ? (
+        {isMaxLevel || !requirements ? (
           <div className="flex flex-col">
             <div className="p-1 mb-2">
               <Label
@@ -203,7 +216,9 @@ export const UpgradeBuildingModal: React.FC<Props> = ({
                 message={t(
                   buildingName === "Water Well"
                     ? "upgrade.intro.water.well"
-                    : "upgrade.intro",
+                    : buildingName === "Pet House"
+                      ? "upgrade.intro.pet.house"
+                      : "upgrade.intro",
                   {
                     building: buildingName,
                     animals:
@@ -224,17 +239,18 @@ export const UpgradeBuildingModal: React.FC<Props> = ({
                   {t("requirements")}
                 </Label>
 
-                {requirements.requiredLevel && !hasRequiredLevel() && (
-                  <Label
-                    type="danger"
-                    secondaryIcon={SUNNYSIDE.icons.player}
-                    className="mr-2 mb-2"
-                  >
-                    {t("warning.level.required", {
-                      lvl: requirements.requiredLevel,
-                    })}
-                  </Label>
-                )}
+                {requirements.requiredLevel &&
+                  !hasRequiredLevel(requirements) && (
+                    <Label
+                      type="danger"
+                      secondaryIcon={SUNNYSIDE.icons.player}
+                      className="mr-2 mb-2"
+                    >
+                      {t("warning.level.required", {
+                        lvl: requirements.requiredLevel,
+                      })}
+                    </Label>
+                  )}
               </div>
               <InnerPanel className="flex flex-wrap gap-2 w-full">
                 {getKeys(requirements.items).map((itemName) => (
@@ -278,7 +294,7 @@ export const UpgradeBuildingModal: React.FC<Props> = ({
             <Button
               className="mt-2"
               onClick={upgrade}
-              disabled={isCurrentlyUpgrading || !hasRequirements()}
+              disabled={isCurrentlyUpgrading || !hasRequirements(requirements)}
             >
               {isCurrentlyUpgrading
                 ? t("in.progress")

@@ -8,7 +8,7 @@ import {
 } from "../../types/crops";
 import { GameState } from "../../types/game";
 import { getSellPrice } from "features/game/expansion/lib/boosts";
-import { trackActivity } from "features/game/types/bumpkinActivity";
+import { trackFarmActivity } from "features/game/types/farmActivity";
 import { setPrecision } from "lib/utils/formatNumber";
 import {
   GREENHOUSE_FRUIT,
@@ -20,6 +20,7 @@ import {
 import { produce } from "immer";
 import { ExoticCrop } from "features/game/types/beans";
 import { getCountAndType } from "features/island/hud/components/inventory/utils/inventory";
+import { updateBoostUsed } from "features/game/types/updateBoostUsed";
 
 export type SellableName = CropName | PatchFruitName;
 export type SellableItem =
@@ -77,21 +78,21 @@ export function sellCrop({
       throw new Error("Insufficient quantity to sell");
     }
 
-    const price = getSellPrice({
+    const { price, boostsUsed } = getSellPrice({
       item: sellables,
       game,
       now: new Date(createdAt),
     });
 
     const coinsEarned = price * action.amount;
-    bumpkin.activity = trackActivity(
+    game.farmActivity = trackFarmActivity(
       "Coins Earned",
-      bumpkin.activity,
+      game.farmActivity,
       new Decimal(coinsEarned),
     );
-    bumpkin.activity = trackActivity(
+    game.farmActivity = trackFarmActivity(
       `${action.crop} Sold`,
-      bumpkin?.activity,
+      game.farmActivity,
       new Decimal(amount),
     );
 
@@ -99,6 +100,12 @@ export function sellCrop({
     game.inventory[action.crop] = setPrecision(
       (game.inventory[action.crop] ?? new Decimal(0)).sub(amount),
     );
+
+    game.boostsUsedAt = updateBoostUsed({
+      game,
+      boostNames: boostsUsed,
+      createdAt,
+    });
 
     return game;
   });

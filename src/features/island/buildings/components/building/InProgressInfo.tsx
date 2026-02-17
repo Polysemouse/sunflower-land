@@ -1,7 +1,7 @@
 import { Box } from "components/ui/Box";
 import { ResizableBar } from "components/ui/ProgressBar";
 import { PIXEL_SCALE } from "features/game/lib/constants";
-import { COOKABLES } from "features/game/types/consumables";
+import { CookableName, COOKABLES } from "features/game/types/consumables";
 import { ITEM_DETAILS } from "features/game/types/images";
 import { secondsToString } from "lib/utils/time";
 import React, { useState } from "react";
@@ -13,35 +13,44 @@ import { getInstantGems } from "features/game/events/landExpansion/speedUpRecipe
 import { BuildingProduct, GameState } from "features/game/types/game";
 import { ConfirmationModal } from "components/ui/ConfirmationModal";
 import fastForward from "assets/icons/fast_forward.png";
-import useUiRefresher from "lib/utils/hooks/useUiRefresher";
+import { useCountdown } from "lib/utils/hooks/useCountdown";
+import { FISH_PROCESSING_TIME_SECONDS } from "features/game/types/fishProcessing";
 
 interface Props {
-  cooking: BuildingProduct;
+  product: BuildingProduct;
   onClose: () => void;
-  isOilBoosted: boolean;
-  onInstantCooked: (gems: number) => void;
+  isOilBoosted?: boolean;
+  onInstantReady: (gems: number) => void;
   state: GameState;
 }
 
 export const InProgressInfo: React.FC<Props> = ({
-  cooking,
+  product,
   isOilBoosted,
-  onInstantCooked,
+  onInstantReady,
   state,
 }) => {
   const { t } = useAppTranslation();
-  useUiRefresher();
 
   const [showConfirmation, setShowConfirmation] = useState(false);
-  const secondsTillReady = (cooking.readyAt - Date.now()) / 1000;
+  const { totalSeconds: secondsTillReady } = useCountdown(product.readyAt ?? 0);
 
-  if (!cooking.name) return null;
+  const isCookableName = (name: string | undefined): name is CookableName =>
+    !!name && name in COOKABLES;
 
-  const { cookingSeconds } = COOKABLES[cooking.name];
+  const getProductTotalSeconds = () => {
+    if (isCookableName(product.name)) {
+      return COOKABLES[product.name].cookingSeconds;
+    }
+
+    return FISH_PROCESSING_TIME_SECONDS[product.name];
+  };
+
+  const totalSeconds = getProductTotalSeconds();
   const { inventory } = state;
 
   const gems = getInstantGems({
-    readyAt: cooking.readyAt,
+    readyAt: product.readyAt,
     game: state,
   });
 
@@ -56,7 +65,7 @@ export const InProgressInfo: React.FC<Props> = ({
       </Label>
       <div className="flex items-center justify-between">
         <Box
-          image={ITEM_DETAILS[cooking.name].image}
+          image={ITEM_DETAILS[product.name].image}
           // alternateIcon={isOilBoosted ? ITEM_DETAILS["Oil"].image : null}
           secondaryImage={isOilBoosted ? ITEM_DETAILS["Oil"].image : null}
         />
@@ -72,7 +81,7 @@ export const InProgressInfo: React.FC<Props> = ({
             {secondsToString(secondsTillReady, { length: "medium" })}
           </span>
           <ResizableBar
-            percentage={(1 - secondsTillReady / cookingSeconds) * 100}
+            percentage={(1 - secondsTillReady / totalSeconds) * 100}
             type="progress"
           />
         </div>
@@ -94,7 +103,7 @@ export const InProgressInfo: React.FC<Props> = ({
           onHide={() => setShowConfirmation(false)}
           onCancel={() => setShowConfirmation(false)}
           onConfirm={() => {
-            onInstantCooked(gems);
+            onInstantReady(gems);
             setShowConfirmation(false);
           }}
           messages={[

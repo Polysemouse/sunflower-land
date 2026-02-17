@@ -14,7 +14,7 @@ import { Equipped } from "../types/bumpkin";
 import { isSeed, SeedName } from "../types/seeds";
 import { makeAnimalBuilding } from "./animals";
 import { ChoreBoard } from "../types/choreBoard";
-import { getSeasonalTicket } from "../types/seasons";
+import { getChapterTicket } from "../types/chapters";
 import { getObjectEntries } from "../expansion/lib/utils";
 import {
   isFullMoonBerry,
@@ -65,10 +65,14 @@ export const INITIAL_STOCK = (
   state?: GameState,
 ): Record<StockableName, Decimal> => {
   const tools = Object.entries(WORKBENCH_TOOLS).reduce(
-    (acc, [toolName, tool]) => ({
-      ...acc,
-      [toolName]: tool.stock,
-    }),
+    (acc, [toolName, tool]) => {
+      if (tool.disabled) return acc;
+
+      return {
+        ...acc,
+        [toolName]: tool.stock,
+      };
+    },
     {} as Record<WorkbenchToolName, Decimal>,
   );
 
@@ -338,27 +342,25 @@ export const INITIAL_BUMPKIN: Bumpkin = {
   skills: {},
   tokenUri: `1_${tokenUriBuilder(INITIAL_EQUIPMENT)}`,
   achievements: {},
-
-  activity: {},
 };
 
 export const INITIAL_CHORE_BOARD: ChoreBoard = {
   chores: {
     "pumpkin' pete": {
       name: "CHOP_1_TREE",
-      reward: { items: { [getSeasonalTicket()]: 1 } },
+      reward: { items: { [getChapterTicket(Date.now())]: 1 } },
       initialProgress: 0,
       startedAt: Date.now(),
     },
     betty: {
       name: "CHOP_2_TREE",
-      reward: { items: { [getSeasonalTicket()]: 2 } },
+      reward: { items: { [getChapterTicket(Date.now())]: 2 } },
       initialProgress: 0,
       startedAt: Date.now(),
     },
     finley: {
       name: "CHOP_1_TREE",
-      reward: { items: { [getSeasonalTicket()]: 2 } },
+      reward: { items: { [getChapterTicket(Date.now())]: 2 } },
       initialProgress: 0,
       startedAt: Date.now(),
     },
@@ -527,6 +529,9 @@ export const INITIAL_FARM: GameState = {
     dailyAttempts: {},
     wharf: {},
   },
+  crabTraps: {
+    trapSpots: {},
+  },
   mailbox: {
     read: [],
   },
@@ -649,6 +654,10 @@ export const INITIAL_FARM: GameState = {
   waterWell: {
     level: 1,
   },
+  petHouse: {
+    level: 1,
+    pets: {},
+  },
   craftingBox: {
     status: "idle",
     startedAt: 0,
@@ -685,6 +694,10 @@ export const INITIAL_FARM: GameState = {
     },
     cheers: {
       freeCheersClaimedAt: 0,
+    },
+    waves: {
+      date: "",
+      farms: [],
     },
   },
   pets: {
@@ -757,6 +770,9 @@ export const TEST_FARM: GameState = {
   fishing: {
     wharf: {},
     dailyAttempts: {},
+  },
+  crabTraps: {
+    trapSpots: {},
   },
   greenhouse: {
     pots: {},
@@ -973,6 +989,10 @@ export const TEST_FARM: GameState = {
   waterWell: {
     level: 1,
   },
+  petHouse: {
+    level: 1,
+    pets: {},
+  },
   craftingBox: {
     status: "idle",
     startedAt: 0,
@@ -1009,6 +1029,10 @@ export const TEST_FARM: GameState = {
     },
     cheers: {
       freeCheersClaimedAt: 0,
+    },
+    waves: {
+      date: "",
+      farms: [],
     },
   },
   pets: {
@@ -1123,6 +1147,9 @@ export const EMPTY: GameState = {
     wharf: {},
     dailyAttempts: {},
   },
+  crabTraps: {
+    trapSpots: {},
+  },
   mushrooms: {
     spawnedAt: 0,
     mushrooms: {},
@@ -1145,6 +1172,10 @@ export const EMPTY: GameState = {
   barn: makeAnimalBuilding("Barn"),
   waterWell: {
     level: 1,
+  },
+  petHouse: {
+    level: 1,
+    pets: {},
   },
   craftingBox: {
     status: "idle",
@@ -1182,6 +1213,10 @@ export const EMPTY: GameState = {
     },
     cheers: {
       freeCheersClaimedAt: 0,
+    },
+    waves: {
+      date: "",
+      farms: [],
     },
   },
   pets: {

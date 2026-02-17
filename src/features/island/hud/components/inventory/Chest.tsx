@@ -30,6 +30,7 @@ import { useAppTranslation } from "lib/i18n/useAppTranslations";
 import {
   BUSH_VARIANTS,
   DIRT_PATH_VARIANTS,
+  PET_HOUSE_VARIANTS,
   TREE_VARIANTS,
   WATER_WELL_VARIANTS,
 } from "features/island/lib/alternateArt";
@@ -37,7 +38,6 @@ import { BANNERS } from "features/game/types/banners";
 import { InnerPanel } from "components/ui/Panel";
 import { ConfirmationModal } from "components/ui/ConfirmationModal";
 import { HourglassType } from "features/island/collectibles/components/Hourglass";
-import { EXPIRY_COOLDOWNS } from "features/game/lib/collectibleBuilt";
 import { TranslationKeys } from "lib/i18n/dictionaries/types";
 import { BEDS } from "features/game/types/beds";
 import { WEATHER_SHOP_ITEM_COSTS } from "features/game/types/calendar";
@@ -58,6 +58,9 @@ import { PetNFTDetails } from "components/ui/layouts/PetNFTDetails";
 import { getPetImage } from "features/island/pets/lib/petShared";
 import { NFTName } from "features/game/events/landExpansion/placeNFT";
 import { MONUMENTS, REWARD_ITEMS } from "features/game/types/monuments";
+import { useNow } from "lib/utils/hooks/useNow";
+import { HOURGLASSES } from "features/game/events/landExpansion/burnCollectible";
+import { PlaceableLocation } from "features/game/types/collectibles";
 
 const imageDomain = CONFIG.NETWORK === "mainnet" ? "buds" : "testnet-buds";
 
@@ -83,6 +86,7 @@ export const ITEM_ICONS: (
   Greenhouse: SUNNYSIDE.icons.greenhouseIcon,
   Bush: BUSH_VARIANTS[biome][season],
   "Water Well": WATER_WELL_VARIANTS[season][level ?? 1],
+  "Pet House": PET_HOUSE_VARIANTS[level ?? 1],
 });
 
 interface PanelContentProps {
@@ -112,6 +116,7 @@ const PanelContent: React.FC<PanelContentProps> = ({
   pets,
 }) => {
   const { t } = useAppTranslation();
+  const now = useNow();
 
   const [confirmationModal, showConfirmationModal] = useState(false);
 
@@ -120,7 +125,9 @@ const PanelContent: React.FC<PanelContentProps> = ({
   const handlePlace = () => {
     if (
       selectedChestItem.name === "Gnome" ||
-      selectedChestItem.name in EXPIRY_COOLDOWNS
+      HOURGLASSES.includes(selectedChestItem.name as HourglassType) ||
+      selectedChestItem.name === "Time Warp Totem" ||
+      selectedChestItem.name === "Super Totem"
     ) {
       showConfirmationModal(true);
     } else {
@@ -171,7 +178,7 @@ const PanelContent: React.FC<PanelContentProps> = ({
   if (selectedChestItem.name === "Pet") {
     const petId = Number(selectedChestItem.id);
     const petData = pets[petId];
-    const isRevealed = isPetNFTRevealed(petId, Date.now());
+    const isRevealed = isPetNFTRevealed(petId, now);
 
     return (
       <PetNFTDetails
@@ -277,6 +284,7 @@ interface Props {
   onPlaceNFT?: (id: string, nft: NFTName) => void;
   onDepositClick?: () => void;
   isSaving?: boolean;
+  location?: PlaceableLocation;
 }
 
 export const Chest: React.FC<Props> = ({
@@ -288,15 +296,20 @@ export const Chest: React.FC<Props> = ({
   onPlace,
   onPlaceNFT,
   onDepositClick,
+  location,
 }: Props) => {
   const divRef = useRef<HTMLDivElement>(null);
-  const buds = getChestBuds(state);
+  // For petHouse, only show buds and petNFTs (no regular buds for petHouse)
+  const buds = location === "petHouse" ? {} : getChestBuds(state);
   const petsNFTs = getChestPets(state.pets?.nfts ?? {});
 
   const chestMap = getChestItems(state);
   const { t } = useAppTranslation();
+
+  // For petHouse, only show pet collectibles
   const collectibles = getKeys(chestMap)
     .filter((item) => chestMap[item]?.gt(0))
+    .filter((item) => (location === "petHouse" ? item in PET_TYPES : true))
     .sort((a, b) => a.localeCompare(b))
     .reduce(
       (acc, item) => {
@@ -306,28 +319,35 @@ export const Chest: React.FC<Props> = ({
     );
 
   const getSelectedChestItems = (): LandscapingPlaceableType | undefined => {
+    const firstBudId = getKeys(buds)[0];
+    const firstPetId = getKeys(petsNFTs)[0];
+    const firstCollectible = getKeys(collectibles)[0];
+
+    const firstBud =
+      firstBudId !== undefined
+        ? { name: "Bud" as const, id: String(firstBudId) }
+        : undefined;
+    const firstPet =
+      firstPetId !== undefined
+        ? { name: "Pet" as const, id: String(firstPetId) }
+        : undefined;
+    const firstCollectibleItem = firstCollectible
+      ? { name: firstCollectible }
+      : undefined;
+    const fallback = firstCollectibleItem ?? firstBud ?? firstPet;
+
     if (selected?.name === "Bud") {
-      const budId = Number(selected.id);
-      const bud = buds[budId];
-      if (bud) return selected;
-      if (getKeys(buds)[0])
-        return { name: "Bud", id: String(getKeys(buds)[0]) };
-      return { name: getKeys(collectibles)[0] };
+      if (buds[Number(selected.id)]) return selected;
+      return firstBud ?? fallback;
     }
-
     if (selected?.name === "Pet") {
-      const petId = Number(selected.id);
-      const pet = petsNFTs[petId];
-      if (pet) return selected;
-      if (getKeys(petsNFTs)[0])
-        return { name: "Pet", id: String(getKeys(petsNFTs)[0]) };
-      return { name: getKeys(collectibles)[0] };
+      if (petsNFTs[Number(selected.id)]) return selected;
+      return firstPet ?? fallback;
     }
-
-    // select first item in collectibles if the original selection is not in collectibles when they are all placed by the player
-    const collectible = collectibles[selected?.name as CollectibleName];
-    if (collectible) return selected;
-    return { name: getKeys(collectibles)[0] };
+    if (selected?.name && collectibles[selected.name as CollectibleName]) {
+      return selected;
+    }
+    return fallback;
   };
 
   const selectedChestItem = getSelectedChestItems();
@@ -337,7 +357,9 @@ export const Chest: React.FC<Props> = ({
   };
 
   const chestIsEmpty =
-    getKeys(collectibles).length === 0 && Object.values(buds).length === 0;
+    getKeys(collectibles).length === 0 &&
+    Object.values(buds).length === 0 &&
+    Object.values(petsNFTs).length === 0;
 
   if (chestIsEmpty) {
     return (
@@ -367,25 +389,37 @@ export const Chest: React.FC<Props> = ({
     );
   }
 
+  const collectibleNames = getKeys(collectibles);
+
   // Sort collectibles by type
-  const resources = getKeys(collectibles).filter((name) => name in RESOURCES);
-  const buildings = getKeys(collectibles).filter((name) => name in BUILDINGS);
-  const monuments = getKeys(collectibles).filter((name) => name in MONUMENTS);
-  const villageProjects = getKeys(collectibles).filter(
+  const resources = collectibleNames.filter((name) => name in RESOURCES);
+  const buildings = collectibleNames.filter((name) => name in BUILDINGS);
+  const monuments = collectibleNames.filter((name) => name in MONUMENTS);
+  const villageProjects = collectibleNames.filter(
     (name) => name in REWARD_ITEMS,
   );
 
-  const banners = getKeys(collectibles).filter((name) => name in BANNERS);
-  const beds = getKeys(collectibles).filter((name) => name in BEDS);
-  const weatherItems = getKeys(collectibles).filter(
+  const banners = collectibleNames.filter((name) => name in BANNERS);
+  const beds = collectibleNames.filter((name) => name in BEDS);
+  const weatherItems = collectibleNames.filter(
     (name) => name in WEATHER_SHOP_ITEM_COSTS,
   );
 
-  const dolls = getKeys(collectibles).filter((name) => name in DOLLS);
+  const dolls = collectibleNames.filter((name) => name in DOLLS);
+  const pets = collectibleNames.filter((name) => name in PET_TYPES);
 
-  const pets = getKeys(collectibles).filter((name) => name in PET_TYPES);
+  // Use Sets for O(1) lookups instead of O(n) .includes()
+  const resourcesSet = new Set(resources);
+  const buildingsSet = new Set(buildings);
+  const monumentsSet = new Set(monuments);
+  const villageProjectsSet = new Set(villageProjects);
+  const bedsSet = new Set(beds);
+  const bannersSet = new Set(banners);
+  const weatherItemsSet = new Set(weatherItems);
+  const dollsSet = new Set(dolls);
+  const petsSet = new Set(pets);
 
-  const boosts = getKeys(collectibles)
+  const boosts = collectibleNames
     .filter(
       (name) =>
         name in COLLECTIBLE_BUFF_LABELS &&
@@ -398,25 +432,27 @@ export const Chest: React.FC<Props> = ({
     )
     .filter(
       (name) =>
-        !resources.includes(name) &&
-        !buildings.includes(name) &&
-        !monuments.includes(name) &&
-        !villageProjects.includes(name) &&
-        !beds.includes(name),
+        !resourcesSet.has(name) &&
+        !buildingsSet.has(name) &&
+        !monumentsSet.has(name) &&
+        !villageProjectsSet.has(name) &&
+        !bedsSet.has(name),
     );
 
-  const decorations = getKeys(collectibles).filter(
+  const boostsSet = new Set(boosts);
+
+  const decorations = collectibleNames.filter(
     (name) =>
-      !resources.includes(name) &&
-      !buildings.includes(name) &&
-      !boosts.includes(name) &&
-      !banners.includes(name) &&
-      !beds.includes(name) &&
-      !weatherItems.includes(name) &&
-      !monuments.includes(name) &&
-      !dolls.includes(name) &&
-      !pets.includes(name) &&
-      !villageProjects.includes(name),
+      !resourcesSet.has(name) &&
+      !buildingsSet.has(name) &&
+      !boostsSet.has(name) &&
+      !bannersSet.has(name) &&
+      !bedsSet.has(name) &&
+      !weatherItemsSet.has(name) &&
+      !monumentsSet.has(name) &&
+      !dollsSet.has(name) &&
+      !petsSet.has(name) &&
+      !villageProjectsSet.has(name),
   );
 
   const ITEM_GROUPS: {

@@ -1,6 +1,6 @@
 import Decimal from "decimal.js-light";
 import { CRIMSTONE_RECOVERY_TIME } from "features/game/lib/constants";
-import { trackActivity } from "features/game/types/bumpkinActivity";
+import { trackFarmActivity } from "features/game/types/farmActivity";
 import { canMine } from "features/game/lib/resourceNodes";
 import { BoostName, FiniteResource, GameState } from "../../types/game";
 import { isWearableActive } from "features/game/lib/wearables";
@@ -10,6 +10,8 @@ import {
   isCollectibleBuilt,
 } from "features/game/lib/collectibleBuilt";
 import { updateBoostUsed } from "features/game/types/updateBoostUsed";
+import { prngChance } from "lib/prng";
+import { KNOWN_IDS } from "features/game/types";
 
 export type MineCrimstoneAction = {
   type: "crimstoneRock.mined";
@@ -20,33 +22,58 @@ type Options = {
   state: Readonly<GameState>;
   action: MineCrimstoneAction;
   createdAt?: number;
+  farmId: number;
 };
 
 type GetMinedAtArgs = {
   createdAt: number;
   game: GameState;
+  farmId: number;
+  itemId: number;
+  counter: number;
 };
 
-function getBoostedTime({ game }: GetMinedAtArgs): {
+function getBoostedTime({ game, farmId, itemId, counter }: GetMinedAtArgs): {
   boostedTime: number;
-  boostsUsed: BoostName[];
+  boostsUsed: { name: BoostName; value: string }[];
 } {
   let totalSeconds = CRIMSTONE_RECOVERY_TIME;
-  const boostsUsed: BoostName[] = [];
+  const boostsUsed: { name: BoostName; value: string }[] = [];
+
+  if (
+    isCollectibleBuilt({ name: "Crimstone Clam", game }) &&
+    prngChance({
+      farmId,
+      itemId,
+      counter,
+      chance: 10,
+      criticalHitName: "Crimstone Clam",
+    })
+  ) {
+    return {
+      boostedTime: CRIMSTONE_RECOVERY_TIME * 1000,
+      boostsUsed: [{ name: "Crimstone Clam", value: "Instant" }],
+    };
+  }
+
+  if (isCollectibleBuilt({ name: "Crimstone Clam", game })) {
+    totalSeconds = totalSeconds * 0.9;
+    boostsUsed.push({ name: "Crimstone Clam", value: "x0.9" });
+  }
 
   if (isWearableActive({ name: "Crimstone Amulet", game })) {
     totalSeconds = totalSeconds * 0.8;
-    boostsUsed.push("Crimstone Amulet");
+    boostsUsed.push({ name: "Crimstone Amulet", value: "x0.8" });
   }
 
   if (game.bumpkin.skills["Fireside Alchemist"]) {
     totalSeconds = totalSeconds * 0.85;
-    boostsUsed.push("Fireside Alchemist");
+    boostsUsed.push({ name: "Fireside Alchemist", value: "x0.85" });
   }
 
   if (isTemporaryCollectibleActive({ name: "Mole Shrine", game })) {
     totalSeconds = totalSeconds * 0.75;
-    boostsUsed.push("Mole Shrine");
+    boostsUsed.push({ name: "Mole Shrine", value: "x0.75" });
   }
 
   const buff = CRIMSTONE_RECOVERY_TIME - totalSeconds;
@@ -54,11 +81,23 @@ function getBoostedTime({ game }: GetMinedAtArgs): {
   return { boostedTime: buff * 1000, boostsUsed };
 }
 
-export function getMinedAt({ createdAt, game }: GetMinedAtArgs): {
+export function getMinedAt({
+  createdAt,
+  game,
+  farmId,
+  itemId,
+  counter,
+}: GetMinedAtArgs): {
   time: number;
-  boostsUsed: BoostName[];
+  boostsUsed: { name: BoostName; value: string }[];
 } {
-  const { boostedTime, boostsUsed } = getBoostedTime({ game, createdAt });
+  const { boostedTime, boostsUsed } = getBoostedTime({
+    game,
+    createdAt,
+    farmId,
+    itemId,
+    counter,
+  });
 
   const time = createdAt - boostedTime;
 
@@ -71,35 +110,36 @@ export function getCrimstoneDropAmount({
 }: {
   game: GameState;
   rock: FiniteResource;
-}): { amount: Decimal; boostsUsed: BoostName[] } {
+}): { amount: Decimal; boostsUsed: { name: BoostName; value: string }[] } {
   let amount = new Decimal(1);
-  const boostsUsed: BoostName[] = [];
+  const boostsUsed: { name: BoostName; value: string }[] = [];
 
   if (isCollectibleBuilt({ name: "Crimson Carp", game })) {
     amount = amount.add(0.05);
-    boostsUsed.push("Crimson Carp");
+    boostsUsed.push({ name: "Crimson Carp", value: "+0.05" });
   }
 
   if (isCollectibleBuilt({ name: "Crim Peckster", game })) {
     amount = amount.add(0.1);
-    boostsUsed.push("Crim Peckster");
+    boostsUsed.push({ name: "Crim Peckster", value: "+0.1" });
   }
 
   if (isWearableActive({ name: "Crimstone Armor", game })) {
     amount = amount.add(0.1);
-    boostsUsed.push("Crimstone Armor");
+    boostsUsed.push({ name: "Crimstone Armor", value: "+0.1" });
   }
 
   if (rock.minesLeft === 1) {
     if (isWearableActive({ name: "Crimstone Hammer", game })) {
       amount = amount.add(2);
-      boostsUsed.push("Crimstone Hammer");
+      boostsUsed.push({ name: "Crimstone Hammer", value: "+2" });
     }
     if (game.bumpkin.skills["Fire Kissed"]) {
       amount = amount.add(1);
-      boostsUsed.push("Fire Kissed");
+      boostsUsed.push({ name: "Fire Kissed", value: "+1" });
     }
     amount = amount.add(2);
+    boostsUsed.push({ name: "Streak Bonus", value: "+2" });
   }
 
   return { amount: amount.toDecimalPlaces(4), boostsUsed };
@@ -109,6 +149,7 @@ export function mineCrimstone({
   state,
   action,
   createdAt = Date.now(),
+  farmId,
 }: Options): GameState {
   return produce(state, (stateCopy) => {
     const { crimstones, bumpkin } = stateCopy;
@@ -131,8 +172,13 @@ export function mineCrimstone({
     }
 
     const toolAmount = stateCopy.inventory["Gold Pickaxe"] || new Decimal(0);
+    const pickaxeBoosts: { name: BoostName; value: string }[] = [];
+    const hasCrimstoneSpikes = isWearableActive({
+      name: "Crimstone Spikes Hair",
+      game: stateCopy,
+    });
 
-    if (toolAmount.lessThan(1)) {
+    if (!hasCrimstoneSpikes && toolAmount.lessThan(1)) {
       throw new Error("No gold pickaxes left");
     }
 
@@ -146,6 +192,12 @@ export function mineCrimstone({
       rock.minesLeft = 5;
     }
 
+    const counter = stateCopy.farmActivity["Crimstone Mined"] ?? 0;
+    const prngObject = {
+      farmId,
+      itemId: KNOWN_IDS["Crimstone Rock"],
+      counter,
+    };
     const { amount: stoneMined, boostsUsed } = getCrimstoneDropAmount({
       game: stateCopy,
       rock,
@@ -155,6 +207,7 @@ export function mineCrimstone({
     const { time, boostsUsed: minedAtBoostsUsed } = getMinedAt({
       createdAt,
       game: stateCopy,
+      ...prngObject,
     });
     rock.stone = { minedAt: time };
 
@@ -164,14 +217,21 @@ export function mineCrimstone({
       rock.minesLeft = 5;
     }
 
-    stateCopy.inventory["Gold Pickaxe"] = toolAmount.sub(1);
+    if (hasCrimstoneSpikes) {
+      pickaxeBoosts.push({ name: "Crimstone Spikes Hair", value: "Free" });
+    } else {
+      stateCopy.inventory["Gold Pickaxe"] = toolAmount.sub(1);
+    }
     stateCopy.inventory.Crimstone = amountInInventory.add(stoneMined);
 
-    bumpkin.activity = trackActivity("Crimstone Mined", bumpkin.activity);
+    stateCopy.farmActivity = trackFarmActivity(
+      "Crimstone Mined",
+      stateCopy.farmActivity,
+    );
 
     stateCopy.boostsUsedAt = updateBoostUsed({
       game: stateCopy,
-      boostNames: [...boostsUsed, ...minedAtBoostsUsed],
+      boostNames: [...boostsUsed, ...minedAtBoostsUsed, ...pickaxeBoosts],
       createdAt,
     });
 

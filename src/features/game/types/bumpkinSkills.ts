@@ -3,7 +3,6 @@ import { SUNNYSIDE } from "assets/sunnyside";
 import { CROP_LIFECYCLE } from "features/island/plots/lib/plant";
 import { translate } from "lib/i18n/translate";
 import { Inventory, IslandType } from "./game";
-import { BuffLabel } from ".";
 import { ITEM_DETAILS } from "./images";
 import powerup from "assets/icons/level_up.png";
 import redArrowDown from "assets/icons/decrease_arrow.png";
@@ -83,6 +82,7 @@ import seededBounty from "assets/icons/skill_icons/seedybounty.png";
 import strongRoots from "assets/icons/skill_icons/strong_roots.png";
 import xpIcon from "assets/icons/xp.png";
 import { NPCName } from "lib/npcs";
+import { BuffLabel } from ".";
 
 export type BumpkinSkillName =
   | "Green Thumb"
@@ -2721,9 +2721,8 @@ export const BUMPKIN_REVAMP_SKILL_TREE = {
     boosts: {
       buff: {
         shortDescription: translate("skill.cropProcessorUnit.buff"),
-        labelType: "success",
-        boostTypeIcon: powerup,
-        boostedItemIcon: SUNNYSIDE.icons.stopwatch,
+        labelType: "info",
+        boostTypeIcon: SUNNYSIDE.icons.stopwatch,
       },
       debuff: {
         shortDescription: translate("skill.cropProcessorUnit.debuff"),

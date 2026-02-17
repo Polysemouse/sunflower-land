@@ -10,7 +10,6 @@ import {
   Rock,
   Skills,
 } from "features/game/types/game";
-import useUiRefresher from "lib/utils/hooks/useUiRefresher";
 import { useSelector } from "@xstate/react";
 import { MachineState } from "features/game/lib/gameMachine";
 import Decimal from "decimal.js-light";
@@ -24,7 +23,9 @@ import {
   getRequiredPickaxeAmount,
   getStoneDropAmount,
 } from "features/game/events/landExpansion/stoneMine";
-import { StoneRockName } from "features/game/types/resources";
+import { RockName, StoneRockName } from "features/game/types/resources";
+import { useNow } from "lib/utils/hooks/useNow";
+import { KNOWN_IDS } from "features/game/types";
 
 const HITS = 3;
 const tool = "Pickaxe";
@@ -58,13 +59,17 @@ const selectSkills = (state: MachineState) =>
 const compareSkills = (prev: Skills, next: Skills) =>
   (prev["Tap Prospector"] ?? false) === (next["Tap Prospector"] ?? false);
 
+const _selectSeason = (state: MachineState) =>
+  state.context.state.season.season;
+const _selectIsland = (state: MachineState) => state.context.state.island;
+const selectFarmId = (state: MachineState) => state.context.farmId;
+
 interface Props {
   id: string;
 }
 
 export const Stone: React.FC<Props> = ({ id }) => {
   const { gameService, shortcutItem, showAnimations } = useContext(Context);
-
   const [touchCount, setTouchCount] = useState(0);
 
   // When to hide the resource that pops out
@@ -89,12 +94,17 @@ export const Stone: React.FC<Props> = ({ id }) => {
   }, []);
 
   const game = useSelector(gameService, _state, _compareQuarryExistence);
+  const farmId = useSelector(gameService, selectFarmId);
   const resource = useSelector(
     gameService,
     (state) => state.context.state.stones[id],
     compareResource,
   );
   const name = (resource.name ?? "Stone Rock") as StoneRockName;
+  const activityCount = useSelector(gameService, (state) => {
+    const rockName = state.context.state.stones[id]?.name ?? "Stone Rock";
+    return state.context.state.farmActivity[`${rockName} Mined`] ?? 0;
+  });
   const inventory = useSelector(
     gameService,
     selectInventory,
@@ -103,12 +113,17 @@ export const Stone: React.FC<Props> = ({ id }) => {
       (prev.Logger ?? new Decimal(0)).equals(next.Logger ?? new Decimal(0)),
   );
   const skills = useSelector(gameService, selectSkills, compareSkills);
-
+  const season = useSelector(gameService, _selectSeason);
+  const island = useSelector(gameService, _selectIsland);
   const hasTool = HasTool(inventory, game, id);
-  const timeLeft = getTimeLeft(resource.stone.minedAt, STONE_RECOVERY_TIME);
+  const readyAt = resource.stone.minedAt + STONE_RECOVERY_TIME * 1000;
+  const now = useNow({ live: true, autoEndAt: readyAt });
+  const timeLeft = getTimeLeft(
+    resource.stone.minedAt,
+    STONE_RECOVERY_TIME,
+    now,
+  );
   const mined = !canMine(resource, name);
-
-  useUiRefresher({ active: mined });
 
   const strike = () => {
     if (!hasTool) return;
@@ -132,15 +147,17 @@ export const Stone: React.FC<Props> = ({ id }) => {
   };
 
   const mine = async () => {
+    const stoneName: RockName = resource.name ?? "Stone Rock";
     const stoneMined = new Decimal(
       resource.stone.amount ??
         getStoneDropAmount({
           game,
           rock: resource,
-          createdAt: Date.now(),
-          criticalDropGenerator: (name) =>
-            !!(resource.stone.criticalHit?.[name] ?? 0),
+          createdAt: now,
           id,
+          farmId,
+          counter: activityCount,
+          itemId: KNOWN_IDS[stoneName],
         }).amount,
     );
 
@@ -170,6 +187,8 @@ export const Stone: React.FC<Props> = ({ id }) => {
       {!mined && (
         <div ref={divRef} className="absolute w-full h-full" onClick={strike}>
           <RecoveredStone
+            season={season}
+            island={island}
             hasTool={hasTool}
             touchCount={touchCount}
             showHelper={false} // FUTURE ENHANCEMENT
@@ -185,7 +204,12 @@ export const Stone: React.FC<Props> = ({ id }) => {
 
       {/* Depleted resource */}
       {mined && (
-        <DepletedStone timeLeft={timeLeft} name={name as StoneRockName} />
+        <DepletedStone
+          season={season}
+          island={island}
+          timeLeft={timeLeft}
+          name={name as StoneRockName}
+        />
       )}
     </div>
   );

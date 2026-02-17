@@ -1,7 +1,7 @@
 import Decimal from "decimal.js-light";
 import { KNOWN_IDS } from "features/game/types";
 import { BuildingName } from "features/game/types/buildings";
-import { trackActivity } from "features/game/types/bumpkinActivity";
+import { trackFarmActivity } from "features/game/types/farmActivity";
 
 import { BuildingProduct, GameState } from "features/game/types/game";
 import { produce } from "immer";
@@ -9,6 +9,7 @@ import { translate } from "lib/i18n/translate";
 import { prngChance } from "lib/prng";
 import { isCookingBuilding } from "./cook";
 import { isWearableActive } from "features/game/lib/wearables";
+import { assertCookableName } from "features/game/types/consumables";
 
 export type CollectRecipeAction = {
   type: "recipes.collected";
@@ -36,6 +37,7 @@ export const getCookingAmount = ({
   counter: number;
   game: GameState;
 }): number => {
+  const recipeName = assertCookableName(recipe.name);
   let amount = 1;
 
   // Double Nom - Guarantee +1 food
@@ -49,7 +51,7 @@ export const getCookingAmount = ({
     game.bumpkin.skills["Fiery Jackpot"] &&
     prngChance({
       farmId,
-      itemId: KNOWN_IDS[recipe.name],
+      itemId: KNOWN_IDS[recipeName],
       counter,
       chance: 20,
       criticalHitName: "Fiery Jackpot",
@@ -59,13 +61,13 @@ export const getCookingAmount = ({
   }
 
   if (
-    isWearableActive({ name: "Cleaver Knife", game }) &&
+    isWearableActive({ name: "Master Chef's Cleaver", game }) &&
     prngChance({
       farmId,
-      itemId: KNOWN_IDS[recipe.name],
+      itemId: KNOWN_IDS[recipeName],
       counter,
       chance: 10,
-      criticalHitName: "Cleaver Knife",
+      criticalHitName: "Master Chef's Cleaver",
     })
   ) {
     amount += 1;
@@ -108,19 +110,21 @@ export function collectRecipe({
     // Collect all recipes that are ready
     building.crafting = (building.crafting ?? []).reduce((acc, recipe) => {
       if (recipe.readyAt <= createdAt) {
+        const cookableName = assertCookableName(recipe.name);
+
         const amount = getCookingAmount({
           building: action.building,
           game,
           recipe,
           farmId,
-          counter: bumpkin.activity[`${recipe.name} Cooked`] || 0,
+          counter: game.farmActivity[`${cookableName} Cooked`] || 0,
         });
-        const consumableCount = game.inventory[recipe.name] || new Decimal(0);
-        game.inventory[recipe.name] = consumableCount.add(amount);
+        const consumableCount = game.inventory[cookableName] || new Decimal(0);
+        game.inventory[cookableName] = consumableCount.add(amount);
 
-        bumpkin.activity = trackActivity(
-          `${recipe.name} Cooked`,
-          bumpkin.activity,
+        game.farmActivity = trackFarmActivity(
+          `${cookableName} Cooked`,
+          game.farmActivity,
         );
 
         return acc;

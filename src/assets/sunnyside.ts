@@ -96,6 +96,11 @@ export const SUNNYSIDE = {
     cleaning: `${CONFIG.PROTECTED_IMAGE_URL}/announcements/cleanup.png`,
     pawPrintsSeason: `${CONFIG.PROTECTED_IMAGE_URL}/announcements/paw_prints_banner.png`,
     pawPrintsSeasonRares: `${CONFIG.PROTECTED_IMAGE_URL}/announcements/paw_prints_rares.png`,
+    crabsAndTrapsChapter: `${CONFIG.PROTECTED_IMAGE_URL}/announcements/crab_chapter_banner.png`,
+    crabsAndTrapsChapterRares: `${CONFIG.PROTECTED_IMAGE_URL}/announcements/crab_and_traps_rares.png`,
+    grass_bg: `${CONFIG.PROTECTED_IMAGE_URL}/announcements/grass_banner_bg.png`,
+    spring_bg: `${CONFIG.PROTECTED_IMAGE_URL}/announcements/spring_background_bg.png`,
+    autumn_bg: `${CONFIG.PROTECTED_IMAGE_URL}/announcements/autumn_background_bg.png`,
   },
   //Badges(Pre-LandExpansion Skills)
   badges: {
@@ -364,6 +369,10 @@ export const SUNNYSIDE = {
     spring_building_bg: `${CONFIG.PROTECTED_IMAGE_URL}/land/spring_building_bg.png`,
     desert_building_bg: `${CONFIG.PROTECTED_IMAGE_URL}/land/desert_building_bg.png`,
     volcano_building_bg: `${CONFIG.PROTECTED_IMAGE_URL}/land/volcano_building_bg.webp`,
+
+    pet_house_inside_one: `${CONFIG.PROTECTED_IMAGE_URL}/land/pet_house_inside_1.png`,
+    pet_house_inside_two: `${CONFIG.PROTECTED_IMAGE_URL}/land/pet_house_inside_2.png`,
+    pet_house_inside_three: `${CONFIG.PROTECTED_IMAGE_URL}/land/pet_house_inside_3.png`,
   },
   //Soil
   soil: {
@@ -465,6 +474,7 @@ export const SUNNYSIDE = {
   },
   //Building
   building: {
+    fishMarket: `${CONFIG.PROTECTED_IMAGE_URL}/buildings/fish_market.webp`,
     smoke: `${CONFIG.PROTECTED_IMAGE_URL}/buildings/smoke.gif`,
     wishingwell: `${CONFIG.PROTECTED_IMAGE_URL}/buildings/wishing_well.png`,
     bountyBoard: `${CONFIG.PROTECTED_IMAGE_URL}/buildings/bounty_board.png`,
@@ -490,6 +500,9 @@ export const SUNNYSIDE = {
     fruitPatchDirt: `${CONFIG.PROTECTED_IMAGE_URL}/fruit/fruit_patch.png`,
     barn: `${CONFIG.PROTECTED_IMAGE_URL}/buildings/barn_sm.webp`,
     feederMachine: `${CONFIG.PROTECTED_IMAGE_URL}/buildings/feeder_machine.webp`,
+    petHouse1: `${CONFIG.PROTECTED_IMAGE_URL}/buildings/pet_house_red.webp`,
+    petHouse2: `${CONFIG.PROTECTED_IMAGE_URL}/buildings/pet_house_blue.webp`,
+    petHouse3: `${CONFIG.PROTECTED_IMAGE_URL}/buildings/pet_house_purple.webp`,
 
     //DESERT
     desertFirePit: `${CONFIG.PROTECTED_IMAGE_URL}/desert/buildings/fire_pit.webp`,
@@ -669,6 +682,7 @@ export const SUNNYSIDE = {
   },
   //NPCs
   npcs: {
+    fishMarket_npc_doing: `${CONFIG.PROTECTED_IMAGE_URL}/npcs/neville_doing.gif`,
     hank_swimming: `${CONFIG.PROTECTED_IMAGE_URL}/npcs/hank_swimming.webp`,
     betty: `${CONFIG.PROTECTED_IMAGE_URL}/npcs/betty.gif`,
     bumpkin: `${CONFIG.PROTECTED_IMAGE_URL}/npcs/idle.gif`,
@@ -1040,6 +1054,7 @@ export const SUNNYSIDE = {
       mansion: `${CONFIG.PROTECTED_IMAGE_URL}/buildings/spring/mansion.webp`,
       toolshed: `${CONFIG.PROTECTED_IMAGE_URL}/buildings/spring/toolshed.webp`,
       warehouse: `${CONFIG.PROTECTED_IMAGE_URL}/buildings/spring/warehouse.webp`,
+      fishMarket: `${CONFIG.PROTECTED_IMAGE_URL}/buildings/spring/fish_market.webp`,
       //Desert
       desertFirePit: `${CONFIG.PROTECTED_IMAGE_URL}/desert/buildings/spring/fire_pit.webp`,
       desertKitchen: `${CONFIG.PROTECTED_IMAGE_URL}/desert/buildings/spring/kitchen.webp`,
@@ -1174,6 +1189,7 @@ export const SUNNYSIDE = {
       mansion: `${CONFIG.PROTECTED_IMAGE_URL}/buildings/autumn/mansion.webp`,
       toolshed: `${CONFIG.PROTECTED_IMAGE_URL}/buildings/autumn/toolshed.webp`,
       warehouse: `${CONFIG.PROTECTED_IMAGE_URL}/buildings/autumn/warehouse.webp`,
+      fishMarket: `${CONFIG.PROTECTED_IMAGE_URL}/buildings/autumn/fish_market.webp`,
       //Desert
       desertFirePit: `${CONFIG.PROTECTED_IMAGE_URL}/desert/buildings/autumn/fire_pit.webp`,
       desertKitchen: `${CONFIG.PROTECTED_IMAGE_URL}/desert/buildings/autumn/kitchen.webp`,
@@ -1308,6 +1324,7 @@ export const SUNNYSIDE = {
       mansion: `${CONFIG.PROTECTED_IMAGE_URL}/buildings/winter/mansion.webp`,
       toolshed: `${CONFIG.PROTECTED_IMAGE_URL}/buildings/winter/toolshed.webp`,
       warehouse: `${CONFIG.PROTECTED_IMAGE_URL}/buildings/winter/warehouse.webp`,
+      fishMarket: `${CONFIG.PROTECTED_IMAGE_URL}/buildings/winter/fish_market.webp`,
       //Desert
       desertFirePit: `${CONFIG.PROTECTED_IMAGE_URL}/desert/buildings/winter/fire_pit.webp`,
       desertKitchen: `${CONFIG.PROTECTED_IMAGE_URL}/desert/buildings/winter/kitchen.webp`,
@@ -1443,6 +1460,10 @@ export const SUNNYSIDE = {
     shovel: `${CONFIG.PROTECTED_IMAGE_URL}/tools/shovel.png`,
     stone_pickaxe: `${CONFIG.PROTECTED_IMAGE_URL}/tools/stone_pickaxe.png`,
     wood_pickaxe: `${CONFIG.PROTECTED_IMAGE_URL}/tools/wood_pickaxe.png`,
+    crab_pot: `${CONFIG.PROTECTED_IMAGE_URL}/tools/crab_pot.webp`,
+    mariner_pot: `${CONFIG.PROTECTED_IMAGE_URL}/tools/mariner_pot.webp`,
+    crab_pot_placed: `${CONFIG.PROTECTED_IMAGE_URL}/tools/crab_pot_placed_sheet.webp`,
+    mariner_pot_placed: `${CONFIG.PROTECTED_IMAGE_URL}/tools/marine_pot_placed_sheet.webp`,
   },
   //UIs
   ui: {
@@ -1465,6 +1486,7 @@ export const SUNNYSIDE = {
     site_bg: `${CONFIG.PROTECTED_IMAGE_URL}/ui/site_bg.png`,
     more: `${CONFIG.PROTECTED_IMAGE_URL}/ui/more.png`,
     grey_background: `${CONFIG.PROTECTED_IMAGE_URL}/ui/grey_background.png`,
+    brown_background_flipped: `${CONFIG.PROTECTED_IMAGE_URL}/ui/brown_background_flipped.png`,
     coins: `${CONFIG.PROTECTED_IMAGE_URL}/ui/coins.png`,
     coinsImg: `${CONFIG.PROTECTED_IMAGE_URL}/ui/coins.png`,
     speechBubble: `${CONFIG.PROTECTED_IMAGE_URL}/ui/speech_border.png`,
@@ -1676,5 +1698,23 @@ export const SUNNYSIDE = {
     flowersTutorial: `${CONFIG.PROTECTED_IMAGE_URL}/tutorials/flowers.webp`,
     beeTutorial: `${CONFIG.PROTECTED_IMAGE_URL}/tutorials/bees.webp`,
     craftingBox: `${CONFIG.PROTECTED_IMAGE_URL}/tutorials/crafting_box.webp`,
+  },
+  crustaceans: {
+    anemone: `${CONFIG.PROTECTED_IMAGE_URL}/crustaceans/anemone.webp`,
+    barnacle: `${CONFIG.PROTECTED_IMAGE_URL}/crustaceans/barnacle.webp`,
+    blueCrab: `${CONFIG.PROTECTED_IMAGE_URL}/crustaceans/blue_crab.webp`,
+    gardenEel: `${CONFIG.PROTECTED_IMAGE_URL}/crustaceans/garden_eel.webp`,
+    hermitCrab: `${CONFIG.PROTECTED_IMAGE_URL}/crustaceans/hermit_crab.webp`,
+    horseshoeCrab: `${CONFIG.PROTECTED_IMAGE_URL}/crustaceans/horseshoe_crab.webp`,
+    isopod: `${CONFIG.PROTECTED_IMAGE_URL}/crustaceans/isopod.webp`,
+    lobster: `${CONFIG.PROTECTED_IMAGE_URL}/crustaceans/lobster.webp`,
+    mussel: `${CONFIG.PROTECTED_IMAGE_URL}/crustaceans/mussel.webp`,
+    octopus: `${CONFIG.PROTECTED_IMAGE_URL}/crustaceans/octopus.webp`,
+    oyster: `${CONFIG.PROTECTED_IMAGE_URL}/crustaceans/oyster.webp`,
+    seaGrapes: `${CONFIG.PROTECTED_IMAGE_URL}/crustaceans/sea_grapes.webp`,
+    seaSlug: `${CONFIG.PROTECTED_IMAGE_URL}/crustaceans/sea_slug.webp`,
+    seaSnail: `${CONFIG.PROTECTED_IMAGE_URL}/crustaceans/sea_snail.webp`,
+    seaUrchin: `${CONFIG.PROTECTED_IMAGE_URL}/crustaceans/sea_urchin.webp`,
+    shrimp: `${CONFIG.PROTECTED_IMAGE_URL}/crustaceans/shrimp.webp`,
   },
 };

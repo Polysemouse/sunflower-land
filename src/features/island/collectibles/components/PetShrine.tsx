@@ -3,7 +3,7 @@ import React, { useContext, useState } from "react";
 import { PIXEL_SCALE } from "features/game/lib/constants";
 import { CollectibleProps } from "../Collectible";
 import { SUNNYSIDE } from "assets/sunnyside";
-import { LiveProgressBar } from "components/ui/ProgressBar";
+import { ProgressBar } from "components/ui/ProgressBar";
 import { Context } from "features/game/GameProvider";
 import { useAppTranslation } from "lib/i18n/useAppTranslations";
 import { Popover, PopoverButton, PopoverPanel } from "@headlessui/react";
@@ -18,10 +18,12 @@ import { ITEM_DETAILS } from "features/game/types/images";
 import { EXPIRY_COOLDOWNS } from "features/game/lib/collectibleBuilt";
 import { PetShrineName } from "features/game/types/pets";
 import { getObjectEntries } from "features/game/expansion/lib/utils";
-import { COMPETITION_POINTS } from "features/game/types/competitions";
+import { useCountdown } from "lib/utils/hooks/useCountdown";
+import { RenewPetShrine } from "features/game/components/RenewPetShrine";
+import { useVisiting } from "lib/utils/visitUtils";
 
 const PET_SHRINE_DIMENSIONS: Record<
-  PetShrineName,
+  PetShrineName | "Obsidian Shrine",
   {
     left?: number;
     right?: number;
@@ -48,11 +50,12 @@ const PET_SHRINE_DIMENSIONS: Record<
   // Sprites not out yet
   "Trading Shrine": { width: 22, left: -1.5 },
   "Legendary Shrine": { width: 32, left: 0 },
+  "Obsidian Shrine": { width: 19, left: -1.25 },
 };
 
-const PET_SHRINE_DIMENSIONS_STYLES = getObjectEntries(
+export const PET_SHRINE_DIMENSIONS_STYLES = getObjectEntries(
   PET_SHRINE_DIMENSIONS,
-).reduce<Record<PetShrineName, React.CSSProperties>>(
+).reduce<Record<PetShrineName | "Obsidian Shrine", React.CSSProperties>>(
   (acc, [pet, styles]) => {
     acc[pet] = {
       left: styles.left ? `${PIXEL_SCALE * styles.left}px` : undefined,
@@ -68,67 +71,82 @@ const PET_SHRINE_DIMENSIONS_STYLES = getObjectEntries(
 );
 
 export const PetShrine: React.FC<
-  CollectibleProps & { name: PetShrineName }
+  CollectibleProps & { name: PetShrineName | "Obsidian Shrine" }
 > = ({ createdAt, id, location, name }) => {
   const { t } = useAppTranslation();
-  const { gameService, showTimers } = useContext(Context);
-
-  const [, setRender] = useState(0);
+  const { showTimers, showAnimations } = useContext(Context);
+  const [showRenewalModal, setShowRenewalModal] = useState(false);
+  const { isVisiting } = useVisiting();
 
   const expiresAt = createdAt + (EXPIRY_COOLDOWNS[name] ?? 0);
 
-  const hasExpired = Date.now() > expiresAt;
+  const { totalSeconds: secondsToExpire } = useCountdown(expiresAt);
+  const durationSeconds = EXPIRY_COOLDOWNS[name] ?? 0;
+  const percentage = 100 - (secondsToExpire / durationSeconds) * 100;
+  const hasExpired = secondsToExpire <= 0;
 
-  const handleRemove = () => {
-    gameService.send("collectible.burned", {
-      name,
-      location,
-      id,
-    });
+  const handleRenewClick = () => {
+    setShowRenewalModal(true);
   };
 
   if (hasExpired) {
     return (
-      <div
-        onClick={handleRemove}
-        className="absolute"
-        style={{ ...PET_SHRINE_DIMENSIONS_STYLES[name], bottom: 0 }}
-      >
+      <>
+        <div
+          onClick={isVisiting ? undefined : handleRenewClick}
+          className="absolute"
+          style={{ ...PET_SHRINE_DIMENSIONS_STYLES[name], bottom: 0 }}
+        >
+          <img
+            src={ITEM_DETAILS[name].image}
+            style={{
+              ...PET_SHRINE_DIMENSIONS_STYLES[name],
+              bottom: 0,
+              filter: "grayscale(100%)",
+            }}
+            className="absolute cursor-pointer"
+            alt={name}
+          />
+        </div>
         {showTimers && (
           <div
             className="absolute left-1/2"
             style={{
               width: `${PIXEL_SCALE * 15}px`,
               transform: "translateX(-50%)",
+              bottom: `${PIXEL_SCALE * -3}px`,
             }}
           >
-            <LiveProgressBar
-              startAt={createdAt}
-              endAt={expiresAt}
+            <ProgressBar
+              seconds={secondsToExpire}
               formatLength="medium"
               type="error"
-              onComplete={() => setRender((r) => r + 1)}
+              percentage={percentage}
             />
           </div>
         )}
-
-        <img
-          className="absolute cursor-pointer group-hover:img-highlight z-30 animate-pulsate"
-          src={SUNNYSIDE.icons.dig_icon}
+        <div
+          className="flex justify-center absolute w-full pointer-events-none z-30"
           style={{
-            width: `${PIXEL_SCALE * 18}px`,
-            right: `${PIXEL_SCALE * -8}px`,
-            top: `${PIXEL_SCALE * -8}px`,
+            top: `${PIXEL_SCALE * -20}px`,
           }}
+        >
+          <img
+            src={SUNNYSIDE.icons.expression_alerted}
+            className={showAnimations ? "ready" : ""}
+            style={{
+              width: `${PIXEL_SCALE * 4}px`,
+            }}
+          />
+        </div>
+        <RenewPetShrine
+          show={showRenewalModal}
+          onHide={() => setShowRenewalModal(false)}
+          name={name}
+          id={id}
+          location={location}
         />
-
-        <img
-          src={ITEM_DETAILS[name].image}
-          style={{ ...PET_SHRINE_DIMENSIONS_STYLES[name], bottom: 0 }}
-          className="absolute cursor-pointer"
-          alt={name}
-        />
-      </div>
+      </>
     );
   }
 
@@ -139,24 +157,6 @@ export const PetShrine: React.FC<
           className="absolute"
           style={{ ...PET_SHRINE_DIMENSIONS_STYLES[name], bottom: 0 }}
         >
-          {showTimers && (
-            <div
-              className="absolute left-1/2"
-              style={{
-                width: `${PIXEL_SCALE * 15}px`,
-                transform: "translateX(-50%)",
-              }}
-            >
-              <LiveProgressBar
-                startAt={createdAt}
-                endAt={expiresAt}
-                formatLength="medium"
-                type={"buff"}
-                onComplete={() => setRender((r) => r + 1)}
-              />
-            </div>
-          )}
-
           <img
             src={ITEM_DETAILS[name].image}
             style={{ ...PET_SHRINE_DIMENSIONS_STYLES[name], bottom: 0 }}
@@ -164,6 +164,23 @@ export const PetShrine: React.FC<
             alt={name}
           />
         </div>
+        {showTimers && (
+          <div
+            className="absolute left-1/2"
+            style={{
+              width: `${PIXEL_SCALE * 15}px`,
+              transform: "translateX(-50%)",
+              bottom: `${PIXEL_SCALE * -3}px`,
+            }}
+          >
+            <ProgressBar
+              seconds={secondsToExpire}
+              formatLength="medium"
+              type={"progress"}
+              percentage={percentage}
+            />
+          </div>
+        )}
       </PopoverButton>
 
       <PopoverPanel anchor={{ to: "left start" }} className="flex">
@@ -176,7 +193,7 @@ export const PetShrine: React.FC<
           >
             <span className="text-xs">
               {t("time.remaining", {
-                time: secondsToString((expiresAt - Date.now()) / 1000, {
+                time: secondsToString(secondsToExpire, {
                   length: "medium",
                   isShortFormat: true,
                   removeTrailingZeros: true,
@@ -185,12 +202,6 @@ export const PetShrine: React.FC<
             </span>
           </Label>
           <SFTDetailPopoverBuffs name={name} />
-          {name === "Fox Shrine" &&
-            Date.now() < COMPETITION_POINTS.BUILDING_FRIENDSHIPS.endAt && (
-              <Label type="danger" icon={SUNNYSIDE.icons.cancel}>
-                {t("error.cannotPlaceFoxShrine")}
-              </Label>
-            )}
         </SFTDetailPopoverInnerPanel>
       </PopoverPanel>
     </Popover>

@@ -12,8 +12,11 @@ export type CookingBuildingName =
   | "Deli"
   | "Smoothie Shack";
 
+export type ProcessingBuildingName = "Fish Market";
+
 export type BuildingName =
   | CookingBuildingName
+  | ProcessingBuildingName
   | "Market"
   | "Town Center"
   | "Workbench"
@@ -201,6 +204,27 @@ export const BUILDINGS: Record<BuildingName, BuildingBluePrint[]> = {
         {
           item: "Gold",
           amount: new Decimal(10),
+        },
+      ],
+    },
+  ],
+  "Fish Market": [
+    {
+      unlocksAtLevel: 10,
+      coins: 0,
+      constructionSeconds: 60 * 60,
+      ingredients: [
+        {
+          item: "Wood",
+          amount: new Decimal(50),
+        },
+        {
+          item: "Iron",
+          amount: new Decimal(10),
+        },
+        {
+          item: "Gold",
+          amount: new Decimal(5),
         },
       ],
     },
@@ -446,8 +470,17 @@ export const BUILDINGS: Record<BuildingName, BuildingBluePrint[]> = {
   "Pet House": [
     {
       unlocksAtLevel: 0,
-      ingredients: [],
-      coins: 0,
+      ingredients: [
+        {
+          item: "Wood",
+          amount: new Decimal(200),
+        },
+        {
+          item: "Stone",
+          amount: new Decimal(100),
+        },
+      ],
+      coins: 5000,
       constructionSeconds: 2 * 60 * 60,
     },
   ],
@@ -470,7 +503,7 @@ export const BUILDINGS_DIMENSIONS: Record<BuildingName, Dimensions> = {
   "Hen House": { width: 4, height: 3 },
   Deli: { width: 4, height: 3 },
   "Smoothie Shack": { width: 3, height: 2 },
-  Toolshed: { width: 2, height: 3 },
+  Toolshed: { width: 2, height: 2 },
   Warehouse: { width: 3, height: 2 },
   "Compost Bin": { width: 2, height: 2 },
   "Turbo Composter": { width: 2, height: 2 },
@@ -478,6 +511,15 @@ export const BUILDINGS_DIMENSIONS: Record<BuildingName, Dimensions> = {
   Greenhouse: { width: 4, height: 4 },
   "Crop Machine": { width: 5, height: 4 },
   Barn: { width: 4, height: 4 },
+  "Fish Market": { width: 3, height: 3 },
   "Crafting Box": { width: 3, height: 2 },
-  "Pet House": { width: 3, height: 2 },
+  "Pet House": { width: 3, height: 3 },
+};
+
+const PROCESSING_BUILDINGS: ProcessingBuildingName[] = ["Fish Market"];
+
+export const isProcessingBuilding = (
+  buildingName: BuildingName,
+): buildingName is ProcessingBuildingName => {
+  return PROCESSING_BUILDINGS.includes(buildingName as ProcessingBuildingName);
 };

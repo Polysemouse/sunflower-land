@@ -32,13 +32,20 @@ export const Revealed: React.FC<{
   const currentStreaks = gameState.context.state.dailyRewards?.streaks ?? 1;
   const streakBonus = currentStreaks % 5 == 0;
 
-  const isOneYearStreakCycle = currentStreaks % 365 === 0;
+  const isOneYearStreak = currentStreaks === 365;
+  const isTwoYearStreak = currentStreaks === 730;
+  const isYearlyStreakMilestone = isOneYearStreak || isTwoYearStreak;
+
+  const getStreakLabel = () => {
+    if (isTwoYearStreak) return t("reward.streak.twoYear");
+    if (isOneYearStreak) return t("reward.streak.oneYear");
+    return t("reward.streakBonus");
+  };
 
   return (
     <>
       <ClaimReward
         reward={{
-          createdAt: Date.now(),
           id: "revealed-reward",
           items: items.reduce(
             (acc, name) => ({
@@ -56,12 +63,10 @@ export const Revealed: React.FC<{
         <div className="flex flex-col items-center p-2">
           <Label
             type="vibrant"
-            icon={isOneYearStreakCycle ? Gift : Lightning}
+            icon={isYearlyStreakMilestone ? Gift : Lightning}
             className="px-0.5 text-sm"
           >
-            {isOneYearStreakCycle
-              ? t("reward.streak.oneYear")
-              : t("reward.streakBonus")}
+            {getStreakLabel()}
           </Label>
         </div>
       )}

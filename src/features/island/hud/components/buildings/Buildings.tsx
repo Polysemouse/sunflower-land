@@ -46,6 +46,7 @@ const getValidBuildings = (): BuildingName[] => {
     "Crop Machine",
     "Crafting Box",
     "Barn",
+    "Fish Market",
   ];
 
   const VALID_BUILDINGS = [...UNSORTED_BUILDINGS].sort(

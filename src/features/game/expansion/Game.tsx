@@ -30,8 +30,8 @@ import { VisitingHud } from "features/island/hud/VisitingHud";
 import { VisitLandExpansionForm } from "./components/VisitLandExpansionForm";
 
 import { IslandNotFound } from "./components/IslandNotFound";
-import { Rules } from "../components/Rules";
 import { Introduction } from "./components/Introduction";
+import { Welcome } from "./components/Welcome";
 import { Purchasing } from "../components/Purchasing";
 import { ClaimAuction } from "../components/auctionResults/ClaimAuction";
 import { RefundAuction } from "../components/auctionResults/RefundAuction";
@@ -66,6 +66,7 @@ import { Transaction } from "features/island/hud/Transaction";
 import { Gems } from "./components/Gems";
 import { HenHouseInside } from "features/henHouse/HenHouseInside";
 import { BarnInside } from "features/barn/BarnInside";
+import { PetHouseInside } from "features/petHouse/PetHouseInside";
 import {
   STATE_MACHINE_EFFECTS,
   STATE_MACHINE_VISIT_EFFECTS,
@@ -79,7 +80,6 @@ import { CompetitionModal } from "features/competition/CompetitionBoard";
 import { SeasonChanged } from "./components/temperateSeason/SeasonChanged";
 import { CalendarEvent } from "./components/temperateSeason/CalendarEvent";
 import { DailyReset } from "../components/DailyReset";
-import { FLOWERTeaserContent } from "../components/FLOWERTeaser";
 import { RoninJinClaim } from "./components/RoninJinClaim";
 import {
   EFFECT_SUCCESS_COMPONENTS,
@@ -90,13 +90,12 @@ import { ClaimReferralRewards } from "./components/ClaimReferralRewards";
 import { SoftBan } from "features/retreat/components/personhood/SoftBan";
 import { RewardBox } from "features/rewardBoxes/RewardBox";
 import { ClaimBlessingReward } from "features/loveIsland/blessings/ClaimBlessing";
-import { Cheering } from "./components/Cheering";
 import { SystemMessageWidget } from "features/announcements/SystemMessageWidget";
-import { News } from "features/farming/mail/components/News";
-import { CloseButtonPanel } from "../components/CloseablePanel";
 import { TradesCleared } from "./components/TradesCleared";
-import { ClaimRoninPack } from "./components/onChainAirdrops/ClaimRoninPack";
 import { RevealPet } from "features/island/pets/RevealPet";
+import { LeagueResults } from "./components/LeagueResults";
+import { MigrateToLinkedWallet } from "./components/MigrateToLinkedWallet";
+import { DailyRewardClaim } from "../components/DailyReward";
 
 function camelToDotCase(str: string): string {
   return str.replace(/([a-z])([A-Z])/g, "$1.$2").toLowerCase() as string;
@@ -165,6 +164,8 @@ const SHOW_MODAL: Record<StateValues, boolean> = {
   claimingStreamRewardSuccess: false,
   claimingStreamRewardFailed: false,
   airdroppingRewardFailed: false,
+  completingProject: false,
+  completingProjectSuccess: false,
 
   // Every new state should be added below here
   gems: true,
@@ -180,8 +181,6 @@ const SHOW_MODAL: Record<StateValues, boolean> = {
   landscaping: false,
   swarming: true,
   coolingDown: true,
-  gameRules: true,
-  FLOWERTeaser: true,
   randomising: false,
   visiting: false,
   loadLandToVisit: true,
@@ -193,6 +192,7 @@ const SHOW_MODAL: Record<StateValues, boolean> = {
   buyingSFL: true,
   depositing: true,
   introduction: false,
+  welcome: true,
   vip: true,
   transacting: true,
   auctionResults: false,
@@ -211,14 +211,16 @@ const SHOW_MODAL: Record<StateValues, boolean> = {
   sellMarketResource: false,
   somethingArrived: true,
   seasonChanged: false,
-  roninAirdrop: true,
   jinAirdrop: true,
   investigating: true,
   blessing: true,
-  cheers: true,
+  leagueResults: false,
+  linkWallet: true,
+  dailyReward: true,
 };
 
 // State change selectors
+const isWelcome = (state: MachineState) => state.matches("welcome");
 const isLoading = (state: MachineState) =>
   state.matches("loading") || state.matches("portalling");
 const isPortalling = (state: MachineState) => state.matches("portalling");
@@ -230,8 +232,6 @@ const isDeletingListing = (state: MachineState) =>
   state.matches("deleteTradeListing");
 const isListingDeleted = (state: MachineState) =>
   state.matches("tradeListingDeleted");
-const isFulfillingTradeListing = (state: MachineState) =>
-  state.matches("fulfillTradeListing");
 const isSniped = (state: MachineState) => state.matches("sniped");
 const isTradeAlreadyFulfilled = (state: MachineState) =>
   state.matches("tradeAlreadyFulfilled");
@@ -251,8 +251,6 @@ const showCommunityCoin = (state: MachineState) =>
 const _showReferralRewards = (state: MachineState) =>
   state.matches("referralRewards");
 const isCoolingDown = (state: MachineState) => state.matches("coolingDown");
-const isGameRules = (state: MachineState) => state.matches("gameRules");
-const isFLOWERTeaser = (state: MachineState) => state.matches("FLOWERTeaser");
 const isDepositing = (state: MachineState) => state.matches("depositing");
 const isLoadingLandToVisit = (state: MachineState) =>
   state.matches("loadLandToVisit");
@@ -276,6 +274,7 @@ const isBlessing = (state: MachineState) => state.matches("blessing");
 const hasFulfilledOffers = (state: MachineState) => state.matches("offers");
 const hasVipNotification = (state: MachineState) => state.matches("vip");
 const isPlaying = (state: MachineState) => state.matches("playing");
+const isDailyReward = (state: MachineState) => state.matches("dailyReward");
 const somethingArrived = (state: MachineState) =>
   state.matches("somethingArrived");
 
@@ -295,12 +294,12 @@ const isCompetition = (state: MachineState) => state.matches("competition");
 const isSeasonChanged = (state: MachineState) => state.matches("seasonChanged");
 const isCalendarEvent = (state: MachineState) => state.matches("calendarEvent");
 
-const isRoninAirdrop = (state: MachineState) => state.matches("roninAirdrop");
 const isJinAirdrop = (state: MachineState) => state.matches("jinAirdrop");
-const isCheers = (state: MachineState) => state.matches("cheers");
-const isNews = (state: MachineState) => state.matches("news");
+const isLinkWallet = (state: MachineState) => state.matches("linkWallet");
 const _isVisiting = (state: MachineState) =>
   state.context.visitorId !== undefined;
+const isLeagueResultsReleased = (state: MachineState) =>
+  state.matches("leagueResults");
 
 const GameContent: React.FC = () => {
   const { gameService } = useContext(Context);
@@ -320,6 +319,10 @@ const GameContent: React.FC = () => {
     HenHouse: (game) =>
       !!game.buildings["Hen House"] &&
       isBuildingReady(game.buildings["Hen House"]),
+    PetHouse: (game) =>
+      !!game.buildings["Pet House"] &&
+      isBuildingReady(game.buildings["Pet House"]) &&
+      hasFeatureAccess(game, "PET_HOUSE"),
   };
 
   const hasAccess = (pathName: string) => {
@@ -368,6 +371,9 @@ const GameContent: React.FC = () => {
           <Routes>
             <Route path="/:id" element={<Land />} />
             <Route path="/:id/home" element={<Home />} />
+            {hasAccess("PetHouse") && (
+              <Route path="/:id/pet-house" element={<PetHouseInside />} />
+            )}
           </Routes>
         </div>
       </>
@@ -390,6 +396,9 @@ const GameContent: React.FC = () => {
           {hasAccess("Barn") && <Route path="/barn" element={<BarnInside />} />}
           {hasAccess("HenHouse") && (
             <Route path="/hen-house" element={<HenHouseInside />} />
+          )}
+          {hasAccess("PetHouse") && (
+            <Route path="/pet-house" element={<PetHouseInside />} />
           )}
           <Route
             path="*"
@@ -424,6 +433,7 @@ export const GameWrapper: React.FC<React.PropsWithChildren> = ({
   const pwaInstallRef = usePWAInstall();
 
   const loading = useSelector(gameService, isLoading);
+  const welcome = useSelector(gameService, isWelcome);
   const portalling = useSelector(gameService, isPortalling);
   const trading = useSelector(gameService, isTrading);
   const traded = useSelector(gameService, isTraded);
@@ -444,8 +454,6 @@ export const GameWrapper: React.FC<React.PropsWithChildren> = ({
   const hoarding = useSelector(gameService, isHoarding);
   const swarming = useSelector(gameService, isSwarming);
   const coolingDown = useSelector(gameService, isCoolingDown);
-  const gameRules = useSelector(gameService, isGameRules);
-  const FLOWERTeaser = useSelector(gameService, isFLOWERTeaser);
   const depositing = useSelector(gameService, isDepositing);
   const loadingLandToVisit = useSelector(gameService, isLoadingLandToVisit);
   const loadingSession = useSelector(gameService, isLoadingSession);
@@ -472,14 +480,18 @@ export const GameWrapper: React.FC<React.PropsWithChildren> = ({
   const competition = useSelector(gameService, isCompetition);
   const seasonChanged = useSelector(gameService, isSeasonChanged);
   const calendarEvent = useSelector(gameService, isCalendarEvent);
-  const roninAirdrop = useSelector(gameService, isRoninAirdrop);
   const jinAirdrop = useSelector(gameService, isJinAirdrop);
   const showPWAInstallPrompt = useSelector(authService, _showPWAInstallPrompt);
   const investigating = useSelector(gameService, isInvestigating);
   const blessing = useSelector(gameService, isBlessing);
-  const cheers = useSelector(gameService, isCheers);
-  const news = useSelector(gameService, isNews);
+  const linkWallet = useSelector(gameService, isLinkWallet);
   const tradesCleared = useSelector(gameService, isTradesCleared);
+  const isVisiting = useSelector(gameService, _isVisiting);
+  const leagueResultsReleased = useSelector(
+    gameService,
+    isLeagueResultsReleased,
+  );
+  const dailyReward = useSelector(gameService, isDailyReward);
   const { t } = useAppTranslation();
 
   useInterval(() => {
@@ -625,6 +637,12 @@ export const GameWrapper: React.FC<React.PropsWithChildren> = ({
     stateValue as string,
   ) as TranslationKeys;
 
+  let effectText = t(effectTranslationKey);
+
+  if (effectText === effectTranslationKey) {
+    effectText = t("loading");
+  }
+
   return (
     <>
       <ToastProvider>
@@ -635,7 +653,7 @@ export const GameWrapper: React.FC<React.PropsWithChildren> = ({
             bumpkinParts={error ? NPC_WEARABLES["worried pete"] : undefined}
           >
             {/* Effects */}
-            {effectPending && <Loading text={t(effectTranslationKey)} />}
+            {effectPending && <Loading text={effectText} />}
             {effectSuccess &&
               (EFFECT_SUCCESS_COMPONENTS[stateValue as StateValues] ?? (
                 <EffectSuccess state={stateValue} />
@@ -652,9 +670,9 @@ export const GameWrapper: React.FC<React.PropsWithChildren> = ({
             {hoarding && <Hoarding />}
             {swarming && <Swarming />}
             {coolingDown && <Cooldown />}
-            {gameRules && <Rules />}
-            {FLOWERTeaser && <FLOWERTeaserContent />}
+            {dailyReward && <DailyRewardClaim showClose />}
             {transacting && <Transaction />}
+            {welcome && <Welcome />}
             {depositing && <Loading text={t("depositing")} />}
             {trading && <Loading text={t("trading")} />}
             {traded && <Traded />}
@@ -674,7 +692,6 @@ export const GameWrapper: React.FC<React.PropsWithChildren> = ({
             {hasSomethingArrived && <SomethingArrived />}
             {hasBBs && <Gems />}
             {hasCommunityCoin && <LoveCharm />}
-            {roninAirdrop && <ClaimRoninPack />}
             {jinAirdrop && <RoninJinClaim />}
             {showReferralRewards && <ClaimReferralRewards />}
             {investigating && <SoftBan />}
@@ -683,7 +700,7 @@ export const GameWrapper: React.FC<React.PropsWithChildren> = ({
                 onClose={() => gameService.send("ACKNOWLEDGE")}
               />
             )}
-            {cheers && <Cheering />}
+            {linkWallet && <MigrateToLinkedWallet />}
           </Panel>
         </Modal>
 
@@ -699,17 +716,15 @@ export const GameWrapper: React.FC<React.PropsWithChildren> = ({
             />
           </Modal>
         )}
-        {news && (
-          <Modal show onHide={() => gameService.send("ACKNOWLEDGE")}>
-            <CloseButtonPanel onClose={() => gameService.send("ACKNOWLEDGE")}>
-              <Label type="default" className="mb-2">
-                {t("news.title")}
-              </Label>
-              <News />
-            </CloseButtonPanel>
+        {leagueResultsReleased && !isVisiting && (
+          <Modal show>
+            <Panel
+              bumpkinParts={error ? NPC_WEARABLES["worried pete"] : undefined}
+            >
+              <LeagueResults />
+            </Panel>
           </Modal>
         )}
-
         <Introduction />
         <NewMail />
 

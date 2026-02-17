@@ -165,7 +165,7 @@ export const KNOWN_IDS: Record<InventoryItemName, number> = {
   Rod: 306,
   "Rusty Shovel": 307,
   Shovel: 308,
-  //  Power Shovel was remove, 309 is available
+  "Crab Pot": 309,
   "Sand Shovel": 310,
   "Sand Drill": 311,
   "Gold Pickaxe": 312,
@@ -173,6 +173,7 @@ export const KNOWN_IDS: Record<InventoryItemName, number> = {
   "Petting Hand": 314,
   Brush: 315,
   "Music Box": 316,
+  "Mariner Pot": 317,
 
   "Sunflower Statue": 401,
   "Potato Statue": 402,
@@ -495,7 +496,11 @@ export const KNOWN_IDS: Record<InventoryItemName, number> = {
   "Paw Prints Banner": 766,
   "Pet Cookie": 767,
   "Moon Crystal": 768,
+  "Crabs and Traps Banner": 771,
+  Floater: 772,
+  "Ammonite Shell": 773,
   "Halloween Token 2025": 769,
+  "Holiday Token 2025": 770,
 
   "Australian Flag": 801,
   "Belgian Flag": 802,
@@ -586,6 +591,8 @@ export const KNOWN_IDS: Record<InventoryItemName, number> = {
   "Polygon Banner": 943,
   "Ronin Banner": 944,
   "Base Banner": 945,
+  "Paw Prints Raffle Ticket": 946,
+  "Crabs and Traps Raffle Ticket": 947,
 
   // Buildings
   Market: 1001,
@@ -612,6 +619,7 @@ export const KNOWN_IDS: Record<InventoryItemName, number> = {
   "Crafting Box": 1022,
   Mansion: 1023,
   "Pet House": 1024,
+  "Fish Market": 1025,
 
   // Temporary Bumpkin items
   "Chef Apron": 1101,
@@ -810,6 +818,9 @@ export const KNOWN_IDS: Record<InventoryItemName, number> = {
   Cobia: 1547,
   Tilapia: 1548,
   "Super Star": 1549,
+  "Giant Isopod": 1550,
+  Nautilus: 1551,
+  Dollocaris: 1552,
 
   "White Festive Fox": 2001,
   Rug: 2002,
@@ -1121,7 +1132,20 @@ export const KNOWN_IDS: Record<InventoryItemName, number> = {
   "Moon Fox Statue": 2333,
   "Giant Acorn": 2334,
   "Pet Bowls": 2335,
-  VIP3: 2336,
+  "Squeaky Chicken": 2336,
+
+  //Holiday Event Items 2025
+  "Holiday Ticket 2025": 2337,
+  "Holiday Decorative Totem": 2338,
+  "Red Holiday Ornament": 2339,
+  "Green Holiday Ornament": 2340,
+  "Gift Turtle": 2341,
+  "Red Nose Reindeer": 2342,
+  "Tuxedo Claus": 2343,
+  "Winter Alpaca": 2344,
+  "Penguin Surprise": 2345,
+  "Frozen Meat": 2346,
+  "Ho Ho oh oh…": 2347,
 
   // Monument Items
   "Big Orange": 2281,
@@ -1217,6 +1241,10 @@ export const KNOWN_IDS: Record<InventoryItemName, number> = {
   "Bronze Friends Trophy": 2533,
   "Silver Friends Trophy": 2534,
   "Gold Friends Trophy": 2535,
+  "Mermaid Cow": 2536,
+  "Mermaid Sheep": 2537,
+  "Squid Chicken": 2538,
+  "Anemone Flower": 2539,
 
   // Pets
   "Pet Egg": 2600,
@@ -1292,6 +1320,55 @@ export const KNOWN_IDS: Record<InventoryItemName, number> = {
   "Magma Stone": 2715,
   Cornucopia: 2716,
   "Messy Bed": 2717,
+
+  "Basic Farming Pack": 2718,
+  "Basic Food Box": 2719,
+  "Weekly Mega Box": 2720,
+  "Basic Love Box": 2721,
+
+  // Processed Resources
+  "Fish Flake": 2722,
+  "Fish Stick": 2723,
+  "Fish Oil": 2724,
+  "Crab Stick": 2725,
+  "Furikake Sprinkle": 2726,
+  "Surimi Rice Bowl": 2727,
+  "Creamy Crab Bite": 2728,
+  "Crimstone Infused Fish Oil": 2729,
+
+  // Crustaceans
+  Isopod: 2800,
+  "Blue Crab": 2801,
+  Lobster: 2802,
+  "Hermit Crab": 2803,
+  Shrimp: 2804,
+  Mussel: 2805,
+  Oyster: 2806,
+  Anemone: 2807,
+  Barnacle: 2808,
+  "Sea Slug": 2809,
+  "Sea Snail": 2810,
+  "Garden Eel": 2811,
+  "Sea Grapes": 2812,
+  Octopus: 2813,
+  "Sea Urchin": 2814,
+  "Horseshoe Crab": 2815,
+
+  "Diving Helmet": 2816,
+  "Speckled Kissing Fish": 2817,
+  "Dark Eyed Kissing Fish": 2818,
+  "Fisherman's Boat": 2819,
+  "Sea Arch": 2820,
+  "Crabs and Fish Rug": 2821,
+  "Fish Flags": 2822,
+  "Fish Drying Rack": 2823,
+  "Yellow Submarine Trophy": 2824,
+  Oaken: 2825,
+  Meerkat: 2826,
+  "Pearl Bed": 2827,
+  "Crimstone Clam": 2828,
+  "Poseidon's Throne": 2829,
+  "Fish Kite": 2830,
 };
 
 // The reverse of above

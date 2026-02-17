@@ -6,17 +6,19 @@ export function updateBoostUsed({
   createdAt = Date.now(),
 }: {
   game: GameState;
-  boostNames: BoostName[];
+  boostNames: { name: BoostName; value: string }[];
   createdAt: number;
 }): BoostUsedAt {
   const { boostsUsedAt = {} } = game;
 
   if (boostNames.length <= 0) return boostsUsedAt;
 
-  return boostNames.reduce<BoostUsedAt>((acc, boostName) => {
-    return {
-      ...acc,
-      [boostName]: createdAt,
-    };
-  }, boostsUsedAt);
+  return boostNames.reduce<BoostUsedAt>(
+    (acc, boostName) => {
+      const { name } = boostName;
+      acc[name] = createdAt;
+      return acc;
+    },
+    { ...boostsUsedAt },
+  );
 }

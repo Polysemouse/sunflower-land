@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { Button } from "components/ui/Button";
 import { KNOWN_IDS } from "features/game/types";
-import React, { ChangeEvent, useState } from "react";
+import React, { ChangeEvent, useContext, useState } from "react";
 import GameABI from "lib/blockchain/abis/SunflowerLandGame";
 import { BumpkinItem, ITEM_IDS } from "features/game/types/bumpkin";
 import { useAppTranslation } from "lib/i18n/useAppTranslations";
@@ -13,9 +13,17 @@ import { CONFIG } from "lib/config";
 import { Loading } from "features/auth/components";
 import { OFFCHAIN_ITEMS } from "features/game/lib/offChainItems";
 import { InventoryItemName } from "features/game/types/game";
+import { useSelector } from "@xstate/react";
+import { Context } from "features/game/GameProvider";
+import { MachineState } from "features/game/lib/gameMachine";
+import { getKeys } from "features/game/lib/crafting";
+
+const _apiKey = (state: MachineState) => state.context.apiKey;
 
 export const DEV_HoarderCheck: React.FC<ContentComponentProps> = () => {
   const { t } = useAppTranslation();
+  const { gameService } = useContext(Context);
+  const apiKey = useSelector(gameService, _apiKey);
   const [loading, setLoading] = useState(false);
   const [farmId, setFarmId] = useState("");
   const [inventoryLimits, setInventoryLimits] = useState<string[]>([]);
@@ -33,6 +41,7 @@ export const DEV_HoarderCheck: React.FC<ContentComponentProps> = () => {
         method: "POST",
         headers: {
           "content-type": "application/json;charset=UTF-8",
+          "x-api-key": apiKey || "",
         },
         body: JSON.stringify({
           ids: [Number(farmId)],
@@ -42,15 +51,18 @@ export const DEV_HoarderCheck: React.FC<ContentComponentProps> = () => {
       const json = await result.json();
 
       // INVENTORY LIMITS
-      const current = json.farms[farmId].inventory;
-      const previous = json.farms[farmId].previousInventory;
+      const current = json.farms[farmId].inventory as Partial<
+        Record<InventoryItemName, string>
+      >;
+      const previous = json.farms[farmId].previousInventory as Partial<
+        Record<InventoryItemName, string>
+      >;
 
-      const maxIds = Object.keys(current)
+      const maxIds = getKeys(current)
         .filter(
-          (k) => ((current as any)[k] ?? 0) - ((previous as any)[k] ?? 0) > 0,
+          (k) => Number(current[k] ?? "0") - Number(previous[k] ?? "0") > 0,
         )
-        .map(String)
-        .map((key) => (KNOWN_IDS as any)[key]);
+        .map((key) => BigInt(KNOWN_IDS[key]));
 
       const publicClient = createPublicClient({
         transport: http(),
@@ -71,17 +83,16 @@ export const DEV_HoarderCheck: React.FC<ContentComponentProps> = () => {
 
       const inventoryLimits: string[] = [];
 
-      Object.keys(current).forEach((key) => {
-        const diff =
-          Number((current as any)[key]) - Number((previous as any)[key] ?? 0);
+      getKeys(current).forEach((key) => {
+        const diff = Number(current[key] ?? "0") - Number(previous[key] ?? "0");
         if (diff > 0) {
-          let limit = maxAmount[maxIds.indexOf((KNOWN_IDS as any)[key])];
+          let limit = maxAmount[maxIds.indexOf(BigInt(KNOWN_IDS[key]))];
 
           if (limit > 100000) {
             limit = limit / 10 ** 18;
           }
 
-          if (OFFCHAIN_ITEMS.includes(key as InventoryItemName)) return;
+          if (OFFCHAIN_ITEMS.includes(key)) return;
 
           if (diff > limit) {
             inventoryLimits.push(`${key} (Diff ${diff} > Limit ${limit})`);

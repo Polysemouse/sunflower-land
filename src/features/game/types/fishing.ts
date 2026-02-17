@@ -10,9 +10,18 @@ import { translate } from "lib/i18n/translate";
 import { PurchaseOptions } from "./buyOptionPurchaseItem";
 import { Decimal } from "decimal.js-light";
 import { isCollectibleBuilt } from "../lib/collectibleBuilt";
+import type { ChapterName } from "./chapters";
+import { getCurrentChapter } from "./chapters";
+import { hasVipAccess } from "../lib/vipAccess";
+import { CrustaceanChum } from "./crustaceans";
 
 export type PurchaseableBait = "Fishing Lure";
-export type FishingBait = Worm | PurchaseableBait;
+export type GuaranteedBait =
+  | "Fish Flake"
+  | "Fish Stick"
+  | "Fish Oil"
+  | "Crab Stick";
+export type FishingBait = Worm | PurchaseableBait | GuaranteedBait;
 export type FishType =
   | "basic"
   | "advanced"
@@ -73,7 +82,10 @@ export type MarineMarvelName =
   | "Jellyfish"
   | "Pink Dolphin"
   | "Poseidon"
-  | "Super Star";
+  | "Super Star"
+  | "Giant Isopod"
+  | "Nautilus"
+  | "Dollocaris";
 
 export type OldFishName = "Kraken Tentacle";
 
@@ -191,7 +203,7 @@ export const CHUM_AMOUNTS: Record<Chum, number> = {
   Acorn: 3,
 };
 
-export const CHUM_DETAILS: Record<Chum, string> = {
+export const CHUM_DETAILS: Record<Chum | CrustaceanChum, string> = {
   Gold: translate("chumDetails.gold"),
   Iron: translate("chumDetails.iron"),
   Stone: translate("chumDetails.stone"),
@@ -237,9 +249,25 @@ export const CHUM_DETAILS: Record<Chum, string> = {
   Artichoke: translate("chumDetails.artichoke"),
   Onion: translate("chumDetails.onion"),
   Turnip: translate("chumDetails.turnip"),
-  Zucchini: "",
+  Zucchini: translate("chumDetails.zucchini"),
   Weed: translate("chumDetails.weed"),
   Acorn: translate("chumDetails.acorn"),
+  "Heart leaf": translate("chumDetails.heartLeaf"),
+  Ribbon: translate("chumDetails.ribbon"),
+  "Wild Grass": translate("chumDetails.wildGrass"),
+  "Frost Pebble": translate("chumDetails.frostPebble"),
+  Grape: translate("chumDetails.grape"),
+  Rice: translate("chumDetails.rice"),
+  Crimstone: translate("chumDetails.crimstone"),
+  Moonfur: translate("chumDetails.moonfur"),
+  "Fish Stick": translate("chumDetails.fishStick"),
+  "Fish Oil": translate("chumDetails.fishOil"),
+  "Crab Stick": translate("chumDetails.crabStick"),
+  "Chewed Bone": translate("chumDetails.chewedBone"),
+  Ruffroot: translate("chumDetails.ruffroot"),
+  Dewberry: translate("chumDetails.dewberry"),
+  Duskberry: translate("chumDetails.duskberry"),
+  Lunara: translate("chumDetails.lunara"),
 };
 
 type Fish = {
@@ -259,6 +287,9 @@ export type ChapterFish = Extract<
   | "Pink Dolphin"
   | "Poseidon"
   | "Super Star"
+  | "Giant Isopod"
+  | "Nautilus"
+  | "Dollocaris"
 >;
 
 export const CHAPTER_FISH: Record<ChapterFish, Fish> = {
@@ -306,6 +337,24 @@ export const CHAPTER_FISH: Record<ChapterFish, Fish> = {
   },
   "Super Star": {
     baits: ["Red Wiggler", "Fishing Lure"],
+    type: "chapter",
+    likes: [],
+    seasons: [],
+  },
+  "Giant Isopod": {
+    baits: ["Grub", "Red Wiggler", "Fishing Lure"],
+    type: "chapter",
+    likes: [],
+    seasons: [],
+  },
+  Nautilus: {
+    baits: ["Grub", "Red Wiggler", "Fishing Lure"],
+    type: "chapter",
+    likes: [],
+    seasons: [],
+  },
+  Dollocaris: {
+    baits: ["Grub", "Red Wiggler", "Fishing Lure"],
     type: "chapter",
     likes: [],
     seasons: [],
@@ -606,6 +655,27 @@ export const FISH_DIFFICULTY: Partial<
   "Phantom Barracuda": 4,
   "Starlight Tuna": 5,
   "Twilight Anglerfish": 5,
+  "Pink Dolphin": 5,
+};
+
+// How difficulty the puzzle is to solve for the map
+export const MAP_PUZZLE_DIFFICULTY: Record<MarineMarvelName, number> = {
+  "Starlight Tuna": 2,
+  "Twilight Anglerfish": 3,
+  "Radiant Ray": 3,
+  "Phantom Barracuda": 4,
+  "Gilded Swordfish": 4,
+  "Crimson Carp": 3,
+  "Battle Fish": 3,
+  "Lemon Shark": 3,
+  "Longhorn Cowfish": 3,
+  Jellyfish: 3,
+  "Pink Dolphin": 3,
+  Poseidon: 3,
+  "Super Star": 4,
+  "Giant Isopod": 2,
+  Nautilus: 4,
+  Dollocaris: 5,
 };
 
 export function getDailyFishingCount(state: GameState): number {
@@ -613,55 +683,176 @@ export function getDailyFishingCount(state: GameState): number {
   return state.fishing.dailyAttempts?.[today] ?? 0;
 }
 
-export function getDailyFishingLimit(game: GameState): {
+export function getDailyFishingLimit(
+  game: GameState,
+  createdAt: number,
+): {
   limit: number;
-  boostsUsed: BoostName[];
+  boostsUsed: { name: BoostName; value: string }[];
 } {
   let limit = 20;
-  const boostsUsed: BoostName[] = [];
+  const boostsUsed: { name: BoostName; value: string }[] = [];
 
   // +10 daily limit if player has Angler Waders
   if (isWearableActive({ name: "Angler Waders", game })) {
     limit += 10;
-    boostsUsed.push("Angler Waders");
+    boostsUsed.push({ name: "Angler Waders", value: "+10" });
   }
 
   // +5 Daily Limit if the player has Reelmaster's Chair
   if (isCollectibleBuilt({ name: "Reelmaster's Chair", game })) {
     limit += 5;
-    boostsUsed.push("Reelmaster's Chair");
+    boostsUsed.push({ name: "Reelmaster's Chair", value: "+5" });
+  }
+
+  // +5 daily limit if player has Nautilus
+  if (isCollectibleBuilt({ name: "Nautilus", game })) {
+    limit += 5;
+    boostsUsed.push({ name: "Nautilus", value: "+5" });
   }
 
   // +5 daily limit if player had Fisherman's 5 Fold skill
   if (game.bumpkin?.skills["Fisherman's 5 Fold"]) {
     limit += 5;
-    boostsUsed.push("Fisherman's 5 Fold");
+    boostsUsed.push({ name: "Fisherman's 5 Fold", value: "+5" });
   }
 
   // +10 daily limit if player had Fisherman's 10 Fold skill
   if (game.bumpkin?.skills["Fisherman's 10 Fold"]) {
     limit += 10;
-    boostsUsed.push("Fisherman's 10 Fold");
+    boostsUsed.push({ name: "Fisherman's 10 Fold", value: "+10" });
   }
 
   // +10 daily limit if player has the More With Less skill
   if (game.bumpkin?.skills["More With Less"]) {
     limit += 15;
-    boostsUsed.push("More With Less");
+    boostsUsed.push({ name: "More With Less", value: "+15" });
   }
 
   // +5 daily limit if player has Saw Fish
   if (isWearableActive({ name: "Saw Fish", game })) {
     limit += 5;
-    boostsUsed.push("Saw Fish");
+    boostsUsed.push({ name: "Saw Fish", value: "+5" });
+  }
+
+  if (
+    hasVipAccess({ game, now: createdAt }) &&
+    getCurrentChapter(createdAt) === "Crabs and Traps"
+  ) {
+    limit += 5;
+    boostsUsed.push({ name: "VIP Access", value: "+5" });
   }
 
   return { limit, boostsUsed };
 }
+
+export const GUARANTEED_BAIT: GuaranteedBait[] = [
+  "Fish Flake",
+  "Fish Stick",
+  "Fish Oil",
+  "Crab Stick",
+];
+
+export const GUARANTEED_CATCH_BY_BAIT: Record<GuaranteedBait, FishName[]> = {
+  "Fish Flake": [
+    "Anchovy",
+    "Butterflyfish",
+    "Halibut",
+    "Blowfish",
+    "Porgy",
+    "Clownfish",
+    "Sea Bass",
+    "Sea Horse",
+    "Muskellunge",
+    "Horse Mackerel",
+    "Squid",
+    "Moray Eel",
+    "Olive Flounder",
+    "Tilapia",
+    "Napoleanfish",
+    "Surgeonfish",
+    "Zebra Turkeyfish",
+    "Walleye",
+    "Angelfish",
+    "Ray",
+  ],
+  "Fish Stick": [
+    "Rock Blackfish",
+    "Hammerhead shark",
+    "Tuna",
+    "Mahi Mahi",
+    "Blue Marlin",
+    "Weakfish",
+    "Oarfish",
+    "Football fish",
+    "Sunfish",
+    "Cobia",
+  ],
+  "Fish Oil": ["Barred Knifejaw", "Trout", "Coelacanth", "Saw Shark"],
+  "Crab Stick": ["Barred Knifejaw", "Whale Shark", "White Shark", "Parrotfish"],
+};
+
+export const isGuaranteedBait = (
+  bait: FishingBait | undefined,
+): bait is GuaranteedBait => {
+  if (!bait) return false;
+  return GUARANTEED_BAIT.includes(bait as GuaranteedBait);
+};
+
+export const getSeasonalGuaranteedCatch = (bait: FishingBait) => {
+  if (!isGuaranteedBait(bait)) return [];
+
+  return GUARANTEED_CATCH_BY_BAIT[bait];
+};
 
 export const BAIT: Record<FishingBait, true> = {
   Earthworm: true,
   Grub: true,
   "Red Wiggler": true,
   "Fishing Lure": true,
+  "Fish Flake": true,
+  "Fish Stick": true,
+  "Fish Oil": true,
+  "Crab Stick": true,
 };
+
+export type MapPieceFishTrigger = {
+  marvel: MarineMarvelName;
+  odds: number;
+};
+
+export const MAP_PIECE_FISH_TRIGGERS: Partial<
+  Record<FishName, MapPieceFishTrigger>
+> = {
+  Halibut: { marvel: "Starlight Tuna", odds: 0.025 },
+  "Horse Mackerel": { marvel: "Starlight Tuna", odds: 0.36 },
+  Clownfish: { marvel: "Twilight Anglerfish", odds: 0.025 },
+  Parrotfish: { marvel: "Twilight Anglerfish", odds: 0.21 },
+  "Rock Blackfish": { marvel: "Gilded Swordfish", odds: 0.05 },
+  "White Shark": { marvel: "Gilded Swordfish", odds: 0.3 },
+  Trout: { marvel: "Radiant Ray", odds: 0.02 },
+  "Hammerhead shark": { marvel: "Radiant Ray", odds: 0.05 },
+  "Mahi Mahi": { marvel: "Phantom Barracuda", odds: 0.0018 },
+  Squid: { marvel: "Phantom Barracuda", odds: 0.05 },
+  "Red Snapper": { marvel: "Super Star", odds: 0.01 },
+  "Whale Shark": { marvel: "Super Star", odds: 0.1 },
+  Anchovy: { marvel: "Giant Isopod", odds: 0.008 },
+  Oarfish: { marvel: "Giant Isopod", odds: 0.03 },
+  "Sea Horse": { marvel: "Nautilus", odds: 0.01 },
+  Tuna: { marvel: "Nautilus", odds: 0.002 },
+  Sunfish: { marvel: "Dollocaris", odds: 0.005 },
+  "Football fish": { marvel: "Dollocaris", odds: 0.005 },
+};
+
+export const MAP_PIECE_CHAPTERS: Partial<
+  Record<MarineMarvelName, ChapterName>
+> = {
+  "Super Star": "Paw Prints",
+  "Giant Isopod": "Crabs and Traps",
+  Nautilus: "Crabs and Traps",
+  Dollocaris: "Crabs and Traps",
+};
+
+export const MAP_PIECE_MARVELS: MarineMarvelName[] = [
+  ...new Set(Object.values(MAP_PIECE_FISH_TRIGGERS).map((t) => t.marvel)),
+];

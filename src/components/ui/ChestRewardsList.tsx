@@ -10,15 +10,11 @@ import { ITEM_DETAILS } from "features/game/types/images";
 import { BumpkinItem, ITEM_IDS } from "features/game/types/bumpkin";
 import { InventoryItemName } from "features/game/types/game";
 import { Label } from "./Label";
-import {
-  BASIC_SEASONAL_REWARDS_WEIGHT,
-  SEASONAL_REWARDS,
-} from "features/game/types/chests";
+
 import {
   NoticeboardItems,
   NoticeboardItemsElements,
 } from "features/world/ui/kingdom/KingdomNoticeboard";
-import { getCurrentSeason } from "features/game/types/seasons";
 import chestIcon from "assets/icons/chest.png";
 import { COLLECTIBLES_DIMENSIONS } from "features/game/types/craftables";
 
@@ -54,14 +50,6 @@ const RewardRow: React.FC<{
       </div>
       <p>{chance}</p>
     </div>
-  );
-};
-
-const isStoreChapterItem = (rewardName: string) => {
-  return SEASONAL_REWARDS(BASIC_SEASONAL_REWARDS_WEIGHT, "luxury").some(
-    (reward) =>
-      (reward.items && Object.keys(reward.items).includes(rewardName)) ||
-      (reward.wearables && Object.keys(reward.wearables).includes(rewardName)),
   );
 };
 
@@ -113,14 +101,6 @@ const MultipleRewardsRow: React.FC<{
                   </p>
                 </div>
               </div>
-
-              {/* States whether it is chapter-limited */}
-              {isStoreChapterItem(rewardName) && (
-                <div className="flex items-center w-20 sm:w-40 space-x-1 pl-[15%]">
-                  <img src={SUNNYSIDE.icons.stopwatch} />
-                  <p className="text-xxs">{`${getCurrentSeason()}`}</p>
-                </div>
-              )}
             </div>
           );
         })}
@@ -170,7 +150,7 @@ export const ChestRewardsList: React.FC<{
 
   return (
     <div
-      className={`flex flex-col py-0.5 pr-1 text-xs ${isFirstInMultiList || isSubsequentInMultiList ? "" : "overflow-y-auto max-h-[400px] scrollable"}`}
+      className={`flex flex-col py-0.5 pr-1 text-xs ${isFirstInMultiList || isSubsequentInMultiList ? "" : "overflow-y-auto max-h-[350px] scrollable"}`}
     >
       {/* The condition hides the descriptions in subsequent lists */}
       {!isSubsequentInMultiList && (

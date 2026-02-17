@@ -33,14 +33,15 @@ import bud from "assets/icons/bud.png";
 import heart_air_balloon from "public/world/heart_air_balloon.webp";
 import {
   getArtefactsFound,
-  SEASONAL_ARTEFACT,
+  CHAPTER_ARTEFACT,
 } from "features/game/types/desert";
-import { getCurrentSeason } from "features/game/types/seasons";
+import { getCurrentChapter } from "features/game/types/chapters";
 import { hasClaimedPetalPrize } from "features/game/events/landExpansion/claimPetalPrize";
 import { getBumpkinLevel } from "features/game/lib/level";
 import { useNavigate } from "react-router";
 import { ChestRewardsList } from "./ChestRewardsList";
 import { translate } from "lib/i18n/translate";
+import { useNow } from "lib/utils/hooks/useNow";
 
 const loveIslandBoxStatus = (state: GameState) => {
   const schedule = state.floatingIsland.schedule;
@@ -97,18 +98,18 @@ const budBoxStatus = (state: GameState) => {
   return { hasBud, now, todayBud, playerBudTypes, hasOpened };
 };
 
-const digbyStreakStatus = (state: GameState) => {
+const digbyStreakStatus = (state: GameState, now: number) => {
   const collectedAt = state.desert.digging.streak?.collectedAt ?? 0;
-  const hasClaimedDigbyReward =
-    new Date().toISOString().substring(0, 10) ===
-    new Date(collectedAt).toISOString().substring(0, 10);
+  const today = new Date(now).toISOString().substring(0, 10);
+  const collectedDay = new Date(collectedAt).toISOString().substring(0, 10);
+  const hasClaimedDigbyReward = today === collectedDay;
 
   const digbyStreakCount = getStreaks({
     game: state,
-    now: Date.now(),
+    now,
   });
 
-  const artefactsFound = getArtefactsFound({ game: state });
+  const artefactsFound = getArtefactsFound({ game: state, now });
 
   return { hasClaimedDigbyReward, digbyStreakCount, artefactsFound };
 };
@@ -125,12 +126,12 @@ const piratePotionStatus = (state: GameState) => {
   return { hasPiratePotion, hasOpenedPirateChest };
 };
 
-const minigamesStatus = (state: GameState) => {
+const minigamesStatus = (minigames: GameState["minigames"]) => {
   const allMinigamesCount = PORTAL_OPTIONS.length;
 
   const minigameInfo = (name: MinigameName) => {
-    const minigame = state.minigames.games[name];
-    const prize = state.minigames.prizes[name];
+    const minigame = minigames.games[name];
+    const prize = minigames.prizes[name];
 
     const dateKey = new Date().toISOString().slice(0, 10);
     const history = minigame?.history ?? {};
@@ -148,12 +149,12 @@ const minigamesStatus = (state: GameState) => {
   };
 
   const isMinigameCompleted = (name: MinigameName) =>
-    isMinigameComplete({ game: state, name }) &&
+    isMinigameComplete({ minigames, name }) &&
     minigameInfo(name).prizeClaimedAt;
 
   const completedMinigames = PORTAL_OPTIONS.filter(({ id }) => {
     return (
-      isMinigameComplete({ game: state, name: id as MinigameName }) &&
+      isMinigameComplete({ minigames, name: id as MinigameName }) &&
       minigameInfo(id as MinigameName).prizeClaimedAt
     );
   }).length;
@@ -166,7 +167,11 @@ const minigamesStatus = (state: GameState) => {
   };
 };
 
-export const checklistCount = (state: GameState, bumpkinLevel: number) => {
+export const checklistCount = (
+  state: GameState,
+  bumpkinLevel: number,
+  now: number,
+) => {
   // Plaza Tasks
   const hasNotClaimedLoveBox = !loveIslandBoxStatus(state).hasClaimed;
 
@@ -182,7 +187,8 @@ export const checklistCount = (state: GameState, bumpkinLevel: number) => {
   };
 
   // Beach Tasks
-  const hasNotClaimedDigbyBox = !digbyStreakStatus(state).hasClaimedDigbyReward;
+  const hasNotClaimedDigbyBox = !digbyStreakStatus(state, now)
+    .hasClaimedDigbyReward;
 
   const { hasPiratePotion, hasOpenedPirateChest } = piratePotionStatus(state);
   const hasNotClaimedPirateBox = hasPiratePotion && !hasOpenedPirateChest;
@@ -195,7 +201,9 @@ export const checklistCount = (state: GameState, bumpkinLevel: number) => {
   };
 
   // Kingdom Tasks
-  const { completedMinigames, allMinigamesCount } = minigamesStatus(state);
+  const { completedMinigames, allMinigamesCount } = minigamesStatus(
+    state.minigames,
+  );
   const completedKingdomTasksCount = () => {
     if (bumpkinLevel >= 7) {
       return completedMinigames !== allMinigamesCount
@@ -305,12 +313,13 @@ const LoveIslandBox: React.FC<{ bumpkinLevel: number }> = ({
   const { t } = useAppTranslation();
   const { gameService } = useContext(Context);
   const state = useSelector(gameService, (state) => state.context.state);
+  const now = useNow();
 
   const { schedule, timeZone, isOpen, nextScheduleTime, hasClaimed } =
     loveIslandBoxStatus(state);
 
   const [nextFlightTime, setNextFlightTime] = useState(
-    (nextScheduleTime - Date.now()) / 1000,
+    (nextScheduleTime - now) / 1000,
   );
 
   useEffect(() => {
@@ -516,9 +525,10 @@ const DiggingStreakContent: React.FC<{ bumpkinLevel: number }> = ({
   const { t } = useAppTranslation();
   const { gameService } = useContext(Context);
   const state = useSelector(gameService, (state) => state.context.state);
+  const now = useNow();
 
   const { hasClaimedDigbyReward, digbyStreakCount, artefactsFound } =
-    digbyStreakStatus(state);
+    digbyStreakStatus(state, now);
   return (
     <RowContent
       isLocked={bumpkinLevel < 4}
@@ -563,7 +573,7 @@ const DiggingStreakContent: React.FC<{ bumpkinLevel: number }> = ({
               <Label
                 type="default"
                 secondaryIcon={
-                  ITEM_DETAILS[SEASONAL_ARTEFACT[getCurrentSeason()]].image
+                  ITEM_DETAILS[CHAPTER_ARTEFACT[getCurrentChapter(now)]].image
                 }
                 className="mr-1"
               >
@@ -646,7 +656,7 @@ const MiniGamesContent: React.FC<{ bumpkinLevel: number }> = ({
     completedMinigames,
     allMinigamesCount,
     minigameInfo,
-  } = minigamesStatus(state);
+  } = minigamesStatus(state.minigames);
 
   const hasCompletedAll = completedMinigames === allMinigamesCount;
 
@@ -832,7 +842,7 @@ const RowContent: React.FC<{
       >
         <CloseButtonPanel
           onClose={() => setShowOverlay(false)}
-          tabs={[{ name: title, icon: titleIcon }]}
+          tabs={[{ id: "overlay", name: title, icon: titleIcon }]}
         >
           {overlayContent}
         </CloseButtonPanel>

@@ -49,7 +49,7 @@ export const SeasonalCrops: React.FC = () => {
 
   const state = useSelector(gameService, _state);
 
-  const { inventory, island, season } = state;
+  const { island, season } = state;
   const { type: islandType } = island;
 
   const divRef = useRef<HTMLDivElement>(null);
@@ -66,7 +66,7 @@ export const SeasonalCrops: React.FC = () => {
         amount: setPrecision(amount, 2),
       });
 
-      if (state.context.state.bumpkin?.activity?.["Sunflower Sold"] === 1) {
+      if (state.context.state.farmActivity?.["Sunflower Sold"] === 1) {
         gameAnalytics.trackMilestone({
           event: "Tutorial:SunflowerSold:Completed",
         });
@@ -79,7 +79,7 @@ export const SeasonalCrops: React.FC = () => {
   ) =>
     isExoticCrop(crop.name)
       ? crop.sellPrice
-      : getSellPrice({ item: crop, game: state });
+      : getSellPrice({ item: crop, game: state }).price;
 
   const cropAmount = setPrecision(
     getCountAndType(state, selected.name).count,
@@ -210,16 +210,20 @@ export const SeasonalCrops: React.FC = () => {
             <div className="flex flex-wrap mb-2">
               {seasonal
                 .filter((name) => !!crops[name].sellPrice)
-                .map((name) => (
-                  <Box
-                    isSelected={selected.name === name}
-                    key={name}
-                    onClick={() => setSelected(crops[name])}
-                    image={ITEM_DETAILS[name].image}
-                    count={getCountAndType(state, name).count}
-                    parentDivRef={divRef}
-                  />
-                ))}
+                .map((name) => {
+                  const { count } = getCountAndType(state, name);
+
+                  return (
+                    <Box
+                      isSelected={selected.name === name}
+                      key={name}
+                      onClick={() => setSelected(crops[name])}
+                      image={ITEM_DETAILS[name].image}
+                      count={count}
+                      parentDivRef={divRef}
+                    />
+                  );
+                })}
             </div>
             <div className="flex">
               <Label
@@ -234,16 +238,20 @@ export const SeasonalCrops: React.FC = () => {
               {getKeys(crops)
                 .filter((name) => !seasonal.includes(name))
                 .filter((name) => !!crops[name].sellPrice)
-                .map((name) => (
-                  <Box
-                    isSelected={selected.name === name}
-                    key={name}
-                    onClick={() => setSelected(crops[name])}
-                    image={ITEM_DETAILS[name].image}
-                    count={getCountAndType(state, name).count}
-                    parentDivRef={divRef}
-                  />
-                ))}
+                .map((name) => {
+                  const { count } = getCountAndType(state, name);
+
+                  return (
+                    <Box
+                      isSelected={selected.name === name}
+                      key={name}
+                      onClick={() => setSelected(crops[name])}
+                      image={ITEM_DETAILS[name].image}
+                      count={count}
+                      parentDivRef={divRef}
+                    />
+                  );
+                })}
             </div>
           </div>
         }

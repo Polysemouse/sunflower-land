@@ -9,6 +9,7 @@ import {
   getPetEnergy,
   getPetExperience,
   getPetFoodRequests,
+  getRequiredFeedAmount,
 } from "features/game/events/pets/feedPet";
 import { Context } from "features/game/GameProvider";
 import { MachineState } from "features/game/lib/gameMachine";
@@ -42,16 +43,20 @@ export const PetFeed: React.FC<Props> = ({ data, onFeed, onResetClick }) => {
 
   const game = useSelector(gameService, _game);
 
-  const isNFTPet = isPetNFT(data);
+  const requiredFeedAmount = getRequiredFeedAmount(game);
+
   const { level } = getPetLevel(data.experience);
   const foodRequests = getPetFoodRequests(data, level);
   const lastFedAt = data.requests.fedAt;
-  const todayDate = new Date(Date.now()).toISOString().split("T")[0];
+  const todayDate = new Date().toISOString().split("T")[0];
   const lastFedAtDate = new Date(lastFedAt ?? 0).toISOString().split("T")[0];
   const fedToday = lastFedAtDate === todayDate;
+
+  const isFoodRequested = (food: CookableName) => foodRequests.includes(food);
+
   const sortedFoodRequests = [...data.requests.food].sort((a, b) => {
-    const aIsRequested = foodRequests.includes(a);
-    const bIsRequested = foodRequests.includes(b);
+    const aIsRequested = isFoodRequested(a);
+    const bIsRequested = isFoodRequested(b);
 
     // If both are requested or both are not requested, maintain original order
     if (aIsRequested === bIsRequested) {
@@ -63,7 +68,7 @@ export const PetFeed: React.FC<Props> = ({ data, onFeed, onResetClick }) => {
   });
 
   const getRequestDetails = (food: CookableName) => {
-    const isRequested = foodRequests.includes(food);
+    const isRequested = isFoodRequested(food);
     const isComplete =
       isRequested && fedToday && data.requests.foodFed?.includes(food);
 
@@ -73,13 +78,13 @@ export const PetFeed: React.FC<Props> = ({ data, onFeed, onResetClick }) => {
       game,
       petLevel: level,
       petData: data,
+      food,
     });
     const petEnergy = getPetEnergy({
       game,
       petLevel: level,
       basePetEnergy: baseFoodXp,
       petData: data,
-      createdAt: Date.now(),
     });
 
     return {
@@ -119,7 +124,7 @@ export const PetFeed: React.FC<Props> = ({ data, onFeed, onResetClick }) => {
           {t("pets.resetRequests")}
         </p>
       </div>
-      <div className="flex flex-col gap-1 max-h-[250px] overflow-y-auto scrollable">
+      <div className="flex flex-col gap-1 max-h-[300px] overflow-y-auto scrollable">
         {sortedFoodRequests.map((food) => {
           const foodAvailable = (
             game.inventory[food] ?? new Decimal(0)
@@ -146,15 +151,18 @@ export const PetFeed: React.FC<Props> = ({ data, onFeed, onResetClick }) => {
                         })
                       : food}
                   </p>
-                  {isRequested && (
-                    <p
-                      className={classNames("text-xxs", {
-                        "text-red-600": foodAvailable === 0,
-                      })}
-                    >
-                      {t("count.available", { count: foodAvailable })}
-                    </p>
-                  )}
+                  {isRequested &&
+                    (requiredFeedAmount === 0 ? (
+                      <p className="text-xxs">{t("free")}</p>
+                    ) : (
+                      <p
+                        className={classNames("text-xxs", {
+                          "text-red-600": foodAvailable === 0,
+                        })}
+                      >
+                        {t("count.available", { count: foodAvailable })}
+                      </p>
+                    ))}
                 </div>
                 <div>
                   <div className="flex flex-row gap-1">
@@ -176,7 +184,11 @@ export const PetFeed: React.FC<Props> = ({ data, onFeed, onResetClick }) => {
               </InnerPanel>
               <Button
                 className="flex-shrink-0 px-2 mr-0.5 w-[77px]"
-                disabled={isComplete || foodAvailable === 0 || !isRequested}
+                disabled={
+                  isComplete ||
+                  foodAvailable < requiredFeedAmount ||
+                  !isRequested
+                }
                 onClick={() => isRequested && onFeed(food)}
               >
                 {isComplete ? (

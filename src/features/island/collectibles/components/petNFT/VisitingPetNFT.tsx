@@ -14,9 +14,9 @@ import { Modal } from "components/ui/Modal";
 import { CloseButtonPanel } from "features/game/components/CloseablePanel";
 import { PIXEL_SCALE } from "features/game/lib/constants";
 import { FarmHelped } from "features/island/hud/components/FarmHelped";
-import { hasFeatureAccess } from "lib/flags";
 import { isHelpComplete } from "features/game/types/monuments";
 import useUiRefresher from "lib/utils/hooks/useUiRefresher";
+import { useNow } from "lib/utils/hooks/useNow";
 
 const _petNFTData = (id: string) => (state: MachineState) => {
   return state.context.state.pets?.nfts?.[Number(id)];
@@ -39,11 +39,6 @@ const _isTypeFed = (id: string) => (state: MachineState) => {
 
 const _hasHelpedPet = (id: number) => (state: MachineState) => {
   if (state.context.visitorState) {
-    const hasAccess = hasFeatureAccess(state.context.visitorState, "PETS");
-    if (!hasAccess) {
-      return true;
-    }
-
     const hasHelpedToday = state.context.hasHelpedPlayerToday ?? false;
 
     const hasHelpedPet = !!state.context.state.pets?.nfts?.[id]?.visitedAt;
@@ -60,6 +55,7 @@ export const VisitingPetNFT: React.FC<{
   const isTypeFed = useSelector(gameService, _isTypeFed(id));
   const hasHelpedPet = useSelector(gameService, _hasHelpedPet(Number(id)));
   const [showHelped, setShowHelped] = useState(false);
+  const now = useNow({ live: true });
 
   const visitorGameState = useSelector(
     gameService,
@@ -71,8 +67,8 @@ export const VisitingPetNFT: React.FC<{
     (state) => state.context.totalHelpedToday ?? 0,
   );
 
-  const isNeglected = isPetNeglected(petNFTData);
-  const isNapping = isPetNapping(petNFTData);
+  const isNeglected = isPetNeglected(petNFTData, now);
+  const isNapping = isPetNapping(petNFTData, now);
 
   const handlePetClick = () => {
     if (petNFTData && visitorGameState && !hasHelpedPet) {

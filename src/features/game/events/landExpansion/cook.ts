@@ -1,5 +1,9 @@
 import Decimal from "decimal.js-light";
-import { CookableName, COOKABLES } from "features/game/types/consumables";
+import {
+  CookableName,
+  COOKABLES,
+  isInstantFishRecipe,
+} from "features/game/types/consumables";
 import {
   BuildingProduct,
   GameState,
@@ -8,6 +12,7 @@ import {
   Skills,
 } from "features/game/types/game";
 import { getCookingTime } from "features/game/expansion/lib/boosts";
+import { setPrecision } from "lib/utils/formatNumber";
 import { translate } from "lib/i18n/translate";
 import {
   BuildingName,
@@ -17,6 +22,8 @@ import { produce } from "immer";
 import { BUILDING_DAILY_OIL_CAPACITY } from "./supplyCookingOil";
 import { hasVipAccess } from "features/game/lib/vipAccess";
 import { updateBoostUsed } from "features/game/types/updateBoostUsed";
+import { getCookingAmount } from "./collectRecipe";
+import { trackFarmActivity } from "features/game/types/farmActivity";
 
 export type RecipeCookedAction = {
   type: "recipe.cooked";
@@ -28,6 +35,7 @@ type Options = {
   state: Readonly<GameState>;
   action: RecipeCookedAction;
   createdAt?: number;
+  farmId: number;
 };
 
 type GetReadyAtArgs = {
@@ -57,7 +65,7 @@ export function getCookingOilBoost(
   item: CookableName,
   game: GameState,
   buildingId?: string,
-): { timeToCook: number; oilConsumed: number } {
+): { timeToCook: number; oilConsumed: number; percent?: number } {
   const buildingName = COOKABLES[item].building;
 
   if (!isCookingBuilding(buildingName) || !buildingId) {
@@ -77,7 +85,11 @@ export function getCookingOilBoost(
   const boostedCookingTime = itemCookingTime * (1 - boostValue);
 
   if (oilRemaining >= itemOilConsumption) {
-    return { timeToCook: boostedCookingTime, oilConsumed: itemOilConsumption };
+    return {
+      timeToCook: boostedCookingTime,
+      oilConsumed: itemOilConsumption,
+      percent: boostValue,
+    };
   }
 
   // Calculate the partial boost based on remaining oil
@@ -87,6 +99,7 @@ export function getCookingOilBoost(
   return {
     timeToCook: partialBoostedCookingTime,
     oilConsumed: (oilRemaining / itemOilConsumption) * itemOilConsumption,
+    percent: effectiveBoostValue > 0 ? effectiveBoostValue : undefined,
   };
 }
 
@@ -96,16 +109,30 @@ export const getReadyAt = ({
   createdAt,
   game,
 }: GetReadyAtArgs) => {
-  const withOilBoost = getCookingOilBoost(item, game, buildingId).timeToCook;
+  const oilBoostResult = getCookingOilBoost(item, game, buildingId);
 
   const { reducedSecs, boostsUsed } = getCookingTime({
-    seconds: withOilBoost,
+    seconds: oilBoostResult.timeToCook,
     item,
     game,
     cookStartAt: createdAt,
   });
 
-  return { createdAt: createdAt + reducedSecs * 1000, boostsUsed };
+  const oilEntry =
+    oilBoostResult.percent != null && oilBoostResult.percent > 0
+      ? [
+          {
+            name: "Building Oil" as const,
+            value: "x" + setPrecision(1 - oilBoostResult.percent, 2),
+          },
+        ]
+      : [];
+
+  return {
+    createdAt: createdAt + reducedSecs * 1000,
+    reducedSecs,
+    boostsUsed: [...oilEntry, ...boostsUsed],
+  };
 };
 
 export const BUILDING_DAILY_OIL_CONSUMPTION: Record<
@@ -165,6 +192,7 @@ export const MAX_COOKING_SLOTS = 4;
 export function cook({
   state,
   action,
+  farmId,
   createdAt = Date.now(),
 }: Options): GameState {
   return produce(state, (stateCopy) => {
@@ -199,7 +227,7 @@ export function cook({
 
     const crafting = (building.crafting ?? []) as BuildingProduct[];
 
-    if (crafting.length >= availableSlots) {
+    if (!isInstantFishRecipe(item) && crafting.length >= availableSlots) {
       throw new Error(translate("error.noAvailableSlots"));
     }
 
@@ -221,6 +249,30 @@ export function cook({
       },
       stateCopy.inventory,
     );
+
+    if (isInstantFishRecipe(item)) {
+      const amount = getCookingAmount({
+        building: requiredBuilding,
+        game: stateCopy,
+        recipe: {
+          name: item,
+          boost: {},
+          skills: { "Double Nom": !!bumpkin.skills["Double Nom"] },
+          readyAt: createdAt,
+        },
+        farmId,
+        counter: stateCopy.farmActivity[`${item} Cooked`] || 0,
+      });
+      stateCopy.inventory[item] = stateCopy.inventory[item] ?? new Decimal(0);
+      stateCopy.inventory[item] = stateCopy.inventory[item].add(amount);
+
+      stateCopy.farmActivity = trackFarmActivity(
+        `${item} Cooked`,
+        stateCopy.farmActivity,
+      );
+
+      return stateCopy;
+    }
 
     // Start the new recipe when the last recipe is ready or now (createdAt)
     let recipeStartAt = createdAt;

@@ -2,17 +2,6 @@ import { Announcements } from "features/game/types/announcements";
 import { getKeys } from "features/game/types/craftables";
 import { GameState } from "features/game/types/game";
 
-export function getGameRulesLastRead(): Date | null {
-  const value = localStorage.getItem("gameRulesLastRead");
-  if (!value) return null;
-
-  return new Date(value);
-}
-
-export function acknowledgeGameRules() {
-  return localStorage.setItem("gameRulesLastRead", new Date().toISOString());
-}
-
 export function getFLOWERTeaserLastRead(): Date | null {
   const value = localStorage.getItem("FLOWERTeaserLastRead");
   if (!value) return null;
@@ -85,8 +74,13 @@ export function hasUnreadMail(
     // Ensure they haven't read it already
     .some((id) => {
       const announceAt = announcements[id].announceAt ?? 0;
+      const expiresAt = announcements[id].expiresAt ?? Infinity;
 
-      if (new Date(lastRead) > new Date(announceAt)) return false;
+      if (
+        new Date(lastRead) > new Date(announceAt) &&
+        new Date(lastRead) < new Date(expiresAt)
+      )
+        return false;
 
       return !mailbox.read.find((message) => message.id === id);
     });

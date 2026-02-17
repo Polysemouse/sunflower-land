@@ -22,6 +22,8 @@ import saveIcon from "assets/icons/save.webp";
 import { getBumpkinBanner } from "./actions/getBumpkinBanner";
 import { Loading } from "../Loading";
 import { TextInput } from "components/ui/TextInput";
+import { useNow } from "lib/utils/hooks/useNow";
+import { hasVipAccess } from "features/game/lib/vipAccess";
 
 const TWITTER_POST_DESCRIPTIONS: Record<TwitterPostName, TranslationKeys> = {
   FARM: "twitter.post.farm",
@@ -40,7 +42,7 @@ const VERIFY_COOLDOWN_MS = 15 * 60 * 1000;
 const TwitterRewards: React.FC = () => {
   const [selected, setSelected] = useState<TwitterPostName>();
   const { gameState } = useGame();
-
+  const now = useNow();
   const { t } = useAppTranslation();
 
   const twitter = gameState.context.state.twitter;
@@ -67,7 +69,9 @@ const TwitterRewards: React.FC = () => {
         // In last 7 days
         const hasCompleted =
           (twitter?.tweets?.[key]?.completedAt ?? 0) >
-          Date.now() - 7 * 24 * 60 * 60 * 1000;
+          now - 7 * 24 * 60 * 60 * 1000;
+
+        const rewards = TWITTER_REWARDS[key].items(gameState.context.state);
 
         return (
           <ButtonPanel
@@ -79,13 +83,13 @@ const TwitterRewards: React.FC = () => {
               <div className="flex gap-1">
                 {
                   // Loop through rewards and give label
-                  getKeys(TWITTER_REWARDS[key].items).map((name) => (
+                  getKeys(rewards).map((name) => (
                     <Label
                       type="warning"
                       key={name}
                       icon={ITEM_DETAILS[name].image}
                     >
-                      {`${name} x ${TWITTER_REWARDS[key].items[name]}`}
+                      {`${name} x ${rewards[name]}`}
                     </Label>
                   ))
                 }
@@ -103,6 +107,9 @@ const TwitterRewards: React.FC = () => {
       })}
 
       <div className="mb-1 mx-1">
+        {!hasVipAccess({ game: gameState.context.state }) && (
+          <p className="text-xs">{t("twitter.rewards.vip")}</p>
+        )}
         <span
           className="underline text-xs cursor-pointer "
           onClick={() => {
@@ -123,6 +130,7 @@ const TwitterPost: React.FC<{ name: TwitterPostName; onClose: () => void }> = ({
   const { gameService, gameState } = useGame();
   const { authService } = useContext(AuthProvider.Context);
   const [authState] = useActor(authService);
+  const now = useNow();
 
   const [url, setUrl] = useState<string>();
 
@@ -192,13 +200,7 @@ const TwitterPost: React.FC<{ name: TwitterPostName; onClose: () => void }> = ({
   }
 
   // return null;
-  const cooldown =
-    VERIFY_COOLDOWN_MS - (Date.now() - (twitter.verifiedPostsAt ?? 0));
-
-  const hasCompleted =
-    (twitter?.tweets?.[name]?.completedAt ?? 0) >
-    Date.now() - 7 * 24 * 60 * 60 * 1000;
-
+  const cooldown = VERIFY_COOLDOWN_MS - (now - (twitter.verifiedPostsAt ?? 0));
   const tweetId = url?.split("/").pop();
   const savedTweetIds = twitter.tweets?.[name]?.tweetIds ?? [];
   const tweetUsed = savedTweetIds.includes(tweetId ?? "");
@@ -265,13 +267,15 @@ const TwitterFarm: React.FC<{ onClose: () => void; onVerify?: () => void }> = ({
 }) => {
   const { gameState } = useGame();
   const { t } = useAppTranslation();
+  const now = useNow();
 
   const twitter = gameState.context.state.twitter;
 
   // In last 7 days
   const hasCompleted =
-    (twitter?.tweets?.FARM?.completedAt ?? 0) >
-    Date.now() - 7 * 24 * 60 * 60 * 1000;
+    (twitter?.tweets?.FARM?.completedAt ?? 0) > now - 7 * 24 * 60 * 60 * 1000;
+
+  const rewards = TWITTER_REWARDS.FARM.items(gameState.context.state);
 
   return (
     <>
@@ -288,13 +292,13 @@ const TwitterFarm: React.FC<{ onClose: () => void; onVerify?: () => void }> = ({
             <div className="flex gap-1">
               {
                 // Loop through rewards and give label
-                getKeys(TWITTER_REWARDS.FARM.items).map((name) => (
+                getKeys(rewards).map((name) => (
                   <Label
                     type="warning"
                     key={name}
                     icon={ITEM_DETAILS[name].image}
                   >
-                    {`${name} x ${TWITTER_REWARDS.FARM.items[name]}`}
+                    {`${name} x ${rewards[name]}`}
                   </Label>
                 ))
               }
@@ -391,6 +395,8 @@ const TwitterBanner: React.FC<{
     }
   };
 
+  const rewards = TWITTER_REWARDS[postName].items(gameState.context.state);
+
   return (
     <>
       <div className="flex  gap-1">
@@ -404,13 +410,13 @@ const TwitterBanner: React.FC<{
             <div className="flex gap-1">
               {
                 // Loop through rewards and give label
-                getKeys(TWITTER_REWARDS[postName].items).map((name) => (
+                getKeys(rewards).map((name) => (
                   <Label
                     type="warning"
                     key={name}
                     icon={ITEM_DETAILS[name].image}
                   >
-                    {`${name} x ${TWITTER_REWARDS[postName].items[name]}`}
+                    {`${name} x ${rewards[name]}`}
                   </Label>
                 ))
               }

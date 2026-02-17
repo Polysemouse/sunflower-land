@@ -1,8 +1,8 @@
 import React, { useContext, useState } from "react";
 import {
-  getCurrentSeason,
-  getSeasonalTicket,
-} from "features/game/types/seasons";
+  getCurrentChapter,
+  getChapterTicket,
+} from "features/game/types/chapters";
 import { ButtonPanel, Panel } from "components/ui/Panel";
 import { Label } from "components/ui/Label";
 import { MachineState } from "features/game/lib/gameMachine";
@@ -15,19 +15,17 @@ import xpIcon from "assets/icons/xp.png";
 import vipIcon from "assets/icons/vip.webp";
 import blueVipIcon from "assets/icons/blue_vip.webp";
 import purpleVipIcon from "assets/icons/purple_vip.webp";
+import multiCast from "src/assets/icons/multi-cast.webp";
 
 import trophyIcon from "assets/icons/trophy.png";
 import shopIcon from "assets/icons/shop.png";
 import { Button } from "components/ui/Button";
 import { SUNNYSIDE } from "assets/sunnyside";
 import Decimal from "decimal.js-light";
-import { millisecondsToString } from "lib/utils/time";
 import { acknowledgeVIP } from "features/announcements/announcementsStorage";
 import { ITEM_DETAILS } from "features/game/types/images";
 import {
   hasVipAccess,
-  RONIN_FARM_CREATION_CUTOFF,
-  RONIN_VIP_COOLDOWN_MS,
   VIP_DURATIONS,
   VIP_PRICES,
   VipBundle,
@@ -40,6 +38,7 @@ import { TranslationKeys } from "lib/i18n/dictionaries/types";
 import { gameAnalytics } from "lib/gameAnalytics";
 import { REPUTATION_POINTS } from "features/game/lib/reputation";
 import * as Auth from "features/auth/lib/Provider";
+import { useNow } from "lib/utils/hooks/useNow";
 
 const _inventory = (state: MachineState) => state.context.state.inventory;
 const _vip = (state: MachineState) => state.context.state.vip;
@@ -65,6 +64,7 @@ export const VIPItems: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
   const inventory = useSelector(gameService, _inventory);
   const vip = useSelector(gameService, _vip);
   const state = useSelector(gameService, _state);
+  const now = useNow();
 
   const gemBalance = inventory["Gem"] ?? new Decimal(0);
 
@@ -84,53 +84,21 @@ export const VIPItems: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
 
   const hasVip = hasVipAccess({ game: state });
 
-  const expiresSoon =
-    vip && vip.expiresAt < Date.now() + 1000 * 60 * 60 * 24 * 7;
+  const expiresSoon = vip && vip.expiresAt < now + 1000 * 60 * 60 * 24 * 7;
 
-  const hasOneYear =
-    vip && vip.expiresAt > Date.now() + 1000 * 60 * 60 * 24 * 365;
-
-  const isRoninFarmCreatedAfterCutOff =
-    state.createdAt > RONIN_FARM_CREATION_CUTOFF;
-
-  const roninNFT = state.nfts?.ronin;
-
-  const roninVip = roninNFT && isRoninFarmCreatedAfterCutOff;
-
-  const isRoninVipOnCooldown =
-    !!roninNFT &&
-    !!roninNFT.acknowledgedAt &&
-    roninNFT.acknowledgedAt > Date.now() - RONIN_VIP_COOLDOWN_MS;
-
-  const roninVipCooldownTimeLeft =
-    (roninNFT?.acknowledgedAt ?? 0) + RONIN_VIP_COOLDOWN_MS - Date.now();
+  const hasOneYear = vip && vip.expiresAt > now + 1000 * 60 * 60 * 24 * 365;
 
   const getExpiresAt = () => {
-    if (!vip && !roninVip) return 0;
+    if (!vip) return 0;
 
     const paidVipExpiresAt = vip?.expiresAt ?? 0;
-    const roninVipExpiresAt = state.nfts?.ronin?.expiresAt ?? 0;
 
-    const expiresAt = Math.max(paidVipExpiresAt, roninVipExpiresAt);
-
-    return expiresAt;
+    return paidVipExpiresAt;
   };
 
   const vipExpiresAt = getExpiresAt();
-  const activeRoninVip =
-    (state.nfts?.ronin?.expiresAt ?? 0) > Date.now() &&
-    isRoninFarmCreatedAfterCutOff;
-
-  // Disable VIP purchase buttons if Ronin NFT is active and expires in more than 1 day
-  const shouldDisableVipPurchase = () => {
-    if (!activeRoninVip) return false;
-
-    const roninExpiresAt = state.nfts?.ronin?.expiresAt ?? 0;
-
-    return roninExpiresAt > Date.now() + 1000 * 60 * 60 * 24 * 1;
-  };
-
-  const disableVipPurchase = shouldDisableVipPurchase();
+  const chapterTicket = getChapterTicket(now);
+  const currentChapter = getCurrentChapter(now);
 
   return (
     <>
@@ -241,16 +209,8 @@ export const VIPItems: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
               )}
             </div>
           </>
-        ) : roninVip && isRoninVipOnCooldown ? (
-          <Label icon={SUNNYSIDE.icons.stopwatch} type="info" className="my-2">
-            {t("ronin.nft.cooldown", {
-              time: millisecondsToString(roninVipCooldownTimeLeft, {
-                length: "medium",
-              }),
-            })}
-          </Label>
         ) : (
-          (vip || roninVip) && (
+          vip && (
             <Label
               icon={SUNNYSIDE.icons.stopwatch}
               type="danger"
@@ -260,25 +220,13 @@ export const VIPItems: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
             </Label>
           )
         )}
-        {disableVipPurchase && !isRoninVipOnCooldown && (
-          <Label type="info" className="ml-1 my-1">
-            {t("vip.ronin.purchase.warning")}
-          </Label>
-        )}
         <div className="flex mt-3 mb-2">
           {getKeys(VIP_PRICES).map((name) => (
             <div className="w-1/3 pr-1" key={name}>
               <ButtonPanel
                 key={name}
                 className="flex flex-col items-center relative"
-                onClick={
-                  disableVipPurchase || (roninVip && isRoninVipOnCooldown)
-                    ? undefined
-                    : () => setSelected(name)
-                }
-                disabled={
-                  disableVipPurchase || (roninVip && isRoninVipOnCooldown)
-                }
+                onClick={() => setSelected(name)}
               >
                 <span className="whitespace-nowrap mb-2 mt-0.5">
                   {t(VIP_NAME[name])}
@@ -318,10 +266,14 @@ export const VIPItems: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
               text: t("vip.benefit.cookingQueue"),
               icon: ITEM_DETAILS["Pumpkin Soup"].image,
             },
+            {
+              text: t("vip.benefit.multicast"),
+              icon: multiCast,
+            },
             { text: t("vip.benefit.stellaDiscounts"), icon: shopIcon },
             {
               text: t("vip.benefit.bonusDelivery"),
-              icon: ITEM_DETAILS[getSeasonalTicket()].image,
+              icon: ITEM_DETAILS[chapterTicket].image,
             },
             {
               text: t("vip.benefit.reputation", {
@@ -330,11 +282,19 @@ export const VIPItems: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
               icon: increaseArrow,
             },
             { text: t("vip.benefit.competition"), icon: trophyIcon },
-            ...(getCurrentSeason() === "Paw Prints"
+            ...(currentChapter === "Paw Prints"
               ? [
                   {
                     text: t("vip.benefit.bonusPetEnergy"),
                     icon: SUNNYSIDE.icons.lightning,
+                  },
+                ]
+              : []),
+            ...(currentChapter === "Crabs and Traps"
+              ? [
+                  {
+                    text: t("vip.benefit.bonusFishingAttempts"),
+                    icon: ITEM_DETAILS["Rod"].image,
                   },
                 ]
               : []),

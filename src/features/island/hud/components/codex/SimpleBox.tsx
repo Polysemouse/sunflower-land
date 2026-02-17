@@ -1,5 +1,6 @@
 import React from "react";
 
+import lightning from "assets/icons/lightning.png";
 import { pixelDarkBorderStyle } from "features/game/lib/style";
 import { PIXEL_SCALE } from "features/game/lib/constants";
 import { SquareIcon } from "components/ui/SquareIcon";
@@ -13,7 +14,8 @@ export interface BoxProps {
   silhouette: boolean;
   className?: string;
   inventoryCount?: number;
-  onClick: () => void;
+  onClick?: () => void;
+  showBoostIcon?: boolean;
 }
 
 export const SimpleBox: React.FC<React.PropsWithChildren<BoxProps>> = ({
@@ -23,11 +25,15 @@ export const SimpleBox: React.FC<React.PropsWithChildren<BoxProps>> = ({
   children,
   inventoryCount,
   onClick,
+  showBoostIcon,
 }) => {
   return (
     <div onClick={onClick}>
       <div
-        className={`bg-brown-600 cursor-pointer relative ${className}`}
+        className={classNames("bg-brown-600 relative", {
+          className,
+          "cursor-pointer": !!onClick,
+        })}
         style={{
           width: `${PIXEL_SCALE * (INNER_CANVAS_WIDTH + 4)}px`,
           height: `${PIXEL_SCALE * (INNER_CANVAS_WIDTH + 4)}px`,
@@ -56,6 +62,16 @@ export const SimpleBox: React.FC<React.PropsWithChildren<BoxProps>> = ({
             width={INNER_CANVAS_WIDTH}
             className={classNames({ silhouette: silhouette })}
           />
+          {showBoostIcon && (
+            <img
+              src={lightning}
+              className="absolute -left-3 -top-3 object-contain"
+              style={{
+                width: `${PIXEL_SCALE * 6}px`,
+              }}
+              alt="boost"
+            />
+          )}
         </div>
 
         {/* Label: Count or Check */}

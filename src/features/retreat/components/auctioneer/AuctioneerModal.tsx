@@ -28,7 +28,7 @@ interface Props {
   farmId: number;
   onClose: () => void;
   onUpdate: (state: GameState) => void;
-  onMint: (id: string) => void;
+  onMint: () => void;
   deviceTrackerId: string;
   linkedAddress?: string;
 }
@@ -47,7 +47,8 @@ export const AuctioneerModal: React.FC<Props> = ({
   const { authService } = useContext(AuthProvider.Context);
   const [authState] = useActor(authService);
 
-  const [tab, setTab] = useState(0);
+  type Tab = "auction" | "results";
+  const [tab, setTab] = useState<Tab>("auction");
 
   const auctionService = useInterpret(createAuctioneerMachine({ onUpdate }), {
     context: {
@@ -87,19 +88,21 @@ export const AuctioneerModal: React.FC<Props> = ({
     );
   }
 
-  const closeModal = () => {
-    onClose();
-  };
-
   return (
-    <Modal show={isOpen} onHide={closeModal}>
+    <Modal show={isOpen} onHide={onClose}>
       <CloseButtonPanel
         onClose={onClose}
         currentTab={tab}
         setCurrentTab={setTab}
         tabs={[
-          { icon: SUNNYSIDE.icons.stopwatch, name: t("auction.title") },
           {
+            id: "auction",
+            icon: SUNNYSIDE.icons.stopwatch,
+            name: t("auction.title"),
+          },
+
+          {
+            id: "results",
             icon: choreIcon,
             name: t("auction.results"),
           },
@@ -124,7 +127,7 @@ export const AuctioneerModal: React.FC<Props> = ({
           </a>
         }
       >
-        {tab === 0 && (
+        {tab === "auction" && (
           <div
             style={{
               minHeight: "200px",
@@ -144,7 +147,7 @@ export const AuctioneerModal: React.FC<Props> = ({
             </div>
           </div>
         )}
-        {tab === 1 && <AuctionHistory />}
+        {tab === "results" && <AuctionHistory />}
       </CloseButtonPanel>
     </Modal>
   );

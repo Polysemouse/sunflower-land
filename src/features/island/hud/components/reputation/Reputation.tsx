@@ -76,7 +76,8 @@ export const RequiredReputation: React.FC<{
 export const ReputationSystem: React.FC<{
   onClose: () => void;
 }> = ({ onClose }) => {
-  const [tab, setTab] = useState(0);
+  type Tab = "tiers" | "earn" | "guide";
+  const [tab, setTab] = useState<Tab>("tiers");
   const { t } = useAppTranslation();
 
   return (
@@ -86,22 +87,25 @@ export const ReputationSystem: React.FC<{
       setCurrentTab={setTab}
       tabs={[
         {
+          id: "tiers",
           icon: SUNNYSIDE.icons.heart,
           name: t("reputation.tiers"),
         },
         {
+          id: "earn",
           icon: salesIcon,
           name: t("reputation.earnPoints"),
         },
         {
+          id: "guide",
           icon: SUNNYSIDE.icons.expression_confused,
           name: t("guide"),
         },
       ]}
     >
-      {tab === 0 && <ReputationTiers />}
-      {tab === 1 && <ReputationPoints />}
-      {tab === 2 && <ReputationGuide onClose={() => setTab(1)} />}
+      {tab === "tiers" && <ReputationTiers />}
+      {tab === "earn" && <ReputationPoints />}
+      {tab === "guide" && <ReputationGuide onClose={() => setTab("earn")} />}
     </CloseButtonPanel>
   );
 };
@@ -155,6 +159,7 @@ export const ReputationTiers: React.FC = () => {
                       show={showInfo === "seedling"}
                       className="top-0 left-8 w-20"
                       onClick={() => setShowInfo(null)}
+                      onBackdropClick={() => setShowInfo(null)}
                     >
                       <div className="text-xxs p-0.5">
                         {t("proof.of.humanity.required")}
@@ -207,6 +212,7 @@ export const ReputationTiers: React.FC = () => {
                       show={showInfo === "grower"}
                       className="top-0 left-8 w-20"
                       onClick={() => setShowInfo(null)}
+                      onBackdropClick={() => setShowInfo(null)}
                     >
                       <div className="text-xxs p-0.5">
                         {t("proof.of.humanity.required")}
@@ -367,6 +373,7 @@ export const ReputationPoints: React.FC = () => {
                       <AnimatedPanel
                         show={showInfo}
                         onClick={() => setShowInfo(!showInfo)}
+                        onBackdropClick={() => setShowInfo(!showInfo)}
                         className="top-5 right-2 whitespace-nowrap"
                       >
                         <div className="flex flex-col text-xxs p-0.5">

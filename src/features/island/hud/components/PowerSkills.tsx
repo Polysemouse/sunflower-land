@@ -6,7 +6,6 @@ import { RequirementLabel } from "components/ui/RequirementsLabel";
 import { SplitScreenView } from "components/ui/SplitScreenView";
 import Decimal from "decimal.js-light";
 import { CloseButtonPanel } from "features/game/components/CloseablePanel";
-import { isReadyToHarvest } from "features/game/events/landExpansion/harvest";
 import { Context } from "features/game/GameProvider";
 import { PIXEL_SCALE } from "features/game/lib/constants";
 import { MachineState } from "features/game/lib/gameMachine";
@@ -16,8 +15,6 @@ import {
   getPowerSkills,
 } from "features/game/types/bumpkinSkills";
 import { InventoryItemName } from "features/game/types/game";
-import { CROPS } from "features/game/types/crops";
-import { gameAnalytics } from "lib/gameAnalytics";
 import { useAppTranslation } from "lib/i18n/useAppTranslations";
 import React, { useContext, useState } from "react";
 import {
@@ -31,8 +28,10 @@ import {
   getSkillCooldown,
   powerSkillDisabledConditions,
 } from "features/game/events/landExpansion/skillUsed";
+import { getPlotsToFertilise } from "features/game/events/landExpansion/bulkFertilisePlot";
 import { getRelativeTime, millisecondsToString } from "lib/utils/time";
 import { ConfirmButton } from "components/ui/ConfirmButton";
+import { useNow } from "lib/utils/hooks/useNow";
 
 interface PowerSkillsProps {
   onHide: () => void;
@@ -51,6 +50,7 @@ export const PowerSkills: React.FC<PowerSkillsProps> = ({
       container={OuterPanel}
       tabs={[
         {
+          id: "powerSkills",
           icon: SUNNYSIDE.icons.lightning,
           name: t("powerSkills.title"),
         },
@@ -70,8 +70,9 @@ const PowerSkillsContent: React.FC<{
   const { t } = useAppTranslation();
   const { gameService } = useContext(Context);
   const state = useSelector(gameService, _state);
-  const { bumpkin, crops, fruitPatches, inventory } = state;
+  const { bumpkin, fruitPatches, inventory } = state;
   const { skills, previousPowerUseAt } = bumpkin;
+  const now = useNow();
 
   const powerSkills = getPowerSkills();
   const powerSkillsUnlocked = powerSkills.filter(
@@ -111,33 +112,20 @@ const PowerSkillsContent: React.FC<{
 
   const isFruitFertiliserSkill = skillName === "Blend-tastic";
 
+  const cropFertiliseEligible = isCropFertiliserSkill
+    ? getPlotsToFertilise(state, now)
+    : [];
+
   const useSkill = () => {
     if (isCropFertiliserSkill) {
-      Object.entries(crops).map(([id, cropPlot]) => {
-        const readyToHarvest =
-          !!cropPlot.crop &&
-          isReadyToHarvest(
-            Date.now(),
-            cropPlot.crop,
-            CROPS[cropPlot.crop.name],
-          );
-        if (!cropPlot.fertiliser && !readyToHarvest) {
-          const state = gameService.send("plot.fertilised", {
-            plotID: id,
-            fertiliser:
-              skillName === "Sprout Surge" ? "Sprout Mix" : "Rapid Root",
-          });
-
-          if (
-            state.context.state.bumpkin?.activity?.["Crop Fertilised"] === 1
-          ) {
-            gameAnalytics.trackMilestone({
-              event: "Tutorial:Fertilised:Completed",
-            });
-          }
-        }
+      gameService.send("plots.bulkFertilised", {
+        fertiliser: skillName === "Sprout Surge" ? "Sprout Mix" : "Rapid Root",
       });
-    } else if (isFruitFertiliserSkill) {
+
+      return;
+    }
+
+    if (isFruitFertiliserSkill) {
       Object.entries(fruitPatches).map(([id, fruitPatch]) => {
         if (!fruitPatch.fertiliser) {
           gameService.send("fruitPatch.fertilised", {
@@ -146,16 +134,17 @@ const PowerSkillsContent: React.FC<{
           });
         }
       });
-    } else {
-      gameService.send("skill.used", { skill: skillName });
+
+      return;
     }
+
+    gameService.send("skill.used", { skill: skillName });
   };
 
   const boostedCooldown = getSkillCooldown({ cooldown: cooldown ?? 0, state });
 
   const nextSkillUse = (previousPowerUseAt?.[skillName] ?? 0) + boostedCooldown;
-
-  const powerSkillReady = nextSkillUse <= Date.now();
+  const powerSkillReady = nextSkillUse < now;
 
   const { disabled, reason } = powerSkillDisabledConditions({
     state,
@@ -230,13 +219,7 @@ const PowerSkillsContent: React.FC<{
               <div className="flex flex-col items-center mb-2">
                 <RequirementLabel
                   type="item"
-                  requirement={
-                    new Decimal(
-                      Object.values(crops).filter(
-                        (plot) => !plot.fertiliser,
-                      ).length,
-                    )
-                  }
+                  requirement={new Decimal(cropFertiliseEligible.length)}
                   item={
                     skillName === "Sprout Surge" ? "Sprout Mix" : "Rapid Root"
                   }
@@ -273,7 +256,7 @@ const PowerSkillsContent: React.FC<{
                   className="mb-2"
                 >
                   {t("powerSkills.nextUse", {
-                    time: getRelativeTime(nextSkillUse, "medium"),
+                    time: getRelativeTime(nextSkillUse, now, "medium"),
                   })}
                 </Label>
               ) : (
@@ -295,7 +278,7 @@ const PowerSkillsContent: React.FC<{
                       {t("powerSkills.ready")}
                     </Label>
                   )}
-                  {boostedCooldown && (
+                  {!!boostedCooldown && (
                     // If power skill has a cooldown, show the cooldown
                     <Label
                       type="info"

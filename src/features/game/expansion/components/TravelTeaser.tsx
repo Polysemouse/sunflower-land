@@ -24,7 +24,7 @@ const expansions = (state: MachineState) =>
   state.context.state.inventory["Basic Land"]?.toNumber() ?? 0;
 
 const hint = (state: MachineState) => {
-  const activity = state.context.state.bumpkin?.activity;
+  const activity = state.context.state.farmActivity;
   const inventory = state.context.state.inventory;
   const level = getBumpkinLevel(state.context.state.bumpkin?.experience ?? 0);
 
@@ -32,7 +32,7 @@ const hint = (state: MachineState) => {
     return "Explore";
   }
 
-  const choppedTrees = activity?.["Tree Chopped"] ?? 0;
+  const choppedTrees = activity["Tree Chopped"] ?? 0;
   if (choppedTrees < 3) {
     return translate("pete.teaser.one");
   }
@@ -100,7 +100,8 @@ export const TravelTeaser: React.FC = () => {
 
   const [peteState, setPeteState] = useState<"idle" | "typing">("idle");
 
-  const [tab, setTab] = useState(0);
+  type Tab = "explore" | "guide";
+  const [tab, setTab] = useState<Tab>("explore");
   const [showModal, setShowModal] = useState(false);
   const [guide, setGuide] = useState<GuidePath>();
 
@@ -135,10 +136,12 @@ export const TravelTeaser: React.FC = () => {
           onClose={() => setShowModal(false)}
           tabs={[
             {
+              id: "explore",
               icon: SUNNYSIDE.icons.expression_chat,
               name: t("explore"),
             },
             {
+              id: "guide",
               icon: SUNNYSIDE.icons.expression_confused,
               name: t("guide"),
             },
@@ -150,8 +153,8 @@ export const TravelTeaser: React.FC = () => {
             style={{ maxHeight: "300px" }}
             className="scrollable overflow-y-auto"
           >
-            {tab === 0 && <PeteHelp />}
-            {tab === 1 && <Guide selected={guide} onSelect={setGuide} />}
+            {tab === "explore" && <PeteHelp />}
+            {tab === "guide" && <Guide selected={guide} onSelect={setGuide} />}
           </div>
         </CloseButtonPanel>
       </Modal>

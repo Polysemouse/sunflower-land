@@ -2,11 +2,21 @@
 import Decimal from "decimal.js-light";
 import { BuildingName } from "./buildings";
 import { Cake } from "./craftables";
-import { Inventory } from "./game";
+import { BuildingProduct, Inventory } from "./game";
 import { FishName } from "./fishing";
 import { translate } from "lib/i18n/translate";
 import { FactionShopFoodName } from "./factionShop";
 import { TradeFood } from "../events/landExpansion/redeemTradeReward";
+
+export const assertCookableName = (
+  name: BuildingProduct["name"],
+): CookableName => {
+  if (!(name in COOKABLES)) {
+    throw new Error("Recipe is not cookable");
+  }
+
+  return name as CookableName;
+};
 
 type FirePitCookableName =
   | "Rapid Roast"
@@ -25,9 +35,13 @@ type FirePitCookableName =
   | "Rice Bun"
   | "Fried Tofu"
   | "Pizza Margherita"
-  | "Rhubarb Tart";
+  | "Rhubarb Tart"
+  | "Furikake Sprinkle";
 
 type KitchenCookableName =
+  | "Surimi Rice Bowl"
+  | "Crimstone Infused Fish Oil"
+  | "Creamy Crab Bite"
   | "Beetroot Blaze"
   | "Roast Veggies"
   | "Bumpkin Salad"
@@ -104,6 +118,19 @@ type CakeName =
   | "Honey Cake"
   | "Lemon Cheesecake";
 
+export type InstantProcessedRecipeName =
+  | "Furikake Sprinkle"
+  | "Surimi Rice Bowl"
+  | "Creamy Crab Bite"
+  | "Crimstone Infused Fish Oil";
+
+export const INSTANT_PROCESSED_RECIPE_NAMES: InstantProcessedRecipeName[] = [
+  "Furikake Sprinkle",
+  "Surimi Rice Bowl",
+  "Creamy Crab Bite",
+  "Crimstone Infused Fish Oil",
+];
+
 export type CookableName =
   | FirePitCookableName
   | KitchenCookableName
@@ -116,7 +143,8 @@ export type ConsumableName =
   | "Pirate Cake"
   | FishName
   | FactionShopFoodName
-  | TradeFood;
+  | TradeFood
+  | InstantProcessedRecipeName;
 
 export type Cookable = {
   experience: number;
@@ -134,6 +162,17 @@ export type Consumable = Omit<
 > & { name: ConsumableName };
 
 export const FIRE_PIT_COOKABLES: Record<FirePitCookableName, Cookable> = {
+  "Furikake Sprinkle": {
+    name: "Furikake Sprinkle",
+    description: translate("description.instantFood.furikakeSprinkle"),
+    ingredients: {
+      "Fish Flake": new Decimal(1),
+      Seaweed: new Decimal(1),
+    },
+    cookingSeconds: 0,
+    building: "Fire Pit",
+    experience: 1000,
+  },
   "Mashed Potato": {
     name: "Mashed Potato",
     description: translate("description.mashed.potato"),
@@ -320,6 +359,40 @@ export const FIRE_PIT_COOKABLES: Record<FirePitCookableName, Cookable> = {
 };
 
 export const KITCHEN_COOKABLES: Record<KitchenCookableName, Cookable> = {
+  "Surimi Rice Bowl": {
+    name: "Surimi Rice Bowl",
+    description: translate("description.instantFood.surimiRiceBall"),
+    ingredients: {
+      "Fish Stick": new Decimal(1),
+      Rice: new Decimal(1),
+      Onion: new Decimal(1),
+    },
+    cookingSeconds: 0,
+    building: "Kitchen",
+    experience: 3000,
+  },
+  "Creamy Crab Bite": {
+    name: "Creamy Crab Bite",
+    description: translate("description.instantFood.creamyCrabBite"),
+    ingredients: {
+      "Crab Stick": new Decimal(1),
+      Cheese: new Decimal(3),
+    },
+    cookingSeconds: 0,
+    building: "Kitchen",
+    experience: 10000,
+  },
+  "Crimstone Infused Fish Oil": {
+    name: "Crimstone Infused Fish Oil",
+    description: translate("description.instantFood.crimstoneInfusedFishOil"),
+    ingredients: {
+      "Fish Oil": new Decimal(1),
+      Crimstone: new Decimal(1),
+    },
+    cookingSeconds: 0,
+    building: "Kitchen",
+    experience: 18000,
+  },
   "Sunflower Crunch": {
     name: "Sunflower Crunch",
     description: translate("description.sunflower.crunch"),
@@ -1070,6 +1143,16 @@ export const FISH_COOKABLES: Record<FishCookableName, Cookable> = {
   "Sushi Roll": KITCHEN_COOKABLES["Sushi Roll"],
 };
 
+export const INSTANT_FISH_RECIPES: Record<
+  InstantProcessedRecipeName,
+  Cookable
+> = {
+  "Furikake Sprinkle": FIRE_PIT_COOKABLES["Furikake Sprinkle"],
+  "Surimi Rice Bowl": KITCHEN_COOKABLES["Surimi Rice Bowl"],
+  "Creamy Crab Bite": KITCHEN_COOKABLES["Creamy Crab Bite"],
+  "Crimstone Infused Fish Oil": KITCHEN_COOKABLES["Crimstone Infused Fish Oil"],
+};
+
 export const COOKABLE_CAKES: Record<CakeName, Cookable> = {
   "Sunflower Cake": BAKERY_COOKABLES["Sunflower Cake"],
   "Potato Cake": BAKERY_COOKABLES["Potato Cake"],
@@ -1321,11 +1404,14 @@ export const CONSUMABLES: Record<ConsumableName, Consumable> = {
   ...TRADE_FOOD,
 };
 
-export const FISH_CONSUMABLES: Record<FishName | FishCookableName, Consumable> =
-  {
-    ...FISH_COOKABLES,
-    ...FISH,
-  };
+export const FISH_CONSUMABLES: Record<
+  FishName | FishCookableName | InstantProcessedRecipeName,
+  Consumable
+> = {
+  ...INSTANT_FISH_RECIPES,
+  ...FISH_COOKABLES,
+  ...FISH,
+};
 
 const Juices = Object.keys(JUICE_COOKABLES);
 
@@ -1335,4 +1421,12 @@ export function isJuice(item: any) {
 
 export function isCookable(consumeable: Consumable): consumeable is Cookable {
   return consumeable.name in COOKABLES;
+}
+
+export function isFishCookable(name: ConsumableName): boolean {
+  return name in FISH_COOKABLES;
+}
+
+export function isInstantFishRecipe(name: ConsumableName): boolean {
+  return name in INSTANT_FISH_RECIPES;
 }

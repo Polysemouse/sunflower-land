@@ -290,8 +290,18 @@ const getTypeBoost = (type: string) => {
   return buffs;
 };
 
+/**
+ * Returns buff labels for display (e.g. boost modal).
+ * Uses budFromState when provided (player's actual traits) so aura percentage
+ * is correct; otherwise falls back to mainnet bud data.
+ */
 export const getBudBuffs = (budId: number): BuffLabel[] => {
-  const { type, stem, aura } = buds[budId];
+  const bud = buds[budId];
+  if (!bud) {
+    return [];
+  }
+
+  const { type, stem, aura } = bud;
 
   const typeBuffs = getTypeBoost(type);
   const stemBuffs = getStemBoost(stem);

@@ -8,7 +8,7 @@ import { NPC_WEARABLES } from "lib/npcs";
 import { translate } from "lib/i18n/translate";
 import { CurrenciesModal } from "features/island/hud/components/CurrenciesModal";
 import { VIPItems } from "./components/VIPItems";
-import { Panel } from "components/ui/Panel";
+import { OuterPanel, Panel } from "components/ui/Panel";
 import { ReputationSystem } from "features/island/hud/components/reputation/Reputation";
 import { Telegram } from "features/auth/components/Telegram/Telegram";
 import { Twitter } from "features/auth/components/Twitter/Twitter";
@@ -16,15 +16,15 @@ import { ReferralContent } from "features/island/hud/components/referral/Referra
 import { CloseButtonPanel } from "../CloseablePanel";
 import { DiscordBonus } from "features/game/expansion/components/DiscordBoat";
 import { Streams } from "./components/Streams";
-import { Merkl } from "./components/Merkl";
 import { Rewards } from "features/island/hud/components/referral/Rewards";
-import { DailyRewardChest } from "features/game/expansion/components/dailyReward/DailyReward";
+import { ChapterTracks } from "features/world/ui/tracks/ChapterTracks";
 type GlobalModal =
   | "BUY_GEMS"
   | "DISCORD"
   | "BUY_BANNER"
   | "STORE_ON_CHAIN"
   | "FIRST_EXPANSION"
+  | "CHAPTER_TRACKS"
   | "NEXT_EXPANSION"
   | "SECOND_LEVEL"
   | "FIREPIT"
@@ -36,7 +36,6 @@ type GlobalModal =
   | "TWITTER"
   | "REFERRAL"
   | "STREAMS"
-  | "MERKL"
   | "DEPOSIT"
   | "DAILY_REWARD"
   | "EARN";
@@ -92,6 +91,12 @@ export const ModalProvider: FC<React.PropsWithChildren> = ({ children }) => {
         </Panel>
       </Modal>
 
+      <Modal show={opened === "CHAPTER_TRACKS"} onHide={handleClose}>
+        <OuterPanel>
+          <ChapterTracks />
+        </OuterPanel>
+      </Modal>
+
       <Modal show={opened === "STORE_ON_CHAIN"} onHide={handleClose}>
         <StoreOnChainModal onClose={handleClose} />
       </Modal>
@@ -114,10 +119,6 @@ export const ModalProvider: FC<React.PropsWithChildren> = ({ children }) => {
 
       <Modal show={opened === "STREAMS"} onHide={handleClose}>
         <Streams onClose={handleClose} />
-      </Modal>
-
-      <Modal show={opened === "MERKL"} onHide={handleClose}>
-        <Merkl onClose={handleClose} />
       </Modal>
 
       <Modal show={opened === "FIRST_EXPANSION"}>
@@ -215,12 +216,6 @@ export const ModalProvider: FC<React.PropsWithChildren> = ({ children }) => {
       </Modal>
 
       <Rewards show={opened === "EARN"} onHide={handleClose} tab={"Earn"} />
-
-      <DailyRewardChest
-        show={opened === "DAILY_REWARD"}
-        onHide={handleClose}
-        tab={0}
-      />
     </ModalContext.Provider>
   );
 };
