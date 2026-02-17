@@ -22,7 +22,7 @@ export const CropsAndChickensRulesPanel: React.FC<Props> = ({
   onConfirm,
 }) => {
   const { t } = useAppTranslation();
-  const [tab, setTab] = useState(0);
+  const [tab, setTab] = useState<"home" | "donations">("home");
 
   return (
     <CloseButtonPanel
@@ -34,15 +34,17 @@ export const CropsAndChickensRulesPanel: React.FC<Props> = ({
         {
           icon: SUNNYSIDE.icons.plant,
           name: t("crops-and-chickens.minigame"),
+          id: "home",
         },
         {
           icon: SUNNYSIDE.icons.heart,
           name: t("donate"),
+          id: "donations",
         },
       ]}
     >
       <>
-        {tab === 0 && (
+        {tab === "home" && (
           <CropsAndChickensHome
             mode={mode}
             showScore={showScore}
@@ -51,7 +53,7 @@ export const CropsAndChickensRulesPanel: React.FC<Props> = ({
             onConfirm={onConfirm}
           />
         )}
-        {tab === 1 && <CropsAndChickensDonations />}
+        {tab === "donations" && <CropsAndChickensDonations />}
       </>
     </CloseButtonPanel>
   );
