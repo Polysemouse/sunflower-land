@@ -1,7 +1,7 @@
-import { NPC_WEARABLES, NPCName } from "lib/npcs";
-import { GameState, InventoryItemName } from "./game";
-import { getKeys } from "./decorations";
-import { FarmActivityName } from "./farmActivity";
+import { NPC_WEARABLES, type NPCName } from "lib/npcs";
+import type { GameState, InventoryItemName } from "./game";
+import { getKeys } from "lib/object";
+import type { FarmActivityName } from "./farmActivity";
 
 type ChoreTask = {
   requirement: number;

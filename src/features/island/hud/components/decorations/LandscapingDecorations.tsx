@@ -5,16 +5,16 @@ import { CraftingRequirements } from "components/ui/layouts/CraftingRequirements
 import { SplitScreenView } from "components/ui/SplitScreenView";
 import {
   LANDSCAPING_DECORATIONS,
-  getKeys,
-  Decoration,
+  type Decoration,
 } from "features/game/types/decorations";
 import { ITEM_DETAILS } from "features/game/types/images";
+import { getKeys } from "lib/object";
 import { gameAnalytics } from "lib/gameAnalytics";
 import { useAppTranslation } from "lib/i18n/useAppTranslations";
 import React, { useContext, useState } from "react";
 import { Context } from "features/game/GameProvider";
 import { ITEM_ICONS } from "../inventory/Chest";
-import { MachineInterpreter } from "features/game/expansion/placeable/landscapingMachine";
+import type { MachineInterpreter } from "features/game/expansion/placeable/landscapingMachine";
 import { getCurrentBiome } from "features/island/biomes/biomes";
 import { Label } from "components/ui/Label";
 

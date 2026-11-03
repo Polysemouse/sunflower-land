@@ -1,5 +1,5 @@
 import React, { useContext, useEffect, useState } from "react";
-import { ImageStyle } from "./template/ImageStyle";
+import type { ImageStyle } from "./template/ImageStyle";
 import { useVisiting } from "lib/utils/visitUtils";
 import { SUNNYSIDE } from "assets/sunnyside";
 import { PIXEL_SCALE } from "features/game/lib/constants";
@@ -10,26 +10,28 @@ import { ButtonPanel, InnerPanel, OuterPanel } from "components/ui/Panel";
 import { Button } from "components/ui/Button";
 import { Modal } from "components/ui/Modal";
 import { ITEM_DETAILS } from "features/game/types/images";
+import { getItemDescription } from "features/game/lib/getItemDescription";
 import { Label } from "components/ui/Label";
 import { useAppTranslation } from "lib/i18n/useAppTranslations";
-import { MachineState } from "features/game/lib/gameMachine";
+import type { MachineState } from "features/game/lib/gameMachine";
 import { useSelector } from "@xstate/react";
 import Decimal from "decimal.js-light";
 import classNames from "classnames";
 import {
+  getProjectReward,
+  hasProjectRaffle,
   isHelpComplete,
-  MonumentName,
-  RAFFLE_REWARDS,
+  type MonumentName,
   REQUIRED_CHEERS,
   REWARD_ITEMS,
-  VillageProjectName,
+  type VillageProjectName,
   WORKBENCH_MONUMENTS,
 } from "features/game/types/monuments";
 import chest from "assets/icons/chest.png";
 import { Box } from "components/ui/Box";
 import { formatNumber } from "lib/utils/formatNumber";
 
-import { GameState } from "features/game/types/game";
+import type { GameState } from "features/game/types/game";
 
 import farmerMonumentOne from "assets/monuments/shovel_monument_stage_1.webp";
 import farmerMonumentTwo from "assets/monuments/shovel_monument_stage_2.webp";
@@ -63,16 +65,27 @@ import cornucopiaThree from "assets/monuments/cornucopia_monument_stage3.webp";
 import poseidonThroneOne from "assets/monuments/poseidons_throne_stage1.webp";
 import poseidonThroneTwo from "assets/monuments/poseidons_throne_stage2.webp";
 
+import crystalAltarOne from "assets/monuments/crystal_altar_1.webp";
+import crystalAltarTwo from "assets/monuments/crystal_altar_2.webp";
+import crystalAltarThree from "assets/monuments/crystal_altar_3.webp";
+import ascensionMonumentOne from "assets/monuments/ascension_monument_stage1.webp";
+import ascensionMonumentTwo from "assets/monuments/ascension_monument_stage2.webp";
+import ascensionMonumentThree from "assets/monuments/ascension_monument_stage3.webp";
+import duendeMonumentOne from "assets/monuments/duende_monument_stage1.webp";
+import duendeMonumentTwo from "assets/monuments/duende_monument_stage2.webp";
+import duendeMonumentThree from "assets/monuments/duende_monument_stage3.webp";
+
 import { getPlayer } from "features/social/actions/getPlayer";
 import { useAuth } from "features/auth/lib/Provider";
-import { Player } from "features/social/types/types";
+import type { Player } from "features/social/types/types";
 import { NPCIcon } from "features/island/bumpkin/components/NPC";
 import { Loading } from "features/auth/components";
-import { BumpkinParts } from "lib/utils/tokenUriBuilder";
+import type { BumpkinParts } from "lib/utils/tokenUriBuilder";
 import { CloseButtonPanel } from "features/game/components/CloseablePanel";
 import { FarmHelped } from "features/island/hud/components/FarmHelped";
 import { getPartialInstantGrowPrice } from "features/game/events/landExpansion/instaGrowProject";
-import { getKeys } from "features/game/types/craftables";
+import { getKeys } from "lib/object";
+import { getCollectiblesAcrossLocations } from "features/game/lib/getCollectiblesAcrossLocations";
 import { RequirementLabel } from "components/ui/RequirementsLabel";
 import { EffectSuccess } from "features/game/expansion/components/effects/EffectSuccess";
 
@@ -146,6 +159,21 @@ export const PROJECT_IMAGES: Record<
     halfway: poseidonThroneTwo,
     ready: ITEM_DETAILS["Poseidon's Throne"].image,
   },
+  "Crystal Altar": {
+    empty: crystalAltarOne,
+    halfway: crystalAltarTwo,
+    ready: crystalAltarThree,
+  },
+  "Ascension Monument": {
+    empty: ascensionMonumentOne,
+    halfway: ascensionMonumentTwo,
+    ready: ascensionMonumentThree,
+  },
+  "Duende Monument": {
+    empty: duendeMonumentOne,
+    halfway: duendeMonumentTwo,
+    ready: duendeMonumentThree,
+  },
 };
 
 const ProjectComplete: React.FC<{
@@ -165,7 +193,11 @@ const ProjectComplete: React.FC<{
 
   const rewardItem = REWARD_ITEMS[project];
 
-  const amount = rewardItem?.amount ?? 0;
+  const { amount } = getProjectReward({
+    project,
+    game: state,
+    amount: rewardItem.amount,
+  });
 
   const isProjectComplete = cheers >= REQUIRED_CHEERS[project];
 
@@ -227,7 +259,7 @@ const ProjectComplete: React.FC<{
         </span>
       </div>
 
-      {isProjectComplete && RAFFLE_REWARDS[project] && !!winner && (
+      {isProjectComplete && hasProjectRaffle(project) && !!winner && (
         <>
           <div className="flex justify-between flex-wrap">
             <Label
@@ -272,9 +304,8 @@ const ProjectComplete: React.FC<{
             </Label>
 
             <p className="text-xs ml-0.5">
-              {ITEM_DETAILS[rewardItem.item]?.description
-                ? ITEM_DETAILS[rewardItem.item].description
-                : t("reward.collectible")}
+              {getItemDescription({ item: rewardItem.item, game: state }) ||
+                t("reward.collectible")}
             </p>
           </div>
         </ButtonPanel>
@@ -472,14 +503,24 @@ const _cheers = (project: MonumentName) => (state: MachineState) => {
   );
 };
 
+/**
+ * A placed monument with no village project behind it — either never started,
+ * or already completed and cashed in. It renders the "start project" flow
+ * instead of a progress bar, and visitors must not be able to cheer it.
+ *
+ * Placement is checked across *all* surfaces (farm, home and both interior
+ * floors). Missing the interior floors here left a pot moved inside looking
+ * like a live project stuck at 0%: the owner got the progress modal rather than
+ * the start prompt, and a visitor's cheer threw "Project not found".
+ */
 const _isInactive = (project: MonumentName) => (state: MachineState) => {
   const gameState = state.context.state;
-  const isPlaced =
-    gameState.collectibles[project]?.some((c) => !!c.coordinates) ||
-    gameState.home.collectibles[project]?.some((c) => !!c.coordinates);
+  const isPlaced = getCollectiblesAcrossLocations(gameState, project).some(
+    (c) => !!c.coordinates,
+  );
   const hasVillageProject =
     !!gameState.socialFarming.villageProjects?.[project];
-  return !!isPlaced && !hasVillageProject;
+  return isPlaced && !hasVillageProject;
 };
 
 const _cheersAvailable = (state: MachineState) => {
@@ -558,13 +599,26 @@ export const Project: React.FC<ProjectProps> = (input) => {
   const [showHelped, setShowHelped] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
 
-  const handleComplete = async () => {
-    gameService.send("project.completed", {
-      effect: {
-        type: "project.completed",
-        project: input.project,
-      },
-    });
+  const handleComplete = () => {
+    /**
+     * A raffle project also pays out the winner, which is another player's
+     * farm, so it has to be settled server side. Everything else is purely the
+     * owner's own state: complete it locally and let autosave catch up.
+     */
+    if (hasProjectRaffle(input.project)) {
+      gameService.send("project.completed", {
+        effect: {
+          type: "project.completed",
+          project: input.project,
+        },
+      });
+
+      return;
+    }
+
+    // Keep the modal open: collecting clears the project, so it switches to
+    // the start prompt and the player can begin the next one right away.
+    gameService.send("project.collected", { project: input.project });
   };
 
   const handleStartProject = () => {
@@ -647,7 +701,7 @@ export const Project: React.FC<ProjectProps> = (input) => {
               }}
             >
               <div
-                className="relative mr-2"
+                className="monument-help-action relative mr-2"
                 style={{ width: `${PIXEL_SCALE * 20}px` }}
               >
                 <img className="w-full" src={SUNNYSIDE.icons.disc} />

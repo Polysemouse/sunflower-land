@@ -1,5 +1,6 @@
 import React, { useContext, useState } from "react";
 import { Transition } from "@headlessui/react";
+import classNames from "classnames";
 
 import emptyPot from "assets/greenhouse/greenhouse_pot.webp";
 import grapeSeedling from "assets/greenhouse/grape_seedling.webp";
@@ -15,22 +16,29 @@ import riceGrowing from "assets/greenhouse/rice_growing.webp";
 import riceAlmost from "assets/greenhouse/rice_almost.webp";
 import riceReady from "assets/greenhouse/rice_ready.webp";
 import barrelIcon from "assets/resources/oil_barrel.webp";
+import powerup from "assets/icons/level_up.png";
 
 import { PIXEL_SCALE } from "features/game/lib/constants";
-import {
+import type {
   GreenHouseCropName,
   GreenHouseCropSeedName,
 } from "features/game/types/crops";
-import { GreenHouseFruitName } from "features/game/types/fruits";
+import type { GreenHouseFruitName } from "features/game/types/fruits";
 import { Context } from "features/game/GameProvider";
-import { MachineState } from "features/game/lib/gameMachine";
+import type { MachineState } from "features/game/lib/gameMachine";
 import { useSelector } from "@xstate/react";
 import { ProgressBar } from "components/ui/ProgressBar";
+import { getGreenhouseCropYieldAmount } from "features/game/events/landExpansion/harvestGreenHouse";
+import { getGreenhouseReadyAt } from "features/game/events/landExpansion/greenhouseReadiness";
 import {
-  getGreenhouseCropYieldAmount,
-  getReadyAt,
-} from "features/game/events/landExpansion/harvestGreenHouse";
-import { ITEM_DETAILS } from "features/game/types/images";
+  getGreenhouseBoostWindows,
+  getGreenhouseGlowWindows,
+} from "features/game/lib/boostWindows";
+import { useNodeTimer } from "features/game/lib/useNodeTimer";
+import {
+  ITEM_DETAILS,
+  getTranslatedItemName,
+} from "features/game/types/images";
 import {
   getOilUsage,
   SEED_TO_PLANT,
@@ -38,10 +46,17 @@ import {
 import { QuickSelect } from "./QuickSelect";
 import { SUNNYSIDE } from "assets/sunnyside";
 import { Label } from "components/ui/Label";
-import { secondsToString } from "lib/utils/time";
 import { useAppTranslation } from "lib/i18n/useAppTranslations";
 import { formatNumber } from "lib/utils/formatNumber";
-import { useNow } from "lib/utils/hooks/useNow";
+import {
+  GREENHOUSE_COMPOST,
+  type GreenhouseCompostName,
+} from "features/game/types/composters";
+import type {
+  GreenhouseFertiliser,
+  InventoryItemName,
+} from "features/game/types/game";
+import { TimerPopover } from "features/island/common/TimerPopover";
 
 type Stage = "seedling" | "growing" | "almost" | "ready";
 const PLANT_STAGES: Record<
@@ -76,6 +91,42 @@ const _state = (state: MachineState) => state.context.state;
 const _farmId = (state: MachineState) => state.context.farmId;
 const clampPercentage = (value: number) => Math.min(Math.max(value, 0), 100);
 
+const GreenhousePotFertiliserBadges: React.FC<{
+  fertiliser?: GreenhouseFertiliser;
+}> = ({ fertiliser }) => {
+  const name = fertiliser?.name;
+  if (!name) return null;
+
+  return (
+    <>
+      {name === "Greenhouse Goodie" && (
+        <img
+          src={powerup}
+          alt=""
+          className="absolute z-10 pointer-events-none"
+          style={{
+            width: `${PIXEL_SCALE * 5}px`,
+            bottom: `${PIXEL_SCALE * 2}px`,
+            right: `${PIXEL_SCALE * 0}px`,
+          }}
+        />
+      )}
+      {name === "Greenhouse Glow" && (
+        <img
+          src={SUNNYSIDE.icons.stopwatch}
+          alt=""
+          className="absolute z-10 pointer-events-none"
+          style={{
+            width: `${PIXEL_SCALE * 6}px`,
+            bottom: `${PIXEL_SCALE * 2}px`,
+            right: `${PIXEL_SCALE * 0}px`,
+          }}
+        />
+      )}
+    </>
+  );
+};
+
 export const GreenhousePot: React.FC<Props> = ({ id }) => {
   const {
     gameService,
@@ -108,21 +159,61 @@ export const GreenhousePot: React.FC<Props> = ({ id }) => {
 
   const pot = pots[id];
   const growingPlant = pot?.plant;
+  const potFertiliser = pot?.fertiliser;
 
   const plantedAt = growingPlant?.plantedAt ?? 0;
+  // Windowed plants (speed-rate model) derive their ready time live from the
+  // boost windows; legacy plants use their back-dated plantedAt + base time.
   const readyAt = growingPlant
-    ? getReadyAt({
-        plant: growingPlant.name,
-        createdAt: plantedAt,
-      })
+    ? getGreenhouseReadyAt(growingPlant, state, potFertiliser)
     : 0;
-  const harvestSeconds = Math.max((readyAt - plantedAt) / 1000, 0);
-  const now = useNow({ live: !!growingPlant, autoEndAt: readyAt });
+
+  // Live windowed greenhouse speed boosts (totems / Tortoise Shrine / Harvest
+  // Hourglass for the crops + this pot's Greenhouse Glow fertiliser). Computed
+  // inline — this component already subscribes to the whole game state.
+  const boostWindows = growingPlant
+    ? [
+        ...getGreenhouseBoostWindows(state, growingPlant.name),
+        ...getGreenhouseGlowWindows(potFertiliser),
+      ]
+    : [];
+  const baseDurationMs = growingPlant?.baseDurationMs;
+  // `boostedTime` carries a different quantity in each model, so split it here:
+  // - windowed: WORK banked across Greenhouse building moves, folded into the
+  //   bar's total so visual progress is preserved (readiness already accounts
+  //   for it).
+  // - legacy: the DISCOUNT baked in by back-dating `plantedAt` (plant time +
+  //   any mid-grow Greenhouse Glow). It is not growth already done, so the bar
+  //   has to un-back-date with it — otherwise a heavily boosted plant opens its
+  //   bar near-full and only ever fills the last sliver. Mirrors FertilePlot.
+  const bankedWorkMs =
+    baseDurationMs !== undefined ? (growingPlant?.boostedTime ?? 0) : 0;
+  const legacyOffsetMs =
+    baseDurationMs === undefined ? (growingPlant?.boostedTime ?? 0) : 0;
+
+  const { now, workLeftSeconds, countdownSeconds } = useNodeTimer({
+    startedAt: plantedAt,
+    baseDurationMs,
+    windows: boostWindows,
+    legacyReadyAt: readyAt,
+    live: !!growingPlant,
+  });
+
+  // Remaining WORK — drives the progress fill and the "is it still growing"
+  // gates below; work does not drain at wall-clock rate while a boost runs.
   const secondsLeft =
-    readyAt > 0 ? Math.max(Math.ceil((readyAt - now) / 1000), 0) : 0;
+    readyAt > 0 || baseDurationMs !== undefined
+      ? Math.max(Math.ceil(workLeftSeconds), 0)
+      : 0;
+  // The wall-clock reading, for the labels.
+  const displaySecondsLeft = Math.max(Math.ceil(countdownSeconds), 0);
+  const totalSeconds =
+    baseDurationMs !== undefined
+      ? (baseDurationMs + bankedWorkMs) / 1000
+      : Math.max((readyAt - plantedAt - legacyOffsetMs) / 1000, 0);
   const percentage =
-    harvestSeconds > 0
-      ? clampPercentage(((harvestSeconds - secondsLeft) / harvestSeconds) * 100)
+    totalSeconds > 0
+      ? clampPercentage(((totalSeconds - secondsLeft) / totalSeconds) * 100)
       : 100;
 
   const { usage: oilRequired } = getOilUsage({
@@ -154,9 +245,22 @@ export const GreenhousePot: React.FC<Props> = ({ id }) => {
     gameService.send("greenhouse.planted", { id, seed });
   };
 
+  const canApplyGreenhouseFertiliser = (item?: InventoryItemName) => {
+    const invItem = item ?? selectedItem;
+    return !!invItem && invItem in GREENHOUSE_COMPOST && !potFertiliser;
+  };
+
+  const tryApplyGreenhouseFertiliser = (item?: InventoryItemName) => {
+    if (!canApplyGreenhouseFertiliser(item)) return false;
+    gameService.send("greenhouse.fertilised", {
+      id,
+      fertiliser: (item ?? selectedItem) as GreenhouseCompostName,
+    });
+    return true;
+  };
   if (!pot?.plant) {
     return (
-      <div style={{ width: `${PIXEL_SCALE * 28}px` }}>
+      <div className="relative" style={{ width: `${PIXEL_SCALE * 28}px` }}>
         {/* Harvest Animation */}
         {showAnimations && (
           <Transition
@@ -228,11 +332,28 @@ export const GreenhousePot: React.FC<Props> = ({ id }) => {
           </Label>
         </Transition>
 
+        <GreenhousePotFertiliserBadges fertiliser={potFertiliser} />
+        {/* Nothing planted: the same ! the Greenhouse shows on the farm. */}
+        <img
+          src={SUNNYSIDE.icons.expression_alerted}
+          alt=""
+          className={classNames("absolute pointer-events-none z-20", {
+            ready: showAnimations,
+          })}
+          style={{
+            width: `${PIXEL_SCALE * 4}px`,
+            left: `calc(50% - ${PIXEL_SCALE * 2}px)`,
+            top: `${PIXEL_SCALE * -10}px`,
+          }}
+        />
         <img
           src={emptyPot}
           className="cursor-pointer hover:img-highlight"
           style={{ width: `${PIXEL_SCALE * 28}px` }}
-          onClick={() => plantSeed()}
+          onClick={() => {
+            if (tryApplyGreenhouseFertiliser()) return;
+            plantSeed();
+          }}
         />
       </div>
     );
@@ -240,6 +361,15 @@ export const GreenhousePot: React.FC<Props> = ({ id }) => {
 
   const harvest = async () => {
     if (!pot.plant) return;
+    if (
+      selectedItem &&
+      selectedItem in GREENHOUSE_COMPOST &&
+      !potFertiliser &&
+      now < readyAt
+    ) {
+      tryApplyGreenhouseFertiliser();
+      return;
+    }
     if (now < readyAt) {
       setShowTimeRemaining(true);
       await new Promise((res) => setTimeout(res, 2000));
@@ -256,6 +386,7 @@ export const GreenhousePot: React.FC<Props> = ({ id }) => {
           crop: pot.plant.name,
           game: state,
           createdAt: now,
+          fertiliser: potFertiliser?.name,
         }).amount,
     );
 
@@ -281,7 +412,8 @@ export const GreenhousePot: React.FC<Props> = ({ id }) => {
   }
 
   return (
-    <div style={{ width: `${PIXEL_SCALE * 28}px` }}>
+    <div className="relative" style={{ width: `${PIXEL_SCALE * 28}px` }}>
+      <GreenhousePotFertiliserBadges fertiliser={potFertiliser} />
       <img
         src={PLANT_STAGES[pot.plant.name][stage]}
         className="cursor-pointer hover:img-highlight"
@@ -299,7 +431,7 @@ export const GreenhousePot: React.FC<Props> = ({ id }) => {
         >
           <ProgressBar
             percentage={percentage}
-            seconds={secondsLeft}
+            seconds={displaySecondsLeft}
             formatLength="short"
             type="progress"
           />
@@ -319,15 +451,12 @@ export const GreenhousePot: React.FC<Props> = ({ id }) => {
         className="flex top-0 left-[90%] absolute z-40 shadow-md w-[200px]"
         as="div"
       >
-        <Label
-          type="info"
-          icon={ITEM_DETAILS[pot.plant.name].image}
-          secondaryIcon={SUNNYSIDE.icons.stopwatch}
-        >
-          {`${pot.plant.name}: ${secondsToString(secondsLeft, {
-            length: "medium",
-          })}`}
-        </Label>
+        <TimerPopover
+          image={ITEM_DETAILS[pot.plant.name].image}
+          description={getTranslatedItemName(pot.plant.name)}
+          showPopover={showTimeRemaining && !canApplyGreenhouseFertiliser()}
+          timeLeft={displaySecondsLeft}
+        />
       </Transition>
     </div>
   );

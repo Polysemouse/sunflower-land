@@ -1,15 +1,25 @@
 import { trackFarmActivity } from "features/game/types/farmActivity";
-import { CollectibleName } from "features/game/types/craftables";
-import { GameState, PlacedItem, PlacedLamp } from "features/game/types/game";
+import type { CollectibleName } from "features/game/types/craftables";
+import type {
+  GameState,
+  PlacedItem,
+  PlacedLamp,
+} from "features/game/types/game";
 
-import { PlaceableLocation } from "features/game/types/collectibles";
+import type { PlaceableLocation } from "features/game/types/collectibles";
 import { produce } from "immer";
 import { LIMITED_ITEMS } from "./burnCollectible";
 import {
   EXPIRY_COOLDOWNS,
-  TemporaryCollectibleName,
+  getCollectibleExpiry,
+  type TemporaryCollectibleName,
 } from "features/game/lib/collectibleBuilt";
 import { PET_SHRINES } from "features/game/types/pets";
+import { populateSaltFarm } from "features/game/types/salt";
+import {
+  snapshotGuardianPlacements,
+  syncGuardianPlacements,
+} from "features/game/lib/guardianPlacements";
 import { isPetCollectible } from "./placeCollectible";
 
 export enum REMOVE_COLLECTIBLE_ERRORS {
@@ -54,6 +64,14 @@ export function removeCollectible({
           );
         }
         return stateCopy.petHouse.pets[name];
+      } else if (location === "interior") {
+        return stateCopy.interior.ground.collectibles[name];
+      } else if (location === "level_one") {
+        const levelOne = stateCopy.interior.level_one;
+        if (!levelOne) {
+          throw new Error("Level one floor has not been unlocked");
+        }
+        return levelOne.collectibles[name];
       } else {
         return stateCopy.collectibles[name];
       }
@@ -98,7 +116,13 @@ export function removeCollectible({
         throw new Error(REMOVE_COLLECTIBLE_ERRORS.LIMITED_ITEM_IN_USE);
       }
 
-      if (!cooldown || (collectible.createdAt ?? 0) + cooldown > createdAt) {
+      const expiresAt = getCollectibleExpiry({
+        name: action.name as TemporaryCollectibleName,
+        collectible,
+        game: stateCopy,
+      });
+
+      if (!cooldown || expiresAt > createdAt) {
         throw new Error(REMOVE_COLLECTIBLE_ERRORS.LIMITED_ITEM_IN_USE);
       }
     }
@@ -109,6 +133,18 @@ export function removeCollectible({
     stateCopy.farmActivity = trackFarmActivity(
       "Collectible Removed",
       stateCopy.farmActivity,
+    );
+
+    populateSaltFarm({
+      gameBefore: state,
+      gameAfter: stateCopy,
+      now: createdAt,
+    });
+
+    syncGuardianPlacements(
+      stateCopy,
+      snapshotGuardianPlacements(state),
+      createdAt,
     );
 
     return stateCopy;

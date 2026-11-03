@@ -2,8 +2,9 @@ import Decimal from "decimal.js-light";
 import { CRIMSTONE_RECOVERY_TIME } from "features/game/lib/constants";
 import { trackFarmActivity } from "features/game/types/farmActivity";
 import { canMine } from "features/game/lib/resourceNodes";
-import { BoostName, FiniteResource, GameState } from "../../types/game";
+import type { BoostName, FiniteResource, GameState } from "../../types/game";
 import { isWearableActive } from "features/game/lib/wearables";
+import { getSkillLevel, SKILL_RANKS } from "features/game/types/bumpkinSkills";
 import { produce } from "immer";
 import {
   isTemporaryCollectibleActive,
@@ -12,6 +13,7 @@ import {
 import { updateBoostUsed } from "features/game/types/updateBoostUsed";
 import { prngChance } from "lib/prng";
 import { KNOWN_IDS } from "features/game/types";
+import { hasFeatureAccess } from "lib/flags";
 
 export type MineCrimstoneAction = {
   type: "crimstoneRock.mined";
@@ -25,33 +27,57 @@ type Options = {
   farmId: number;
 };
 
-type GetMinedAtArgs = {
-  createdAt: number;
-  game: GameState;
+type PrngArgs = {
   farmId: number;
   itemId: number;
   counter: number;
 };
 
-function getBoostedTime({ game, farmId, itemId, counter }: GetMinedAtArgs): {
-  boostedTime: number;
+type GetMinedAtArgs = {
+  createdAt: number;
+  game: GameState;
+  prngArgs?: PrngArgs;
+};
+
+/**
+ * Single source of truth for crimstone recovery boosts. Used by both getMinedAt (game) and UI.
+ * When prngArgs is omitted, PRNG-dependent branches (e.g. Crimstone Clam instant) are skipped.
+ */
+export function getCrimstoneRecoveryTimeForDisplay({
+  game,
+  prngArgs,
+  now,
+}: {
+  game: GameState;
+  prngArgs?: PrngArgs;
+  now: number;
+}): {
+  baseTimeMs: number;
+  recoveryTimeMs: number;
   boostsUsed: { name: BoostName; value: string }[];
 } {
+  const baseTimeMs = CRIMSTONE_RECOVERY_TIME * 1000;
   let totalSeconds = CRIMSTONE_RECOVERY_TIME;
   const boostsUsed: { name: BoostName; value: string }[] = [];
 
+  // Under SPEED_BOOSTS the temporary crimstone boost (Mole Shrine) is a
+  // retroactive speed-rate window (see boostWindows), so it's excluded from the
+  // baked recovery here — what remains is the permanent-boost-only base duration.
+  // Flag-off keeps the legacy discount-at-start.
+  const boostsWindowed = hasFeatureAccess(game, "SPEED_BOOSTS");
+
   if (
     isCollectibleBuilt({ name: "Crimstone Clam", game }) &&
+    prngArgs &&
     prngChance({
-      farmId,
-      itemId,
-      counter,
+      ...prngArgs,
       chance: 10,
       criticalHitName: "Crimstone Clam",
     })
   ) {
     return {
-      boostedTime: CRIMSTONE_RECOVERY_TIME * 1000,
+      baseTimeMs,
+      recoveryTimeMs: 0,
       boostsUsed: [{ name: "Crimstone Clam", value: "Instant" }],
     };
   }
@@ -66,42 +92,54 @@ function getBoostedTime({ game, farmId, itemId, counter }: GetMinedAtArgs): {
     boostsUsed.push({ name: "Crimstone Amulet", value: "x0.8" });
   }
 
-  if (game.bumpkin.skills["Fireside Alchemist"]) {
-    totalSeconds = totalSeconds * 0.85;
-    boostsUsed.push({ name: "Fireside Alchemist", value: "x0.85" });
+  const firesideAlchemistLevel = getSkillLevel(
+    game.bumpkin.skills,
+    "Fireside Alchemist",
+  );
+  if (firesideAlchemistLevel) {
+    const v =
+      SKILL_RANKS["Fireside Alchemist"].ranks[firesideAlchemistLevel - 1];
+    totalSeconds = totalSeconds * v;
+    boostsUsed.push({ name: "Fireside Alchemist", value: `x${v}` });
   }
 
-  if (isTemporaryCollectibleActive({ name: "Mole Shrine", game })) {
+  if (
+    !boostsWindowed &&
+    isTemporaryCollectibleActive({ name: "Mole Shrine", game, now })
+  ) {
     totalSeconds = totalSeconds * 0.75;
     boostsUsed.push({ name: "Mole Shrine", value: "x0.75" });
   }
 
-  const buff = CRIMSTONE_RECOVERY_TIME - totalSeconds;
-
-  return { boostedTime: buff * 1000, boostsUsed };
+  return {
+    baseTimeMs,
+    recoveryTimeMs: totalSeconds * 1000,
+    boostsUsed,
+  };
 }
 
-export function getMinedAt({
-  createdAt,
-  game,
-  farmId,
-  itemId,
-  counter,
-}: GetMinedAtArgs): {
+/**
+ * The mine time to persist, plus (under SPEED_BOOSTS) the base recovery duration.
+ *
+ * Legacy model: back-date `minedAt` into the past so the rock replenishes faster.
+ * Speed-rate model (SPEED_BOOSTS): store the REAL mine time and a `baseDurationMs`
+ * carrying only the permanent boosts; the temporary boosts are derived live from
+ * windows. Uses getCrimstoneRecoveryTimeForDisplay for boost logic.
+ */
+export function getMinedAt({ createdAt, game, prngArgs }: GetMinedAtArgs): {
   time: number;
+  baseDurationMs?: number;
   boostsUsed: { name: BoostName; value: string }[];
 } {
-  const { boostedTime, boostsUsed } = getBoostedTime({
-    game,
-    createdAt,
-    farmId,
-    itemId,
-    counter,
-  });
+  const { baseTimeMs, recoveryTimeMs, boostsUsed } =
+    getCrimstoneRecoveryTimeForDisplay({ game, prngArgs, now: createdAt });
 
-  const time = createdAt - boostedTime;
+  if (hasFeatureAccess(game, "SPEED_BOOSTS")) {
+    return { time: createdAt, baseDurationMs: recoveryTimeMs, boostsUsed };
+  }
 
-  return { time, boostsUsed };
+  const buffMs = baseTimeMs - recoveryTimeMs;
+  return { time: createdAt - buffMs, boostsUsed };
 }
 
 export function getCrimstoneDropAmount({
@@ -134,9 +172,15 @@ export function getCrimstoneDropAmount({
       amount = amount.add(2);
       boostsUsed.push({ name: "Crimstone Hammer", value: "+2" });
     }
-    if (game.bumpkin.skills["Fire Kissed"]) {
-      amount = amount.add(1);
-      boostsUsed.push({ name: "Fire Kissed", value: "+1" });
+    const fireKissedLevel = getSkillLevel(game.bumpkin.skills, "Fire Kissed");
+    if (fireKissedLevel) {
+      const v = SKILL_RANKS["Fire Kissed"].ranks[fireKissedLevel - 1];
+      amount = amount.add(v);
+      boostsUsed.push({ name: "Fire Kissed", value: `+${v}` });
+    }
+    if (isCollectibleBuilt({ name: "Mushroom Chicken", game })) {
+      amount = amount.add(0.5);
+      boostsUsed.push({ name: "Mushroom Chicken", value: "+0.5" });
     }
     amount = amount.add(2);
     boostsUsed.push({ name: "Streak Bonus", value: "+2" });
@@ -167,7 +211,7 @@ export function mineCrimstone({
       throw new Error("Crimstone rock is not placed");
     }
 
-    if (!canMine(rock, "Crimstone Rock", createdAt)) {
+    if (!canMine(rock, "Crimstone Rock", stateCopy, createdAt)) {
       throw new Error("Rock is still recovering");
     }
 
@@ -204,12 +248,21 @@ export function mineCrimstone({
     });
     const amountInInventory = stateCopy.inventory.Crimstone || new Decimal(0);
 
-    const { time, boostsUsed: minedAtBoostsUsed } = getMinedAt({
+    const {
+      time,
+      baseDurationMs,
+      boostsUsed: minedAtBoostsUsed,
+    } = getMinedAt({
       createdAt,
       game: stateCopy,
-      ...prngObject,
+      prngArgs: prngObject,
     });
     rock.stone = { minedAt: time };
+    if (baseDurationMs !== undefined) {
+      // Speed-rate model: real minedAt + permanent-only baseDurationMs. Temporary
+      // boosts are derived live from windows, so there's no baked discount.
+      rock.stone.baseDurationMs = baseDurationMs;
+    }
 
     rock.minesLeft = rock.minesLeft - 1;
 

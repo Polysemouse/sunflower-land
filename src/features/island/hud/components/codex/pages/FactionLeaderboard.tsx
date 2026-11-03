@@ -7,12 +7,12 @@ import { ButtonPanel, InnerPanel } from "components/ui/Panel";
 import { useAppTranslation } from "lib/i18n/useAppTranslations";
 import { secondsToString } from "lib/utils/time";
 
-import { FactionName } from "features/game/types/game";
+import type { FactionName } from "features/game/types/game";
 
 import mark from "assets/icons/faction_mark.webp";
 import trophy from "assets/icons/trophy.png";
 
-import {
+import type {
   KingdomLeaderboard,
   RankData,
 } from "features/game/expansion/components/leaderboard/actions/leaderboard";
@@ -25,10 +25,9 @@ import { SUNNYSIDE } from "assets/sunnyside";
 import { PIXEL_SCALE } from "features/game/lib/constants";
 import { NPCIcon } from "features/island/bumpkin/components/NPC";
 import { formatNumber, shortenCount } from "lib/utils/formatNumber";
-import { NPCName, NPC_WEARABLES } from "lib/npcs";
+import { type NPCName, NPC_WEARABLES } from "lib/npcs";
 import { ChampionsPrizes } from "features/world/ui/factions/Champions";
 import { toOrdinalSuffix } from "features/retreat/components/auctioneer/AuctionLeaderboardTable";
-import { KingdomChores } from "features/world/ui/factions/chores/KingdomChoresCodex";
 import { LastUpdatedAt } from "components/LastUpdatedAt";
 
 const npcs: Record<FactionName, NPCName> = {
@@ -104,9 +103,11 @@ export const FactionLeaderboard: React.FC<Props> = ({
         <div className="flex justify-between">
           <Label type="default">{`Weekly War`}</Label>
           <Label type="info" icon={SUNNYSIDE.icons.stopwatch}>
-            {`${secondsToString(secondsTillWeekReset(), {
-              length: "short",
-            })} left`}
+            {t("vipExpiry.timeLeft", {
+              time: secondsToString(secondsTillWeekReset(), {
+                length: "short",
+              }),
+            })}
           </Label>
         </div>
         <span className="text-xs mb-1">
@@ -163,7 +164,6 @@ export const FactionLeaderboard: React.FC<Props> = ({
           </div>
         </div>
         <ChampionsPrizes />
-        <KingdomChores />
       </div>
     </InnerPanel>
   );

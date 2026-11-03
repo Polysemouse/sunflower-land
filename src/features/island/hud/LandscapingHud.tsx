@@ -1,4 +1,5 @@
-import React, { useContext, useState } from "react";
+import React, { useContext, useEffect, useState } from "react";
+import { useInterval } from "lib/utils/hooks/useInterval";
 import { Balances } from "components/Balances";
 import { useActor, useSelector } from "@xstate/react";
 import { Context } from "features/game/GameProvider";
@@ -11,28 +12,24 @@ import shopIcon from "assets/icons/shop.png";
 import flipped from "assets/icons/flipped.webp";
 import flipIcon from "assets/icons/flip.webp";
 import cleanBroom from "assets/icons/clean_broom.webp";
+import mapIcon from "assets/icons/map.webp";
 
 import { isMobile } from "mobile-device-detect";
 
 import {
-  LandscapingPlaceable,
-  MachineInterpreter,
-  MachineState,
+  type LandscapingPlaceable,
+  type MachineInterpreter,
+  type MachineState,
   placeEvent,
 } from "features/game/expansion/placeable/landscapingMachine";
-import { Label } from "components/ui/Label";
 import { PlaceableController } from "features/farming/hud/components/PlaceableController";
-import { LandscapingChest } from "./components/LandscapingChest";
-import { getChestItems } from "./components/inventory/utils/inventory";
-import { getKeys } from "features/game/types/craftables";
-import { ITEM_DETAILS } from "features/game/types/images";
 import {
   getRemoveAction,
   getSelectedCollectible,
   isCollectible,
 } from "../collectibles/MovableComponent";
 import { RemoveKuebikoModal } from "../collectibles/RemoveKuebikoModal";
-import { PlaceableLocation } from "features/game/types/collectibles";
+import type { PlaceableLocation } from "features/game/types/collectibles";
 import { HudContainer } from "components/ui/HudContainer";
 import { RemoveHungryCaterpillarModal } from "../collectibles/RemoveHungryCaterpillarModal";
 import { useSound } from "lib/utils/hooks/useSound";
@@ -40,10 +37,24 @@ import { useAppTranslation } from "lib/i18n/useAppTranslations";
 import { RoundButton } from "components/ui/RoundButton";
 import { CraftDecorationsModal } from "./components/decorations/CraftDecorationsModal";
 import { RemoveAllConfirmation } from "../collectibles/RemoveAllConfirmation";
-import { NFTName } from "features/game/events/landExpansion/placeNFT";
+import { LandscapingConfirmation } from "../collectibles/LandscapingConfirmation";
+import { ArrangementConflictsPanel } from "./components/ArrangementConflictsPanel";
+import { commitArrangement } from "features/game/actions/arrangementEffects";
+import { isSaveInFlight } from "features/game/actions/layoutEffects";
+import { SavedLayoutsModal } from "./components/SavedLayoutsModal";
 import { useNow } from "lib/utils/hooks/useNow";
 import { PET_SHRINES } from "features/game/types/pets";
 import { isPetCollectible } from "features/game/events/landExpansion/placeCollectible";
+import { getKeys } from "lib/object";
+import { Label } from "components/ui/Label";
+import { Panel } from "components/ui/Panel";
+import { Loading } from "features/auth/components";
+import { ITEM_DETAILS } from "features/game/types/images";
+import { getChestItems } from "./components/inventory/utils/inventory";
+import type { NFTName } from "features/game/events/landExpansion/placeNFT";
+import { LandscapingChest } from "./components/LandscapingChest";
+import { LandscapingQuickPanel } from "./components/LandscapingQuickPanel";
+import { InteriorFloorNav } from "features/interior/components/InteriorFloorNav";
 
 const compareBalance = (prev: Decimal, next: Decimal) => {
   return prev.eq(next);
@@ -61,6 +72,7 @@ const compareBlockBucks = (prev: Decimal, next: Decimal) => {
 
 const selectMovingItem = (state: MachineState) => state.context.moving;
 const isIdle = (state: MachineState) => state.matches({ editing: "idle" });
+const selectRemovalMode = (state: MachineState) => !!state.context.removalMode;
 
 const LandscapingHudComponent: React.FC<{ location: PlaceableLocation }> = ({
   location,
@@ -68,11 +80,44 @@ const LandscapingHudComponent: React.FC<{ location: PlaceableLocation }> = ({
   const { t } = useAppTranslation();
   const { gameService } = useContext(Context);
 
+  // Flush pending actions every minute so the API never receives actions
+  // older than its acceptance window.
+  useInterval(() => {
+    gameService.send("SAVE");
+  }, 1000 * 60);
+
   const [showRemoveConfirmation, setShowRemoveConfirmation] = useState(false);
   const [showRemoveAllConfirmation, setShowRemoveAllConfirmation] =
     useState(false);
   const [showDecorations, setShowDecorations] = useState(false);
+  const [showSavedLayouts, setShowSavedLayouts] = useState(false);
+  const [showDiscardConfirmation, setShowDiscardConfirmation] = useState(false);
+  const [showSaveConfirmation, setShowSaveConfirmation] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [saveFailed, setSaveFailed] = useState(false);
+  const [quickDragging, setQuickDragging] = useState(false);
   const button = useSound("button");
+
+  // Every placeable surface is a sandbox: edits live in a local draft until Save.
+  const isDirty = useSelector(
+    gameService,
+    (state) => state.context.draftActions.length > 0,
+  );
+  const conflicts = useSelector(
+    gameService,
+    (state) => state.context.arrangementConflicts,
+  );
+  // A live-action flush is mid-flight: leaving now would re-send its actions.
+  const saveInFlight = useSelector(gameService, isSaveInFlight);
+  // The surface the draft is keyed to (set on LANDSCAPE, re-keyed on a switch).
+  const landscapingLocation = useSelector(
+    gameService,
+    (state) => state.context.landscapingLocation,
+  );
+  // Set only when the sandbox experiment is on (see lib/landscapingDraft.ts).
+  // With it off every edit is already saved, so there is no Save tick and
+  // nothing to discard - the HUD falls back to its pre-sandbox shape.
+  const sandbox = !!landscapingLocation;
 
   const child = gameService.getSnapshot().children
     .landscaping as MachineInterpreter;
@@ -97,6 +142,92 @@ const LandscapingHudComponent: React.FC<{ location: PlaceableLocation }> = ({
 
   const selectedItem = useSelector(child, selectMovingItem);
   const idle = useSelector(child, isIdle);
+  const removalMode = useSelector(child, selectRemovalMode);
+
+  const toggleRemovalMode = () => {
+    button.play();
+    child.send("TOGGLE_REMOVAL_MODE");
+  };
+
+  // Outside the sandbox there is nothing in flight worth blocking on: every
+  // edit is already saved and Cancel is just "leave landscaping". Inside it,
+  // CANCEL tears the child out of `saving.autosaving`, killing the invoked
+  // save before its SAVE_SUCCESS/SAVE_ERROR can come back.
+  const cancelBlocked = sandbox && (saving || saveInFlight);
+
+  const cancel = () => {
+    if (cancelBlocked) return;
+    button.play();
+    if (isDirty) {
+      setShowDiscardConfirmation(true);
+      return;
+    }
+    child.send("CANCEL");
+  };
+
+  // The tick asks first when there is something to save; a clean draft just
+  // leaves landscaping.
+  const save = () => {
+    if (saving || saveInFlight) return;
+    button.play();
+    if (isDirty) {
+      setShowSaveConfirmation(true);
+      return;
+    }
+    void commitNow();
+  };
+
+  const commitNow = async () => {
+    if (saving || saveInFlight) return;
+    setSaving(true);
+    setSaveFailed(false);
+    try {
+      await commitArrangement(gameService);
+    } catch {
+      setSaveFailed(true);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  /**
+   * Move the draft to another surface. A clean draft is simply re-keyed; a
+   * dirty one saves the surface being left first (same overlay as Save) and
+   * only reports success when the server accepted it - a conflict keeps the
+   * player where they are with the panel showing.
+   */
+  const switchSurface = async (next: PlaceableLocation): Promise<boolean> => {
+    if (saving || saveInFlight) return false;
+    if (!isDirty) {
+      gameService.send({ type: "SURFACE_CHANGED", location: next });
+      return true;
+    }
+    setSaving(true);
+    setSaveFailed(false);
+    try {
+      return await commitArrangement(gameService, { nextLocation: next });
+    } catch {
+      setSaveFailed(true);
+      return false;
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // The floor buttons go through switchSurface, but browser back or a typed
+  // URL can land the player on another surface with landscaping still
+  // active and the draft still keyed to the one they left. Settle it the same
+  // way: save that surface, then continue here.
+  useEffect(() => {
+    if (landscapingLocation && landscapingLocation !== location) {
+      void switchSurface(location);
+    }
+    // Mount only: this is about how the player arrived, not later changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  const gameState = useSelector(gameService, (state) => state.context.state);
+  const farmHandIds = getKeys(gameState.farmHands.bumpkins);
+
   const isShrine =
     selectedItem?.name &&
     (selectedItem.name in PET_SHRINES ||
@@ -112,11 +243,17 @@ const LandscapingHudComponent: React.FC<{ location: PlaceableLocation }> = ({
     selectedItem?.name,
     now,
     selectedCollectible,
+    location,
   );
 
   const showRemove = isMobile && selectedItem && removeAction;
 
-  const showFlip = isMobile && selectedItem && isCollectible(selectedItem.name);
+  const showFlip =
+    isMobile &&
+    selectedItem &&
+    (isCollectible(selectedItem.name) ||
+      selectedItem.name === "FarmHand" ||
+      selectedItem.name === "Bumpkin");
 
   const remove = () => {
     const action = selectedItem && removeAction;
@@ -151,7 +288,12 @@ const LandscapingHudComponent: React.FC<{ location: PlaceableLocation }> = ({
   };
 
   const flip = () => {
-    if (selectedItem && isCollectible(selectedItem.name)) {
+    if (
+      selectedItem &&
+      (isCollectible(selectedItem.name) ||
+        selectedItem.name === "FarmHand" ||
+        selectedItem.name === "Bumpkin")
+    ) {
       child.send("FLIP", {
         id: selectedItem.id,
         name: selectedItem.name,
@@ -161,14 +303,28 @@ const LandscapingHudComponent: React.FC<{ location: PlaceableLocation }> = ({
   };
 
   const isFlipped = useSelector(gameService, (state) => {
-    if (!selectedItem || !isCollectible(selectedItem.name)) return false;
+    if (!selectedItem) return false;
+
+    if (selectedItem.name === "FarmHand") {
+      return !!state.context.state.farmHands.bumpkins[selectedItem.id]?.flipped;
+    }
+
+    if (selectedItem.name === "Bumpkin") {
+      return !!state.context.state.bumpkin?.flipped;
+    }
+
+    if (!isCollectible(selectedItem.name)) return false;
     const name = selectedItem.name;
     const collectibles =
       location === "home"
         ? state.context.state.home.collectibles[name]
         : location === "petHouse" && isPetCollectible(name)
           ? state.context.state.petHouse.pets[name]
-          : state.context.state.collectibles[name];
+          : location === "interior"
+            ? state.context.state.interior.ground.collectibles[name]
+            : location === "level_one"
+              ? state.context.state.interior.level_one?.collectibles[name]
+              : state.context.state.collectibles[name];
     return (
       collectibles?.find((collectible) => collectible.id === selectedItem.id)
         ?.flipped ?? false
@@ -181,8 +337,76 @@ const LandscapingHudComponent: React.FC<{ location: PlaceableLocation }> = ({
         <Balances sfl={balance} coins={coins} gems={gems ?? new Decimal(0)} />
       </div>
 
+      {/*
+        Floor navigation stays available while landscaping the interior so the
+        player can move between floors without leaving edit mode. Each floor is
+        its own draft surface, so switching saves the floor being left first
+        (see switchSurface). The matching in-world arrows are hidden during
+        landscaping (see Interior/LevelOne), so these HUD buttons are the only
+        way to switch floors here.
+      */}
+      {(location === "interior" || location === "level_one") && (
+        <div className="absolute bottom-0 p-2.5 left-0 flex flex-col space-y-2.5">
+          <InteriorFloorNav
+            floor={location === "interior" ? "ground" : "level_one"}
+            beforeNavigate={
+              sandbox
+                ? (to) =>
+                    switchSurface(to === "ground" ? "interior" : "level_one")
+                : undefined
+            }
+          />
+        </div>
+      )}
+
+      {/*
+        No farm hand / bumpkin line on the interior surfaces — the Bumpkin and
+        each unplaced farm hand are placed from the quick panel's "Farm Hands"
+        tab, and equipped from the beds modal (InteriorBedsButton in Hud.tsx).
+      */}
+
+      {removalMode && (
+        <>
+          <div className="absolute left-1/2 -translate-x-1/2 top-2.5 z-50">
+            <Label type="danger">{"Removal mode"}</Label>
+          </div>
+          <div
+            className="absolute flex z-50 flex-col"
+            style={{
+              width: `${PIXEL_SCALE * 22}px`,
+              right: `${PIXEL_SCALE * 3}px`,
+              top: `${PIXEL_SCALE * 31}px`,
+            }}
+          >
+            <RoundButton className="mb-3.5" onClick={toggleRemovalMode}>
+              <img
+                src={SUNNYSIDE.icons.cancel}
+                className="absolute group-active:translate-y-[2px]"
+                style={{
+                  top: `${PIXEL_SCALE * 5.5}px`,
+                  left: `${PIXEL_SCALE * 5.5}px`,
+                  width: `${PIXEL_SCALE * 11}px`,
+                }}
+              />
+            </RoundButton>
+
+            <RoundButton onClick={removeAll}>
+              <img
+                src={cleanBroom}
+                className="absolute group-active:translate-y-[2px]"
+                style={{
+                  top: `${PIXEL_SCALE * 5}px`,
+                  left: `${PIXEL_SCALE * 5}px`,
+                  width: `${PIXEL_SCALE * 13}px`,
+                }}
+              />
+            </RoundButton>
+          </div>
+        </>
+      )}
+
       <>
-        {idle && (
+        {idle && !removalMode && (
           <>
             <div
               className="absolute flex z-50 flex-col"
@@ -194,12 +418,27 @@ const LandscapingHudComponent: React.FC<{ location: PlaceableLocation }> = ({
                 top: `${PIXEL_SCALE * 31}px`,
               }}
             >
+              {sandbox && (
+                <RoundButton
+                  className="mb-3.5"
+                  disabled={saving || saveInFlight}
+                  onClick={save}
+                >
+                  <img
+                    src={SUNNYSIDE.icons.confirm}
+                    className="absolute group-active:translate-y-[2px]"
+                    style={{
+                      top: `${PIXEL_SCALE * 5.5}px`,
+                      left: `${PIXEL_SCALE * 5.5}px`,
+                      width: `${PIXEL_SCALE * 11}px`,
+                    }}
+                  />
+                </RoundButton>
+              )}
               <RoundButton
                 className="mb-3.5"
-                onClick={() => {
-                  button.play();
-                  child.send("CANCEL");
-                }}
+                disabled={cancelBlocked}
+                onClick={cancel}
               >
                 <img
                   src={SUNNYSIDE.icons.cancel}
@@ -211,19 +450,39 @@ const LandscapingHudComponent: React.FC<{ location: PlaceableLocation }> = ({
                   }}
                 />
               </RoundButton>
-              <RoundButton className="mb-3.5" onClick={removeAll}>
-                <img
-                  src={cleanBroom}
-                  className="absolute group-active:translate-y-[2px]"
-                  style={{
-                    top: `${PIXEL_SCALE * 5}px`,
-                    left: `${PIXEL_SCALE * 5}px`,
-                    width: `${PIXEL_SCALE * 13}px`,
-                  }}
-                />
-              </RoundButton>
-
-              {location === "farm" && (
+              <Chest
+                location={location}
+                onPlaceChestItem={(selected) => {
+                  child.send("SELECT", {
+                    action: placeEvent(selected, location),
+                    placeable: { name: selected },
+                    multiple: true,
+                  });
+                }}
+                onPlaceNFT={(id, nft) => {
+                  child.send("SELECT", {
+                    action: "nft.placed",
+                    placeable: { id, name: nft },
+                    location,
+                  });
+                }}
+                onPlaceFarmHand={
+                  farmHandIds.length > 0
+                    ? (id) => {
+                        button.play();
+                        child.send("SELECT", {
+                          placeable: { name: "FarmHand", id },
+                          action: "farmHand.placed",
+                          requirements: { coins: 0, ingredients: {} },
+                        });
+                      }
+                    : undefined
+                }
+              />
+              {(location === "farm" ||
+                location === "home" ||
+                location === "interior" ||
+                location === "level_one") && (
                 <>
                   <RoundButton
                     className="mb-3.5"
@@ -246,23 +505,68 @@ const LandscapingHudComponent: React.FC<{ location: PlaceableLocation }> = ({
                 </>
               )}
 
-              <Chest
-                location={location}
-                onPlaceChestItem={(selected) => {
-                  child.send("SELECT", {
-                    action: placeEvent(selected),
-                    placeable: { name: selected },
-                    multiple: true,
-                  });
-                }}
-                onPlaceNFT={(id, nft) => {
-                  child.send("SELECT", {
-                    action: "nft.placed",
-                    placeable: { id, name: nft },
-                    location,
-                  });
-                }}
-              />
+              {/* Saved Layouts rides on the same experiment: it applies a
+                  whole arrangement, which only the sandbox can hold. */}
+              {location === "farm" && sandbox && (
+                <RoundButton
+                  className="mb-3.5"
+                  onClick={() => {
+                    button.play();
+                    setShowSavedLayouts(true);
+                  }}
+                >
+                  <img
+                    src={mapIcon}
+                    className="absolute group-active:translate-y-[2px]"
+                    style={{
+                      top: `${PIXEL_SCALE * 5}px`,
+                      left: `${PIXEL_SCALE * 5}px`,
+                      width: `${PIXEL_SCALE * 13}px`,
+                    }}
+                  />
+                </RoundButton>
+              )}
+
+              <RoundButton className="mb-3.5" onClick={toggleRemovalMode}>
+                <img
+                  src={ITEM_DETAILS["Rusty Shovel"].image}
+                  className="absolute group-active:translate-y-[2px]"
+                  style={{
+                    top: `${PIXEL_SCALE * 4}px`,
+                    left: `${PIXEL_SCALE * 4}px`,
+                    width: `${PIXEL_SCALE * 14}px`,
+                  }}
+                />
+              </RoundButton>
+
+              {/* {farmHandIds.length > 0 && (
+                <>
+                  {farmHandIds.map((id) => (
+                    <RoundButton
+                      key={id}
+                      className="mb-3.5"
+                      onClick={() => {
+                        button.play();
+                        child.send("SELECT", {
+                          placeable: { name: "FarmHand", id },
+                          action: "farmHand.placed",
+                          requirements: { coins: 0, ingredients: {} },
+                        });
+                      }}
+                    >
+                      <img
+                        src={SUNNYSIDE.achievement.farmHand}
+                        className="absolute group-active:translate-y-[2px]"
+                        style={{
+                          top: `${PIXEL_SCALE * 3}px`,
+                          left: `${PIXEL_SCALE * 3}px`,
+                          width: `${PIXEL_SCALE * 16}px`,
+                        }}
+                      />
+                    </RoundButton>
+                  ))}
+                </>
+              )} */}
             </div>
           </>
         )}
@@ -333,6 +637,63 @@ const LandscapingHudComponent: React.FC<{ location: PlaceableLocation }> = ({
           location={location}
         />
       )}
+      {showSavedLayouts && (
+        <SavedLayoutsModal
+          show={showSavedLayouts}
+          onHide={() => setShowSavedLayouts(false)}
+        />
+      )}
+      {showDiscardConfirmation && (
+        <LandscapingConfirmation
+          mode="discard"
+          confirmDisabled={cancelBlocked}
+          onClose={() => setShowDiscardConfirmation(false)}
+          onConfirm={() => {
+            // An autosave can start while this modal sits open, so re-run the
+            // guard here too - the one in cancel() only covers the moment the
+            // tick was pressed. Holding the modal open leaves the child in
+            // saving.autosaving until the save lands.
+            if (cancelBlocked) return;
+            setShowDiscardConfirmation(false);
+            child.send("CANCEL");
+          }}
+        />
+      )}
+      {showSaveConfirmation && (
+        <LandscapingConfirmation
+          mode="save"
+          onClose={() => setShowSaveConfirmation(false)}
+          onConfirm={() => {
+            setShowSaveConfirmation(false);
+            void commitNow();
+          }}
+        />
+      )}
+      {conflicts && conflicts.length > 0 && (
+        <ArrangementConflictsPanel
+          conflicts={conflicts}
+          onDismiss={() =>
+            gameService.send({ type: "ARRANGEMENT_REJECTED", conflicts: [] })
+          }
+        />
+      )}
+      {saveFailed && (
+        <div className="absolute left-1/2 -translate-x-1/2 top-2.5 z-50">
+          <Label type="danger">{t("landscaping.saveFailed")}</Label>
+        </div>
+      )}
+      {/*
+        The commit is one server round trip; without immediate feedback the
+        tick feels dead for the ~1s it takes. Dim the screen and block input
+        until the response (success, conflicts, or failure) arrives.
+      */}
+      {saving && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black bg-opacity-50">
+          <Panel>
+            <Loading text={t("landscaping.saving")} />
+          </Panel>
+        </div>
+      )}
       {showRemove && (
         <div
           className="absolute flex z-50 flex-col"
@@ -381,7 +742,16 @@ const LandscapingHudComponent: React.FC<{ location: PlaceableLocation }> = ({
         </div>
       )}
 
-      <PlaceableController location={location} />
+      {!removalMode && (
+        <LandscapingQuickPanel
+          location={location}
+          onQuickDragChange={setQuickDragging}
+        />
+      )}
+
+      {!removalMode && !quickDragging && (
+        <PlaceableController location={location} />
+      )}
     </HudContainer>
   );
 };
@@ -390,7 +760,8 @@ const Chest: React.FC<{
   location: PlaceableLocation;
   onPlaceChestItem: (item: LandscapingPlaceable) => void;
   onPlaceNFT: (id: string, nft: NFTName) => void;
-}> = ({ location, onPlaceChestItem, onPlaceNFT }) => {
+  onPlaceFarmHand?: (id: string) => void;
+}> = ({ location, onPlaceChestItem, onPlaceNFT, onPlaceFarmHand }) => {
   const { gameService } = useContext(Context);
   const [gameState] = useActor(gameService);
   const [showChest, setShowChest] = useState(false);
@@ -426,6 +797,7 @@ const Chest: React.FC<{
         show={showChest}
         onPlace={onPlaceChestItem}
         onPlaceNFT={onPlaceNFT}
+        onPlaceFarmHand={onPlaceFarmHand}
         location={location}
       />
     </>

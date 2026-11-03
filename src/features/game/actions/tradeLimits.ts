@@ -1,12 +1,14 @@
-import { CropName, GreenHouseCropName } from "../types/crops";
-import { GreenHouseFruitName, PatchFruitName } from "../types/fruits";
-import {
+import type { BeetleName } from "../types/beetles";
+import type { CropName, GreenHouseCropName } from "../types/crops";
+import type { FermentationBait } from "../types/fishing";
+import type { GreenHouseFruitName, PatchFruitName } from "../types/fruits";
+import type {
   AnimalResource,
   FactionEmblem,
   InventoryItemName,
 } from "../types/game";
-import { PetResourceName } from "../types/pets";
-import { CommodityName } from "../types/resources";
+import type { PetResourceName } from "../types/pets";
+import type { CommodityName } from "../types/resources";
 
 export const EMBLEM_TRADE_LIMITS: Record<FactionEmblem, number> = {
   "Goblin Emblem": 200,
@@ -15,19 +17,40 @@ export const EMBLEM_TRADE_LIMITS: Record<FactionEmblem, number> = {
   "Nightshade Emblem": 200,
 };
 
+export const EMBLEM_TRADE_MINIMUMS: Record<FactionEmblem, number> = {
+  "Goblin Emblem": 1,
+  "Sunflorian Emblem": 1,
+  "Bumpkin Emblem": 1,
+  "Nightshade Emblem": 1,
+};
+
 export type TradeResource = Extract<
   InventoryItemName,
   | CropName
   | PatchFruitName
   | GreenHouseFruitName
   | GreenHouseCropName
-  | CommodityName
+  | Exclude<
+      CommodityName,
+      | "Diamond"
+      | "Sunstone"
+      | "Ascension Shard"
+      | "Oil"
+      | "Obsidian"
+      | "Refined Salt"
+      | "Wild Mushroom"
+      | "Magic Mushroom"
+      | "Chicken"
+      | "Mud"
+    >
   | AnimalResource
   | FactionEmblem
-  | PetResourceName
+  | Exclude<PetResourceName, "Acorn" | "Fossil Shell">
+  | FermentationBait
+  | BeetleName
 >;
 
-export const TRADE_LIMITS: Partial<Record<TradeResource, number>> = {
+export const TRADE_LIMITS: Record<TradeResource, number> = {
   // Crops
   Sunflower: 4000,
   Potato: 3000,
@@ -52,6 +75,8 @@ export const TRADE_LIMITS: Partial<Record<TradeResource, number>> = {
   Kale: 500,
   Artichoke: 500,
   Barley: 500,
+  Saltwort: 500,
+  "Crystal Leaf": 500,
 
   // Fruits
   Tomato: 400,
@@ -75,6 +100,7 @@ export const TRADE_LIMITS: Partial<Record<TradeResource, number>> = {
   Iron: 200,
   Gold: 100,
   Crimstone: 20,
+  Salt: 500,
 
   // Animal Produce
   Egg: 500,
@@ -94,9 +120,21 @@ export const TRADE_LIMITS: Partial<Record<TradeResource, number>> = {
   Ribbon: 100,
   Dewberry: 100,
   Moonfur: 100,
+  "Capsule Bait": 10,
+  "Umbrella Bait": 10,
+  "Crimson Baitfish": 10,
+
+  // Cave Dwellers (Chapter 16) - Leather's values as the starting point,
+  // tune before launch (ticket 805).
+  "Green Beetle": 100,
+  "Blue Beetle": 100,
+  "Pink Beetle": 100,
+  "Amber Beetle": 100,
+  "Pig Bristles": 100,
+  Truffle: 100,
 };
 
-export const TRADE_MINIMUMS: Partial<Record<TradeResource, number>> = {
+export const TRADE_MINIMUMS: Record<TradeResource, number> = {
   Sunflower: 200,
   Potato: 200,
   Rhubarb: 200,
@@ -120,6 +158,8 @@ export const TRADE_MINIMUMS: Partial<Record<TradeResource, number>> = {
   Kale: 10,
   Artichoke: 10,
   Barley: 10,
+  Saltwort: 10,
+  "Crystal Leaf": 10,
 
   Tomato: 20,
   Lemon: 10,
@@ -140,6 +180,7 @@ export const TRADE_MINIMUMS: Partial<Record<TradeResource, number>> = {
   Iron: 5,
   Gold: 3,
   Crimstone: 1,
+  Salt: 10,
 
   Honey: 5,
   Feather: 20,
@@ -157,13 +198,18 @@ export const TRADE_MINIMUMS: Partial<Record<TradeResource, number>> = {
   Ribbon: 1,
   Dewberry: 1,
   Moonfur: 1,
-};
 
-export const EMBLEM_TRADE_MINIMUMS: Record<FactionEmblem, number> = {
-  "Goblin Emblem": 1,
-  "Sunflorian Emblem": 1,
-  "Bumpkin Emblem": 1,
-  "Nightshade Emblem": 1,
+  "Capsule Bait": 1,
+  "Umbrella Bait": 1,
+  "Crimson Baitfish": 1,
+  ...EMBLEM_TRADE_MINIMUMS,
+
+  "Green Beetle": 5,
+  "Blue Beetle": 5,
+  "Pink Beetle": 5,
+  "Amber Beetle": 5,
+  "Pig Bristles": 5,
+  Truffle: 5,
 };
 
 export const isTradeResource = (

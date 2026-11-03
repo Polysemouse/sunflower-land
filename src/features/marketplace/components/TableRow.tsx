@@ -6,9 +6,11 @@ import token from "assets/icons/flower_token.webp";
 import { Decimal } from "decimal.js-light";
 import { NPCIcon } from "features/island/bumpkin/components/NPC";
 import { interpretTokenUri } from "lib/utils/tokenUriBuilder";
-import { TradeableDisplay } from "../lib/tradeables";
+import type { TradeableDisplay } from "../lib/tradeables";
+import { MINIGAME_TOKEN_IMAGE_FALLBACK } from "features/minigame/lib/minigameTokenIcons";
 import { formatNumber } from "lib/utils/formatNumber";
 import { Checkbox } from "components/ui/Checkbox";
+import { playerModalManager } from "features/social/lib/playerModalManager";
 
 export type TableItem = {
   id: string;
@@ -67,7 +69,16 @@ export const TableRow: React.FC<RowProps> = ({
         borderTop: index === 0 ? "1px solid #b96f50" : "",
       }}
     >
-      <div className="p-1.5 truncate flex sm:w-1/3 items-center">
+      <div
+        className="p-1.5 truncate flex sm:w-1/3 items-center cursor-pointer"
+        onClick={() => {
+          playerModalManager.open({
+            farmId: createdBy.id,
+            username: createdBy.username,
+            clothing: interpretTokenUri(createdBy.bumpkinUri).equipped,
+          });
+        }}
+      >
         <div className="flex items-center">
           <div className="relative w-6 sm:w-8 h-8 flex items-center">
             <NPCIcon
@@ -88,9 +99,16 @@ export const TableRow: React.FC<RowProps> = ({
           <img
             src={details.image}
             className="h-6 w-6 sm:h-8 sm:w-8 object-contain mr-1 sm:mr-4"
+            style={{ imageRendering: "pixelated" }}
+            alt=""
+            onError={(e) => {
+              if (details.type === "economies" && details.minigameCurrencyKey) {
+                e.currentTarget.src = MINIGAME_TOKEN_IMAGE_FALLBACK;
+              }
+            }}
           />
           <p className="py-0.5 text-xxs sm:text-sm">
-            {`${isResource ? quantity : details.name}`}
+            {`${isResource || details.type === "economies" ? quantity : details.name}`}
           </p>
         </div>
       </div>

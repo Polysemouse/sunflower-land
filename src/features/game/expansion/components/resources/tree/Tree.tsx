@@ -3,40 +3,48 @@ import React, { useContext, useEffect, useRef, useState } from "react";
 import { TREE_RECOVERY_TIME } from "features/game/lib/constants";
 import { Context } from "features/game/GameProvider";
 
-import { getTimeLeft } from "lib/utils/time";
-import {
+import type {
   GameState,
   InventoryItemName,
   Reward,
   Tree as TreeType,
 } from "features/game/types/game";
 import {
-  canChop,
   getRequiredAxeAmount,
   getReward,
   getWoodDropAmount,
+  TUTORIAL_WOOD_NATIVE_BONUS,
 } from "features/game/events/landExpansion/chop";
+import {
+  getTreeBoostWindows,
+  type BoostWindow,
+} from "features/game/lib/boostWindows";
+import { useNodeTimer } from "features/game/lib/useNodeTimer";
+import { useNow } from "lib/utils/hooks/useNow";
+import { PRE_ACTION_TICK_MS } from "features/game/lib/timerDisplay";
 import { KNOWN_IDS } from "features/game/types";
-import { TreeName } from "features/game/types/resources";
-import useUiRefresher from "lib/utils/hooks/useUiRefresher";
+import type { TreeName } from "features/game/types/resources";
 import { ChestReward } from "features/island/common/chest-reward/ChestReward";
 import { useSelector } from "@xstate/react";
-import { MachineState } from "features/game/lib/gameMachine";
+import {
+  type MachineState,
+  selectGameState,
+  selectVerified,
+} from "features/game/lib/gameMachine";
+import { isSeasonedPlayer } from "features/game/lib/seasonedPlayer";
 import Decimal from "decimal.js-light";
 import { isCollectibleBuilt } from "features/game/lib/collectibleBuilt";
 import { DepletedTree } from "./components/DepletedTree";
 import { DepletingTree } from "./components/DepletingTree";
 import { RecoveredTree } from "./components/RecoveredTree";
 import { gameAnalytics } from "lib/gameAnalytics";
-import { getBumpkinLevel } from "features/game/lib/level";
+import { getTutorialNudge } from "features/island/lib/tutorialNudge";
+import { ModalContext } from "features/game/components/modal/ModalProvider";
 import { useSound } from "lib/utils/hooks/useSound";
-import { hasReputation, Reputation } from "features/game/lib/reputation";
-import { isFaceVerified } from "features/retreat/components/personhood/lib/faceRecognition";
 import { setPrecision } from "lib/utils/formatNumber";
 import { Transition } from "@headlessui/react";
 import lightning from "assets/icons/lightning.png";
-import { useNow } from "lib/utils/hooks/useNow";
-import { FarmActivityName } from "features/game/types/farmActivity";
+import type { FarmActivityName } from "features/game/types/farmActivity";
 
 const HITS = 3;
 const tool = "Axe";
@@ -60,28 +68,31 @@ const selectSeason = (state: MachineState) => state.context.state.season.season;
 const selectInventory = (state: MachineState) => state.context.state.inventory;
 const selectTreesChopped = (state: MachineState) =>
   state.context.state.farmActivity["Tree Chopped"] ?? 0;
-const selectGame = (state: MachineState) => state.context.state;
+const selectActiveNudge = (state: MachineState) =>
+  getTutorialNudge(state.context.state);
 const selectFarmId = (state: MachineState) => state.context.farmId;
 
 const compareResource = (prev: TreeType, next: TreeType) => {
   return JSON.stringify(prev) === JSON.stringify(next);
 };
+// Field comparator for the tree boost windows so the selector skips re-renders
+// without allocating JSON strings per tree on every service update.
+const areBoostWindowsEqual = (a: BoostWindow[], b: BoostWindow[]) =>
+  a.length === b.length &&
+  a.every((window, index) => {
+    const other = b[index];
+    return (
+      other !== undefined &&
+      window.from === other.from &&
+      window.to === other.to &&
+      window.speed === other.speed
+    );
+  });
 const compareGame = (prev: GameState, next: GameState) =>
   isCollectibleBuilt({ name: "Foreman Beaver", game: prev }) ===
     isCollectibleBuilt({ name: "Foreman Beaver", game: next }) &&
   (prev.bumpkin?.skills["Insta-Chop"] ?? false) ===
     (next.bumpkin?.skills["Insta-Chop"] ?? false);
-
-// A player that has been vetted and is engaged in the season.
-const isSeasonedPlayer = (state: MachineState) =>
-  // - level 60+
-  getBumpkinLevel(state.context.state.bumpkin?.experience ?? 0) >= 60 &&
-  // - verified (personhood verification)
-  (state.context.verified || isFaceVerified({ game: state.context.state })) &&
-  hasReputation({
-    game: state.context.state,
-    reputation: Reputation.Cropkeeper,
-  });
 
 interface Props {
   id: string;
@@ -90,6 +101,7 @@ interface Props {
 
 export const Tree: React.FC<Props> = ({ id }) => {
   const { gameService, shortcutItem, showAnimations } = useContext(Context);
+  const { openModal } = useContext(ModalContext);
 
   const [touchCount, setTouchCount] = useState(0);
   const [reward, setReward] = useState<Reward>();
@@ -97,8 +109,6 @@ export const Tree: React.FC<Props> = ({ id }) => {
   // When to hide the resource that pops out
   const [collecting, setCollecting] = useState(false);
   const harvested = useRef<number>(0);
-
-  const isSeasoned = useSelector(gameService, isSeasonedPlayer);
 
   const divRef = useRef<HTMLDivElement>(null);
 
@@ -122,7 +132,8 @@ export const Tree: React.FC<Props> = ({ id }) => {
     (state) => state.context.state.trees[id],
     compareResource,
   );
-  const game = useSelector(gameService, selectGame, compareGame);
+  const game = useSelector(gameService, selectGameState, compareGame);
+  const verified = useSelector(gameService, selectVerified);
   const inventory = useSelector(
     gameService,
     selectInventory,
@@ -132,6 +143,7 @@ export const Tree: React.FC<Props> = ({ id }) => {
   );
 
   const treesChopped = useSelector(gameService, selectTreesChopped);
+  const activeNudge = useSelector(gameService, selectActiveNudge);
   const activityCount = useSelector(gameService, (state) => {
     const treeName = state.context.state.trees[id]?.name ?? "Tree";
     const activityKey =
@@ -141,15 +153,34 @@ export const Tree: React.FC<Props> = ({ id }) => {
   const island = useSelector(gameService, selectIsland);
   const season = useSelector(gameService, selectSeason);
   const farmId = useSelector(gameService, selectFarmId);
-  const hasTool = HasTool(inventory, game, id);
-  const readyAt = resource.wood.choppedAt + TREE_RECOVERY_TIME * 1000;
-  const now = useNow({ live: true, autoEndAt: readyAt });
-  const timeLeft = getTimeLeft(
-    resource.wood.choppedAt,
-    TREE_RECOVERY_TIME,
-    now,
+  // Live windowed tree-recovery speed boosts (Timber Hourglass, Badger Shrine,
+  // totems). Recomputed from full state but only re-renders when the windows
+  // actually change, so the countdown reacts to boosters placed/expired mid-grow.
+  const treeBoostWindows = useSelector(
+    gameService,
+    (state) => getTreeBoostWindows(state.context.state),
+    areBoostWindowsEqual,
   );
-  const chopped = !canChop(resource);
+  const hasTool = HasTool(inventory, game, id);
+
+  const { choppedAt, baseDurationMs } = resource.wood;
+  const {
+    now,
+    readyAt,
+    countdownSeconds: timeLeft,
+  } = useNodeTimer({
+    startedAt: choppedAt,
+    baseDurationMs,
+    windows: treeBoostWindows,
+    legacyReadyAt: choppedAt + TREE_RECOVERY_TIME * 1000,
+  });
+  // The timer's `now` freezes once the tree is ready (autoEndAt), so boost
+  // checks need a LIVE clock — a frozen one would keep promising a shrine's
+  // bonus wood after the shrine expired. One tick a minute is enough for a
+  // boost that flips at most a few times a day.
+  const liveNow = useNow({ live: true, intervalMs: PRE_ACTION_TICK_MS });
+  const isSeasoned = isSeasonedPlayer({ game, verified, now: liveNow });
+  const chopped = now <= readyAt;
 
   const [isAnimationRunning, setIsAnimationRunning] = useState(false);
   const [isRecentlyChopped, setIsRecentlyChopped] = useState(false);
@@ -178,8 +209,6 @@ export const Tree: React.FC<Props> = ({ id }) => {
       return () => clearTimeout(timeout);
     }
   }, [isAnimationRunning]);
-
-  useUiRefresher({ active: chopped });
 
   // Calculate expected reward for UI preview (captcha gate for non-seasoned players)
   const treeName: TreeName = resource.name ?? "Tree";
@@ -235,6 +264,7 @@ export const Tree: React.FC<Props> = ({ id }) => {
         farmId,
         itemId: KNOWN_IDS[treeName],
         counter: activityCount,
+        now: liveNow,
       }).amount;
 
     const newState = gameService.send("timber.chopped", {
@@ -242,22 +272,39 @@ export const Tree: React.FC<Props> = ({ id }) => {
       item: "Axe",
     });
 
-    if (!newState.matches("hoarding")) {
-      if (showAnimations) {
-        setCollecting(true);
-        harvested.current = setPrecision(woodDropAmount, 2).toNumber();
-      }
+    const treesChopped =
+      newState.context.state.farmActivity["Tree Chopped"] ?? 0;
 
-      treeFallAudio();
+    // Tutorial popups open as soon as the chop lands, not after the 3 second
+    // collecting animation below.
 
-      if (showAnimations) {
-        await new Promise((res) => setTimeout(res, 3000));
-        setCollecting(false);
-        harvested.current = 0;
-      }
+    // The three starting trees are exactly the first expansion's cost, so once
+    // they are down Grimbly points the player at the expansion.
+    if (treesChopped === 3) {
+      openModal("EXPAND_LAND");
     }
 
-    if (newState.context.state.farmActivity["Tree Chopped"] === 1) {
+    // The first scripted +1 wood is Pete's cue to explain the native bonus.
+    const basicTreesChopped =
+      newState.context.state.farmActivity["Basic Tree Chopped"] ?? 0;
+    if (basicTreesChopped === TUTORIAL_WOOD_NATIVE_BONUS.indexOf(true) + 1) {
+      openModal("NATIVE_BONUS");
+    }
+
+    if (showAnimations) {
+      setCollecting(true);
+      harvested.current = setPrecision(woodDropAmount, 2).toNumber();
+    }
+
+    treeFallAudio();
+
+    if (showAnimations) {
+      await new Promise((res) => setTimeout(res, 3000));
+      setCollecting(false);
+      harvested.current = 0;
+    }
+
+    if (treesChopped === 1) {
       gameAnalytics.trackMilestone({ event: "Tutorial:TreeChopped:Completed" });
     }
   };
@@ -283,7 +330,14 @@ export const Tree: React.FC<Props> = ({ id }) => {
           <RecoveredTree
             hasTool={hasTool}
             touchCount={touchCount}
-            showHelper={treesChopped < 3 && treesChopped + 1 === Number(id)}
+            // The first-three walk steps tree by tree; the post-delivery
+            // chop-trees nudge lights every standing tree, since any of them
+            // yields the expansion's Wood.
+            showHelper={
+              hasTool &&
+              ((treesChopped < 3 && treesChopped + 1 === Number(id)) ||
+                activeNudge === "chop-trees")
+            }
             island={island}
             season={season}
             id={id}
@@ -298,7 +352,12 @@ export const Tree: React.FC<Props> = ({ id }) => {
 
       {/* Depleted resource */}
       {(chopped || isRecentlyChopped) && (
-        <DepletedTree timeLeft={timeLeft} island={island} season={season} />
+        <DepletedTree
+          timeLeft={timeLeft}
+          island={island}
+          season={season}
+          name={treeName}
+        />
       )}
 
       {/* Chest reward - captcha gate for non-seasoned players */}

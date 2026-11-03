@@ -1,28 +1,32 @@
 import Decimal from "decimal.js-light";
-import { GameState, InventoryItemName } from "features/game/types/game";
+import type {
+  BoostName,
+  GameState,
+  InventoryItemName,
+} from "features/game/types/game";
 import {
   getChoreProgress,
   NPC_CHORES,
-  NpcChore,
+  type NpcChore,
 } from "features/game/types/choreBoard";
 import { produce } from "immer";
-import { NPCName } from "lib/npcs";
+import type { NPCName } from "lib/npcs";
 import {
   getCurrentChapter,
   getChapterTicket,
-  ChapterName,
+  type ChapterName,
 } from "features/game/types/chapters";
 import { isWearableActive } from "features/game/lib/wearables";
 import { hasVipAccess } from "features/game/lib/vipAccess";
 import { isCollectibleBuilt } from "features/game/lib/collectibleBuilt";
-import {
+import type {
   ChapterTierItemName,
   MegastoreKeys,
 } from "features/game/types/megastore";
 import { isCollectible } from "./garbageSold";
 import { trackFarmActivity } from "features/game/types/farmActivity";
 import { getChapterTaskPoints } from "features/game/types/tracks";
-import { FlowerBox } from "../landExpansion/buyChapterItem";
+import type { FlowerBox } from "../landExpansion/buyChapterItem";
 import { handleChapterAnalytics } from "features/game/lib/trackAnalytics";
 
 export type CompleteNPCChoreAction = {
@@ -38,11 +42,15 @@ type Options = {
 
 export const CHAPTER_TICKET_BOOST_ITEMS: Record<
   ChapterName,
-  {
-    basic: Exclude<ChapterTierItemName, MegastoreKeys | FlowerBox | "Pet Egg">;
-    rare: Exclude<ChapterTierItemName, MegastoreKeys | FlowerBox | "Pet Egg">;
-    epic: Exclude<ChapterTierItemName, MegastoreKeys | FlowerBox | "Pet Egg">;
-  }
+  | {
+      basic: Exclude<
+        ChapterTierItemName,
+        MegastoreKeys | FlowerBox | "Pet Egg"
+      >;
+      rare: Exclude<ChapterTierItemName, MegastoreKeys | FlowerBox | "Pet Egg">;
+      epic: Exclude<ChapterTierItemName, MegastoreKeys | FlowerBox | "Pet Egg">;
+    }
+  | undefined
 > = {
   "Solar Flare": {
     basic: "Cow Scratcher",
@@ -106,11 +114,25 @@ export const CHAPTER_TICKET_BOOST_ITEMS: Record<
     rare: "Pet Specialist Pants",
     epic: "Pet Specialist Shirt",
   },
-  // TODO: Add Crabs and Traps items
   "Crabs and Traps": {
     basic: "Fish Hook Hat",
     rare: "Fish Hook Vest",
     epic: "Fish Hook Waders",
+  },
+  "Salt Awakening": {
+    basic: "Spa Hat",
+    rare: "Spa Robe",
+    epic: "Spa Slippers",
+  },
+  "Ascension Age": {
+    basic: "Swamp Lily Hat",
+    rare: "Swamp Armor",
+    epic: "Swamp Pants",
+  },
+  "Cave Dwellers": {
+    basic: "Duende Shoes",
+    rare: "Duende Pants",
+    epic: "Duende Shirt",
   },
 };
 
@@ -142,7 +164,7 @@ export function completeNPCChore({
     // Mark chore as completed
     chore.completedAt = createdAt;
 
-    const items = generateChoreRewards({
+    const { items } = generateChoreRewards({
       game: draft,
       chore,
       now: new Date(createdAt),
@@ -185,11 +207,11 @@ export function completeNPCChore({
       const chapter = getCurrentChapter(createdAt);
       const pointsAwarded = getChapterTaskPoints({
         task: "chore",
-        tickets: amount,
+        points: amount,
       });
       handleChapterAnalytics({
         task: "chore",
-        tickets: amount,
+        points: amount,
         farmActivity: draft.farmActivity,
         createdAt,
       });
@@ -205,6 +227,14 @@ export function completeNPCChore({
         draft.farmActivity,
         new Decimal(pointsAwarded),
       );
+
+      if (hasVipAccess({ game: draft, now: createdAt })) {
+        draft.farmActivity = trackFarmActivity(
+          "VIP Ticket Earned",
+          draft.farmActivity,
+          new Decimal(2),
+        );
+      }
     }
 
     return draft;
@@ -219,34 +249,42 @@ export function generateChoreRewards({
   game: GameState;
   chore: NpcChore;
   now: Date;
-}) {
-  if (!chore) return {};
+}): {
+  items: Partial<Record<InventoryItemName, number>>;
+  boostsUsed: { name: BoostName; value: string }[];
+} {
+  const boostsUsed: { name: BoostName; value: string }[] = [];
+
+  if (!chore) return { items: {}, boostsUsed };
 
   const items = Object.assign({}, chore.reward.items) ?? {};
 
   const ticket = getChapterTicket(now.getTime());
-  if (!items[ticket]) return items;
+  if (!items[ticket]) return { items, boostsUsed };
   let amount = items[ticket] ?? 0;
 
   if (hasVipAccess({ game, now: now.getTime() })) {
     amount += 2;
+    boostsUsed.push({ name: "VIP Access", value: "+2" });
   }
   const chapter = getCurrentChapter(now.getTime());
   const chapterBoost = CHAPTER_TICKET_BOOST_ITEMS[chapter];
 
-  Object.values(chapterBoost).forEach((item) => {
+  Object.values(chapterBoost ?? {}).forEach((item) => {
     if (isCollectible(item)) {
       if (isCollectibleBuilt({ game, name: item })) {
         amount += 1;
+        boostsUsed.push({ name: item, value: "+1" });
       }
     } else {
       if (isWearableActive({ game, name: item })) {
         amount += 1;
+        boostsUsed.push({ name: item, value: "+1" });
       }
     }
   });
 
   items[ticket] = amount;
 
-  return items;
+  return { items, boostsUsed };
 }

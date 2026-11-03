@@ -1,5 +1,5 @@
 import { useSelector } from "@xstate/react";
-import React, { PropsWithChildren, useContext } from "react";
+import React, { type PropsWithChildren, useContext } from "react";
 import { Popover, PopoverButton, PopoverPanel } from "@headlessui/react";
 
 import { Context } from "features/game/GameProvider";
@@ -10,7 +10,7 @@ import {
   useDisconnect,
   useSwitchChain,
 } from "wagmi";
-import { MachineState } from "features/game/lib/gameMachine";
+import type { MachineState } from "features/game/lib/gameMachine";
 import { isAddressEqual } from "viem";
 import {
   base,
@@ -21,7 +21,8 @@ import {
   saigon,
 } from "@wagmi/core/chains";
 import { CONFIG } from "lib/config";
-import { Reputation } from "features/game/lib/reputation";
+import { isWaypointWalletDisabled } from "lib/flags";
+import type { Reputation } from "features/game/lib/reputation";
 import { ConnectWallet } from "./components/ConnectWallet";
 import { LinkWallet } from "./components/LinkWallet";
 import { ConnectLinkedWallet } from "./components/ConnectLinkedWallet";
@@ -34,7 +35,7 @@ import { shortAddress } from "lib/utils/shortAddress";
 import { useAppTranslation } from "lib/i18n/useAppTranslations";
 import { NoNFT } from "./components/NoNFT";
 import classNames from "classnames";
-import { NetworkName } from "features/game/events/landExpansion/updateNetwork";
+import type { NetworkName } from "features/game/events/landExpansion/updateNetwork";
 import baseIcon from "assets/icons/chains/base.png";
 
 export type NetworkOption = {
@@ -112,7 +113,9 @@ export type WalletAction =
   | "purchase"
   | "raffle"
   | "auction"
-  | "linkWallet";
+  | "linkWallet"
+  | "blockchainSettings"
+  | "linkGoogle";
 
 interface Props {
   action: WalletAction;
@@ -227,6 +230,8 @@ const WALLET_ACTIONS: Record<WalletAction, WalletActionSettings> = {
     requiresNFT: true,
     chains: {
       [CONFIG.NETWORK === "mainnet" ? polygon.id : polygonAmoy.id]: true,
+      [CONFIG.NETWORK === "mainnet" ? ronin.id : saigon.id]:
+        isWaypointWalletDisabled() ? undefined : true,
     },
   },
   sync: {
@@ -252,6 +257,22 @@ const WALLET_ACTIONS: Record<WalletAction, WalletActionSettings> = {
     requiresLinkedWallet: true,
     requiresNFT: false,
     chains: {},
+  },
+  blockchainSettings: {
+    requiresLinkedWallet: true,
+    requiresNFT: false,
+    chains: {
+      [CONFIG.NETWORK === "mainnet" ? polygon.id : polygonAmoy.id]: true,
+    },
+  },
+  linkGoogle: {
+    requiresLinkedWallet: true,
+    requiresNFT: true,
+    chains: {
+      [CONFIG.NETWORK === "mainnet" ? polygon.id : polygonAmoy.id]: true,
+      [CONFIG.NETWORK === "mainnet" ? base.id : baseSepolia.id]: true,
+      [CONFIG.NETWORK === "mainnet" ? ronin.id : saigon.id]: true,
+    },
   },
 };
 
@@ -429,6 +450,8 @@ const ACTION_HUMAN_NAMES: Record<WalletAction, string> = {
   raffle: "enter the raffle",
   auction: "auction",
   linkWallet: "link wallet",
+  blockchainSettings: "manage blockchain settings",
+  linkGoogle: "link Google",
 };
 
 const SelectChain: React.FC<{
@@ -488,7 +511,9 @@ export const Wallet: React.FC<PropsWithChildren<Props>> = ({
 
   const availableChains = enforceChainId
     ? [enforceChainId]
-    : Object.keys(WALLET_ACTIONS[action].chains).map(Number);
+    : Object.entries(WALLET_ACTIONS[action].chains)
+        .filter(([, enabled]) => enabled)
+        .map(([id]) => Number(id));
   const hasChain = !!chainId && availableChains.includes(chainId);
 
   if (requiresConnection && !hasConnection) {
@@ -505,7 +530,12 @@ export const Wallet: React.FC<PropsWithChildren<Props>> = ({
   }
 
   if (requiresLinkedWalletSelected && !hasLinkedWalletSelected) {
-    return <SelectLinkedWallet linkedWallet={linkedAddress as `0x${string}`} />;
+    return (
+      <SelectLinkedWallet
+        linkedWallet={linkedAddress as `0x${string}`}
+        isWithdrawal={action === "withdrawFlower" || action === "withdrawItems"}
+      />
+    );
   }
 
   if (requiresChain && !hasChain) {

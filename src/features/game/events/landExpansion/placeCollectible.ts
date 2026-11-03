@@ -1,26 +1,41 @@
 import {
-  CollectibleName,
+  type CollectibleName,
   COLLECTIBLES_DIMENSIONS,
 } from "../../types/craftables";
-import { GameState, PlacedItem } from "features/game/types/game";
+import type { GameState, PlacedItem } from "features/game/types/game";
 import { trackFarmActivity } from "features/game/types/farmActivity";
-import { PlaceableLocation } from "features/game/types/collectibles";
+import {
+  PLACEABLE_LOCATIONS,
+  type PlaceableLocation,
+} from "features/game/types/collectibles";
 import { produce } from "immer";
 import { getCountAndType } from "features/island/hud/components/inventory/utils/inventory";
-import { MonumentName, REQUIRED_CHEERS } from "features/game/types/monuments";
+import {
+  type MonumentName,
+  REQUIRED_CHEERS,
+} from "features/game/types/monuments";
 import {
   getPlacedCommonPetTypesInPetHouse,
   isPet,
-  PetName,
+  type PetName,
   PET_HOUSE_CAPACITY,
   PET_TYPES,
 } from "features/game/types/pets";
 import {
   EXPIRY_COOLDOWNS,
-  TemporaryCollectibleName,
+  getPlacementGroup,
+  isTemporaryCollectible,
 } from "features/game/lib/collectibleBuilt";
-import { Coordinates } from "features/game/expansion/components/MapPlacement";
+import type { Coordinates } from "features/game/expansion/components/MapPlacement";
 import { COMPETITION_POINTS } from "features/game/types/competitions";
+import { populateSaltFarm } from "features/game/types/salt";
+import {
+  snapshotGuardianPlacements,
+  syncGuardianPlacements,
+} from "features/game/lib/guardianPlacements";
+import { refreshBasicScarecrowTimeAOE } from "features/game/lib/aoe";
+import { getCollectiblesAcrossLocations } from "features/game/lib/getCollectiblesAcrossLocations";
+import { detectCollision } from "features/game/expansion/placeable/lib/collisionDetection";
 
 export type PlaceCollectibleAction = {
   type: "collectible.placed";
@@ -42,16 +57,23 @@ type Options = {
  */
 export function isCollectibleWithTimestamps(name: CollectibleName) {
   return (
-    EXPIRY_COOLDOWNS[name as TemporaryCollectibleName] ||
-    name === "Maneki Neko" ||
-    name === "Magic Bean"
+    name in EXPIRY_COOLDOWNS || name === "Maneki Neko" || name === "Magic Bean"
   );
 }
 
 export const isPetCollectible = (name: CollectibleName): name is PetName =>
   name in PET_TYPES;
 
-export function placeCollectible({
+export function placeCollectible(options: Options): GameState {
+  const { state, createdAt = Date.now() } = options;
+  const guardiansBefore = snapshotGuardianPlacements(state);
+
+  return produce(placeCollectibleOnLand(options), (game) => {
+    syncGuardianPlacements(game, guardiansBefore, createdAt);
+  });
+}
+
+function placeCollectibleOnLand({
   state,
   action,
   createdAt = Date.now(),
@@ -79,6 +101,22 @@ export function placeCollectible({
       throw new Error("You cannot place this item");
     }
 
+    // A temporary collectible grants ONE boost window per name: a second copy
+    // placed alongside the first merges into that same window (see
+    // getBoostWindows) and would burn an item for nothing. So only one may be
+    // down at a time - whether or not it has expired, since an expired one is
+    // still occupying the map and can be renewed or extended in place.
+    if (
+      isTemporaryCollectible(collectible) &&
+      getPlacementGroup(collectible).some((name) =>
+        getCollectiblesAcrossLocations(stateCopy, name).some(
+          (placed) => !!placed.coordinates,
+        ),
+      )
+    ) {
+      throw new Error("Only one of this temporary collectible can be placed");
+    }
+
     // Only pet collectibles can be placed in the pet house
     if (action.location === "petHouse" && !isPetCollectible(action.name)) {
       throw new Error("Only pet collectibles can be placed in the pet house");
@@ -90,8 +128,17 @@ export function placeCollectible({
         action.name as MonumentName,
       ) ?? false;
 
+    // Monuments obtained outside of `buyMonument` (rewards, trades) have no
+    // village project, so seed one the first time they are placed. Only ever on
+    // a first placement — otherwise removing and re-placing a monument whose
+    // project has already been consumed would restart it for free, skipping the
+    // `project.started` cost.
+    const hasBeenPlacedBefore =
+      getCollectiblesAcrossLocations(stateCopy, action.name).length > 0;
+
     if (
       isMonument &&
+      !hasBeenPlacedBefore &&
       !stateCopy.socialFarming.villageProjects[action.name as MonumentName] &&
       !isInCompletedProjects
     ) {
@@ -137,13 +184,50 @@ export function placeCollectible({
       }
     }
 
+    // For level_one, the floor must already be unlocked (player has bought the
+    // first interior.upgrade) before any placement is allowed. Run this before
+    // collision detection so the user gets a meaningful error instead of a
+    // generic "collides" message (collision returns true when level_one is
+    // missing because it can't validate a floor that doesn't exist).
+    if (action.location === "level_one" && !stateCopy.interior.level_one) {
+      throw new Error("Level one floor has not been unlocked");
+    }
+
+    // Mirrors the same check in the API's placeCollectible reducer. The UI
+    // placement flows already block a colliding drop before dispatching, so
+    // this is a no-op for them — it exists so that callers which reduce
+    // speculatively (the home import's `tryApplyImportStep`) find out here
+    // rather than having the server reject the whole save batch. Keep the two
+    // implementations in lockstep: anything accepted here and rejected there
+    // fails at save time with "Building collides".
+    const dimensions = COLLECTIBLES_DIMENSIONS[collectible];
+    const collides = detectCollision({
+      state,
+      position: {
+        x: action.coordinates.x,
+        y: action.coordinates.y,
+        height: dimensions.height,
+        width: dimensions.width,
+      },
+      name: collectible,
+      location: action.location,
+    });
+
+    if (collides) {
+      throw new Error("Building collides");
+    }
+
     // Search for existing collectible in current location
     const collectibleItems =
       action.location === "home"
         ? (stateCopy.home.collectibles[action.name] ?? [])
         : action.location === "petHouse" && isPetCollectible(action.name)
           ? (stateCopy.petHouse.pets[action.name] ?? [])
-          : (stateCopy.collectibles[action.name] ?? []);
+          : action.location === "interior"
+            ? (stateCopy.interior.ground.collectibles[action.name] ?? [])
+            : action.location === "level_one"
+              ? (stateCopy.interior.level_one!.collectibles[action.name] ?? [])
+              : (stateCopy.collectibles[action.name] ?? []);
 
     let existingCollectible = collectibleItems.find(
       (collectible) => !collectible.coordinates,
@@ -157,25 +241,29 @@ export function placeCollectible({
       return stateCopy;
     }
 
-    // If no existing collectible is found, search for it in other locations, and move it to the new location
-    // Define which locations to search based on target location
-    const otherLocations: PlaceableLocation[] =
-      action.location === "home"
-        ? ["farm", "petHouse"]
-        : action.location === "petHouse"
-          ? ["farm", "home"]
-          : ["home", "petHouse"]; // farm
+    // If no existing collectible is found, search for it in other locations, and move it to the new location.
+    // Every other location must be searched: missing one creates a duplicate
+    // placement instead of moving the existing one, which silently drops the
+    // instance's state (e.g. a weather item's `used` flag would be lost, renewing
+    // it for free).
+    const otherLocations: PlaceableLocation[] = PLACEABLE_LOCATIONS.filter(
+      (location) => location !== action.location,
+    );
 
     const getCollectiblesForLocation = (
-      loc: "farm" | "home" | "petHouse",
+      loc: PlaceableLocation,
     ): PlacedItem[] => {
       switch (loc) {
         case "home":
           return stateCopy.home.collectibles[action.name] ?? [];
         case "petHouse":
           return isPetCollectible(action.name)
-            ? (stateCopy.petHouse.pets[action.name] ?? [])
+            ? (stateCopy.petHouse?.pets[action.name] ?? [])
             : [];
+        case "interior":
+          return stateCopy.interior?.ground.collectibles[action.name] ?? [];
+        case "level_one":
+          return stateCopy.interior?.level_one?.collectibles[action.name] ?? [];
         case "farm":
         default:
           return stateCopy.collectibles[action.name] ?? [];
@@ -183,7 +271,7 @@ export function placeCollectible({
     };
 
     const setCollectiblesForLocation = (
-      loc: "farm" | "home" | "petHouse",
+      loc: PlaceableLocation,
       items: PlacedItem[],
     ) => {
       switch (loc) {
@@ -193,6 +281,16 @@ export function placeCollectible({
         case "petHouse":
           if (isPetCollectible(action.name)) {
             stateCopy.petHouse.pets[action.name] = items;
+          }
+          break;
+        case "interior":
+          if (stateCopy.interior) {
+            stateCopy.interior.ground.collectibles[action.name] = items;
+          }
+          break;
+        case "level_one":
+          if (stateCopy.interior?.level_one) {
+            stateCopy.interior.level_one.collectibles[action.name] = items;
           }
           break;
         case "farm":
@@ -247,6 +345,13 @@ export function placeCollectible({
       isPetCollectible(action.name)
     ) {
       stateCopy.petHouse.pets[action.name] = collectibleItems;
+    } else if (action.location === "interior") {
+      stateCopy.interior.ground.collectibles[action.name] = collectibleItems;
+    } else if (action.location === "level_one") {
+      // The not-unlocked check at the top of this reducer guarantees level_one
+      // exists by this point.
+      stateCopy.interior.level_one!.collectibles[action.name] =
+        collectibleItems;
     } else {
       stateCopy.collectibles[action.name] = collectibleItems;
     }
@@ -255,6 +360,18 @@ export function placeCollectible({
       "Collectible Placed",
       stateCopy.farmActivity,
     );
+
+    populateSaltFarm({
+      gameBefore: state,
+      gameAfter: stateCopy,
+      now: createdAt,
+    });
+
+    // A boost collectible (shrine/totem/hourglass) placed mid-grow shortens
+    // windowed crops' ready time — keep each cell's Basic Scarecrow time-AOE in
+    // sync so a replant in the gap isn't wrongly denied the boost. Idempotent
+    // for non-boost placements (windows unchanged).
+    refreshBasicScarecrowTimeAOE(stateCopy);
 
     return stateCopy;
   });

@@ -11,18 +11,21 @@ import { InlineDialogue } from "../TypingMessage";
 import { isMinigameComplete } from "features/game/events/minigames/claimMinigamePrize";
 import { ClaimReward } from "features/game/expansion/components/ClaimReward";
 import { PortalLeaderboard } from "./PortalLeaderboard";
-import { MachineState } from "features/game/lib/gameMachine";
+import type { MachineState } from "features/game/lib/gameMachine";
 import { MinigamePrizeUI } from "./MinigamePrizeUI";
+
 interface Props {
   onClose: () => void;
 }
 
 const _minigames = (state: MachineState) => state.context.state.minigames;
+const _game = (state: MachineState) => state.context.state;
 
 export const ChickenRescue: React.FC<Props> = ({ onClose }) => {
   const { authService } = useContext(AuthProvider.Context);
   const { gameService } = useContext(Context);
   const minigames = useSelector(gameService, _minigames);
+  const game = useSelector(gameService, _game);
   const minigame = minigames.games["chicken-rescue"];
   const prize = minigames.prizes["chicken-rescue"];
 
@@ -61,6 +64,10 @@ export const ChickenRescue: React.FC<Props> = ({ onClose }) => {
   });
 
   if (isComplete && !dailyAttempt.prizeClaimedAt && prize) {
+    const claimItems = {
+      ...prize.items,
+    };
+
     return (
       <ClaimReward
         onClaim={onClaim}
@@ -69,7 +76,7 @@ export const ChickenRescue: React.FC<Props> = ({ onClose }) => {
             "Congratulations, you rescued the chickens! Here is your reward.",
           factionPoints: 0,
           id: "discord-bonus",
-          items: prize.items,
+          items: claimItems,
           wearables: prize.wearables,
           sfl: 0,
           coins: prize.coins,

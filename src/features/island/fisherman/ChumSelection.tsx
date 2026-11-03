@@ -3,14 +3,18 @@ import React, { useState } from "react";
 import { Box } from "components/ui/Box";
 import { Button } from "components/ui/Button";
 import { Label } from "components/ui/Label";
-import { getKeys } from "features/game/types/craftables";
-import { GameState, InventoryItemName } from "features/game/types/game";
-import { ITEM_DETAILS } from "features/game/types/images";
+import { getKeys } from "lib/object";
+import type { GameState, InventoryItemName } from "features/game/types/game";
+import {
+  getTranslatedItemName,
+  ITEM_DETAILS,
+} from "features/game/types/images";
 import {
   CHUM_AMOUNTS,
   CHUM_DETAILS,
-  Chum,
-  FishingBait,
+  type Chum,
+  type FishingBait,
+  normalizeBaitForWormMechanics,
 } from "features/game/types/fishing";
 import { useAppTranslation } from "lib/i18n/useAppTranslations";
 import {
@@ -53,7 +57,10 @@ export const ChumSelection: React.FC<{
         {getKeys(CHUM_AMOUNTS)
           .filter((name) => !!items[name]?.gte(1))
           .filter((name) => {
-            if (bait !== "Red Wiggler" && RARE_CHUM.includes(name)) {
+            if (
+              normalizeBaitForWormMechanics(bait) !== "Red Wiggler" &&
+              RARE_CHUM.includes(name)
+            ) {
               return false;
             }
 
@@ -78,13 +85,13 @@ export const ChumSelection: React.FC<{
               className="mb-1"
               icon={ITEM_DETAILS[selected].image}
             >
-              {selected}
+              {getTranslatedItemName(selected)}
             </Label>
             <Label
               type={!hasRequirements ? "danger" : "default"}
               className="mb-1"
             >
-              {`${CHUM_AMOUNTS[selected]} ${selected}`}
+              {`${CHUM_AMOUNTS[selected]} ${getTranslatedItemName(selected)}`}
             </Label>
           </div>
           <p className="text-xs">{CHUM_DETAILS[selected]}</p>

@@ -4,17 +4,18 @@ import React, { useContext, useState } from "react";
 import * as Auth from "features/auth/lib/Provider";
 import { Context } from "features/game/GameProvider";
 import { useActor, useSelector } from "@xstate/react";
-import { getKeys } from "features/game/types/decorations";
+import { getKeys } from "lib/object";
 import { getTradeableDisplay } from "../../lib/tradeables";
-import { getItemId, tradeToId } from "../../lib/offers";
+import { tradeToId } from "../../lib/offers";
+import type { CollectionName } from "features/game/types/marketplace";
 import { useLocation, useNavigate, useParams } from "react-router";
 import { useAppTranslation } from "lib/i18n/useAppTranslations";
 import { Modal } from "components/ui/Modal";
 import { RemoveOffer } from "../RemoveOffer";
 import { ClaimReward } from "features/game/expansion/components/ClaimReward";
 import { NPC_WEARABLES } from "lib/npcs";
-import { AuthMachineState } from "features/auth/lib/authMachine";
-import { InventoryItemName } from "features/game/types/game";
+import type { AuthMachineState } from "features/auth/lib/authMachine";
+import type { InventoryItemName } from "features/game/types/game";
 import { formatNumber } from "lib/utils/formatNumber";
 import { isTradeResource } from "features/game/actions/tradeLimits";
 import { MyTableRow } from "./MyTableRow";
@@ -23,13 +24,29 @@ import lock from "assets/icons/lock.png";
 import trade from "assets/icons/trade.png";
 import { BulkRemoveTrades } from "../BulkRemoveListings";
 import { Button } from "components/ui/Button";
+import { MAX_ITEM_OFFERS } from "../../lib/tradeLimits";
 
 const _authToken = (state: AuthMachineState) =>
   state.context.user.rawToken as string;
 
-export const MyOffers: React.FC = () => {
+type Props = {
+  fullHeight?: boolean;
+};
+
+export const MyOffers: React.FC<Props> = ({ fullHeight = false }) => {
   const { t } = useAppTranslation();
-  const params = useParams();
+  const params = useParams<{
+    collection?: CollectionName;
+    id?: string;
+    economy?: string;
+  }>();
+
+  const routeCollection: CollectionName | undefined =
+    params.economy != null && params.id != null && params.collection == null
+      ? "economies"
+      : params.collection;
+
+  const routeEconomy = params.economy;
   const isWorldRoute = useLocation().pathname.includes("/world");
 
   const { gameService } = useContext(Context);
@@ -46,27 +63,45 @@ export const MyOffers: React.FC = () => {
   const offers = trades.offers ?? {};
 
   const filteredOffers =
-    params.id && params.collection
+    params.id && routeCollection
       ? Object.fromEntries(
           Object.entries(offers).filter(([_, offer]) => {
-            const offerItemName = getKeys(
-              offer.items ?? {},
-            )[0] as InventoryItemName;
-            const offerItemId = getItemId({
-              name: offerItemName,
-              collection: offer.collection,
+            const offerItemId = tradeToId({
+              details: {
+                collection: offer.collection,
+                items: offer.items,
+              },
             });
+            const offerCollection = offer.collection as string;
+            if (routeCollection === "economies") {
+              return (
+                offerCollection === "economies" &&
+                offer.economy === routeEconomy &&
+                offerItemId === Number(params.id)
+              );
+            }
             return (
-              offerItemId === Number(params.id) &&
-              offer.collection === params.collection
+              offer.collection === routeCollection &&
+              offerItemId === Number(params.id)
             );
           }),
         )
       : offers;
 
+  const filteredOfferIds = getKeys(filteredOffers);
+  const selectedOffer = filteredOffers[filteredOfferIds[0]];
+  const selectedItemName = selectedOffer
+    ? (getKeys(selectedOffer.items ?? {})[0] as InventoryItemName)
+    : undefined;
+  const showResourceOfferCount =
+    !!params.id &&
+    routeCollection === "collectibles" &&
+    !!selectedItemName &&
+    isTradeResource(selectedItemName);
+
   const navigate = useNavigate();
 
-  if (getKeys(filteredOffers).length === 0) return null;
+  if (filteredOfferIds.length === 0) return null;
 
   const escrowedSFL = getKeys(offers).reduce(
     (total, id) => total + offers[id].sfl,
@@ -133,13 +168,24 @@ export const MyOffers: React.FC = () => {
         />
       </Modal>
 
-      <InnerPanel className="mb-1">
-        <div className="p-2">
+      <InnerPanel
+        className={fullHeight ? "flex h-full min-h-0 flex-col" : "mb-1"}
+      >
+        <div
+          className={fullHeight ? "flex h-full min-h-0 flex-col p-2" : "p-2"}
+        >
           <div className="flex justify-between flex-col mb-2">
             <div className="flex items-center justify-between mb-1">
-              <Label type="default" icon={trade}>
-                {t("marketplace.myOffers")}
-              </Label>
+              <div className="flex items-center gap-1">
+                <Label type="default" icon={trade}>
+                  {t("marketplace.myOffers")}
+                </Label>
+                {showResourceOfferCount && (
+                  <Label type="default">
+                    {`${filteredOfferIds.length}/${MAX_ITEM_OFFERS}`}
+                  </Label>
+                )}
+              </div>
               <Button
                 className="w-fit h-8 rounded-none"
                 onClick={() => setBulkCancel(true)}
@@ -155,12 +201,18 @@ export const MyOffers: React.FC = () => {
               })}
             </Label>
           </div>
-          <div className="flex flex-wrap">
-            {getKeys(filteredOffers).length === 0 ? (
+          <div
+            className={fullHeight ? "flex min-h-0 flex-1" : "flex flex-wrap"}
+          >
+            {filteredOfferIds.length === 0 ? (
               <p className="text-sm">{t("marketplace.noMyOffers")}</p>
             ) : (
-              <div className="w-full relative border-collapse mb-2 max-h-[200px] scrollable overflow-y-auto overflow-x-hidden">
-                {getKeys(filteredOffers).map((id, index) => {
+              <div
+                className={`w-full relative border-collapse mb-2 scrollable overflow-y-auto overflow-x-hidden ${
+                  fullHeight ? "h-full min-h-0" : "max-h-[200px]"
+                }`}
+              >
+                {filteredOfferIds.map((id, index) => {
                   const offer = filteredOffers[id];
                   const itemName = getKeys(
                     offer.items ?? {},
@@ -202,11 +254,17 @@ export const MyOffers: React.FC = () => {
                       isResource={isResource}
                       onCancel={() => setRemoveId(id)}
                       fee={0}
-                      onRowClick={() =>
-                        navigate(
-                          `${isWorldRoute ? "/world" : ""}/marketplace/${details.type}/${itemId}`,
-                        )
-                      }
+                      onRowClick={() => {
+                        const base = `${isWorldRoute ? "/world" : ""}/marketplace`;
+                        const offerCol = offer.collection as string;
+                        if (offerCol === "economies" && offer.economy) {
+                          navigate(
+                            `${base}/economies/${offer.economy}/${itemId}`,
+                          );
+                          return;
+                        }
+                        navigate(`${base}/${details.type}/${itemId}`);
+                      }}
                       onClaim={() => setClaimId(id)}
                     />
                   );

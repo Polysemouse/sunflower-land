@@ -1,7 +1,7 @@
-import { Coordinates } from "features/game/expansion/components/MapPlacement";
-import { PlaceableLocation } from "features/game/types/collectibles";
-import { CollectibleName } from "features/game/types/craftables";
-import { GameState } from "features/game/types/game";
+import type { Coordinates } from "features/game/expansion/components/MapPlacement";
+import type { PlaceableLocation } from "features/game/types/collectibles";
+import type { CollectibleName } from "features/game/types/craftables";
+import type { GameState } from "features/game/types/game";
 import { produce } from "immer";
 import { isPetCollectible } from "./placeCollectible";
 
@@ -39,6 +39,14 @@ export function moveCollectible({ state, action }: Options): GameState {
           );
         }
         return stateCopy.petHouse.pets[name];
+      } else if (location === "interior") {
+        return stateCopy.interior.ground.collectibles[name];
+      } else if (location === "level_one") {
+        const levelOne = stateCopy.interior.level_one;
+        if (!levelOne) {
+          throw new Error("Level one floor has not been unlocked");
+        }
+        return levelOne.collectibles[name];
       } else {
         return stateCopy.collectibles[name];
       }

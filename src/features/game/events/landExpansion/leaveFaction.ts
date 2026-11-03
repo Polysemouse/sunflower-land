@@ -1,6 +1,6 @@
 import { produce } from "immer";
 import { FACTION_BANNERS, FACTION_EMBLEMS } from "./joinFaction";
-import { GameState } from "features/game/types/game";
+import type { GameState } from "features/game/types/game";
 
 export type LeaveFactionAction = {
   type: "faction.left";
@@ -44,6 +44,8 @@ export function leaveFaction({
       delete game.inventory[name];
       delete game.collectibles[name];
       delete game.home.collectibles[name];
+      delete game.interior?.ground.collectibles[name];
+      delete game.interior?.level_one?.collectibles[name];
     });
 
     return game;

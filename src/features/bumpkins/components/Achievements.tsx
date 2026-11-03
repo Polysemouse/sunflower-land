@@ -1,12 +1,11 @@
-import { useActor } from "@xstate/react";
 import React, { useContext, useState } from "react";
 
 import { Context } from "features/game/GameProvider";
 import {
-  AchievementName,
+  type AchievementName,
   ACHIEVEMENTS,
 } from "features/game/types/achievements";
-import { getKeys } from "features/game/types/craftables";
+import { getKeys } from "lib/object";
 import { ITEM_DETAILS } from "features/game/types/images";
 import classNames from "classnames";
 import { AchievementDetails } from "./AchievementDetails";
@@ -18,7 +17,8 @@ import { ResizableBar } from "components/ui/ProgressBar";
 import { SUNNYSIDE } from "assets/sunnyside";
 import { CloseButtonPanel } from "features/game/components/CloseablePanel";
 import { useAppTranslation } from "lib/i18n/useAppTranslations";
-import { GameState } from "features/game/types/game";
+import type { GameState } from "features/game/types/game";
+import { useSelector } from "@xstate/react";
 
 const CONTENT_HEIGHT = 350;
 interface Props {
@@ -49,11 +49,8 @@ const getDefaultSelectedAchievement = (state: GameState) => {
 
 export const Achievements: React.FC<Props> = ({ onBack, readonly }) => {
   const { gameService } = useContext(Context);
-  const [
-    {
-      context: { state },
-    },
-  ] = useActor(gameService);
+  const state = useSelector(gameService, (state) => state.context.state);
+
   const [selected, setSelected] = useState<AchievementName>(
     getDefaultSelectedAchievement(state),
   );

@@ -18,17 +18,18 @@ import { getRelativeTime } from "lib/utils/time";
 import promote from "assets/icons/promote.webp";
 import followIcon from "assets/icons/follow.webp";
 import helpIcon from "assets/icons/help.webp";
+import cheer from "assets/icons/cheer.webp";
 
-import { MachineState } from "features/game/lib/gameMachine";
+import type { MachineState } from "features/game/lib/gameMachine";
 import { Context } from "features/game/GameProvider";
 import { useSelector } from "@xstate/react";
 import { isMobile } from "mobile-device-detect";
 import { useAppTranslation } from "lib/i18n/useAppTranslations";
 import { useFeedInteractions } from "./hooks/useFeedInteractions";
-import { AuthMachineState } from "features/auth/lib/authMachine";
+import type { AuthMachineState } from "features/auth/lib/authMachine";
 import * as AuthProvider from "features/auth/lib/Provider";
 import { FeedSkeleton } from "./components/skeletons/FeedSkeleton";
-import { Interaction } from "./types/types";
+import type { Interaction } from "./types/types";
 import { NPCIcon } from "features/island/bumpkin/components/NPC";
 import silhouette from "assets/npcs/silhouette.webp";
 import { playerModalManager } from "./lib/playerModalManager";
@@ -46,8 +47,13 @@ import { FeedFilters } from "./components/FeedFilters";
 import { getFilter, storeFilter } from "./lib/persistFilter";
 import { HelpInfoPopover } from "./components/HelpInfoPopover";
 import { SearchBar } from "./components/SearchBar";
-import { Detail } from "./actions/getFollowNetworkDetails";
+import type { Detail } from "./actions/getFollowNetworkDetails";
 import { useNow } from "lib/utils/hooks/useNow";
+import Decimal from "decimal.js-light";
+import { getHelpLimit } from "features/game/types/monuments";
+import { Modal } from "components/ui/Modal";
+import { CloseButtonPanel } from "features/game/components/CloseablePanel";
+import { PickServer } from "features/island/hud/components/settings-menu/plaza-settings/PickServer";
 
 type Props = {
   type: "world" | "local";
@@ -56,10 +62,38 @@ type Props = {
   setShowFeed: (showFeed: boolean) => void;
 };
 
+const SERVER_DISPLAY_NAMES: Record<string, string> = {
+  sunflorea_bliss: "Bliss",
+  sunflorea_dream: "Dream",
+  sunflorea_oasis: "Plaza",
+  sunflorea_brazil: "Brazil",
+  sunflorea_magic: "Magic",
+  sunflorea_kale: "Kale",
+  sunflorea_flower: "Flower",
+  sunflorea_stream: "Stream",
+  "Bumpkin Plaza": "Plaza",
+  "Bumpkin Bazaar": "Plaza",
+};
+
+const formatServerName = (server: string) =>
+  SERVER_DISPLAY_NAMES[server] ??
+  server
+    .replace(/^sunflorea[_\s-]*/i, "")
+    .replace(/^bumpkin[_\s-]*/i, "")
+    .replace(/[_-]+/g, " ")
+    .replace(/\b\w/g, (char) => char.toUpperCase());
+
 const _username = (state: MachineState) =>
   (state.context.visitorState ?? state.context.state).username;
 const _farmId = (state: MachineState) =>
   state.context.visitorId ?? state.context.farmId;
+const _cheersAvailable = (state: MachineState) =>
+  (state.context.visitorState ?? state.context.state).inventory["Cheer"] ??
+  new Decimal(0);
+const _totalHelpedToday = (state: MachineState) =>
+  state.context.totalHelpedToday;
+const _game = (state: MachineState) =>
+  state.context.visitorState ?? state.context.state;
 const _token = (state: AuthMachineState) =>
   state.context.user.rawToken as string;
 
@@ -78,6 +112,9 @@ const mergeUpdates = (
     ...current.slice(1),
   ];
 };
+
+const getUTCDateKey = (timestamp: number) =>
+  new Date(timestamp).toISOString().split("T")[0];
 
 export type FeedFilter = "all" | "help" | "chat" | "cheer" | "follow";
 export type FeedFilterOption = {
@@ -99,10 +136,20 @@ export const Feed: React.FC<Props> = ({
   const feedRef = useRef<HTMLDivElement>(null);
   const [selectedFilter, setSelectedFilter] = useState<FeedFilter>(getFilter());
   const [searchResults, setSearchResults] = useState<Detail[]>([]);
+  const [showPickServer, setShowPickServer] = useState(false);
 
   const username = useSelector(gameService, _username);
   const token = useSelector(authService, _token);
   const farmId = useSelector(gameService, _farmId);
+  const cheersAvailable = useSelector(gameService, _cheersAvailable);
+  const totalHelpedToday = useSelector(gameService, _totalHelpedToday);
+  const game = useSelector(gameService, _game);
+  const helpLimit = getHelpLimit({ game });
+  const helpRemaining =
+    totalHelpedToday == null
+      ? undefined
+      : Math.max(helpLimit - totalHelpedToday, 0);
+  const serverLabel = server ? formatServerName(server) : undefined;
 
   const { t } = useAppTranslation();
 
@@ -205,6 +252,20 @@ export const Feed: React.FC<Props> = ({
     mutate,
   );
 
+  useOnMachineTransition(
+    gameService,
+    "cheeringFarm",
+    "cheeringFarmSuccess",
+    mutate,
+  );
+
+  useOnMachineTransition(
+    gameService,
+    "cheeringFarmVisiting",
+    "cheeringFarmVisitingSuccess",
+    mutate,
+  );
+
   const handleInteractionClick = (interaction: Interaction) => {
     setShowFeed(false);
     playerModalManager.open({
@@ -235,6 +296,10 @@ export const Feed: React.FC<Props> = ({
     setShowFeed(false);
   };
 
+  const handleServerLabelClick = () => {
+    setShowPickServer(true);
+  };
+
   const showMobileFeed = showFeed && isMobile;
   const showDesktopFeed = showFeed && !isMobile;
   const hideMobileFeed = !showFeed && isMobile;
@@ -253,10 +318,18 @@ export const Feed: React.FC<Props> = ({
       )}
       divRef={feedRef}
     >
+      <Modal show={showPickServer} onHide={() => setShowPickServer(false)}>
+        <CloseButtonPanel
+          title={t("gameOptions.plazaSettings.pickServer")}
+          onClose={() => setShowPickServer(false)}
+        >
+          <PickServer onClose={() => setShowPickServer(false)} />
+        </CloseButtonPanel>
+      </Modal>
       <div className="flex flex-col gap-2 h-full w-full">
         <div className="sticky top-0 flex flex-col z-10 bg-[#e4a672]">
           <div className="flex items-center gap-2 pb-1">
-            <div className="flex items-center w-full gap-2">
+            <div className="flex items-center w-full min-w-0 gap-2">
               {showFollowing && (
                 <img
                   src={SUNNYSIDE.icons.arrow_left}
@@ -266,7 +339,22 @@ export const Feed: React.FC<Props> = ({
                 />
               )}
               <Label type="default">{t("feed")}</Label>
-              {server && <span className="text-xxs">{server}</span>}
+              <Label type="default" icon={SUNNYSIDE.icons.drag}>
+                {`${helpRemaining ?? "--"}/${helpLimit}`}
+              </Label>
+              <Label type="default" icon={cheer}>
+                {cheersAvailable.toNumber()}
+              </Label>
+              {serverLabel && (
+                <button
+                  type="button"
+                  className="min-w-0 max-w-[56px] shrink cursor-pointer truncate bg-transparent p-0 text-left text-xxs hover:underline"
+                  title={serverLabel}
+                  onClick={handleServerLabelClick}
+                >
+                  {serverLabel}
+                </button>
+              )}
             </div>
             <img
               src={SUNNYSIDE.icons.close}
@@ -437,6 +525,34 @@ const HelpIconWithPopover: React.FC<{
   );
 };
 
+const OlderPostsSeparator: React.FC = () => {
+  const { t } = useAppTranslation();
+
+  return (
+    <p className="text-xs text-center opacity-70 my-1">
+      {t("feed.olderPosts")}
+    </p>
+  );
+};
+
+const CheerGivenIcon: React.FC = () => {
+  return (
+    <div
+      className="flex h-8 w-10 items-center justify-center cursor-default"
+      onPointerDown={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+      }}
+      onClickCapture={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+      }}
+    >
+      <img src={cheer} className="w-5 h-5" alt="" />
+    </div>
+  );
+};
+
 type FeedContentProps = {
   feed: Interaction[];
   following: number[];
@@ -466,6 +582,11 @@ const FeedContent: React.FC<FeedContentProps> = ({
   const loaderRef = useRef<HTMLDivElement>(null);
   const { t } = useAppTranslation();
   const [canPaginate, setCanPaginate] = useState(false);
+  const [hasMeasuredScroll, setHasMeasuredScroll] = useState(false);
+  // Minute granularity is plenty — todayKey only flips at UTC midnight, so a
+  // 1s tick would reconcile the whole feed list every second for nothing.
+  const now = useNow({ live: true, intervalMs: 60_000 });
+  const todayKey = getUTCDateKey(now);
 
   // Intersection observer to load more interactions when the loader is in view
   const { ref: intersectionRef, inView } = useInView({
@@ -479,6 +600,7 @@ const FeedContent: React.FC<FeedContentProps> = ({
     if (!el) return;
     // tiny buffer so off-by-1 doesn’t trigger
     setCanPaginate(el.scrollHeight > el.clientHeight + 2);
+    setHasMeasuredScroll(true);
   }, [feed.length, filter]);
 
   useEffect(() => {
@@ -490,10 +612,23 @@ const FeedContent: React.FC<FeedContentProps> = ({
   }, [filter]);
 
   useEffect(() => {
-    if (inView && hasMore && !isLoadingMore && canPaginate) {
+    const shouldLoadMore =
+      hasMore &&
+      !isLoadingMore &&
+      (inView || feed.length === 0 || (hasMeasuredScroll && !canPaginate));
+
+    if (shouldLoadMore) {
       loadMore();
     }
-  }, [inView, hasMore, isLoadingMore, loadMore, scrollContainerRef]);
+  }, [
+    canPaginate,
+    hasMeasuredScroll,
+    hasMore,
+    inView,
+    isLoadingMore,
+    loadMore,
+    feed.length,
+  ]);
 
   const setRefs = useCallback(
     (node: HTMLDivElement | null) => {
@@ -513,7 +648,6 @@ const FeedContent: React.FC<FeedContentProps> = ({
     e.stopPropagation();
     onFollowClick(id);
   };
-
   if (isLoadingInitialData) {
     return <FeedSkeleton />;
   }
@@ -521,7 +655,11 @@ const FeedContent: React.FC<FeedContentProps> = ({
   if (feed.length === 0) {
     return (
       <div className="flex justify-center items-center h-full">
-        <Label type="default">{t("noActivity")}</Label>
+        {hasMore ? (
+          <Loading dotsOnly />
+        ) : (
+          <Label type="default">{t("noActivity")}</Label>
+        )}
       </div>
     );
   }
@@ -545,81 +683,94 @@ const FeedContent: React.FC<FeedContentProps> = ({
               : () => onInteractionClick(interaction);
           const isFollowing = following.includes(interaction.sender.id);
           const isAtMaxFollowing = !isFollowing && following.length >= 5000;
+          const previousInteraction = feed[index - 1];
+          const currentDateKey = getUTCDateKey(interaction.createdAt);
+          const showOlderPostsSeparator =
+            currentDateKey < todayKey &&
+            (index === 0 ||
+              getUTCDateKey(previousInteraction.createdAt) >= todayKey);
 
           return (
-            <div
-              key={`${interaction.createdAt}-${index}`}
-              className={classNames({
-                "pl-1": direction === "left" && interaction.type === "chat",
-                "pr-1": direction === "right" && interaction.type === "chat",
-              })}
+            <React.Fragment
+              key={
+                interaction.id ??
+                `${interaction.type}-${interaction.sender.id}-${interaction.createdAt}`
+              }
             >
-              <InteractionBubble
-                key={`${interaction.sender.id}-${interaction.createdAt}-${index}`}
-                direction={direction}
-                type={interaction.type}
-                onClick={onClick}
+              {showOlderPostsSeparator && <OlderPostsSeparator />}
+              <div
+                className={classNames({
+                  "pl-1": direction === "left" && interaction.type === "chat",
+                  "pr-1": direction === "right" && interaction.type === "chat",
+                })}
               >
-                <div className="text-xxs flex">
-                  <div className="-ml-1 mr-1">
-                    {interaction.sender.clothing ? (
-                      <NPCIcon
-                        parts={interaction.sender.clothing}
-                        width={PIXEL_SCALE * 14}
-                      />
-                    ) : (
-                      <img
-                        id="silhouette"
-                        src={silhouette}
-                        className="w-3/5 absolute top-1.5 left-1.5"
-                      />
-                    )}
-                  </div>
-                  <div className="flex flex-col w-full gap-1">
-                    <span className="flex items-center gap-1">
-                      {interaction.type === "announcement" ? (
-                        <img src={promote} />
+                <InteractionBubble
+                  direction={direction}
+                  type={interaction.type}
+                  onClick={onClick}
+                >
+                  <div className="text-xxs flex">
+                    <div className="-ml-1 mr-1">
+                      {interaction.sender.clothing ? (
+                        <NPCIcon
+                          parts={interaction.sender.clothing}
+                          width={PIXEL_SCALE * 14}
+                        />
                       ) : (
-                        `${sender ?? ""} ${interaction.sender ? "- " : ""}`
-                      )}
-                      <RelativeTime createdAt={interaction.createdAt} />
-                    </span>
-                    <div className="flex justify-between items-center w-full">
-                      <div
-                        className="text-xs break-words w-full"
-                        style={{
-                          lineHeight: 1,
-                        }}
-                      >
-                        {interaction.message}
-                      </div>
-                      {!!interaction.helpedThemToday && (
-                        <HelpIconWithPopover
-                          helpedThemToday={interaction.helpedThemToday}
+                        <img
+                          id="silhouette"
+                          src={silhouette}
+                          className="w-3/5 absolute top-1.5 left-1.5"
                         />
                       )}
                     </div>
-                  </div>
-                  {!isAtMaxFollowing && (
-                    <div className="flex items-center justify-end flex-grow cursor-pointer">
-                      {interaction.type === "follow" && !isFollowing && (
-                        <Button
-                          className="text-xs flex h-10 w-10 justify-center items-center"
-                          onClick={(e) =>
-                            handleFollowClick(e, interaction.sender.id)
-                          }
+                    <div className="flex flex-col w-full gap-1">
+                      <span className="flex items-center gap-1">
+                        {interaction.type === "announcement" ? (
+                          <img src={promote} />
+                        ) : (
+                          `${sender ?? ""} ${interaction.sender ? "- " : ""}`
+                        )}
+                        <RelativeTime createdAt={interaction.createdAt} />
+                      </span>
+                      <div className="flex justify-between items-center w-full">
+                        <div
+                          className="text-xs break-words w-full"
+                          style={{
+                            lineHeight: 1,
+                          }}
                         >
-                          <img
-                            src={followIcon}
-                            className="w-6 object-contain"
+                          {interaction.message}
+                        </div>
+                        {!!interaction.helpedThemToday && (
+                          <HelpIconWithPopover
+                            helpedThemToday={interaction.helpedThemToday}
                           />
-                        </Button>
-                      )}
+                        )}
+                        {!!interaction.cheeredThemToday && <CheerGivenIcon />}
+                      </div>
                     </div>
-                  )}
-                </div>
-              </InteractionBubble>
-            </div>
+                    {!isAtMaxFollowing && (
+                      <div className="flex items-center justify-end flex-grow cursor-pointer">
+                        {interaction.type === "follow" && !isFollowing && (
+                          <Button
+                            className="text-xs flex h-10 w-10 justify-center items-center"
+                            onClick={(e) =>
+                              handleFollowClick(e, interaction.sender.id)
+                            }
+                          >
+                            <img
+                              src={followIcon}
+                              className="w-6 object-contain"
+                            />
+                          </Button>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </InteractionBubble>
+              </div>
+            </React.Fragment>
           );
         })}
       </div>

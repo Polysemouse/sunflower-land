@@ -1,7 +1,7 @@
 import React, { useContext } from "react";
 import { Modal } from "components/ui/Modal";
 import { Panel } from "components/ui/Panel";
-import { MutantAnimal } from "features/game/types/game";
+import type { MutantAnimal } from "features/game/types/game";
 
 import { COLLECTIBLE_BUFF_LABELS } from "features/game/types/collectibleItemBuffs";
 
@@ -12,7 +12,7 @@ import chest from "assets/icons/chest.png";
 import { ITEM_DETAILS } from "features/game/types/images";
 import { SUNNYSIDE } from "assets/sunnyside";
 import { Context } from "features/game/GameProvider";
-import { MachineState } from "features/game/lib/gameMachine";
+import type { MachineState } from "features/game/lib/gameMachine";
 import { useSelector } from "@xstate/react";
 
 interface Props {
@@ -25,10 +25,7 @@ export const MutantAnimalModal = ({ mutant, show, onContinue }: Props) => {
   const { t } = useAppTranslation();
   const { gameService } = useContext(Context);
   const state = useSelector(gameService, _state);
-  const boost = COLLECTIBLE_BUFF_LABELS[mutant]?.({
-    skills: state.bumpkin.skills,
-    collectibles: state.collectibles,
-  });
+  const boost = COLLECTIBLE_BUFF_LABELS[mutant]?.(state);
 
   return (
     <Modal show={show} dialogClassName="max-w-[480px]">

@@ -8,9 +8,12 @@ import {
   getBuildingBumpkinLevelRequired,
   isBuildingEnabled,
 } from "features/game/expansion/lib/buildingRequirements";
-import { BuildingName } from "features/game/types/buildings";
-import { MachineState } from "features/game/lib/gameMachine";
-import { getBumpkinLevel } from "features/game/lib/level";
+import type { BuildingName } from "features/game/types/buildings";
+import type { MachineState } from "features/game/lib/gameMachine";
+import {
+  getAscensionLevel,
+  meetsLevelRequirement,
+} from "features/game/lib/level";
 import { Context } from "features/game/GameProvider";
 import { Modal } from "components/ui/Modal";
 import { InnerPanel } from "components/ui/Panel";
@@ -24,39 +27,43 @@ import { useVisiting } from "lib/utils/visitUtils";
  * @param onClick on click event
  */
 interface Props {
-  name: string;
-  index?: number;
+  name: BuildingName;
   ready?: boolean;
   nonInteractible?: boolean;
   onClick?: () => void;
 }
 
-const _bumpkinLevel = (state: MachineState) =>
-  getBumpkinLevel(state.context.state.bumpkin?.experience ?? 0);
+const _level = (state: MachineState) =>
+  getAscensionLevel({
+    experience: state.context.state.bumpkin.experience ?? 0,
+    ascensionLevel: state.context.state.island.ascensionLevel ?? 0,
+  });
 
 export const BuildingImageWrapper: React.FC<React.PropsWithChildren<Props>> = ({
   name,
-  index,
   nonInteractible,
   ready,
   onClick,
   children,
 }) => {
   const { gameService, showAnimations } = useContext(Context);
-  const bumpkinLevel = useSelector(gameService, _bumpkinLevel);
+  const level = useSelector(gameService, _level);
   const [warning, setWarning] = useState<JSX.Element>();
   const { isVisiting } = useVisiting();
 
   const [showBumpkinLevel, setShowBumpkinLevel] = useState(false);
 
-  const bumpkinLevelRequired = getBuildingBumpkinLevelRequired(
-    name as BuildingName,
-    index ?? 0,
-  );
-  const bumpkinTooLow = bumpkinLevel < bumpkinLevelRequired;
+  const bumpkinLevelRequired = getBuildingBumpkinLevelRequired(name);
+  // Infinity-level buildings aren't level-gated (obtained via progression).
+  const bumpkinTooLow =
+    bumpkinLevelRequired.level !== Infinity &&
+    !meetsLevelRequirement(level, bumpkinLevelRequired);
   const { t } = useAppTranslation();
 
-  const getHandleDisabledOnClick = (name: string, nonInteractible: boolean) =>
+  const getHandleDisabledOnClick = (
+    name: BuildingName,
+    nonInteractible: boolean,
+  ) =>
     function handleDisabledOnClick() {
       if (nonInteractible) return;
 
@@ -64,7 +71,7 @@ export const BuildingImageWrapper: React.FC<React.PropsWithChildren<Props>> = ({
         <CloseButtonPanel onClose={() => setWarning(undefined)}>
           <div className="p-2 flex flex-col items-center">
             <img src={SUNNYSIDE.icons.lock} className="w-20 my-2" />
-            <p className="text-sm">{`${name} requires Bumpkin level ${bumpkinLevelRequired} to use.`}</p>
+            <p className="text-sm">{`${name} requires Bumpkin level ${bumpkinLevelRequired.level} to use.`}</p>
           </div>
         </CloseButtonPanel>,
       );
@@ -72,7 +79,7 @@ export const BuildingImageWrapper: React.FC<React.PropsWithChildren<Props>> = ({
 
   let enabled = !nonInteractible;
   if (enabled && !isVisiting) {
-    enabled = isBuildingEnabled(bumpkinLevel, name as BuildingName);
+    enabled = isBuildingEnabled(level, name as BuildingName);
   }
   // When visiting, always allow clicking (enabled = true) if not nonInteractible
   if (isVisiting && !nonInteractible) {
@@ -124,7 +131,8 @@ export const BuildingImageWrapper: React.FC<React.PropsWithChildren<Props>> = ({
           <InnerPanel className="absolute whitespace-nowrap w-fit z-50">
             <div className="text-xs mx-1 p-1">
               <span>
-                {t("bumpkin.level")} {bumpkinLevelRequired} {t("required")}
+                {t("bumpkin.level")} {bumpkinLevelRequired.level}{" "}
+                {t("required")}
                 {"."}
               </span>
             </div>

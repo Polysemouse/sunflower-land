@@ -1,0 +1,45 @@
+import React from "react";
+import { Button } from "components/ui/Button";
+import type { ContentComponentProps } from "../types";
+import { useAppTranslation } from "lib/i18n/useAppTranslations";
+
+export const ExperimentsSettings: React.FC<ContentComponentProps> = ({
+  onSubMenuClick,
+}) => {
+  const { t } = useAppTranslation();
+
+  return (
+    <div className="grid grid-cols-1 gap-1 min-h-[240px] content-start">
+      <Button
+        className="self-start"
+        onClick={() => onSubMenuClick("economyEditor")}
+      >
+        <span>{t("gameOptions.experiments.economyEditor")}</span>
+      </Button>
+      <Button
+        className="self-start"
+        onClick={() => onSubMenuClick("interiorExperiment")}
+      >
+        <span>{t("gameOptions.experiments.interiors")}</span>
+      </Button>
+      <Button
+        className="self-start"
+        onClick={() => onSubMenuClick("landscapingExperiment")}
+      >
+        <span>{t("gameOptions.experiments.landscaping")}</span>
+      </Button>
+      <Button
+        className="self-start"
+        onClick={() => onSubMenuClick("statsLeaderboard")}
+      >
+        <span>{t("gameOptions.experiments.statsLeaderboard")}</span>
+      </Button>
+      <Button
+        className="self-start"
+        onClick={() => onSubMenuClick("auctionCalendar")}
+      >
+        <span>{t("gameOptions.experiments.auctionCalendar")}</span>
+      </Button>
+    </div>
+  );
+};

@@ -6,14 +6,14 @@ import { useAppTranslation } from "lib/i18n/useAppTranslations";
 import React, { useContext } from "react";
 import { getTradeableDisplay } from "../lib/tradeables";
 import { tradeToId } from "../lib/offers";
-import { TradeOffer } from "features/game/types/game";
+import type { TradeOffer } from "features/game/types/game";
 import sflIcon from "assets/icons/flower_token.webp";
 import bg from "assets/ui/3x3_bg.png";
 import {
-  MarketplaceTradeableName,
+  type MarketplaceTradeableName,
   TRADE_INITIATION_MS,
 } from "features/game/types/marketplace";
-import { MachineState } from "features/game/lib/gameMachine";
+import type { MachineState } from "features/game/lib/gameMachine";
 import { useSelector } from "@xstate/react";
 import { TradeInitiated } from "./RemoveListing";
 import { useNow } from "lib/utils/hooks/useNow";
@@ -93,7 +93,7 @@ export const RemoveOffer: React.FC<Props> = ({
               <img src={bg} className="w-full rounded" />
               <img
                 src={display.image}
-                className="w-1/2 absolute"
+                className="h-1/2 max-w-[50%] object-contain absolute"
                 style={{
                   left: "50%",
                   transform: "translate(-50%, 50%)",

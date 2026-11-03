@@ -1,5 +1,5 @@
 import { INITIAL_FARM } from "features/game/lib/constants";
-import { collectLavaPit } from "./collectLavaPit";
+import { collectLavaPit, getObsidianYield } from "./collectLavaPit";
 import Decimal from "decimal.js-light";
 
 describe("collectLavaPit", () => {
@@ -46,6 +46,28 @@ describe("collectLavaPit", () => {
     expect(result.lavaPits[1].collectedAt).toBe(now);
   });
 
+  it("requires the lava pit to be placed", () => {
+    // A lifted pit keeps burning until it is placed back down, where the pause is
+    // applied. Collecting from one in the inventory would skip it.
+    expect(() =>
+      collectLavaPit({
+        state: {
+          ...INITIAL_FARM,
+          lavaPits: {
+            1: {
+              createdAt: 0,
+              startedAt: now - 100 * 60 * 60 * 1000,
+              readyAt: now - 1000,
+              removedAt: now - 500,
+            },
+          },
+        },
+        action: { type: "lavaPit.collected", id: "1" },
+        createdAt: now,
+      }),
+    ).toThrow("Lava pit is not placed");
+  });
+
   it("requires the lava pit was started 72 hours ago", () => {
     expect(() =>
       collectLavaPit({
@@ -83,6 +105,60 @@ describe("collectLavaPit", () => {
             x: 0,
             y: 0,
             startedAt: now - 36 * 60 * 60 * 1000,
+            createdAt: 0,
+          },
+        },
+      },
+      action: { type: "lavaPit.collected", id: "1" },
+      createdAt: now,
+    });
+
+    expect(result.lavaPits[1].startedAt).toBe(undefined);
+    expect(result.lavaPits[1].collectedAt).toBe(now);
+  });
+
+  it("does not speed up a burn when the necklace is equipped after it started", () => {
+    // Started WITHOUT the necklace, so the snapshot is the full 72h. Equipping
+    // mid-burn must not bring that forward.
+    expect(() =>
+      collectLavaPit({
+        state: {
+          ...INITIAL_FARM,
+          bumpkin: {
+            ...INITIAL_FARM.bumpkin,
+            equipped: {
+              ...INITIAL_FARM.bumpkin.equipped,
+              necklace: "Obsidian Necklace",
+            },
+          },
+          lavaPits: {
+            1: {
+              x: 0,
+              y: 0,
+              startedAt: now - 36 * 60 * 60 * 1000,
+              readyAt: now + 36 * 60 * 60 * 1000,
+              createdAt: 0,
+            },
+          },
+        },
+        action: { type: "lavaPit.collected", id: "1" },
+        createdAt: now,
+      }),
+    ).toThrow("Lava pit still active");
+  });
+
+  it("does not delay a burn when the necklace is removed after it started", () => {
+    // Started WITH the necklace, so the snapshot is 36h. Taking it off mid-burn
+    // must not push the pit back out to the unboosted 72h.
+    const result = collectLavaPit({
+      state: {
+        ...INITIAL_FARM,
+        lavaPits: {
+          1: {
+            x: 0,
+            y: 0,
+            startedAt: now - 36 * 60 * 60 * 1000,
+            readyAt: now,
             createdAt: 0,
           },
         },
@@ -164,5 +240,23 @@ describe("collectLavaPit", () => {
     });
 
     expect(result.inventory.Obsidian).toEqual(new Decimal(1.15));
+  });
+});
+
+describe("Macropinna", () => {
+  it("gives +0.1 Obsidian", () => {
+    const { amount, boostsUsed } = getObsidianYield({
+      game: {
+        ...INITIAL_FARM,
+        collectibles: {
+          Macropinna: [
+            { id: "1", createdAt: 0, coordinates: { x: 0, y: 0 }, readyAt: 0 },
+          ],
+        },
+      },
+    });
+
+    expect(amount).toEqual(1.1);
+    expect(boostsUsed).toContainEqual({ name: "Macropinna", value: "+0.1" });
   });
 });

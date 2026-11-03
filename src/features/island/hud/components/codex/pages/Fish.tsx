@@ -1,35 +1,35 @@
 import React, { useContext, useState, useEffect, useRef } from "react";
 import { SimpleBox } from "../SimpleBox";
 import { Label } from "components/ui/Label";
-import { getKeys } from "features/game/types/craftables";
+import { getKeys } from "lib/object";
 import { ITEM_DETAILS } from "features/game/types/images";
 import { MilestonePanel } from "../components/Milestone";
 import { MilestoneTracker } from "../components/MilestoneTracker";
 import {
   FISH_MILESTONES,
   MILESTONES,
-  MilestoneName,
+  type MilestoneName,
 } from "features/game/types/milestones";
 import { getFishByType, getFishSection } from "../lib/utils";
 import { SUNNYSIDE } from "assets/sunnyside";
 import {
   CHAPTER_FISH,
-  ChapterFish,
+  type ChapterFish,
   FISH,
-  FishName,
+  type FishName,
   MAP_PIECE_CHAPTERS,
   MAP_PIECE_MARVELS,
-  MarineMarvelName,
+  type MarineMarvelName,
 } from "features/game/types/fishing";
 import {
   CRUSTACEANS,
   CRUSTACEANS_LOOKUP,
-  CrustaceanName,
-  CrustaceanChum,
-  WaterTrapName,
+  type CrustaceanName,
+  type CrustaceanChum,
+  type WaterTrapName,
 } from "features/game/types/crustaceans";
 import { Detail } from "../components/Detail";
-import { GameState } from "features/game/types/game";
+import type { GameState } from "features/game/types/game";
 import { ButtonPanel, InnerPanel } from "components/ui/Panel";
 import classNames from "classnames";
 
@@ -426,6 +426,24 @@ export const Crustaceans: React.FC<{
   const { t } = useAppTranslation();
   const { farmActivity } = state;
 
+  const crabPotCrustaceans = new Set(
+    Object.values(CRUSTACEANS_LOOKUP["Crab Pot"]).filter(
+      (name): name is CrustaceanName => name !== undefined,
+    ),
+  );
+  const marinerPotCrustaceans = new Set(
+    Object.values(CRUSTACEANS_LOOKUP["Mariner Pot"]).filter(
+      (name): name is CrustaceanName => name !== undefined,
+    ),
+  );
+
+  const crabPotList = CRUSTACEANS.filter((name) =>
+    crabPotCrustaceans.has(name),
+  );
+  const marinerPotList = CRUSTACEANS.filter((name) =>
+    marinerPotCrustaceans.has(name),
+  );
+
   return (
     <InnerPanel>
       <div ref={sectionRef} className="flex flex-col">
@@ -436,16 +454,44 @@ export const Crustaceans: React.FC<{
         >
           {t("crustaceans")}
         </Label>
-        <div className="flex flex-wrap">
-          {CRUSTACEANS.map((name) => (
-            <SimpleBox
-              silhouette={!farmActivity[`${name} Caught`]}
-              onClick={() => onSelect(name)}
-              key={name}
-              inventoryCount={state.inventory[name]?.toNumber()}
-              image={ITEM_DETAILS[name].image}
-            />
-          ))}
+        <div className="flex flex-col">
+          <Label
+            type="default"
+            className="capitalize ml-3 mt-2"
+            icon={ITEM_DETAILS["Crab Pot"].image}
+          >
+            {t("crustaceans.crabPot")}
+          </Label>
+          <div className="flex flex-wrap">
+            {crabPotList.map((name) => (
+              <SimpleBox
+                silhouette={!farmActivity[`${name} Caught`]}
+                onClick={() => onSelect(name)}
+                key={`crab-pot-${name}`}
+                inventoryCount={state.inventory[name]?.toNumber()}
+                image={ITEM_DETAILS[name].image}
+              />
+            ))}
+          </div>
+
+          <Label
+            type="default"
+            className="capitalize ml-3 mt-2"
+            icon={ITEM_DETAILS["Mariner Pot"].image}
+          >
+            {t("crustaceans.marinerPot")}
+          </Label>
+          <div className="flex flex-wrap">
+            {marinerPotList.map((name) => (
+              <SimpleBox
+                silhouette={!farmActivity[`${name} Caught`]}
+                onClick={() => onSelect(name)}
+                key={`mariner-pot-${name}`}
+                inventoryCount={state.inventory[name]?.toNumber()}
+                image={ITEM_DETAILS[name].image}
+              />
+            ))}
+          </div>
         </div>
       </div>
     </InnerPanel>

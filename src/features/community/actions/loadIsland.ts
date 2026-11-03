@@ -1,6 +1,7 @@
 import { CONFIG } from "lib/config";
+import { fetchWithRetry } from "lib/fetchWithRetry";
 import { ERRORS } from "lib/errors";
-import { CommunityIsland } from "features/game/types/game";
+import type { CommunityIsland } from "features/game/types/game";
 
 type Request = {
   islandId: string;
@@ -18,7 +19,7 @@ export async function loadIsland(
 ): Promise<Response | undefined> {
   if (!API_URL) return;
 
-  const response = await window.fetch(
+  const response = await fetchWithRetry(
     `${API_URL}/island/${request.islandId}/farm/${request.farmId}`,
     {
       method: "GET",

@@ -3,14 +3,21 @@ import { Button } from "components/ui/Button";
 import { SUNNYSIDE } from "assets/sunnyside";
 import powerup from "assets/icons/level_up.png";
 import { CROP_LIFECYCLE } from "../plots/lib/plant";
-import { ITEM_DETAILS } from "features/game/types/images";
+import {
+  ITEM_DETAILS,
+  getTranslatedItemName,
+} from "features/game/types/images";
 import { translate } from "lib/i18n/translate";
 import { useAppTranslation } from "lib/i18n/useAppTranslations";
 import { Label } from "components/ui/Label";
-import { getKeys } from "features/game/types/decorations";
-import { FISH, FishingBait } from "features/game/types/fishing";
+import { getKeys } from "lib/object";
+import {
+  FISH,
+  type FishingBait,
+  getFermentationBaitsForFishBaits,
+} from "features/game/types/fishing";
 import { SEASON_ICONS } from "../buildings/components/building/market/SeasonalSeeds";
-import { TemperateSeasonName } from "features/game/types/game";
+import type { TemperateSeasonName } from "features/game/types/game";
 import { useGame } from "features/game/GameProvider";
 
 interface Props {
@@ -47,8 +54,11 @@ const SEASON_ORDER: TemperateSeasonName[] = [
 
 const BAIT_ORDER: FishingBait[] = [
   "Earthworm",
+  "Capsule Bait",
   "Grub",
+  "Umbrella Bait",
   "Red Wiggler",
+  "Crimson Baitfish",
   "Fishing Lure",
   "Fish Flake",
   "Fish Stick",
@@ -65,7 +75,11 @@ const FishingRow: React.FC<{
 
   const seasonSet = new Set(details.seasons);
 
-  const baits = BAIT_ORDER.filter((bait) => details.baits.includes(bait));
+  const allowedBaits = [
+    ...details.baits,
+    ...getFermentationBaitsForFishBaits(details.baits),
+  ];
+  const baits = BAIT_ORDER.filter((bait) => allowedBaits.includes(bait));
 
   return (
     <div
@@ -79,7 +93,9 @@ const FishingRow: React.FC<{
           className="w-6 h-auto mr-2 flex-shrink-0"
         />
         <div className="min-w-0">
-          <p className="text-xs pb-0.5 truncate">{fish}</p>
+          <p className="text-xs pb-0.5 truncate">
+            {getTranslatedItemName(fish)}
+          </p>
           {hasCaught && details.likes.length > 0 && (
             <div className="flex items-center gap-x-0.5 mt-0.5">
               {details.likes.map((like) => (
@@ -87,7 +103,7 @@ const FishingRow: React.FC<{
                   key={`${fish}-${like}`}
                   src={ITEM_DETAILS[like].image}
                   className="h-4"
-                  title={like}
+                  title={getTranslatedItemName(like)}
                 />
               ))}
             </div>
@@ -111,14 +127,14 @@ const FishingRow: React.FC<{
 
       <div
         className="flex flex-wrap items-center justify-end gap-x-0.5 gap-y-0.5 w-full min-w-0"
-        title={baits.join(", ")}
+        title={baits.map((bait) => getTranslatedItemName(bait)).join(", ")}
       >
         {baits.map((bait) => (
           <img
             key={`${fish}-${bait}`}
             src={ITEM_DETAILS[bait].image}
             className="w-4 h-4 object-contain"
-            title={bait}
+            title={getTranslatedItemName(bait)}
           />
         ))}
       </div>

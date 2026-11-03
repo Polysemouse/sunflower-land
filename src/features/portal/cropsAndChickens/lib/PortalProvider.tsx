@@ -1,6 +1,9 @@
 import React, { useEffect } from "react";
 import { useInterpret } from "@xstate/react";
-import { MachineInterpreter, portalMachine } from "./cropsAndChickensMachine";
+import {
+  type MachineInterpreter,
+  portalMachine,
+} from "./cropsAndChickensMachine";
 import {
   RESTOCK_ATTEMPTS_FLOWER,
   UNLIMITED_ATTEMPTS_FLOWER,

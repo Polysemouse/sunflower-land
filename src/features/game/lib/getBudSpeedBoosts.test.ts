@@ -1,4 +1,4 @@
-import { Bud } from "../types/buds";
+import type { Bud } from "../types/buds";
 import { getBudSpeedBoosts } from "./getBudSpeedBoosts";
 
 const NON_BOOSTED_TRAITS: Omit<Bud, "type"> = {
@@ -48,7 +48,6 @@ describe("getBudSpeedBoosts", () => {
       ),
     ).toEqual({ budUsed: "Bud #1", speedBoost: 0.895 });
   });
-  8;
 
   it("returns 0.88 if Saphiro type and Green Aura", () => {
     expect(

@@ -2,12 +2,12 @@ import React, { useRef, useState } from "react";
 import Decimal from "decimal.js-light";
 import { randomID } from "lib/utils/random";
 import { createContext } from "react";
-import { getKeys } from "../types/craftables";
-import { InventoryItemName } from "../types/game";
-import { BumpkinItem, ITEM_IDS } from "../types/bumpkin";
-import { Bud } from "../types/buds";
+import { getKeys } from "lib/object";
+import type { InventoryItemName } from "../types/game";
+import { type BumpkinItem, ITEM_IDS } from "../types/bumpkin";
+import type { Bud } from "../types/buds";
 import { KNOWN_IDS } from "../types";
-import { PetNFT } from "../types/pets";
+import type { PetNFT } from "../types/pets";
 
 /**
  * The type of the toast.

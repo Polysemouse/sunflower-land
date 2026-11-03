@@ -1,9 +1,12 @@
-import {
+import type {
   CollectionName,
   TradeableDetails,
 } from "features/game/types/marketplace";
 import { CONFIG } from "lib/config";
+import { secureFetch } from "lib/requestToken";
 import { ERRORS } from "lib/errors";
+import { apiError } from "lib/apiError";
+import { randomID } from "lib/utils/random";
 
 const API_URL = CONFIG.API_URL;
 
@@ -11,11 +14,13 @@ export async function loadTradeable({
   type,
   id,
   token,
+  economy,
   attempts = 0,
 }: {
   type: CollectionName;
   id: number;
   token: string;
+  economy?: string;
   attempts?: number;
 }): Promise<TradeableDetails> {
   if (!CONFIG.API_URL)
@@ -37,15 +42,20 @@ export async function loadTradeable({
           dates: {},
         },
       },
-    };
+    } as TradeableDetails;
 
   const url = new URL(`${API_URL}/collection/${type}/${id}`);
   url.searchParams.append("type", type);
+  if (economy) {
+    url.searchParams.set("economy", economy);
+  }
 
-  const response = await window.fetch(url.toString(), {
+  const transactionId = randomID();
+  const response = await secureFetch(url.toString(), {
     method: "GET",
     headers: {
       "content-type": "application/json;charset=UTF-8",
+      "X-Transaction-ID": transactionId,
       Authorization: `Bearer ${token}`,
     },
   });
@@ -53,14 +63,24 @@ export async function loadTradeable({
   if (response.status === 429) {
     if (attempts < 3) {
       await new Promise((resolve) => setTimeout(resolve, 5000));
-      return await loadTradeable({ type, id, token, attempts: attempts + 1 });
+      return await loadTradeable({
+        type,
+        id,
+        token,
+        economy,
+        attempts: attempts + 1,
+      });
     }
 
     throw new Error(ERRORS.TOO_MANY_REQUESTS);
   }
 
   if (response.status >= 400) {
-    throw new Error(ERRORS.FAILED_REQUEST);
+    throw await apiError(response, {
+      endpoint: `GET /collection/:type/:id`,
+      transactionId,
+      meta: { collection: type, itemId: id, economy, hasToken: !!token },
+    });
   }
 
   return await response.json();

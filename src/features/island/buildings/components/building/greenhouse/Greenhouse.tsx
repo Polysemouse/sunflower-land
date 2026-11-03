@@ -1,23 +1,43 @@
 import React, { useContext } from "react";
 
 import { PIXEL_SCALE } from "features/game/lib/constants";
-import { BuildingProps } from "../Building";
+import type { BuildingProps } from "../Building";
 import { Context } from "features/game/GameProvider";
 import { useSelector } from "@xstate/react";
 import { BuildingImageWrapper } from "../BuildingImageWrapper";
 import { useNavigate } from "react-router";
-import { MachineState } from "features/game/lib/gameMachine";
-import { getKeys } from "features/game/types/craftables";
-import { getReadyAt } from "features/game/events/landExpansion/harvestGreenHouse";
-import { GreenHouseCropName } from "features/game/types/crops";
-import { GreenHouseFruitName } from "features/game/types/fruits";
+import type { MachineState } from "features/game/lib/gameMachine";
+import { getKeys } from "lib/object";
+import { isGreenhouseReady } from "features/game/events/landExpansion/greenhouseReadiness";
+import { MAX_POTS } from "features/game/events/landExpansion/plantGreenhouse";
+import type { GreenHouseCropName } from "features/game/types/crops";
+import type { GreenHouseFruitName } from "features/game/types/fruits";
 import { ITEM_DETAILS } from "features/game/types/images";
 import { GREENHOUSE_VARIANTS } from "features/island/lib/alternateArt";
+import { SUNNYSIDE } from "assets/sunnyside";
+import { saveIslandScrollPosition } from "features/game/expansion/lib/islandScroll";
+import { useNow } from "lib/utils/hooks/useNow";
 
-const selectReadyPlants = (state: MachineState) => {
-  const pots = state.context.state.greenhouse.pots;
+const _gameState = (state: MachineState) => state.context.state;
 
-  return getKeys(pots).reduce(
+export const Greenhouse: React.FC<BuildingProps> = ({ isBuilt, season }) => {
+  const { gameService, showAnimations } = useContext(Context);
+
+  const gameState = useSelector(gameService, _gameState);
+
+  const { pots } = gameState.greenhouse;
+  const hasActivePlants = Object.values(pots).some((pot) => !!pot.plant);
+  // Pots are only recorded once planted, so count the empties by id.
+  const hasEmptyPot = Array.from(
+    { length: MAX_POTS },
+    (_, i) => !pots[i + 1]?.plant,
+  ).some(Boolean);
+
+  // Readiness is derived in-render (windowed plants become ready earlier than
+  // their stored plantedAt implies) off a live clock, so the ready indicators
+  // appear on time; the clock stops when nothing is growing.
+  const now = useNow({ live: hasActivePlants });
+  const readyPlants = getKeys(pots).reduce(
     (plants, id) => {
       const pot = pots[id];
 
@@ -25,11 +45,7 @@ const selectReadyPlants = (state: MachineState) => {
         return plants;
       }
 
-      const isReady =
-        Date.now() >
-        getReadyAt({ plant: pot.plant.name, createdAt: pot.plant.plantedAt });
-
-      if (!isReady) {
+      if (!isGreenhouseReady(now, pot, gameState)) {
         return plants;
       }
 
@@ -37,17 +53,12 @@ const selectReadyPlants = (state: MachineState) => {
     },
     [] as (GreenHouseCropName | GreenHouseFruitName)[],
   );
-};
-
-export const Greenhouse: React.FC<BuildingProps> = ({ isBuilt, season }) => {
-  const { gameService, showAnimations } = useContext(Context);
-
-  const readyPlants = useSelector(gameService, selectReadyPlants);
 
   const navigate = useNavigate();
 
   const handleClick = () => {
     if (isBuilt) {
+      saveIslandScrollPosition();
       navigate("/greenhouse");
 
       // Add future on click actions here
@@ -57,7 +68,24 @@ export const Greenhouse: React.FC<BuildingProps> = ({ isBuilt, season }) => {
 
   return (
     <div className="absolute h-full w-full">
-      <BuildingImageWrapper name="Greenhouse" onClick={handleClick}>
+      <BuildingImageWrapper
+        name="Greenhouse"
+        onClick={handleClick}
+        // An empty pot shows the ! the other buildings use: come plant one.
+        // Ready plants show as their own images below it.
+        ready={isBuilt && hasEmptyPot}
+      >
+        {hasActivePlants && (
+          <img
+            src={SUNNYSIDE.building.smoke}
+            className="absolute pointer-events-none"
+            style={{
+              width: `${PIXEL_SCALE * 20}px`,
+              left: `calc(${PIXEL_SCALE * 26}px - 50px)`,
+              bottom: `calc(${PIXEL_SCALE * 46}px + 30px)`,
+            }}
+          />
+        )}
         <img
           src={GREENHOUSE_VARIANTS[season]}
           className="absolute pointer-events-none"

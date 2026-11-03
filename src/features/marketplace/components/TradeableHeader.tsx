@@ -3,8 +3,7 @@ import { Button } from "components/ui/Button";
 import { Label } from "components/ui/Label";
 import { Modal } from "components/ui/Modal";
 import { Panel, InnerPanel } from "components/ui/Panel";
-import {
-  CollectionName,
+import type {
   TradeableDetails,
   Tradeable,
 } from "features/game/types/marketplace";
@@ -15,9 +14,10 @@ import { GameWallet } from "features/wallet/Wallet";
 import { Context } from "features/game/GameProvider";
 import confetti from "canvas-confetti";
 import {
-  BlockchainEvent,
-  Context as ContextType,
-  MachineState,
+  type BlockchainEvent,
+  type Context as ContextType,
+  type MachineState,
+  selectGameState,
 } from "features/game/lib/gameMachine";
 import { useOnMachineTransition } from "lib/utils/hooks/useOnMachineTransition";
 import { PurchaseModalContent } from "./PurchaseModalContent";
@@ -29,16 +29,19 @@ import { isTradeResource } from "features/game/actions/tradeLimits";
 import classNames from "classnames";
 import { ITEM_DETAILS } from "features/game/types/images";
 import Decimal from "decimal.js-light";
-import { getRemainingTrades, Reputation } from "features/game/lib/reputation";
-import { hasReputation } from "features/game/lib/reputation";
-import { hasVipAccess } from "features/game/lib/vipAccess";
-import { TradeableDisplay } from "../lib/tradeables";
+import {
+  getRemainingTrades,
+  hasReputation,
+  Reputation,
+} from "features/game/lib/reputation";
+import { useVipAccess } from "lib/utils/hooks/useVipAccess";
+import type { TradeableDisplay } from "../lib/tradeables";
+import { useNow } from "lib/utils/hooks/useNow";
 
 type TradeableHeaderProps = {
   authToken: string;
   farmId: number;
   limitedTradesLeft: number;
-  collection: CollectionName;
   tradeable?: TradeableDetails;
   count: number;
   pricePerUnit?: number;
@@ -47,14 +50,11 @@ type TradeableHeaderProps = {
   reload: () => void;
   limitedPurchasesLeft: number;
   display: TradeableDisplay;
+  /** When true, buying & listing are blocked (e.g. Crystal Leaf without event access). */
+  disabled?: boolean;
 };
 
 const _balance = (state: MachineState) => state.context.state.balance;
-const _hasTradeReputation = (state: MachineState) =>
-  hasReputation({
-    game: state.context.state,
-    reputation: Reputation.Cropkeeper,
-  });
 
 export const TradeableHeader: React.FC<TradeableHeaderProps> = ({
   authToken,
@@ -66,10 +66,17 @@ export const TradeableHeader: React.FC<TradeableHeaderProps> = ({
   onListClick,
   reload,
   display,
+  disabled,
 }) => {
   const { gameService } = useContext(Context);
   const balance = useSelector(gameService, _balance);
-  const hasTradeReputation = useSelector(gameService, _hasTradeReputation);
+  const game = useSelector(gameService, selectGameState);
+  const now = useNow();
+  const hasTradeReputation = hasReputation({
+    game,
+    reputation: Reputation.Cropkeeper,
+    now,
+  });
   const params = useParams();
   const [showPurchaseModal, setShowPurchaseModal] = useState(false);
 
@@ -115,11 +122,14 @@ export const TradeableHeader: React.FC<TradeableHeaderProps> = ({
     isTradeResource(KNOWN_ITEMS[Number(params.id)]) &&
     params.collection === "collectibles";
 
-  const vipIsRequired =
-    tradeable?.isVip &&
-    !hasVipAccess({
-      game: gameService.getSnapshot().context.state,
-    });
+  const hasVipAccess = useVipAccess({
+    game: gameService.getSnapshot().context.state,
+    type: "full",
+  });
+
+  const vipIsRequired = tradeable?.isVip && !hasVipAccess;
+
+  const isTutorialItem = tradeable?.id === 2129;
 
   const showBuyNow =
     !isResources &&
@@ -127,7 +137,9 @@ export const TradeableHeader: React.FC<TradeableHeaderProps> = ({
     tradeable?.isActive &&
     !vipIsRequired &&
     // Don't show buy now if the listing is mine
-    cheapestListing.listedById !== farmId;
+    cheapestListing.listedById !== farmId &&
+    // Don't show buy if they have already bought the tutorial item
+    (!isTutorialItem || count === 0);
   // const showFreeListing = !isVIP && dailyListings === 0;
 
   const usd = gameService.getSnapshot().context.prices.sfl?.usd ?? 0.0;
@@ -138,6 +150,12 @@ export const TradeableHeader: React.FC<TradeableHeaderProps> = ({
 
   const availableCount = count - totalListed;
 
+  const canBuy =
+    cheapestListing &&
+    balance.gte(cheapestListing.sfl) &&
+    limitedPurchasesLeft > 0;
+
+  const isTutorialBuy = canBuy && isTutorialItem && count === 0;
   return (
     <>
       {cheapestListing && (
@@ -257,24 +275,25 @@ export const TradeableHeader: React.FC<TradeableHeaderProps> = ({
                 {showBuyNow && (
                   <Button
                     onClick={() => setShowPurchaseModal(true)}
-                    disabled={
-                      !balance.gt(cheapestListing.sfl) ||
-                      limitedPurchasesLeft <= 0
-                    }
-                    className="mr-1 w-full sm:w-auto"
+                    disabled={!canBuy || disabled}
+                    className={classNames("mr-1 w-full sm:w-auto", {
+                      "animate-pulsate": isTutorialBuy,
+                    })}
                   >
                     {t("marketplace.buyNow")}
                   </Button>
                 )}
-                {tradeable?.isActive && !vipIsRequired && (
+                {tradeable?.isActive && !vipIsRequired && !isTutorialItem && (
                   <Button
                     disabled={
+                      disabled ||
                       !availableCount ||
                       // Already has one listed?
 
                       (!hasTradeReputation &&
                         getRemainingTrades({
                           game: gameService.getSnapshot().context.state,
+                          now,
                         }) <= 0) ||
                       limitedTradesLeft <= 0
                     }
@@ -297,22 +316,24 @@ export const TradeableHeader: React.FC<TradeableHeaderProps> = ({
             {showBuyNow && (
               <Button
                 onClick={() => setShowPurchaseModal(true)}
-                disabled={
-                  !balance.gt(cheapestListing.sfl) || limitedPurchasesLeft <= 0
-                }
-                className="mr-1 w-full sm:w-auto"
+                disabled={!canBuy || disabled}
+                className={classNames("mr-1 w-full sm:w-auto", {
+                  "animate-pulsate": isTutorialBuy,
+                })}
               >
                 {t("marketplace.buyNow")}
               </Button>
             )}
-            {tradeable?.isActive && !vipIsRequired && (
+            {tradeable?.isActive && !vipIsRequired && !isTutorialItem && (
               <Button
                 onClick={onListClick}
                 disabled={
+                  disabled ||
                   !availableCount ||
                   (!hasTradeReputation &&
                     getRemainingTrades({
                       game: gameService.getSnapshot().context.state,
+                      now,
                     }) <= 0) ||
                   limitedTradesLeft <= 0
                 }

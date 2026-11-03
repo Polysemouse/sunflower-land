@@ -1,8 +1,9 @@
 import { makeGame } from "features/game/lib/transforms";
-import { GameState } from "features/game/types/game";
+import type { GameState } from "features/game/types/game";
 import { CONFIG } from "lib/config";
+import { fetchWithRetry } from "lib/fetchWithRetry";
 import { ERRORS } from "lib/errors";
-import { Font } from "lib/utils/fonts";
+import type { Font } from "lib/utils/fonts";
 
 type Request = {
   portalId: string;
@@ -40,7 +41,7 @@ export const getFont = (): Font => {
 
 export async function loadPortal(request: Request) {
   // Uses same autosave event driven endpoint
-  const response = await window.fetch(
+  const response = await fetchWithRetry(
     `${getUrl()}/portal/${request.portalId}/player`,
     {
       method: "GET",
@@ -52,7 +53,7 @@ export async function loadPortal(request: Request) {
   );
 
   if (response.status >= 400) {
-    throw new Error(ERRORS.PORTAL_LOGIN_ERROR);
+    throw new Error(ERRORS.PORTAL_LOAD_ERROR);
   }
 
   const data: { farm: GameState } = await response.json();

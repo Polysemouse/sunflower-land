@@ -1,13 +1,19 @@
-import { GameState } from "features/game/types/game";
+import type { GameState } from "features/game/types/game";
 import { produce } from "immer";
 import Decimal from "decimal.js-light";
-import { getInstantGems, makeGemHistory } from "./speedUpRecipe";
-import { BuildingName } from "features/game/types/buildings";
+import {
+  chargeCoinsForSpeedUp,
+  getInstantGems,
+  makeGemHistory,
+  type SpeedUpPaymentMethod,
+} from "features/game/lib/getInstantGems";
+import type { BuildingName } from "features/game/types/buildings";
 
 export type SpeedUpBuilding = {
   type: "building.spedUp";
   name: BuildingName;
   id: string;
+  paymentMethod?: SpeedUpPaymentMethod;
 };
 
 type Options = {
@@ -40,15 +46,21 @@ export function speedUpBuilding({
       game,
     });
 
-    if (!game.inventory["Gem"]?.gte(gems)) {
-      throw new Error("Insufficient Gems");
+    if (action.paymentMethod === "coins") {
+      game = chargeCoinsForSpeedUp({ game, gems, createdAt });
+    } else {
+      if (!game.inventory["Gem"]?.gte(gems)) {
+        throw new Error("Insufficient Gems");
+      }
+
+      game.inventory["Gem"] = (game.inventory["Gem"] ?? new Decimal(0)).sub(
+        gems,
+      );
+
+      game = makeGemHistory({ game, amount: gems, createdAt });
     }
 
-    game.inventory["Gem"] = (game.inventory["Gem"] ?? new Decimal(0)).sub(gems);
-
     building.readyAt = createdAt;
-
-    game = makeGemHistory({ game, amount: gems });
 
     return game;
   });

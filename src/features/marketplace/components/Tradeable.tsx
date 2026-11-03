@@ -1,12 +1,17 @@
 import {
-  CollectionName,
+  type CollectionName,
   getMarketPrice,
-  MarketplaceTradeableName,
+  type MarketplaceTradeableName,
 } from "features/game/types/marketplace";
 import React, { useContext, useState } from "react";
 import * as Auth from "features/auth/lib/Provider";
 import { useActor, useSelector } from "@xstate/react";
-import { useLocation, useNavigate, useParams } from "react-router";
+import {
+  useLocation,
+  useNavigate,
+  useParams,
+  useSearchParams,
+} from "react-router";
 import { loadTradeable } from "../actions/loadTradeable";
 import { getTradeableDisplay } from "../lib/tradeables";
 import { isMobile } from "mobile-device-detect";
@@ -14,25 +19,31 @@ import { isMobile } from "mobile-device-detect";
 import { SaleHistory } from "./PriceHistory";
 import { TradeableOffers } from "./TradeableOffers";
 import { Context } from "features/game/GameProvider";
-import { KNOWN_ITEMS } from "features/game/types";
-import { getBasketItems } from "features/island/hud/components/inventory/utils/inventory";
-import { ITEM_NAMES } from "features/game/types/bumpkin";
 import { TradeableHeader } from "./TradeableHeader";
 import { TradeableInfo, TradeableMobileInfo } from "./TradeableInfo";
 import { MyListings } from "./profile/MyListings";
 import { MyOffers } from "./profile/MyOffers";
 import { TradeableListings } from "./TradeableListings";
 import { InnerPanel } from "components/ui/Panel";
+import { Label } from "components/ui/Label";
 import { SUNNYSIDE } from "assets/sunnyside";
+import {
+  CHAPTER_CROP_WEEK_CROP,
+  hasChapterCropWeekAccess,
+  isRetiredChapterCropWeekItem,
+} from "features/game/types/chapterCropWeek";
 import { TradeableStats } from "./TradeableStats";
-import { getKeys } from "features/game/types/decorations";
+import { getKeys } from "lib/object";
 import { tradeToId } from "../lib/offers";
-import { COLLECTIBLES_DIMENSIONS } from "features/game/types/craftables";
 import useSWR from "swr";
 import { getWeekKey } from "features/game/lib/factions";
-import { MachineState } from "features/game/lib/gameMachine";
+import type { MachineState } from "features/game/lib/gameMachine";
+import { useAppTranslation } from "lib/i18n/useAppTranslations";
+import { useMarketplaceFavorites } from "../lib/marketplaceFavorites";
 
 const _trades = (state: MachineState) => state.context.state.trades;
+const _farmId = (state: MachineState) => state.context.farmId;
+const _state = (state: MachineState) => state.context.state;
 export const MAX_LIMITED_SALES = 1;
 export const getMaxPurchases = (
   item: MarketplaceTradeableName,
@@ -42,71 +53,99 @@ export const getMaxPurchases = (
 export const Tradeable: React.FC<{ hideLimited?: boolean }> = ({
   hideLimited,
 }) => {
+  const { t } = useAppTranslation();
   const { authService } = useContext(Auth.Context);
   const [authState] = useActor(authService);
   const { gameService } = useContext(Context);
-  const [gameState] = useActor(gameService);
   const location = useLocation();
 
-  const farmId = gameState.context.farmId;
+  const farmId = useSelector(gameService, _farmId);
+  const { isFavorite, toggleFavorite } = useMarketplaceFavorites(farmId);
   const authToken = authState.context.user.rawToken as string;
-  const inventory = gameState.context.state.inventory;
+  const state = useSelector(gameService, _state);
+  const trades = useSelector(gameService, _trades);
 
-  const { collection, id } = useParams<{
-    collection: CollectionName;
-    id: string;
+  const params = useParams<{
+    collection?: CollectionName;
+    id?: string;
+    economy?: string;
   }>();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+
+  const collection: CollectionName | undefined =
+    params.economy != null && params.id != null && params.collection == null
+      ? "economies"
+      : params.collection;
+
+  const id = params.id;
+
+  const economy =
+    params.economy ??
+    (collection === "economies"
+      ? (searchParams.get("economy") ?? undefined)
+      : undefined);
 
   const [showListItem, setShowListItem] = useState(false);
-
-  const display = getTradeableDisplay({
-    id: Number(id),
-    type: collection as CollectionName,
-    state: gameState.context.state,
-  });
-
-  let count = 0;
-
-  const game = gameState.context.state;
-  if (display.type === "collectibles") {
-    const name = KNOWN_ITEMS[Number(id)];
-
-    if (name in COLLECTIBLES_DIMENSIONS) {
-      count = game.inventory[name]?.toNumber() ?? 0;
-    } else {
-      count = getBasketItems(inventory)[name]?.toNumber() ?? 0;
-    }
-  }
-
-  if (display.type === "wearables") {
-    const name = ITEM_NAMES[Number(id)];
-    count = game.wardrobe[name] ?? 0;
-  }
-
-  if (display.type === "buds") {
-    count = game.buds?.[Number(id)] ? 1 : 0;
-  }
-
-  if (display.type === "pets") {
-    count = game.pets?.nfts?.[Number(id)] ? 1 : 0;
-  }
 
   const {
     data: tradeable,
     error,
     mutate: reload,
   } = useSWR(
-    [collection, id, authState.context.user.rawToken as string],
-    ([collection, id, token]) =>
-      loadTradeable({
-        type: collection as CollectionName,
-        id: Number(id),
+    collection === "economies"
+      ? economy
+        ? [collection, id, authState.context.user.rawToken as string, economy]
+        : null
+      : [collection, id, authState.context.user.rawToken as string],
+    (
+      key:
+        | readonly [CollectionName, string, string]
+        | readonly [CollectionName, string, string, string],
+    ) => {
+      if (key.length === 4) {
+        const [col, itemId, token, economySlug] = key;
+        return loadTradeable({
+          type: col,
+          id: Number(itemId),
+          token,
+          economy: economySlug,
+        });
+      }
+      const [col, itemId, token] = key;
+      return loadTradeable({
+        type: col,
+        id: Number(itemId),
         token,
-      }),
+      });
+    },
   );
 
-  const trades = useSelector(gameService, _trades);
+  if (!collection || !id) {
+    return (
+      <InnerPanel className="m-2 p-4">
+        <p className="text-sm">{t("marketplace.tradeable.invalidLink")}</p>
+      </InnerPanel>
+    );
+  }
+
+  const display = getTradeableDisplay({
+    id: Number(id),
+    type: collection as CollectionName,
+    state,
+    tradeableDetails: tradeable ?? undefined,
+  });
+
+  if (collection === "economies" && !economy) {
+    return (
+      <InnerPanel className="m-2 p-4">
+        <p className="text-sm">{t("marketplace.minigames.missingSlug")}</p>
+      </InnerPanel>
+    );
+  }
+
+  const count = tradeable?.balance ?? 0;
+
   const currentWeek = getWeekKey({ date: new Date() });
   // Weekly sales count
   const weeklySalesCount =
@@ -144,25 +183,105 @@ export const Tradeable: React.FC<{ hideLimited?: boolean }> = ({
   }
 
   const onBack = () => {
-    const { route, scrollPosition } = location.state ?? {};
+    const { route, scrollPosition, ...navigationState } = location.state ?? {};
 
     if (route) {
-      navigate(route, { state: { scrollPosition } });
+      navigate(route, { state: { ...navigationState, scrollPosition } });
     } else {
       navigate(-1);
     }
   };
 
-  const hasListings = getKeys(trades.listings ?? {}).some(
-    (listing) =>
-      tradeToId({ details: trades.listings![listing] }) === Number(id),
-  );
+  const hasListings = getKeys(trades.listings ?? {}).some((listingId) => {
+    const listing = trades.listings![listingId];
+    const listingItemId = tradeToId({ details: listing });
+    const lc = listing.collection as string;
+    if (collection === "economies") {
+      return (
+        lc === "economies" &&
+        listing.economy === economy &&
+        listingItemId === Number(id)
+      );
+    }
+    return listing.collection === collection && listingItemId === Number(id);
+  });
 
-  const hasOffers = getKeys(trades.offers ?? {}).some(
-    (offer) => tradeToId({ details: trades.offers![offer] }) === Number(id),
-  );
+  const hasOffers = getKeys(trades.offers ?? {}).some((offerId) => {
+    const offer = trades.offers![offerId];
+    const offerItemId = tradeToId({ details: offer });
+    const oc = offer.collection as string;
+    if (collection === "economies") {
+      return (
+        oc === "economies" &&
+        offer.economy === economy &&
+        offerItemId === Number(id)
+      );
+    }
+    return offer.collection === collection && offerItemId === Number(id);
+  });
 
   const marketPrice = getMarketPrice({ tradeable });
+
+  const isStoneBeetle = collection === "collectibles" && Number(id) === 2129;
+
+  // Chapter Crop Week crop (Crystal Leaf) trading is only available while the event
+  // is active (admin testers get early access). Everyone else sees a "Coming
+  // Soon" page instead of the details.
+  const isChapterCropWeekLocked =
+    display.name === CHAPTER_CROP_WEEK_CROP && !hasChapterCropWeekAccess(state);
+
+  // Crops from previous Chapter Crop Week runs are never tradeable again.
+  const isRetiredChapterCropWeekCrop = isRetiredChapterCropWeekItem(
+    display.name,
+  );
+
+  if (isChapterCropWeekLocked || isRetiredChapterCropWeekCrop) {
+    return (
+      <div className="flex flex-col w-full sm:w-1/3 mr-1 mb-1">
+        <InnerPanel
+          className="mb-1 z-10 sticky top-0 cursor-pointer"
+          onClick={onBack}
+        >
+          <div className="flex items-center w-fit">
+            <img src={SUNNYSIDE.icons.arrow_left} className="h-6 mr-2 mt-1" />
+            <p className="capitalize underline">
+              {display.translatedName ?? display.name}
+            </p>
+          </div>
+        </InnerPanel>
+        <InnerPanel className="p-4 flex flex-col items-center justify-center gap-2">
+          {isRetiredChapterCropWeekCrop ? (
+            <>
+              <Label type="danger" icon={SUNNYSIDE.icons.cancel}>
+                {t("chapterCropWeek.retired")}
+              </Label>
+              <p className="text-xs text-center">
+                {t("chapterCropWeek.retiredDescription")}
+              </p>
+            </>
+          ) : (
+            <>
+              <Label type="vibrant" icon={SUNNYSIDE.icons.stopwatch}>
+                {t("coming.soon")}
+              </Label>
+              <p className="text-xs text-center">
+                {t("chapterCropWeek.comingSoon")}
+              </p>
+            </>
+          )}
+        </InnerPanel>
+      </div>
+    );
+  }
+
+  const favoriteItem =
+    collection === "economies"
+      ? undefined
+      : {
+          collection: collection as CollectionName,
+          id: Number(id),
+        };
+  const isFavorited = favoriteItem ? isFavorite(favoriteItem) : false;
 
   return (
     <div className="flex sm:flex-row flex-col w-full scrollable overflow-y-auto h-[calc(100vh-112px)] pr-1 pb-8">
@@ -185,12 +304,20 @@ export const Tradeable: React.FC<{ hideLimited?: boolean }> = ({
             hideLimited={hideLimited}
             display={display}
             tradeable={tradeable}
+            isFavorite={isFavorited}
+            onToggleFavorite={
+              favoriteItem ? () => toggleFavorite(favoriteItem) : undefined
+            }
           />
         ) : (
           <TradeableInfo
             display={display}
             tradeable={tradeable}
             hideLimited={hideLimited}
+            isFavorite={isFavorited}
+            onToggleFavorite={
+              favoriteItem ? () => toggleFavorite(favoriteItem) : undefined
+            }
           />
         )}
       </div>
@@ -200,13 +327,13 @@ export const Tradeable: React.FC<{ hideLimited?: boolean }> = ({
           farmId={farmId}
           limitedTradesLeft={limitedTradesLeft}
           limitedPurchasesLeft={limitedPurchasesLeft}
-          collection={collection as CollectionName}
           count={count}
           tradeable={tradeable}
           display={display}
           onBack={onBack}
           reload={reload}
           onListClick={() => setShowListItem(true)}
+          disabled={isChapterCropWeekLocked}
         />
 
         {!isMobile && (
@@ -235,18 +362,22 @@ export const Tradeable: React.FC<{ hideLimited?: boolean }> = ({
             setShowListItem(false);
           }}
           reload={reload}
+          disabled={isChapterCropWeekLocked}
         />
 
-        <TradeableOffers
-          hideLimited={hideLimited}
-          itemId={Number(id)}
-          limitedTradesLeft={limitedTradesLeft}
-          limitedPurchasesLeft={limitedPurchasesLeft}
-          tradeable={tradeable}
-          display={display}
-          farmId={farmId}
-          reload={reload}
-        />
+        {!isStoneBeetle && (
+          <TradeableOffers
+            hideLimited={hideLimited}
+            itemId={Number(id)}
+            limitedTradesLeft={limitedTradesLeft}
+            limitedPurchasesLeft={limitedPurchasesLeft}
+            tradeable={tradeable}
+            display={display}
+            farmId={farmId}
+            reload={reload}
+            disabled={isChapterCropWeekLocked}
+          />
+        )}
 
         <SaleHistory history={tradeable?.history} />
       </div>

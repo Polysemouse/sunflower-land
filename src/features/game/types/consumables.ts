@@ -1,12 +1,16 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import Decimal from "decimal.js-light";
-import { BuildingName } from "./buildings";
-import { Cake } from "./craftables";
-import { BuildingProduct, Inventory } from "./game";
-import { FishName } from "./fishing";
+import type { BuildingName } from "./buildings";
+import type { Cake } from "./craftables";
+import type { BuildingProduct, Inventory, InventoryItemName } from "./game";
+import type { AgedFishName, FishName, PrimeAgedFishName } from "./fishing";
+// Imported from the leaf, not `./agingFormulas`, to avoid the import cycle
+// agingFormulas -> bumpkinSkills -> images -> achievements -> consumables.
+import { getAgingMaxXP, PRIME_AGED_XP_MULTIPLIER } from "./agingBase";
 import { translate } from "lib/i18n/translate";
-import { FactionShopFoodName } from "./factionShop";
-import { TradeFood } from "../events/landExpansion/redeemTradeReward";
+import type { FactionShopFoodName } from "./factionShop";
+import type { TradeFood } from "../events/landExpansion/redeemTradeReward";
+import { getObjectEntries } from "lib/object";
 
 export const assertCookableName = (
   name: BuildingProduct["name"],
@@ -36,7 +40,10 @@ type FirePitCookableName =
   | "Fried Tofu"
   | "Pizza Margherita"
   | "Rhubarb Tart"
-  | "Furikake Sprinkle";
+  | "Furikake Sprinkle"
+  | "Saltbite"
+  | "Crystal Cookie"
+  | "Ember-Roasted Truffle Potatoes";
 
 type KitchenCookableName =
   | "Surimi Rice Bowl"
@@ -66,7 +73,8 @@ type KitchenCookableName =
   | "Fish n Chips"
   | "Sushi Roll"
   | "Caprese Salad"
-  | "Spaghetti al Limone";
+  | "Spaghetti al Limone"
+  | "Creamy Truffle Risotto";
 
 type BakeryCookableName =
   | CakeName
@@ -116,7 +124,8 @@ type CakeName =
   | "Orange Cake"
   | "Eggplant Cake"
   | "Honey Cake"
-  | "Lemon Cheesecake";
+  | "Lemon Cheesecake"
+  | "Truffle Cake";
 
 export type InstantProcessedRecipeName =
   | "Furikake Sprinkle"
@@ -142,6 +151,8 @@ export type ConsumableName =
   | CookableName
   | "Pirate Cake"
   | FishName
+  | AgedFishName
+  | PrimeAgedFishName
   | FactionShopFoodName
   | TradeFood
   | InstantProcessedRecipeName;
@@ -301,6 +312,27 @@ export const FIRE_PIT_COOKABLES: Record<FirePitCookableName, Cookable> = {
       Pumpkin: new Decimal(40),
     },
   },
+  // Chapter Crop Week (limited-time event recipes)
+  Saltbite: {
+    name: "Saltbite",
+    description: translate("description.saltbite"),
+    experience: 3000,
+    building: "Fire Pit",
+    cookingSeconds: 4 * 60 * 60,
+    ingredients: {
+      Saltwort: new Decimal(10),
+    },
+  },
+  "Crystal Cookie": {
+    name: "Crystal Cookie",
+    description: translate("description.crystalCookie"),
+    experience: 6000,
+    building: "Fire Pit",
+    cookingSeconds: 4 * 60 * 60,
+    ingredients: {
+      "Crystal Leaf": new Decimal(10),
+    },
+  },
   "Fried Tofu": {
     name: "Fried Tofu",
     description: translate("description.friedTofu"),
@@ -354,6 +386,19 @@ export const FIRE_PIT_COOKABLES: Record<FirePitCookableName, Cookable> = {
     cookingSeconds: 60,
     ingredients: {
       Rhubarb: new Decimal(3),
+    },
+  },
+  "Ember-Roasted Truffle Potatoes": {
+    name: "Ember-Roasted Truffle Potatoes",
+    description: translate("description.emberRoastedTrufflePotatoes"),
+    building: "Fire Pit",
+    // Beta uptake rebalance (2026-10-30): the Truffle ladder reads 1,000 /
+    // 2,000 / 4,000 XP per Truffle (Potatoes / Cake / Risotto).
+    experience: 1000,
+    cookingSeconds: 1 * 60 * 60,
+    ingredients: {
+      Truffle: new Decimal(1),
+      Potato: new Decimal(30),
     },
   },
 };
@@ -682,6 +727,19 @@ export const KITCHEN_COOKABLES: Record<KitchenCookableName, Cookable> = {
       Cheese: new Decimal(3),
     },
   },
+  "Creamy Truffle Risotto": {
+    name: "Creamy Truffle Risotto",
+    description: translate("description.creamyTruffleRisotto"),
+    building: "Kitchen",
+    // 4,000 XP per Truffle: the premium rung of the Truffle ladder.
+    experience: 32000,
+    cookingSeconds: 48 * 60 * 60,
+    ingredients: {
+      Truffle: new Decimal(8),
+      Rice: new Decimal(3),
+      "Wild Mushroom": new Decimal(5),
+    },
+  },
 };
 
 export const BAKERY_COOKABLES: Record<BakeryCookableName, Cookable> = {
@@ -886,6 +944,21 @@ export const BAKERY_COOKABLES: Record<BakeryCookableName, Cookable> = {
       Lemon: new Decimal(20),
       Cheese: new Decimal(5),
       Egg: new Decimal(40),
+    },
+  },
+  "Truffle Cake": {
+    name: "Truffle Cake",
+    description: translate("description.truffleCake"),
+    building: "Bakery",
+    // 2,000 XP per Truffle: the volume sink (15 a bake). Matches the
+    // Lemon Cheesecake ceiling rather than passing it.
+    experience: 30000,
+    cookingSeconds: 26 * 60 * 60,
+    ingredients: {
+      Truffle: new Decimal(15),
+      Wheat: new Decimal(30),
+      Egg: new Decimal(30),
+      Honey: new Decimal(5),
     },
   },
 };
@@ -1168,6 +1241,7 @@ export const COOKABLE_CAKES: Record<CakeName, Cookable> = {
   "Orange Cake": BAKERY_COOKABLES["Orange Cake"],
   "Honey Cake": BAKERY_COOKABLES["Honey Cake"],
   "Lemon Cheesecake": BAKERY_COOKABLES["Lemon Cheesecake"],
+  "Truffle Cake": BAKERY_COOKABLES["Truffle Cake"],
 };
 
 export const PIRATE_CAKE: Record<"Pirate Cake", Consumable> = {
@@ -1182,191 +1256,191 @@ export const FISH: Record<FishName, Consumable> = {
   Anchovy: {
     name: "Anchovy",
     description: translate("description.anchovy.two"),
-    experience: 60,
+    experience: 80,
   },
   Butterflyfish: {
     name: "Butterflyfish",
     description: translate("description.butterflyfish.two"),
-    experience: 70,
+    experience: 110,
   },
   Blowfish: {
     name: "Blowfish",
     description: translate("description.blowfish.two"),
-    experience: 80,
+    experience: 170,
   },
   Clownfish: {
     name: "Clownfish",
     description: translate("description.clownfish.two"),
-    experience: 90,
+    experience: 210,
   },
   "Sea Bass": {
     name: "Sea Bass",
     description: translate("description.seabass.two"),
-    experience: 100,
+    experience: 140,
   },
   "Sea Horse": {
     name: "Sea Horse",
     description: translate("description.seahorse.two"),
-    experience: 110,
+    experience: 240,
   },
   "Horse Mackerel": {
     name: "Horse Mackerel",
     description: translate("description.horsemackerel.two"),
-    experience: 120,
+    experience: 250,
   },
   Squid: {
     name: "Squid",
     description: translate("description.squid.two"),
-    experience: 130,
+    experience: 250,
   },
   "Red Snapper": {
     name: "Red Snapper",
     description: translate("description.redsnapper.two"),
-    experience: 140,
+    experience: 100,
   },
   "Moray Eel": {
     name: "Moray Eel",
     description: translate("description.morayeel.two"),
-    experience: 150,
+    experience: 220,
   },
   "Olive Flounder": {
     name: "Olive Flounder",
     description: translate("description.oliveflounder.two"),
-    experience: 160,
+    experience: 180,
   },
   Napoleanfish: {
     name: "Napoleanfish",
     description: translate("description.napoleanfish.two"),
-    experience: 170,
+    experience: 180,
   },
   Surgeonfish: {
     name: "Surgeonfish",
     description: translate("description.surgeonfish.two"),
-    experience: 180,
+    experience: 210,
   },
   "Zebra Turkeyfish": {
     name: "Zebra Turkeyfish",
     description: translate("description.zebraturkeyfish.two"),
-    experience: 190,
+    experience: 220,
   },
   Ray: {
     name: "Ray",
     description: translate("description.ray.two"),
-    experience: 200,
+    experience: 430,
   },
   "Hammerhead shark": {
     name: "Hammerhead shark",
     description: translate("description.hammerheadshark.two"),
-    experience: 210,
+    experience: 750,
   },
   "Barred Knifejaw": {
     name: "Barred Knifejaw",
     description: translate("description.barredknifejaw.two"),
-    experience: 220,
+    experience: 580,
   },
   Tuna: {
     name: "Tuna",
     description: translate("description.tuna.two"),
-    experience: 230,
+    experience: 200,
   },
   "Mahi Mahi": {
     name: "Mahi Mahi",
     description: translate("description.mahimahi.two"),
-    experience: 240,
+    experience: 200,
   },
   "Blue Marlin": {
     name: "Blue Marlin",
     description: translate("description.bluemarlin.two"),
-    experience: 250,
+    experience: 200,
   },
   Oarfish: {
     name: "Oarfish",
     description: translate("description.oarfish.two"),
-    experience: 300,
+    experience: 220,
   },
   "Football fish": {
     name: "Football fish",
     description: translate("description.footballfish.two"),
-    experience: 350,
+    experience: 200,
   },
   Sunfish: {
     name: "Sunfish",
     description: translate("description.sunfish.two"),
-    experience: 400,
+    experience: 200,
   },
   Coelacanth: {
     name: "Coelacanth",
     description: translate("description.coelacanth.two"),
-    experience: 700,
+    experience: 410,
   },
   "Whale Shark": {
     name: "Whale Shark",
     description: translate("description.whaleshark.two"),
-    experience: 750,
+    experience: 1370,
   },
   "Saw Shark": {
     name: "Saw Shark",
     description: translate("description.sawshark.two"),
-    experience: 800,
+    experience: 1920,
   },
   "White Shark": {
     name: "White Shark",
     description: translate("description.whiteshark.two"),
-    experience: 1000,
+    experience: 2000,
   },
   Angelfish: {
     description: "?",
-    experience: 100,
+    experience: 250,
     name: "Angelfish",
   },
   Halibut: {
     description: "?",
-    experience: 100,
+    experience: 220,
     name: "Halibut",
   },
   Parrotfish: {
     description: "?",
-    experience: 100,
+    experience: 440,
     name: "Parrotfish",
   },
   Porgy: {
     description: "?",
-    experience: 100,
+    experience: 250,
     name: "Porgy",
   },
   Muskellunge: {
     description: "?",
-    experience: 100,
+    experience: 250,
     name: "Muskellunge",
   },
   Trout: {
     description: "?",
-    experience: 100,
+    experience: 330,
     name: "Trout",
   },
   Walleye: {
     description: "?",
-    experience: 100,
+    experience: 210,
     name: "Walleye",
   },
   Weakfish: {
     description: "?",
-    experience: 100,
+    experience: 210,
     name: "Weakfish",
   },
   "Rock Blackfish": {
     description: "?",
-    experience: 100,
+    experience: 320,
     name: "Rock Blackfish",
   },
   Cobia: {
     description: "?",
-    experience: 100,
+    experience: 310,
     name: "Cobia",
   },
   Tilapia: {
     description: "?",
-    experience: 100,
+    experience: 190,
     name: "Tilapia",
   },
 };
@@ -1396,21 +1470,73 @@ export const TRADE_FOOD: Record<TradeFood, Consumable> = {
   },
 };
 
+export const AGED_FISH: Record<AgedFishName, Consumable> = getObjectEntries(
+  FISH,
+).reduce<Record<AgedFishName, Consumable>>(
+  (acc, [name, fish]) => {
+    const agedFishName: AgedFishName = `Aged ${name}`;
+
+    acc[agedFishName] = {
+      name: agedFishName,
+      description: agedFishName,
+      experience: getAgingMaxXP(fish.experience),
+    };
+
+    return acc;
+  },
+  {} as Record<AgedFishName, Consumable>,
+);
+
+export const PRIME_AGED_FISH: Record<PrimeAgedFishName, Consumable> =
+  getObjectEntries(FISH).reduce<Record<PrimeAgedFishName, Consumable>>(
+    (acc, [name, fish]) => {
+      const primeAgedFishName: PrimeAgedFishName = `Prime Aged ${name}`;
+      acc[primeAgedFishName] = {
+        name: primeAgedFishName,
+        description: primeAgedFishName,
+        experience: Math.floor(
+          getAgingMaxXP(fish.experience) * PRIME_AGED_XP_MULTIPLIER,
+        ),
+      };
+
+      return acc;
+    },
+    {} as Record<PrimeAgedFishName, Consumable>,
+  );
+
+export const isAgedFish = (name: InventoryItemName): name is AgedFishName => {
+  return name in AGED_FISH;
+};
+
+export const isPrimeAgedFish = (
+  name: InventoryItemName,
+): name is PrimeAgedFishName => {
+  return name in PRIME_AGED_FISH;
+};
+
 export const CONSUMABLES: Record<ConsumableName, Consumable> = {
   ...COOKABLES,
   ...PIRATE_CAKE,
   ...FISH,
+  ...AGED_FISH,
+  ...PRIME_AGED_FISH,
   ...FACTION_FOOD,
   ...TRADE_FOOD,
 };
 
 export const FISH_CONSUMABLES: Record<
-  FishName | FishCookableName | InstantProcessedRecipeName,
+  | FishName
+  | FishCookableName
+  | AgedFishName
+  | PrimeAgedFishName
+  | InstantProcessedRecipeName,
   Consumable
 > = {
   ...INSTANT_FISH_RECIPES,
   ...FISH_COOKABLES,
   ...FISH,
+  ...AGED_FISH,
+  ...PRIME_AGED_FISH,
 };
 
 const Juices = Object.keys(JUICE_COOKABLES);

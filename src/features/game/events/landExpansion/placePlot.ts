@@ -1,8 +1,13 @@
-import { CropPlot, GameState } from "features/game/types/game";
-import { ResourceName } from "features/game/types/resources";
+import type { CropPlot, GameState } from "features/game/types/game";
+import type { ResourceName } from "features/game/types/resources";
 import Decimal from "decimal.js-light";
 import { produce } from "immer";
-import { Coordinates } from "features/game/expansion/components/MapPlacement";
+import type { Coordinates } from "features/game/expansion/components/MapPlacement";
+import {
+  getCropFertiliserWindows,
+  getCropPlotBoostWindows,
+  pauseWindowedTimer,
+} from "features/game/lib/boostWindows";
 
 export type PlacePlotAction = {
   type: "plot.placed";
@@ -46,9 +51,19 @@ export function placePlot({
       };
 
       if (updatedPlot.crop && updatedPlot.removedAt) {
-        const existingProgress =
-          updatedPlot.removedAt - updatedPlot.crop.plantedAt;
-        updatedPlot.crop.plantedAt = createdAt - existingProgress;
+        // Pause growth across the lift (windowed banking or legacy back-date).
+        // trackProgress banks the pre-lift work into boostedTime for the growth bar.
+        updatedPlot.crop.plantedAt = pauseWindowedTimer({
+          timer: updatedPlot.crop,
+          startedAt: updatedPlot.crop.plantedAt,
+          removedAt: updatedPlot.removedAt,
+          createdAt,
+          windows: [
+            ...getCropPlotBoostWindows(game),
+            ...getCropFertiliserWindows(updatedPlot.fertiliser),
+          ],
+          trackProgress: true,
+        });
       }
       delete updatedPlot.removedAt;
 

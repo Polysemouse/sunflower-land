@@ -1,0 +1,597 @@
+import Decimal from "decimal.js-light";
+import { INITIAL_FARM } from "features/game/lib/constants";
+import type { Animal, GameState } from "features/game/types/game";
+import { getBulkMixRequirements } from "./getBulkMixRequirements";
+
+describe("getBulkMixRequirements", () => {
+  const animal = ({
+    state,
+    type,
+  }: {
+    state: Animal["state"];
+    type: Animal["type"];
+  }): Animal => ({
+    id: "0",
+    type,
+    createdAt: 0,
+    state,
+    experience: 0,
+    asleepAt: 0,
+    awakeAt: 0,
+    lovedAt: 0,
+    item: "Petting Hand",
+  });
+
+  const chicken = (state: Animal["state"]) =>
+    animal({ state, type: "Chicken" });
+
+  it("includes awake animals that are sad after a feed but still need food", () => {
+    const { requests, missingRequests, requirements } = getBulkMixRequirements(
+      {
+        ...INITIAL_FARM,
+        inventory: {},
+        henHouse: {
+          ...INITIAL_FARM.henHouse,
+          animals: {
+            "0": chicken("sad"),
+          },
+        },
+      },
+      "Hen House",
+      Date.now(),
+    );
+
+    expect(requests["Kernel Blend"]).toEqual(new Decimal(1));
+    expect(missingRequests["Kernel Blend"]).toEqual(new Decimal(1));
+    expect(requirements.ingredients.Corn).toEqual(new Decimal(1));
+    expect(requirements.coins).toBe(0);
+  });
+
+  it("uses the supplied timestamp for the awake check, not the wall clock", () => {
+    const realNow = Date.now();
+    // Awake as of the wall clock, still asleep as of the timestamp passed in.
+    const sleeping: Animal = { ...chicken("idle"), awakeAt: realNow - 30_000 };
+
+    const { requests } = getBulkMixRequirements(
+      {
+        ...INITIAL_FARM,
+        inventory: {},
+        henHouse: {
+          ...INITIAL_FARM.henHouse,
+          animals: { "0": sleeping },
+        },
+      },
+      "Hen House",
+      realNow - 60_000,
+    );
+
+    expect(requests["Kernel Blend"]).toBeUndefined();
+  });
+
+  it("does not request feed for ready animals", () => {
+    const { requests, missingRequests } = getBulkMixRequirements(
+      {
+        ...INITIAL_FARM,
+        inventory: {
+          "Mixed Grain": new Decimal(100),
+        },
+        henHouse: {
+          ...INITIAL_FARM.henHouse,
+          animals: {
+            "0": chicken("ready"),
+          },
+        },
+      },
+      "Hen House",
+      Date.now(),
+    );
+
+    expect(requests).toEqual({});
+    expect(missingRequests).toEqual({});
+  });
+
+  it("calculates barn feed requirements", () => {
+    const { requests, missingRequests, requirements } = getBulkMixRequirements(
+      {
+        ...INITIAL_FARM,
+        inventory: {},
+        barn: {
+          ...INITIAL_FARM.barn,
+          animals: {
+            "0": animal({ state: "idle", type: "Cow" }),
+          },
+        },
+      },
+      "Barn",
+      Date.now(),
+    );
+
+    expect(requests["Kernel Blend"]).toEqual(new Decimal(15));
+    expect(missingRequests["Kernel Blend"]).toEqual(new Decimal(15));
+    expect(requirements.ingredients.Corn).toEqual(new Decimal(15));
+    expect(requirements.coins).toBe(0);
+  });
+
+  it("breaks down each requested feed with its own ingredients", () => {
+    const { feeds } = getBulkMixRequirements(
+      {
+        ...INITIAL_FARM,
+        inventory: {},
+        henHouse: {
+          ...INITIAL_FARM.henHouse,
+          animals: {
+            "0": chicken("sad"),
+            "1": chicken("sick"),
+          },
+        },
+      },
+      "Hen House",
+      Date.now(),
+    );
+
+    const kernelBlend = feeds.find((feed) => feed.item === "Kernel Blend");
+    const barnDelight = feeds.find((feed) => feed.item === "Barn Delight");
+
+    expect(kernelBlend?.type).toBe("food");
+    expect(kernelBlend?.missing).toEqual(new Decimal(2));
+    expect(kernelBlend?.ingredients.Corn).toEqual(new Decimal(2));
+
+    expect(barnDelight?.type).toBe("medicine");
+    expect(barnDelight?.missing).toEqual(new Decimal(1));
+    expect(barnDelight?.ingredients.Lemon).toEqual(new Decimal(5));
+    expect(barnDelight?.ingredients.Honey).toEqual(new Decimal(3));
+  });
+
+  it("includes the normal feed an awake sick animal needs after its cure", () => {
+    const { requests, missingRequests } = getBulkMixRequirements(
+      {
+        ...INITIAL_FARM,
+        inventory: {},
+        henHouse: {
+          ...INITIAL_FARM.henHouse,
+          animals: {
+            "0": chicken("sick"),
+          },
+        },
+      },
+      "Hen House",
+      Date.now(),
+    );
+
+    expect(requests["Barn Delight"]).toEqual(new Decimal(1));
+    expect(requests["Kernel Blend"]).toEqual(new Decimal(1));
+    expect(missingRequests["Barn Delight"]).toEqual(new Decimal(1));
+    expect(missingRequests["Kernel Blend"]).toEqual(new Decimal(1));
+  });
+
+  it("does not include post-cure feed while a sick animal is asleep", () => {
+    const now = Date.now();
+    const sleeping = { ...chicken("sick"), awakeAt: now + 60_000 };
+    const { requests } = getBulkMixRequirements(
+      {
+        ...INITIAL_FARM,
+        inventory: {},
+        henHouse: {
+          ...INITIAL_FARM.henHouse,
+          animals: {
+            "0": sleeping,
+          },
+        },
+      },
+      "Hen House",
+      now,
+    );
+
+    expect(requests["Barn Delight"]).toEqual(new Decimal(1));
+    expect(requests["Kernel Blend"]).toBeUndefined();
+  });
+
+  it("excludes medicine made free by Oracle Syringe but includes post-cure feed", () => {
+    const { requests, feeds } = getBulkMixRequirements(
+      {
+        ...INITIAL_FARM,
+        inventory: {},
+        bumpkin: {
+          ...INITIAL_FARM.bumpkin,
+          equipped: {
+            ...INITIAL_FARM.bumpkin.equipped,
+            wings: "Oracle Syringe",
+          },
+        },
+        henHouse: {
+          ...INITIAL_FARM.henHouse,
+          animals: {
+            "0": chicken("sick"),
+          },
+        },
+      },
+      "Hen House",
+      Date.now(),
+    );
+
+    expect(requests["Barn Delight"]).toBeUndefined();
+    expect(feeds.find((feed) => feed.item === "Barn Delight")).toBeUndefined();
+    expect(requests["Kernel Blend"]).toEqual(new Decimal(1));
+    expect(feeds.find((feed) => feed.item === "Kernel Blend")?.missing).toEqual(
+      new Decimal(1),
+    );
+  });
+
+  it("surfaces the free-feed collectibles feeding a building's animals", () => {
+    const { requests, freeFeedBoosts } = getBulkMixRequirements(
+      {
+        ...INITIAL_FARM,
+        inventory: {},
+        collectibles: {
+          ...INITIAL_FARM.collectibles,
+          "Golden Cow": [
+            {
+              id: "1",
+              createdAt: 0,
+              coordinates: { x: 0, y: 0 },
+              readyAt: 0,
+            },
+          ],
+        },
+        barn: {
+          ...INITIAL_FARM.barn,
+          animals: {
+            "0": animal({ state: "idle", type: "Cow" }),
+            "1": animal({ state: "idle", type: "Sheep" }),
+          },
+        },
+      },
+      "Barn",
+      Date.now(),
+    );
+
+    // Golden Cow feeds cows for free, so no request and a boost row for it.
+    // The sheep has no free-feed collectible, so it still requests feed.
+    expect(freeFeedBoosts).toEqual([
+      { source: "collectible", item: "Golden Cow", animalType: "Cow" },
+    ]);
+    expect(requests["Kernel Blend"]).toBeDefined();
+  });
+
+  it("surfaces the Oracle Syringe as a free-cure boost for sick animals", () => {
+    const { requests, freeFeedBoosts } = getBulkMixRequirements(
+      {
+        ...INITIAL_FARM,
+        inventory: {},
+        bumpkin: {
+          ...INITIAL_FARM.bumpkin,
+          equipped: {
+            ...INITIAL_FARM.bumpkin.equipped,
+            wings: "Oracle Syringe",
+          },
+        },
+        henHouse: {
+          ...INITIAL_FARM.henHouse,
+          animals: {
+            "0": chicken("sick"),
+          },
+        },
+      },
+      "Hen House",
+      Date.now(),
+    );
+
+    // Free cure means no Barn Delight request, surfaced as a wearable boost.
+    expect(requests["Barn Delight"]).toBeUndefined();
+    expect(freeFeedBoosts).toEqual([
+      { source: "wearable", item: "Oracle Syringe" },
+    ]);
+  });
+
+  it("does not surface the Oracle Syringe when no animal is sick", () => {
+    const { freeFeedBoosts } = getBulkMixRequirements(
+      {
+        ...INITIAL_FARM,
+        inventory: {},
+        bumpkin: {
+          ...INITIAL_FARM.bumpkin,
+          equipped: {
+            ...INITIAL_FARM.bumpkin.equipped,
+            wings: "Oracle Syringe",
+          },
+        },
+        henHouse: {
+          ...INITIAL_FARM.henHouse,
+          animals: {
+            "0": chicken("idle"),
+          },
+        },
+      },
+      "Hen House",
+      Date.now(),
+    );
+
+    expect(freeFeedBoosts).toEqual([]);
+  });
+
+  it("counts how many animals are waiting for feed", () => {
+    const { animalsWaiting } = getBulkMixRequirements(
+      {
+        ...INITIAL_FARM,
+        inventory: {},
+        henHouse: {
+          ...INITIAL_FARM.henHouse,
+          animals: {
+            "0": chicken("sad"),
+            "1": chicken("idle"),
+            "2": chicken("ready"),
+          },
+        },
+      },
+      "Hen House",
+      Date.now(),
+    );
+
+    // The ready chicken makes no request, so only two animals are waiting.
+    expect(animalsWaiting).toBe(2);
+  });
+
+  it("marks feeds already covered by inventory with zero missing", () => {
+    const { feeds, missingRequests } = getBulkMixRequirements(
+      {
+        ...INITIAL_FARM,
+        inventory: {
+          "Kernel Blend": new Decimal(100),
+        },
+        barn: {
+          ...INITIAL_FARM.barn,
+          animals: {
+            "0": animal({ state: "idle", type: "Cow" }),
+          },
+        },
+      },
+      "Barn",
+      Date.now(),
+    );
+
+    const kernelBlend = feeds.find((feed) => feed.item === "Kernel Blend");
+
+    expect(kernelBlend?.requested).toEqual(new Decimal(15));
+    expect(kernelBlend?.inInventory).toEqual(new Decimal(100));
+    expect(kernelBlend?.missing).toEqual(new Decimal(0));
+    expect(kernelBlend?.ingredients).toEqual({});
+    expect(missingRequests["Kernel Blend"]).toBeUndefined();
+  });
+
+  it("rounds a fractional food shortfall up to a whole feed", () => {
+    const { requests, missingRequests, feeds, requirements } =
+      getBulkMixRequirements(
+        {
+          ...INITIAL_FARM,
+          inventory: {},
+          collectibles: {
+            ...INITIAL_FARM.collectibles,
+            // Fat Chicken cuts chicken feed to x0.9.
+            "Fat Chicken": [
+              {
+                id: "1",
+                createdAt: 0,
+                coordinates: { x: 0, y: 0 },
+                readyAt: 0,
+              },
+            ],
+          },
+          henHouse: {
+            ...INITIAL_FARM.henHouse,
+            animals: {
+              "0": chicken("sad"),
+            },
+          },
+        },
+        "Hen House",
+        Date.now(),
+      );
+
+    const kernelBlend = feeds.find((feed) => feed.item === "Kernel Blend");
+
+    // The real requirement stays exact, but feeds are mixed in whole units.
+    expect(requests["Kernel Blend"]).toEqual(new Decimal(0.9));
+    expect(kernelBlend?.requested).toEqual(new Decimal(0.9));
+    expect(missingRequests["Kernel Blend"]).toEqual(new Decimal(1));
+    expect(kernelBlend?.missing).toEqual(new Decimal(1));
+
+    // Ingredients are charged for the whole feed that gets mixed.
+    expect(kernelBlend?.ingredients.Corn).toEqual(new Decimal(1));
+    expect(requirements.ingredients.Corn).toEqual(new Decimal(1));
+  });
+
+  it("rounds a fractional medicine shortfall up to a whole feed", () => {
+    const { requests, missingRequests, feeds } = getBulkMixRequirements(
+      {
+        ...INITIAL_FARM,
+        inventory: {},
+        bumpkin: {
+          ...INITIAL_FARM.bumpkin,
+          equipped: {
+            ...INITIAL_FARM.bumpkin.equipped,
+            // Medic Apron halves the Barn Delight cure cost.
+            coat: "Medic Apron",
+          },
+        },
+        henHouse: {
+          ...INITIAL_FARM.henHouse,
+          animals: {
+            "0": chicken("sick"),
+          },
+        },
+      },
+      "Hen House",
+      Date.now(),
+    );
+
+    const barnDelight = feeds.find((feed) => feed.item === "Barn Delight");
+
+    expect(requests["Barn Delight"]).toEqual(new Decimal(0.5));
+    expect(missingRequests["Barn Delight"]).toEqual(new Decimal(1));
+    expect(barnDelight?.missing).toEqual(new Decimal(1));
+    expect(barnDelight?.ingredients.Lemon).toEqual(new Decimal(5));
+    expect(barnDelight?.ingredients.Honey).toEqual(new Decimal(3));
+  });
+
+  it("rounds up the shortfall left after inventory is applied", () => {
+    const { requests, missingRequests, requirements } = getBulkMixRequirements(
+      {
+        ...INITIAL_FARM,
+        inventory: {
+          "Kernel Blend": new Decimal(10),
+        },
+        collectibles: {
+          ...INITIAL_FARM.collectibles,
+          // Dr Cow cuts cow feed to x0.95, so 3 feeds cost 14.25.
+          "Dr Cow": [
+            {
+              id: "1",
+              createdAt: 0,
+              coordinates: { x: 0, y: 0 },
+              readyAt: 0,
+            },
+          ],
+        },
+        barn: {
+          ...INITIAL_FARM.barn,
+          animals: {
+            "0": animal({ state: "idle", type: "Cow" }),
+          },
+        },
+      },
+      "Barn",
+      Date.now(),
+    );
+
+    expect(requests["Kernel Blend"]).toEqual(new Decimal(14.25));
+    // 14.25 - 10 = 4.25 still to mix, rounded up to 5 whole feeds.
+    expect(missingRequests["Kernel Blend"]).toEqual(new Decimal(5));
+    expect(requirements.ingredients.Corn).toEqual(new Decimal(5));
+  });
+
+  it("ignores negligible decimal remainders after mixing", () => {
+    const { feeds, missingRequests } = getBulkMixRequirements(
+      {
+        ...INITIAL_FARM,
+        inventory: {
+          "Kernel Blend": new Decimal("14.9999999999999999"),
+        },
+        barn: {
+          ...INITIAL_FARM.barn,
+          animals: {
+            "0": animal({ state: "idle", type: "Cow" }),
+          },
+        },
+      },
+      "Barn",
+      Date.now(),
+    );
+
+    const kernelBlend = feeds.find((feed) => feed.item === "Kernel Blend");
+
+    expect(kernelBlend?.requested).toEqual(new Decimal(15));
+    expect(kernelBlend?.missing).toEqual(new Decimal(0));
+    expect(kernelBlend?.ingredients).toEqual({});
+    expect(missingRequests["Kernel Blend"]).toBeUndefined();
+  });
+
+  describe("Pigs", () => {
+    // A level-0 Pig 30 XP in needs 150 more for level 1. Basic Slop gives
+    // 60 XP, or 75 with Mud, at one Slop per feed.
+    const pigFarm = (
+      mud?: Animal["mud"],
+      inventory: GameState["inventory"] = {},
+    ): GameState => ({
+      ...INITIAL_FARM,
+      inventory,
+      pigpen: {
+        level: 1,
+        animals: {
+          "0": {
+            ...animal({ state: "idle", type: "Pig" }),
+            experience: 30,
+            mud,
+          },
+        },
+      },
+    });
+
+    const pigRequests = (mud?: Animal["mud"]) =>
+      getBulkMixRequirements(pigFarm(mud), "Pigpen", Date.now()).requests[
+        "Basic Slop"
+      ];
+
+    it("plans three Slops for a Pig without Mud", () => {
+      expect(pigRequests()).toEqual(new Decimal(3));
+    });
+
+    it("plans fewer Slops for a muddy Pig", () => {
+      expect(pigRequests({ harvestsRemaining: 3 })).toEqual(new Decimal(2));
+    });
+
+    it("keeps Mud's bonus for every feed, since feeding spends no charge", () => {
+      // 30 + 75 + 75 = 180: even a last charge covers the whole plan.
+      expect(pigRequests({ harvestsRemaining: 1 })).toEqual(new Decimal(2));
+    });
+
+    it("mixes a Slop from the input the player can make the most of", () => {
+      const { feeds, requirements } = getBulkMixRequirements(
+        pigFarm(undefined, {
+          Sunflower: new Decimal(1000),
+          Potato: new Decimal(400),
+        }),
+        "Pigpen",
+        Date.now(),
+      );
+      const slop = feeds.find((feed) => feed.item === "Basic Slop");
+
+      // Sunflower makes 1 Slop, Potato 2.
+      expect(slop?.ingredient).toEqual("Potato");
+      expect(slop?.ingredients).toEqual({ Potato: new Decimal(450) });
+      expect(requirements.ingredients).toEqual({ Potato: new Decimal(450) });
+    });
+
+    it("mixes a Slop from the input the player picked", () => {
+      const { feeds, requirements } = getBulkMixRequirements(
+        pigFarm(undefined, {
+          Sunflower: new Decimal(1000),
+          Potato: new Decimal(400),
+        }),
+        "Pigpen",
+        Date.now(),
+        { "Basic Slop": "Carrot" },
+      );
+      const slop = feeds.find((feed) => feed.item === "Basic Slop");
+
+      expect(slop?.ingredient).toEqual("Carrot");
+      expect(slop?.ingredients).toEqual({ Carrot: new Decimal(75) });
+      expect(requirements.ingredients).toEqual({ Carrot: new Decimal(75) });
+    });
+
+    it("falls back to the first input when the player holds none", () => {
+      const { feeds } = getBulkMixRequirements(pigFarm(), "Pigpen", Date.now());
+
+      expect(feeds.find((feed) => feed.item === "Basic Slop")).toMatchObject({
+        ingredient: "Sunflower",
+        ingredients: { Sunflower: new Decimal(2400) },
+      });
+    });
+
+    it("leaves the input off feeds with a fixed recipe", () => {
+      const { feeds } = getBulkMixRequirements(
+        {
+          ...INITIAL_FARM,
+          inventory: {},
+          henHouse: {
+            ...INITIAL_FARM.henHouse,
+            animals: { "0": chicken("idle") },
+          },
+        },
+        "Hen House",
+        Date.now(),
+      );
+
+      expect(feeds[0].ingredient).toBeUndefined();
+    });
+  });
+});

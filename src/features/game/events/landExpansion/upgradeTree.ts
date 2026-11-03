@@ -3,11 +3,15 @@ import Decimal from "decimal.js-light";
 import { produce } from "immer";
 import {
   ADVANCED_RESOURCES,
-  TreeName,
+  type TreeName,
   RESOURCE_MULTIPLIER,
 } from "features/game/types/resources";
-import { GameState, InventoryItemName, Tree } from "features/game/types/game";
-import { getObjectEntries } from "features/game/expansion/lib/utils";
+import type {
+  GameState,
+  InventoryItemName,
+  Tree,
+} from "features/game/types/game";
+import { getObjectEntries } from "lib/object";
 import { trackFarmActivity } from "features/game/types/farmActivity";
 import {
   canUpgrade,

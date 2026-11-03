@@ -12,17 +12,15 @@ import lightning from "assets/icons/lightning.png";
 import { PIXEL_SCALE } from "features/game/lib/constants";
 import classNames from "classnames";
 import { Context } from "features/game/GameProvider";
-import { MachineState } from "features/game/lib/gameMachine";
+import type { MachineState } from "features/game/lib/gameMachine";
 import { useInterpret, useSelector } from "@xstate/react";
 import { Bar } from "components/ui/ProgressBar";
-import { Beehive as IBeehive } from "features/game/types/game";
+import type { Beehive as IBeehive } from "features/game/types/game";
 import {
-  BeehiveContext,
-  BeehiveMachineState,
-  MachineInterpreter,
+  type BeehiveContext,
+  type BeehiveMachineState,
+  type MachineInterpreter,
   beehiveMachine,
-  getCurrentHoneyProduced,
-  getCurrentSpeed,
 } from "./beehiveMachine";
 import { Bee } from "./Bee";
 import { Modal } from "components/ui/Modal";
@@ -44,8 +42,13 @@ import { formatNumber } from "lib/utils/formatNumber";
 import { SUNNYSIDE } from "assets/sunnyside";
 import {
   calculateSwarmBoost,
-  getHoneyMultiplier,
+  getFullHiveHoneyYield,
 } from "features/game/events/landExpansion/harvestBeehive";
+import { useNow } from "lib/utils/hooks/useNow";
+import {
+  getCurrentHoneyProduced,
+  getCurrentSpeed,
+} from "features/game/lib/beehiveProduction";
 
 interface Props {
   id: string;
@@ -86,12 +89,13 @@ export const Beehive: React.FC<Props> = ({ id }) => {
   const landscaping = useSelector(gameService, _landscaping);
   const hive = useSelector(gameService, getBeehiveById(id), compareHive);
   const gameState = useSelector(gameService, _state);
+  const now = useNow({ live: true });
 
   const beehiveContext: BeehiveContext = {
     gameState,
     hive,
-    honeyProduced: getCurrentHoneyProduced(hive),
-    currentSpeed: getCurrentSpeed(hive),
+    honeyProduced: getCurrentHoneyProduced(hive, now),
+    currentSpeed: getCurrentSpeed(hive, now),
   };
 
   const beehiveService = useInterpret(beehiveMachine, {
@@ -105,7 +109,9 @@ export const Beehive: React.FC<Props> = ({ id }) => {
   const currentFlowerId = useSelector(beehiveService, _currentFlowerId);
   const showBeeAnimation = useSelector(beehiveService, _showBeeAnimation);
 
-  const { multiplier: honeyMultiplier } = getHoneyMultiplier(gameState);
+  // Full-hive yield, not the bare multiplier — the label below describes a full
+  // hive, which is exactly when Ruins Flower's flat bonus applies.
+  const { yield: honeyPerFullHive } = getFullHiveHoneyYield(gameState);
 
   const handleBeeAnimationEnd = useCallback(() => {
     beehiveService.send("BEE_ANIMATION_DONE");
@@ -113,15 +119,18 @@ export const Beehive: React.FC<Props> = ({ id }) => {
   }, [honeyReady, beehiveService]);
 
   const handleHarvestHoney = () => {
-    if (hive.swarm && honeyReady) {
+    setShowHoneyLevelModal(false);
+
+    const hadSwarm = hive.swarm;
+    const state = gameService.send("beehive.harvested", { id });
+    const updatedHive = state.context.state.beehives[id];
+
+    if (hadSwarm && updatedHive?.swarm === false) {
       setShowSwarmModal(true);
     }
 
-    setShowHoneyLevelModal(false);
-
-    const state = gameService.send("beehive.harvested", { id });
     beehiveService.send("HARVEST_HONEY", {
-      updatedHive: state.context.state.beehives[id],
+      updatedHive,
     });
   };
 
@@ -308,10 +317,7 @@ export const Beehive: React.FC<Props> = ({ id }) => {
               <img src={ITEM_DETAILS.Honey.image} className="w-4 mr-1" />
               <span>
                 {t("honey")}
-                {":"}{" "}
-                {Number(honeyAmount) < 1
-                  ? `${honeyPercentageDisplay} ${t("full")}`
-                  : t("full")}
+                {":"} {honeyPercentageDisplay} {t("full")}
               </span>
             </div>
           </InfoPopover>
@@ -378,7 +384,7 @@ export const Beehive: React.FC<Props> = ({ id }) => {
                 </Label>
                 <div className="text-xs mb-0.5">
                   {t("beehive.honeyPerFullHive", {
-                    multiplier: formatNumber(honeyMultiplier),
+                    multiplier: formatNumber(honeyPerFullHive),
                   })}
                 </div>
               </div>

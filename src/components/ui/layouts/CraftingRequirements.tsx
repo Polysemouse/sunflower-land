@@ -1,16 +1,28 @@
 import Decimal from "decimal.js-light";
 import { INVENTORY_LIMIT } from "features/game/lib/constants";
-import { getBumpkinLevel } from "features/game/lib/level";
-import { getKeys } from "features/game/types/craftables";
 import {
+  getAscensionLevel,
+  type LevelRequirement,
+} from "features/game/lib/level";
+import { getKeys } from "lib/object";
+import type {
   BoostName,
   GameState,
   InventoryItemName,
   Rock,
   Tree,
 } from "features/game/types/game";
-import { ITEM_DETAILS } from "features/game/types/images";
-import React, { Dispatch, SetStateAction, useState, type JSX } from "react";
+import {
+  ITEM_DETAILS,
+  getTranslatedItemName,
+} from "features/game/types/images";
+import React, {
+  type Dispatch,
+  type SetStateAction,
+  useRef,
+  useState,
+  type JSX,
+} from "react";
 import { BoostsDisplay } from "./BoostsDisplay";
 import { Label } from "../Label";
 import { RequirementLabel } from "../RequirementsLabel";
@@ -19,7 +31,7 @@ import { formatDateRange, secondsToString } from "lib/utils/time";
 import { SUNNYSIDE } from "assets/sunnyside";
 import {
   BUMPKIN_ITEM_PART,
-  BumpkinItem,
+  type BumpkinItem,
   ITEM_IDS,
 } from "features/game/types/bumpkin";
 import { NPCIcon } from "features/island/bumpkin/components/NPC";
@@ -27,22 +39,24 @@ import { useAppTranslation } from "lib/i18n/useAppTranslations";
 import { getImageUrl } from "lib/utils/getImageURLS";
 import { ITEM_ICONS } from "features/island/hud/components/inventory/Chest";
 import { IngredientsPopover } from "../IngredientsPopover";
-import { BuffLabel } from "features/game/types";
+import { isPreActionBoosted } from "features/game/lib/timerDisplay";
+import type { BuffLabel } from "features/game/types";
 import { isSeed } from "features/game/types/seeds";
 import { getCurrentBiome } from "features/island/biomes/biomes";
 import {
   EXPIRY_COOLDOWNS,
-  TemporaryCollectibleName,
+  getExpiryCooldown,
+  type TemporaryCollectibleName,
 } from "features/game/lib/collectibleBuilt";
 import {
   RESOURCES_UPGRADES_TO,
   ADVANCED_RESOURCES,
-  UpgradedResourceName,
+  type UpgradedResourceName,
   RESOURCE_STATE_ACCESSORS,
 } from "features/game/types/resources";
 import { SEASON_ICONS } from "features/island/buildings/components/building/market/SeasonalSeeds";
-import { capitalize } from "lib/utils/capitalize";
 import classNames from "classnames";
+import { getItemDescription } from "features/game/lib/getItemDescription";
 
 function getResourceTier(name: UpgradedResourceName): number | undefined {
   if (name in ADVANCED_RESOURCES) {
@@ -113,7 +127,7 @@ interface RequirementsProps {
   timeSeconds?: number;
   baseTimeSeconds?: number;
   timeBoostsUsed?: { name: BoostName; value: string }[];
-  level?: number;
+  level?: LevelRequirement;
 }
 
 /**
@@ -161,17 +175,14 @@ function getDetails(
       ? INVENTORY_LIMIT(game)[details.item]
       : undefined;
 
-    const {
-      description,
-      image: defaultImage,
-      translatedName,
-    } = ITEM_DETAILS[details.item];
+    const { image: defaultImage } = ITEM_DETAILS[details.item];
+    const description = getItemDescription({ item: details.item, game });
 
     const image =
       ITEM_ICONS(game.season.season, getCurrentBiome(game.island))[
         details.item
       ] ?? defaultImage;
-    const name = translatedName ?? details.item;
+    const name = getTranslatedItemName(details.item);
 
     return { count, description, image, name, limit };
   }
@@ -210,6 +221,7 @@ export const CraftingRequirements: React.FC<Props> = ({
 }: Props) => {
   const { t } = useAppTranslation();
   const [showIngredients, setShowIngredients] = useState(false);
+  const timeBoostsRef = useRef<HTMLDivElement>(null);
   const getStock = () => {
     if (!stock) return <></>;
 
@@ -287,7 +299,7 @@ export const CraftingRequirements: React.FC<Props> = ({
       item: InventoryItemName,
     ): item is TemporaryCollectibleName => item in EXPIRY_COOLDOWNS;
     if (details.item && isTemporaryCollectible(details.item)) {
-      expiry = EXPIRY_COOLDOWNS[details.item];
+      expiry = getExpiryCooldown(details.item, gameState);
     }
 
     return (
@@ -335,7 +347,7 @@ export const CraftingRequirements: React.FC<Props> = ({
             icon={SEASON_ICONS[gameState.season.season]}
             className="-mb-3.5"
           >
-            {capitalize(gameState.season.season)}
+            {t(`season.${gameState.season.season}`)}
           </Label>
         )}
         <div
@@ -463,7 +475,7 @@ export const CraftingRequirements: React.FC<Props> = ({
               ) {
                 return (
                   <div
-                    className="flex flex-col items-center cursor-pointer"
+                    className="flex flex-row sm:flex-col items-center cursor-pointer"
                     onClick={() => setShowBoosts(!showBoosts)}
                   >
                     <RequirementLabel type="xp" xp={requirements.xp} boosted />
@@ -495,10 +507,12 @@ export const CraftingRequirements: React.FC<Props> = ({
             (() => {
               const baseTimeSeconds = requirements.baseTimeSeconds;
               const timeBoostsUsed = requirements.timeBoostsUsed;
-              const isTimeBoosted =
-                baseTimeSeconds != null &&
-                requirements.timeSeconds < baseTimeSeconds &&
-                !!(timeBoostsUsed?.length ?? 0);
+              const hasNamedBoosts = !!(timeBoostsUsed?.length ?? 0);
+              const isTimeBoosted = isPreActionBoosted({
+                displaySeconds: requirements.timeSeconds,
+                baseSeconds: baseTimeSeconds,
+                hasNamedBoosts,
+              });
 
               if (
                 isTimeBoosted &&
@@ -507,25 +521,41 @@ export const CraftingRequirements: React.FC<Props> = ({
               ) {
                 return (
                   <div
-                    className="flex flex-col items-center cursor-pointer"
-                    onClick={() => setShowTimeBoosts(!showTimeBoosts)}
+                    ref={timeBoostsRef}
+                    className={classNames(
+                      "flex flex-row sm:flex-col items-center",
+                      {
+                        // Only itemisable (named) boosts open the breakdown; a
+                        // live speed window has no name to list.
+                        "cursor-pointer": hasNamedBoosts,
+                      },
+                    )}
+                    onClick={() =>
+                      hasNamedBoosts && setShowTimeBoosts(!showTimeBoosts)
+                    }
                   >
                     <RequirementLabel
                       type="time"
                       waitSeconds={requirements.timeSeconds}
                       boosted
                     />
-                    <RequirementLabel
-                      type="time"
-                      waitSeconds={baseTimeSeconds ?? 0}
-                      strikethrough
-                    />
-                    {showTimeBoosts && (
+                    {baseTimeSeconds !== undefined &&
+                      requirements.timeSeconds !== baseTimeSeconds && (
+                        <RequirementLabel
+                          type="time"
+                          waitSeconds={baseTimeSeconds}
+                          strikethrough
+                        />
+                      )}
+                    {hasNamedBoosts && showTimeBoosts && (
                       <BoostsDisplay
                         boosts={timeBoostsUsed ?? []}
                         show={showTimeBoosts}
                         state={gameState}
                         onClick={() => setShowTimeBoosts((prev) => !prev)}
+                        anchorRef={timeBoostsRef}
+                        portalAlign="center"
+                        portalPlacement="above"
                       />
                     )}
                   </div>
@@ -544,7 +574,10 @@ export const CraftingRequirements: React.FC<Props> = ({
           {!!requirements.level && (
             <RequirementLabel
               type="level"
-              currentLevel={getBumpkinLevel(gameState.bumpkin?.experience ?? 0)}
+              currentLevel={getAscensionLevel({
+                experience: gameState.bumpkin.experience ?? 0,
+                ascensionLevel: gameState.island.ascensionLevel ?? 0,
+              })}
               requirement={requirements.level}
             />
           )}

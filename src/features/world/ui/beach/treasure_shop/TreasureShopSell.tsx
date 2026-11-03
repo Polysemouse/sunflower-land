@@ -1,8 +1,8 @@
 import React, { useContext, useRef, useState } from "react";
 import { useAppTranslation } from "lib/i18n/useAppTranslations";
-import { getKeys } from "features/game/types/craftables";
+import { getKeys } from "lib/object";
 import {
-  BeachBountyTreasure,
+  type BeachBountyTreasure,
   SELLABLE_TREASURES,
 } from "features/game/types/treasure";
 import { Context } from "features/game/GameProvider";
@@ -13,11 +13,18 @@ import { SplitScreenView } from "components/ui/SplitScreenView";
 import { ShopSellDetails } from "components/ui/layouts/ShopSellDetails";
 import { Button } from "components/ui/Button";
 import { Box } from "components/ui/Box";
-import { ITEM_DETAILS } from "features/game/types/images";
+import {
+  getTranslatedItemName,
+  ITEM_DETAILS,
+} from "features/game/types/images";
 import { ConfirmationModal } from "components/ui/ConfirmationModal";
 import { NPC_WEARABLES } from "lib/npcs";
 import { BulkSellModal } from "components/ui/BulkSellModal";
-import { CHAPTER_ARTEFACT } from "features/game/types/desert";
+import {
+  CHAPTER_ARTEFACT,
+  isChapterArtefact,
+  shouldHideChapterArtefact,
+} from "features/game/types/desert";
 import { getCurrentChapter } from "features/game/types/chapters";
 import { useNow } from "lib/utils/hooks/useNow";
 
@@ -26,29 +33,48 @@ export const TreasureShopSell: React.FC = () => {
   const now = useNow();
   const currentChapter = getCurrentChapter(now);
   const currentSeasonalArtefact = CHAPTER_ARTEFACT[currentChapter];
-  const beachBountyTreasure = getKeys(SELLABLE_TREASURES).sort(
+  const allBeachBountyTreasure = getKeys(SELLABLE_TREASURES).sort(
     (a, b) => SELLABLE_TREASURES[a].sellPrice - SELLABLE_TREASURES[b].sellPrice,
   );
-
-  const [selectedName, setSelectedName] = useState<BeachBountyTreasure>(
-    beachBountyTreasure[0],
-  );
-  const [confirmationModal, showConfirmationModal] = useState(false);
-  const [bulkSellModal, showBulkSellModal] = useState(false);
-  const [customAmount, setCustomAmount] = useState(new Decimal(0));
-
-  const selected = SELLABLE_TREASURES[selectedName];
   const { gameService } = useContext(Context);
   const [
     {
       context: { state },
     },
   ] = useActor(gameService);
+  const inventory = state.inventory;
+
+  const [selectedTreasure, setSelectedTreasure] = useState<BeachBountyTreasure>(
+    allBeachBountyTreasure[0],
+  );
+  const [chapterArtefactsVisibleAtOpen] = useState(
+    () =>
+      new Set<BeachBountyTreasure>(
+        allBeachBountyTreasure.filter(
+          (name) =>
+            isChapterArtefact(name) &&
+            (inventory[name]?.greaterThan(0) ?? false),
+        ),
+      ),
+  );
+  const [confirmationModal, showConfirmationModal] = useState(false);
+  const [bulkSellModal, showBulkSellModal] = useState(false);
+  const [customAmount, setCustomAmount] = useState(new Decimal(0));
 
   const divRef = useRef<HTMLDivElement>(null);
 
-  const inventory = state.inventory;
+  const beachBountyTreasure = allBeachBountyTreasure.filter(
+    (name) =>
+      chapterArtefactsVisibleAtOpen.has(name) ||
+      !shouldHideChapterArtefact({
+        name,
+        currentChapterArtefact: currentSeasonalArtefact,
+        amount: inventory[name] ?? new Decimal(0),
+      }),
+  );
+  const selectedName = selectedTreasure;
 
+  const selected = SELLABLE_TREASURES[selectedName];
   const { price } = getSellPrice(selected, state);
   const amount = inventory[selectedName] || new Decimal(0);
   const coinAmount = price * customAmount.toNumber();
@@ -131,7 +157,7 @@ export const TreasureShopSell: React.FC = () => {
               <Box
                 isSelected={selectedName === name}
                 key={name}
-                onClick={() => setSelectedName(name)}
+                onClick={() => setSelectedTreasure(name)}
                 image={ITEM_DETAILS[name].image}
                 count={inventory[name] || new Decimal(0)}
               />
@@ -149,7 +175,7 @@ export const TreasureShopSell: React.FC = () => {
               ? t("confirmation.valuableTreasure")
               : t("confirmation.sell", {
                   amount: customAmount,
-                  name: selectedName,
+                  name: getTranslatedItemName(selectedName),
                   coinAmount,
                 }),
         ]}

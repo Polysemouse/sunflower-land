@@ -8,10 +8,10 @@ import React, { useState } from "react";
 import { getCurrentChapter, CHAPTERS } from "features/game/types/chapters";
 import {
   MEGASTORE,
-  ChapterStoreCollectible,
-  ChapterStoreItem,
-  ChapterStoreTier,
-  ChapterStoreWearable,
+  type ChapterStoreCollectible,
+  type ChapterStoreItem,
+  type ChapterStoreTier,
+  type ChapterStoreWearable,
 } from "features/game/types/megastore";
 
 import { ItemsList } from "./chapter_store_components/ItemsList";
@@ -19,12 +19,12 @@ import { ItemDetail } from "./chapter_store_components/ItemDetail";
 import { ITEM_IDS } from "features/game/types/bumpkin";
 import { ITEM_DETAILS } from "features/game/types/images";
 import { getImageUrl } from "lib/utils/getImageURLS";
-import { BuffLabel } from "features/game/types";
+import type { BuffLabel } from "features/game/types";
 import { BUMPKIN_ITEM_BUFF_LABELS } from "features/game/types/bumpkinItemBuffs";
 import { COLLECTIBLE_BUFF_LABELS } from "features/game/types/collectibleItemBuffs";
 import { FACTION_SHOP_KEYS } from "features/game/types/factionShop";
 import { OPEN_SEA_WEARABLES } from "metadata/metadata";
-import { GameState } from "features/game/types/game";
+import type { GameState } from "features/game/types/game";
 import { useNow } from "lib/utils/hooks/useNow";
 
 // type guard for WearablesItem | CollectiblesItem
@@ -60,10 +60,7 @@ export const getItemBuffLabel = (
     return BUMPKIN_ITEM_BUFF_LABELS[item.wearable];
   }
 
-  return COLLECTIBLE_BUFF_LABELS[item.collectible]?.({
-    skills: state.bumpkin.skills,
-    collectibles: state.collectibles,
-  });
+  return COLLECTIBLE_BUFF_LABELS[item.collectible]?.(state);
 };
 export const getItemDescription = (item: ChapterStoreItem | null): string => {
   if (!item) return "";
@@ -110,6 +107,7 @@ export const ChapterStore: React.FC<{
     <>
       <ModalOverlay
         show={!!selectedItem}
+        panelClassName="w-full sm:w-11/12"
         onBackdropClick={() => setSelectedItem(null)}
       >
         <ItemDetail
@@ -142,7 +140,7 @@ export const ChapterStore: React.FC<{
       </div>
       <div
         className={classNames("flex flex-col p-1 pt-1", {
-          ["max-h-[400px] overflow-y-auto scrollable"]: !readonly,
+          ["max-h-[500px] overflow-y-auto scrollable"]: !readonly,
         })}
       >
         <span className="text-xs px-1 pb-3">

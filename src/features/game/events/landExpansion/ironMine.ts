@@ -1,6 +1,7 @@
 import Decimal from "decimal.js-light";
+import { hasRequiredIslandExpansion } from "features/game/lib/hasRequiredIslandExpansion";
 import { trackFarmActivity } from "features/game/types/farmActivity";
-import {
+import type {
   AOE,
   BoostName,
   CriticalHitName,
@@ -13,14 +14,18 @@ import {
 } from "features/game/lib/collectibleBuilt";
 import { produce } from "immer";
 import {
-  Position,
+  type Position,
   isWithinAOE,
 } from "features/game/expansion/placeable/lib/collisionDetection";
 import { FACTION_ITEMS } from "features/game/lib/factions";
+import { getSkillLevel, SKILL_RANKS } from "features/game/types/bumpkinSkills";
 import { getBudYieldBoosts } from "features/game/lib/getBudYieldBoosts";
 import { isWearableActive } from "features/game/lib/wearables";
 import { COLLECTIBLES_DIMENSIONS } from "features/game/types/craftables";
-import { RESOURCE_DIMENSIONS, RockName } from "features/game/types/resources";
+import {
+  RESOURCE_DIMENSIONS,
+  type RockName,
+} from "features/game/types/resources";
 import { updateBoostUsed } from "features/game/types/updateBoostUsed";
 import cloneDeep from "lodash.clonedeep";
 import {
@@ -31,6 +36,8 @@ import {
 import { prngChance } from "lib/prng";
 import { KNOWN_IDS } from "features/game/types";
 import { IRON_RECOVERY_TIME } from "features/game/lib/constants";
+import { hasFeatureAccess } from "lib/flags";
+import { canMine, getMineReadyAt } from "features/game/lib/resourceNodes";
 
 export type LandExpansionIronMineAction = {
   type: "ironRock.mined";
@@ -44,37 +51,58 @@ type Options = {
   farmId: number;
 };
 
-// 8 hours
-export function canMine(rock: Rock, now: number = Date.now()) {
-  const recoveryTime = IRON_RECOVERY_TIME;
-  return now - rock.stone.minedAt >= recoveryTime * 1000;
-}
-
 type GetMinedAtArgs = {
   createdAt: number;
   game: GameState;
 };
 
-const getBoostedTime = ({
+/**
+ * The iron rock's real recovery duration (ms), for gating the yield-AOE re-use.
+ * Windowed rocks derive it from the live speed windows so an active boost shortens
+ * it to match the actual recovery (matching how legacy rocks folded the discount
+ * into `boostedTime`); legacy rocks keep their back-dated boosted time.
+ */
+function getIronRecoveryDurationMs(rock: Rock, game: GameState): number {
+  return rock.stone.baseDurationMs !== undefined
+    ? getMineReadyAt(rock, "Iron Rock", game) - rock.stone.minedAt
+    : IRON_RECOVERY_TIME * 1000 - (rock?.stone?.boostedTime ?? 0);
+}
+
+/**
+ * Single source of truth for iron recovery boosts. Used by both getMinedAt (game) and UI.
+ */
+export function getIronRecoveryTimeForDisplay({
   game,
+  now,
 }: {
   game: GameState;
+  now: number;
 }): {
-  boostedTime: number;
+  baseTimeMs: number;
+  recoveryTimeMs: number;
   boostsUsed: { name: BoostName; value: string }[];
-} => {
+} {
+  const baseTimeMs = IRON_RECOVERY_TIME * 1000;
   let totalSeconds = IRON_RECOVERY_TIME;
   const boostsUsed: { name: BoostName; value: string }[] = [];
+
+  // Under SPEED_BOOSTS the temporary iron boosts (totems, Ore Hourglass, Mole
+  // Shrine) are retroactive speed-rate windows (see boostWindows), so they're
+  // excluded from the baked recovery here — what remains is the permanent-boost-
+  // only base duration. Flag-off keeps the legacy discount-at-start.
+  const boostsWindowed = hasFeatureAccess(game, "SPEED_BOOSTS");
 
   const superTotemActive = isTemporaryCollectibleActive({
     name: "Super Totem",
     game,
+    now,
   });
   const timeWarpTotemActive = isTemporaryCollectibleActive({
     name: "Time Warp Totem",
     game,
+    now,
   });
-  if (superTotemActive || timeWarpTotemActive) {
+  if (!boostsWindowed && (superTotemActive || timeWarpTotemActive)) {
     totalSeconds = totalSeconds * 0.5;
     if (superTotemActive)
       boostsUsed.push({ name: "Super Totem", value: "x0.5" });
@@ -82,36 +110,58 @@ const getBoostedTime = ({
       boostsUsed.push({ name: "Time Warp Totem", value: "x0.5" });
   }
 
-  if (isTemporaryCollectibleActive({ name: "Ore Hourglass", game })) {
+  if (
+    !boostsWindowed &&
+    isTemporaryCollectibleActive({ name: "Ore Hourglass", game, now })
+  ) {
     totalSeconds = totalSeconds * 0.5;
     boostsUsed.push({ name: "Ore Hourglass", value: "x0.5" });
   }
 
-  if (isTemporaryCollectibleActive({ name: "Mole Shrine", game })) {
+  if (
+    !boostsWindowed &&
+    isTemporaryCollectibleActive({ name: "Mole Shrine", game, now })
+  ) {
     totalSeconds = totalSeconds * 0.75;
     boostsUsed.push({ name: "Mole Shrine", value: "x0.75" });
   }
 
-  if (game.bumpkin.skills["Iron Hustle"]) {
-    totalSeconds = totalSeconds * 0.7;
-    boostsUsed.push({ name: "Iron Hustle", value: "x0.7" });
+  const ironHustleLevel = getSkillLevel(game.bumpkin.skills, "Iron Hustle");
+  if (ironHustleLevel) {
+    const v = SKILL_RANKS["Iron Hustle"].ranks[ironHustleLevel - 1];
+    totalSeconds = totalSeconds * v;
+    boostsUsed.push({ name: "Iron Hustle", value: `x${v}` });
   }
 
-  const buff = IRON_RECOVERY_TIME - totalSeconds;
-
-  return { boostedTime: buff * 1000, boostsUsed };
-};
+  return {
+    baseTimeMs,
+    recoveryTimeMs: totalSeconds * 1000,
+    boostsUsed,
+  };
+}
 
 /**
- * Set a mined in the past to make it replenish faster
+ * The mine time to persist, plus (under SPEED_BOOSTS) the base recovery duration.
+ *
+ * Legacy model: back-date `minedAt` into the past so the rock replenishes faster.
+ * Speed-rate model (SPEED_BOOSTS): store the REAL mine time and a `baseDurationMs`
+ * carrying only the permanent boosts; the temporary boosts are derived live from
+ * windows. Uses getIronRecoveryTimeForDisplay for boost logic.
  */
 export function getMinedAt({ createdAt, game }: GetMinedAtArgs): {
   time: number;
+  baseDurationMs?: number;
   boostsUsed: { name: BoostName; value: string }[];
 } {
-  const { boostedTime, boostsUsed } = getBoostedTime({ game });
+  const { baseTimeMs, recoveryTimeMs, boostsUsed } =
+    getIronRecoveryTimeForDisplay({ game, now: createdAt });
 
-  return { time: createdAt - boostedTime, boostsUsed };
+  if (hasFeatureAccess(game, "SPEED_BOOSTS")) {
+    return { time: createdAt, baseDurationMs: recoveryTimeMs, boostsUsed };
+  }
+
+  const buffMs = baseTimeMs - recoveryTimeMs;
+  return { time: createdAt - buffMs, boostsUsed };
 }
 
 /**
@@ -171,19 +221,27 @@ export function getIronDropAmount({
     boostsUsed.push({ name: "Iron Beetle", value: "+0.1" });
   }
 
-  if (game.bumpkin.skills["Iron Bumpkin"]) {
-    amount += 0.1;
-    boostsUsed.push({ name: "Iron Bumpkin", value: "+0.1" });
+  const ironBumpkinLevel = getSkillLevel(game.bumpkin.skills, "Iron Bumpkin");
+  if (ironBumpkinLevel) {
+    const v = SKILL_RANKS["Iron Bumpkin"].ranks[ironBumpkinLevel - 1];
+    amount += v;
+    boostsUsed.push({ name: "Iron Bumpkin", value: `+${v}` });
   }
 
-  if (game.bumpkin.skills["Rocky Favor"]) {
-    amount -= 0.5;
-    boostsUsed.push({ name: "Rocky Favor", value: "-0.5" });
+  // Rocky Favor: debuff to Iron yield (buff to Stone applied in stoneMine)
+  const rockyFavorLevel = getSkillLevel(game.bumpkin.skills, "Rocky Favor");
+  if (rockyFavorLevel) {
+    const v = SKILL_RANKS["Rocky Favor"].debuff[rockyFavorLevel - 1];
+    amount -= v;
+    boostsUsed.push({ name: "Rocky Favor", value: `-${v}` });
   }
 
-  if (game.bumpkin.skills["Ferrous Favor"]) {
-    amount += 1;
-    boostsUsed.push({ name: "Ferrous Favor", value: "+1" });
+  // Ferrous Favor: buff to Iron yield (debuff to Stone applied in stoneMine)
+  const ferrousFavorLevel = getSkillLevel(game.bumpkin.skills, "Ferrous Favor");
+  if (ferrousFavorLevel) {
+    const v = SKILL_RANKS["Ferrous Favor"].buff[ferrousFavorLevel - 1];
+    amount += v;
+    boostsUsed.push({ name: "Ferrous Favor", value: `+${v}` });
   }
 
   if (getPrngChance(20, "Native")) {
@@ -224,7 +282,7 @@ export function getIronDropAmount({
         updatedAoe,
         "Emerald Turtle",
         { dx, dy },
-        IRON_RECOVERY_TIME * 1000 - (rock?.stone?.boostedTime ?? 0),
+        getIronRecoveryDurationMs(rock, game),
         createdAt,
       );
 
@@ -257,7 +315,7 @@ export function getIronDropAmount({
   if (budUsed)
     boostsUsed.push({ name: budUsed, value: `+${yieldBoost.toString()}` });
 
-  if (game.island.type === "volcano") {
+  if (hasRequiredIslandExpansion(game.island.type, "volcano")) {
     amount += 0.1;
     boostsUsed.push({ name: "Volcano Bonus", value: "+0.1" });
   }
@@ -305,7 +363,9 @@ export function mineIron({
       throw new Error("Iron rock is not placed");
     }
 
-    if (!canMine(ironRock, createdAt)) {
+    if (
+      !canMine(ironRock, ironRock.name ?? "Iron Rock", stateCopy, createdAt)
+    ) {
       throw new Error("Iron is still recovering");
     }
 
@@ -343,19 +403,31 @@ export function mineIron({
 
     const amountInInventory = stateCopy.inventory.Iron || new Decimal(0);
 
-    const { time, boostsUsed: minedAtBoostsUsed } = getMinedAt({
+    const {
+      time,
+      baseDurationMs,
+      boostsUsed: minedAtBoostsUsed,
+    } = getMinedAt({
       createdAt,
       game: stateCopy,
     });
 
-    const { boostedTime, boostsUsed: boostedTimeBoostsUsed } = getBoostedTime({
-      game: stateCopy,
-    });
+    const {
+      baseTimeMs,
+      recoveryTimeMs,
+      boostsUsed: boostedTimeBoostsUsed,
+    } = getIronRecoveryTimeForDisplay({ game: stateCopy, now: createdAt });
 
-    ironRock.stone = {
-      minedAt: time,
-      boostedTime,
-    };
+    ironRock.stone = { minedAt: time };
+    if (baseDurationMs !== undefined) {
+      // Speed-rate model: real minedAt + permanent-only baseDurationMs. Temporary
+      // boosts are derived live from windows, so there's no baked discount; keep
+      // boostedTime at 0 so the yield-AOE budget uses the real windowed duration.
+      ironRock.stone.baseDurationMs = baseDurationMs;
+      ironRock.stone.boostedTime = 0;
+    } else {
+      ironRock.stone.boostedTime = baseTimeMs - recoveryTimeMs;
+    }
 
     stateCopy.farmActivity = trackFarmActivity(
       "Iron Mined",

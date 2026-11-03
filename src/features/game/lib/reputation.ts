@@ -1,7 +1,7 @@
 import { getDayOfYear } from "lib/utils/time";
-import { getKeys } from "../types/decorations";
-import { GameState } from "../types/game";
-import { getBumpkinLevel } from "./level";
+import { getKeys } from "lib/object";
+import type { GameState } from "../types/game";
+import { getAscensionLevel, meetsLevelRequirement } from "./level";
 import { hasVipAccess } from "./vipAccess";
 import { isFaceVerified } from "features/retreat/components/personhood/lib/faceRecognition";
 
@@ -24,9 +24,9 @@ export const REPUTATION_NAME: Record<Reputation, string> = {
 export const REPUTATION_TIERS: Record<Reputation, number> = {
   [Reputation.Beginner]: 0,
   [Reputation.Seedling]: 250,
-  [Reputation.Grower]: 350,
+  [Reputation.Grower]: 400,
   [Reputation.Cropkeeper]: 600,
-  [Reputation.GrandHarvester]: 1100,
+  [Reputation.GrandHarvester]: 1000,
 };
 
 export const REPUTATION_POINTS = {
@@ -43,7 +43,7 @@ export const REPUTATION_POINTS = {
 
 export const REPUTATION_TASKS: Record<
   keyof typeof REPUTATION_POINTS,
-  ({ game }: { game: GameState }) => boolean
+  ({ game, now }: { game: GameState; now: number }) => boolean
 > = {
   SpringIsland: ({ game }) => game.island.type !== "basic",
   DesertIsland: ({ game }) =>
@@ -54,17 +54,37 @@ export const REPUTATION_TASKS: Record<
     game.island.type !== "desert",
   Discord: ({ game }) => !!game.discord?.verified,
   ProofOfHumanity: ({ game }) => isFaceVerified({ game }) || !!game.verified,
-  Level100: ({ game }) => getBumpkinLevel(game.bumpkin.experience) >= 100,
-  Level15: ({ game }) => getBumpkinLevel(game.bumpkin.experience) >= 15,
+  Level100: ({ game }) =>
+    meetsLevelRequirement(
+      getAscensionLevel({
+        experience: game.bumpkin.experience,
+        ascensionLevel: game.island.ascensionLevel ?? 0,
+      }),
+      { ascension: 0, level: 100 },
+    ),
+  Level15: ({ game }) =>
+    meetsLevelRequirement(
+      getAscensionLevel({
+        experience: game.bumpkin.experience,
+        ascensionLevel: game.island.ascensionLevel ?? 0,
+      }),
+      { ascension: 0, level: 15 },
+    ),
   Bud: ({ game }) => getKeys(game.buds ?? {}).length > 0,
-  VIP: ({ game }) => hasVipAccess({ game: game }),
+  VIP: ({ game, now }) => hasVipAccess({ game: game, type: "full", now }),
 };
 
-export function getReputationPoints({ game }: { game: GameState }): number {
+export function getReputationPoints({
+  game,
+  now,
+}: {
+  game: GameState;
+  now: number;
+}): number {
   let points = 0;
 
   for (const [key, task] of Object.entries(REPUTATION_TASKS)) {
-    if (task({ game })) {
+    if (task({ game, now })) {
       points += REPUTATION_POINTS[key as keyof typeof REPUTATION_POINTS];
     }
   }
@@ -72,8 +92,14 @@ export function getReputationPoints({ game }: { game: GameState }): number {
   return points;
 }
 
-export function getReputation({ game }: { game: GameState }): Reputation {
-  const points = getReputationPoints({ game });
+export function getReputation({
+  game,
+  now,
+}: {
+  game: GameState;
+  now: number;
+}): Reputation {
+  const points = getReputationPoints({ game, now });
 
   // Get the highest tier that the player has reached
   const tier = getKeys(REPUTATION_TIERS)
@@ -88,16 +114,24 @@ export function getReputation({ game }: { game: GameState }): Reputation {
 export function hasReputation({
   game,
   reputation,
+  now,
 }: {
   game: GameState;
   reputation: Reputation;
+  now: number;
 }) {
-  const playerReputation = getReputation({ game });
+  const playerReputation = getReputation({ game, now });
   return playerReputation >= reputation;
 }
 
-export function getRemainingTrades({ game }: { game: GameState }) {
-  const today = getDayOfYear(new Date());
+export function getRemainingTrades({
+  game,
+  now,
+}: {
+  game: GameState;
+  now: number;
+}) {
+  const today = getDayOfYear(new Date(now));
   const dailyListings = game.trades.dailyListings ?? {
     date: 0,
     count: 0,
@@ -105,7 +139,7 @@ export function getRemainingTrades({ game }: { game: GameState }) {
 
   const count = dailyListings.date === today ? dailyListings.count : 0;
 
-  const playerReputation = getReputation({ game });
+  const playerReputation = getReputation({ game, now });
 
   if (playerReputation == Reputation.Beginner) {
     return 0;

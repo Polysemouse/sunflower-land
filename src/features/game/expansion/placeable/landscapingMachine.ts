@@ -1,82 +1,42 @@
-import { v4 as uuidv4 } from "uuid";
-import { GameEventName, PlacementEvent } from "features/game/events";
 import {
-  BUILDINGS_DIMENSIONS,
-  BuildingName,
-} from "features/game/types/buildings";
-import { CollectibleName } from "features/game/types/craftables";
-import { assign, createMachine, Interpreter, sendParent, State } from "xstate";
-import { Coordinates } from "../components/MapPlacement";
-import { Inventory } from "features/game/types/game";
+  draftPlacementEvent,
+  needsDraftPlacement,
+  settlePlacementEvent,
+  type LandscapingPlaceable,
+  type LandscapingPlaceableType,
+} from "./lib/placementEvents";
+import type { GameEventName, PlacementEvent } from "features/game/events";
+import type { CollectibleName } from "features/game/types/craftables";
 import {
-  Context as GameMachineContext,
+  assign,
+  createMachine,
+  type Interpreter,
+  sendParent,
+  type State,
+  choose,
+} from "xstate";
+import type { Coordinates } from "../components/MapPlacement";
+import type { Inventory } from "features/game/types/game";
+import {
+  type Context as GameMachineContext,
   saveGame,
 } from "features/game/lib/gameMachine";
-import { RESOURCES } from "features/game/types/resources";
-import { ResourceName } from "features/game/types/resources";
 import {
   RESOURCE_MOVE_EVENTS,
   RESOURCES_REMOVE_ACTIONS,
 } from "features/island/collectibles/MovableComponent";
-import { PlaceableLocation } from "features/game/types/collectibles";
-import { NFTName } from "features/game/events/landExpansion/placeNFT";
+import type { PlaceableLocation } from "features/game/types/collectibles";
+import type { FlipCollectibleAction } from "features/game/events/landExpansion/flipCollectible";
+import type { FlipFarmHandAction } from "features/game/events/landExpansion/flipFarmHand";
+import type { FlipBumpkinAction } from "features/game/events/landExpansion/flipBumpkin";
 
-export const RESOURCE_PLACE_EVENTS: Partial<
-  Record<ResourceName, GameEventName<PlacementEvent>>
-> = {
-  Tree: "tree.placed",
-  "Ancient Tree": "tree.placed",
-  "Sacred Tree": "tree.placed",
-  "Stone Rock": "stone.placed",
-  "Fused Stone Rock": "stone.placed",
-  "Reinforced Stone Rock": "stone.placed",
-  "Iron Rock": "iron.placed",
-  "Refined Iron Rock": "iron.placed",
-  "Tempered Iron Rock": "iron.placed",
-  "Gold Rock": "gold.placed",
-  "Pure Gold Rock": "gold.placed",
-  "Prime Gold Rock": "gold.placed",
-  "Crimstone Rock": "crimstone.placed",
-  "Crop Plot": "plot.placed",
-  "Fruit Patch": "fruitPatch.placed",
-  Beehive: "beehive.placed",
-  "Flower Bed": "flowerBed.placed",
-  "Sunstone Rock": "sunstone.placed",
-  "Oil Reserve": "oilReserve.placed",
-  "Lava Pit": "lavaPit.placed",
-};
-
-export function placeEvent(
-  name: LandscapingPlaceable,
-): GameEventName<PlacementEvent> {
-  if (name in RESOURCES) {
-    return RESOURCE_PLACE_EVENTS[
-      name as ResourceName
-    ] as GameEventName<PlacementEvent>;
-  }
-
-  if (name in BUILDINGS_DIMENSIONS) {
-    return "building.placed";
-  }
-
-  return "collectible.placed";
-}
-
-export type LandscapingPlaceable =
-  | BuildingName
-  | CollectibleName
-  | ResourceName
-  | NFTName;
-
-export type LandscapingPlaceableType =
-  | {
-      name: NFTName;
-      id: string;
-    }
-  | {
-      name: BuildingName | CollectibleName | ResourceName;
-      id?: string;
-    };
+// Placement-event building lives in a leaf module so it can be unit-tested;
+// re-exported here because this is where the rest of the app imports it from.
+export { placeEvent, RESOURCE_PLACE_EVENTS } from "./lib/placementEvents";
+export type {
+  LandscapingPlaceable,
+  LandscapingPlaceableType,
+} from "./lib/placementEvents";
 
 export interface Context {
   action?: GameEventName<PlacementEvent>;
@@ -95,6 +55,21 @@ export interface Context {
   moving?: { id: string; name: LandscapingPlaceable };
 
   maximum?: number;
+
+  /**
+   * The landscaping sandbox experiment is on for this player: placements are
+   * drafted by the parent and only reach the server on Save. With it off the
+   * machine keeps its pre-sandbox behaviour - a purchase places the item in
+   * one live event and hands the player straight back to playing.
+   */
+  sandbox?: boolean;
+
+  /**
+   * Bulk-removal mode. When true, the landscaping HUD collapses to a single
+   * "exit" button and a red banner, and any click on a placed item dispatches
+   * the matching `*.removed` event directly instead of selecting the item.
+   */
+  removalMode?: boolean;
 }
 
 type SelectEvent = {
@@ -140,7 +115,7 @@ type RemoveAllEvent = {
 type FlipEvent = {
   type: "FLIP";
   id: string;
-  name: CollectibleName;
+  name: CollectibleName | "FarmHand" | "Bumpkin";
   location: PlaceableLocation;
 };
 
@@ -176,6 +151,7 @@ export type BlockchainEvent =
   | RemoveEvent
   | RemoveAllEvent
   | FlipEvent
+  | { type: "TOGGLE_REMOVAL_MODE" }
   | { type: "CANCEL" }
   | { type: "BACK" };
 
@@ -292,11 +268,19 @@ export const landscapingMachine = createMachine<
             },
             BLUR: {
               actions: assign({
-                moving: (_, event) => undefined,
+                moving: (_) => undefined,
               }),
             },
             BUILD: {
               target: "idle",
+            },
+            TOGGLE_REMOVAL_MODE: {
+              actions: assign({
+                removalMode: (context) => !context.removalMode,
+                // Entering removal mode should also clear any current
+                // selection so the floating action row goes away.
+                moving: (_) => undefined,
+              }),
             },
             REMOVE_ALL: {
               target: "idle",
@@ -311,32 +295,49 @@ export const landscapingMachine = createMachine<
             FLIP: {
               target: "idle",
               actions: [
-                sendParent((_, event) => ({
-                  type: "collectible.flipped",
-                  id: event.id,
-                  name: event.name,
-                  location: event.location,
-                })),
+                sendParent(
+                  (_, event) =>
+                    ({
+                      type:
+                        event.name === "FarmHand"
+                          ? "farmHand.flipped"
+                          : event.name === "Bumpkin"
+                            ? "bumpkin.flipped"
+                            : "collectible.flipped",
+                      ...(event.name !== "Bumpkin" ? { id: event.id } : {}),
+                      ...(event.name !== "FarmHand" && event.name !== "Bumpkin"
+                        ? { name: event.name }
+                        : {}),
+                      location: event.location,
+                    }) as
+                      | FlipCollectibleAction
+                      | FlipFarmHandAction
+                      | FlipBumpkinAction,
+                ),
               ],
             },
             REMOVE: {
               target: "idle",
               actions: [
-                sendParent(
-                  (_context, event: RemoveEvent) =>
-                    ({
-                      type: event.event,
-                      ...(event.name in RESOURCE_MOVE_EVENTS
-                        ? {}
-                        : event.name === "Bud" || event.name === "Pet"
-                          ? { nft: event.name }
-                          : { name: event.name }),
-                      id: event.id,
-                      ...(event.name in RESOURCES_REMOVE_ACTIONS
-                        ? {}
-                        : { location: event.location }),
-                    }) as PlacementEvent,
-                ),
+                sendParent((_context, event: RemoveEvent) => {
+                  const isResource = event.name in RESOURCE_MOVE_EVENTS;
+                  const isNFT = event.name === "Bud" || event.name === "Pet";
+                  const isFarmHand = event.name === "FarmHand";
+                  const isBumpkin = event.name === "Bumpkin";
+                  const hasLocation = !(event.name in RESOURCES_REMOVE_ACTIONS);
+
+                  let nameField = {};
+                  if (isNFT) nameField = { nft: event.name };
+                  else if (!isResource && !isFarmHand && !isBumpkin)
+                    nameField = { name: event.name };
+
+                  return {
+                    type: event.event,
+                    ...nameField,
+                    ...(!isBumpkin ? { id: event.id } : {}),
+                    ...(hasLocation ? { location: event.location } : {}),
+                  };
+                }),
                 assign({ moving: (_) => undefined }),
               ],
             },
@@ -367,17 +368,19 @@ export const landscapingMachine = createMachine<
                   return !!context.multiple && !!e.nextOrigin;
                 },
                 actions: [
-                  sendParent(
-                    ({ placeable, action, coordinates: { x, y } }, e) => {
-                      return {
-                        type: action,
-                        name: placeable?.name,
-                        coordinates: { x, y },
-                        id: uuidv4().slice(0, 8),
-                        location: e.location,
-                      } as PlacementEvent;
-                    },
+                  sendParent((context, e) =>
+                    settlePlacementEvent(context, e.location),
                   ),
+                  // Buying several in a row settles one purchase per drop, so
+                  // each one needs its own draft placement too.
+                  choose([
+                    {
+                      cond: needsDraftPlacement,
+                      actions: sendParent((context, e) =>
+                        draftPlacementEvent(context, e.location),
+                      ),
+                    },
+                  ]),
                   assign({
                     collisionDetected: (_, event) => !!event.nextWillCollide,
                     origin: (_, event) => event.nextOrigin ?? { x: 0, y: 0 },
@@ -387,23 +390,17 @@ export const landscapingMachine = createMachine<
                 ],
               },
               {
+                // Sandbox experiment off: crafting or constructing places the
+                // item in one live event and hands the player back to playing,
+                // the way landscaping worked before the sandbox.
                 target: ["#saving.done", "done"],
                 cond: (context) =>
-                  // When buying/crafting items, return them to playing mode once bought
-                  context.action === "collectible.crafted" ||
-                  context.action === "collectible.placed" ||
-                  context.action === "building.constructed",
+                  !context.sandbox &&
+                  (context.action === "collectible.crafted" ||
+                    context.action === "building.constructed"),
                 actions: [
-                  sendParent(
-                    ({ placeable, action, coordinates: { x, y } }, e) => {
-                      return {
-                        type: action,
-                        name: placeable?.name,
-                        coordinates: { x, y },
-                        id: uuidv4().slice(0, 8),
-                        location: e.location,
-                      } as PlacementEvent;
-                    },
+                  sendParent((context, e) =>
+                    settlePlacementEvent(context, e.location),
                   ),
                   assign({
                     placeable: (_) => undefined,
@@ -411,34 +408,24 @@ export const landscapingMachine = createMachine<
                 ],
               },
               {
-                target: ["#saving.done", "idle"],
+                // Stay in landscaping (the `saving` region keeps flushing live
+                // actions). In the sandbox a purchase is sent live WITHOUT
+                // coordinates - the item lands in the chest - followed by a
+                // draft placement at the chosen tile, so Cancel keeps the
+                // purchase but not the placement. See lib/landscapingDraft.ts.
+                target: "idle",
                 actions: [
-                  sendParent(
-                    (
-                      { placeable, action, coordinates: { x, y } },
-                      { location },
-                    ) => {
-                      if (
-                        placeable?.name === "Bud" ||
-                        placeable?.name === "Pet"
-                      ) {
-                        return {
-                          type: action,
-                          coordinates: { x, y },
-                          id: placeable?.id,
-                          nft: placeable?.name,
-                          location,
-                        } as PlacementEvent;
-                      }
-                      return {
-                        type: action,
-                        name: placeable?.name,
-                        coordinates: { x, y },
-                        id: uuidv4().slice(0, 8),
-                        location,
-                      } as PlacementEvent;
-                    },
+                  sendParent((context, e) =>
+                    settlePlacementEvent(context, e.location),
                   ),
+                  choose([
+                    {
+                      cond: needsDraftPlacement,
+                      actions: sendParent((context, e) =>
+                        draftPlacementEvent(context, e.location),
+                      ),
+                    },
+                  ]),
                   assign({
                     placeable: (_) => undefined,
                   }),

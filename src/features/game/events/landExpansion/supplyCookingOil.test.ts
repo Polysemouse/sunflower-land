@@ -1,4 +1,4 @@
-import { GameState } from "features/game/types/game";
+import type { GameState } from "features/game/types/game";
 import { INITIAL_BUMPKIN, TEST_FARM } from "features/game/lib/constants";
 import { supplyCookingOil } from "./supplyCookingOil";
 import Decimal from "decimal.js-light";
@@ -225,5 +225,52 @@ describe("supplyCookingOil", () => {
         createdAt: Date.now(),
       }),
     ).toThrow("Oil capacity exceeded");
+  });
+});
+
+describe("supplyCookingOil exploit guards", () => {
+  const withFirePit: GameState = {
+    ...GAME_STATE,
+    inventory: { ...GAME_STATE.inventory, Oil: new Decimal(0) },
+    buildings: {
+      ...GAME_STATE.buildings,
+      "Fire Pit": [
+        {
+          id: "1",
+          createdAt: 0,
+          readyAt: 0,
+          coordinates: { x: 0, y: 0 },
+          oil: 0,
+        },
+      ],
+    },
+  };
+
+  it("rejects a negative oilQuantity (would otherwise mint free Oil)", () => {
+    expect(() =>
+      supplyCookingOil({
+        state: withFirePit,
+        action: {
+          type: "cookingOil.supplied",
+          building: "Fire Pit",
+          buildingId: "1",
+          oilQuantity: -1000,
+        },
+      }),
+    ).toThrow("Invalid oil quantity");
+  });
+
+  it("rejects a non-integer oilQuantity", () => {
+    expect(() =>
+      supplyCookingOil({
+        state: withFirePit,
+        action: {
+          type: "cookingOil.supplied",
+          building: "Fire Pit",
+          buildingId: "1",
+          oilQuantity: 1.5,
+        },
+      }),
+    ).toThrow("Invalid oil quantity");
   });
 });

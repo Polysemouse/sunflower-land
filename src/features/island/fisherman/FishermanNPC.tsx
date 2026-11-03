@@ -1,4 +1,5 @@
 /* eslint-disable react-hooks/exhaustive-deps */
+import type { GameState } from "features/game/types/game";
 import React, { useContext, useEffect, useRef, useState } from "react";
 import { useSelector } from "@xstate/react";
 
@@ -10,7 +11,7 @@ import mapIcon from "assets/icons/map.webp";
 
 import { ZoomContext } from "components/ZoomProvider";
 import Spritesheet, {
-  SpriteSheetInstance,
+  type SpriteSheetInstance,
 } from "components/animation/SpriteAnimator";
 import { PIXEL_SCALE } from "features/game/lib/constants";
 import { Context } from "features/game/GameProvider";
@@ -19,17 +20,21 @@ import { CloseButtonPanel } from "features/game/components/CloseablePanel";
 import { NPC_WEARABLES } from "lib/npcs";
 import { CONFIG } from "lib/config";
 import { FishCaught } from "./FishCaught";
-import { getKeys } from "features/game/types/craftables";
+import { getKeys } from "lib/object";
 import {
   FISH,
-  FishName,
+  type FishName,
   FISH_DIFFICULTY,
-  MarineMarvelName,
+  type MarineMarvelName,
   MAP_PIECE_MARVELS,
 } from "features/game/types/fishing";
-import { MachineState } from "features/game/lib/gameMachine";
+
+import type { MachineState } from "features/game/lib/gameMachine";
 import { gameAnalytics } from "lib/gameAnalytics";
-import { getBumpkinLevel } from "features/game/lib/level";
+import {
+  getAscensionLevel,
+  meetsLevelRequirement,
+} from "features/game/lib/level";
 import { Label } from "components/ui/Label";
 import { ITEM_DETAILS } from "features/game/types/images";
 import { useAppTranslation } from "lib/i18n/useAppTranslations";
@@ -37,7 +42,10 @@ import classNames from "classnames";
 import { isFishFrenzy, isFullMoon } from "features/game/types/calendar";
 import { FishermanPuzzle } from "features/island/fisherman/FishingPuzzle";
 import { Panel } from "components/ui/Panel";
-import { Coordinates } from "features/game/expansion/components/MapPlacement";
+import type { Coordinates } from "features/game/expansion/components/MapPlacement";
+import { hasRequiredIslandExpansion } from "features/game/lib/hasRequiredIslandExpansion";
+
+const HITBOX_SIZE_PX = 50;
 
 type SpriteFrames = { startAt: number; endAt: number };
 
@@ -87,7 +95,13 @@ interface Props {
 }
 
 const _canFish = (state: MachineState) =>
-  getBumpkinLevel(state.context.state.bumpkin?.experience ?? 0) >= 5;
+  meetsLevelRequirement(
+    getAscensionLevel({
+      experience: state.context.state.bumpkin.experience ?? 0,
+      ascensionLevel: state.context.state.island.ascensionLevel ?? 0,
+    }),
+    { ascension: 0, level: 5 },
+  );
 const _state = (state: MachineState) => state.context.state;
 
 const _marvel = (state: MachineState) => {
@@ -229,15 +243,21 @@ export const FishermanNPC: React.FC<Props> = ({ onClick }) => {
 
   const claim = () => {
     if (fishing.wharf.caught) {
-      const state = gameService.send("rod.reeled");
+      const countFishCaught = (activity: GameState["farmActivity"]) =>
+        getKeys(FISH).reduce(
+          (total, name) => total + (activity[`${name} Caught`] ?? 0),
+          0,
+        );
 
-      const totalFishCaught = getKeys(FISH).reduce(
-        (total, name) =>
-          total + (state.context.state.farmActivity[`${name} Caught`] ?? 0),
-        0,
+      const caughtBefore = countFishCaught(
+        gameService.getSnapshot().context.state.farmActivity,
       );
+      const state = gameService.send("rod.reeled");
+      const caughtAfter = countFishCaught(state.context.state.farmActivity);
 
-      if (totalFishCaught === 1) {
+      // Catches are counted in units, so a first reel that lands 2 fish would
+      // skip a check for a total of exactly 1.
+      if (caughtBefore === 0 && caughtAfter > 0) {
         gameAnalytics.trackMilestone({
           event: "Tutorial:Fishing:Completed",
         });
@@ -268,7 +288,9 @@ export const FishermanNPC: React.FC<Props> = ({ onClick }) => {
   };
 
   const fishermanPosition = (): Coordinates => {
-    if (island.type === "volcano") {
+    // Ascension islands (swamp, spooky, crystal, galaxy, marble) reuse the volcano
+    // dock art, so the fisherman stands at the same spot.
+    if (hasRequiredIslandExpansion(island.type, "volcano")) {
       return {
         x: 53,
         y: 44,
@@ -300,13 +322,15 @@ export const FishermanNPC: React.FC<Props> = ({ onClick }) => {
   return (
     <>
       <div
-        className={classNames("absolute z-50 w-full h-full", {
+        className={classNames("absolute z-50", {
           "cursor-pointer hover:img-highlight": !fishing.wharf.castedAt,
         })}
         onClick={handleClick}
         style={{
           left: `${PIXEL_SCALE * x}px`,
           top: `${PIXEL_SCALE * y}px`,
+          width: `${PIXEL_SCALE * HITBOX_SIZE_PX}px`,
+          height: `${PIXEL_SCALE * HITBOX_SIZE_PX}px`,
         }}
       >
         {!canFish && (
@@ -484,7 +508,10 @@ export const FishermanNPC: React.FC<Props> = ({ onClick }) => {
           bumpkinParts={NPC_WEARABLES["reelin roy"]}
         >
           <FishCaught
+            state={state}
             caught={fishing.wharf.caught ?? {}}
+            shrimpOnesieBonus={fishing.wharf.shrimpOnesieBonus}
+            ottyBonus={fishing.wharf.ottyBonus}
             multiplier={fishing.wharf.multiplier}
             onClaim={close}
             farmActivity={farmActivity}

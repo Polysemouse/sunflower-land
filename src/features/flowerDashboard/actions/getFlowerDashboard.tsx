@@ -1,9 +1,11 @@
 import { CONFIG } from "lib/config";
+import { fetchWithRetry } from "lib/fetchWithRetry";
 
 type TopPlayer = {
   player: string;
   amount: number;
   tokenUri: string;
+  farmId?: number;
 };
 
 export type FlowerDashboardData = {
@@ -36,7 +38,7 @@ export type FlowerDashboardData = {
 export const getFlowerDashboard = async (): Promise<
   FlowerDashboardData & { lastUpdated: number }
 > => {
-  const res = await fetch(`${CONFIG.API_URL}/flower-dashboard`);
+  const res = await fetchWithRetry(`${CONFIG.API_URL}/flower-dashboard`);
 
   const response = await res.json();
 

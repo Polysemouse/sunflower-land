@@ -1,8 +1,14 @@
 import { instaGrowFlower } from "./instaGrowFlower";
-import { GameState } from "../../types/game";
-import { FLOWER_SEEDS, FLOWERS, FlowerName } from "../../types/flowers";
+import type { GameState } from "../../types/game";
+import { FLOWER_SEEDS, FLOWERS, type FlowerName } from "../../types/flowers";
 import Decimal from "decimal.js-light";
 import { INITIAL_FARM } from "features/game/lib/constants";
+import { getFlowerReadyAt } from "features/game/lib/flowerBedReadiness";
+import { CONFIG } from "lib/config";
+
+const setNetwork = (network: "mainnet" | "amoy") => {
+  (CONFIG as { NETWORK: "mainnet" | "amoy" }).NETWORK = network;
+};
 
 const GAME_STATE: GameState = {
   flowers: {
@@ -220,5 +226,105 @@ describe("instaGrowFlower", () => {
     });
 
     expect(result.beehives["123"].flowers).toEqual([]);
+  });
+});
+
+describe("instaGrowFlower — SPEED_BOOSTS speed windows", () => {
+  const originalNetwork = CONFIG.NETWORK;
+  beforeEach(() => setNetwork("amoy"));
+  afterAll(() => setNetwork(originalNetwork));
+
+  const flowerName: FlowerName = "Red Pansy";
+  const baseMs = FLOWER_SEEDS[FLOWERS[flowerName].seed].plantSeconds * 1000;
+
+  it("zeroes baseDurationMs instead of back-dating plantedAt", () => {
+    const createdAt = 2_000_000_000;
+    const plantedAt = createdAt;
+    const flowerBedId = "1";
+
+    const result = instaGrowFlower({
+      state: {
+        ...INITIAL_FARM,
+        inventory: { Obsidian: new Decimal(100) },
+        beehives: {},
+        flowers: {
+          discovered: {},
+          flowerBeds: {
+            [flowerBedId]: {
+              createdAt: 0,
+              x: 0,
+              y: 0,
+              flower: { name: flowerName, plantedAt, baseDurationMs: baseMs },
+            },
+          },
+        },
+      } as GameState,
+      action: { type: "flower.instaGrown", id: flowerBedId },
+      createdAt,
+    });
+
+    const flower = result.flowers.flowerBeds[flowerBedId].flower!;
+
+    // Windowed insta-grow zeroes remaining work and anchors the start to now.
+    expect(flower.baseDurationMs).toEqual(0);
+    expect(flower.plantedAt).toEqual(createdAt);
+    // Ready now: readyAt resolves to the (now) start === createdAt.
+    expect(getFlowerReadyAt(flower, result)).toEqual(createdAt);
+    // Some Obsidian was spent.
+    expect(result.inventory.Obsidian!.lt(new Decimal(100))).toBe(true);
+  });
+
+  it("credits beehive honey accrued before insta-growing an attached windowed flower", () => {
+    const createdAt = 2_000_000_000;
+    const plantedAt = createdAt - 12 * 60 * 60 * 1000; // planted 12h ago
+    const flowerBedId = "1";
+
+    const result = instaGrowFlower({
+      state: {
+        ...INITIAL_FARM,
+        inventory: { Obsidian: new Decimal(100) },
+        beehives: {
+          hive: {
+            swarm: false,
+            honey: { updatedAt: plantedAt, produced: 0 },
+            x: 0,
+            y: 0,
+            flowers: [
+              {
+                id: flowerBedId,
+                attachedAt: plantedAt,
+                attachedUntil: plantedAt + baseMs,
+              },
+            ],
+          },
+        },
+        flowers: {
+          discovered: {},
+          flowerBeds: {
+            [flowerBedId]: {
+              createdAt: 0,
+              x: 0,
+              y: 0,
+              // Windowed flower with a 24h base still 12h from ready.
+              flower: {
+                name: flowerName,
+                plantedAt,
+                baseDurationMs: 24 * 60 * 60 * 1000,
+              },
+            },
+          },
+        },
+      } as GameState,
+      action: { type: "flower.instaGrown", id: flowerBedId },
+      createdAt,
+    });
+
+    const flower = result.flowers.flowerBeds[flowerBedId].flower!;
+    // readyAt anchored to now, NOT collapsed back to the (past) plantedAt.
+    expect(flower.plantedAt).toEqual(createdAt);
+    expect(getFlowerReadyAt(flower, result)).toEqual(createdAt);
+    // Honey produced over [attachedAt, insta-grow] is credited, not clamped to 0
+    // by a past readyAt.
+    expect(result.beehives.hive.honey.produced).toBeGreaterThan(0);
   });
 });

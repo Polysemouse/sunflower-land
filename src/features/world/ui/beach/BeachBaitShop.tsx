@@ -3,20 +3,22 @@ import React, { useContext, useState } from "react";
 import { Box } from "components/ui/Box";
 
 import { Context } from "features/game/GameProvider";
-import { getKeys } from "features/game/types/craftables";
-import { ITEM_DETAILS } from "features/game/types/images";
+import { getKeys, getObjectEntries } from "lib/object";
+import {
+  ITEM_DETAILS,
+  getTranslatedItemName,
+} from "features/game/types/images";
 
 import { SplitScreenView } from "components/ui/SplitScreenView";
 import { SUNNYSIDE } from "assets/sunnyside";
 import { PIXEL_SCALE } from "features/game/lib/constants";
 import {
   PURCHASEABLE_BAIT,
-  PurchaseableBait,
+  type PurchaseableBait,
 } from "features/game/types/fishing";
-import { PurchaseType } from "features/game/types/buyOptionPurchaseItem";
+import type { PurchaseType } from "features/game/types/buyOptionPurchaseItem";
 import { gameAnalytics } from "lib/gameAnalytics";
 import { useAppTranslation } from "lib/i18n/useAppTranslations";
-import { getObjectEntries } from "features/game/expansion/lib/utils";
 import { useSelector } from "@xstate/react";
 import { CraftingRequirements } from "components/ui/layouts/CraftingRequirements";
 import { Button } from "components/ui/Button";
@@ -106,7 +108,9 @@ export const BeachBaitShop: React.FC = () => {
               </div>
             ) : (
               <>
-                <p className="text-xs mb-2 px-1 text-center">{`Choose your purchase option:`}</p>
+                <p className="text-xs mb-2 px-1 text-center">
+                  {t("purchaseOption.choose")}
+                </p>
                 <div className="flex flex-row sm:flex-col gap-1">
                   {getKeys(purchaseOptions).map((type) => {
                     return (
@@ -116,7 +120,7 @@ export const BeachBaitShop: React.FC = () => {
                         onClick={() => setPurchaseType(type)}
                       >
                         <div className="flex items-center">
-                          <p>{type}</p>
+                          <p>{getTranslatedItemName(type)}</p>
                           <img
                             src={ITEM_DETAILS[type].image}
                             className="h-5 absolute right-1 top-1"

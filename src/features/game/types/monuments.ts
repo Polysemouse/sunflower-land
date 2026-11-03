@@ -1,9 +1,11 @@
 import Decimal from "decimal.js-light";
-import { Decoration, getKeys } from "./decorations";
-import { GameState, InventoryItemName } from "./game";
-import { ClutterName } from "./clutter";
-import { PetName, PetNFTName } from "./pets";
+import type { Decoration } from "./decorations";
+import { getKeys } from "lib/object";
+import type { BoostName, GameState, InventoryItemName } from "./game";
+import type { ClutterName } from "./clutter";
+import type { PetName, PetNFTName } from "./pets";
 import { isCollectibleBuilt } from "../lib/collectibleBuilt";
+import type { LevelRequirement } from "features/game/lib/level";
 
 type HelpLimitMonumentName =
   | "Farmer's Monument"
@@ -13,7 +15,10 @@ type HelpLimitMonumentName =
 type MegastoreMonumentName =
   | "Teamwork Monument"
   | "Cornucopia"
-  | "Poseidon's Throne";
+  | "Poseidon's Throne"
+  | "Crystal Altar"
+  | "Ascension Monument"
+  | "Duende Monument";
 
 export type WorkbenchMonumentName =
   | HelpLimitMonumentName
@@ -26,7 +31,7 @@ export type WorkbenchMonumentName =
 
 type HelpLimitMonument = Omit<Decoration, "name"> & {
   name: HelpLimitMonumentName;
-  level?: number;
+  level?: LevelRequirement;
 };
 
 type MegastoreMonument = Omit<Decoration, "name"> & {
@@ -35,7 +40,7 @@ type MegastoreMonument = Omit<Decoration, "name"> & {
 
 export type LandscapingMonument = Omit<Decoration, "name"> & {
   name: WorkbenchMonumentName;
-  level?: number;
+  level?: LevelRequirement;
 };
 
 export type Monument =
@@ -65,6 +70,24 @@ export const MEGASTORE_MONUMENTS: Record<
     coins: 0,
     ingredients: {},
   },
+  "Crystal Altar": {
+    name: "Crystal Altar",
+    description: "",
+    coins: 0,
+    ingredients: {},
+  },
+  "Ascension Monument": {
+    name: "Ascension Monument",
+    description: "",
+    coins: 0,
+    ingredients: {},
+  },
+  "Duende Monument": {
+    name: "Duende Monument",
+    description: "",
+    coins: 0,
+    ingredients: {},
+  },
 };
 
 export const HELP_LIMIT_MONUMENTS: Record<
@@ -78,7 +101,7 @@ export const HELP_LIMIT_MONUMENTS: Record<
     ingredients: {
       Gem: new Decimal(100),
     },
-    level: 10,
+    level: { ascension: 0, level: 10 },
   },
   "Woodcutter's Monument": {
     name: "Woodcutter's Monument",
@@ -87,7 +110,7 @@ export const HELP_LIMIT_MONUMENTS: Record<
     ingredients: {
       Gem: new Decimal(200),
     },
-    level: 20,
+    level: { ascension: 0, level: 20 },
   },
   "Miner's Monument": {
     name: "Miner's Monument",
@@ -96,7 +119,7 @@ export const HELP_LIMIT_MONUMENTS: Record<
     ingredients: {
       Gem: new Decimal(300),
     },
-    level: 50,
+    level: { ascension: 0, level: 50 },
   },
 };
 
@@ -115,20 +138,20 @@ export const WORKBENCH_MONUMENTS: Record<
     description: "",
     coins: 500,
     ingredients: {},
-    level: 16,
+    level: { ascension: 0, level: 16 },
   },
   "Big Apple": {
     name: "Big Apple",
     description: "",
     coins: 1500,
     ingredients: {},
-    level: 30,
+    level: { ascension: 0, level: 30 },
   },
   "Big Banana": {
     name: "Big Banana",
     description: "",
     coins: 4000,
-    level: 50,
+    level: { ascension: 0, level: 50 },
     ingredients: {},
   },
   "Basic Cooking Pot": {
@@ -136,21 +159,21 @@ export const WORKBENCH_MONUMENTS: Record<
     description: "",
     coins: 0,
     ingredients: { Gem: new Decimal(10) },
-    level: 20,
+    level: { ascension: 0, level: 20 },
   },
   "Expert Cooking Pot": {
     name: "Expert Cooking Pot",
     description: "",
     coins: 0,
     ingredients: { Gem: new Decimal(50) },
-    level: 40,
+    level: { ascension: 0, level: 40 },
   },
   "Advanced Cooking Pot": {
     name: "Advanced Cooking Pot",
     description: "",
     coins: 0,
     ingredients: { Gem: new Decimal(500) },
-    level: 60,
+    level: { ascension: 0, level: 60 },
   },
 };
 
@@ -172,6 +195,9 @@ export const REQUIRED_CHEERS: Record<MonumentName, number> = {
   "Teamwork Monument": 100,
   Cornucopia: 1000,
   "Poseidon's Throne": 2000,
+  "Crystal Altar": 1000,
+  "Ascension Monument": 1000,
+  "Duende Monument": 1000,
 };
 
 export type VillageProjectName = Exclude<
@@ -212,7 +238,31 @@ export const REWARD_ITEMS: Record<
   },
 };
 
-export function isMonumentComplete({
+export function getProjectReward({
+  project,
+  game,
+  amount,
+}: {
+  amount: number;
+  project: MonumentName;
+  game: GameState;
+}) {
+  let newAmount = amount;
+  const boostsUsed: { name: BoostName; value: string }[] = [];
+
+  if (
+    isMonumentActive({ game, monument: "Cornucopia" }) &&
+    (project === "Big Orange" ||
+      project === "Big Apple" ||
+      project === "Big Banana")
+  ) {
+    newAmount += 1;
+    boostsUsed.push({ name: "Cornucopia", value: "+1" });
+  }
+  return { amount: newAmount, boostsUsed };
+}
+
+function isMonumentComplete({
   game,
   monument,
 }: {
@@ -225,6 +275,19 @@ export function isMonumentComplete({
   );
 }
 
+export function isMonumentActive({
+  game,
+  monument,
+}: {
+  game: GameState;
+  monument: MonumentName;
+}) {
+  return (
+    isMonumentComplete({ game, monument }) &&
+    isCollectibleBuilt({ name: monument, game })
+  );
+}
+
 export function isHelpComplete({ game }: { game: GameState }) {
   return getHelpRequired({ game }).totalCount <= 0;
 }
@@ -233,10 +296,36 @@ export function isHelpComplete({ game }: { game: GameState }) {
 export function getHelpRequired({ game }: { game: GameState }) {
   const villageProjects = game.socialFarming.villageProjects;
   const collectibles = game.collectibles;
-  const homeCollectibles = game.home.collectibles;
   const petHouseCollectibles = game.petHouse?.pets ?? {};
+
+  /**
+   * Every placement surface that sits *inside* the player's house: the legacy
+   * `home` room plus the two interior floors that replaced it. They all report
+   * into the same `home` bucket, which is what the house building badge and the
+   * VisitorGuide read — as far as a visitor is concerned it is one building.
+   *
+   * Without the interior floors here, a project or pet that has been imported
+   * out of the old home is invisible to the whole help system: it isn't counted
+   * on the house, `isHelpComplete` returns true without it, and the visitor is
+   * never sent inside to help with it.
+   */
+  const insideHouse = [
+    game.home.collectibles,
+    game.interior?.ground.collectibles,
+    game.interior?.level_one?.collectibles,
+  ];
+
+  const isPlacedInsideHouse = (name: MonumentName | PetName) =>
+    insideHouse.some((c) => !!c?.[name]?.some((item) => !!item.coordinates));
+
+  /** Pet NFTs carry their surface on the item rather than in a keyed bucket. */
+  const HOUSE_LOCATIONS = ["home", "interior", "level_one"];
+
   const clutterLocations = game.socialFarming.clutter?.locations;
   const pets = game.pets;
+  const isPetHousePlaced = !!game.buildings["Pet House"]?.some(
+    (b) => !!b.coordinates,
+  );
 
   // Reduce clutter to get a count of each type
   const clutter = getKeys(clutterLocations ?? {}).reduce(
@@ -264,9 +353,7 @@ export function getHelpRequired({ game }: { game: GameState }) {
       const isProjectPlacedOnLand = !!collectibles[monument]?.some(
         (item) => !!item.coordinates,
       );
-      const isProjectPlacedInHome = !!homeCollectibles[monument]?.some(
-        (item) => !!item.coordinates,
-      );
+      const isProjectPlacedInHome = isPlacedInsideHouse(monument);
 
       if (isProjectPlacedOnLand) {
         acc.pendingLandProjects = [...acc.pendingLandProjects, monument];
@@ -304,9 +391,7 @@ export function getHelpRequired({ game }: { game: GameState }) {
       const isPetPlacedOnLand = !!collectibles[name]?.some(
         (item) => !!item.coordinates,
       );
-      const isPetPlacedOnHome = !!homeCollectibles[name]?.some(
-        (item) => !!item.coordinates,
-      );
+      const isPetPlacedOnHome = isPlacedInsideHouse(name);
       const isPetPlacedOnPetHouse = !!petHouseCollectibles[name]?.some(
         (item) => !!item.coordinates,
       );
@@ -323,7 +408,7 @@ export function getHelpRequired({ game }: { game: GameState }) {
         return acc;
       }
 
-      if (isPetPlacedOnPetHouse) {
+      if (isPetPlacedOnPetHouse && isPetHousePlaced) {
         acc.pendingPetHouseCommonPets = [
           ...acc.pendingPetHouseCommonPets,
           name,
@@ -359,13 +444,13 @@ export function getHelpRequired({ game }: { game: GameState }) {
           return acc;
         }
 
-        if (pet.location === "home") {
+        if (HOUSE_LOCATIONS.includes(pet.location ?? "")) {
           acc.pendingHomeNftPets = [...acc.pendingHomeNftPets, pet.name];
 
           return acc;
         }
 
-        if (pet.location === "petHouse") {
+        if (pet.location === "petHouse" && isPetHousePlaced) {
           acc.pendingPetHouseNftPets = [
             ...acc.pendingPetHouseNftPets,
             pet.name,
@@ -445,18 +530,12 @@ export function getHelpLimit({
   };
 
   getKeys(monuments).forEach((monument) => {
-    if (
-      isMonumentComplete({ game, monument }) &&
-      isCollectibleBuilt({ name: monument, game })
-    ) {
+    if (isMonumentActive({ game, monument })) {
       limit += 1;
     }
   });
 
-  if (
-    isCollectibleBuilt({ name: "Teamwork Monument", game }) &&
-    isMonumentComplete({ game, monument: "Teamwork Monument" })
-  ) {
+  if (isMonumentActive({ game, monument: "Teamwork Monument" })) {
     limit += 1;
   }
 
@@ -481,14 +560,29 @@ export function hasHitHelpLimit({
   return totalHelpedToday >= getHelpLimit({ game });
 }
 
-export const RAFFLE_REWARDS: Partial<
-  Record<
-    MonumentName,
-    {
-      item: InventoryItemName;
-      amount: number;
-    }
-  >
+/**
+ * Projects whose completion also hands a prize to the raffle winner, which
+ * means writing to *another player's* farm. That can only happen server side,
+ * so these go through the `project.completed` effect.
+ */
+export type RaffleProjectName =
+  | "Basic Cooking Pot"
+  | "Expert Cooking Pot"
+  | "Advanced Cooking Pot";
+
+/**
+ * Projects whose completion touches nothing but the owner's own game state.
+ * These are completed locally by `project.collected` and synced on the next
+ * autosave, so the player gets their reward without a round trip.
+ */
+export type SoloProjectName = Exclude<VillageProjectName, RaffleProjectName>;
+
+export const RAFFLE_REWARDS: Record<
+  RaffleProjectName,
+  {
+    item: InventoryItemName;
+    amount: number;
+  }
 > = {
   "Basic Cooking Pot": {
     item: "Bronze Food Box",
@@ -503,3 +597,15 @@ export const RAFFLE_REWARDS: Partial<
     amount: 1,
   },
 };
+
+export const SOLO_PROJECTS: SoloProjectName[] = [
+  "Big Orange",
+  "Big Apple",
+  "Big Banana",
+];
+
+export function hasProjectRaffle(
+  project: MonumentName,
+): project is RaffleProjectName {
+  return project in RAFFLE_REWARDS;
+}

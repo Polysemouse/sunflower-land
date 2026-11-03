@@ -6,7 +6,7 @@ import { PortalContext } from "../../lib/PortalProvider";
 import { Label } from "components/ui/Label";
 import factions from "assets/icons/factions.webp";
 
-import { PortalMachineState } from "../../lib/cropsAndChickensMachine";
+import type { PortalMachineState } from "../../lib/cropsAndChickensMachine";
 import { SUNNYSIDE } from "assets/sunnyside";
 import trophy from "assets/icons/trophy.png";
 import goldenSeed from "public/crops-and-chickens/golden_seed.png";
@@ -15,7 +15,7 @@ import { SquareIcon } from "components/ui/SquareIcon";
 import { hasFeatureAccess } from "lib/flags";
 import letter from "assets/icons/letter.png";
 import { useMailRead } from "../../hooks/useMailRead";
-import { CropsAndChickensPage } from "./CropsAndChickensHome";
+import type { CropsAndChickensPage } from "./CropsAndChickensHome";
 import {
   getDailyHighscore,
   getWeeklyHighscore,

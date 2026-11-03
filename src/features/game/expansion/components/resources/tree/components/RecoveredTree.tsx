@@ -2,7 +2,7 @@ import React, { useContext, useEffect, useRef, useState } from "react";
 import { useSelector } from "@xstate/react";
 
 import Spritesheet, {
-  SpriteSheetInstance,
+  type SpriteSheetInstance,
 } from "components/animation/SpriteAnimator";
 
 import { PIXEL_SCALE } from "features/game/lib/constants";
@@ -12,14 +12,18 @@ import { InnerPanel } from "components/ui/Panel";
 import classNames from "classnames";
 import { SUNNYSIDE } from "assets/sunnyside";
 import { ZoomContext } from "components/ZoomProvider";
-import { GameState, TemperateSeasonName } from "features/game/types/game";
-import { TreeName } from "features/game/types/resources";
+import type { GameState, TemperateSeasonName } from "features/game/types/game";
+import type { TreeName } from "features/game/types/resources";
 import { useAppTranslation } from "lib/i18n/useAppTranslations";
 import { useSound } from "lib/utils/hooks/useSound";
 import { TREE_SHAKE_SHEET_VARIANTS } from "features/island/lib/alternateArt";
-import { getCurrentBiome, LandBiomeName } from "features/island/biomes/biomes";
+import {
+  getCurrentBiome,
+  type LandBiomeName,
+} from "features/island/biomes/biomes";
 import { Context } from "features/game/GameProvider";
 import { READONLY_RESOURCE_COMPONENTS } from "features/island/resources/Resource";
+import { getTranslatedItemName } from "features/game/types/images";
 
 const tool = "Axe";
 
@@ -159,7 +163,7 @@ const RecoveredTreeComponent: React.FC<Props> = ({
           <InnerPanel className="absolute whitespace-nowrap w-fit z-50">
             <div className="text-xs mx-1 p-1">
               <span>
-                {t("craft")} {tool.toLowerCase()}
+                {t("craft")} {getTranslatedItemName(tool).toLowerCase()}
               </span>
             </div>
           </InnerPanel>

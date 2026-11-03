@@ -1,15 +1,17 @@
 import { CONFIG } from "lib/config";
 import { ERRORS } from "lib/errors";
 import { sanitizeHTTPResponse } from "lib/network";
-import { GameEvent, GameEventName } from "../events";
-import { PastAction } from "../lib/gameMachine";
+import type { GameEvent, GameEventName } from "../events";
+import type { PastAction } from "../lib/gameMachine";
 import { makeGame } from "../lib/transforms";
 import { getSessionId } from "./loadSession";
 import Decimal from "decimal.js-light";
-import { SeedBoughtAction } from "../events/landExpansion/seedBought";
-import { GameState } from "../types/game";
+import type { SeedBoughtAction } from "../events/landExpansion/seedBought";
+import type { GameState } from "../types/game";
 import { AUTO_SAVE_INTERVAL } from "../expansion/Game";
+import { flushMetrics } from "../lib/interactionMetrics";
 import { getRecordHash } from "lib/stateHash";
+import { secureFetch } from "lib/requestToken";
 
 type StateHash = Record<keyof GameState, string>;
 
@@ -84,6 +86,7 @@ export async function autosaveRequest(
     actions: any[];
     stateHash?: Record<keyof GameState, string>;
   },
+  apiUrl: string = API_URL,
 ) {
   const ttl = (window as any)["x-amz-ttl"];
 
@@ -92,11 +95,13 @@ export async function autosaveRequest(
 
   const controller = new AbortController();
   const timeoutId = setTimeout(() => {
-    controller.abort();
+    // Abort with a reason so the rejection says why it was cancelled instead of
+    // the anonymous, browser-specific "signal is aborted without reason".
+    controller.abort(new Error(ERRORS.AUTOSAVE_TIMEOUT));
   }, AUTO_SAVE_INTERVAL);
 
   try {
-    return await window.fetch(`${API_URL}/autosave/${request.farmId}`, {
+    return await secureFetch(`${apiUrl}/autosave/${request.farmId}`, {
       method: "POST",
       headers: {
         ...{
@@ -114,6 +119,7 @@ export async function autosaveRequest(
         cachedKey,
         deviceTrackerId: request.deviceTrackerId,
         stateHash: request.stateHash,
+        metrics: flushMetrics(),
       }),
       signal: controller.signal,
     });
@@ -124,7 +130,7 @@ export async function autosaveRequest(
 
 let autosaveErrors = 0;
 
-export async function autosave(request: Request, retries = 0) {
+export async function autosave(request: Request) {
   if (!API_URL) return { verified: true };
 
   // Shorten the payload
@@ -154,25 +160,23 @@ export async function autosave(request: Request, retries = 0) {
   });
 
   if (response.status === 503) {
-    const data = await response.json();
-    if (data.message === "Temporary maintenance") {
+    const data = await response.json().catch(() => null);
+    if (data?.message === "Temporary maintenance") {
       throw new Error(ERRORS.MAINTENANCE);
-    } else {
-      // Throttling. Do exponential backoff with jitter
-      const backoff = Math.min(1000 * Math.pow(2, retries), 10000);
-      const jitter = Math.random() * 1000;
-
-      await new Promise((resolve) => setTimeout(resolve, backoff + jitter));
-
-      if (retries < 3) {
-        return await autosave(request, retries + 1);
-      }
-
-      throw new Error(ERRORS.AUTOSAVE_SERVER_ERROR);
     }
+
+    // Retries are handled by fetchWithRetry; a 503 here is terminal
+    throw new Error(ERRORS.AUTOSAVE_SERVER_ERROR);
   }
 
   if (response.status === 401) {
+    // The BE tags disabled-login as a 401 with a structured body so we
+    // can route the user to the dedicated GoogleLoginDisabled screen
+    // instead of the generic SessionExpired one.
+    const data = await response.json().catch(() => null);
+    if (data?.errorCode === ERRORS.GOOGLE_LOGIN_DISABLED) {
+      throw new Error(ERRORS.GOOGLE_LOGIN_DISABLED);
+    }
     throw new Error(ERRORS.SESSION_EXPIRED);
   }
 

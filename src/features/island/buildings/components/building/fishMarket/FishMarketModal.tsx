@@ -11,27 +11,37 @@ import { Button } from "components/ui/Button";
 import vipIcon from "assets/icons/vip.webp";
 
 import { Context } from "features/game/GameProvider";
-import { BuildingProduct, InventoryItemName } from "features/game/types/game";
+import type {
+  BoostName,
+  BuildingProduct,
+  InventoryItemName,
+} from "features/game/types/game";
 import {
   FISH_PROCESSING_TIME_SECONDS,
   getFishProcessingRequirements,
   isProcessedFood,
 } from "features/game/types/fishProcessing";
-import { ProcessedResource } from "features/game/types/processedFood";
+import type { ProcessedResource } from "features/game/types/processedFood";
 import { useAppTranslation } from "lib/i18n/useAppTranslations";
-import { hasVipAccess } from "features/game/lib/vipAccess";
-import { MAX_FISH_PROCESSING_SLOTS } from "features/game/events/landExpansion/processResource";
-import { ITEM_DETAILS } from "features/game/types/images";
+import {
+  getFishProcessingTime,
+  MAX_FISH_PROCESSING_SLOTS,
+} from "features/game/events/landExpansion/processResource";
+import {
+  ITEM_DETAILS,
+  getTranslatedItemName,
+} from "features/game/types/images";
 import { SUNNYSIDE } from "assets/sunnyside";
 import { InProgressInfo } from "../InProgressInfo";
 import { Queue } from "../Queue";
 import { Label } from "components/ui/Label";
 import process from "assets/icons/process.webp";
 import { NPC_WEARABLES } from "lib/npcs";
-import { MachineState } from "features/game/lib/gameMachine";
+import type { MachineState } from "features/game/lib/gameMachine";
 import { ModalOverlay } from "components/ui/ModalOverlay";
 import { ModalContext } from "features/game/components/modal/ModalProvider";
-import { getKeys } from "features/game/lib/crafting";
+import { getKeys } from "lib/object";
+import { useVipAccess } from "lib/utils/hooks/useVipAccess";
 
 interface Props {
   isOpen: boolean;
@@ -39,7 +49,7 @@ interface Props {
   onClose: () => void;
   onProcess: (item: ProcessedResource) => void;
   onCollect: () => void;
-  onInstantProcess: (gems: number) => void;
+  onInstantProcess: (cost: number, paymentMethod?: "gems" | "coins") => void;
   processing?: BuildingProduct;
   queue: BuildingProduct[];
   ready: BuildingProduct[];
@@ -49,8 +59,6 @@ const PROCESSED_ITEMS: ProcessedResource[] = getKeys(
   FISH_PROCESSING_TIME_SECONDS,
 );
 
-const _isVIP = (state: MachineState) =>
-  hasVipAccess({ game: state.context.state });
 const _state = (state: MachineState) => state.context.state;
 const _season = (state: MachineState) => state.context.state.season.season;
 
@@ -68,15 +76,16 @@ export const FishMarketModal: React.FC<Props> = ({
   const { t } = useAppTranslation();
   const { gameService } = useContext(Context);
   const { openModal } = useContext(ModalContext);
-  const isVIP = useSelector(gameService, _isVIP);
   const state = useSelector(gameService, _state);
   const season = useSelector(gameService, _season);
+  const isVIP = useVipAccess({ game: state });
   const inventory = state.inventory;
 
   const [selected, setSelected] = useState<ProcessedResource>(
     PROCESSED_ITEMS[0],
   );
   const [showQueueInformation, setShowQueueInformation] = useState(false);
+  const [showTimeBoosts, setShowTimeBoosts] = useState(false);
 
   const requirements = getFishProcessingRequirements({
     item: selected,
@@ -105,15 +114,24 @@ export const FishMarketModal: React.FC<Props> = ({
   const totalQueued = ready.length + queue.length + (processing ? 1 : 0);
   const isQueueFull = totalQueued >= availableSlots;
 
-  const totalSeconds = isProcessedFood(selected)
+  const baseTimeSeconds = isProcessedFood(selected)
     ? FISH_PROCESSING_TIME_SECONDS[selected]
     : 0;
+  const fishProcessingTime = isProcessedFood(selected)
+    ? getFishProcessingTime(selected, state)
+    : { reducedMs: 0, boostsUsed: [] as { name: BoostName; value: string }[] };
+  const totalSeconds = fishProcessingTime.reducedMs / 1000;
+  const timeBoostsUsed = fishProcessingTime.boostsUsed;
 
   return (
     <Modal show={isOpen} onHide={onClose}>
       <CloseButtonPanel
         tabs={[
-          { id: "fishMarket", icon: SUNNYSIDE.icons.fish, name: "Fish Market" },
+          {
+            id: "fishMarket",
+            icon: SUNNYSIDE.icons.fish,
+            name: getTranslatedItemName("Fish Market"),
+          },
         ]}
         bumpkinParts={NPC_WEARABLES.neville}
         onClose={onClose}
@@ -131,7 +149,11 @@ export const FishMarketModal: React.FC<Props> = ({
               requirements={{
                 resources: requirements,
                 timeSeconds: totalSeconds,
+                baseTimeSeconds,
+                timeBoostsUsed,
               }}
+              showTimeBoosts={showTimeBoosts}
+              setShowTimeBoosts={setShowTimeBoosts}
               actionView={
                 <div className="flex flex-col gap-1">
                   {isProcessedFood(selected) && (
@@ -144,7 +166,7 @@ export const FishMarketModal: React.FC<Props> = ({
                           : () => onProcess(selected)
                       }
                     >
-                      {processing ? t("recipes.addToQueue") : "Process"}
+                      {processing ? t("recipes.addToQueue") : t("process")}
                     </Button>
                   )}
                   <Button

@@ -1,8 +1,12 @@
-import { FiniteResource, GameState } from "features/game/types/game";
-import { ResourceName } from "features/game/types/resources";
+import type { FiniteResource, GameState } from "features/game/types/game";
+import type { ResourceName } from "features/game/types/resources";
 import Decimal from "decimal.js-light";
 import { produce } from "immer";
-import { Coordinates } from "features/game/expansion/components/MapPlacement";
+import {
+  getMineBoostWindows,
+  pauseWindowedTimer,
+} from "features/game/lib/boostWindows";
+import type { Coordinates } from "features/game/expansion/components/MapPlacement";
 
 export type PlaceCrimstoneAction = {
   type: "crimstone.placed";
@@ -49,9 +53,14 @@ export function placeCrimstone({
       };
 
       if (updatedCrimstone.stone && updatedCrimstone.removedAt) {
-        const existingProgress =
-          updatedCrimstone.removedAt - updatedCrimstone.stone.minedAt;
-        updatedCrimstone.stone.minedAt = createdAt - existingProgress;
+        // Pause recovery across the lift (windowed banking or legacy back-date).
+        updatedCrimstone.stone.minedAt = pauseWindowedTimer({
+          timer: updatedCrimstone.stone,
+          startedAt: updatedCrimstone.stone.minedAt,
+          removedAt: updatedCrimstone.removedAt,
+          createdAt,
+          windows: getMineBoostWindows(game, "Crimstone Rock"),
+        });
       }
       delete updatedCrimstone.removedAt;
 

@@ -1,7 +1,7 @@
 import Decimal from "decimal.js-light";
 
-import { GameState } from "../../types/game";
-import { CropCompostName } from "features/game/types/composters";
+import type { GameState } from "../../types/game";
+import type { CropCompostName } from "features/game/types/composters";
 import { applyFertiliserToPlot } from "./fertilisePlot";
 import { produce } from "immer";
 import { isReadyToHarvest } from "./harvest";
@@ -27,7 +27,7 @@ export const getPlotsToFertilise = (state: GameState, createdAt: number) => {
     const isEmpty = !plot.crop;
     const isGrowing =
       !!plot.crop &&
-      !isReadyToHarvest(createdAt, plot.crop, CROPS[plot.crop.name]);
+      !isReadyToHarvest(createdAt, plot.crop, CROPS[plot.crop.name], state);
 
     return (
       hasPlacedPosition &&

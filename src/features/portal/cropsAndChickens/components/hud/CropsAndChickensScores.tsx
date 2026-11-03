@@ -2,7 +2,7 @@ import React, { useContext, useEffect, useState } from "react";
 import { useSelector } from "@xstate/react";
 import { PortalContext } from "../../lib/PortalProvider";
 import { useAppTranslation } from "lib/i18n/useAppTranslations";
-import { PortalMachineState } from "../../lib/cropsAndChickensMachine";
+import type { PortalMachineState } from "../../lib/cropsAndChickensMachine";
 import {
   getCropImage,
   getTotalCropsInGame,

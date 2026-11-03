@@ -9,27 +9,35 @@ import type { TranslationKeys } from "lib/i18n/dictionaries/types";
 import { BUMPKIN_ITEM_BUFF_LABELS } from "features/game/types/bumpkinItemBuffs";
 import { COLLECTIBLE_BUFF_LABELS } from "features/game/types/collectibleItemBuffs";
 import {
-  ChapterItemSourceKey,
+  type ChapterItemSourceKey,
   getChapterItemSource,
 } from "features/game/types/collections";
-import { ChapterName, hasChapterEnded } from "features/game/types/chapters";
+import {
+  type ChapterName,
+  hasChapterEnded,
+} from "features/game/types/chapters";
+import type { EventCollectionName } from "features/game/types/eventCollections";
 import { useNow } from "lib/utils/hooks/useNow";
-import { GameState, InventoryItemName } from "features/game/types/game";
+import type { GameState, InventoryItemName } from "features/game/types/game";
 import { ITEM_DETAILS } from "features/game/types/images";
-import { BumpkinItem, ITEM_IDS } from "features/game/types/bumpkin";
+import { type BumpkinItem, ITEM_IDS } from "features/game/types/bumpkin";
 import { KNOWN_IDS } from "features/game/types";
 import { getWearableImage } from "features/game/lib/getWearableImage";
 import {
-  BUMPKIN_RELEASES,
+  WEARABLE_RELEASES,
   INVENTORY_RELEASES,
 } from "features/game/types/withdrawables";
 
 export type ChapterCollectionItemType = "collectible" | "wearable";
 
+export type CollectionSource =
+  | { chapter: ChapterName }
+  | { event: EventCollectionName };
+
 type ContentProps = {
   itemName: InventoryItemName | BumpkinItem;
   type: ChapterCollectionItemType;
-  chapter: ChapterName;
+  collection: CollectionSource;
   state: GameState;
   onClose: () => void;
 };
@@ -42,14 +50,14 @@ const HOW_TO_OBTAIN_I18N_KEY: Record<
   mutants: "season.codex.howToObtain.mutants",
   track: "season.codex.howToObtain.track",
   auctioneer: "season.codex.howToObtain.auctioneer",
-  vipChest: "season.codex.howToObtain.vipChest",
   vipGift: "season.codex.howToObtain.vipGift",
+  other: "season.codex.howToObtain.unknown",
 };
 
 const ChapterCollectionItemDetailContent: React.FC<ContentProps> = ({
   itemName,
   type,
-  chapter,
+  collection,
   state,
   onClose,
 }) => {
@@ -58,8 +66,13 @@ const ChapterCollectionItemDetailContent: React.FC<ContentProps> = ({
   const navigate = useNavigate();
   const { pathname } = useLocation();
 
-  const chapterEnded = hasChapterEnded(chapter, now);
-  const { source } = getChapterItemSource(chapter, itemName, type);
+  // Event collections only list past events, so treat them as ended
+  const chapterEnded =
+    "event" in collection || hasChapterEnded(collection.chapter, now);
+  const { source } =
+    "chapter" in collection
+      ? getChapterItemSource(collection.chapter, itemName, type)
+      : { source: "unknown" as const };
 
   const image =
     type === "wearable"
@@ -69,28 +82,26 @@ const ChapterCollectionItemDetailContent: React.FC<ContentProps> = ({
   const buff =
     type === "wearable"
       ? BUMPKIN_ITEM_BUFF_LABELS[itemName as BumpkinItem]
-      : COLLECTIBLE_BUFF_LABELS[itemName as InventoryItemName]?.({
-          skills: state.bumpkin.skills,
-          collectibles: state.collectibles,
-        });
+      : COLLECTIBLE_BUFF_LABELS[itemName as InventoryItemName]?.(state);
 
   const howToObtainKey =
     source === "unknown" ? null : HOW_TO_OBTAIN_I18N_KEY[source];
 
   const isTradable =
     type === "wearable"
-      ? !!BUMPKIN_RELEASES[itemName as BumpkinItem]
+      ? !!WEARABLE_RELEASES[itemName as BumpkinItem]
       : !!INVENTORY_RELEASES[itemName as InventoryItemName];
 
   const marketplaceId =
     type === "collectible"
       ? KNOWN_IDS[itemName as InventoryItemName]
       : ITEM_IDS[itemName as BumpkinItem];
-  const collection = type === "collectible" ? "collectibles" : "wearables";
+  const marketplaceCollection =
+    type === "collectible" ? "collectibles" : "wearables";
   const isWorldRoute = pathname.startsWith("/world");
   const marketplaceUrl =
     typeof marketplaceId === "number"
-      ? `${isWorldRoute ? "/world" : ""}/marketplace/${collection}/${marketplaceId}`
+      ? `${isWorldRoute ? "/world" : ""}/marketplace/${marketplaceCollection}/${marketplaceId}`
       : null;
 
   return (
@@ -103,7 +114,7 @@ const ChapterCollectionItemDetailContent: React.FC<ContentProps> = ({
         <div className="flex items-center gap-1">
           <SquareIcon icon={image} width={9} />
           <Label type="transparent" className="ml-2">
-            <span className="text-xs whitespace-nowrap">{itemName}</span>
+            <span className="text-xs">{itemName}</span>
           </Label>
         </div>
 
@@ -175,7 +186,7 @@ type PopoverProps = ContentProps & {
 export const ChapterCollectionItemPopover: React.FC<PopoverProps> = ({
   itemName,
   type,
-  chapter,
+  collection,
   state,
   children,
   onClose,
@@ -189,7 +200,7 @@ export const ChapterCollectionItemPopover: React.FC<PopoverProps> = ({
         <ChapterCollectionItemDetailContent
           itemName={itemName}
           type={type}
-          chapter={chapter}
+          collection={collection}
           state={state}
           onClose={onClose}
         />

@@ -1,7 +1,7 @@
 import {
   BUMPKIN_ITEM_PART,
-  BumpkinItem,
-  BumpkinPart,
+  type BumpkinItem,
+  type BumpkinPart,
 } from "features/game/types/bumpkin";
 import React, { useContext, useState } from "react";
 import { DynamicNFT } from "./DynamicNFT";
@@ -11,7 +11,7 @@ import { Button } from "components/ui/Button";
 import { SquareIcon } from "components/ui/SquareIcon";
 import { BumpkinPartGroup } from "./BumpkinPartGroup";
 import { SUNNYSIDE } from "assets/sunnyside";
-import { getKeys } from "features/game/types/craftables";
+import { getKeys } from "lib/object";
 
 import lightning from "assets/icons/lightning.png";
 
@@ -21,7 +21,7 @@ import {
   BUMPKIN_ITEM_BUFF_LABELS,
   SPECIAL_ITEM_LABELS,
 } from "features/game/types/bumpkinItemBuffs";
-import { BumpkinParts } from "lib/utils/tokenUriBuilder";
+import type { BumpkinParts } from "lib/utils/tokenUriBuilder";
 import { availableWardrobe } from "features/game/events/landExpansion/equip";
 import { useAppTranslation } from "lib/i18n/useAppTranslations";
 import {
@@ -30,10 +30,11 @@ import {
   pixelVibrantBorderStyle,
 } from "features/game/lib/style";
 import { Popover, PopoverButton, PopoverPanel } from "@headlessui/react";
-import { MachineState } from "features/game/lib/gameMachine";
+import type { MachineState } from "features/game/lib/gameMachine";
 import { Context } from "features/game/GameProvider";
 import { useSelector } from "@xstate/react";
 import { getWearableImage } from "features/game/lib/getWearableImage";
+import { ConfirmationModal } from "components/ui/ConfirmationModal";
 
 const REQUIRED: BumpkinPart[] = ["background", "body", "hair", "shoes", "tool"];
 
@@ -42,7 +43,10 @@ const REQUIRED_BUT_INCOMPATIBLE: BumpkinPart[][] = [
   ["dress"],
 ];
 
-const NOTREQUIRED: BumpkinPart[] = [
+/** Set true to show eyes/mouth category tiles in the optional row (domain + autosave already support them). */
+const SHOW_EYES_AND_MOUTH_IN_EQUIP_UI = false;
+
+const NOTREQUIRED_ALL: BumpkinPart[] = [
   "hat",
   "beard",
   "necklace",
@@ -52,19 +56,33 @@ const NOTREQUIRED: BumpkinPart[] = [
   "onesie",
   "secondaryTool",
   "aura",
+  "eyes",
+  "mouth",
 ];
+
+const NOTREQUIRED: BumpkinPart[] = SHOW_EYES_AND_MOUTH_IN_EQUIP_UI
+  ? NOTREQUIRED_ALL
+  : NOTREQUIRED_ALL.filter((part) => part !== "eyes" && part !== "mouth");
 
 interface Props {
   onEquip: (equipment: BumpkinParts) => void;
   equipment: BumpkinParts;
+  farmHandId?: string;
 }
 
 const _game = (state: MachineState) => state.context.state;
 
-export const BumpkinEquip: React.FC<Props> = ({ equipment, onEquip }) => {
+export const BumpkinEquip: React.FC<Props> = ({
+  equipment,
+  onEquip,
+  farmHandId,
+}) => {
   const { gameService } = useContext(Context);
   const [equipped, setEquipped] = useState(equipment);
+  const [baseEquipment, setBaseEquipment] = useState(equipment);
   const [selectedBumpkinPart, setSelectedBumpkinPart] = useState(REQUIRED[0]);
+  const [localFarmHandId, setLocalFarmHandId] = useState(farmHandId);
+  const [showPromoteConfirm, setShowPromoteConfirm] = useState(false);
 
   const game = useSelector(gameService, _game);
 
@@ -117,11 +135,12 @@ export const BumpkinEquip: React.FC<Props> = ({ equipment, onEquip }) => {
 
   const finish = (equipment: BumpkinParts) => {
     onEquip(equipment);
+    setBaseEquipment(equipment); // Reset dirty baseline when saving
   };
 
-  const isDirty = JSON.stringify(equipped) !== JSON.stringify(equipment);
+  const isDirty = JSON.stringify(equipped) !== JSON.stringify(baseEquipment);
 
-  const equippedItems = Object.values(equipped);
+  const equippedItems = Object.values(baseEquipment);
 
   const { t } = useAppTranslation();
 
@@ -157,6 +176,15 @@ export const BumpkinEquip: React.FC<Props> = ({ equipment, onEquip }) => {
           <Button disabled={!isDirty} onClick={() => finish(equipped)}>
             <div className="flex">{t("save")}</div>
           </Button>
+          {localFarmHandId && (
+            <Button
+              onClick={() => {
+                setShowPromoteConfirm(true);
+              }}
+            >
+              {t("setAsBumpkin")}
+            </Button>
+          )}
         </div>
         <div className="w-full sm:w-1/3 flex flex-col gap-2">
           <Label type="default">{t("required")}</Label>
@@ -230,12 +258,12 @@ export const BumpkinEquip: React.FC<Props> = ({ equipment, onEquip }) => {
                       <Popover key={name}>
                         <PopoverButton
                           as="div"
-                          className="cursor-pointer"
+                          className="cursor-pointer w-full"
                           disabled={!unavailable}
                         >
                           <OuterPanel
                             className={classNames(
-                              "w-full relative  !p-0 flex items-center justify-center",
+                              "w-full min-h-0 aspect-square relative !p-0 flex items-center justify-center",
                               {
                                 "hover:img-highlight": !unavailable,
                                 "img-highlight":
@@ -295,7 +323,9 @@ export const BumpkinEquip: React.FC<Props> = ({ equipment, onEquip }) => {
                             )}
                             <img
                               src={getWearableImage(name)}
-                              className="h-10"
+                              alt={name}
+                              className="max-h-10 max-w-10 w-auto h-auto object-contain shrink-0"
+                              style={{ imageRendering: "pixelated" }}
                             />
                           </OuterPanel>
                         </PopoverButton>
@@ -358,6 +388,21 @@ export const BumpkinEquip: React.FC<Props> = ({ equipment, onEquip }) => {
           </OuterPanel>
         </div>
       </div>
+      <ConfirmationModal
+        show={showPromoteConfirm}
+        onHide={() => setShowPromoteConfirm(false)}
+        messages={[t("signup.createBumpkinConfirmation")]}
+        onCancel={() => setShowPromoteConfirm(false)}
+        onConfirm={() => {
+          if (!localFarmHandId) return;
+
+          gameService.send("farmhand.promoted", { id: localFarmHandId });
+          gameService.send("SAVE");
+          setLocalFarmHandId(undefined);
+          setShowPromoteConfirm(false);
+        }}
+        confirmButtonLabel={t("setAsBumpkin")}
+      />
     </div>
   );
 };

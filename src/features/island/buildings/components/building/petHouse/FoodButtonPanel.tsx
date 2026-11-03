@@ -1,12 +1,13 @@
 import React from "react";
 import { ButtonPanel } from "components/ui/Panel";
 import { Label } from "components/ui/Label";
-import { CookableName } from "features/game/types/consumables";
+import type { CookableName } from "features/game/types/consumables";
 import { ITEM_DETAILS } from "features/game/types/images";
 import { SUNNYSIDE } from "assets/sunnyside";
 import { PIXEL_SCALE } from "features/game/lib/constants";
 import classNames from "classnames";
-import Decimal from "decimal.js-light";
+import type Decimal from "decimal.js-light";
+import { useAppTranslation } from "lib/i18n/useAppTranslations";
 
 const INNER_CANVAS_WIDTH = 12;
 
@@ -35,6 +36,7 @@ export const FoodButtonPanel: React.FC<FoodButtonPanelProps> = ({
   locked,
   className,
 }) => {
+  const { t } = useAppTranslation();
   const foodImage = ITEM_DETAILS[food]?.image;
 
   return (
@@ -68,11 +70,11 @@ export const FoodButtonPanel: React.FC<FoodButtonPanelProps> = ({
           />
         )}
 
-        {foodFed && (
+        {(foodFed || selected) && (
           <img
             src={SUNNYSIDE.icons.confirm}
-            alt="Locked"
-            className="absolute top-0 left-0 w-4 h-4 object-contain z-10"
+            alt={foodFed ? t("pets.foodFedToday") : t("selected")}
+            className="absolute top-0 left-0 w-5 h-5 object-contain z-10"
           />
         )}
 

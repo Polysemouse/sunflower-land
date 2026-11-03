@@ -1,12 +1,12 @@
 import Decimal from "decimal.js-light";
 import { isCollectibleBuilt } from "features/game/lib/collectibleBuilt";
 import {
-  ComposterName,
+  type ComposterName,
   SEASON_COMPOST_REQUIREMENTS,
   composterDetails,
 } from "features/game/types/composters";
-import { getKeys } from "features/game/types/craftables";
-import {
+import { getKeys } from "lib/object";
+import type {
   BoostName,
   CompostBuilding,
   GameState,
@@ -16,6 +16,7 @@ import { translate } from "lib/i18n/translate";
 import { produce } from "immer";
 import { updateBoostUsed } from "features/game/types/updateBoostUsed";
 import { isWearableActive } from "features/game/lib/wearables";
+import { SKILL_RANKS, getSkillLevel } from "features/game/types/bumpkinSkills";
 
 export type StartComposterAction = {
   type: "composter.started";
@@ -47,10 +48,20 @@ export function getReadyAt({
     boostsUsed.push({ name: "Soil Krabby", value: "x0.9" });
   }
 
-  // gives +10% speed boost if the player has Swift Decomposer skill
-  if (gameState.bumpkin?.skills["Swift Decomposer"]) {
+  if (isCollectibleBuilt({ name: "Straw House", game: gameState })) {
     timeToFinishMilliseconds = timeToFinishMilliseconds * 0.9;
-    boostsUsed.push({ name: "Swift Decomposer", value: "x0.9" });
+    boostsUsed.push({ name: "Straw House", value: "x0.9" });
+  }
+
+  // gives a speed boost if the player has the Swift Decomposer skill
+  const swiftDecomposerLevel = getSkillLevel(
+    gameState.bumpkin?.skills ?? {},
+    "Swift Decomposer",
+  );
+  if (swiftDecomposerLevel) {
+    const v = SKILL_RANKS["Swift Decomposer"].ranks[swiftDecomposerLevel - 1];
+    timeToFinishMilliseconds = timeToFinishMilliseconds * v;
+    boostsUsed.push({ name: "Swift Decomposer", value: `x${v}` });
   }
 
   return { timeToFinishMilliseconds, boostsUsed };
@@ -70,29 +81,38 @@ export function getCompostAmount({
   const boostsUsed: { name: BoostName; value: string }[] = [];
   const { skills } = game.bumpkin;
 
-  if (skills["Efficient Bin"] && building === "Compost Bin") {
-    produceAmount += 5;
-    boostsUsed.push({ name: "Efficient Bin", value: "+5" });
+  // Multiplies the base yield, so it's applied before the additive boosts
+  if (isCollectibleBuilt({ name: "Straw House", game })) {
+    produceAmount = produceAmount * 3;
+    boostsUsed.push({ name: "Straw House", value: "x3" });
   }
 
-  if (skills["Turbo Charged"] && building === "Turbo Composter") {
-    produceAmount += 5;
-    boostsUsed.push({ name: "Turbo Charged", value: "+5" });
+  const efficientBinLevel = getSkillLevel(skills, "Efficient Bin");
+  if (efficientBinLevel && building === "Compost Bin") {
+    const v = SKILL_RANKS["Efficient Bin"].ranks[efficientBinLevel - 1];
+    produceAmount += v;
+    boostsUsed.push({ name: "Efficient Bin", value: `+${v}` });
   }
 
-  if (skills["Premium Worms"] && building === "Premium Composter") {
-    produceAmount += 10;
-    boostsUsed.push({ name: "Premium Worms", value: "+10" });
+  const turboChargedLevel = getSkillLevel(skills, "Turbo Charged");
+  if (turboChargedLevel && building === "Turbo Composter") {
+    const v = SKILL_RANKS["Turbo Charged"].ranks[turboChargedLevel - 1];
+    produceAmount += v;
+    boostsUsed.push({ name: "Turbo Charged", value: `+${v}` });
   }
 
-  if (skills["Composting Overhaul"]) {
-    produceAmount -= 5;
-    boostsUsed.push({ name: "Composting Overhaul", value: "-5" });
+  const premiumWormsLevel = getSkillLevel(skills, "Premium Worms");
+  if (premiumWormsLevel && building === "Premium Composter") {
+    const v = SKILL_RANKS["Premium Worms"].ranks[premiumWormsLevel - 1];
+    produceAmount += v;
+    boostsUsed.push({ name: "Premium Worms", value: `+${v}` });
   }
 
-  if (skills["Composting Revamp"]) {
-    produceAmount += 5;
-    boostsUsed.push({ name: "Composting Revamp", value: "+5" });
+  const compostingRevampLevel = getSkillLevel(skills, "Composting Revamp");
+  if (compostingRevampLevel) {
+    const v = SKILL_RANKS["Composting Revamp"].buff[compostingRevampLevel - 1];
+    produceAmount += v;
+    boostsUsed.push({ name: "Composting Revamp", value: `+${v}` });
   }
 
   if (isWearableActive({ game, name: "Turd Topper" })) {
@@ -148,7 +168,7 @@ export function startComposter({
       );
     });
 
-    const { produce, worm } = composterDetails[building];
+    const { produce } = composterDetails[building];
 
     const { produceAmount, boostsUsed: composterBoostsUsed } = getCompostAmount(
       {
@@ -162,11 +182,11 @@ export function startComposter({
     });
 
     // start the production
+    // Worm amount is rolled at collect time via a seeded PRNG, so boosts
+    // equipped any time before collect apply to the final bait output.
     buildings[0].producing = {
       items: {
         [produce]: produceAmount,
-        // Set on backend
-        [worm]: 1,
       },
       startedAt: createdAt,
       readyAt: createdAt + timeToFinishMilliseconds,

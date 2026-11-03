@@ -5,21 +5,28 @@ import frozen_wharf from "assets/decorations/frozen_wharf.png";
 import fishSilhoutte from "assets/decorations/fish_silhouette.png";
 import { Context } from "features/game/GameProvider";
 import {
-  Coordinates,
+  type Coordinates,
   MapPlacement,
 } from "features/game/expansion/components/MapPlacement";
 import { PIXEL_SCALE, GRID_WIDTH_PX } from "features/game/lib/constants";
-import { MachineState } from "features/game/lib/gameMachine";
+import { getWharfCoordinates } from "features/game/expansion/lib/constants";
+import type { MachineState } from "features/game/lib/gameMachine";
 import React, { useContext, useState } from "react";
 import { Modal } from "components/ui/Modal";
 import { FishermanModal } from "./FishermanModal";
 import { FishermanNPC } from "./FishermanNPC";
-import { InventoryItemName, IslandType } from "features/game/types/game";
-import { FishName, FishingBait } from "features/game/types/fishing";
+import {
+  ASCENSION_ISLANDS,
+  type AscensionIslandType,
+  type InventoryItemName,
+  type IslandType,
+} from "features/game/types/game";
+import type { FishName, FishingBait } from "features/game/types/fishing";
 import classNames from "classnames";
 import springWharf from "assets/wharf/spring_wharf.png";
 import desertWharf from "assets/wharf/desert_wharf.png";
 import volcanoWharf from "assets/wharf/volcano_wharf.png";
+import { hasRequiredIslandExpansion } from "features/game/lib/hasRequiredIslandExpansion";
 
 const expansions = (state: MachineState) =>
   state.context.state.inventory["Basic Land"]?.toNumber() ?? 3;
@@ -33,6 +40,12 @@ const WHARF: Record<Exclude<IslandType, "basic">, string> = {
   volcano: volcanoWharf,
   desert: desertWharf,
   spring: springWharf,
+  swamp: volcanoWharf,
+  // Ascension islands (spooky onward) reuse the swamp value for now.
+  spooky: volcanoWharf,
+  crystal: volcanoWharf,
+  galaxy: volcanoWharf,
+  marble: volcanoWharf,
 };
 
 export const Fisherman: React.FC = () => {
@@ -44,16 +57,7 @@ export const Fisherman: React.FC = () => {
   const season = useSelector(gameService, _season);
   const island = useSelector(gameService, _island);
 
-  const wharfCoords = (): Coordinates => {
-    if (expansionCount < 7) {
-      return { x: -1, y: -3 };
-    }
-    if (expansionCount >= 7 && expansionCount < 21) {
-      return { x: -8, y: -9 };
-    } else {
-      return { x: -14, y: -15 };
-    }
-  };
+  const wharfCoords = (): Coordinates => getWharfCoordinates(expansionCount);
 
   const extendedWharfPosition = (): React.CSSProperties | undefined => {
     if (island === "spring") {
@@ -78,13 +82,14 @@ export const Fisherman: React.FC = () => {
       };
     }
 
-    if (island === "volcano") {
+    if (hasRequiredIslandExpansion(island, "volcano")) {
       const width = 76;
       const top = 24;
-      let right = 8.619;
+      // +2 over the original (8.619 / 9.76) to nudge the volcano dock art 2px west.
+      let right = 10.619;
 
       if (expansionCount > 7) {
-        right = 9.76;
+        right = 11.76;
       }
 
       return {
@@ -130,7 +135,10 @@ export const Fisherman: React.FC = () => {
       bottom = -78;
     }
 
-    if (island === "volcano") {
+    if (
+      island === "volcano" ||
+      ASCENSION_ISLANDS.includes(island as AscensionIslandType)
+    ) {
       right = -23;
       bottom = -93;
     }

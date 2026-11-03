@@ -4,35 +4,59 @@ import { CloseButtonPanel } from "features/game/components/CloseablePanel";
 import { SplitScreenView } from "components/ui/SplitScreenView";
 import { Context } from "features/game/GameProvider";
 import { useSelector } from "@xstate/react";
-import { MachineState } from "features/game/lib/gameMachine";
+import type { MachineState } from "features/game/lib/gameMachine";
 import { CraftingRequirements } from "components/ui/layouts/CraftingRequirements";
 import { Button } from "components/ui/Button";
-import { getKeys } from "features/game/types/decorations";
+import { getKeys } from "lib/object";
 import {
-  AnimalBuildingType,
+  type AnimalBuildingType,
   ANIMALS,
-  AnimalType,
+  type AnimalType,
 } from "features/game/types/animals";
 import { Box } from "components/ui/Box";
-import { ITEM_DETAILS } from "features/game/types/images";
+import {
+  ITEM_DETAILS,
+  getTranslatedItemName,
+} from "features/game/types/images";
 import { SUNNYSIDE } from "assets/sunnyside";
-import { AnimalBounty, AnimalBuildingKey } from "features/game/types/game";
+import type { AnimalBounty, AnimalBuildingKey } from "features/game/types/game";
 import Decimal from "decimal.js-light";
-import { getBumpkinLevel } from "features/game/lib/level";
+import {
+  getAscensionLevel,
+  meetsLevelRequirement,
+} from "features/game/lib/level";
 import { getBoostedAnimalCapacity } from "features/game/events/landExpansion/buyAnimal";
 import { Label } from "components/ui/Label";
 
 import coinsIcon from "assets/icons/coins.webp";
 import brush from "assets/animals/brush.webp";
 import { useAppTranslation } from "lib/i18n/useAppTranslations";
-import { makeAnimalBuildingKey } from "features/game/lib/animals";
+import {
+  getAnimalMaturityTimeForDisplay,
+  makeAnimalBuildingKey,
+} from "features/game/lib/animals";
+import { getAnimalBoostWindows } from "features/game/lib/boostWindows";
+import { hasFeatureAccess } from "lib/flags";
+import {
+  getBoostContributionEntries,
+  getAnimalBoostContributions,
+} from "features/game/lib/boostContributions";
+import {
+  getPreActionDisplay,
+  PRE_ACTION_TICK_MS,
+} from "features/game/lib/timerDisplay";
+import { useNow } from "lib/utils/hooks/useNow";
+import { secondsToString } from "lib/utils/time";
 import { AnimalBounties } from "features/barn/components/AnimalBounties";
 import { SpeakingModal } from "features/game/components/SpeakingModal";
 import { NPC_WEARABLES } from "lib/npcs";
 import { InnerPanel, OuterPanel } from "components/ui/Panel";
 import classNames from "classnames";
 import { isMobile } from "mobile-device-detect";
-import { SICK_ANIMAL_REWARD_MULTIPLIER } from "features/game/events/landExpansion/sellAnimal";
+import {
+  MUD_XP_MULTIPLIER,
+  SICK_ANIMAL_REWARD_MULTIPLIER,
+} from "features/game/lib/animals";
 import { formatNumber } from "lib/utils/formatNumber";
 import { SquareIcon } from "components/ui/SquareIcon";
 
@@ -59,6 +83,8 @@ type Props = {
   buildingName: AnimalBuildingType;
   onClose: () => void;
   onExchanging: (deal: AnimalBounty) => void;
+  /** Pigpen only: the Sell tab's "Trade in" section. */
+  onTradeIn?: () => void;
 };
 
 const _state = (state: MachineState) => state.context.state;
@@ -70,6 +96,7 @@ export const AnimalBuildingModal: React.FC<Props> = ({
   buildingName,
   onClose,
   onExchanging,
+  onTradeIn,
 }) => {
   const { gameService } = useContext(Context);
   const [showIntro, setShowIntro] = useState(!hasReadIntro());
@@ -77,6 +104,7 @@ export const AnimalBuildingModal: React.FC<Props> = ({
   const [currentTab, setCurrentTab] = useState<Tab>(
     !hasReadGuide() ? "guide" : "buy",
   );
+  const [showTimeBoosts, setShowTimeBoosts] = useState(false);
 
   const state = useSelector(gameService, _state);
   const bumpkin = useSelector(gameService, _bumpkin);
@@ -91,6 +119,9 @@ export const AnimalBuildingModal: React.FC<Props> = ({
   );
 
   const [selectedName, setSelectedName] = useState<AnimalType>(animals[0]);
+  // Minute granularity: the projection goes stale as the shrine burns down, but
+  // the panel renders whole minutes (see PRE_ACTION_TICK_MS).
+  const now = useNow({ live: true, intervalMs: PRE_ACTION_TICK_MS });
 
   const handleBuyAnimal = () => {
     gameService.send({
@@ -110,14 +141,52 @@ export const AnimalBuildingModal: React.FC<Props> = ({
       (animal) => ANIMALS[animal.type].buildingRequired === buildingName,
     ).length;
 
-  const bumpkinLevel = getBumpkinLevel(bumpkin.experience);
+  const ascension = getAscensionLevel({
+    experience: bumpkin.experience,
+    ascensionLevel: state.island.ascensionLevel ?? 0,
+  });
 
   const hasRequiredLevel = () =>
-    bumpkinLevel >= ANIMALS[selectedName].levelRequired;
+    meetsLevelRequirement(ascension, ANIMALS[selectedName].levelRequired);
 
   const atMaxCapacity =
     getTotalAnimalsInBuilding() >=
     getBoostedAnimalCapacity(buildingKey, state).capacity;
+
+  const maturityTime = getAnimalMaturityTimeForDisplay({
+    animalType: selectedName,
+    game: state,
+  });
+  // Gate on the SAME flag `getBoostedAwakeAt` uses to decide what it bakes.
+  // Flag-off it still bakes the shrine into `maturityTimeMs`, so projecting
+  // through the windows as well would count it twice (and list a boost the
+  // player isn't on). The windows themselves exist regardless of the flag.
+  const boostsWindowed = hasFeatureAccess(state, "SPEED_BOOSTS");
+  const maturityWindows = boostsWindowed
+    ? getAnimalBoostWindows(state, selectedName)
+    : [];
+  // The windowed shrine isn't in `boostsUsed` (it applies over the sleep rather
+  // than being baked into it), so name it for the boost panel: the time it
+  // actually saves.
+  const maturityBoostsUsed = [
+    ...maturityTime.boostsUsed,
+    ...getBoostContributionEntries({
+      contributions: boostsWindowed
+        ? getAnimalBoostContributions(state, selectedName)
+        : [],
+      seconds: maturityTime.maturityTimeMs / 1000,
+      at: now,
+      formatSeconds: (seconds) =>
+        secondsToString(seconds, { length: "medium" }),
+    }),
+  ];
+  const { displaySeconds: maturityDisplaySeconds } = getPreActionDisplay({
+    seconds: maturityTime.maturityTimeMs / 1000,
+    baseSeconds: maturityTime.baseTimeMs / 1000,
+    namedBoostCount: maturityBoostsUsed.length,
+    windows: maturityWindows,
+    at: now,
+  });
 
   if (showIntro) {
     return (
@@ -158,6 +227,16 @@ export const AnimalBuildingModal: React.FC<Props> = ({
       icon: SUNNYSIDE.animalFoods.barn_delight,
       text: t("animals.guide.sickness"),
     },
+    ...(buildingName === "Pigpen"
+      ? [
+          {
+            icon: ITEM_DETAILS.Mud.image,
+            text: t("animals.guide.mud", {
+              percent: Math.round((MUD_XP_MULTIPLIER - 1) * 100),
+            }),
+          },
+        ]
+      : []),
     {
       icon: SUNNYSIDE.icons.death,
       text: t("animals.guide.bounties", {
@@ -194,12 +273,19 @@ export const AnimalBuildingModal: React.FC<Props> = ({
               requirements={{
                 coins: ANIMALS[selectedName].coins,
                 showCoinsIfFree: true,
+                timeSeconds: Math.ceil(maturityDisplaySeconds),
+                baseTimeSeconds: Math.ceil(maturityTime.baseTimeMs / 1000),
+                timeBoostsUsed: maturityBoostsUsed,
                 level: ANIMALS[selectedName].levelRequired,
               }}
+              showTimeBoosts={showTimeBoosts}
+              setShowTimeBoosts={setShowTimeBoosts}
               label={
                 atMaxCapacity ? (
                   <Label type="danger">
-                    {t("animals.buildingIsFull", { buildingName })}
+                    {t("animals.buildingIsFull", {
+                      buildingName: getTranslatedItemName(buildingName),
+                    })}
                   </Label>
                 ) : undefined
               }
@@ -209,7 +295,9 @@ export const AnimalBuildingModal: React.FC<Props> = ({
                   onClick={handleBuyAnimal}
                   className="w-full"
                 >
-                  {t("animals.buy", { animal: selectedName })}
+                  {t("animals.buy", {
+                    animal: getTranslatedItemName(selectedName),
+                  })}
                 </Button>
               }
             />
@@ -225,7 +313,10 @@ export const AnimalBuildingModal: React.FC<Props> = ({
                   <Box
                     isSelected={selectedName === name}
                     key={name}
-                    onClick={() => setSelectedName(name)}
+                    onClick={() => {
+                      setSelectedName(name);
+                      setShowTimeBoosts(false);
+                    }}
                     image={ITEM_DETAILS[name].image}
                     showOverlay={!hasRequiredLevel()}
                     secondaryImage={
@@ -237,7 +328,7 @@ export const AnimalBuildingModal: React.FC<Props> = ({
               </div>
               <Label
                 type={atMaxCapacity ? "danger" : "info"}
-                className="absolute bottom-3 sm:bottom-2 left-2"
+                className="mt-1 sm:mt-0 sm:absolute sm:bottom-2 sm:left-2"
               >
                 {`${getTotalAnimalsInBuilding()}/${
                   getBoostedAnimalCapacity(buildingKey, state).capacity
@@ -250,8 +341,13 @@ export const AnimalBuildingModal: React.FC<Props> = ({
 
       {currentTab === "sell" && (
         <AnimalBounties
-          type={buildingName === "Barn" ? ["Cow", "Sheep"] : ["Chicken"]}
+          // Derived from ANIMALS rather than listed per building, so a new
+          // animal shows its bounties in its own house automatically.
+          type={getKeys(ANIMALS).filter(
+            (animal) => ANIMALS[animal].buildingRequired === buildingName,
+          )}
           onExchanging={onExchanging}
+          onTradeIn={onTradeIn}
         />
       )}
 

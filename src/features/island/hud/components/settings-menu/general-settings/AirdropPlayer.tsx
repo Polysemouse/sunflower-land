@@ -1,7 +1,7 @@
 import React, { useContext, useState } from "react";
 import * as AuthProvider from "features/auth/lib/Provider";
 import { Button } from "components/ui/Button";
-import { ContentComponentProps } from "../GameOptions";
+import type { ContentComponentProps } from "../types";
 import { NumberInput } from "components/ui/NumberInput";
 import { Label } from "components/ui/Label";
 import { ITEM_DETAILS } from "features/game/types/images";
@@ -11,25 +11,25 @@ import add from "assets/icons/plus.png";
 import { SUNNYSIDE } from "assets/sunnyside";
 import { Context } from "features/game/GameProvider";
 import { TextInput } from "components/ui/TextInput";
-import { getObjectEntries } from "features/game/expansion/lib/utils";
-import { BumpkinItem } from "features/game/types/bumpkin";
+import { getObjectEntries } from "lib/object";
+import type { BumpkinItem } from "features/game/types/bumpkin";
 import { GameWallet } from "features/wallet/Wallet";
 import { useSelector } from "@xstate/react";
 import { Dropdown } from "components/ui/Dropdown";
-import { InventoryItemName, Wardrobe } from "features/game/types/game";
+import type { InventoryItemName, Wardrobe } from "features/game/types/game";
 import { ITEM_TRADE_TYPES } from "features/marketplace/lib/getTradeType";
 import { getWearableImage } from "features/game/lib/getWearableImage";
 import { PIXEL_SCALE } from "features/game/lib/constants";
-import { MANAGER_IDS } from "lib/flags";
+import { MANAGER_IDS } from "lib/access";
 import { CONFIG } from "lib/config";
-import { getKeys } from "features/game/types/decorations";
+import { getKeys } from "lib/object";
 import { signTypedData } from "@wagmi/core";
 import { config } from "features/wallet/WalletProvider";
 import { useAppTranslation } from "lib/i18n/useAppTranslations";
 import { Modal } from "components/ui/Modal";
 import { Panel } from "components/ui/Panel";
 import { useConnection } from "wagmi";
-import { ErrorCode } from "lib/errors";
+import type { ErrorCode } from "lib/errors";
 
 // Types
 interface AirdropItem {
@@ -353,6 +353,13 @@ const AirdropContent: React.FC<AirdropContentProps> = ({
   );
 };
 
+// Per-drop caps enforced by the server for Gems and Love Charms sent from
+// this panel. Larger rewards go through the support tool.
+const GIFT_GIVER_ITEM_CAPS = {
+  Gem: 5_000,
+  "Love Charm": 1_000,
+};
+
 export const AirdropPlayer: React.FC<
   ContentComponentProps & { id?: number }
 > = ({ id }) => {
@@ -468,7 +475,7 @@ export const AirdropPlayer: React.FC<
       setValue: setCoins,
       maxDecimalPlaces: 0,
       icon: coinsIcon,
-      maxValue: 10000,
+      maxValue: 100_000,
       allowNegative: true,
     },
     Gems: {
@@ -476,7 +483,7 @@ export const AirdropPlayer: React.FC<
       setValue: setGems,
       maxDecimalPlaces: 0,
       icon: ITEM_DETAILS.Gem.image,
-      maxValue: 10000,
+      maxValue: GIFT_GIVER_ITEM_CAPS.Gem,
       allowNegative: true,
     },
     "Love Charm": {
@@ -484,7 +491,7 @@ export const AirdropPlayer: React.FC<
       setValue: setLoveCharm,
       maxDecimalPlaces: 0,
       icon: ITEM_DETAILS["Love Charm"].image,
-      maxValue: 10000,
+      maxValue: GIFT_GIVER_ITEM_CAPS["Love Charm"],
       allowNegative: true,
     },
     VIP: {

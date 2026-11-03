@@ -1,12 +1,19 @@
 import { createPortal } from "react-dom";
-import React, { useContext, useEffect, useRef, useState } from "react";
+import React, {
+  useCallback,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import { useActor } from "@xstate/react";
 
 import * as AuthProvider from "features/auth/lib/Provider";
 import { Context } from "features/game/GameProvider";
-import { MinigameName } from "features/game/types/minigames";
+import type { MinigameName } from "features/game/types/minigames";
 import { CloseButtonPanel } from "features/game/components/CloseablePanel";
 import { ClaimReward } from "features/game/expansion/components/ClaimReward";
+import { getMinigamePrizeReward } from "features/game/events/minigames/claimMinigamePrize";
 
 import { Button } from "components/ui/Button";
 import { Label } from "components/ui/Label";
@@ -16,19 +23,16 @@ import { CONFIG } from "lib/config";
 
 import { portal } from "../community/actions/portal";
 import { Loading } from "features/auth/components";
-import { InventoryItemName } from "features/game/types/game";
+import type { InventoryItemName } from "features/game/types/game";
 import { Box } from "components/ui/Box";
-import { getKeys } from "features/game/types/craftables";
+import { getKeys } from "lib/object";
 import { ITEM_DETAILS } from "features/game/types/images";
 
 import sflIcon from "assets/icons/flower_token.webp";
-import { IPortalDonation, PortalDonation } from "./PortalDonation";
+import { type IPortalDonation, PortalDonation } from "./PortalDonation";
 import { getCachedFont } from "lib/utils/fonts";
 
-interface Props {
-  portalName: MinigameName;
-  onClose: () => void;
-}
+const PORTAL_LOAD_TIMEOUT_MS = 30_000;
 
 type PortalPurchase = {
   sfl: number;
@@ -40,10 +44,61 @@ type PortalPurchase = {
  */
 const DOMAIN_MAP: Partial<Record<MinigameName, string>> = {
   "festival-of-colors-2025": "festival-of-colors",
-  "holiday-puzzle-2025": "halloween",
+  "halloween-2026-game-2": "halloween",
+  "chaacs-temple": "chaacs-temple.minigames",
+  /** Host: `https://chicken-rescue-v2.minigames.sunflower-land.com` */
+  "chicken-rescue-v2": "chicken-rescue-v2.minigames",
 };
 
-export const Portal: React.FC<Props> = ({ portalName, onClose }) => {
+/**
+ * Iframe base URL resolution:
+ * 1. `iframeBaseUrl` when set (e.g. player economy dashboard → `*.economies.sunflower-land.com`).
+ * 2. `VITE_PORTAL_GAME_URL` when set (local / override).
+ * 3. `apiPlayUrl` from the minigame session API when provided.
+ * 4. `DOMAIN_MAP` / default `https://{portalName}.sunflower-land.com`.
+ */
+function resolveMinigameIframeBaseUrl(
+  portalName: MinigameName,
+  apiPlayUrl?: string,
+  iframeBaseUrl?: string,
+): string {
+  const locked = iframeBaseUrl?.trim();
+  if (locked) {
+    return locked.replace(/\/$/, "");
+  }
+
+  const fromEnv = CONFIG.PORTAL_GAME_URL?.trim();
+  if (fromEnv) {
+    return fromEnv.replace(/\/$/, "");
+  }
+
+  const fromApi = apiPlayUrl?.trim();
+  if (fromApi) {
+    return fromApi.replace(/\/$/, "");
+  }
+
+  const slug = DOMAIN_MAP[portalName] ?? portalName;
+  return `https://${slug}.sunflower-land.com`;
+}
+
+interface Props {
+  portalName: MinigameName;
+  onClose: () => void;
+  /** Canonical play URL from `GET /portal/:id/minigame` when API provides `playUrl`. */
+  playUrl?: string;
+  /**
+   * When set, used as the iframe origin and wins over `VITE_PORTAL_GAME_URL` and `playUrl`.
+   * Player economy dashboard uses `https://{slug}.economies.sunflower-land.com`.
+   */
+  iframeBaseUrl?: string;
+}
+
+export const Portal: React.FC<Props> = ({
+  portalName,
+  onClose,
+  playUrl,
+  iframeBaseUrl,
+}) => {
   const iframeRef = useRef<HTMLIFrameElement>(null);
 
   const { gameService } = useContext(Context);
@@ -54,6 +109,8 @@ export const Portal: React.FC<Props> = ({ portalName, onClose }) => {
   const [url, setUrl] = useState<string>();
 
   const [loading, setLoading] = useState(true);
+  const [loadFailed, setLoadFailed] = useState(false);
+  const [loadAttempt, setLoadAttempt] = useState(0);
   const [isComplete, setIsComplete] = useState(false);
   const [purchase, setPurchase] = useState<PortalPurchase | undefined>(
     undefined,
@@ -62,114 +119,174 @@ export const Portal: React.FC<Props> = ({ portalName, onClose }) => {
 
   const { t } = useAppTranslation();
 
+  /**
+   * Parent auth/farm context updates often (token refresh, SAVE, etc.). Those must not
+   * re-run iframe URL construction or the `src` change reloads the embedded minigame.
+   * The minigame persists JWT in sessionStorage after first load (`chicken-rescue-v2` url.ts).
+   */
+  const rawTokenRef = useRef(authState.context.user.rawToken);
+  const farmIdRef = useRef(gameState.context.farmId);
+
+  const rawToken = authState.context.user.rawToken;
+  const farmId = gameState.context.farmId;
+
   useEffect(() => {
+    rawTokenRef.current = rawToken;
+    farmIdRef.current = farmId;
+  }, [rawToken, farmId]);
+
+  useEffect(() => {
+    let cancelled = false;
+
     const load = async () => {
       setLoading(true);
+      setLoadFailed(false);
+      setUrl(undefined);
 
-      let token = "";
-      if (CONFIG.API_URL) {
-        const { token: portalToken } = await portal({
-          portalId: portalName,
-          token: authState.context.user.rawToken as string,
-          farmId: gameState.context.farmId,
-        });
-        token = portalToken;
+      try {
+        let token = "";
+        if (CONFIG.API_URL) {
+          const { token: portalToken } = await portal({
+            portalId: portalName,
+            token: rawTokenRef.current as string,
+            farmId: farmIdRef.current,
+          });
+          token = portalToken;
+        }
+
+        const baseUrl = resolveMinigameIframeBaseUrl(
+          portalName,
+          playUrl,
+          iframeBaseUrl,
+        );
+
+        const language = localStorage.getItem("language") || "en";
+        const font = getCachedFont();
+
+        const params = new URLSearchParams();
+        params.set("jwt", token);
+        params.set("network", CONFIG.NETWORK);
+        params.set("language", language);
+        params.set("font", font);
+        if (CONFIG.API_URL) {
+          params.set("apiUrl", CONFIG.API_URL);
+        }
+
+        const nextUrl = `${baseUrl}?${params.toString()}`;
+
+        if (!cancelled) {
+          setUrl(nextUrl);
+        }
+      } catch {
+        if (!cancelled) {
+          setLoading(false);
+          setLoadFailed(true);
+        }
       }
-
-      const baseUrl = `https://${DOMAIN_MAP[portalName] ?? portalName}.sunflower-land.com`;
-
-      // If testing a local portal, uncomment this line
-      // baseUrl = `http://localhost:3001`;
-
-      const language = localStorage.getItem("language") || "en";
-      const font = getCachedFont();
-
-      const url = `${baseUrl}?jwt=${token}&network=${CONFIG.NETWORK}&language=${language}&font=${font}`;
-
-      setUrl(url);
-
-      setLoading(false);
     };
 
     load();
-  }, []);
 
-  // Function to handle messages from the iframe
-  const handleMessage = (event: any) => {
-    if (event.data?.event === "closePortal") {
-      // Close the modal when the message is received
-      setLoading(false);
-      setUrl("");
-      onClose();
-    }
+    return () => {
+      cancelled = true;
+    };
+  }, [portalName, playUrl, iframeBaseUrl, loadAttempt]);
 
-    if (event.data?.event === "claimPrize") {
-      // Close the modal when the message is received
-      setLoading(false);
-      setIsComplete(true);
-      return;
-    }
+  const handleMessage = useCallback(
+    (event: MessageEvent) => {
+      const iframeWindow = iframeRef.current?.contentWindow;
+      const iframeOrigin = url
+        ? new URL(url, window.location.origin).origin
+        : undefined;
 
-    if (event.data.event === "purchase") {
-      // Purchase the item
-      setPurchase(event.data);
-      return;
-    }
+      if (
+        !iframeWindow ||
+        !iframeOrigin ||
+        event.source !== iframeWindow ||
+        event.origin !== iframeOrigin
+      ) {
+        return;
+      }
 
-    if (event.data.event === "donated") {
-      setDonation(event.data);
-      return;
-    }
+      const eventName = event.data?.event;
 
-    if (event.data.event === "attemptStarted") {
-      // Start the minigame attempt
-      gameService.send("minigame.attemptStarted", {
-        id: portalName,
-      });
-      gameService.send("SAVE");
-      return;
-    }
+      if (eventName === "closePortal") {
+        setLoading(false);
+        setUrl("");
+        onClose();
+      }
 
-    if (event.data.event === "scoreSubmitted") {
-      // Submit the minigame score
-      gameService.send("minigame.scoreSubmitted", {
-        score: event.data.score,
-        id: portalName,
-      });
-      gameService.send("SAVE");
-      return;
-    }
+      if (eventName === "claimPrize") {
+        setLoading(false);
+        setIsComplete(true);
+        return;
+      }
 
-    // achievements
-    if (event.data.event === "achievementsUnlocked") {
-      gameService.send("minigame.achievementsUnlocked", {
-        id: portalName,
-        achievementNames: event.data.achievementNames,
-      });
-      gameService.send("SAVE");
-      return;
-    }
+      if (eventName === "purchase") {
+        setPurchase(event.data);
+        return;
+      }
 
-    // activities
-    if (event.data.event === "activitiesTracked") {
-      gameService.send("minigame.activitiesTracked", {
-        id: portalName,
-        activities: event.data.activities,
-      });
-      gameService.send("SAVE");
-      return;
-    }
-  };
+      if (eventName === "donated") {
+        setDonation(event.data);
+        return;
+      }
+
+      if (eventName === "attemptStarted") {
+        gameService.send("minigame.attemptStarted", {
+          id: portalName,
+        });
+        gameService.send("SAVE");
+        return;
+      }
+
+      if (eventName === "scoreSubmitted") {
+        gameService.send("minigame.scoreSubmitted", {
+          score: event.data.score,
+          id: portalName,
+        });
+        gameService.send("SAVE");
+        return;
+      }
+
+      if (eventName === "achievementsUnlocked") {
+        gameService.send("minigame.achievementsUnlocked", {
+          id: portalName,
+          achievementNames: event.data.achievementNames,
+        });
+        gameService.send("SAVE");
+        return;
+      }
+
+      if (eventName === "activitiesTracked") {
+        gameService.send("minigame.activitiesTracked", {
+          id: portalName,
+          activities: event.data.activities,
+        });
+        gameService.send("SAVE");
+      }
+    },
+    [gameService, onClose, portalName, url],
+  );
 
   useEffect(() => {
-    // Add event listener to listen for messages from any origin
     window.addEventListener("message", handleMessage);
 
     return () => {
-      // Remove the event listener when the component is unmounted
       window.removeEventListener("message", handleMessage);
     };
-  }, []);
+  }, [handleMessage]);
+
+  useEffect(() => {
+    if (!url || !loading) return;
+
+    const timeout = window.setTimeout(() => {
+      setLoading(false);
+      setLoadFailed(true);
+    }, PORTAL_LOAD_TIMEOUT_MS);
+
+    return () => window.clearTimeout(timeout);
+  }, [loading, url]);
 
   const confirmPurchase = () => {
     gameService.send("minigame.itemPurchased", {
@@ -201,12 +318,18 @@ export const Portal: React.FC<Props> = ({ portalName, onClose }) => {
     onClose();
   };
 
-  if (loading) {
-    return <Loading />;
-  }
-
   if (isComplete) {
-    const prize = gameState.context.state.minigames.prizes[portalName];
+    const { prizes, games } = gameState.context.state.minigames;
+    const prize = prizes[portalName];
+    // A tiered prize pays the tier this run reached
+    const history =
+      prize &&
+      games[portalName]?.history[
+        new Date(prize.startAt).toISOString().slice(0, 10)
+      ];
+    const reward =
+      (prize && history && getMinigamePrizeReward({ prize, history })) ?? prize;
+
     return (
       <ClaimReward
         onClaim={onClaim}
@@ -214,31 +337,50 @@ export const Portal: React.FC<Props> = ({ portalName, onClose }) => {
           message: "Congratulations, you completed the mission!",
           factionPoints: 0,
           id: "discord-bonus",
-          items: prize?.items ?? {},
-          wearables: prize?.wearables ?? {},
+          items: reward?.items ?? {},
+          wearables: reward?.wearables ?? {},
           sfl: 0,
-          coins: prize?.coins ?? 0,
+          coins: reward?.coins ?? 0,
         }}
       />
     );
   }
 
+  if (loadFailed) {
+    return (
+      <div className="flex min-h-[48px] items-center gap-2 p-1 pr-12">
+        <Label type="danger">{t("error")}</Label>
+        <Button onClick={() => setLoadAttempt((attempt) => attempt + 1)}>
+          {t("retry")}
+        </Button>
+      </div>
+    );
+  }
+
   return (
     <>
-      {createPortal(
-        <div
-          data-html2canvas-ignore="true"
-          aria-label="Hud"
-          className="fixed inset-0 z-50"
-        >
-          <iframe
-            src={url}
-            className="w-full h-full absolute z-10"
-            ref={iframeRef} // Set ref to the iframe
-          />
-        </div>,
-        document.body,
+      {loading && (
+        <div className="flex min-h-[48px] items-center pr-12">
+          <Loading />
+        </div>
       )}
+      {url &&
+        createPortal(
+          <div
+            data-html2canvas-ignore="true"
+            aria-label="Hud"
+            className={`fixed inset-0 z-50 ${loading ? "invisible" : ""}`}
+          >
+            <iframe
+              src={url}
+              className="w-full h-full absolute z-10"
+              ref={iframeRef} // Set ref to the iframe
+              title={portalName}
+              onLoad={() => setLoading(false)}
+            />
+          </div>,
+          document.body,
+        )}
       {purchase &&
         createPortal(
           <div
@@ -303,7 +445,6 @@ export const Portal: React.FC<Props> = ({ portalName, onClose }) => {
           </div>,
           document.body,
         )}
-      <Loading className="z-10 left-0 top-0" />
     </>
   );
 };

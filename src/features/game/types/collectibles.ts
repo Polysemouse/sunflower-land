@@ -1,10 +1,17 @@
 import Decimal from "decimal.js-light";
-import { Inventory, Keys } from "./game";
+import type { Inventory, Keys } from "./game";
+import type { LevelRequirement } from "features/game/lib/level";
 import { translate } from "lib/i18n/translate";
 import { CHAPTERS } from "./chapters";
-import { ExoticCropName } from "./beans";
+import type { ExoticCropName } from "./beans";
 
-export const PLACEABLE_LOCATIONS = ["farm", "home", "petHouse"] as const;
+export const PLACEABLE_LOCATIONS = [
+  "farm",
+  "home",
+  "petHouse",
+  "interior",
+  "level_one",
+] as const;
 export type PlaceableLocation = (typeof PLACEABLE_LOCATIONS)[number];
 
 export type SeasonPassName =
@@ -30,13 +37,13 @@ export type HeliosBlacksmithItem =
   | "Bale"
   | "Scary Mike"
   | "Laurie the Chuckle Crow"
-  | "Stone Beetle"
   | "Iron Beetle"
   | "Gold Beetle"
   | "Fairy Circle"
   | "Squirrel"
   | "Macaw"
-  | "Butterfly";
+  | "Butterfly"
+  | "Salt Sculpture";
 
 export type TreasureCollectibleItem =
   | "Treasure Map"
@@ -88,6 +95,7 @@ export type SoldOutCollectibleName =
   | "Royal Throne"
   | "Lily Egg"
   | "Goblet"
+  | "Stone Beetle"
   | "Pharaoh Gnome"
   | "Lemon Tea Bath"
   | "Tomato Clown"
@@ -133,7 +141,19 @@ export type SoldOutCollectibleName =
   | "Pearl Bed"
   | "Crimstone Clam"
   | "Poseidon's Throne"
-  | "Fish Kite";
+  | "Fish Kite"
+  | "Pufferfish"
+  | "Fat Crab"
+  | "Navigation Table"
+  | "Royal Crab Pot"
+  | "Crab House"
+  | "Speed Trap"
+  // Salt Awakening
+  | "Crystal Altar"
+  | "Dino Egg Trophy"
+  | "Salt Lamp"
+  | "World Map Rug"
+  | "Ripped Salt Bag";
 
 export type MegaStoreCollectibleName =
   | "Flower Cart"
@@ -205,7 +225,7 @@ export type CraftableCollectible = {
   coins?: number;
   from?: Date;
   to?: Date;
-  level?: number;
+  level?: LevelRequirement;
   limit?: number;
   inventoryLimit?: number;
   disabled?: boolean;
@@ -280,15 +300,6 @@ export const HELIOS_BLACKSMITH_ITEMS: Record<
     },
     inventoryLimit: 1,
   },
-  "Stone Beetle": {
-    description: translate("description.stone.beetle"),
-    boost: translate("description.stone.beetle.boost"),
-    coins: 1000,
-    ingredients: {
-      Stone: new Decimal(20),
-    },
-    inventoryLimit: 1,
-  },
   "Iron Beetle": {
     description: translate("description.iron.beetle"),
     boost: translate("description.iron.beetle.boost"),
@@ -335,6 +346,15 @@ export const HELIOS_BLACKSMITH_ITEMS: Record<
     boost: translate("description.butterfly.boost"),
     coins: 15000,
     ingredients: {},
+    inventoryLimit: 1,
+  },
+  "Salt Sculpture": {
+    description: translate("description.saltSculpture"),
+    boost: translate("description.saltSculpture.boost"),
+    coins: 2000,
+    ingredients: {
+      "Refined Salt": new Decimal(30),
+    },
     inventoryLimit: 1,
   },
 };

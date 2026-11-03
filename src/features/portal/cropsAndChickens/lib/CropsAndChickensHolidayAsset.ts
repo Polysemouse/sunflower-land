@@ -1,6 +1,6 @@
 import { ITEM_DETAILS } from "features/game/types/images";
-import { CropsAndChickensHolidayEvent } from "./cropsAndChickensUtils";
-import { CropsAndChickensCropName } from "../CropsAndChickensConstants";
+import type { CropsAndChickensHolidayEvent } from "./cropsAndChickensUtils";
+import type { CropsAndChickensCropName } from "../CropsAndChickensConstants";
 import { t } from "i18next";
 import mapJson from "assets/map/crops_and_chickens.json";
 import mapJson_halloween from "assets/map/crops_and_chickens_halloween.json";

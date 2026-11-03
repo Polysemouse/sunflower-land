@@ -12,10 +12,10 @@
 // 20: Less than 48 hrs
 
 import { INITIAL_FARM } from "features/game/lib/constants";
-import { getInstantGems, speedUpRecipe } from "./speedUpRecipe";
+import { speedUpRecipe } from "./speedUpRecipe";
 import Decimal from "decimal.js-light";
 import { BAKERY_COOKABLES, COOKABLES } from "features/game/types/consumables";
-import { GameState } from "features/game/types/game";
+import type { GameState } from "features/game/types/game";
 import { supplyCookingOil } from "./supplyCookingOil";
 import { cook, getCookingOilBoost } from "./cook";
 
@@ -30,6 +30,191 @@ describe("instantCook", () => {
   });
 
   const farmId = 1;
+
+  const firePit = (crafting: GameState["buildings"]["Fire Pit"]) =>
+    ({
+      ...INITIAL_FARM,
+      inventory: { ...INITIAL_FARM.inventory, Gem: new Decimal(1000) },
+      buildings: { "Fire Pit": crafting },
+    }) as GameState;
+
+  const speedUp = (state: GameState) =>
+    speedUpRecipe({
+      farmId,
+      state,
+      action: {
+        buildingId: "1",
+        buildingName: "Fire Pit",
+        type: "recipe.spedUp",
+      },
+      createdAt: Date.now(),
+    });
+
+  // `recalculateQueue` split the queue on each recipe's STORED `readyAt` while
+  // everything around it derived readiness from the chain. The stored value can only
+  // ever be stale-FUTURE (a window is added, never removed), so a recipe that has
+  // actually finished landed in the "upcoming" half and, as the new head of an
+  // instant cook, was handed a fresh `startedAt` - restarting a finished cook.
+  it("does not restart a finished recipe whose cached readyAt is stale", () => {
+    const now = Date.now();
+    const HOUR = 60 * 60 * 1000;
+
+    const state = speedUp({
+      ...INITIAL_FARM,
+      inventory: { ...INITIAL_FARM.inventory, Gem: new Decimal(1000) },
+      collectibles: {
+        ...INITIAL_FARM.collectibles,
+        "Gourmet Hourglass": [
+          {
+            id: "1",
+            coordinates: { x: 1, y: 1 },
+            createdAt: now - 2 * HOUR,
+            readyAt: now - 2 * HOUR,
+          },
+        ],
+      },
+      buildings: {
+        "Fire Pit": [
+          {
+            id: "1",
+            coordinates: { x: 0, y: 0 },
+            createdAt: 0,
+            readyAt: 0,
+            crafting: [
+              // 4h of work at 2x: finished exactly now. The cache was written
+              // before the hourglass went down, so it still says 2h to go.
+              {
+                id: "head",
+                name: "Boiled Eggs",
+                startedAt: now - 2 * HOUR,
+                baseDurationMs: 4 * HOUR,
+                readyAt: now + 2 * HOUR,
+              },
+              // The one actually still cooking - this is what gets sped up.
+              {
+                id: "tail",
+                name: "Mashed Potato",
+                baseDurationMs: 2 * HOUR,
+                readyAt: now + 4 * HOUR,
+              },
+            ],
+          },
+        ],
+      },
+    } as GameState);
+
+    const queue = state.buildings["Fire Pit"]?.[0].crafting ?? [];
+
+    expect(state.inventory["Mashed Potato"]).toEqual(new Decimal(1));
+    expect(queue).toHaveLength(1);
+    expect(queue[0].id).toEqual("head");
+    expect(queue[0].startedAt).toEqual(now - 2 * HOUR);
+    expect(queue[0].readyAt).toEqual(now);
+  });
+
+  // Removing by predicate takes out EVERY entry that matches, so a player who
+  // queued the same recipe twice loses two and pays for one.
+  it("removes exactly one recipe when two legacy entries share a readyAt", () => {
+    const now = Date.now();
+    const state = speedUp(
+      firePit([
+        {
+          id: "1",
+          coordinates: { x: 0, y: 0 },
+          createdAt: 0,
+          readyAt: 0,
+          crafting: [
+            { name: "Boiled Eggs", readyAt: now + 60 * 1000 },
+            { name: "Boiled Eggs", readyAt: now + 60 * 1000 },
+          ],
+        },
+      ]),
+    );
+
+    expect(state.buildings["Fire Pit"]?.[0].crafting).toHaveLength(1);
+  });
+
+  it("removes exactly one recipe when two entries share an id", () => {
+    const now = Date.now();
+    const state = speedUp(
+      firePit([
+        {
+          id: "1",
+          coordinates: { x: 0, y: 0 },
+          createdAt: 0,
+          readyAt: 0,
+          crafting: [
+            {
+              id: "dupe",
+              name: "Boiled Eggs",
+              startedAt: now,
+              baseDurationMs: 60 * 1000,
+              readyAt: now + 60 * 1000,
+            },
+            {
+              id: "dupe",
+              name: "Boiled Eggs",
+              baseDurationMs: 60 * 1000,
+              readyAt: now + 120 * 1000,
+            },
+          ],
+        },
+      ]),
+    );
+
+    expect(state.buildings["Fire Pit"]?.[0].crafting).toHaveLength(1);
+  });
+
+  // The stored readyAt is a cache. Under a live boost the head can already be
+  // finished while its cache still says otherwise - speeding up must not be spent
+  // on it.
+  it("speeds up the next unfinished recipe, not one the boosts already finished", () => {
+    const now = Date.now();
+    const base = firePit([
+      {
+        id: "1",
+        coordinates: { x: 0, y: 0 },
+        createdAt: 0,
+        readyAt: 0,
+        crafting: [
+          {
+            id: "done",
+            name: "Boiled Eggs",
+            startedAt: now - 60 * 60 * 1000,
+            baseDurationMs: 60 * 60 * 1000,
+            // Stale cache: says an hour left, but 1h at 2x has finished the work.
+            readyAt: now + 60 * 60 * 1000,
+          },
+          {
+            id: "next",
+            name: "Boiled Eggs",
+            baseDurationMs: 4 * 60 * 60 * 1000,
+            readyAt: now + 5 * 60 * 60 * 1000,
+          },
+        ],
+      },
+    ]);
+
+    const state = speedUp({
+      ...base,
+      collectibles: {
+        ...base.collectibles,
+        "Gourmet Hourglass": [
+          {
+            id: "1",
+            coordinates: { x: 1, y: 1 },
+            createdAt: now - 60 * 60 * 1000,
+            readyAt: now - 60 * 60 * 1000,
+          },
+        ],
+      },
+    });
+
+    const remaining = state.buildings["Fire Pit"]?.[0].crafting ?? [];
+
+    // "done" is finished and stays for collection; "next" is the one sped up.
+    expect(remaining.map((recipe) => recipe.id)).toEqual(["done"]);
+  });
 
   it("requires item is cooking", () => {
     expect(() =>
@@ -429,72 +614,6 @@ describe("instantCook", () => {
     // Ready at for the fish should now be minus the milk cooking time
     expect(result).toBe(fishShouldBeReadyAt - twentyMinutesMs);
   });
-});
-
-describe("getInstantGems", () => {
-  const farmId = 1;
-  it("returns the correct amount of gems for a 1 hour recipe", () => {
-    expect(
-      getInstantGems({
-        readyAt: Date.now() + 1 * 60 * 60 * 1000,
-        game: INITIAL_FARM,
-      }),
-    ).toEqual(5);
-  });
-
-  it("returns the 20% more when player has spent 100 gems in a day", () => {
-    const now = new Date("2024-01-01T03:00:00Z");
-    expect(
-      getInstantGems({
-        readyAt: now.getTime() + 1 * 60 * 60 * 1000,
-        game: {
-          ...INITIAL_FARM,
-          gems: {
-            history: {
-              "2024-01-01": { spent: 100 },
-            },
-          },
-        },
-        now: now.getTime(),
-      }),
-    ).toEqual(6);
-  });
-
-  it("returns the 40% more when player has spent 200 gems in a day", () => {
-    const now = new Date("2024-01-01T03:00:00Z");
-    expect(
-      getInstantGems({
-        readyAt: now.getTime() + 1 * 60 * 60 * 1000,
-        game: {
-          ...INITIAL_FARM,
-          gems: {
-            history: {
-              "2024-01-01": { spent: 200 },
-            },
-          },
-        },
-        now: now.getTime(),
-      }),
-    ).toEqual(7);
-  });
-
-  it("returns the 100% more when player has spent 500 gems in a day", () => {
-    const now = new Date("2024-01-01T03:00:00Z");
-    expect(
-      getInstantGems({
-        readyAt: now.getTime() + 1 * 60 * 60 * 1000,
-        game: {
-          ...INITIAL_FARM,
-          gems: {
-            history: {
-              "2024-01-01": { spent: 500 },
-            },
-          },
-        },
-        now: now.getTime(),
-      }),
-    ).toEqual(10);
-  });
 
   it("doesn't remove other ready recipes when speeding up the current recipe", () => {
     const now = Date.now();
@@ -539,5 +658,84 @@ describe("getInstantGems", () => {
       },
     ]);
     expect(state.inventory["Radish Cake"]).toEqual(new Decimal(1));
+  });
+
+  describe("Dino Egg Trophy coin payment", () => {
+    it("throws when paymentMethod is 'coins' without a placed Dino Egg Trophy", () => {
+      expect(() =>
+        speedUpRecipe({
+          farmId,
+          action: {
+            buildingId: "123",
+            buildingName: "Fire Pit",
+            type: "recipe.spedUp",
+            paymentMethod: "coins",
+          },
+          state: {
+            ...INITIAL_FARM,
+            coins: 100_000,
+            inventory: { Gem: new Decimal(0) },
+            buildings: {
+              "Fire Pit": [
+                {
+                  id: "123",
+                  coordinates: { x: 0, y: 0 },
+                  createdAt: 0,
+                  readyAt: 0,
+                  crafting: [
+                    { name: "Mashed Potato", readyAt: Date.now() + 1000 },
+                  ],
+                },
+              ],
+            },
+          },
+        }),
+      ).toThrow("Dino Egg Trophy required");
+    });
+
+    it("charges coins (and 0 gems) when trophy is placed and cooks the recipe", () => {
+      const state = speedUpRecipe({
+        farmId,
+        action: {
+          buildingId: "123",
+          buildingName: "Fire Pit",
+          type: "recipe.spedUp",
+          paymentMethod: "coins",
+        },
+        state: {
+          ...INITIAL_FARM,
+          coins: 1000,
+          inventory: { Gem: new Decimal(0) },
+          collectibles: {
+            "Dino Egg Trophy": [
+              {
+                id: "trophy-1",
+                createdAt: 0,
+                coordinates: { x: 0, y: 0 },
+                readyAt: 0,
+              },
+            ],
+          },
+          buildings: {
+            "Fire Pit": [
+              {
+                id: "123",
+                coordinates: { x: 0, y: 0 },
+                createdAt: 0,
+                readyAt: 0,
+                crafting: [
+                  { name: "Mashed Potato", readyAt: Date.now() + 1000 },
+                ],
+              },
+            ],
+          },
+        },
+      });
+
+      // Mashed Potato 1s remaining ⇒ 1 gem ⇒ 50 coins.
+      expect(state.coins).toBe(950);
+      expect(state.inventory.Gem).toEqual(new Decimal(0));
+      expect(state.inventory["Mashed Potato"]).toEqual(new Decimal(1));
+    });
   });
 });

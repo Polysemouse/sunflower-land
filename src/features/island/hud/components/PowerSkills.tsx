@@ -8,13 +8,13 @@ import Decimal from "decimal.js-light";
 import { CloseButtonPanel } from "features/game/components/CloseablePanel";
 import { Context } from "features/game/GameProvider";
 import { PIXEL_SCALE } from "features/game/lib/constants";
-import { MachineState } from "features/game/lib/gameMachine";
+import type { MachineState } from "features/game/lib/gameMachine";
 import {
-  BumpkinRevampSkillName,
-  BumpkinSkillRevamp,
+  type BumpkinRevampSkillName,
+  type BumpkinSkillRevamp,
   getPowerSkills,
 } from "features/game/types/bumpkinSkills";
-import { InventoryItemName } from "features/game/types/game";
+import type { InventoryItemName } from "features/game/types/game";
 import { useAppTranslation } from "lib/i18n/useAppTranslations";
 import React, { useContext, useState } from "react";
 import {
@@ -141,7 +141,11 @@ const PowerSkillsContent: React.FC<{
     gameService.send("skill.used", { skill: skillName });
   };
 
-  const boostedCooldown = getSkillCooldown({ cooldown: cooldown ?? 0, state });
+  const boostedCooldown = getSkillCooldown({
+    cooldown: cooldown ?? 0,
+    state,
+    skillName,
+  });
 
   const nextSkillUse = (previousPowerUseAt?.[skillName] ?? 0) + boostedCooldown;
   const powerSkillReady = nextSkillUse < now;
@@ -149,7 +153,23 @@ const PowerSkillsContent: React.FC<{
   const { disabled, reason } = powerSkillDisabledConditions({
     state,
     skillTree: selectedSkill,
+    createdAt: now,
   });
+
+  const isPowerSkillCooldownReady = (skill: BumpkinSkillRevamp) => {
+    if (!skill.power) return false;
+
+    const skillName = skill.name as BumpkinRevampSkillName;
+    const boostedCooldown = getSkillCooldown({
+      cooldown: skill.requirements.cooldown ?? 0,
+      state,
+      skillName,
+    });
+    const nextSkillUse =
+      (previousPowerUseAt?.[skillName] ?? 0) + boostedCooldown;
+
+    return nextSkillUse < now;
+  };
 
   return (
     <SplitScreenView
@@ -286,8 +306,10 @@ const PowerSkillsContent: React.FC<{
                       className="mb-2"
                     >
                       {t("skill.cooldown", {
+                        // "medium" (two units) so half-day cooldowns don't
+                        // collapse: 2.5d must read "2d 12h", not a truncated "2d".
                         cooldown: millisecondsToString(boostedCooldown, {
-                          length: "short",
+                          length: "medium",
                           isShortFormat: true,
                           removeTrailingZeros: true,
                         }),
@@ -356,6 +378,7 @@ const PowerSkillsContent: React.FC<{
                       }}
                       tier={requirements.tier}
                       npc={npc}
+                      isReady={isPowerSkillCooldownReady(skill)}
                       secondaryImage={
                         boosts.debuff
                           ? tradeOffs
@@ -412,6 +435,7 @@ const PowerSkillsContent: React.FC<{
                       }}
                       tier={requirements.tier}
                       npc={npc}
+                      isReady={isPowerSkillCooldownReady(skill)}
                       secondaryImage={
                         boosts.debuff
                           ? tradeOffs

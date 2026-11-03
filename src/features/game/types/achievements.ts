@@ -1,9 +1,10 @@
 import Decimal from "decimal.js-light";
-import { getBumpkinLevel } from "../lib/level";
-import { GameState, Inventory } from "./game";
-import { CookEvent, CraftedEvent, HarvestEvent } from "./farmActivity";
+import { getTotalBumpkinLevel } from "../lib/level";
+import type { GameState, Inventory } from "./game";
+import type { CookEvent, CraftedEvent, HarvestEvent } from "./farmActivity";
 import { COOKABLES, COOKABLE_CAKES } from "./consumables";
-import { getKeys, TOOLS } from "./craftables";
+import { TOOLS } from "./craftables";
+import { getKeys } from "lib/object";
 import { CROPS } from "./crops";
 import { GREENHOUSE_FRUIT, PATCH_FRUIT } from "./fruits";
 import { getChapterTicket } from "./chapters";
@@ -226,7 +227,10 @@ export const ACHIEVEMENTS: () => Record<AchievementName, Achievement> = () => ({
   "Busy Bumpkin": {
     description: translate("busyBumpkin.description"),
     progress: (gameState: GameState) =>
-      getBumpkinLevel(gameState.bumpkin?.experience || 0),
+      getTotalBumpkinLevel({
+        experience: gameState.bumpkin.experience || 0,
+        ascensionLevel: gameState.island.ascensionLevel ?? 0,
+      }),
     requirement: 2,
     coins: 10,
     introduction: [translate("busyBumpkin.one"), translate("busyBumpkin.two")],
@@ -274,7 +278,10 @@ export const ACHIEVEMENTS: () => Record<AchievementName, Achievement> = () => ({
   "Brilliant Bumpkin": {
     description: translate("brilliantBumpkin.description"),
     progress: (gameState: GameState) =>
-      getBumpkinLevel(gameState.bumpkin?.experience || 0),
+      getTotalBumpkinLevel({
+        experience: gameState.bumpkin.experience || 0,
+        ascensionLevel: gameState.island.ascensionLevel ?? 0,
+      }),
     requirement: 20,
     coins: 0,
     rewards: {
@@ -316,7 +323,8 @@ export const ACHIEVEMENTS: () => Record<AchievementName, Achievement> = () => ({
   "Big Spender": {
     description: translate("bigSpender.description"),
     progress: (gameState: GameState) =>
-      gameState.farmActivity["SFL Spent"] || 0,
+      (gameState.farmActivity["SFL Spent"] || 0) +
+      (gameState.farmActivity["FLOWER Spent"] || 0),
     requirement: 10,
     coins: 20,
   },
@@ -332,7 +340,8 @@ export const ACHIEVEMENTS: () => Record<AchievementName, Achievement> = () => ({
   "High Roller": {
     description: translate("highRoller.description"),
     progress: (gameState: GameState) =>
-      gameState.farmActivity["SFL Spent"] || 0,
+      (gameState.farmActivity["SFL Spent"] || 0) +
+      (gameState.farmActivity["FLOWER Spent"] || 0),
     requirement: 7500,
     coins: 0,
     rewards: {

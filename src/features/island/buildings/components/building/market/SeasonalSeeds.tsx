@@ -1,16 +1,19 @@
-import React, { useContext, useState } from "react";
+import React, { useContext, useMemo, useState } from "react";
 import { useSelector } from "@xstate/react";
 import { Box } from "components/ui/Box";
 import { Button } from "components/ui/Button";
 import { Context } from "features/game/GameProvider";
 import {
   CROP_SEEDS,
-  CropName,
-  CropSeedName,
+  type CropName,
+  type CropSeedName,
   GREENHOUSE_SEEDS,
-  GreenHouseCropSeedName,
+  type GreenHouseCropSeedName,
 } from "features/game/types/crops";
-import { ITEM_DETAILS } from "features/game/types/images";
+import {
+  ITEM_DETAILS,
+  getTranslatedItemName,
+} from "features/game/types/images";
 import { Decimal } from "decimal.js-light";
 import {
   FULL_MOON_SEEDS,
@@ -20,14 +23,21 @@ import {
 import { getCropPlotTime } from "features/game/events/landExpansion/plant";
 import { INVENTORY_LIMIT } from "features/game/lib/constants";
 import { makeBulkBuySeeds } from "./lib/makeBulkBuyAmount";
-import { getBumpkinLevel } from "features/game/lib/level";
-import { SEASONAL_SEEDS, SEEDS, SeedName } from "features/game/types/seeds";
+import {
+  getAscensionLevel,
+  meetsLevelRequirement,
+} from "features/game/lib/level";
+import {
+  SEASONAL_SEEDS,
+  SEEDS,
+  type SeedName,
+} from "features/game/types/seeds";
 import {
   GREENHOUSE_FRUIT_SEEDS,
-  GreenHouseFruitSeedName,
+  type GreenHouseFruitSeedName,
   PATCH_FRUIT,
   PATCH_FRUIT_SEEDS,
-  PatchFruitSeedName,
+  type PatchFruitSeedName,
 } from "features/game/types/fruits";
 import { getFruitHarvests } from "features/game/events/landExpansion/utils";
 import { SplitScreenView } from "components/ui/SplitScreenView";
@@ -36,7 +46,8 @@ import { gameAnalytics } from "lib/gameAnalytics";
 import { Label } from "components/ui/Label";
 import { useAppTranslation } from "lib/i18n/useAppTranslations";
 import { SUNNYSIDE } from "assets/sunnyside";
-import { FLOWER_SEEDS, FlowerSeedName } from "features/game/types/flowers";
+import { PIXEL_SCALE } from "features/game/lib/constants";
+import { FLOWER_SEEDS, type FlowerSeedName } from "features/game/types/flowers";
 import { getFlowerTime } from "features/game/events/landExpansion/plantFlower";
 import {
   SEED_TO_PLANT,
@@ -45,11 +56,18 @@ import {
 import { NPC_WEARABLES } from "lib/npcs";
 import { ConfirmationModal } from "components/ui/ConfirmationModal";
 import { formatNumber, setPrecision } from "lib/utils/formatNumber";
+import { useVipAccess } from "lib/utils/hooks/useVipAccess";
+import { VIPAccess } from "features/game/components/VipAccess";
+import { ModalContext } from "features/game/components/modal/ModalProvider";
+import { isFirstSeedPurchase, needsFirstSeedPurchase } from "./lib/onboarding";
+import vipIcon from "assets/icons/vip.webp";
 
 import { Restock } from "./restock/Restock";
-import { BoostName, TemperateSeasonName } from "features/game/types/game";
+import { planSeedPurchases } from "./lib/planSeedPurchases";
+import type { BoostName, TemperateSeasonName } from "features/game/types/game";
 import { secondsToString } from "lib/utils/time";
 import { secondsTillWeekReset } from "features/game/lib/factions";
+import { SpecialEventPanel } from "../SpecialEventPanel";
 
 import springIcon from "assets/icons/spring.webp";
 import summerIcon from "assets/icons/summer.webp";
@@ -57,8 +75,8 @@ import autumnIcon from "assets/icons/autumn.webp";
 import winterIcon from "assets/icons/winter.webp";
 import fullMoon from "assets/icons/full_moon.png";
 import { SeedRequirements } from "components/ui/layouts/SeedRequirements";
-import { getKeys } from "features/game/types/decorations";
-import { MachineState } from "features/game/lib/gameMachine";
+import { getKeys } from "lib/object";
+import type { MachineState } from "features/game/lib/gameMachine";
 import {
   BASIC_CROP_MACHINE_SEEDS,
   CROP_EXTENSION_MOD_I_SEEDS,
@@ -68,6 +86,21 @@ import {
 import { isFullMoon } from "features/game/types/calendar";
 import { hasRequiredIslandExpansion } from "features/game/lib/hasRequiredIslandExpansion";
 import { useNow } from "lib/utils/hooks/useNow";
+import {
+  getPreActionDisplay,
+  PRE_ACTION_TICK_MS,
+} from "features/game/lib/timerDisplay";
+import { getSeedBoostWindows } from "features/game/lib/seedBoostWindows";
+import {
+  getBoostContributionEntries,
+  getSeedBoostContributions,
+} from "features/game/lib/boostContributions";
+import {
+  CHAPTER_CROP_WEEK,
+  CHAPTER_CROP_WEEK_SEED,
+  hasChapterCropWeekAccess,
+} from "features/game/types/chapterCropWeek";
+import { hasUpgradedChapterCropWeekSkill } from "features/game/types/bumpkinSkills";
 
 export const SEASON_ICONS: Record<TemperateSeasonName, string> = {
   spring: springIcon,
@@ -80,19 +113,30 @@ const _state = (state: MachineState) => state.context.state;
 
 export const SeasonalSeeds: React.FC = () => {
   const { gameService, shortcutItem } = useContext(Context);
+  const { openModal } = useContext(ModalContext);
   const state = useSelector(gameService, _state);
   const { inventory, coins, island, bumpkin, season } = state;
   const currentSeason = season.season;
+  const isVIP = useVipAccess({ game: state });
+  const canShowBuyAll = hasRequiredIslandExpansion(island.type, "spring");
   // Sort the seeds by their default order
   const currentSeasonSeeds = getKeys(SEEDS).filter((seed) =>
     SEASONAL_SEEDS[currentSeason].includes(seed),
   );
-  const now = useNow();
+
+  const now = useNow({ live: true, intervalMs: PRE_ACTION_TICK_MS });
+  const isCropWeek = hasChapterCropWeekAccess(state, now);
 
   const [selectedName, setSelectedName] = useState<SeedName>(
     currentSeasonSeeds[0],
   );
   const [confirmBuyModal, showConfirmBuyModal] = useState(false);
+
+  // Tutorial: point a new player at their first batch of Sunflower Seeds.
+  const showBuyHelper =
+    selectedName === "Sunflower Seed" && needsFirstSeedPurchase(state);
+  const [confirmBuyAllModal, showConfirmBuyAllModal] = useState(false);
+  const [buyAllFailures, setBuyAllFailures] = useState<SeedName[]>([]);
 
   const [showBoosts, setShowBoosts] = useState(false);
 
@@ -107,17 +151,30 @@ export const SeasonalSeeds: React.FC = () => {
   };
 
   const buy = (amount = 1) => {
-    const state = gameService.send("seed.bought", {
+    const before = gameService.getSnapshot().context.state;
+    const isFirstPurchase = isFirstSeedPurchase(before);
+    const isFirstSunflowerSeedPurchase =
+      selectedName === "Sunflower Seed" &&
+      !before.farmActivity?.["Sunflower Seed Bought"];
+
+    gameService.send("seed.bought", {
       item: selectedName,
       amount,
     });
 
     shortcutItem(selectedName);
 
-    if (state.context.state.farmActivity?.["Sunflower Seed Bought"] === 1) {
+    // "Sunflower Seed Bought" counts units, not purchases, so compare against
+    // the state before the purchase rather than checking for a total of 1.
+    if (isFirstSunflowerSeedPurchase) {
       gameAnalytics.trackMilestone({
         event: "Tutorial:SunflowerSeedBought:Completed",
       });
+    }
+
+    // Tutorial: seeds in hand, Betty sends the player back to their plots.
+    if (isFirstPurchase) {
+      openModal("BETTY_PLANT");
     }
   };
 
@@ -125,11 +182,18 @@ export const SeasonalSeeds: React.FC = () => {
     return coins < price * amount;
   };
 
+  const lessFundsForSeed = (seedName: SeedName) =>
+    coins < getBuyPrice(seedName, SEEDS[seedName], state).price;
+
   const stock = state.stock[selectedName] || new Decimal(0);
   const inventoryLimit = INVENTORY_LIMIT(state)[selectedName] ?? new Decimal(0);
+  // Rounded down to a whole seed: seeds are discrete units, and comparing
+  // against inventoryLimit at 2 decimal places lets a stray fractional
+  // remainder (e.g. from a historical bug) permanently block purchases
+  // even though the player has less than one whole seed of headroom left.
   const inventoryAmount = setPrecision(
     inventory[selectedName] ?? new Decimal(0),
-    2,
+    0,
   );
   const bulkBuyLimit = inventoryLimit.minus(inventoryAmount);
   // Calculates the difference between amount in inventory and the inventory limit
@@ -139,7 +203,13 @@ export const SeasonalSeeds: React.FC = () => {
 
   const isSeedLocked = (seedName: SeedName) => {
     const seed = SEEDS[seedName];
-    return getBumpkinLevel(bumpkin?.experience ?? 0) < seed.bumpkinLevel;
+    return !meetsLevelRequirement(
+      getAscensionLevel({
+        experience: bumpkin.experience ?? 0,
+        ascensionLevel: island.ascensionLevel ?? 0,
+      }),
+      seed.bumpkinLevel,
+    );
   };
 
   const getAction = () => {
@@ -170,6 +240,12 @@ export const SeasonalSeeds: React.FC = () => {
     // return buy buttons otherwise
     return (
       <>
+        {selectedName === CHAPTER_CROP_WEEK_SEED &&
+          hasUpgradedChapterCropWeekSkill(bumpkin.skills, "Crops") && (
+            <Label type="warning" className="mb-1">
+              {t("chapterCropWeek.ascensionBoostsPaused")}
+            </Label>
+          )}
         <div className="flex space-x-1 sm:space-x-0 sm:space-y-1 sm:flex-col w-full">
           <Button
             disabled={lessFunds() || stock.lessThan(1)}
@@ -178,9 +254,22 @@ export const SeasonalSeeds: React.FC = () => {
             {t("buy")} {"1"}
           </Button>
           {bulkSeedBuyAmount > 10 && (
-            <Button disabled={lessFunds(10)} onClick={() => buy(10)}>
-              {t("buy")} {`10`}
-            </Button>
+            <div className="relative w-full">
+              <Button disabled={lessFunds(10)} onClick={() => buy(10)}>
+                {t("buy")} {`10`}
+              </Button>
+              {showBuyHelper && (
+                <img
+                  className="absolute pointer-events-none z-30 animate-pulsate"
+                  src={SUNNYSIDE.icons.click_icon}
+                  style={{
+                    width: `${PIXEL_SCALE * 18}px`,
+                    right: `${PIXEL_SCALE * -4}px`,
+                    top: `${PIXEL_SCALE * 2}px`,
+                  }}
+                />
+              )}
+            </div>
           )}
           {bulkSeedBuyAmount > 1 && bulkSeedBuyAmount <= 10 && (
             <Button
@@ -266,11 +355,11 @@ export const SeasonalSeeds: React.FC = () => {
     boostsUsed: { name: BoostName; value: string }[];
   } => {
     if (selectedName in FLOWER_SEEDS) {
-      return getFlowerTime(selectedName as FlowerSeedName, state);
+      return getFlowerTime(selectedName as FlowerSeedName, state, now);
     }
 
     if (yields && yields in PATCH_FRUIT)
-      return getFruitPatchTime(selectedName as PatchFruitSeedName, state);
+      return getFruitPatchTime(selectedName as PatchFruitSeedName, state, now);
 
     if (
       selectedName in GREENHOUSE_SEEDS ||
@@ -280,6 +369,7 @@ export const SeasonalSeeds: React.FC = () => {
       return getGreenhouseCropTime({
         crop: plant,
         game: state,
+        now,
       });
     }
 
@@ -293,6 +383,31 @@ export const SeasonalSeeds: React.FC = () => {
   };
 
   const baseTime = getBasePlantSeconds();
+
+  // A live speed window isn't folded into the grow time — project the real
+  // "plant now → ready in X", which credits only the part of the grow the
+  // booster still covers.
+  const plantTime = getPlantSeconds();
+  // The windowed boosters aren't in `boostsUsed` (they apply over the grow rather
+  // than being baked into it), so name them for the boost panel with the time
+  // each one actually saves.
+  const plantBoostsUsed = [
+    ...plantTime.boostsUsed,
+    ...getBoostContributionEntries({
+      contributions: getSeedBoostContributions(state, selectedName, now),
+      seconds: plantTime.seconds,
+      at: now,
+      formatSeconds: (seconds) =>
+        secondsToString(seconds, { length: "medium" }),
+    }),
+  ];
+  const { displaySeconds: plantDisplaySeconds } = getPreActionDisplay({
+    seconds: plantTime.seconds,
+    baseSeconds: baseTime,
+    namedBoostCount: plantBoostsUsed.length,
+    windows: getSeedBoostWindows(state, selectedName),
+    at: now,
+  });
 
   const getHarvestCount = () => {
     if (!yields) return undefined;
@@ -353,7 +468,57 @@ export const SeasonalSeeds: React.FC = () => {
     ...cropMachineSeeds,
     ...currentSeasonSeeds,
     ...FULL_MOON_SEEDS,
+    ...(isCropWeek ? [CHAPTER_CROP_WEEK_SEED] : []),
   ];
+
+  const buyAllPlan = useMemo(
+    () =>
+      planSeedPurchases(state, [
+        ...currentSeasonSeeds,
+        ...cropMachineSeeds,
+        ...FULL_MOON_SEEDS,
+        ...(isCropWeek ? [CHAPTER_CROP_WEEK_SEED] : []),
+      ]),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [state, currentSeasonSeeds, cropMachineSeeds, isCropWeek],
+  );
+
+  const buyAllSeeds = () => {
+    const failures: SeedName[] = [];
+    const before = gameService.getSnapshot().context.state;
+    const isFirstPurchase = isFirstSeedPurchase(before);
+    const hadBoughtSunflowerSeeds =
+      !!before.farmActivity?.["Sunflower Seed Bought"];
+
+    buyAllPlan.purchases.forEach(({ seedName, amount }) => {
+      try {
+        gameService.send("seed.bought", { item: seedName, amount });
+      } catch (error) {
+        // Don't let one seed's edge case (e.g. a race with a state change
+        // since the plan was computed) abort the rest of the purchases.
+        failures.push(seedName);
+        // eslint-disable-next-line no-console
+        console.error(`[BuyAllSeeds] Failed to buy ${seedName}:`, error);
+      }
+    });
+
+    setBuyAllFailures(failures);
+    showConfirmBuyAllModal(false);
+
+    if (isFirstPurchase && failures.length < buyAllPlan.purchases.length) {
+      openModal("BETTY_PLANT");
+    }
+
+    const boughtSunflowerSeeds =
+      !!gameService.getSnapshot().context.state.farmActivity?.[
+        "Sunflower Seed Bought"
+      ];
+    if (!hadBoughtSunflowerSeeds && boughtSunflowerSeeds) {
+      gameAnalytics.trackMilestone({
+        event: "Tutorial:SunflowerSeedBought:Completed",
+      });
+    }
+  };
 
   const harvestCount = getHarvestCount();
 
@@ -371,6 +536,12 @@ export const SeasonalSeeds: React.FC = () => {
             item: selectedName,
             seasons,
             cropMachineSeeds,
+            ...(selectedName === CHAPTER_CROP_WEEK_SEED
+              ? {
+                  from: CHAPTER_CROP_WEEK.startDate,
+                  to: CHAPTER_CROP_WEEK.endDate,
+                }
+              : {}),
           }}
           requirements={{
             coins: price,
@@ -384,7 +555,10 @@ export const SeasonalSeeds: React.FC = () => {
                   maxHarvest: harvestCount[1],
                 }
               : undefined,
-            time: getPlantSeconds(),
+            time: {
+              seconds: plantDisplaySeconds,
+              boostsUsed: plantBoostsUsed,
+            },
             baseTimeSeconds: baseTime,
             restriction: {
               icon: SEASON_ICONS[currentSeason],
@@ -431,12 +605,31 @@ export const SeasonalSeeds: React.FC = () => {
                   }}
                   image={ITEM_DETAILS[SEEDS[name].yield ?? name].image}
                   showOverlay={isSeedLocked(name)}
-                  // secondaryImage={SUNNYSIDE.icons.seedling}
                   count={inventory[name]}
+                  missingRequirements={
+                    !isSeedLocked(name) && lessFundsForSeed(name)
+                  }
                 />
               ))}
             </div>
           </div>
+          {isCropWeek && (
+            <SpecialEventPanel
+              image={
+                ITEM_DETAILS[
+                  SEEDS[CHAPTER_CROP_WEEK_SEED].yield ?? CHAPTER_CROP_WEEK_SEED
+                ].image
+              }
+              title={t("chapterCropWeek.specialEventCrop")}
+              endDate={CHAPTER_CROP_WEEK.endDate}
+              isSelected={selectedName === CHAPTER_CROP_WEEK_SEED}
+              count={inventory[CHAPTER_CROP_WEEK_SEED]}
+              onSelect={() => {
+                onSeedClick(CHAPTER_CROP_WEEK_SEED);
+                setShowBoosts(false);
+              }}
+            />
+          )}
           {cropMachineSeeds.length > 0 && (
             <div id="CropMachineSeeds">
               <Label
@@ -459,6 +652,9 @@ export const SeasonalSeeds: React.FC = () => {
                     showOverlay={isSeedLocked(name)}
                     // secondaryImage={SUNNYSIDE.icons.seedling}
                     count={inventory[name]}
+                    missingRequirements={
+                      !isSeedLocked(name) && lessFundsForSeed(name)
+                    }
                   />
                 ))}
               </div>
@@ -483,11 +679,79 @@ export const SeasonalSeeds: React.FC = () => {
                     showOverlay={isSeedLocked(name)}
                     // secondaryImage={SUNNYSIDE.icons.seedling}
                     count={inventory[name]}
+                    missingRequirements={
+                      !isSeedLocked(name) && lessFundsForSeed(name)
+                    }
                   />
                 ))}
               </div>
             </div>
           )}
+          {canShowBuyAll && buyAllPlan.purchases.length > 0 && (
+            <div className="flex flex-col items-center mb-2">
+              <Button
+                className="relative"
+                onClick={() => {
+                  setBuyAllFailures([]);
+                  if (isVIP && buyAllPlan.totalCost === 0) {
+                    buyAllSeeds();
+                  } else {
+                    showConfirmBuyAllModal(true);
+                  }
+                }}
+              >
+                <img
+                  src={vipIcon}
+                  alt="VIP"
+                  className="absolute w-6 sm:w-4 -top-[1px] -right-[2px]"
+                />
+                {t("seeds.buyAll")}
+              </Button>
+              {buyAllFailures.length > 0 && (
+                <Label type="danger" className="mt-1">
+                  {t("seeds.buyAllPartialFailure", {
+                    seeds: buyAllFailures.join(", "),
+                  })}
+                </Label>
+              )}
+            </div>
+          )}
+          <ConfirmationModal
+            show={confirmBuyAllModal}
+            onHide={() => showConfirmBuyAllModal(false)}
+            messages={[
+              t("confirmation.buyAllSeeds", {
+                seedTypes: buyAllPlan.purchases.length,
+                coinAmount: formatNumber(buyAllPlan.totalCost),
+              }),
+            ]}
+            bodyContent={
+              <div className="w-full flex flex-col items-center">
+                <div className="w-full max-h-32 overflow-y-auto scrollable mt-1">
+                  {buyAllPlan.purchases.map(({ seedName, amount }) => (
+                    <p key={seedName} className="text-xs w-full text-left">
+                      {`${amount} x ${getTranslatedItemName(seedName)}`}
+                    </p>
+                  ))}
+                </div>
+                <div className="w-full flex justify-around mt-2 -mb-4">
+                  <div className="w-[95%]" />
+                  <VIPAccess
+                    isVIP={isVIP}
+                    onUpgrade={() => {
+                      showConfirmBuyAllModal(false);
+                      openModal("BUY_BANNER");
+                    }}
+                  />
+                </div>
+              </div>
+            }
+            onCancel={() => showConfirmBuyAllModal(false)}
+            onConfirm={buyAllSeeds}
+            confirmButtonLabel={t("seeds.buyAll")}
+            bumpkinParts={NPC_WEARABLES.betty}
+            disabled={!isVIP || coins < buyAllPlan.totalCost}
+          />
         </div>
       }
     />

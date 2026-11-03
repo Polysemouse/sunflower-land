@@ -6,7 +6,7 @@ import { PIXEL_SCALE } from "features/game/lib/constants";
 import { useSound } from "lib/utils/hooks/useSound";
 import { PortalLeaderboard } from "features/world/ui/portals/PortalLeaderboard";
 import { PortalContext } from "../../lib/PortalProvider";
-import { PortalMachineState } from "../../lib/cropsAndChickensMachine";
+import type { PortalMachineState } from "../../lib/cropsAndChickensMachine";
 import { useSelector } from "@xstate/react";
 import {
   getEndOfUTCWeek,

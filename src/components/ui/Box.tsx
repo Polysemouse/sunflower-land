@@ -1,8 +1,9 @@
-import React, { useState } from "react";
+import React, { useLayoutEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import classNames from "classnames";
-import Decimal from "decimal.js-light";
+import type Decimal from "decimal.js-light";
 
-import { LabelType } from "./Label";
+import { Label, type LabelType } from "./Label";
 import { useLongPress } from "lib/utils/hooks/useLongPress";
 import { setPrecision } from "lib/utils/formatNumber";
 import { isMobile } from "mobile-device-detect";
@@ -10,7 +11,7 @@ import { pixelDarkBorderStyle } from "features/game/lib/style";
 import { PIXEL_SCALE } from "features/game/lib/constants";
 import { SquareIcon } from "./SquareIcon";
 import { SUNNYSIDE } from "assets/sunnyside";
-import { ProgressType, ResizableBar } from "./ProgressBar";
+import { type ProgressType, ResizableBar } from "./ProgressBar";
 import { CountLabel } from "./CountLabel";
 
 const LABEL_RIGHT_SHIFT_PX = -5 * PIXEL_SCALE;
@@ -19,14 +20,20 @@ const INNER_CANVAS_WIDTH = 13.7;
 
 export interface BoxProps {
   hideCount?: boolean;
-  image?: any;
-  secondaryImage?: any;
+  image?: string;
+  secondaryImage?: string;
   isSelected?: boolean;
   count?: Decimal;
   countLabelType?: LabelType;
   onClick?: () => void;
   disabled?: boolean;
   locked?: boolean;
+  /**
+   * The player is missing something this item requires (coins, ingredients).
+   * Darkens the box background while keeping it clickable so the player can
+   * still open it and see what is missing.
+   */
+  missingRequirements?: boolean;
   canBeLongPressed?: boolean;
   /**
    * This can be used a different icon when there is no count passed in.
@@ -59,6 +66,17 @@ export interface BoxProps {
   };
   onDragOver?: (e: React.DragEvent<HTMLDivElement>) => void;
   onDrop?: (e: React.DragEvent<HTMLDivElement>) => void;
+  onPointerDown?: (e: React.PointerEvent<HTMLDivElement>) => void;
+  style?: React.CSSProperties;
+  /**
+   * Custom content to show inside the box (e.g. Bumpkin).
+   * When provided, this is shown instead of the image.
+   */
+  children?: React.ReactNode;
+  /**
+   * Optional short label shown above the box on mouse hover.
+   */
+  tooltip?: string;
 }
 
 export const Box: React.FC<BoxProps> = ({
@@ -71,6 +89,7 @@ export const Box: React.FC<BoxProps> = ({
   onClick,
   disabled,
   locked,
+  missingRequirements = false,
   canBeLongPressed,
   cooldownInProgress,
   showOverlay = false,
@@ -82,8 +101,35 @@ export const Box: React.FC<BoxProps> = ({
   progress,
   onDragOver,
   onDrop,
+  onPointerDown,
+  style,
+  children,
+  tooltip,
 }) => {
   const [isHover, setIsHover] = useState(false);
+  const [tooltipPosition, setTooltipPosition] = useState<
+    { left: number; top: number } | undefined
+  >();
+  const boxRef = useRef<HTMLDivElement>(null);
+  const tooltipRef = useRef<HTMLDivElement>(null);
+
+  useLayoutEffect(() => {
+    if (!isHover || !tooltip || !boxRef.current || !tooltipRef.current) return;
+
+    const boxRect = boxRef.current.getBoundingClientRect();
+    const tooltipRect = tooltipRef.current.getBoundingClientRect();
+    const viewportPadding = PIXEL_SCALE * 2;
+    const preferredLeft = boxRect.left + boxRect.width / 2;
+    const left = Math.min(
+      Math.max(preferredLeft, viewportPadding + tooltipRect.width / 2),
+      window.innerWidth - viewportPadding - tooltipRect.width / 2,
+    );
+
+    setTooltipPosition({
+      left,
+      top: boxRect.top - PIXEL_SCALE,
+    });
+  }, [isHover, tooltip]);
 
   const precisionCount = setPrecision(count ?? 0, 2);
 
@@ -106,13 +152,24 @@ export const Box: React.FC<BoxProps> = ({
 
   return (
     <div
+      ref={boxRef}
       className={`relative ${className}`}
-      onMouseEnter={() => setIsHover(true)}
-      onMouseLeave={() => setIsHover(false)}
+      onMouseEnter={() => {
+        setTooltipPosition(undefined);
+        setIsHover(true);
+      }}
+      onMouseLeave={() => {
+        setIsHover(false);
+        setTooltipPosition(undefined);
+      }}
+      onPointerDown={onPointerDown}
+      style={style}
     >
       <div
-        className={classNames("bg-brown-600 relative", {
-          "bg-brown-600 cursor-not-allowed opacity-75": disabled,
+        className={classNames("relative", {
+          "bg-brown-700": missingRequirements && !disabled,
+          "bg-brown-600": !missingRequirements || disabled,
+          "cursor-not-allowed opacity-75": disabled,
           "cursor-pointer": canClick,
         })}
         {...clickEvents}
@@ -136,13 +193,14 @@ export const Box: React.FC<BoxProps> = ({
             },
           )}
         >
-          {image && (
-            <SquareIcon
-              icon={image}
-              width={INNER_CANVAS_WIDTH}
-              className={iconClassName}
-            />
-          )}
+          {children ??
+            (image && (
+              <SquareIcon
+                icon={image}
+                width={INNER_CANVAS_WIDTH}
+                className={iconClassName}
+              />
+            ))}
           {secondaryImage && (
             <img
               src={secondaryImage}
@@ -289,6 +347,33 @@ export const Box: React.FC<BoxProps> = ({
           <span className="text-xxs whitespace-nowrap">{progress.label}</span>
         </div>
       )}
+      {isHover &&
+        !isMobile &&
+        tooltip &&
+        createPortal(
+          <div
+            ref={tooltipRef}
+            className="fixed z-[9999] pointer-events-none"
+            style={{
+              left: tooltipPosition?.left ?? 0,
+              top: tooltipPosition?.top ?? 0,
+              transform: "translate(-50%, -100%)",
+              visibility: tooltipPosition ? "visible" : "hidden",
+            }}
+          >
+            <Label
+              type="default"
+              className="text-xxs whitespace-normal break-words text-center"
+              style={{
+                boxSizing: "border-box",
+                maxWidth: `calc(100vw - ${PIXEL_SCALE * 4}px)`,
+              }}
+            >
+              {tooltip}
+            </Label>
+          </div>,
+          document.body,
+        )}
     </div>
   );
 };

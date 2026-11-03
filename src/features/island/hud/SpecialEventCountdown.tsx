@@ -6,11 +6,11 @@ import { useAppTranslation } from "lib/i18n/useAppTranslations";
 
 import { Context } from "features/game/GameProvider";
 import { useSelector } from "@xstate/react";
-import { MachineState } from "features/game/lib/gameMachine";
+import type { MachineState } from "features/game/lib/gameMachine";
 
 import { secondsToString } from "lib/utils/time";
 
-import { getKeys } from "features/game/types/decorations";
+import { getKeys } from "lib/object";
 import { ITEM_DETAILS } from "features/game/types/images";
 
 import lightning from "assets/icons/lightning.png";
@@ -94,9 +94,11 @@ export const SpecialEventCountdown: React.FC = () => {
             type="info"
             className="ml-1 mt-1"
           >
-            {`${secondsToString((specialEvent.endAt - now) / 1000, {
-              length: "short",
-            })} left`}
+            {t("vipExpiry.timeLeft", {
+              time: secondsToString((specialEvent.endAt - now) / 1000, {
+                length: "short",
+              }),
+            })}
           </Label>
         </div>
       </div>

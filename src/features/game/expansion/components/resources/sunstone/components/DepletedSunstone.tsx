@@ -1,7 +1,11 @@
 import React, { useState } from "react";
 import { PIXEL_SCALE } from "features/game/lib/constants";
-import { TimeLeftPanel } from "components/ui/TimeLeftPanel";
-import { getSunstoneStage } from "../Sunstone";
+import { TimerPopover } from "features/island/common/TimerPopover";
+import {
+  ITEM_DETAILS,
+  getTranslatedItemName,
+} from "features/game/types/images";
+import { getSunstoneStage } from "../getSunstoneStage";
 import sunstone_1 from "assets/resources/sunstone/sunstone_rock_1.webp";
 import sunstone_2 from "assets/resources/sunstone/sunstone_rock_2.webp";
 import sunstone_3 from "assets/resources/sunstone/sunstone_rock_3.webp";
@@ -12,7 +16,6 @@ import sunstone_7 from "assets/resources/sunstone/sunstone_rock_7.webp";
 import sunstone_8 from "assets/resources/sunstone/sunstone_rock_8.webp";
 import sunstone_9 from "assets/resources/sunstone/sunstone_rock_9.webp";
 import sunstone_10 from "assets/resources/sunstone/sunstone_rock_10.webp";
-import { useAppTranslation } from "lib/i18n/useAppTranslations";
 
 interface Props {
   timeLeft: number;
@@ -23,7 +26,6 @@ const DepletedSunstoneComponent: React.FC<Props> = ({
   timeLeft,
   minesLeft,
 }) => {
-  const { t } = useAppTranslation();
   const [showTimeLeft, setShowTimeLeft] = useState(false);
 
   const sunstoneImage = [
@@ -61,10 +63,11 @@ const DepletedSunstoneComponent: React.FC<Props> = ({
             top: `${PIXEL_SCALE * -20}px`,
           }}
         >
-          <TimeLeftPanel
-            text={t("resources.recoversIn")}
+          <TimerPopover
+            image={ITEM_DETAILS["Sunstone"].image}
+            description={getTranslatedItemName("Sunstone Rock")}
+            showPopover={showTimeLeft}
             timeLeft={timeLeft}
-            showTimeLeft={showTimeLeft}
           />
         </div>
       </div>

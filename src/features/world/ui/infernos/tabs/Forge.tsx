@@ -8,11 +8,14 @@ import { Label } from "components/ui/Label";
 import { CraftingRequirements } from "components/ui/layouts/CraftingRequirements";
 import { SplitScreenView } from "components/ui/SplitScreenView";
 import { Context } from "features/game/GameProvider";
-import { getKeys } from "features/game/lib/crafting";
-import { ITEM_DETAILS } from "features/game/types/images";
+import { getKeys } from "lib/object";
+import {
+  ITEM_DETAILS,
+  getTranslatedItemName,
+} from "features/game/types/images";
 import {
   ADVANCED_RESOURCES,
-  UpgradedResourceName,
+  type UpgradedResourceName,
 } from "features/game/types/resources";
 import React, { useContext, useState } from "react";
 import { useAppTranslation } from "lib/i18n/useAppTranslations";
@@ -21,8 +24,8 @@ import { Modal } from "components/ui/Modal";
 import { Panel } from "components/ui/Panel";
 import { getCurrentBiome } from "features/island/biomes/biomes";
 import { ITEM_ICONS } from "features/island/hud/components/inventory/Chest";
-import { UpgradeTreeAction } from "features/game/events/landExpansion/upgradeTree";
-import { UpgradeRockAction } from "features/game/events/landExpansion/upgradeRock";
+import type { UpgradeTreeAction } from "features/game/events/landExpansion/upgradeTree";
+import type { UpgradeRockAction } from "features/game/events/landExpansion/upgradeRock";
 import { COLLECTIBLE_BUFF_LABELS } from "features/game/types/collectibleItemBuffs";
 
 export const Forge: React.FC = () => {
@@ -84,10 +87,7 @@ export const Forge: React.FC = () => {
             details={{
               item: selectedResource,
             }}
-            boost={COLLECTIBLE_BUFF_LABELS[selectedResource]?.({
-              skills: state.bumpkin.skills,
-              collectibles: state.collectibles,
-            })}
+            boost={COLLECTIBLE_BUFF_LABELS[selectedResource]?.(state)}
             requirements={
               forgingSoon
                 ? undefined
@@ -143,15 +143,17 @@ export const Forge: React.FC = () => {
           <Panel className="m-auto flex flex-col gap-2">
             <Label type="success">
               {t("upgrade.success", {
-                resource: selectedResource,
+                resource: getTranslatedItemName(selectedResource),
               })}
             </Label>
             <div className="flex flex-col gap-2 my-2 items-center">
               <img src={selectedResourceImage} width={50} />
               <span>
                 {t("upgrade.success.description", {
-                  resource: selectedResource,
-                  action: selectedResource.includes("Tree") ? "chop" : "mine",
+                  resource: getTranslatedItemName(selectedResource),
+                  action: selectedResource.includes("Tree")
+                    ? t("action.chop")
+                    : t("action.mine"),
                 })}
               </span>
               <Button onClick={() => setShowSuccess(false)}>

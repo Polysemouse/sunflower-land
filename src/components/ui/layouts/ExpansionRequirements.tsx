@@ -1,32 +1,47 @@
 import Decimal from "decimal.js-light";
-import { getBumpkinLevel } from "features/game/lib/level";
-import { getKeys } from "features/game/types/craftables";
 import {
+  getAscensionLevel,
+  meetsLevelRequirement,
+} from "features/game/lib/level";
+import { getKeys } from "lib/object";
+import type {
+  BoostName,
   Bumpkin,
   GameState,
   ExpansionRequirements as IExpansionRequirements,
   Inventory,
 } from "features/game/types/game";
-import React, { useContext, useEffect } from "react";
+import React, { useContext, useEffect, useState } from "react";
 import { RequirementLabel } from "../RequirementsLabel";
 import { InlineDialogue } from "features/world/ui/TypingMessage";
 import { SUNNYSIDE } from "assets/sunnyside";
 
 import { Label } from "../Label";
-import { secondsToString } from "lib/utils/time";
+import { SquareIcon } from "../SquareIcon";
 import { InnerPanel } from "../Panel";
 import { useAppTranslation } from "lib/i18n/useAppTranslations";
 import { useCountdown } from "lib/utils/hooks/useCountdown";
 import { ResizableBar } from "../ProgressBar";
 import { TimerDisplay } from "features/retreat/components/auctioneer/AuctionDetails";
-import { expansionRequirements } from "features/game/events/landExpansion/revealLand";
 import { Button } from "../Button";
 import { ITEM_DETAILS } from "features/game/types/images";
+import { useSpeedUpPayment } from "features/game/lib/useSpeedUpPayment";
+import { SpeedUpPaymentSelector } from "features/game/components/SpeedUpPaymentSelector";
 import { gameAnalytics } from "lib/gameAnalytics";
 import { Context } from "features/game/GameProvider";
 import { craftingRequirementsMet } from "features/game/lib/craftingRequirement";
-import { getInstantGems } from "features/game/events/landExpansion/speedUpRecipe";
 import { hasRequiredIslandExpansion } from "features/game/lib/hasRequiredIslandExpansion";
+import vipIcon from "assets/icons/vip.webp";
+import coinsIcon from "assets/icons/coins.webp";
+import { formatNumber } from "lib/utils/formatNumber";
+import {
+  useExpansionCoinCostWithVip,
+  useVipAccess,
+} from "lib/utils/hooks/useVipAccess";
+import { BoostsDisplay } from "./BoostsDisplay";
+import { getNextExpansionNodePreview } from "features/game/types/expansions";
+import { ExpansionNodePreview } from "./ExpansionNodePreview";
+
 /**
  * The props for the component.
  * @param gameState The game state.
@@ -40,6 +55,10 @@ interface Props {
   bumpkin: Bumpkin;
   details: DetailsProps;
   requirements: IExpansionRequirements;
+  /** Build time before any time boost — struck through when one applies. */
+  baseTimeSeconds: number;
+  /** Time boosts behind the shortened build, listed in the boosts popover. */
+  timeBoostsUsed: { name: BoostName; value: string }[];
   state: GameState;
   onClose: () => void;
 }
@@ -62,15 +81,41 @@ export const ExpansionRequirements: React.FC<Props> = ({
   bumpkin,
   details,
   requirements,
+  baseTimeSeconds,
+  timeBoostsUsed,
   coins,
   state,
   onClose,
 }: Props) => {
   const { t } = useAppTranslation();
   const { gameService } = useContext(Context);
+  const [showTimeBoosts, setShowTimeBoosts] = useState(false);
 
-  const hasLevel =
-    getBumpkinLevel(bumpkin.experience) >= requirements.bumpkinLevel;
+  // Compare the player's standing against the (ascension, level) requirement —
+  // matching the `expandLand` gate.
+  const ascensionLevel = state.island.ascensionLevel ?? 0;
+  const hasLevel = meetsLevelRequirement(
+    getAscensionLevel({ experience: bumpkin.experience, ascensionLevel }),
+    requirements.bumpkinLevel,
+  );
+
+  const fullCoinRequirement = requirements.coins ?? 0;
+  const effectiveCoinCost = useExpansionCoinCostWithVip({
+    coins: requirements.coins,
+    game: state,
+  });
+  const hasVip = useVipAccess({ game: state });
+  const showVipDiscount =
+    !!fullCoinRequirement && hasVip && effectiveCoinCost < fullCoinRequirement;
+  const requirementsWithVipCoins = {
+    ...requirements,
+    coins: effectiveCoinCost,
+  };
+
+  // `requirements.seconds` already carries any shortening (Ascension Monument,
+  // VIP) — show it against the original, with the boosts behind the tap.
+  const isTimeBoosted =
+    timeBoostsUsed.length > 0 && requirements.seconds < baseTimeSeconds;
 
   const onExpand = () => {
     gameService.send("land.expanded");
@@ -95,11 +140,12 @@ export const ExpansionRequirements: React.FC<Props> = ({
     onClose();
   };
 
-  const canExpand = craftingRequirementsMet(state, requirements);
+  const canExpand = craftingRequirementsMet(state, requirementsWithVipCoins);
+  const expansionNodes = getNextExpansionNodePreview({ game: state });
 
   return (
-    <div className="flex flex-col justify-center">
-      <div className="flex flex-col justify-center p-2">
+    <>
+      <InnerPanel className="flex flex-col justify-center p-2 mb-1">
         <Label
           type="default"
           icon={SUNNYSIDE.icons.player}
@@ -107,89 +153,144 @@ export const ExpansionRequirements: React.FC<Props> = ({
         >
           {`Grimbly`}
         </Label>
-        <div
-          style={{
-            minHeight: "50px",
-          }}
-          className="mb-2"
-        >
+        <div style={{ minHeight: "50px" }} className="p-1">
           <InlineDialogue trail={25} message={details.description} />
         </div>
-        <div className="mb-2 flex justify-between items-center">
+      </InnerPanel>
+      <InnerPanel className="relative flex flex-col mb-1">
+        <div className="p-1 flex justify-between items-center mb-1">
           <Label type={"default"} icon={SUNNYSIDE.icons.basket}>
             {t("requirements")}
           </Label>
-          <Label
-            type="info"
-            icon={SUNNYSIDE.icons.stopwatch}
-            secondaryIcon={SUNNYSIDE.icons.hammer}
+          <div
+            className={`flex flex-row items-center ${
+              isTimeBoosted ? "cursor-pointer" : ""
+            }`}
+            onClick={
+              isTimeBoosted
+                ? () => setShowTimeBoosts(!showTimeBoosts)
+                : undefined
+            }
           >
-            {secondsToString(requirements.seconds, { length: "medium" })}
-          </Label>
+            {isTimeBoosted && (
+              <RequirementLabel
+                type="time"
+                waitSeconds={requirements.seconds}
+                boosted
+              />
+            )}
+            <RequirementLabel
+              type="time"
+              waitSeconds={baseTimeSeconds}
+              strikethrough={isTimeBoosted}
+            />
+            <BoostsDisplay
+              boosts={timeBoostsUsed}
+              show={showTimeBoosts}
+              state={state}
+              onClick={() => setShowTimeBoosts(!showTimeBoosts)}
+            />
+          </div>
         </div>
 
-        <InnerPanel className="-ml-2 -mr-2 relative flex flex-col space-y-0.5">
-          {!!requirements.coins && (
-            <RequirementLabel
-              key={"coins"}
-              type="coins"
-              balance={coins}
-              showLabel
-              requirement={requirements.coins}
-            />
-          )}
-          {getKeys(requirements.resources).map((itemName) => {
-            return (
-              <RequirementLabel
-                key={itemName}
-                type="item"
-                item={itemName}
-                balance={inventory[itemName] ?? new Decimal(0)}
-                showLabel
-                requirement={new Decimal(requirements.resources[itemName] ?? 0)}
-              />
-            );
-          })}
-        </InnerPanel>
-
-        {!hasLevel && (
-          <>
-            <Label type="danger" icon={SUNNYSIDE.icons.lock} className="my-2">
-              {t("warning.level.required", {
-                lvl: requirements.bumpkinLevel,
-              })}
-            </Label>
-            <p className="text-xs mb-2">{t("statements.visit.firePit")}</p>
-          </>
+        {!!requirements.coins && !showVipDiscount && (
+          <RequirementLabel
+            type="coins"
+            balance={coins}
+            showLabel
+            requirement={effectiveCoinCost}
+          />
         )}
-      </div>
+        {!!requirements.coins && showVipDiscount && (
+          <div
+            key={"coins"}
+            className="flex justify-between items-center min-h-[26px]"
+          >
+            <div className="flex items-center">
+              <SquareIcon icon={coinsIcon} width={7} />
+              <span className="text-xs ml-1">{t("coins")}</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <span className="line-through text-xs">
+                {requirements.coins.toLocaleString()}
+              </span>
+              <Label
+                className="whitespace-nowrap font-secondary"
+                type={coins >= effectiveCoinCost ? "transparent" : "danger"}
+              >
+                {formatNumber(effectiveCoinCost)}
+              </Label>
+              <img
+                src={vipIcon}
+                alt="VIP"
+                className="h-4 w-4"
+                title="VIP discount"
+              />
+            </div>
+          </div>
+        )}
+        {getKeys(requirements.resources).map((itemName) => {
+          return (
+            <RequirementLabel
+              key={itemName}
+              type="item"
+              item={itemName}
+              balance={inventory[itemName] ?? new Decimal(0)}
+              showLabel
+              requirement={new Decimal(requirements.resources[itemName] ?? 0)}
+            />
+          );
+        })}
+      </InnerPanel>
+
+      <ExpansionNodePreview nodes={expansionNodes} />
+
+      {!hasLevel && (
+        <InnerPanel className="mb-1">
+          <Label type="danger" icon={SUNNYSIDE.icons.lock}>
+            {t("warning.level.required", {
+              lvl: requirements.bumpkinLevel.level,
+            })}
+          </Label>
+          <p className="text-xs">{t("statements.visit.firePit")}</p>
+        </InnerPanel>
+      )}
       <Button onClick={onExpand} disabled={!canExpand}>
         {t("expand")}
       </Button>
-    </div>
+    </>
   );
 };
 
 export const Expanding: React.FC<{
   state: GameState;
   onClose: () => void;
-  onInstantExpanded: () => void;
-}> = ({ state, onClose, onInstantExpanded }) => {
+  onInstantExpanded: (cost: number, paymentMethod?: "gems" | "coins") => void;
+  readyAt: number;
+}> = ({ state, onClose, onInstantExpanded, readyAt }) => {
   const { t } = useAppTranslation();
-  const readyAt = state.expansionConstruction?.readyAt ?? 0;
 
-  const { requirements } = expansionRequirements({ game: state });
-  const totalSeconds = requirements?.seconds ?? 0;
+  // Read the length of the build from the construction itself rather than
+  // re-deriving it — boosts (Ascension Monument, VIP speed) are baked into
+  // `readyAt` when the expansion starts and may no longer apply now.
+  const construction = state.expansionConstruction;
+  const totalSeconds = construction
+    ? (construction.readyAt - construction.createdAt) / 1000
+    : 0;
   const { totalSeconds: secondsTillReady, ...ready } = useCountdown(
     readyAt ?? 0,
   );
 
-  const gems = getInstantGems({
-    readyAt: readyAt as number,
-    game: state,
-  });
+  const hasAccess = !hasRequiredIslandExpansion(state.island.type, "swamp");
 
-  const hasAccess = !hasRequiredIslandExpansion(state.island.type, "desert");
+  const payment = useSpeedUpPayment({ readyAt, game: state });
+  const expansionNodes = getNextExpansionNodePreview({ game: state });
+  const cost =
+    payment.paymentMethod === "coins" ? payment.coinCost : payment.gemCost;
+  const costIcon =
+    payment.paymentMethod === "coins"
+      ? SUNNYSIDE.ui.coins
+      : ITEM_DETAILS.Gem.image;
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -204,10 +305,9 @@ export const Expanding: React.FC<{
   return (
     <>
       <div className="p-1 ">
-        <Label
-          type="default"
-          icon={SUNNYSIDE.icons.stopwatch}
-        >{`In progress`}</Label>
+        <Label type="default" icon={SUNNYSIDE.icons.stopwatch}>
+          {t("crafting.inProgress")}
+        </Label>
         <p className="text-sm my-2">{t("crafting.expansionSoon")}</p>
         <div className="flex items-center mb-1">
           <div>
@@ -222,24 +322,29 @@ export const Expanding: React.FC<{
             </div>
           </div>
         </div>
+        {hasAccess && <SpeedUpPaymentSelector payment={payment} />}
       </div>
+
+      <ExpansionNodePreview nodes={expansionNodes} />
 
       <div className="flex">
         <Button onClick={onClose}>{t("close")}</Button>
         {hasAccess && (
           <Button
-            disabled={!state.inventory.Gem?.gte(gems)}
+            disabled={!payment.canAfford}
             className="relative ml-1"
-            onClick={onInstantExpanded}
+            onClick={() => onInstantExpanded(cost, payment.paymentMethod)}
           >
             {t("gems.speedUp")}
-            <Label
-              type={state.inventory.Gem?.gte(gems) ? "default" : "danger"}
-              icon={ITEM_DETAILS.Gem.image}
-              className="flex absolute right-0 -top-5"
-            >
-              {gems}
-            </Label>
+            {!payment.canPayWithCoins && (
+              <Label
+                type={payment.canAfford ? "default" : "danger"}
+                icon={costIcon}
+                className="flex absolute right-0 -top-5"
+              >
+                {cost}
+              </Label>
+            )}
           </Button>
         )}
       </div>

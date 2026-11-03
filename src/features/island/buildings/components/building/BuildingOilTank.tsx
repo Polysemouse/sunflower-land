@@ -8,7 +8,7 @@ import { PIXEL_SCALE } from "features/game/lib/constants";
 import oilBarrel from "assets/icons/oil_barrel.webp";
 import { ITEM_DETAILS } from "features/game/types/images";
 import { useAppTranslation } from "lib/i18n/useAppTranslations";
-import {
+import type {
   BuildingName,
   CookingBuildingName,
 } from "features/game/types/buildings";
@@ -16,7 +16,6 @@ import { BUILDING_DAILY_OIL_CAPACITY } from "features/game/events/landExpansion/
 import {
   BUILDING_DAILY_OIL_CONSUMPTION,
   BUILDING_OIL_BOOSTS,
-  isCookingBuilding,
 } from "features/game/events/landExpansion/cook";
 import { Context } from "features/game/GameProvider";
 import { ModalOverlay } from "components/ui/ModalOverlay";
@@ -26,6 +25,7 @@ import { formatNumber } from "lib/utils/formatNumber";
 import Decimal from "decimal.js-light";
 import { Box } from "components/ui/Box";
 import useUiRefresher from "lib/utils/hooks/useUiRefresher";
+import { isCookingBuilding } from "features/game/events/landExpansion/isCookingBuilding";
 
 interface OilTankProps {
   buildingName: BuildingName;
@@ -63,7 +63,7 @@ export const BuildingOilTank: React.FC<OilTankProps> = ({
     BUILDING_DAILY_OIL_CAPACITY[buildingName as CookingBuildingName] -
     oilRemainingInBuilding;
   const incrementMaxOil = () => {
-    setTotalOilToAdd(amountToFull);
+    setTotalOilToAdd(Math.floor(amountToFull));
   };
 
   function getOilTimeInMillis(oil: number): number {
@@ -157,7 +157,7 @@ export const BuildingOilTank: React.FC<OilTankProps> = ({
         {runtime === 0 ? (
           <Label
             type={"default"}
-            className="ml-1.5 mt-2.5 cursor-pointer"
+            className="ml-1.5 cursor-pointer"
             icon={ITEM_DETAILS.Oil.image}
             secondaryIcon={SUNNYSIDE.ui.add_button}
             onClick={() => setShowAddOilModal(true)}
@@ -168,7 +168,7 @@ export const BuildingOilTank: React.FC<OilTankProps> = ({
           <div>
             <Label
               type={"default"}
-              className="ml-1.5 mt-2.5"
+              className="ml-1.5"
               icon={ITEM_DETAILS.Oil.image}
               secondaryIcon={SUNNYSIDE.ui.add_button}
               onClick={() => setShowAddOilModal(true)}

@@ -142,6 +142,129 @@ describe("resetSkills", () => {
     });
   });
 
+  describe("ticket reset", () => {
+    it("throws when the player has no Skill Reset Ticket", () => {
+      expect(() => {
+        resetSkills({
+          state: {
+            ...INITIAL_FARM,
+            bumpkin: {
+              ...TEST_BUMPKIN,
+              skills: { "Green Thumb": 1 },
+            },
+            inventory: {},
+          },
+          action: { type: "skills.reset", paymentType: "ticket" },
+          createdAt: dateNow,
+        });
+      }).toThrow("You do not have a Skill Reset Ticket");
+    });
+
+    it("throws when the ticket balance is below 1", () => {
+      expect(() => {
+        resetSkills({
+          state: {
+            ...INITIAL_FARM,
+            bumpkin: {
+              ...TEST_BUMPKIN,
+              skills: { "Green Thumb": 1 },
+            },
+            inventory: {
+              "Skill Reset Ticket": new Decimal(0),
+            },
+          },
+          action: { type: "skills.reset", paymentType: "ticket" },
+          createdAt: dateNow,
+        });
+      }).toThrow("You do not have a Skill Reset Ticket");
+    });
+
+    it("consumes exactly 1 Skill Reset Ticket", () => {
+      const state = resetSkills({
+        state: {
+          ...INITIAL_FARM,
+          bumpkin: {
+            ...TEST_BUMPKIN,
+            skills: { "Green Thumb": 1 },
+          },
+          inventory: {
+            "Skill Reset Ticket": new Decimal(3),
+          },
+        },
+        action: { type: "skills.reset", paymentType: "ticket" },
+        createdAt: dateNow,
+      });
+
+      expect(state.inventory["Skill Reset Ticket"]?.toNumber()).toEqual(2);
+      expect(state.bumpkin?.skills).toEqual({});
+    });
+
+    it("does not increment paidSkillResets when using a ticket", () => {
+      const state = resetSkills({
+        state: {
+          ...INITIAL_FARM,
+          bumpkin: {
+            ...TEST_BUMPKIN,
+            skills: { "Green Thumb": 1 },
+            paidSkillResets: 1,
+          },
+          inventory: {
+            "Skill Reset Ticket": new Decimal(1),
+          },
+        },
+        action: { type: "skills.reset", paymentType: "ticket" },
+        createdAt: dateNow,
+      });
+
+      expect(state.bumpkin?.paidSkillResets).toEqual(1);
+    });
+
+    it("does not touch previousFreeSkillResetAt when using a ticket", () => {
+      const threeMonthsAgo = new Date(dateNow);
+      threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
+
+      const state = resetSkills({
+        state: {
+          ...INITIAL_FARM,
+          bumpkin: {
+            ...TEST_BUMPKIN,
+            skills: { "Green Thumb": 1 },
+            previousFreeSkillResetAt: threeMonthsAgo.getTime(),
+          },
+          inventory: {
+            "Skill Reset Ticket": new Decimal(1),
+          },
+        },
+        action: { type: "skills.reset", paymentType: "ticket" },
+        createdAt: dateNow,
+      });
+
+      expect(state.bumpkin?.previousFreeSkillResetAt).toEqual(
+        threeMonthsAgo.getTime(),
+      );
+    });
+
+    it("does not deduct gems when using a ticket", () => {
+      const state = resetSkills({
+        state: {
+          ...INITIAL_FARM,
+          bumpkin: {
+            ...TEST_BUMPKIN,
+            skills: { "Green Thumb": 1 },
+          },
+          inventory: {
+            "Skill Reset Ticket": new Decimal(1),
+            Gem: new Decimal(500),
+          },
+        },
+        action: { type: "skills.reset", paymentType: "ticket" },
+        createdAt: dateNow,
+      });
+
+      expect(state.inventory.Gem?.toNumber()).toEqual(500);
+    });
+  });
+
   describe("validation checks", () => {
     it("succeeds reset with crops in additional slots (post-split no restriction)", () => {
       const state = resetSkills({
@@ -207,6 +330,102 @@ describe("resetSkills", () => {
       });
 
       expect(state.bumpkin?.skills).toEqual({});
+    });
+  });
+
+  describe("Ascension Shard refund", () => {
+    const sixMonthsAgo = () => {
+      const date = new Date(dateNow);
+      date.setMonth(date.getMonth() - 6);
+      return date.getTime();
+    };
+
+    it("refunds shards spent on skill upgrades (tier-scaled)", () => {
+      const state = resetSkills({
+        state: {
+          ...INITIAL_FARM,
+          bumpkin: {
+            ...TEST_BUMPKIN,
+            // Green Thumb (tier 1) at rank 3 => 2 upgrades * 1 shard = 2.
+            skills: { "Green Thumb": 3 },
+            previousFreeSkillResetAt: sixMonthsAgo(),
+          },
+          inventory: {
+            ...INITIAL_FARM.inventory,
+            "Ascension Shard": new Decimal(1),
+          },
+        },
+        action: { type: "skills.reset", paymentType: "free" },
+        createdAt: dateNow,
+      });
+
+      expect(state.bumpkin?.skills).toEqual({});
+      expect(state.inventory["Ascension Shard"]).toEqual(new Decimal(3));
+    });
+
+    it("refunds no shards for a base (rank 1) skill", () => {
+      const state = resetSkills({
+        state: {
+          ...INITIAL_FARM,
+          bumpkin: {
+            ...TEST_BUMPKIN,
+            skills: { "Green Thumb": 1 },
+            previousFreeSkillResetAt: sixMonthsAgo(),
+          },
+          inventory: {
+            ...INITIAL_FARM.inventory,
+            "Ascension Shard": new Decimal(5),
+          },
+        },
+        action: { type: "skills.reset", paymentType: "free" },
+        createdAt: dateNow,
+      });
+
+      expect(state.inventory["Ascension Shard"]).toEqual(new Decimal(5));
+    });
+
+    it("refunds tier-scaled shards for a rank 3 tier-2 skill", () => {
+      const state = resetSkills({
+        state: {
+          ...INITIAL_FARM,
+          bumpkin: {
+            ...TEST_BUMPKIN,
+            // Strong Roots (tier 2) at rank 3 => 2 upgrades * 2 shards = 4.
+            skills: { "Strong Roots": 3 },
+            previousFreeSkillResetAt: sixMonthsAgo(),
+          },
+          inventory: {
+            ...INITIAL_FARM.inventory,
+            "Ascension Shard": new Decimal(0),
+          },
+        },
+        action: { type: "skills.reset", paymentType: "free" },
+        createdAt: dateNow,
+      });
+
+      expect(state.inventory["Ascension Shard"]).toEqual(new Decimal(4));
+    });
+
+    it("caps the refund at maxLevel for a malformed rank", () => {
+      const state = resetSkills({
+        state: {
+          ...INITIAL_FARM,
+          bumpkin: {
+            ...TEST_BUMPKIN,
+            skills: { "Green Thumb": 99 },
+            previousFreeSkillResetAt: sixMonthsAgo(),
+          },
+          inventory: {
+            ...INITIAL_FARM.inventory,
+            "Ascension Shard": new Decimal(0),
+          },
+        },
+        action: { type: "skills.reset", paymentType: "free" },
+        createdAt: dateNow,
+      });
+
+      // Capped at maxLevel 3 => 2 refundable ranks * 1 shard (tier 1) = 2.
+      expect(state.inventory["Ascension Shard"]).toEqual(new Decimal(2));
     });
   });
 });

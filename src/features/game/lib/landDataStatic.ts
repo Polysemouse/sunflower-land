@@ -1,91 +1,47 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
-/* eslint-disable unused-imports/no-unused-vars */
 import Decimal from "decimal.js-light";
-import { GameState } from "../types/game";
-
+import type { Animal, AnimalBuilding, GameState } from "../types/game";
 import {
-  INITIAL_BUMPKIN,
-  INITIAL_CHORE_BOARD,
-  INITIAL_RESOURCES,
-  INITIAL_STOCK,
-} from "./constants";
-import { getKeys } from "./crafting";
-import { makeAnimalBuilding } from "./animals";
-import { getChapterTicket } from "../types/chapters";
+  ANIMAL_LEVELS,
+  type AnimalLevel,
+  type AnimalType,
+} from "../types/animals";
+
+import { INITIAL_FARM } from "./constants";
+
+// Builds one animal per requested level (experience set to that level's
+// threshold) so bounty min-level checks can be tested across the whole range.
+const makeAnimals = (
+  type: AnimalType,
+  levels: AnimalLevel[],
+): AnimalBuilding["animals"] =>
+  levels.reduce<Record<string, Animal>>((animals, level, index) => {
+    const id = `${type}-${index}`;
+    return {
+      ...animals,
+      [id]: {
+        id,
+        type,
+        state: "idle",
+        createdAt: 0,
+        experience: ANIMAL_LEVELS[type][level],
+        asleepAt: 0,
+        awakeAt: 0,
+        lovedAt: 0,
+        item: "Petting Hand",
+      },
+    };
+  }, {});
 
 export const STATIC_OFFLINE_FARM: GameState = {
-  settings: {},
-  coins: 100000,
-  balance: new Decimal(1000),
-  previousBalance: new Decimal(0),
-  inventory: {
-    "Easter Token 2025": new Decimal(500),
-    Marty: new Decimal(2),
-    "Paw Prints Raffle Ticket": new Decimal(100),
-    "Pet Cookie": new Decimal(100),
-    Miffy: new Decimal(2),
-    Morty: new Decimal(2),
-    Mog: new Decimal(2),
-    "Town Center": new Decimal(1),
-    Market: new Decimal(1),
-    Workbench: new Decimal(1),
-    "Basic Land": new Decimal(9),
-    "Crop Plot": new Decimal(getKeys(INITIAL_RESOURCES.crops).length),
-    Tree: new Decimal(getKeys(INITIAL_RESOURCES.trees).length),
-    "Stone Rock": new Decimal(getKeys(INITIAL_RESOURCES.stones).length),
-    Axe: new Decimal(10),
-    Gem: new Decimal(10000),
-    Rug: new Decimal(1),
-    Wardrobe: new Decimal(1),
-    Shovel: new Decimal(1),
-    "Giant Isopod": new Decimal(1),
-    Nautilus: new Decimal(1),
-    Dollocaris: new Decimal(1),
-    "Time Warp Totem": new Decimal(1),
-    // "Lifetime Farmer Banner": new Decimal(1),
-    Barkley: new Decimal(1),
-    Meowchi: new Decimal(1),
-    "Pet House": new Decimal(1),
-    Rhubarb: new Decimal(50),
-    "Pumpkin Soup": new Decimal(50),
-    Sunflower: new Decimal(50),
-  },
-  previousInventory: {},
-  wardrobe: {
-    "Paw Aura": 1,
-  },
-  previousWardrobe: {},
-  bank: { taxFreeSFL: 0, withdrawnAmount: 0 },
-
-  calendar: {
-    dates: [],
-  },
-
-  choreBoard: INITIAL_CHORE_BOARD,
-
-  competitions: {
-    progress: {},
-  },
-
-  shipments: {},
-  gems: {},
-  flower: {},
+  ...INITIAL_FARM,
   bumpkin: {
-    ...INITIAL_BUMPKIN,
-    experience: 1000000,
-    equipped: {
-      ...INITIAL_BUMPKIN.equipped,
-      aura: "Paw Aura",
-    },
+    ...INITIAL_FARM.bumpkin,
+    // Past level 30 so the Barn / Hen House and all animals are unlocked.
+    experience: 300000,
   },
-
+  coins: 10000,
   minigames: {
-    games: {
-      "easter-eggstravaganza": {
-        history: {},
-        highscore: 0,
-      },
-    },
+    ...INITIAL_FARM.minigames,
     prizes: {
       "crops-and-chickens": {
         coins: 10,
@@ -97,336 +53,121 @@ export const STATIC_OFFLINE_FARM: GameState = {
       },
     },
   },
-  raffle: {
-    active: {
-      "1": {
-        entries: 100,
-        endAt: Date.now() + 1000 * 60 * 60 * 24 * 7,
-        items: {},
+  buildings: {
+    ...INITIAL_FARM.buildings,
+    // Placed on the land so you can walk in from the farm.
+    Barn: [
+      {
+        id: "barn",
+        readyAt: 0,
+        createdAt: 0,
+        coordinates: { x: -7, y: 8 },
       },
+    ],
+    "Hen House": [
+      {
+        id: "henHouse",
+        readyAt: 0,
+        createdAt: 0,
+        coordinates: { x: -7, y: 2 },
+      },
+    ],
+  },
+  // Level 3 buildings = capacity 20 each, with animals spread across the
+  // level range so every bounty tier below has at least one eligible animal.
+  barn: {
+    level: 3,
+    animals: {
+      ...makeAnimals("Cow", [0, 1, 2, 3, 5, 5, 8, 10, 12, 15]),
+      ...makeAnimals("Sheep", [0, 1, 3, 5, 8, 10, 15]),
     },
   },
+  henHouse: {
+    level: 3,
+    animals: makeAnimals("Chicken", [0, 1, 2, 3, 3, 5, 5, 8, 10, 12, 15]),
+  },
+  // A spread of animal bounties per type: coin deals, chapter-ticket deals
+  // (Shiny Feather = Ascension Age) and gem deals, at varied min levels.
   bounties: {
     completed: [],
     requests: [
+      { id: "animal-1", name: "Chicken", level: 1, coins: 250 },
+      { id: "animal-2", name: "Chicken", level: 3, coins: 480 },
       {
-        id: "21",
-        name: "Red Balloon Flower",
-        items: { "Pet Cookie": 15 },
-      },
-      {
-        id: "1",
-        name: "Cow",
-        level: 1,
-        items: { [getChapterTicket(Date.now())]: 1 },
-      },
-      {
-        id: "3",
-        name: "Chicken",
-        level: 1,
-        coins: 100,
-      },
-      {
-        id: "2",
+        id: "animal-3",
         name: "Chicken",
         level: 5,
-        items: { [getChapterTicket(Date.now())]: 1 },
+        items: { "Shiny Feather": 2 },
       },
+      { id: "animal-4", name: "Chicken", level: 10, items: { Gem: 20 } },
+      { id: "animal-5", name: "Cow", level: 1, coins: 400 },
+      { id: "animal-6", name: "Cow", level: 5, coins: 900 },
+      { id: "animal-7", name: "Cow", level: 8, items: { "Shiny Feather": 3 } },
+      { id: "animal-8", name: "Cow", level: 12, items: { Gem: 30 } },
+      { id: "animal-9", name: "Sheep", level: 1, coins: 450 },
       {
-        id: "2",
-        name: "Chicken",
-        level: 5,
-        items: { Scroll: 1 },
+        id: "animal-10",
+        name: "Sheep",
+        level: 3,
+        items: { "Shiny Feather": 2 },
       },
-      {
-        id: "2",
-        name: "Chicken",
-        level: 5,
-        items: { Scroll: 1 },
-      },
-      {
-        id: "2",
-        name: "Chicken",
-        level: 5,
-        items: { Scroll: 1 },
-      },
-      {
-        id: "22",
-        name: "Chicken",
-        level: 1,
-        items: { Scroll: 1 },
-      },
+      { id: "animal-11", name: "Sheep", level: 8, coins: 1200 },
+      { id: "animal-12", name: "Sheep", level: 15, items: { Gem: 50 } },
     ],
   },
-
-  mysteryPrizes: {},
-  stockExpiry: {},
-  mushrooms: {
-    mushrooms: {},
-    spawnedAt: 0,
-  },
-
-  island: {
-    type: "basic",
-  },
-
-  home: {
-    collectibles: {
-      Wardrobe: [
-        {
-          id: "1",
-          createdAt: Date.now(),
-          coordinates: {
-            x: 1,
-            y: 3,
-          },
-          readyAt: Date.now(),
-        },
-      ],
-      Rug: [
-        {
-          id: "2",
-          createdAt: Date.now(),
-          coordinates: {
-            x: 0,
-            y: 2,
-          },
-          readyAt: Date.now(),
-        },
-      ],
-    },
-  },
-  farmHands: { bumpkins: {} },
-  greenhouse: {
-    oil: 100,
-    pots: {},
-  },
-
-  createdAt: new Date().getTime(),
-
-  experiments: ["GEM_BOOSTS"],
-
-  ...INITIAL_RESOURCES,
-
-  conversations: ["hank-intro"],
-
-  dailyRewards: {
-    streaks: 1,
-    chest: {
-      collectedAt: new Date("2026-01-08").getTime(),
-      code: 1,
-    },
-  },
-
-  farmActivity: {
-    "Starlight Tuna Map Piece Found": 8,
-    "Daily Reward Collected": 1,
-    "Pet Cookie Collected": 2250,
-    "Paw Prints Points Earned": 930,
-    "Paw Prints free Milestone Claimed": 4,
-    "welcome Bonus Claimed": 1,
-  },
-
-  fishing: {
-    dailyAttempts: {},
-    wharf: {
-      maps: {
-        "Starlight Tuna": 1,
-      },
-      castedAt: 100011000,
-      caught: {
-        Anchovy: 1,
-      },
-      chum: "Earthworm",
-      multiplier: 1,
-      guaranteedCatch: "Anchovy",
-    },
-  },
-  crabTraps: {
-    trapSpots: {},
-  },
-  mailbox: {
-    read: [],
-  },
-
-  stock: INITIAL_STOCK(),
-  trades: {},
-  floatingIsland: {
-    schedule: [],
-    shop: {},
-  },
-  buildings: {
-    "Town Center": [
-      {
-        id: "123",
-        readyAt: 0,
-        coordinates: {
-          x: -1,
-          y: 1,
-        },
-        createdAt: 0,
-      },
-    ],
-    "Fire Pit": [
-      {
-        id: "123",
-        readyAt: 0,
-        coordinates: {
-          x: 4,
-          y: 8,
-        },
-        createdAt: 0,
-      },
-    ],
-
-    Barn: [
-      {
-        id: "123",
-        readyAt: 0,
-        coordinates: {
-          x: -2,
-          y: 8,
-        },
-        createdAt: 0,
-      },
-    ],
-
-    Market: [
-      {
-        id: "123",
-        readyAt: 0,
-        coordinates: {
-          x: 5,
-          y: 3,
-        },
-        createdAt: 0,
-      },
-    ],
-  },
-  collectibles: {},
-  pumpkinPlaza: {},
-  auctioneer: {},
-  delivery: {
-    fulfilledCount: 0,
-    orders: [
-      {
-        createdAt: Date.now(),
-        readyAt: Date.now(),
-        from: "betty",
-        reward: {
-          items: {},
-          coins: 64,
-        },
-        id: "1",
-        items: {
-          Sunflower: 30,
-        },
-      },
-      {
-        createdAt: Date.now(),
-        readyAt: Date.now(),
-        from: "grubnuk",
-        reward: {
-          items: {},
-          coins: 64,
-        },
-        id: "2",
-        items: {
-          "Pumpkin Soup": 1,
-        },
-      },
-      {
-        createdAt: Date.now(),
-        readyAt: Date.now(),
-        from: "tywin",
-        reward: {
-          items: {
-            "Pet Cookie": 1,
-          },
-          coins: 0,
-        },
-        id: "3",
-        items: {},
-      },
-    ],
-    milestone: {
-      goal: 10,
-      total: 10,
-    },
-  },
-
-  milestones: {},
-  specialEvents: {
-    history: {},
-    current: {},
-  },
-  goblinMarket: {
-    resources: {},
-  },
-  kingdomChores: {
-    chores: [],
-    choresCompleted: 0,
-    choresSkipped: 0,
-  },
-  desert: {
-    digging: {
-      grid: [],
-      patterns: [],
-    },
-  },
-  henHouse: makeAnimalBuilding("Hen House"),
-  barn: makeAnimalBuilding("Barn"),
-  username: "hero",
-  waterWell: {
-    level: 1,
-  },
-  petHouse: {
-    level: 1,
-    pets: {},
-  },
-  craftingBox: {
-    status: "idle",
-    startedAt: 0,
-    readyAt: 0,
-    recipes: {},
-  },
-  season: {
-    season: "spring",
-    startedAt: 0,
-  },
-  lavaPits: {},
-  ban: {
-    status: "ok",
-    isSocialVerified: false,
-  },
-  blessing: {
-    offering: {
-      item: "Potato",
-      prize: "Potato",
-    },
-  },
-  aoe: {},
-  socialFarming: {
-    weeklyPoints: {
-      points: 0,
-      week: "2025-08-04",
-    },
-    points: 0,
-    villageProjects: {},
-    cheersGiven: {
-      date: "",
-      farms: [],
-      projects: {},
-    },
-    cheers: {
-      freeCheersClaimedAt: 0,
-    },
-    waves: {
-      date: "",
-      farms: [],
-    },
-  },
-  pets: {
-    common: {},
+  inventory: {
+    ...INITIAL_FARM.inventory,
+    // Animal buildings + feed (matches the placed buildings above)
+    Barn: new Decimal(1),
+    "Hen House": new Decimal(1),
+    "Kernel Blend": new Decimal(100),
+    Hay: new Decimal(100),
+    NutriBarley: new Decimal(100),
+    "Mixed Grain": new Decimal(100),
+    Omnifeed: new Decimal(50),
+    "Barn Delight": new Decimal(20),
+    // A spread of foods across every Feed tab category, with a mix of
+    // quantities: >10 (bulk modal + "Eat 10"), 2-10, and exactly 1.
+    // Fire Pit
+    "Mashed Potato": new Decimal(50),
+    "Pumpkin Soup": new Decimal(25),
+    "Bumpkin Broth": new Decimal(12),
+    "Boiled Eggs": new Decimal(8),
+    "Reindeer Carrot": new Decimal(3),
+    Popcorn: new Decimal(1),
+    // Kitchen
+    "Fruit Salad": new Decimal(60),
+    "Sunflower Crunch": new Decimal(30),
+    "Roast Veggies": new Decimal(15),
+    Pancakes: new Decimal(11),
+    "Club Sandwich": new Decimal(5),
+    // Bakery
+    "Sunflower Cake": new Decimal(20),
+    "Carrot Cake": new Decimal(12),
+    "Apple Pie": new Decimal(7),
+    "Honey Cake": new Decimal(2),
+    // Deli
+    "Fancy Fries": new Decimal(40),
+    Cheese: new Decimal(25),
+    Sauerkraut: new Decimal(11),
+    "Blueberry Jam": new Decimal(4),
+    // Smoothie Shack (juices — exercises the "Drink" verb)
+    "Orange Juice": new Decimal(35),
+    "Purple Smoothie": new Decimal(15),
+    "Apple Juice": new Decimal(11),
+    "Bumpkin Detox": new Decimal(6),
+    // Special
+    "Pirate Cake": new Decimal(15),
+    Caponata: new Decimal(3),
+    "Trade Cake": new Decimal(1),
+    // Fish
+    Anchovy: new Decimal(50),
+    Clownfish: new Decimal(30),
+    Tuna: new Decimal(12),
+    "Red Snapper": new Decimal(8),
+    // Aged fish
+    "Aged Anchovy": new Decimal(20),
+    "Prime Aged Anchovy": new Decimal(11),
+    "Aged Tuna": new Decimal(5),
   },
 };

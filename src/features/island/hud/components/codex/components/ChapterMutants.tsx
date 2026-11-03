@@ -1,10 +1,10 @@
 import { Label } from "components/ui/Label";
 import { InnerPanel } from "components/ui/Panel";
 import { ITEM_DETAILS } from "features/game/types/images";
-import { ChapterName } from "features/game/types/chapters";
+import type { ChapterName } from "features/game/types/chapters";
 import {
   CHAPTER_MUTANTS,
-  MutantsChapterName,
+  type MutantsChapterName,
 } from "features/game/types/chapterMutants";
 import { NoticeboardItems } from "features/world/ui/kingdom/KingdomNoticeboard";
 import { useAppTranslation } from "lib/i18n/useAppTranslations";
@@ -36,12 +36,16 @@ export const ChapterMutants: React.FC<Props> = ({ chapter }) => {
         <NoticeboardItems
           iconWidth={8}
           items={[
-            {
-              text: t("season.codex.mutants.one", {
-                item: mutants.Chicken,
-              }),
-              icon: ITEM_DETAILS.Chicken.image,
-            },
+            ...(mutants.Chicken
+              ? [
+                  {
+                    text: t("season.codex.mutants.one", {
+                      item: mutants.Chicken,
+                    }),
+                    icon: ITEM_DETAILS.Chicken.image,
+                  },
+                ]
+              : []),
             {
               text: t("season.codex.mutants.two", {
                 item: mutants.Fish.join(", "),

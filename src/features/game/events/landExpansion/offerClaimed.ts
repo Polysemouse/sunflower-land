@@ -1,7 +1,7 @@
 import Decimal from "decimal.js-light";
-import { BumpkinItem } from "features/game/types/bumpkin";
-import { getKeys } from "features/game/types/decorations";
-import {
+import type { BumpkinItem } from "features/game/types/bumpkin";
+import { getKeys } from "lib/object";
+import type {
   GameState,
   InventoryItemName,
   TradeOffer,

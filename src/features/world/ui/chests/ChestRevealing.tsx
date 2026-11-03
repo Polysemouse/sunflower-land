@@ -11,17 +11,21 @@ import {
   MANEKI_NEKO_REWARDS,
   FESTIVE_TREE_REWARDS,
 } from "features/game/types/chests";
-import { ITEM_DETAILS } from "features/game/types/images";
+import {
+  getTranslatedItemName,
+  ITEM_DETAILS,
+} from "features/game/types/images";
+import { translate } from "lib/i18n/translate";
 import React, { useContext, useEffect, useMemo, useState } from "react";
 
 import sfl from "assets/icons/flower_token.webp";
 import coins from "assets/icons/coins.webp";
 import { ITEM_IDS } from "features/game/types/bumpkin";
-import { getKeys } from "features/game/types/craftables";
+import { getKeys } from "lib/object";
 import { Label } from "components/ui/Label";
 import { SUNNYSIDE } from "assets/sunnyside";
 import { getImageUrl } from "lib/utils/getImageURLS";
-import { GameState, Keys } from "features/game/types/game";
+import type { GameState, Keys } from "features/game/types/game";
 import {
   possibleRewards,
   BASIC_DAILY_REWARDS,
@@ -30,7 +34,8 @@ import {
 } from "features/game/types/collectDailyReward";
 import { Context } from "features/game/GameProvider";
 import { useSelector } from "@xstate/react";
-import { RewardBoxReward } from "features/game/types/rewardBoxes";
+import type { RewardBoxReward } from "features/game/types/rewardBoxes";
+import { useNow } from "lib/utils/hooks/useNow";
 
 export type ChestRewardType =
   | Keys
@@ -53,10 +58,11 @@ interface Props {
 
 export const CHEST_LOOT: (
   game: GameState,
-) => Record<ChestRewardType, RewardBoxReward[]> = (state) => ({
-  "Treasure Key": BASIC_REWARDS(),
-  "Rare Key": RARE_REWARDS(),
-  "Luxury Key": LUXURY_REWARDS(),
+  now: number,
+) => Record<ChestRewardType, RewardBoxReward[]> = (state, now) => ({
+  "Treasure Key": BASIC_REWARDS(now),
+  "Rare Key": RARE_REWARDS(now),
+  "Luxury Key": LUXURY_REWARDS(now),
   "Bud Box": BUD_BOX_REWARDS,
   "Gift Giver": GIFT_GIVER_REWARDS,
   "Basic Desert Rewards": BASIC_DESERT_STREAK,
@@ -79,8 +85,9 @@ export const ChestRevealing: React.FC<Props> = ({ type }) => {
 
   const { gameService } = useContext(Context);
   const state = useSelector(gameService, (state) => state.context.state);
+  const now = useNow();
 
-  const chestLoot = useMemo(() => CHEST_LOOT(state), [state]);
+  const chestLoot = useMemo(() => CHEST_LOOT(state, now), [state, now]);
   const items = chestLoot[type];
 
   useEffect(() => {
@@ -97,14 +104,14 @@ export const ChestRevealing: React.FC<Props> = ({ type }) => {
           if (randomItem.flower) {
             return {
               image: sfl,
-              label: `${randomItem.flower} FLOWER`,
+              label: `${randomItem.flower} ${translate("flower")}`,
             };
           }
 
           if (randomItem.coins) {
             return {
               image: coins,
-              label: `${randomItem.coins} Coins`,
+              label: `${randomItem.coins} ${translate("coins")}`,
             };
           }
 
@@ -114,7 +121,7 @@ export const ChestRevealing: React.FC<Props> = ({ type }) => {
             if (randomWearable) {
               return {
                 image: getImageUrl(ITEM_IDS[randomWearable]),
-                label: randomWearable,
+                label: getTranslatedItemName(randomWearable),
               };
             }
           }
@@ -128,7 +135,10 @@ export const ChestRevealing: React.FC<Props> = ({ type }) => {
               return {
                 image: ITEM_DETAILS[first].image,
                 label: names
-                  .map((name) => `${randomItem.items?.[name]} ${name}`)
+                  .map(
+                    (name) =>
+                      `${randomItem.items?.[name]} ${getTranslatedItemName(name)}`,
+                  )
                   .join(" - "),
               };
             }

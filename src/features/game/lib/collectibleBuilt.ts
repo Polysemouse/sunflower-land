@@ -1,8 +1,13 @@
-import { HourglassType } from "features/island/collectibles/components/Hourglass";
-import { CollectibleName, getKeys } from "../types/craftables";
-import { GameState } from "../types/game";
-import { PET_SHRINES, PetShrineName } from "../types/pets";
+import type { HourglassType } from "features/island/collectibles/components/Hourglass";
+import type { CollectibleName } from "../types/craftables";
+import { getKeys } from "lib/object";
+import type { GameState, InventoryItemName, PlacedItem } from "../types/game";
+import { PET_SHRINES, type PetShrineName } from "../types/pets";
 import { isPetCollectible } from "../events/landExpansion/placeCollectible";
+import { getCollectiblesAcrossLocations } from "./getCollectiblesAcrossLocations";
+import { hasFeatureAccess } from "lib/flags";
+
+export { getCollectiblesAcrossLocations };
 
 export function isCollectibleBuilt({
   name,
@@ -11,26 +16,21 @@ export function isCollectibleBuilt({
   name: CollectibleName;
   game: GameState;
 }) {
-  const placedOnFarm =
-    game.collectibles[name] &&
-    game.collectibles[name]?.some(
-      (placed) => (placed.readyAt ?? 0) <= Date.now() && placed.coordinates,
-    );
+  const isReady = (placed: {
+    readyAt?: number;
+    coordinates?: unknown;
+    used?: boolean;
+  }) =>
+    (placed.readyAt ?? 0) <= Date.now() && !!placed.coordinates && !placed.used;
 
-  const placedInHome =
-    game.home.collectibles[name] &&
-    game.home.collectibles[name]?.some(
-      (placed) => (placed.readyAt ?? 0) <= Date.now() && placed.coordinates,
-    );
+  const placedAcrossLocations = getCollectiblesAcrossLocations(game, name).some(
+    isReady,
+  );
 
   const placedInPetHouse =
-    isPetCollectible(name) &&
-    game.petHouse.pets[name] &&
-    game.petHouse.pets[name]?.some(
-      (placed) => (placed.readyAt ?? 0) <= Date.now() && placed.coordinates,
-    );
+    isPetCollectible(name) && !!game.petHouse.pets[name]?.some(isReady);
 
-  return !!placedOnFarm || !!placedInHome || !!placedInPetHouse;
+  return placedAcrossLocations || placedInPetHouse;
 }
 
 export type TemporaryCollectibleName = Extract<
@@ -68,29 +68,110 @@ export const EXPIRY_COOLDOWNS: Record<TemporaryCollectibleName, number> = {
 };
 
 /**
+ * Rebalanced (longer) durations applied ONLY under the `SPEED_BOOSTS` flag (via
+ * `getExpiryCooldown`). The windowed model credits only the overlap, so the short
+ * boosters are extended to still bank a worthwhile chunk on longer tasks (agreed
+ * in Discussion #7393). Flag-off / production keeps `EXPIRY_COOLDOWNS` unchanged.
+ * Only the entries that actually change are listed; everything else falls through
+ * to `EXPIRY_COOLDOWNS`.
+ */
+export const SPEED_BOOST_EXPIRY_COOLDOWNS: Partial<
+  Record<TemporaryCollectibleName, number>
+> = {
+  "Time Warp Totem": 4 * 60 * 60 * 1000,
+  "Gourmet Hourglass": 6 * 60 * 60 * 1000,
+  "Harvest Hourglass": 9 * 60 * 60 * 1000,
+  "Ore Hourglass": 5 * 60 * 60 * 1000,
+  "Orchard Hourglass": 8 * 60 * 60 * 1000,
+  "Blossom Hourglass": 12 * 60 * 60 * 1000,
+};
+
+/**
+ * A temporary collectible's active-lifetime / boost-window duration, flag-gated:
+ * `SPEED_BOOSTS` players get the rebalanced durations, everyone else keeps the
+ * legacy `EXPIRY_COOLDOWNS`. Every timing consumer that has `game` (boost windows,
+ * the active check, cooking, boostHistory writers) routes through this so a
+ * boost's window, active state and recorded history stay consistent.
+ */
+export function getExpiryCooldown(
+  name: TemporaryCollectibleName,
+  game: GameState,
+): number {
+  if (hasFeatureAccess(game, "SPEED_BOOSTS")) {
+    return SPEED_BOOST_EXPIRY_COOLDOWNS[name] ?? EXPIRY_COOLDOWNS[name];
+  }
+
+  return EXPIRY_COOLDOWNS[name];
+}
+
+/**
+ * Whether a collectible is one of the time-limited boosters — the items that
+ * expire and can be renewed or extended, keyed by `EXPIRY_COOLDOWNS`.
+ */
+export const isTemporaryCollectible = (
+  name: InventoryItemName,
+): name is TemporaryCollectibleName => name in EXPIRY_COOLDOWNS;
+
+/**
+ * The two totems. They grant the SAME buff — identical description, 2x in every
+ * windowed speed table, and `getMergedTotemWindows` unions them so they cannot
+ * stack with each other — and differ only in duration and how they are obtained.
+ * That interchangeability is what lets them extend one another.
+ */
+export const TOTEMS = ["Super Totem", "Time Warp Totem"] as const;
+
+export type TotemName = (typeof TOTEMS)[number];
+
+export const isTotem = (name: InventoryItemName): name is TotemName =>
+  TOTEMS.includes(name as TotemName);
+
+/**
+ * The names that share a placement slot with this one. Because the totems merge
+ * into a single boost window, a second totem alongside the first is wasted, so
+ * the pair occupies one slot between them. Everything else is its own group.
+ */
+export const getPlacementGroup = (
+  name: TemporaryCollectibleName,
+): TemporaryCollectibleName[] => (isTotem(name) ? [...TOTEMS] : [name]);
+
+/**
+ * Wall-clock expiry of ONE placed temporary collectible: its `createdAt` plus the
+ * (flag-gated) base cooldown plus any time bought via `collectible.extended` and
+ * banked on the placement. Every consumer — boost windows, the active check,
+ * renew/burn eligibility and the UI countdowns — must read the expiry from here
+ * rather than re-deriving `createdAt + cooldown`, or an extended booster will
+ * silently expire early for whichever consumer was missed.
+ */
+export function getCollectibleExpiry({
+  name,
+  collectible,
+  game,
+}: {
+  name: TemporaryCollectibleName;
+  collectible: Pick<PlacedItem, "createdAt" | "extendedMs">;
+  game: GameState;
+}): number {
+  return (
+    (collectible.createdAt ?? 0) +
+    getExpiryCooldown(name, game) +
+    (collectible.extendedMs ?? 0)
+  );
+}
+
+/**
  * Useful for collectibles which expire after X time
  * Currently we only support Time Warp Totem
  */
 export function isTemporaryCollectibleActive({
   name,
   game,
+  now,
 }: {
   name: TemporaryCollectibleName;
   game: GameState;
+  now: number;
 }) {
-  const cooldown = EXPIRY_COOLDOWNS[name];
-
-  const placedOnFarm =
-    game.collectibles[name] &&
-    game.collectibles[name]?.some(
-      (placed) => (placed.createdAt ?? 0) + cooldown > Date.now(),
-    );
-
-  const placedInHome =
-    game.home.collectibles[name] &&
-    game.home.collectibles[name]?.some(
-      (placed) => (placed.createdAt ?? 0) + cooldown > Date.now(),
-    );
-
-  return !!placedOnFarm || !!placedInHome;
+  return getCollectiblesAcrossLocations(game, name).some(
+    (placed) => getCollectibleExpiry({ name, collectible: placed, game }) > now,
+  );
 }

@@ -1,7 +1,7 @@
 import React from "react";
 import { SUNNYSIDE } from "assets/sunnyside";
 import { PIXEL_SCALE } from "features/game/lib/constants";
-import {
+import type {
   AnimalFoodName,
   AnimalMedicineName,
   LoveAnimalItem,
@@ -52,6 +52,26 @@ const ANIMAL_REQUEST_IMAGES: Record<
   Omnifeed: {
     src: ITEM_DETAILS.Omnifeed.image,
     width: 11,
+    height: 16,
+  },
+  "Basic Slop": {
+    src: ITEM_DETAILS["Basic Slop"].image,
+    width: 14,
+    height: 12,
+  },
+  "Hearty Slop": {
+    src: ITEM_DETAILS["Hearty Slop"].image,
+    width: 14,
+    height: 18,
+  },
+  "Rich Slop": {
+    src: ITEM_DETAILS["Rich Slop"].image,
+    width: 16,
+    height: 16,
+  },
+  "Gourmet Slop": {
+    src: ITEM_DETAILS["Gourmet Slop"].image,
+    width: 14,
     height: 16,
   },
   "Petting Hand": {

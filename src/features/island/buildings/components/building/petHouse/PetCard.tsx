@@ -6,10 +6,10 @@ import {
   isPetNapping,
   isPetNeglected,
   PET_RESOURCES,
-  Pet,
-  PetName,
-  PetNFT,
-  PetResourceName,
+  type Pet,
+  type PetName,
+  type PetNFT,
+  type PetResourceName,
   isPetNFT,
 } from "features/game/types/pets";
 import React, { useState } from "react";
@@ -21,9 +21,9 @@ import {
 } from "features/game/events/pets/feedPet";
 import { FetchButtonPanel } from "./FetchButtonPanel";
 import { FoodButtonPanel } from "./FoodButtonPanel";
-import { GameState, Inventory } from "features/game/types/game";
+import type { GameState, Inventory } from "features/game/types/game";
 import { Label } from "components/ui/Label";
-import { CookableName } from "features/game/types/consumables";
+import type { CookableName } from "features/game/types/consumables";
 import { useNow } from "lib/utils/hooks/useNow";
 import { Button } from "components/ui/Button";
 import { useAppTranslation } from "lib/i18n/useAppTranslations";
@@ -47,10 +47,19 @@ interface Props {
   setSelectedFeed?: (
     feed: { petId: PetName | number; food: CookableName }[],
   ) => void;
+  isBulkFetch?: boolean;
+  selectedFetchKeys?: Set<string>;
+  fetchPlanAmounts?: Map<string, number>;
+  onToggleFetch?: (petName: number | PetName, fetch: PetResourceName) => void;
   handleResetRequests: () => void;
   onAcknowledged: () => void;
-  farmId: number;
 }
+
+/** Stable key identifying a single (pet, resource) fetch selection. */
+export const fetchSelectionKey = (
+  petId: number | PetName,
+  fetch: PetResourceName,
+) => `${petId}::${fetch}`;
 
 export const getAdjustedFoodCount = (
   foodName: CookableName,
@@ -96,20 +105,13 @@ export const hasFoodInInventory = (
   return adjustedCount.greaterThan(0);
 };
 
-export const isFoodAlreadyFed = (
-  pet: Pet | PetNFT,
-  food: CookableName,
-  now: number,
-) => {
-  const today = new Date(now).toISOString().split("T")[0];
-  const lastFedDate = pet.requests.fedAt
-    ? new Date(pet.requests.fedAt).toISOString().split("T")[0]
-    : null;
-
-  if (lastFedDate !== today) return false;
-
-  return pet.requests.foodFed?.includes(food) || false;
-};
+// `foodFed` is cleared whenever the day's requests are regenerated, so it is
+// the record of what the pet has eaten today and the only check the feed
+// event itself applies. `fedAt` holds the client's event timestamp, which can
+// fall on the previous UTC day for a feed saved just after the rollover, so a
+// date check on it would offer food the game then refuses as already fed.
+export const isFoodAlreadyFed = (pet: Pet | PetNFT, food: CookableName) =>
+  pet.requests.foodFed?.includes(food) || false;
 
 export const PetCard: React.FC<Props> = ({
   petData,
@@ -124,9 +126,12 @@ export const PetCard: React.FC<Props> = ({
   isBulkFeed,
   selectedFeed,
   setSelectedFeed,
+  isBulkFetch,
+  selectedFetchKeys,
+  fetchPlanAmounts,
+  onToggleFetch,
   handleResetRequests,
   onAcknowledged,
-  farmId,
 }) => {
   const now = useNow({ live: true });
   const todayDate = new Date(now).toISOString().split("T")[0];
@@ -192,7 +197,7 @@ export const PetCard: React.FC<Props> = ({
         style={{ display: display === "feeding" ? "flex" : "none" }}
       >
         <div className="flex flex-row gap-1 items-center justify-between">
-          <Label type="default">{`Today's Requests`}</Label>
+          <Label type="default">{t("pets.todaysRequests")}</Label>
           <p
             className="underline font-secondary text-xxs pb-1 -mt-1 mr-1 cursor-pointer hover:text-blue-500"
             onClick={() => setShowResetRequests(true)}
@@ -221,7 +226,7 @@ export const PetCard: React.FC<Props> = ({
                 requiredFeedAmount,
               );
 
-            const alreadyFed = isFoodAlreadyFed(petData, food, now);
+            const alreadyFed = isFoodAlreadyFed(petData, food);
 
             const isSelected =
               isBulkFeed &&
@@ -229,7 +234,8 @@ export const PetCard: React.FC<Props> = ({
                 (item) => item.petId === petName && item.food === food,
               );
 
-            const isDisabled = !canFeed || alreadyFed || isFoodLocked;
+            const isDisabled =
+              (!canFeed && !isSelected) || alreadyFed || isFoodLocked;
 
             const xp = getPetExperience({
               basePetXP: getPetRequestXP(food),
@@ -237,6 +243,7 @@ export const PetCard: React.FC<Props> = ({
               petLevel,
               petData,
               food,
+              now,
             });
 
             const energy = getPetEnergy({
@@ -293,7 +300,7 @@ export const PetCard: React.FC<Props> = ({
           style={{ display: display === "fetching" ? "flex" : "none" }}
         >
           <Label type="default">{t("pets.fetchableResources")}</Label>
-          <div className="grid grid-cols-3 gap-1 mt-2 w-full">
+          <div className="grid grid-cols-3 gap-2 mt-2 w-full">
             {!getPetType(petData) ? (
               <p className="text-xs col-span-3 p-1">{t("pets.typeUnknown")}</p>
             ) : (
@@ -323,21 +330,28 @@ export const PetCard: React.FC<Props> = ({
                   const hasRequiredLevel = level >= fetch.level;
                   const energyRequired = PET_RESOURCES[fetch.name].energy;
                   const hasEnoughEnergy = petData.energy >= energyRequired;
-                  const isDisabled = !hasRequiredLevel || !hasEnoughEnergy;
                   const inventoryCount =
                     inventory[fetch.name] ?? new Decimal(0);
-
-                  const initialFetchCount =
-                    state.farmActivity[`${fetch.name} Fetched`] ?? 0;
 
                   const { yieldAmount: fetchAmount } = getFetchYield({
                     petLevel: level,
                     fetchResource: fetch.name,
                     isPetNFT: isPetNFT(petData),
-                    farmId,
-                    counter: petData.fetches?.[fetch.name] ?? initialFetchCount,
                     state,
                   });
+
+                  const selectionKey = fetchSelectionKey(petName, fetch.name);
+                  const plannedAmount = fetchPlanAmounts?.get(selectionKey);
+                  const inPlan = plannedAmount !== undefined;
+                  const isSelected =
+                    !!isBulkFetch &&
+                    (selectedFetchKeys?.has(selectionKey) ?? false);
+
+                  // In bulk fetch mode only the planner's picks are
+                  // interactive (toggle on/off); everything else is inert.
+                  const isDisabled = isBulkFetch
+                    ? !inPlan
+                    : !hasRequiredLevel || !hasEnoughEnergy;
 
                   return (
                     <FetchButtonPanel
@@ -347,7 +361,13 @@ export const PetCard: React.FC<Props> = ({
                       energyRequired={energyRequired}
                       disabled={isDisabled}
                       locked={!hasRequiredLevel}
-                      onClick={() => handleFetch(petName, fetch.name)}
+                      selected={isSelected}
+                      plannedAmount={isBulkFetch ? plannedAmount : undefined}
+                      onClick={
+                        isBulkFetch
+                          ? () => onToggleFetch?.(petName, fetch.name)
+                          : () => handleFetch(petName, fetch.name)
+                      }
                       fetchAmount={fetchAmount}
                     />
                   );

@@ -1,0 +1,17 @@
+{
+  // Assets-only Worker (no script) serving the Vite build output.
+  // Deployed by .github/workflows/testnet.yml via `wrangler deploy`.
+  // The build outputs into dist/testnet so asset paths line up with the
+  // sunflower-land.com/testnet/* Worker route (assets are matched by the
+  // full URL pathname against files under this directory).
+  // The mainnet deploy can later override with `wrangler deploy --name sunflower-land-mainnet`
+  // or a dedicated config passed via `--config`.
+  "name": "sunflower-land-testnet",
+  "compatibility_date": "2026-06-01",
+  "assets": {
+    "directory": "./dist",
+    // Serve index.html with a 200 for unmatched paths so client-side
+    // routing works on deep links / refreshes.
+    "not_found_handling": "single-page-application",
+  },
+}

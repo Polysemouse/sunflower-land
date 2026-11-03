@@ -8,9 +8,9 @@ import { useGame } from "features/game/GameProvider";
 import { Button } from "components/ui/Button";
 import { useCountdown } from "lib/utils/hooks/useCountdown";
 import { TimerDisplay } from "../auctioneer/AuctionDetails";
-import { TranslationKeys } from "lib/i18n/dictionaries/types";
+import type { TranslationKeys } from "lib/i18n/dictionaries/types";
 import { useAppTranslation } from "lib/i18n/useAppTranslations";
-import { FaceRecognitionEvent, GameState } from "features/game/types/game";
+import type { FaceRecognitionEvent, GameState } from "features/game/types/game";
 import { Label } from "components/ui/Label";
 import { SUNNYSIDE } from "assets/sunnyside";
 import {
@@ -93,7 +93,7 @@ export const FaceRecognition: React.FC<{ skipIntro?: boolean }> = ({
   const [showMobileInstall, setShowMobileInstall] = useState(false);
   const { t } = useAppTranslation();
 
-  const now = useNow();
+  const now = useNow({ live: true });
 
   const { gameState, gameService } = useGame();
 
@@ -150,6 +150,7 @@ export const FaceRecognition: React.FC<{ skipIntro?: boolean }> = ({
 
       const cooldownUntil = faceCooldownUntil({
         game: gameState.context.state,
+        now,
       });
 
       const isOnCooldown = now < cooldownUntil;
@@ -280,7 +281,7 @@ export const RecognitionAttempt: React.FC<{
 }> = ({ game, event }) => {
   const { t } = useAppTranslation();
 
-  const now = useNow();
+  const now = useNow({ live: true });
 
   if (event.event === "succeeded") {
     return (
@@ -295,7 +296,7 @@ export const RecognitionAttempt: React.FC<{
     );
   }
 
-  const cooldownUntil = faceCooldownUntil({ game });
+  const cooldownUntil = faceCooldownUntil({ game, now });
   const isOnCooldown = now < cooldownUntil;
 
   if (isOnCooldown) {
@@ -320,6 +321,7 @@ export const RecognitionAttempt: React.FC<{
 
   const attemptsLeft = getFaceRecognitionAttemptsLeft({
     game,
+    now,
   });
 
   if (event.event === "duplicate") {

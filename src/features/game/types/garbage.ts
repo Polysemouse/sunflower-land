@@ -1,9 +1,13 @@
-import { BB_TO_GEM_RATIO, Inventory, InventoryItemName } from "./game";
-import { CHAPTER_TICKET_NAME, ChapterTicket, CHAPTERS } from "./chapters";
+import {
+  BB_TO_GEM_RATIO,
+  type Inventory,
+  type InventoryItemName,
+} from "./game";
+import { CHAPTER_TICKET_NAME, type ChapterTicket, CHAPTERS } from "./chapters";
 import Decimal from "decimal.js-light";
-import { BumpkinItem } from "./bumpkin";
-import { getObjectEntries } from "../expansion/lib/utils";
-import { ClutterName } from "./clutter";
+import type { BumpkinItem } from "./bumpkin";
+import { getObjectEntries } from "lib/object";
+import type { ClutterName } from "./clutter";
 
 export type GarbageName =
   | Extract<
@@ -36,6 +40,12 @@ export type GarbageName =
       | "Halloween Ticket 2025"
       | "Holiday Token 2025"
       | "Holiday Ticket 2025"
+      | "April Fools Token 2026"
+      | "April Fools Ticket 2026"
+      | "Colors Token 2026"
+      | "Colors Ticket 2026"
+      | "Halloween Token 2026"
+      | "Halloween Ticket 2026"
       | ClutterName
     >
   | Extract<BumpkinItem, "Basic Hair">;
@@ -205,6 +215,30 @@ export const GARBAGE: Record<GarbageName, Garbage> = {
     gems: 0,
   },
   "Holiday Ticket 2025": {
+    sellPrice: 1,
+    gems: 0,
+  },
+  "April Fools Token 2026": {
+    sellPrice: 1,
+    gems: 0,
+  },
+  "April Fools Ticket 2026": {
+    sellPrice: 1,
+    gems: 0,
+  },
+  "Colors Token 2026": {
+    sellPrice: 1,
+    gems: 0,
+  },
+  "Colors Ticket 2026": {
+    sellPrice: 1,
+    gems: 0,
+  },
+  "Halloween Token 2026": {
+    sellPrice: 1,
+    gems: 0,
+  },
+  "Halloween Ticket 2026": {
     sellPrice: 1,
     gems: 0,
   },

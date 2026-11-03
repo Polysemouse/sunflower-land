@@ -1,18 +1,19 @@
 import { CONFIG } from "lib/config";
+import { fetchWithRetry } from "lib/fetchWithRetry";
 import { ERRORS } from "lib/errors";
 import {
-  Leaderboards,
+  type Leaderboards,
   cacheLeaderboard,
   getCachedLeaderboardData,
 } from "./cache";
-import { FactionName, MazeAttempt } from "features/game/types/game";
+import type { FactionName, MazeAttempt } from "features/game/types/game";
 import { getWeekKey } from "features/game/lib/factions";
-import { CompetitionName } from "features/game/types/competitions";
-import { BumpkinParts } from "lib/utils/tokenUriBuilder";
-import { MinigameName } from "features/game/types/minigames";
-import { LeagueId, LeagueName } from "features/leagues/leagues";
+import type { CompetitionName } from "features/game/types/competitions";
+import type { BumpkinParts } from "lib/utils/tokenUriBuilder";
+import type { MinigameName } from "features/game/types/minigames";
 import { NPC_WEARABLES } from "lib/npcs";
 import { getUrl } from "features/portal/actions/loadPortal";
+import { LEVEL_EXPERIENCE } from "features/game/lib/level";
 
 const API_URL = CONFIG.API_URL;
 
@@ -20,6 +21,8 @@ type Options = {
   farmId: number;
   leaderboardName: keyof Leaderboards;
   cacheExpiry?: number;
+  /** Optional limit (e.g. 500 for tickets). When set, skips cache and adds limit query param. */
+  limit?: number;
 };
 
 export type RankData = {
@@ -27,6 +30,9 @@ export type RankData = {
   count: number;
   rank?: number;
   bumpkin: BumpkinParts;
+  experience?: number;
+  ascensionLevel?: number; // ascension band — needed to read the level derived from experience
+  farmId?: number;
 };
 
 export type MazeAttemptStat = Pick<MazeAttempt, "time" | "health"> & {
@@ -75,89 +81,117 @@ export type EmblemsLeaderboard = {
   lastUpdated: number;
 };
 
-export type LeaguesLeaderboard = {
-  playersToShow: RankData[];
-  playerLeague: LeagueName;
-  promotionRank: number | undefined;
-  demotionRank: number | undefined;
-  lastUpdated: number;
-};
-
 export async function getLeaderboard<T>({
   farmId,
   leaderboardName,
   cacheExpiry,
+  limit,
 }: Options): Promise<T | undefined> {
   if (!API_URL && leaderboardName === "tickets") {
+    await new Promise((resolve) => setTimeout(resolve, 1000));
     return {
       topTen: [
         {
           id: "Chun Long",
           count: 1000,
           bumpkin: NPC_WEARABLES["Chun Long"],
+          experience: LEVEL_EXPERIENCE[150],
+          farmId: 1,
         },
         {
           id: "pumpkin' pete",
           count: 900,
           bumpkin: NPC_WEARABLES["pumpkin' pete"],
+          experience: LEVEL_EXPERIENCE[12],
+          farmId: 2,
         },
         {
           id: "gordy",
           count: 800,
           bumpkin: NPC_WEARABLES["gordy"],
+          experience: LEVEL_EXPERIENCE[1],
+          farmId: 3,
         },
         {
           id: "bert",
           count: 700,
           bumpkin: NPC_WEARABLES["bert"],
+          experience: LEVEL_EXPERIENCE[5],
+          farmId: 4,
         },
         {
           id: "craig",
           count: 600,
           bumpkin: NPC_WEARABLES["craig"],
+          experience: LEVEL_EXPERIENCE[5],
+          farmId: 5,
         },
         {
           id: "raven",
           count: 500,
           bumpkin: NPC_WEARABLES["raven"],
+          experience: LEVEL_EXPERIENCE[5],
+          farmId: 6,
         },
-        {
-          id: "birdie",
-          count: 400,
-          bumpkin: NPC_WEARABLES["birdie"],
-        },
-        {
-          id: "old salty",
-          count: 300,
-          bumpkin: NPC_WEARABLES["old salty"],
-        },
+
         {
           id: "cornwell",
           count: 200,
           bumpkin: NPC_WEARABLES["cornwell"],
+          experience: LEVEL_EXPERIENCE[5],
+          farmId: 8,
         },
         {
           id: "wanderleaf",
           count: 100,
           bumpkin: NPC_WEARABLES["wanderleaf"],
+          experience: LEVEL_EXPERIENCE[51],
+          farmId: 9,
+        },
+        {
+          id: "hannigan",
+          count: 1000,
+          bumpkin: NPC_WEARABLES["bailey"],
+          experience: LEVEL_EXPERIENCE[150],
+          farmId: 10,
+        },
+        {
+          id: "bailey",
+          count: 1000,
+          bumpkin: NPC_WEARABLES["bailey"],
+          experience: LEVEL_EXPERIENCE[150],
+          farmId: 11,
+        },
+        {
+          id: "bailey",
+          count: 1000,
+          bumpkin: NPC_WEARABLES["bailey"],
+          experience: LEVEL_EXPERIENCE[150],
+          farmId: 11,
         },
       ],
       lastUpdated: 0,
     } as T;
   }
 
-  const cache = getCachedLeaderboardData({
-    name: leaderboardName,
-    duration: cacheExpiry,
-  });
+  const skipCache = limit != null;
+  const cache = skipCache
+    ? null
+    : getCachedLeaderboardData({
+        name: leaderboardName,
+        duration: cacheExpiry,
+      });
 
   if (cache) {
     return cache as T;
   }
 
-  const url = `${API_URL}/leaderboard/${leaderboardName}/${farmId}`;
+  const url = new URL(`${API_URL}/leaderboard/${leaderboardName}/${farmId}`);
+  if (limit != null) {
+    url.searchParams.set("limit", String(limit));
+  }
 
-  const response = await window.fetch(url, {
+  const response = await fetchWithRetry(url.toString(), {
     method: "GET",
     headers: {
       "content-type": "application/json;charset=UTF-8",
@@ -174,42 +208,9 @@ export async function getLeaderboard<T>({
 
   const data = await response.json();
 
-  cacheLeaderboard({ name: leaderboardName, data });
-
-  return data;
-}
-
-export async function getLeaguesLeaderboard({
-  farmId,
-  leagueId,
-  token = "",
-}: {
-  farmId: number;
-  leagueId?: LeagueId;
-  token?: string;
-}): Promise<LeaguesLeaderboard | undefined> {
-  const url = new URL(`${API_URL}/data`);
-  url.searchParams.set("type", "leagues");
-  url.searchParams.set("farmId", farmId.toString());
-  if (leagueId) {
-    url.searchParams.set("leagueId", leagueId);
+  if (!skipCache) {
+    cacheLeaderboard({ name: leaderboardName, data });
   }
-
-  const response = await window.fetch(url.toString(), {
-    method: "GET",
-    headers: {
-      "content-type": "application/json;charset=UTF-8",
-      Authorization: `Bearer ${token}`,
-    },
-  });
-  if (response.status === 429) {
-    throw new Error(ERRORS.TOO_MANY_REQUESTS);
-  }
-
-  if (response.status >= 400) {
-    return;
-  }
-  const data = await response.json();
 
   return data;
 }
@@ -234,7 +235,7 @@ export async function getCompetitionLeaderboard({
 
   const url = `${API_URL}/leaderboard/competition/${farmId}?name=${name}`;
 
-  const response = await window.fetch(url, {
+  const response = await fetchWithRetry(url, {
     method: "GET",
     headers: {
       "content-type": "application/json;charset=UTF-8",
@@ -281,7 +282,7 @@ export async function getChampionsLeaderboard<T>({
 
   const url = `${API_URL}/leaderboard/kingdom/${farmId}?date=${date}`;
 
-  const response = await window.fetch(url, {
+  const response = await fetchWithRetry(url, {
     method: "GET",
     headers: {
       "content-type": "application/json;charset=UTF-8",
@@ -305,7 +306,6 @@ export async function getChampionsLeaderboard<T>({
 
 export async function fetchLeaderboardData(
   farmId: number,
-  token?: string,
 ): Promise<Leaderboards | null> {
   try {
     const [
@@ -314,7 +314,6 @@ export async function fetchLeaderboardData(
       kingdomLeaderboard,
       emblemsLeaderboard,
       socialPointsLeaderboard,
-      leaguesLeaderboard,
     ] = await Promise.all([
       getLeaderboard<TicketLeaderboard>({
         farmId: Number(farmId),
@@ -337,10 +336,6 @@ export async function fetchLeaderboardData(
         farmId: Number(farmId),
         leaderboardName: "socialPoints",
       }),
-      getLeaguesLeaderboard({
-        farmId: Number(farmId),
-        token,
-      }),
     ]);
 
     return {
@@ -349,7 +344,6 @@ export async function fetchLeaderboardData(
       kingdom: kingdomLeaderboard,
       emblems: emblemsLeaderboard,
       socialPoints: socialPointsLeaderboard,
-      leagues: leaguesLeaderboard,
     };
   } catch (error) {
     // eslint-disable-next-line no-console
@@ -413,7 +407,7 @@ export async function getPortalLeaderboard({
 
   const url = `${getUrl()}/leaderboard/portals/${farmId}?name=${name}&from=${from}&to=${to}`;
 
-  const response = await window.fetch(url, {
+  const response = await fetchWithRetry(url, {
     method: "GET",
     headers: {
       "content-type": "application/json;charset=UTF-8",

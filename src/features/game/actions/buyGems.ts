@@ -2,6 +2,7 @@ import { buyGemsMATIC } from "lib/blockchain/BuyGems";
 import { wallet } from "lib/blockchain/wallet";
 import { CONFIG } from "lib/config";
 import { ERRORS } from "lib/errors";
+import { secureFetch } from "lib/requestToken";
 
 export type Currency = "MATIC";
 
@@ -25,7 +26,7 @@ type Response = {
 const API_URL = CONFIG.API_URL;
 
 export async function buyBlockBucks(request: Request): Promise<Response> {
-  const response = await window.fetch(`${API_URL}/buy-gems/${request.farmId}`, {
+  const response = await secureFetch(`${API_URL}/buy-gems/${request.farmId}`, {
     method: "POST",
     headers: {
       "content-type": "application/json;charset=UTF-8",
@@ -64,9 +65,9 @@ export async function buyBlockBucksMATIC(transaction: any) {
 }
 
 export async function buyBlockBucksXsolla(
-  request: Omit<Request, "type">,
+  request: Omit<Request, "type"> & { amount: number | "STARTER_PACK" },
 ): Promise<{ url: string }> {
-  const response = await window.fetch(
+  const response = await secureFetch(
     `${API_URL}/payments/create/${request.farmId}`,
     {
       method: "POST",
@@ -86,7 +87,7 @@ export async function buyBlockBucksXsolla(
   }
 
   if (response.status !== 200 || !response.ok) {
-    throw new Error(ERRORS.MINT_COLLECTIBLE_SERVER_ERROR);
+    throw new Error(ERRORS.BUY_GEMS_SERVER_ERROR);
   }
 
   return await response.json();

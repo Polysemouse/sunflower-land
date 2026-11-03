@@ -2,7 +2,7 @@ import React, { useContext, useLayoutEffect, useState } from "react";
 import { SUNNYSIDE } from "assets/sunnyside";
 import { Label } from "components/ui/Label";
 import Decimal from "decimal.js-light";
-import { InventoryItemName } from "features/game/types/game";
+import type { InventoryItemName } from "features/game/types/game";
 
 import { Context } from "features/game/GameProvider";
 import { useSelector } from "@xstate/react";
@@ -10,27 +10,27 @@ import { PIXEL_SCALE } from "features/game/lib/constants";
 import { InnerPanel } from "components/ui/Panel";
 import classNames from "classnames";
 import { Button } from "components/ui/Button";
-import { BuffLabel } from "features/game/types";
+import type { BuffLabel } from "features/game/types";
 import { RequirementLabel } from "components/ui/RequirementsLabel";
 import { gameAnalytics } from "lib/gameAnalytics";
-import { MachineState } from "features/game/lib/gameMachine";
+import type { MachineState } from "features/game/lib/gameMachine";
 import {
   getChapterArtefact,
   getChapterTicket,
 } from "features/game/types/chapters";
 import { useNow } from "lib/utils/hooks/useNow";
 import confetti from "canvas-confetti";
-import { BumpkinItem } from "features/game/types/bumpkin";
+import type { BumpkinItem } from "features/game/types/bumpkin";
 import { useAppTranslation } from "lib/i18n/useAppTranslations";
 import {
-  HOLIDAY_EVENT_ITEMS,
-  EventStoreCollectible,
-  EventStoreItem,
-  EventStoreWearable,
-  EventTierItemName,
-} from "features/game/types/holidayEventShop";
+  HALLOWEEN_2026_EVENT_ITEMS,
+  type EventStoreCollectible,
+  type EventStoreItem,
+  type EventStoreWearable,
+  type EventTierItemName,
+} from "features/game/types/halloween2026EventShop";
 import { getItemDescription } from "../EventStore";
-import { getKeys } from "features/game/types/craftables";
+import { getKeys } from "lib/object";
 import { SFLDiscount } from "features/game/lib/SFLDiscount";
 
 import { REWARD_BOXES } from "features/game/types/rewardBoxes";
@@ -41,7 +41,7 @@ interface ItemOverlayProps {
   image: string;
   isWearable: boolean;
   buff?: BuffLabel[];
-  tier?: "basic" | "rare" | "epic" | "mega";
+  tier?: "basic" | "rare" | "epic" | "mega" | "extra";
   isVisible: boolean;
   onClose: () => void;
   readonly?: boolean;
@@ -74,7 +74,7 @@ export const ItemDetail: React.FC<ItemOverlayProps> = ({
   const now = useNow();
   const chapterTicket = getChapterTicket(now);
   const chapterArtefact = getChapterArtefact(now);
-  const eventStore = HOLIDAY_EVENT_ITEMS;
+  const eventStore = HALLOWEEN_2026_EVENT_ITEMS;
   const tiers =
     tier === "basic"
       ? "basic"
@@ -84,11 +84,13 @@ export const ItemDetail: React.FC<ItemOverlayProps> = ({
           ? "epic"
           : tier === "mega"
             ? "mega"
-            : "basic";
+            : tier === "extra"
+              ? "extra"
+              : "basic";
 
   const shop =
     gameService.getSnapshot().context.state.minigames.games[
-      "holiday-puzzle-2025"
+      "halloween-2026-game-2"
     ]?.shop;
 
   const eventCollectiblesCrafted = Object.keys(shop?.items ?? {}).length;
@@ -108,21 +110,24 @@ export const ItemDetail: React.FC<ItemOverlayProps> = ({
     tiers === "epic" && eventItemsCrafted >= eventStore.epic.requirement;
   const isMegaUnlocked =
     tier === "mega" && eventItemsCrafted >= eventStore.mega.requirement;
+  const isExtraUnlocked =
+    tier === "extra" && eventItemsCrafted >= eventStore.extra.requirement;
 
   const itemsCrafted = isWearable
-    ? (state.minigames.games["holiday-puzzle-2025"]?.shop?.wearables?.[
+    ? (state.minigames.games["halloween-2026-game-2"]?.shop?.wearables?.[
         itemName as BumpkinItem
       ] ?? 0)
-    : (state.minigames.games["holiday-puzzle-2025"]?.shop?.items?.[
+    : (state.minigames.games["halloween-2026-game-2"]?.shop?.items?.[
         itemName as InventoryItemName
       ] ?? 0);
 
   const canCraftMore =
     itemsCrafted <
-    (MINIGAME_SHOP_ITEMS["holiday-puzzle-2025"]?.[itemName as EventTierItemName]
-      ?.max ?? 1);
+    (MINIGAME_SHOP_ITEMS["halloween-2026-game-2"]?.[
+      itemName as EventTierItemName
+    ]?.max ?? 1);
 
-  const description = getItemDescription(item);
+  const description = getItemDescription(item, state);
   const { sfl = 0 } = item?.cost || {};
   const itemReq = item?.cost?.items;
 
@@ -151,6 +156,7 @@ export const ItemDetail: React.FC<ItemOverlayProps> = ({
       if (tier === "rare" && !isRareUnlocked) return false;
       if (tier === "epic" && !isEpicUnlocked) return false;
       if (tier === "mega" && !isMegaUnlocked) return false;
+      if (tier === "extra" && !isExtraUnlocked) return false;
     }
 
     if (!canCraftMore) {
@@ -167,7 +173,7 @@ export const ItemDetail: React.FC<ItemOverlayProps> = ({
     }
 
     return sflBalance.greaterThanOrEqualTo(
-      SFLDiscount(state, new Decimal(sfl)),
+      SFLDiscount(state, new Decimal(sfl), now),
     );
   };
 
@@ -206,7 +212,7 @@ export const ItemDetail: React.FC<ItemOverlayProps> = ({
     if (!item) return;
 
     gameService.send("minigameItem.bought", {
-      id: "holiday-puzzle-2025",
+      id: "halloween-2026-game-2",
       name: itemName,
     });
 
@@ -350,7 +356,7 @@ export const ItemDetail: React.FC<ItemOverlayProps> = ({
                       {t("season.megastore.crafting.limit.max", {
                         limit: itemsCrafted,
                         max:
-                          MINIGAME_SHOP_ITEMS["holiday-puzzle-2025"]?.[
+                          MINIGAME_SHOP_ITEMS["halloween-2026-game-2"]?.[
                             itemName as EventTierItemName
                           ]?.max ?? 1,
                       })}
@@ -406,6 +412,7 @@ export const ItemDetail: React.FC<ItemOverlayProps> = ({
                             requirement={SFLDiscount(
                               state,
                               new Decimal(item.cost.sfl),
+                              now,
                             )}
                           />
                         </div>

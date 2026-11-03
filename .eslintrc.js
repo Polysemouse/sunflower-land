@@ -1,5 +1,5 @@
 /* eslint-env node */
-/* eslint-disable @typescript-eslint/no-var-requires */
+/* eslint-disable @typescript-eslint/no-require-imports */
 const reactHooks = require("eslint-plugin-react-hooks");
 
 const hasSetStateInEffectRule =
@@ -33,7 +33,8 @@ module.exports = {
     },
   },
   plugins: ["react", "@typescript-eslint", "unused-imports"],
-  ignorePatterns: ["*.typegen.ts"],
+  // requestToken/wasm is wasm-bindgen generated output — not hand-written code
+  ignorePatterns: ["*.typegen.ts", "src/lib/requestToken/wasm/"],
   rules: {
     "react/jsx-no-literals": "error",
     "no-console": "error",
@@ -58,6 +59,19 @@ module.exports = {
       },
     ],
     "@typescript-eslint/no-explicit-any": "warn",
+    "@typescript-eslint/no-unused-expressions": [
+      "error",
+      { allowShortCircuit: true, allowTernary: true },
+    ],
+    "@typescript-eslint/consistent-type-imports": [
+      "error",
+      {
+        prefer: "type-imports",
+        fixStyle: "inline-type-imports",
+        disallowTypeAnnotations: true,
+      },
+    ],
+    "@typescript-eslint/no-import-type-side-effects": "error",
     "prettier/prettier": [
       "error",
       {

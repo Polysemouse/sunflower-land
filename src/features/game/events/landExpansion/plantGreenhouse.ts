@@ -1,31 +1,35 @@
-import { BoostName, GameState } from "features/game/types/game";
+import type { BoostName, GameState } from "features/game/types/game";
+import type { GreenhouseCompostName } from "features/game/types/composters";
 
 import {
   GREENHOUSE_CROPS,
-  GreenHouseCropName,
-  GreenHouseCropSeedName,
+  type GreenHouseCropName,
+  type GreenHouseCropSeedName,
 } from "features/game/types/crops";
 import {
   GREENHOUSE_FRUIT,
-  GreenHouseFruitName,
-  GreenHouseFruitSeedName,
+  type GreenHouseFruitName,
+  type GreenHouseFruitSeedName,
 } from "features/game/types/fruits";
 import Decimal from "decimal.js-light";
 
-import { GREENHOUSE_CROP_TIME_SECONDS } from "./harvestGreenHouse";
+import { GREENHOUSE_CROP_TIME_SECONDS } from "features/game/lib/greenhouseGrowTimes";
 import {
   isTemporaryCollectibleActive,
   isCollectibleBuilt,
 } from "features/game/lib/collectibleBuilt";
 import { getCropTime } from "./plant";
 import { getFruitTime } from "./fruitPlanted";
-import { Resource } from "features/game/lib/getBudYieldBoosts";
+import { isWearableActive } from "features/game/lib/wearables";
+import { hasFeatureAccess } from "lib/flags";
+import type { Resource } from "features/game/lib/getBudYieldBoosts";
 import { produce } from "immer";
 import { updateBoostUsed } from "features/game/types/updateBoostUsed";
 import {
-  FarmActivityName,
+  type FarmActivityName,
   trackFarmActivity,
 } from "features/game/types/farmActivity";
+import { getSkillLevel, SKILL_RANKS } from "features/game/types/bumpkinSkills";
 
 export type PlantGreenhouseAction = {
   type: "greenhouse.planted";
@@ -37,7 +41,6 @@ type Options = {
   state: Readonly<GameState>;
   action: PlantGreenhouseAction;
   createdAt?: number;
-  farmId: number;
 };
 
 type GreenhouseSeed = GreenHouseCropSeedName | GreenHouseFruitSeedName;
@@ -81,11 +84,25 @@ type GetPlantedAtArgs = {
   crop: GreenHouseCropName | GreenHouseFruitName;
   game: GameState;
   createdAt: number;
-  prngArgs?: { farmId: number; counter: number };
+  greenhouseFertiliser?: GreenhouseCompostName;
 };
 
-function getPlantedAt({ crop, game, createdAt, prngArgs }: GetPlantedAtArgs): {
+function getPlantedAt({
+  crop,
+  game,
+  createdAt,
+  greenhouseFertiliser,
+}: GetPlantedAtArgs): {
   plantedAt: number;
+  baseDurationMs?: number;
+  /**
+   * Legacy model only: the back-date applied to `plantedAt` (ms). It is a
+   * DISCOUNT, not growth already done, so the pot's progress bar has to
+   * un-back-date with it — otherwise a heavily boosted plant opens its bar
+   * near-full. Mirrors `PlantedCrop.boostedTime` (see plant.ts/getBoostedTime).
+   * Omitted when nothing boosts the grow time.
+   */
+  boostedTime?: number;
   boostsUsed: { name: BoostName; value: string }[];
 } {
   if (!crop) return { plantedAt: 0, boostsUsed: [] };
@@ -95,37 +112,66 @@ function getPlantedAt({ crop, game, createdAt, prngArgs }: GetPlantedAtArgs): {
   const { seconds: boostedTime, boostsUsed } = getGreenhouseCropTime({
     crop,
     game,
-    prngArgs,
+    greenhouseFertiliser,
+    now: createdAt,
   });
 
-  const offset = cropTime - boostedTime;
+  if (hasFeatureAccess(game, "SPEED_BOOSTS")) {
+    // Speed-rate model: keep the real plant time and store the grow duration
+    // with only permanent boosts folded in (getGreenhouseCropTime excludes the
+    // temporary ones under the flag); the temporary boosts — totems, Harvest
+    // Hourglass, Tortoise Shrine, Greenhouse Glow — apply live as speed
+    // windows over the grow instead (see getGreenhouseReadyAt).
+    return {
+      plantedAt: createdAt,
+      baseDurationMs: boostedTime * 1000,
+      boostsUsed,
+    };
+  }
 
-  return { plantedAt: createdAt - offset * 1000, boostsUsed };
+  const offsetMs = (cropTime - boostedTime) * 1000;
+
+  return {
+    plantedAt: createdAt - offsetMs,
+    ...(offsetMs > 0 ? { boostedTime: offsetMs } : {}),
+    boostsUsed,
+  };
 }
 
 export const getGreenhouseCropTime = ({
   crop,
   game,
-  prngArgs,
+  greenhouseFertiliser,
+  now,
 }: {
   crop: GreenHouseCropName | GreenHouseFruitName;
   game: GameState;
-  prngArgs?: { farmId: number; counter: number };
+  greenhouseFertiliser?: GreenhouseCompostName;
+  now: number;
 }): { seconds: number; boostsUsed: { name: BoostName; value: string }[] } => {
   let seconds = GREENHOUSE_CROP_TIME_SECONDS[crop];
   const boostsUsed: { name: BoostName; value: string }[] = [];
+
+  // Under SPEED_BOOSTS the temporary boosts — totems + Harvest Hourglass
+  // (excluded inside getCropTime/getFruitTime), Tortoise Shrine and Greenhouse
+  // Glow (gated below) — are windowed speed boosts derived live over the grow
+  // (see getGreenhouseBoostWindows / getGreenhouseGlowWindows), so they're
+  // excluded from the baked time AND from boostsUsed here; only permanent
+  // boosts stay baked. Flag off keeps the legacy discount-at-start.
+  const windowed = hasFeatureAccess(game, "SPEED_BOOSTS");
+
   if (isGreenhouseCrop(crop)) {
     const { multiplier: baseMultiplier, boostsUsed: cropBoostsUsed } =
       getCropTime({
         game,
         crop,
-        prngArgs,
+        now,
       });
     seconds *= baseMultiplier;
     boostsUsed.push(...cropBoostsUsed);
   } else {
     const { multiplier: baseMultiplier, boostsUsed: fruitBoostsUsed } =
-      getFruitTime({ game });
+      getFruitTime({ game, now });
     seconds *= baseMultiplier;
     boostsUsed.push(...fruitBoostsUsed);
   }
@@ -135,32 +181,55 @@ export const getGreenhouseCropTime = ({
     boostsUsed.push({ name: "Turbo Sprout", value: "x0.5" });
   }
 
-  if (isTemporaryCollectibleActive({ name: "Tortoise Shrine", game })) {
+  if (
+    !windowed &&
+    isTemporaryCollectibleActive({ name: "Tortoise Shrine", game, now })
+  ) {
     seconds *= 2 / 3; // -33% growth time
     boostsUsed.push({ name: "Tortoise Shrine", value: "x0.67" });
   }
 
-  if (game.bumpkin.skills["Rice and Shine"]) {
-    seconds *= 0.95;
-    boostsUsed.push({ name: "Rice and Shine", value: "x0.95" });
+  const { skills } = game.bumpkin;
+
+  const riceAndShineLevel = getSkillLevel(skills, "Rice and Shine");
+  if (riceAndShineLevel) {
+    const m = SKILL_RANKS["Rice and Shine"].ranks[riceAndShineLevel - 1];
+    seconds *= m;
+    boostsUsed.push({ name: "Rice and Shine", value: `x${m}` });
   }
 
-  // Olive Express: 10% reduction
-  if (crop === "Olive" && game.bumpkin.skills["Olive Express"]) {
-    seconds *= 0.9;
-    boostsUsed.push({ name: "Olive Express", value: "x0.9" });
+  // Olive Express: Olive growth-time reduction
+  const oliveExpressLevel = getSkillLevel(skills, "Olive Express");
+  if (crop === "Olive" && oliveExpressLevel) {
+    const m = SKILL_RANKS["Olive Express"].ranks[oliveExpressLevel - 1];
+    seconds *= m;
+    boostsUsed.push({ name: "Olive Express", value: `x${m}` });
   }
 
-  // Rice Rocket: 10% reduction
-  if (crop === "Rice" && game.bumpkin.skills["Rice Rocket"]) {
-    seconds *= 0.9;
-    boostsUsed.push({ name: "Rice Rocket", value: "x0.9" });
+  // Rice Rocket: Rice growth-time reduction
+  const riceRocketLevel = getSkillLevel(skills, "Rice Rocket");
+  if (crop === "Rice" && riceRocketLevel) {
+    const m = SKILL_RANKS["Rice Rocket"].ranks[riceRocketLevel - 1];
+    seconds *= m;
+    boostsUsed.push({ name: "Rice Rocket", value: `x${m}` });
   }
 
-  // Vine Velocity: 10% reduction
-  if (crop === "Grape" && game.bumpkin.skills["Vine Velocity"]) {
-    seconds *= 0.9;
-    boostsUsed.push({ name: "Vine Velocity", value: "x0.9" });
+  // Vine Velocity: Grape growth-time reduction
+  const vineVelocityLevel = getSkillLevel(skills, "Vine Velocity");
+  if (crop === "Grape" && vineVelocityLevel) {
+    const m = SKILL_RANKS["Vine Velocity"].ranks[vineVelocityLevel - 1];
+    seconds *= m;
+    boostsUsed.push({ name: "Vine Velocity", value: `x${m}` });
+  }
+
+  if (crop === "Grape" && isWearableActive({ name: "Antique Dress", game })) {
+    seconds *= 0.7;
+    boostsUsed.push({ name: "Antique Dress", value: "x0.7" });
+  }
+
+  if (!windowed && greenhouseFertiliser === "Greenhouse Glow") {
+    seconds *= 0.8;
+    boostsUsed.push({ name: "Greenhouse Glow", value: "x0.8" });
   }
 
   return { seconds, boostsUsed };
@@ -175,15 +244,25 @@ export function getOilUsage({
 }): { usage: number; boostsUsed: { name: BoostName; value: string }[] } {
   let usage = OIL_USAGE[seed];
   const boostsUsed: { name: BoostName; value: string }[] = [];
+  const { skills } = game.bumpkin;
 
-  if (game.bumpkin.skills["Greasy Plants"]) {
-    usage *= 2;
-    boostsUsed.push({ name: "Greasy Plants", value: "x2" });
+  const greasyPlantsLevel = getSkillLevel(skills, "Greasy Plants");
+  if (greasyPlantsLevel) {
+    const m = SKILL_RANKS["Greasy Plants"].oilMultiplier[greasyPlantsLevel - 1];
+    usage *= m;
+    boostsUsed.push({ name: "Greasy Plants", value: `x${m}` });
   }
 
-  if (game.bumpkin.skills["Slick Saver"]) {
-    usage -= 1;
-    boostsUsed.push({ name: "Slick Saver", value: "-1" });
+  const slickSaverLevel = getSkillLevel(skills, "Slick Saver");
+  if (slickSaverLevel) {
+    const v = SKILL_RANKS["Slick Saver"].ranks[slickSaverLevel - 1];
+    usage -= v;
+    boostsUsed.push({ name: "Slick Saver", value: `-${v}` });
+  }
+
+  if (seed === "Rice Seed" && isWearableActive({ name: "Rice Shirt", game })) {
+    usage *= 0.5;
+    boostsUsed.push({ name: "Rice Shirt", value: "x0.5" });
   }
 
   return { usage, boostsUsed };
@@ -208,7 +287,6 @@ export function plantGreenhouse({
   state,
   action,
   createdAt = Date.now(),
-  farmId,
 }: Options): GameState {
   return produce(state, (game) => {
     // Requires Greenhouse exists
@@ -254,18 +332,21 @@ export function plantGreenhouse({
     }
 
     const plantName = SEED_TO_PLANT[action.seed];
-    const counter = game.farmActivity[`${plantName} Planted`] ?? 0;
-    const { plantedAt, boostsUsed } = getPlantedAt({
-      createdAt,
-      crop: plantName,
-      game,
-      prngArgs: { farmId, counter },
-    });
-    // Plants
+    const { plantedAt, baseDurationMs, boostedTime, boostsUsed } = getPlantedAt(
+      {
+        createdAt,
+        crop: plantName,
+        game,
+        greenhouseFertiliser: pot.fertiliser?.name,
+      },
+    );
     game.greenhouse.pots[potId] = {
+      ...pot,
       plant: {
         name: plantName,
         plantedAt,
+        ...(baseDurationMs !== undefined ? { baseDurationMs } : {}),
+        ...(boostedTime !== undefined ? { boostedTime } : {}),
       },
     };
 

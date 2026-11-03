@@ -1,7 +1,7 @@
 import Decimal from "decimal.js-light";
 import { produce } from "immer";
-import { GameState, InventoryItemName } from "../../types/game";
-import { CHAPTER_TRACKS, TrackName } from "features/game/types/tracks";
+import type { GameState, InventoryItemName } from "../../types/game";
+import { CHAPTER_TRACKS, type TrackName } from "features/game/types/tracks";
 import {
   getChapterTicket,
   getCurrentChapter,
@@ -9,8 +9,8 @@ import {
 } from "features/game/types/chapters";
 import { trackFarmActivity } from "features/game/types/farmActivity";
 import { hasVipAccess } from "features/game/lib/vipAccess";
-import { BumpkinItem } from "features/game/types/bumpkin";
-import { getObjectEntries } from "features/game/expansion/lib/utils";
+import type { BumpkinItem } from "features/game/types/bumpkin";
+import { getObjectEntries } from "lib/object";
 import { gameAnalytics } from "lib/gameAnalytics";
 
 export type ClaimTrackMilestoneAction = {

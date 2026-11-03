@@ -3,10 +3,11 @@ import { useLocation, useNavigate } from "react-router";
 
 export type TraitCollection = "buds" | "pets";
 
-export type BudTrait = "type" | "aura" | "stem" | "colour";
+export type BudTrait = "type" | "aura" | "stem" | "colour" | "boost";
 export type PetTrait =
   | "type"
   | "category"
+  | "resource"
   | "aura"
   | "bib"
   | "fur"
@@ -23,8 +24,17 @@ export interface TraitFilter {
 
 // Defines which trait keys are valid for each collection.
 const COLLECTION_TRAIT_KEYS: Record<TraitCollection, TraitKey[]> = {
-  buds: ["type", "aura", "stem", "colour"],
-  pets: ["type", "category", "aura", "bib", "fur", "accessory", "level"],
+  buds: ["type", "aura", "stem", "colour", "boost"],
+  pets: [
+    "type",
+    "category",
+    "resource",
+    "aura",
+    "bib",
+    "fur",
+    "accessory",
+    "level",
+  ],
 };
 
 const TRAIT_QUERY_KEYS = new Set<TraitKey>(

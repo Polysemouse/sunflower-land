@@ -1,9 +1,9 @@
-import { BoostName, GameState } from "../../types/game";
+import type { BoostName, GameState } from "../../types/game";
 import {
   CHUM_AMOUNTS,
-  Chum,
-  FishName,
-  FishingBait,
+  type Chum,
+  type FishName,
+  type FishingBait,
   getDailyFishingLimit,
   getSeasonalGuaranteedCatch,
   isGuaranteedBait,
@@ -15,6 +15,8 @@ import { trackFarmActivity } from "features/game/types/farmActivity";
 import { produce } from "immer";
 import { updateBoostUsed } from "features/game/types/updateBoostUsed";
 import { hasVipAccess } from "features/game/lib/vipAccess";
+import { prngChance } from "lib/prng";
+import { KNOWN_IDS } from "features/game/types";
 
 export type CastRodAction = {
   type: "rod.casted";
@@ -33,7 +35,10 @@ type Options = {
   state: Readonly<GameState>;
   action: CastRodAction;
   createdAt?: number;
+  farmId?: number;
 };
+
+export const HARPOON_FREE_ATTEMPT_CHANCE = 20;
 
 const ALLOWED_MULTIPLIERS = new Set([1, 5, 10, 25]);
 export const EXTRA_REELS_AMOUNT = 5;
@@ -55,6 +60,41 @@ export const getRemainingReels = (state: GameState, now = new Date()) => {
   return reelsLeft;
 };
 
+export function getRodCost({
+  game,
+  multiplier,
+}: {
+  game: GameState;
+  multiplier: number;
+}): { rodCost: number; boostsUsed: { name: BoostName; value: string }[] } {
+  let rodCost = multiplier;
+  const boostsUsed: { name: BoostName; value: string }[] = [];
+
+  if (isWearableActive({ name: "Ancient Rod", game })) {
+    boostsUsed.push({ name: "Ancient Rod", value: "Free" });
+    rodCost = 0;
+  }
+
+  return { rodCost, boostsUsed };
+}
+
+export const REEL_PACK_BASE_PRICE = 5;
+// Packs at the start of each day that ramp linearly before the price doubles
+export const REEL_PACK_LINEAR_COUNT = 4;
+
+/**
+ * Gem price of a single reel pack based on how many were already bought today.
+ * The first 4 packs ramp linearly (5, 10, 15, 20), then the price doubles for
+ * every pack after (40, 80, 160, ...).
+ */
+export function getReelPackPrice(timesBought: number): number {
+  if (timesBought < REEL_PACK_LINEAR_COUNT) {
+    return REEL_PACK_BASE_PRICE * (timesBought + 1);
+  }
+
+  return REEL_PACK_BASE_PRICE * 2 ** (timesBought - 1);
+}
+
 export function getReelsPackGemPrice({
   state,
   packs,
@@ -69,15 +109,12 @@ export function getReelsPackGemPrice({
   const { extraReels = { count: 0 } } = state.fishing;
   const { timesBought = {} } = extraReels;
 
-  const basePrice = 10;
-  const gemMultiplier = 2;
-
   const timesBoughtToday = timesBought[today] ?? 0;
 
   // Sum the cost of each pack at the incremented price scale
   let totalPrice = 0;
   for (let i = 0; i < packs; i++) {
-    totalPrice += basePrice * gemMultiplier ** (timesBoughtToday + i);
+    totalPrice += getReelPackPrice(timesBoughtToday + i);
   }
 
   return totalPrice;
@@ -87,6 +124,7 @@ export function castRod({
   state,
   action,
   createdAt = Date.now(),
+  farmId,
 }: Options): GameState {
   return produce(state, (game) => {
     const now = new Date(createdAt);
@@ -122,6 +160,7 @@ export function castRod({
       const gemPrice = getReelsPackGemPrice({
         state,
         packs: action.reelPacksToBuy,
+        createdAt,
       });
       const gemsInventory = game.inventory.Gem ?? new Decimal(0);
 
@@ -153,12 +192,15 @@ export function castRod({
       throw new Error(`Daily attempts exhausted`);
     }
 
+    const { rodCost, boostsUsed: rodBoostsUsed } = getRodCost({
+      game,
+      multiplier,
+    });
+    boostsUsed.push(...rodBoostsUsed);
+
     const rodCount = game.inventory.Rod ?? new Decimal(0);
     // Requires Rod
-    if (
-      rodCount.lt(multiplier) &&
-      !isWearableActive({ name: "Ancient Rod", game })
-    ) {
+    if (rodCount.lt(rodCost)) {
       throw new Error(translate("error.missingRod"));
     }
 
@@ -212,14 +254,8 @@ export function castRod({
     }
 
     // Subtracts Rod
-    if (!isWearableActive({ name: "Ancient Rod", game })) {
-      game.inventory.Rod = rodCount.sub(multiplier);
-    } else {
-      game.boostsUsedAt = updateBoostUsed({
-        game,
-        boostNames: [{ name: "Ancient Rod", value: "Free" }],
-        createdAt,
-      });
+    if (rodCost > 0) {
+      game.inventory.Rod = rodCount.sub(rodCost);
     }
 
     // Subtracts Bait
@@ -237,9 +273,34 @@ export function castRod({
       },
     };
 
+    // Harpoon: each reel has a 20% chance not to use a daily attempt. Mirrors
+    // the server roll (same seed), skipped without a farmId.
+    let freeAttempts = 0;
+    if (farmId !== undefined && isWearableActive({ game, name: "Harpoon" })) {
+      const previousCasts = game.farmActivity["Rod Casted"] ?? 0;
+      for (let i = 0; i < multiplier; i++) {
+        if (
+          prngChance({
+            farmId,
+            itemId: KNOWN_IDS["Rod"],
+            counter: previousCasts + i + 1,
+            chance: HARPOON_FREE_ATTEMPT_CHANCE,
+            criticalHitName: "Harpoon",
+          })
+        ) {
+          freeAttempts += 1;
+        }
+      }
+    }
+
+    if (freeAttempts > 0) {
+      boostsUsed.push({ name: "Harpoon", value: `+${freeAttempts} Attempt` });
+    }
+
     // Track daily attempts
+    const attemptsUsed = multiplier - freeAttempts;
     const attemptsBefore = todayAttempts;
-    const attemptsAfter = todayAttempts + multiplier;
+    const attemptsAfter = todayAttempts + attemptsUsed;
     const overBefore = Math.max(0, attemptsBefore - fishingLimit);
     const overAfter = Math.max(0, attemptsAfter - fishingLimit);
     const extraReelsUsed = Math.max(0, overAfter - overBefore);
@@ -249,10 +310,10 @@ export function castRod({
     }
 
     if (game.fishing.dailyAttempts && game.fishing.dailyAttempts[today]) {
-      game.fishing.dailyAttempts[today] += multiplier;
+      game.fishing.dailyAttempts[today] += attemptsUsed;
     } else {
       game.fishing.dailyAttempts = {
-        [today]: multiplier,
+        [today]: attemptsUsed,
       };
     }
 

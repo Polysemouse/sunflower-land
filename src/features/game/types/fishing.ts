@@ -1,5 +1,5 @@
-import { Worm } from "./composters";
-import {
+import type { Worm } from "./composters";
+import type {
   BoostName,
   GameState,
   InventoryItemName,
@@ -7,13 +7,14 @@ import {
 } from "./game";
 import { isWearableActive } from "../lib/wearables";
 import { translate } from "lib/i18n/translate";
-import { PurchaseOptions } from "./buyOptionPurchaseItem";
+import type { PurchaseOptions } from "./buyOptionPurchaseItem";
 import { Decimal } from "decimal.js-light";
 import { isCollectibleBuilt } from "../lib/collectibleBuilt";
 import type { ChapterName } from "./chapters";
 import { getCurrentChapter } from "./chapters";
 import { hasVipAccess } from "../lib/vipAccess";
-import { CrustaceanChum } from "./crustaceans";
+import type { CrustaceanChum } from "./crustaceans";
+import { getSkillLevel, SKILL_RANKS } from "./bumpkinSkills";
 
 export type PurchaseableBait = "Fishing Lure";
 export type GuaranteedBait =
@@ -21,7 +22,15 @@ export type GuaranteedBait =
   | "Fish Stick"
   | "Fish Oil"
   | "Crab Stick";
-export type FishingBait = Worm | PurchaseableBait | GuaranteedBait;
+export type FermentationBait =
+  | "Capsule Bait"
+  | "Umbrella Bait"
+  | "Crimson Baitfish";
+export type FishingBait =
+  | Worm
+  | PurchaseableBait
+  | GuaranteedBait
+  | FermentationBait;
 export type FishType =
   | "basic"
   | "advanced"
@@ -69,6 +78,9 @@ export type FishName =
   | "Cobia"
   | "Tilapia";
 
+export type AgedFishName = `Aged ${FishName}`;
+export type PrimeAgedFishName = `Prime Aged ${FishName}`;
+
 export type MarineMarvelName =
   | "Twilight Anglerfish"
   | "Starlight Tuna"
@@ -85,7 +97,16 @@ export type MarineMarvelName =
   | "Super Star"
   | "Giant Isopod"
   | "Nautilus"
-  | "Dollocaris";
+  | "Dollocaris"
+  | "Deep Sea Pig"
+  | "Deep Sea Slug"
+  | "Crystal Shrimp"
+  | "Crocodile"
+  | "Dumbo Octopus"
+  | "Seahorse Dad"
+  | "Manatee"
+  | "Betta"
+  | "Macropinna";
 
 export type OldFishName = "Kraken Tentacle";
 
@@ -290,6 +311,15 @@ export type ChapterFish = Extract<
   | "Giant Isopod"
   | "Nautilus"
   | "Dollocaris"
+  | "Deep Sea Pig"
+  | "Deep Sea Slug"
+  | "Crystal Shrimp"
+  | "Crocodile"
+  | "Dumbo Octopus"
+  | "Seahorse Dad"
+  | "Manatee"
+  | "Betta"
+  | "Macropinna"
 >;
 
 export const CHAPTER_FISH: Record<ChapterFish, Fish> = {
@@ -342,19 +372,73 @@ export const CHAPTER_FISH: Record<ChapterFish, Fish> = {
     seasons: [],
   },
   "Giant Isopod": {
-    baits: ["Grub", "Red Wiggler", "Fishing Lure"],
+    baits: [],
     type: "chapter",
     likes: [],
     seasons: [],
   },
   Nautilus: {
-    baits: ["Grub", "Red Wiggler", "Fishing Lure"],
+    baits: [],
     type: "chapter",
     likes: [],
     seasons: [],
   },
   Dollocaris: {
-    baits: ["Grub", "Red Wiggler", "Fishing Lure"],
+    baits: [],
+    type: "chapter",
+    likes: [],
+    seasons: [],
+  },
+  "Deep Sea Pig": {
+    baits: [],
+    type: "chapter",
+    likes: [],
+    seasons: [],
+  },
+  "Deep Sea Slug": {
+    baits: [],
+    type: "chapter",
+    likes: [],
+    seasons: [],
+  },
+  "Crystal Shrimp": {
+    baits: [],
+    type: "chapter",
+    likes: [],
+    seasons: [],
+  },
+  Crocodile: {
+    baits: [],
+    type: "chapter",
+    likes: [],
+    seasons: [],
+  },
+  "Dumbo Octopus": {
+    baits: [],
+    type: "chapter",
+    likes: [],
+    seasons: [],
+  },
+  "Seahorse Dad": {
+    baits: [],
+    type: "chapter",
+    likes: [],
+    seasons: [],
+  },
+  Manatee: {
+    baits: [],
+    type: "chapter",
+    likes: [],
+    seasons: [],
+  },
+  Betta: {
+    baits: [],
+    type: "chapter",
+    likes: [],
+    seasons: [],
+  },
+  Macropinna: {
+    baits: [],
     type: "chapter",
     likes: [],
     seasons: [],
@@ -633,6 +717,45 @@ export const FISH: Record<FishName | MarineMarvelName, Fish> = {
   ...CHAPTER_FISH,
 };
 
+export function getFishNamesByTier(
+  tier: Extract<FishType, "basic" | "advanced" | "expert">,
+): FishName[] {
+  return (Object.keys(FISH) as (FishName | MarineMarvelName)[]).filter(
+    (name) => FISH[name].type === tier,
+  ) as FishName[];
+}
+
+/** Fermentation baits count as the matching worm for fish `baits` lists. */
+export function baitMatchesFishRequirement(
+  selected: FishingBait,
+  allowed: FishingBait,
+): boolean {
+  if (selected === allowed) return true;
+  if (allowed === "Earthworm" && selected === "Capsule Bait") return true;
+  if (allowed === "Grub" && selected === "Umbrella Bait") return true;
+  if (allowed === "Red Wiggler" && selected === "Crimson Baitfish") return true;
+  return false;
+}
+
+/** Map fermentation bait to worm for attraction / chum logic keyed by worm. */
+export function normalizeBaitForWormMechanics(bait: FishingBait): FishingBait {
+  if (bait === "Capsule Bait") return "Earthworm";
+  if (bait === "Umbrella Bait") return "Grub";
+  if (bait === "Crimson Baitfish") return "Red Wiggler";
+  return bait;
+}
+
+/** Fermentation baits to list in the fishing guide when a fish accepts the matching worm. */
+export function getFermentationBaitsForFishBaits(
+  fishBaits: readonly FishingBait[],
+): FishingBait[] {
+  const extra: FishingBait[] = [];
+  if (fishBaits.includes("Earthworm")) extra.push("Capsule Bait");
+  if (fishBaits.includes("Grub")) extra.push("Umbrella Bait");
+  if (fishBaits.includes("Red Wiggler")) extra.push("Crimson Baitfish");
+  return extra;
+}
+
 /**
  * Difficulty 1-5 how hard the challenge will be
  */
@@ -676,6 +799,16 @@ export const MAP_PUZZLE_DIFFICULTY: Record<MarineMarvelName, number> = {
   "Giant Isopod": 2,
   Nautilus: 4,
   Dollocaris: 5,
+  "Deep Sea Pig": 3,
+  "Deep Sea Slug": 4,
+  "Crystal Shrimp": 3,
+  Crocodile: 3,
+  "Dumbo Octopus": 3,
+  "Seahorse Dad": 4,
+  // TODO(Cave Dwellers): set with the keepsake / boost / tradable roles
+  Manatee: 4,
+  Betta: 3,
+  Macropinna: 3,
 };
 
 export function getDailyFishingCount(state: GameState): number {
@@ -711,22 +844,44 @@ export function getDailyFishingLimit(
     boostsUsed.push({ name: "Nautilus", value: "+5" });
   }
 
-  // +5 daily limit if player had Fisherman's 5 Fold skill
-  if (game.bumpkin?.skills["Fisherman's 5 Fold"]) {
+  // +5 daily limit if player has Deep Sea Slug
+  if (isCollectibleBuilt({ name: "Deep Sea Slug", game })) {
     limit += 5;
-    boostsUsed.push({ name: "Fisherman's 5 Fold", value: "+5" });
+    boostsUsed.push({ name: "Deep Sea Slug", value: "+5" });
   }
 
-  // +10 daily limit if player had Fisherman's 10 Fold skill
-  if (game.bumpkin?.skills["Fisherman's 10 Fold"]) {
-    limit += 10;
-    boostsUsed.push({ name: "Fisherman's 10 Fold", value: "+10" });
+  // +5 daily limit if player has Otty the Otter
+  if (isCollectibleBuilt({ name: "Otty the Otter", game })) {
+    limit += 5;
+    boostsUsed.push({ name: "Otty the Otter", value: "+5" });
   }
 
-  // +10 daily limit if player has the More With Less skill
-  if (game.bumpkin?.skills["More With Less"]) {
-    limit += 15;
-    boostsUsed.push({ name: "More With Less", value: "+15" });
+  const skills = game.bumpkin?.skills ?? {};
+
+  // +5/+7/+10 daily limit per rank if player has Fisherman's 5 Fold skill
+  const fishermansFiveFoldLevel = getSkillLevel(skills, "Fisherman's 5 Fold");
+  if (fishermansFiveFoldLevel) {
+    const bonus =
+      SKILL_RANKS["Fisherman's 5 Fold"].ranks[fishermansFiveFoldLevel - 1];
+    limit += bonus;
+    boostsUsed.push({ name: "Fisherman's 5 Fold", value: `+${bonus}` });
+  }
+
+  // +10/+18/+25 daily limit per rank if player has Fisherman's 10 Fold skill
+  const fishermansTenFoldLevel = getSkillLevel(skills, "Fisherman's 10 Fold");
+  if (fishermansTenFoldLevel) {
+    const bonus =
+      SKILL_RANKS["Fisherman's 10 Fold"].ranks[fishermansTenFoldLevel - 1];
+    limit += bonus;
+    boostsUsed.push({ name: "Fisherman's 10 Fold", value: `+${bonus}` });
+  }
+
+  // +10/+30/+50 daily limit per rank if player has the More With Less skill
+  const moreWithLessLevel = getSkillLevel(skills, "More With Less");
+  if (moreWithLessLevel) {
+    const bonus = SKILL_RANKS["More With Less"].ranks[moreWithLessLevel - 1];
+    limit += bonus;
+    boostsUsed.push({ name: "More With Less", value: `+${bonus}` });
   }
 
   // +5 daily limit if player has Saw Fish
@@ -814,6 +969,9 @@ export const BAIT: Record<FishingBait, true> = {
   "Fish Stick": true,
   "Fish Oil": true,
   "Crab Stick": true,
+  "Capsule Bait": true,
+  "Umbrella Bait": true,
+  "Crimson Baitfish": true,
 };
 
 export type MapPieceFishTrigger = {
@@ -821,9 +979,7 @@ export type MapPieceFishTrigger = {
   odds: number;
 };
 
-export const MAP_PIECE_FISH_TRIGGERS: Partial<
-  Record<FishName, MapPieceFishTrigger>
-> = {
+const BASE_MAP_PIECE_TRIGGERS = {
   Halibut: { marvel: "Starlight Tuna", odds: 0.025 },
   "Horse Mackerel": { marvel: "Starlight Tuna", odds: 0.36 },
   Clownfish: { marvel: "Twilight Anglerfish", odds: 0.025 },
@@ -834,15 +990,67 @@ export const MAP_PIECE_FISH_TRIGGERS: Partial<
   "Hammerhead shark": { marvel: "Radiant Ray", odds: 0.05 },
   "Mahi Mahi": { marvel: "Phantom Barracuda", odds: 0.0018 },
   Squid: { marvel: "Phantom Barracuda", odds: 0.05 },
-  "Red Snapper": { marvel: "Super Star", odds: 0.01 },
-  "Whale Shark": { marvel: "Super Star", odds: 0.1 },
-  Anchovy: { marvel: "Giant Isopod", odds: 0.008 },
-  Oarfish: { marvel: "Giant Isopod", odds: 0.03 },
-  "Sea Horse": { marvel: "Nautilus", odds: 0.01 },
-  Tuna: { marvel: "Nautilus", odds: 0.002 },
-  Sunfish: { marvel: "Dollocaris", odds: 0.005 },
-  "Football fish": { marvel: "Dollocaris", odds: 0.005 },
+} satisfies Partial<Record<FishName, MapPieceFishTrigger>>;
+
+type BaseMapPieceFishName = keyof typeof BASE_MAP_PIECE_TRIGGERS;
+
+type MapPieceTriggers = Partial<
+  Record<Exclude<FishName, BaseMapPieceFishName>, MapPieceFishTrigger>
+>;
+
+const CHAPTER_MAP_PIECE_TRIGGERS: Partial<
+  Record<ChapterName, MapPieceTriggers>
+> = {
+  "Paw Prints": {
+    "Red Snapper": { marvel: "Super Star", odds: 0.01 },
+    "Whale Shark": { marvel: "Super Star", odds: 0.1 },
+  },
+  "Crabs and Traps": {
+    Anchovy: { marvel: "Giant Isopod", odds: 0.008 },
+    Oarfish: { marvel: "Giant Isopod", odds: 0.03 },
+    "Sea Horse": { marvel: "Nautilus", odds: 0.01 },
+    Tuna: { marvel: "Nautilus", odds: 0.002 },
+    Sunfish: { marvel: "Dollocaris", odds: 0.005 },
+    "Football fish": { marvel: "Dollocaris", odds: 0.005 },
+  },
+  "Salt Awakening": {
+    Tuna: { marvel: "Crystal Shrimp", odds: 0.008 },
+    "Sea Bass": { marvel: "Crystal Shrimp", odds: 0.03 },
+    Surgeonfish: { marvel: "Deep Sea Slug", odds: 0.001 },
+    "Barred Knifejaw": { marvel: "Deep Sea Slug", odds: 0.01 },
+    Sunfish: { marvel: "Deep Sea Pig", odds: 0.005 },
+    Coelacanth: { marvel: "Deep Sea Pig", odds: 0.005 },
+  },
+  "Ascension Age": {
+    "Red Snapper": { marvel: "Crocodile", odds: 0.005 },
+    "Moray Eel": { marvel: "Crocodile", odds: 0.015 },
+    "Olive Flounder": { marvel: "Dumbo Octopus", odds: 0.005 },
+    Napoleanfish: { marvel: "Dumbo Octopus", odds: 0.005 },
+    Angelfish: { marvel: "Seahorse Dad", odds: 0.001 },
+    Porgy: { marvel: "Seahorse Dad", odds: 0.01 },
+  },
+  "Cave Dwellers": {
+    "Moray Eel": { marvel: "Macropinna", odds: 0.015 },
+    Coelacanth: { marvel: "Macropinna", odds: 0.01 },
+    "Zebra Turkeyfish": { marvel: "Betta", odds: 0.01 },
+    Muskellunge: { marvel: "Betta", odds: 0.02 },
+    Blowfish: { marvel: "Betta", odds: 0.01 },
+    "Whale Shark": { marvel: "Manatee", odds: 0.01 },
+    "Sea Bass": { marvel: "Manatee", odds: 0.002 },
+  },
 };
+
+export function getMapPieceFishTriggers(
+  now: number,
+): Partial<Record<FishName, MapPieceFishTrigger>> {
+  const currentChapter = getCurrentChapter(now);
+  const triggers: Partial<Record<FishName, MapPieceFishTrigger>> = {
+    ...BASE_MAP_PIECE_TRIGGERS,
+    ...CHAPTER_MAP_PIECE_TRIGGERS[currentChapter],
+  };
+
+  return triggers;
+}
 
 export const MAP_PIECE_CHAPTERS: Partial<
   Record<MarineMarvelName, ChapterName>
@@ -851,8 +1059,24 @@ export const MAP_PIECE_CHAPTERS: Partial<
   "Giant Isopod": "Crabs and Traps",
   Nautilus: "Crabs and Traps",
   Dollocaris: "Crabs and Traps",
+  "Deep Sea Pig": "Salt Awakening",
+  "Deep Sea Slug": "Salt Awakening",
+  "Crystal Shrimp": "Salt Awakening",
+  Crocodile: "Ascension Age",
+  "Dumbo Octopus": "Ascension Age",
+  "Seahorse Dad": "Ascension Age",
+  Manatee: "Cave Dwellers",
+  Betta: "Cave Dwellers",
+  Macropinna: "Cave Dwellers",
 };
 
 export const MAP_PIECE_MARVELS: MarineMarvelName[] = [
-  ...new Set(Object.values(MAP_PIECE_FISH_TRIGGERS).map((t) => t.marvel)),
+  ...new Set(
+    [
+      ...Object.values(BASE_MAP_PIECE_TRIGGERS),
+      ...Object.values(CHAPTER_MAP_PIECE_TRIGGERS).flatMap((t) =>
+        Object.values(t ?? {}),
+      ),
+    ].map((t) => t.marvel),
+  ),
 ];

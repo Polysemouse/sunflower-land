@@ -1,5 +1,6 @@
 import { CONFIG } from "lib/config";
-import { VisitGameState } from "./loadGameStateForVisit";
+import { fetchWithRetry } from "lib/fetchWithRetry";
+import type { VisitGameState } from "./loadGameStateForVisit";
 
 const API_URL = CONFIG.API_URL;
 
@@ -11,6 +12,7 @@ export async function loadGameStateForAdmin({
   discordId,
   nftId,
   wallet,
+  depositAddress,
 }: {
   adminId: number;
   token: string;
@@ -19,6 +21,7 @@ export async function loadGameStateForAdmin({
   discordId?: string;
   nftId?: number;
   wallet?: string;
+  depositAddress?: string;
 }): Promise<{
   visitedFarmState: VisitGameState;
   id: number;
@@ -46,7 +49,11 @@ export async function loadGameStateForAdmin({
     url.searchParams.set("wallet", wallet);
   }
 
-  const response = await window.fetch(url, {
+  if (depositAddress) {
+    url.searchParams.set("depositAddress", depositAddress);
+  }
+
+  const response = await fetchWithRetry(url, {
     method: "GET",
     headers: {
       "content-type": "application/json;charset=UTF-8",

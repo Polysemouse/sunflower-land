@@ -1,10 +1,12 @@
-import { NPCName } from "lib/npcs";
+import type { NPCName } from "lib/npcs";
 import React, { useContext, useEffect, useRef, useState } from "react";
+import { useNavigate } from "react-router";
+import { gameAnalytics } from "lib/gameAnalytics";
 import { Label } from "components/ui/Label";
 import { SUNNYSIDE } from "assets/sunnyside";
 import { Context } from "features/game/GameProvider";
-import { useActor, useSelector } from "@xstate/react";
-import { Airdrop, GameState, Order } from "features/game/types/game";
+import { useActor } from "@xstate/react";
+import type { Airdrop, GameState, Order } from "features/game/types/game";
 import { Button } from "components/ui/Button";
 
 import coinsImg from "assets/icons/coins.webp";
@@ -17,11 +19,14 @@ import { InlineDialogue } from "../TypingMessage";
 import Decimal from "decimal.js-light";
 import { InnerPanel } from "components/ui/Panel";
 import classNames from "classnames";
-import { getKeys } from "features/game/types/craftables";
+import { getKeys } from "lib/object";
 import { RequirementLabel } from "components/ui/RequirementsLabel";
-import { ITEM_DETAILS } from "features/game/types/images";
+import {
+  ITEM_DETAILS,
+  getTranslatedItemName,
+} from "features/game/types/images";
 import { ResizableBar } from "components/ui/ProgressBar";
-import { FLOWERS, FlowerName } from "features/game/types/flowers";
+import { FLOWERS, type FlowerName } from "features/game/types/flowers";
 import { Box } from "components/ui/Box";
 import {
   getBumpkinRecipes,
@@ -32,16 +37,25 @@ import { defaultDialogue, npcDialogues } from "./dialogues";
 import { useRandomItem } from "lib/utils/hooks/useRandomItem";
 import {
   NPC_DELIVERY_LEVELS,
-  DeliveryNpcName,
+  type DeliveryNpcName,
+  isCoinNPC,
+  isSFLNPC,
+  isTicketNPC,
 } from "features/island/delivery/lib/delivery";
-import { getChapterTicket } from "features/game/types/chapters";
+import {
+  getChapterTicket,
+  getCurrentChapter,
+} from "features/game/types/chapters";
 import { useAppTranslation } from "lib/i18n/useAppTranslations";
 import { useNow } from "lib/utils/hooks/useNow";
+import { getDayOfYear, secondsTillReset } from "lib/utils/time";
+import { Loading } from "features/auth/components";
 import {
   BUMPKIN_FLOWER_BONUSES,
   DEFAULT_FLOWER_POINTS,
 } from "features/game/types/gifts";
 import {
+  areBumpkinsOnHoliday,
   generateDeliveryTickets,
   getOrderSellPrice,
   GOBLINS_REQUIRING_REPUTATION,
@@ -49,19 +63,25 @@ import {
 import { getBumpkinHoliday } from "lib/utils/getSeasonWeek";
 import { SquareIcon } from "components/ui/SquareIcon";
 import { formatNumber } from "lib/utils/formatNumber";
-import { getBumpkinLevel } from "features/game/lib/level";
-import { TranslationKeys } from "lib/i18n/dictionaries/types";
+import { BoostsDisplay } from "components/ui/layouts/BoostsDisplay";
+import {
+  getAscensionLevel,
+  levelRequirementToTotal,
+  meetsLevelRequirement,
+} from "features/game/lib/level";
+import type { TranslationKeys } from "lib/i18n/dictionaries/types";
 import { calculateRelationshipPoints } from "features/game/events/landExpansion/giftFlowers";
 import { FriendshipInfoPanel } from "components/ui/FriendshipInfoPanel";
 import { getActiveCalendarEvent } from "features/game/types/calendar";
 import { RequiredReputation } from "features/island/hud/components/reputation/Reputation";
 import { hasReputation, Reputation } from "features/game/lib/reputation";
-import { MachineState } from "features/game/lib/gameMachine";
 import { getCountAndType } from "features/island/hud/components/inventory/utils/inventory";
 import { getChapterTaskPoints } from "features/game/types/tracks";
-import chapterPoints from "assets/icons/red_medal_short.webp";
+import chapterPointsIcon from "assets/icons/red_medal_short.webp";
+import { hasTimeBasedFeatureAccess } from "lib/flags";
+import { SoftBan } from "features/retreat/components/personhood/SoftBan";
 
-export const OrderCard: React.FC<{
+const OrderCard: React.FC<{
   order: Order;
   game: GameState;
   onDeliver: () => void;
@@ -86,8 +106,72 @@ export const OrderCard: React.FC<{
 
   const canDeliver = hasRequirementsCheck(order);
   const { t } = useAppTranslation();
+  const { holiday } = getBumpkinHoliday({ now });
+  const isHoliday = holiday === new Date(now).toISOString().split("T")[0];
+  const [showTicketBoosts, setShowTicketBoosts] = useState(false);
+  const ticketBoostsAnchorRef = useRef<HTMLDivElement>(null);
 
-  const tickets = generateDeliveryTickets({ game, npc: order.from, now });
+  const { amount: baseTickets, boostsUsed: ticketBoostsUsed } =
+    generateDeliveryTickets({
+      game,
+      npc: order.from,
+      now,
+    });
+  const tickets = isHoliday && !isTicketNPC(order.from) ? 0 : baseTickets;
+  // Hide ticket count on frozen quest orders (holiday) to avoid mixed messaging
+  const ticketDisplay =
+    isHoliday && isTicketNPC(order.from) && baseTickets > 0 ? 0 : tickets;
+  const isFrozenQuestOrder =
+    isHoliday && isTicketNPC(order.from) && baseTickets > 0;
+  const hasRewardAmount =
+    order.reward.coins !== undefined || order.reward.sfl !== undefined;
+
+  const getChapterPoints = () => {
+    if (
+      isCoinNPC(order.from) &&
+      hasTimeBasedFeatureAccess({
+        featureName: "TICKETS_FROM_COIN_NPC",
+        now: order.createdAt,
+        game,
+      })
+    ) {
+      if (areBumpkinsOnHoliday(order.createdAt)) {
+        return 0;
+      }
+      if (getCurrentChapter(order.createdAt) !== getCurrentChapter(now)) {
+        return 0;
+      }
+      return getChapterTaskPoints({
+        task: "coinDelivery",
+        points: 10,
+      });
+    }
+    if (
+      isSFLNPC(order.from) &&
+      hasTimeBasedFeatureAccess({
+        featureName: "TICKETS_FROM_FLOWER_NPC",
+        now: order.createdAt,
+        game,
+      })
+    ) {
+      if (areBumpkinsOnHoliday(order.createdAt)) {
+        return 0;
+      }
+      if (getCurrentChapter(order.createdAt) !== getCurrentChapter(now)) {
+        return 0;
+      }
+      return getChapterTaskPoints({
+        task: "flowerDelivery",
+        points: 10,
+      });
+    }
+    return getChapterTaskPoints({
+      task: "delivery",
+      points: ticketDisplay,
+    });
+  };
+
+  const chapterPoints = getChapterPoints();
 
   return (
     <>
@@ -142,46 +226,103 @@ export const OrderCard: React.FC<{
               </div>
               <div className="flex items-center flex-wrap">
                 <Label type="warning" style={{ height: "25px" }}>
-                  {order.reward.sfl !== undefined && (
+                  {isFrozenQuestOrder && !hasRewardAmount ? (
                     <div className="flex items-center mr-1">
-                      <span className="text-xs">
-                        {makeRewardAmountForLabel(order)}
-                      </span>
-                      <img src={token} className="h-4 w-auto ml-1" />
+                      <span className="text-xs">{t("deliveries.closed")}</span>
                     </div>
+                  ) : (
+                    <>
+                      {order.reward.sfl !== undefined && (
+                        <div className="flex items-center mr-1">
+                          <span className="text-xs">
+                            {makeRewardAmountForLabel(order)}
+                          </span>
+                          <img src={token} className="h-4 w-auto ml-1" />
+                        </div>
+                      )}
+                      {order.reward.coins !== undefined && (
+                        <div className="flex items-center mr-1">
+                          <span className="text-xs">
+                            {makeRewardAmountForLabel(order)}
+                          </span>
+                          <img src={coinsImg} className="h-4 w-auto ml-1" />
+                        </div>
+                      )}
+                      {!!ticketDisplay && (
+                        <div className="flex items-center space-x-3 mr-1">
+                          <div
+                            ref={ticketBoostsAnchorRef}
+                            className={classNames("flex items-center", {
+                              "cursor-pointer": ticketBoostsUsed.length > 0,
+                            })}
+                            role={
+                              ticketBoostsUsed.length > 0 ? "button" : undefined
+                            }
+                            tabIndex={
+                              ticketBoostsUsed.length > 0 ? 0 : undefined
+                            }
+                            aria-expanded={
+                              ticketBoostsUsed.length > 0
+                                ? showTicketBoosts
+                                : undefined
+                            }
+                            onClick={(e) => {
+                              if (ticketBoostsUsed.length === 0) return;
+                              e.stopPropagation();
+                              setShowTicketBoosts((prev) => !prev);
+                            }}
+                            onKeyDown={(e) => {
+                              if (
+                                ticketBoostsUsed.length === 0 ||
+                                (e.key !== "Enter" && e.key !== " ")
+                              )
+                                return;
+                              e.preventDefault();
+                              e.stopPropagation();
+                              setShowTicketBoosts((prev) => !prev);
+                            }}
+                          >
+                            <span className="text-xs mx-1">
+                              {ticketDisplay}
+                            </span>
+                            <img
+                              src={ITEM_DETAILS[getChapterTicket(now)].image}
+                              className="h-4 w-auto"
+                            />
+                            {ticketBoostsUsed.length > 0 &&
+                              showTicketBoosts && (
+                                <BoostsDisplay
+                                  boosts={ticketBoostsUsed}
+                                  show={showTicketBoosts}
+                                  state={game}
+                                  onClick={() => setShowTicketBoosts(false)}
+                                  anchorRef={ticketBoostsAnchorRef}
+                                  portalAlign="right"
+                                  portalPlacement="auto"
+                                />
+                              )}
+                          </div>
+                        </div>
+                      )}
+                      {getKeys(order.reward.items ?? {}).map((item) => (
+                        <div className="flex items-center" key={item}>
+                          <span className="text-xs">{item}</span>
+                          <img
+                            src={ITEM_DETAILS[item].image}
+                            className="h-4 w-auto ml-1"
+                          />
+                        </div>
+                      ))}
+                    </>
                   )}
-                  {order.reward.coins !== undefined && (
-                    <div className="flex items-center mr-1">
-                      <span className="text-xs">
-                        {makeRewardAmountForLabel(order)}
-                      </span>
-                      <img src={coinsImg} className="h-4 w-auto ml-1" />
-                    </div>
-                  )}
-                  {!!tickets && (
-                    <div className="flex items-center space-x-3 mr-1">
-                      <div className="flex items-center">
-                        <span className="text-xs mx-1">{tickets}</span>
-                        <img
-                          src={ITEM_DETAILS[getChapterTicket(now)].image}
-                          className="h-4 w-auto"
-                        />
-                      </div>
-                    </div>
-                  )}
-                  {getKeys(order.reward.items ?? {}).map((item) => (
-                    <div className="flex items-center" key={item}>
-                      <span className="text-xs">{item}</span>
-                      <img
-                        src={ITEM_DETAILS[item].image}
-                        className="h-4 w-auto ml-1"
-                      />
-                    </div>
-                  ))}
                 </Label>
-                {!!tickets && (
-                  <Label type={"vibrant"} icon={chapterPoints} className="ml-2">
-                    {`${getChapterTaskPoints({ task: "delivery", tickets: tickets })}`}
+                {!!chapterPoints && (
+                  <Label
+                    type={"vibrant"}
+                    icon={chapterPointsIcon}
+                    className="ml-2"
+                  >
+                    {`${chapterPoints}`}
                   </Label>
                 )}
               </div>
@@ -324,12 +465,31 @@ export const Gifts: React.FC<{
     GIFT_RESPONSES[name]?.flowerIntro ?? DEFAULT_DIALOGUE.flowerIntro,
   );
 
+  const now = useNow({ live: true });
+
   const flowers = getKeys(game.inventory)
     .filter(
       (item): item is FlowerName =>
         item in FLOWERS && !!game.inventory[item]?.gte(1),
     )
     .sort((a, b) => getKeys(FLOWERS).indexOf(a) - getKeys(FLOWERS).indexOf(b));
+
+  // No favoriting step: the shortlist is derived from this NPC's own gift
+  // history (most recent first), so it's populated automatically the moment
+  // the player has gifted them anything.
+  const [recentFlowers, setRecentFlowers] = useState<FlowerName[]>(() =>
+    getRecentGiftFlowers(name),
+  );
+  const recentOwnedFlowers = recentFlowers.filter((flower) =>
+    flowers.includes(flower),
+  );
+  const otherFlowers = flowers.filter(
+    (flower) => !recentOwnedFlowers.includes(flower),
+  );
+
+  const onFlowerClick = (flower: FlowerName) => {
+    setSelected(flower);
+  };
 
   const onGift = async () => {
     const previous = game.npcs?.[name]?.friendship?.points ?? 0;
@@ -340,6 +500,11 @@ export const Gifts: React.FC<{
 
     const difference =
       (state.context.state.npcs?.[name]?.friendship?.points ?? 0) - previous;
+
+    if (selected) {
+      const updated = recordRecentGiftFlower(name, selected);
+      setRecentFlowers(updated);
+    }
 
     if (BUMPKIN_FLOWER_BONUSES[name]?.[selected as FlowerName]) {
       setMessage(
@@ -358,7 +523,7 @@ export const Gifts: React.FC<{
 
   let translated: string = t(message);
 
-  const dateKey = new Date().toISOString().substring(0, 10);
+  const dateKey = new Date(now).toISOString().substring(0, 10);
 
   const giftedAt = game.npcs?.[name]?.friendship?.giftedAt ?? 0;
   // GiftedAt is the same UTC day as right now
@@ -426,7 +591,7 @@ export const Gifts: React.FC<{
               className="mb-1 ml-1"
               icon={ITEM_DETAILS[selected].image}
             >
-              {selected}
+              {getTranslatedItemName(selected)}
             </Label>
           )}
         </div>
@@ -435,17 +600,52 @@ export const Gifts: React.FC<{
           <p className="text-xs mb-2">{`${t("bumpkin.delivery.noFlowers")}`}</p>
         )}
         {flowers.length > 0 && (
-          <div className="flex w-full flex-wrap mb-2">
-            {flowers.map((flower) => (
-              <Box
-                key={flower}
-                onClick={() => setSelected(flower as FlowerName)}
-                image={ITEM_DETAILS[flower].image}
-                isSelected={selected === flower}
-                count={game.inventory[flower]}
-              />
-            ))}
-          </div>
+          <>
+            {recentOwnedFlowers.length > 0 && (
+              <>
+                <Label
+                  type="default"
+                  className="mb-1 ml-1"
+                  icon={SUNNYSIDE.icons.stopwatch}
+                >
+                  {t("bumpkin.delivery.recentlyGifted")}
+                </Label>
+                <div className="flex w-full flex-wrap mb-2">
+                  {recentOwnedFlowers.map((flower) => (
+                    <Box
+                      key={flower}
+                      onClick={() => onFlowerClick(flower)}
+                      image={ITEM_DETAILS[flower].image}
+                      secondaryImage={
+                        BUMPKIN_FLOWER_BONUSES[name]?.[flower]
+                          ? lightning
+                          : undefined
+                      }
+                      isSelected={selected === flower}
+                      count={game.inventory[flower]}
+                    />
+                  ))}
+                </div>
+                <div className="border-t border-brown-600 mb-2 w-full" />
+              </>
+            )}
+            <div className="flex w-full flex-wrap mb-2">
+              {otherFlowers.map((flower) => (
+                <Box
+                  key={flower}
+                  onClick={() => onFlowerClick(flower)}
+                  image={ITEM_DETAILS[flower].image}
+                  secondaryImage={
+                    BUMPKIN_FLOWER_BONUSES[name]?.[flower]
+                      ? lightning
+                      : undefined
+                  }
+                  isSelected={selected === flower}
+                  count={game.inventory[flower]}
+                />
+              ))}
+            </div>
+          </>
         )}
       </InnerPanel>
 
@@ -504,6 +704,42 @@ function acknowledgeGiftInfoRead() {
 
 function hasReadGiftInfo() {
   return !!localStorage.getItem(LOCAL_STORAGE_KEY);
+}
+
+// Recent gift flowers are a purely client-side UI convenience (a quick-pick
+// shortlist in the gift flower grid, derived from what the player already
+// gave this NPC - no manual favoriting step) - stored in localStorage rather
+// than game state, so no server-side schema/event is needed for this.
+export const MAX_RECENT_GIFT_FLOWERS = 3;
+const recentGiftFlowersKey = (npc: NPCName) =>
+  `recent-gift-flowers.${host}-${window.location.pathname}.${npc}`;
+
+function getRecentGiftFlowers(npc: NPCName): FlowerName[] {
+  try {
+    const raw = localStorage.getItem(recentGiftFlowersKey(npc));
+    if (!raw) return [];
+
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? (parsed as FlowerName[]) : [];
+  } catch {
+    return [];
+  }
+}
+
+// Moves `flower` to the front of this NPC's recent list (de-duped), capped
+// at MAX_RECENT_GIFT_FLOWERS, and persists the result.
+function recordRecentGiftFlower(
+  npc: NPCName,
+  flower: FlowerName,
+): FlowerName[] {
+  const previous = getRecentGiftFlowers(npc);
+  const updated = [flower, ...previous.filter((f) => f !== flower)].slice(
+    0,
+    MAX_RECENT_GIFT_FLOWERS,
+  );
+
+  localStorage.setItem(recentGiftFlowersKey(npc), JSON.stringify(updated));
+  return updated;
 }
 const BumpkinGiftBar: React.FC<{
   game: GameState;
@@ -640,12 +876,6 @@ interface Props {
   npc: NPCName;
 }
 
-const _hasReputation = (state: MachineState) =>
-  hasReputation({
-    game: state.context.state,
-    reputation: Reputation.Cropkeeper,
-  });
-
 export const BumpkinDelivery: React.FC<Props> = ({ onClose, npc }) => {
   const { t } = useAppTranslation();
   const { gameService } = useContext(Context);
@@ -655,9 +885,44 @@ export const BumpkinDelivery: React.FC<Props> = ({ onClose, npc }) => {
 
   const game = gameState.context.state;
   const [showFlowers, setShowFlowers] = useState(false);
+  const [showSkipDialog, setShowSkipDialog] = useState(false);
   const [gift, setGift] = useState<Airdrop>();
+  // Tutorial: after the first-ever delivery the player is told what to do
+  // next - head home and spend the coins on an expansion.
+  const [firstDeliveryFulfilled, setFirstDeliveryFulfilled] = useState(false);
+
+  const navigate = useNavigate();
 
   const delivery = game.delivery.orders.find((order) => order.from === npc);
+
+  const canSkip =
+    !!delivery &&
+    (getDayOfYear(new Date(now)) !==
+      getDayOfYear(new Date(delivery.createdAt)) ||
+      new Date(now).getFullYear() !==
+        new Date(delivery.createdAt).getFullYear());
+
+  const skippableDelivery =
+    delivery && !delivery.completedAt && delivery.readyAt <= now && canSkip
+      ? delivery
+      : undefined;
+
+  // Keep the loading screen up from the moment the player skips until the
+  // autosave settles and the server returns the fresh set of orders.
+  const isAutosaving = gameState.matches("autosaving");
+  const [isSkipping, setIsSkipping] = useState(false);
+  const [wasAutosaving, setWasAutosaving] = useState(isAutosaving);
+  if (wasAutosaving !== isAutosaving) {
+    setWasAutosaving(isAutosaving);
+    if (!isAutosaving) setIsSkipping(false);
+  }
+
+  const skip = (id: string) => {
+    setShowSkipDialog(false);
+    setIsSkipping(true);
+    gameService.send("order.skipped", { id });
+    gameService.send("SAVE");
+  };
 
   const { holiday } = getBumpkinHoliday({ now });
 
@@ -665,15 +930,25 @@ export const BumpkinDelivery: React.FC<Props> = ({ onClose, npc }) => {
   const isHoliday = holiday === today;
 
   const deliver = () => {
+    // Tutorial: the first delivery is the new player's first coin task.
+    const isFirstDelivery = (game.delivery.fulfilledCount ?? 0) === 0;
+
     gameService.send("order.delivered", {
       id: delivery?.id,
       friendship: true,
     });
+
+    if (isFirstDelivery) {
+      gameAnalytics.trackMilestone({
+        event: "Tutorial:FirstDeliveryCompleted",
+      });
+      setFirstDeliveryFulfilled(true);
+    }
   };
 
   const hasDelivery = getKeys(delivery?.items ?? {}).every((name) => {
     if (name === "coins") {
-      return game.coins > (delivery?.items.coins ?? 0);
+      return game.coins >= (delivery?.items.coins ?? 0);
     }
 
     if (name === "sfl") {
@@ -702,14 +977,22 @@ export const BumpkinDelivery: React.FC<Props> = ({ onClose, npc }) => {
   };
 
   const requiresReputation = GOBLINS_REQUIRING_REPUTATION.includes(npc);
-  const hasCropkeeperReputation = useSelector(gameService, _hasReputation);
+  const hasCropkeeperReputation = hasReputation({
+    game,
+    reputation: Reputation.Cropkeeper,
+    now,
+  });
 
   const dialogue = npcDialogues[npc] || defaultDialogue;
   const intro = useRandomItem(dialogue.intro);
   const positive = useRandomItem(dialogue.positiveDelivery);
   const noOrder = useRandomItem(dialogue.noOrder);
 
-  const tickets = generateDeliveryTickets({ game, npc, now });
+  const { amount: baseTickets } = generateDeliveryTickets({
+    game,
+    npc,
+    now,
+  });
 
   const dateKey = new Date(now).toISOString().substring(0, 10);
 
@@ -723,7 +1006,7 @@ export const BumpkinDelivery: React.FC<Props> = ({ onClose, npc }) => {
     message = t("bumpkin.delivery.waiting");
   }
 
-  if (!delivery || (!!tickets && isHoliday)) {
+  if (!delivery || (isHoliday && isTicketNPC(npc) && baseTickets > 0)) {
     message = noOrder;
   }
   const missingRequiredReputation =
@@ -733,12 +1016,24 @@ export const BumpkinDelivery: React.FC<Props> = ({ onClose, npc }) => {
     message = t("goblinTrade.missingReputation.sflDelivery");
   }
 
-  const missingLevels =
-    (NPC_DELIVERY_LEVELS[npc as DeliveryNpcName] ?? 0) -
-    getBumpkinLevel(game.bumpkin?.experience ?? 0);
-  const isLocked = missingLevels >= 1;
-  const isTicketOrder = tickets > 0;
-  const deliveryFrozen = isHoliday && isTicketOrder;
+  const requiredLevel = NPC_DELIVERY_LEVELS[npc as DeliveryNpcName] ?? {
+    ascension: 0,
+    level: 0,
+  };
+  const ascension = getAscensionLevel({
+    experience: game.bumpkin.experience ?? 0,
+    ascensionLevel: game.island.ascensionLevel ?? 0,
+  });
+  const isLocked = !meetsLevelRequirement(ascension, requiredLevel);
+  const missingLevels = Math.max(
+    0,
+    levelRequirementToTotal(requiredLevel) - levelRequirementToTotal(ascension),
+  );
+  const deliveryFrozen = isHoliday && isTicketNPC(npc) && baseTickets > 0;
+  // A soft ban keeps the player farming but holds value until they verify,
+  // so FLOWER orders show the verification steps in place of the delivery.
+  const softBannedFlowerOrder =
+    game.ban.status === "investigating" && !!delivery?.reward.sfl;
   const acceptGifts = !!getNextGift({ game, npc });
 
   const completedAt = game.npcs?.[npc]?.deliveryCompletedAt;
@@ -746,6 +1041,30 @@ export const BumpkinDelivery: React.FC<Props> = ({ onClose, npc }) => {
   const hasClaimedBonus =
     !!completedAt &&
     new Date(completedAt).toISOString().substring(0, 10) === dateKey;
+
+  if (firstDeliveryFulfilled) {
+    return (
+      <InnerPanel>
+        <div className="p-2">
+          <div className="flex justify-between items-center mb-2">
+            <Label type="success" icon={coinsImg}>
+              {t("firstDelivery.title")}
+            </Label>
+            {onClose && (
+              <img
+                src={SUNNYSIDE.icons.close}
+                className="h-7 cursor-pointer"
+                onClick={onClose}
+              />
+            )}
+          </div>
+          <p className="text-sm mb-2">{t("firstDelivery.coins")}</p>
+          <p className="text-sm mb-1">{t("firstDelivery.expand")}</p>
+        </div>
+        <Button onClick={() => navigate("/")}>{t("firstDelivery.home")}</Button>
+      </InnerPanel>
+    );
+  }
 
   if (gift) {
     return (
@@ -806,98 +1125,163 @@ export const BumpkinDelivery: React.FC<Props> = ({ onClose, npc }) => {
           </InnerPanel>
 
           <InnerPanel className="mb-1">
-            <div className="px-2 ">
-              <div className="flex flex-col justify-between items-stretch mb-2 gap-1">
-                <div className="flex flex-row justify-between w-full">
-                  {getActiveCalendarEvent({
-                    calendar: gameState.context.state.calendar,
-                  }) === "doubleDelivery" && !hasClaimedBonus ? (
-                    <Label type="vibrant" icon={lightning}>
-                      {t("double.rewards.delivery")}
-                    </Label>
-                  ) : (
-                    <Label
-                      type="default"
-                      icon={SUNNYSIDE.icons.expression_chat}
-                    >
-                      {t("delivery")}
-                    </Label>
-                  )}
-
-                  {isLocked && (
-                    <Label type="danger" secondaryIcon={SUNNYSIDE.icons.player}>
-                      {t("warning.level.required", {
-                        lvl: NPC_DELIVERY_LEVELS[npc as DeliveryNpcName],
-                      })}
-                    </Label>
-                  )}
-
-                  {delivery?.completedAt && (
-                    <Label
-                      style={{ whiteSpace: "nowrap" }}
-                      type="success"
-                      secondaryIcon={SUNNYSIDE.icons.confirm}
-                    >
-                      {t("completed")}
-                    </Label>
-                  )}
-                </div>
+            {isSkipping ? (
+              <div className="flex-1 p-2">
+                <Loading
+                  className="text-center mb-0.5 mt-1 text-sm loading"
+                  text={t("skipping")}
+                />
               </div>
-              {!delivery && !isLocked && (
-                <p className="text-xs mb-1">{t("no.delivery.avl")}</p>
-              )}
+            ) : showSkipDialog ? (
+              <div className="flex-1 space-y-2 p-1">
+                <p className="text-xs">{t("orderhelp.Skip.hour")}</p>
+                {canSkip && <p className="text-xs">{t("choose.wisely")}</p>}
+                {!canSkip && (
+                  <>
+                    <p className="text-xs font-secondary">
+                      {`${t("orderhelp.SkipIn")}:`}
+                    </p>
+                    <div className="flex-1">
+                      <RequirementLabel
+                        type="time"
+                        waitSeconds={secondsTillReset(now)}
+                      />
+                    </div>
+                  </>
+                )}
+              </div>
+            ) : (
+              <div className="px-2 ">
+                <div className="flex flex-col justify-between items-stretch mb-2 gap-1">
+                  <div className="flex flex-row justify-between w-full">
+                    {getActiveCalendarEvent({
+                      calendar: gameState.context.state.calendar,
+                    }) === "doubleDelivery" && !hasClaimedBonus ? (
+                      <Label type="vibrant" icon={lightning}>
+                        {t("double.rewards.delivery")}
+                      </Label>
+                    ) : (
+                      <Label
+                        type="default"
+                        icon={SUNNYSIDE.icons.expression_chat}
+                      >
+                        {t("delivery")}
+                      </Label>
+                    )}
 
-              {isLocked && (
-                <>
-                  <p className="text-xs mb-2">
-                    {t("bumpkin.delivery.proveYourself", {
-                      missingLevels: missingLevels,
-                    })}
-                  </p>
-                </>
-              )}
+                    {isLocked && (
+                      <Label
+                        type="danger"
+                        secondaryIcon={SUNNYSIDE.icons.player}
+                      >
+                        {t("warning.level.required", {
+                          lvl: NPC_DELIVERY_LEVELS[npc as DeliveryNpcName]
+                            ?.level,
+                        })}
+                      </Label>
+                    )}
 
-              {delivery && !deliveryFrozen && (
-                <>
-                  <OrderCard
-                    game={gameState.context.state}
-                    order={delivery as Order}
-                    hasRequirementsCheck={() => true}
-                    onDeliver={deliver}
-                  />
-                </>
-              )}
-              {isTicketOrder && isHoliday && (
-                <Label type="danger" icon={SUNNYSIDE.icons.stopwatch}>
-                  {t("orderhelp.ticket.deliveries.closed")}
-                </Label>
-              )}
-            </div>
+                    {delivery?.completedAt && (
+                      <Label
+                        style={{ whiteSpace: "nowrap" }}
+                        type="success"
+                        secondaryIcon={SUNNYSIDE.icons.confirm}
+                      >
+                        {t("completed")}
+                      </Label>
+                    )}
+                  </div>
+                </div>
+                {!delivery && !isLocked && (
+                  <p className="text-xs mb-1">{t("no.delivery.avl")}</p>
+                )}
+
+                {isLocked && (
+                  <>
+                    <p className="text-xs mb-2">
+                      {t("bumpkin.delivery.proveYourself", {
+                        missingLevels: missingLevels,
+                      })}
+                    </p>
+                  </>
+                )}
+
+                {delivery && !deliveryFrozen && (
+                  <>
+                    <OrderCard
+                      game={gameState.context.state}
+                      order={delivery as Order}
+                      hasRequirementsCheck={() => true}
+                      onDeliver={deliver}
+                    />
+                    {!delivery.completedAt &&
+                      !isLocked &&
+                      !missingRequiredReputation &&
+                      delivery.readyAt <= now && (
+                        <button
+                          type="button"
+                          className="text-left underline font-secondary text-xxs p-0 pb-1 pt-0.5 bg-transparent border-0 cursor-pointer hover:text-blue-500 focus-visible:text-blue-500"
+                          onClick={() => setShowSkipDialog(true)}
+                        >
+                          {t("skip.order")}
+                          {"?"}
+                        </button>
+                      )}
+                  </>
+                )}
+                {deliveryFrozen && (
+                  <Label type="danger" icon={SUNNYSIDE.icons.stopwatch}>
+                    {t("orderhelp.ticket.deliveries.closed")}
+                  </Label>
+                )}
+              </div>
+            )}
           </InnerPanel>
           {missingRequiredReputation && (
             <RequiredReputation reputation={Reputation.Cropkeeper} />
           )}
-          <div className="flex mt-1">
-            {acceptGifts && (
-              <Button className="mr-1" onClick={() => setShowFlowers(true)}>
-                {t("gift")}
+          {softBannedFlowerOrder && !delivery?.completedAt && <SoftBan />}
+          {isSkipping ? null : showSkipDialog ? (
+            canSkip ? (
+              <div className="flex flex-row gap-1">
+                <Button onClick={() => setShowSkipDialog(false)}>
+                  {t("orderhelp.NoRight")}
+                </Button>
+                {skippableDelivery && (
+                  <Button onClick={() => skip(skippableDelivery.id)}>
+                    {t("skip.order")}
+                  </Button>
+                )}
+              </div>
+            ) : (
+              <Button onClick={() => setShowSkipDialog(false)}>
+                {t("back")}
               </Button>
-            )}
+            )
+          ) : (
+            <div className="flex mt-1">
+              {acceptGifts && (
+                <Button className="mr-1" onClick={() => setShowFlowers(true)}>
+                  {t("gift")}
+                </Button>
+              )}
 
-            <Button
-              disabled={
-                !delivery ||
-                !hasDelivery ||
-                !!delivery?.completedAt ||
-                isLocked ||
-                missingRequiredReputation ||
-                (isTicketOrder && isHoliday)
-              }
-              onClick={deliver}
-            >
-              {t("deliver")}
-            </Button>
-          </div>
+              <Button
+                disabled={
+                  !delivery ||
+                  !hasDelivery ||
+                  !!delivery?.completedAt ||
+                  isLocked ||
+                  missingRequiredReputation ||
+                  deliveryFrozen ||
+                  softBannedFlowerOrder
+                }
+                onClick={deliver}
+              >
+                {t("deliver")}
+              </Button>
+            </div>
+          )}
         </>
       )}
     </>

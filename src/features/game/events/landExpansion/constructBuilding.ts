@@ -1,25 +1,36 @@
 import Decimal from "decimal.js-light";
 import { trackFarmActivity } from "features/game/types/farmActivity";
-import { BuildingName, BUILDINGS } from "../../types/buildings";
-import { GameState, PlacedItem } from "../../types/game";
-import { getBumpkinLevel } from "features/game/lib/level";
+import { type BuildingName, BUILDINGS } from "../../types/buildings";
+import type { GameState, PlacedItem } from "../../types/game";
+import {
+  getAscensionLevel,
+  meetsLevelRequirement,
+} from "features/game/lib/level";
 import { hasRequiredIslandExpansion } from "features/game/lib/hasRequiredIslandExpansion";
 import { produce } from "immer";
-import { hasFeatureAccess } from "lib/flags";
-import { Coordinates } from "features/game/expansion/components/MapPlacement";
+import type { Coordinates } from "features/game/expansion/components/MapPlacement";
+import { getObjectEntries } from "lib/object";
+import { isAnimalBuildingType } from "../../types/animals";
+import { makeAnimalBuilding, makeAnimalBuildingKey } from "../../lib/animals";
+import { getKeys } from "lib/object";
 
 export enum CONSTRUCT_BUILDING_ERRORS {
   NO_BUMPKIN = "You do not have a Bumpkin!",
-  MAX_BUILDINGS_REACHED = "Building limit reached for your bumpkin level!",
+  BUILDING_ALREADY_BUILT = "Building already built!",
+  BUMPKIN_LEVEL_NOT_MET = "You do not meet the land requirements",
   NOT_ENOUGH_COINS = "Insufficient Coins!",
-  NOT_ENOUGH_INGREDIENTS = "Insufficient ingredient! Missing: ",
+  NOT_ENOUGH_INGREDIENTS = "Insufficient ingredient: ",
 }
 
 export type ConstructBuildingAction = {
   type: "building.constructed";
   name: BuildingName;
   id: string;
-  coordinates: Coordinates;
+  /**
+   * Optional: without coordinates the building is constructed into the chest
+   * (the landscaping sandbox buys live and places in its local draft).
+   */
+  coordinates?: Coordinates;
 };
 
 type Options = {
@@ -34,32 +45,26 @@ export function constructBuilding({
   createdAt = Date.now(),
 }: Options): GameState {
   return produce(state, (stateCopy) => {
-    const { bumpkin, inventory, coins } = stateCopy;
+    const { bumpkin, coins, buildings } = stateCopy;
 
-    const buildingNumber = inventory[action.name]?.toNumber() ?? 0;
-    const building = BUILDINGS[action.name];
+    const hasBuiltBuilding = (buildings[action.name] || []).length > 0;
 
-    if (bumpkin === undefined) {
-      throw new Error(CONSTRUCT_BUILDING_ERRORS.NO_BUMPKIN);
+    if (hasBuiltBuilding) {
+      throw new Error(CONSTRUCT_BUILDING_ERRORS.BUILDING_ALREADY_BUILT);
     }
 
-    if (
-      action.name === "Pet House" &&
-      !hasFeatureAccess(stateCopy, "PET_HOUSE")
-    ) {
-      throw new Error("You do not have the required feature access");
-    }
+    const buildingToConstruct = BUILDINGS[action.name];
 
-    const allowedBuildings = building.filter(
-      ({ unlocksAtLevel }) =>
-        getBumpkinLevel(bumpkin.experience) >= unlocksAtLevel,
-    ).length;
+    const hasReachedUnlockRequirement = meetsLevelRequirement(
+      getAscensionLevel({
+        experience: bumpkin.experience,
+        ascensionLevel: stateCopy.island.ascensionLevel ?? 0,
+      }),
+      buildingToConstruct.unlocksAtLevel,
+    );
 
-    const buildingToConstruct = building[buildingNumber];
-
-    const built = stateCopy.inventory[action.name] || new Decimal(0);
-    if (built.gte(allowedBuildings)) {
-      throw new Error(CONSTRUCT_BUILDING_ERRORS.MAX_BUILDINGS_REACHED);
+    if (!hasReachedUnlockRequirement) {
+      throw new Error(CONSTRUCT_BUILDING_ERRORS.BUMPKIN_LEVEL_NOT_MET);
     }
 
     if (coins < buildingToConstruct.coins) {
@@ -75,31 +80,21 @@ export function constructBuilding({
       throw new Error("You do not have the required island expansion");
     }
 
-    let missingIngredients: string[] = [];
+    const inventoryMinusIngredients = getObjectEntries(
+      buildingToConstruct.ingredients,
+    ).reduce(
+      (inventory, [ingredient, amount]) => {
+        const count = inventory[ingredient] || new Decimal(0);
+        const required = new Decimal(amount ?? 0);
 
-    const inventoryMinusIngredients = buildingToConstruct.ingredients.reduce(
-      (inventory, ingredient) => {
-        const count = inventory[ingredient.item] || new Decimal(0);
-
-        if (count.lessThan(ingredient.amount)) {
-          missingIngredients = [...missingIngredients, ingredient.item];
+        if (count.lessThan(required)) {
+          throw new Error(`Insufficient ingredient: ${ingredient}`);
         }
-
-        return {
-          ...inventory,
-          [ingredient.item]: count.sub(ingredient.amount),
-        };
+        inventory[ingredient] = count.sub(required);
+        return inventory;
       },
-      stateCopy.inventory,
+      { ...stateCopy.inventory },
     );
-
-    if (missingIngredients.length > 0) {
-      throw new Error(
-        `${
-          CONSTRUCT_BUILDING_ERRORS.NOT_ENOUGH_INGREDIENTS
-        }${missingIngredients.join(", ")}`,
-      );
-    }
 
     const buildingInventory =
       stateCopy.inventory[action.name] || new Decimal(0);
@@ -108,7 +103,7 @@ export function constructBuilding({
     const newBuilding: PlacedItem = {
       id: action.id,
       createdAt: createdAt,
-      coordinates: action.coordinates,
+      ...(action.coordinates ? { coordinates: action.coordinates } : {}),
       readyAt: createdAt + buildingToConstruct.constructionSeconds * 1000,
     };
 
@@ -123,13 +118,38 @@ export function constructBuilding({
       stateCopy.farmActivity,
       new Decimal(buildingToConstruct.coins),
     );
-    stateCopy.inventory = inventoryMinusIngredients;
+    stateCopy.inventory = { ...inventoryMinusIngredients };
     stateCopy.inventory[action.name] = buildingInventory.add(1);
     stateCopy.buildings[action.name] = [...placed, newBuilding];
 
-    if (action.name === "Barn" || action.name === "Hen House") {
+    if (isAnimalBuildingType(action.name)) {
       stateCopy.inventory["Kernel Blend"] =
         stateCopy.inventory["Kernel Blend"]?.add(5) || new Decimal(5);
+
+      // Starter animals are seeded HERE rather than in INITIAL_FARM, because a
+      // farm with no record for an animal building is hydrated from
+      // INITIAL_FARM - so seeding there hands every existing farm free animals
+      // the moment the field ships. Guarded on an empty record so a rebuild can
+      // never wipe or duplicate a herd.
+      const buildingKey = makeAnimalBuildingKey(action.name);
+      const animalBuilding = stateCopy[buildingKey];
+
+      if (getKeys(animalBuilding.animals).length === 0) {
+        animalBuilding.animals = makeAnimalBuilding(
+          action.name,
+          createdAt,
+        ).animals;
+      }
+    }
+
+    // The cave.* events all require game.cave, so the Tier I Cave opens with
+    // the building. Guarded so an existing Cave is never reset.
+    if (action.name === "Cave" && !stateCopy.cave) {
+      stateCopy.cave = {
+        builtAt: createdAt,
+        tier: 1,
+        machines: { "1": {} },
+      };
     }
 
     return stateCopy;

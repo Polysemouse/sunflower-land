@@ -1,5 +1,18 @@
 export {};
 
+jest.doMock("lib/utils/hooks/useSound", () => ({
+  useSound: () => ({ play: jest.fn(), stop: jest.fn() }),
+}));
+
+jest.doMock(
+  "features/island/buildings/components/building/market/SeasonalSeeds",
+  () => ({ SEASON_ICONS: {} }),
+);
+
+jest.doMock("metadata/metadata", () => ({ OPEN_SEA_WEARABLES: {} }), {
+  virtual: true,
+});
+
 jest.doMock("assets/sunnyside", () => ({
   SUNNYSIDE: {
     achievement: {},
@@ -28,6 +41,8 @@ jest.doMock("assets/sunnyside", () => ({
     splash: {},
     tutorial: {},
     crustaceans: {},
+    sculptures: {},
+    tiles: {},
   },
 }));
 
@@ -67,23 +82,23 @@ export const configMock = jest.fn(() => ({
   },
 }));
 
+// Mutable CONFIG object so tests can override fields (e.g. NETWORK)
+// per-test via `(CONFIG as { NETWORK: "mainnet" | "amoy" }).NETWORK = "mainnet"`.
 jest.mock("lib/config", () => ({
-  get CONFIG() {
-    return {
-      NETWORK,
-      POLYGON_CHAIN_ID,
-      DONATION_ADDRESS,
-      WISHING_WELL_CONTRACT,
-      ACCOUNT_MINTER_CONTRACT,
-      FARM_CONTRACT,
-      INVENTORY_CONTRACT,
-      PAIR_CONTRACT,
-      SESSION_CONTRACT,
-      TOKEN_CONTRACT,
-      FIREBASE_VAPID_KEY,
-      FIREBASE_API_KEY,
-      FIREBASE_MESSAGING_SENDER_ID,
-      FIREBASE_APP_ID,
-    }; // set some default value
+  CONFIG: {
+    NETWORK,
+    POLYGON_CHAIN_ID,
+    DONATION_ADDRESS,
+    WISHING_WELL_CONTRACT,
+    ACCOUNT_MINTER_CONTRACT,
+    FARM_CONTRACT,
+    INVENTORY_CONTRACT,
+    PAIR_CONTRACT,
+    SESSION_CONTRACT,
+    TOKEN_CONTRACT,
+    FIREBASE_VAPID_KEY,
+    FIREBASE_API_KEY,
+    FIREBASE_MESSAGING_SENDER_ID,
+    FIREBASE_APP_ID,
   },
 }));

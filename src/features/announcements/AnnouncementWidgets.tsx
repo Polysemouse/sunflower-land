@@ -8,6 +8,10 @@ import classNames from "classnames";
 import { SUNNYSIDE } from "assets/sunnyside";
 import { ITEM_DETAILS } from "features/game/types/images";
 import { ModalContext } from "features/game/components/modal/ModalProvider";
+import {
+  daysUntilFlowerDiscountReduction,
+  getFlowerGemDiscount,
+} from "features/game/lib/flowerGemDiscount";
 
 export const BuyGemsWidget: React.FC = () => {
   const [showMessage, setShowMessage] = useState(true);
@@ -17,6 +21,9 @@ export const BuyGemsWidget: React.FC = () => {
   if (!showMessage) {
     return null;
   }
+
+  const discountPercent = Math.round(getFlowerGemDiscount() * 100);
+  const daysLeft = daysUntilFlowerDiscountReduction();
 
   return (
     <div
@@ -31,10 +38,17 @@ export const BuyGemsWidget: React.FC = () => {
     >
       <img src={ITEM_DETAILS.Gem.image} className="w-8 mr-2" />
       <div>
-        <p className="text-xs flex-1">{t("announcement.flowerGemsDiscount")}</p>
+        <p className="text-xs flex-1">
+          {t("announcement.flowerGemsDiscount", { discount: discountPercent })}
+        </p>
+        {daysLeft > 0 && (
+          <p className="text-xxs flex-1 italic">
+            {t("announcement.flowerDiscountDaysLeft", { days: daysLeft })}
+          </p>
+        )}
         <a
           href={
-            "https://docs.sunflower-land.com/getting-started/usdflower-erc20/schedule#usdflower-x-gems"
+            "https://docs.sunflower-land.com/getting-started/usdflower-erc20"
           }
           target="_blank"
           rel="noopener noreferrer"

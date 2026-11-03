@@ -8,18 +8,22 @@ import React, {
 } from "react";
 import { useActor, useSelector } from "@xstate/react";
 import { Context } from "features/game/GameProvider";
-import { GRID_WIDTH_PX, PIXEL_SCALE } from "features/game/lib/constants";
-import { MachineInterpreter } from "./landscapingMachine";
+import {
+  GRID_WIDTH_PX,
+  PIXEL_SCALE,
+  SQUARE_WIDTH,
+} from "features/game/lib/constants";
+import type { MachineInterpreter } from "./landscapingMachine";
 
 import Draggable from "react-draggable";
 import { detectCollision } from "./lib/collisionDetection";
 import classNames from "classnames";
-import { Coordinates } from "../components/MapPlacement";
+import type { Coordinates } from "../components/MapPlacement";
 import { BUILDINGS_DIMENSIONS } from "features/game/types/buildings";
 import {
   ANIMAL_DIMENSIONS,
   COLLECTIBLES_DIMENSIONS,
-  CollectibleName,
+  type CollectibleName,
 } from "features/game/types/craftables";
 import { READONLY_COLLECTIBLES } from "features/island/collectibles/CollectibleCollection";
 
@@ -29,27 +33,35 @@ import { READONLY_RESOURCE_COMPONENTS } from "features/island/resources/Resource
 import { getGameGrid } from "./lib/makeGrid";
 import { READONLY_BUILDINGS } from "features/island/buildings/components/building/BuildingComponents";
 import { ZoomContext } from "components/ZoomProvider";
-import { PlaceableLocation } from "features/game/types/collectibles";
+import type { PlaceableLocation } from "features/game/types/collectibles";
 import { RESOURCE_DIMENSIONS } from "features/game/types/resources";
 import { useAppTranslation } from "lib/i18n/useAppTranslations";
-import { GameState, TemperateSeasonName } from "features/game/types/game";
+import type { GameState, TemperateSeasonName } from "features/game/types/game";
 import { DIRT_PATH_VARIANTS } from "features/island/lib/alternateArt";
-import { getCurrentBiome, LandBiomeName } from "features/island/biomes/biomes";
+import {
+  getCurrentBiome,
+  type LandBiomeName,
+} from "features/island/biomes/biomes";
 import {
   getSortedCollectiblePositions,
   getSortedResourcePositions,
 } from "../lib/utils";
-import { MachineState } from "features/game/lib/gameMachine";
+import type { MachineState } from "features/game/lib/gameMachine";
+import { FarmHand } from "features/island/farmhand/FarmHand";
+import { PlacedBumpkin } from "features/island/bumpkin/components/PlacedBumpkin";
 
 type PlaceableArgs = {
   island: GameState["island"];
   season: TemperateSeasonName;
   henHouseLevel: number;
   barnLevel: number;
+  pigpenLevel: number;
+  placeableId?: string;
 };
 
 export const PLACEABLES = (args: PlaceableArgs) => {
-  const { island, season, henHouseLevel, barnLevel } = args;
+  const { island, season, henHouseLevel, barnLevel, pigpenLevel, placeableId } =
+    args;
   const biome: LandBiomeName = getCurrentBiome(island);
 
   return {
@@ -58,7 +70,15 @@ export const PLACEABLES = (args: PlaceableArgs) => {
       season,
       island,
     }),
-    ...READONLY_BUILDINGS({ island, season, henHouseLevel, barnLevel }),
+    ...READONLY_BUILDINGS({
+      island,
+      season,
+      henHouseLevel,
+      barnLevel,
+      pigpenLevel,
+    }),
+    FarmHand: () => <FarmHand id={placeableId ?? ""} />,
+    Bumpkin: () => <PlacedBumpkin />,
     "Dirt Path": () => (
       <img
         src={DIRT_PATH_VARIANTS[biome]}
@@ -121,6 +141,7 @@ const _season = (state: MachineState) => state.context.state.season.season;
 const _henHouseLevel = (state: MachineState) =>
   state.context.state.henHouse.level;
 const _barnLevel = (state: MachineState) => state.context.state.barn.level;
+const _pigpenLevel = (state: MachineState) => state.context.state.pigpen.level;
 const _crops = (state: MachineState) => state.context.state.crops;
 const _collectibles = (state: MachineState) => state.context.state.collectibles;
 const _landscapingMachine = (state: MachineState) =>
@@ -135,6 +156,7 @@ export const Placeable: React.FC<Props> = ({ location }) => {
   const season = useSelector(gameService, _season);
   const henHouseLevel = useSelector(gameService, _henHouseLevel);
   const barnLevel = useSelector(gameService, _barnLevel);
+  const pigpenLevel = useSelector(gameService, _pigpenLevel);
   const crops = useSelector(gameService, _crops);
   const collectibles = useSelector(gameService, _collectibles);
   const bumpkin = useSelector(gameService, _bumpkin);
@@ -144,6 +166,7 @@ export const Placeable: React.FC<Props> = ({ location }) => {
   const { placeable, collisionDetected, origin, coordinates } = machine.context;
 
   const nodeRef = useRef<HTMLDivElement>(null);
+  const [pixelPerfect, setPixelPerfect] = useState(false);
 
   const hintResetToken = useMemo(
     () => Symbol(`origin-${origin?.x ?? "none"}-${origin?.y ?? "none"}`),
@@ -175,6 +198,10 @@ export const Placeable: React.FC<Props> = ({ location }) => {
     dimensions = { width: 1, height: 1 };
   } else if (placeable?.name === "Pet") {
     dimensions = { width: 2, height: 2 };
+  } else if (placeable?.name === "FarmHand") {
+    dimensions = { width: 1, height: 1 };
+  } else if (placeable?.name === "Bumpkin") {
+    dimensions = { width: 1, height: 1 };
   } else if (placeable?.name) {
     dimensions = {
       ...BUILDINGS_DIMENSIONS,
@@ -224,25 +251,31 @@ export const Placeable: React.FC<Props> = ({ location }) => {
     [coordinates.x, coordinates.y],
   );
 
-  // Arrow/WASD keyboard movement to move the ghost placeable on the grid
+  // Arrow/WASD keyboard movement + p for pixel-perfect toggle
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (!placeable) return;
-
-      // Only while placing; ignore if typing in inputs
       if (document.activeElement?.tagName === "INPUT") return;
+
+      if (e.key === "p") {
+        setPixelPerfect((prev) => !prev);
+        return;
+      }
+
+      // One grid unit normally; one in-game pixel (1/SQUARE_WIDTH) in pixel-perfect mode
+      const step = pixelPerfect ? 1 / SQUARE_WIDTH : 1;
 
       let deltaX = 0;
       let deltaY = 0;
 
       if (e.key === "ArrowUp" || e.key === "w") {
-        deltaY = 1;
+        deltaY = step;
       } else if (e.key === "ArrowDown" || e.key === "s") {
-        deltaY = -1;
+        deltaY = -step;
       } else if (e.key === "ArrowLeft" || e.key === "a") {
-        deltaX = -1;
+        deltaX = -step;
       } else if (e.key === "ArrowRight" || e.key === "d") {
-        deltaX = 1;
+        deltaX = step;
       } else {
         return;
       }
@@ -255,18 +288,18 @@ export const Placeable: React.FC<Props> = ({ location }) => {
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [placeable, coordinates.x, coordinates.y, detect, hideHint]);
+  }, [placeable, pixelPerfect, coordinates.x, coordinates.y, detect, hideHint]);
 
   if (!placeable) return null;
 
-  const Collectible =
-    placeable?.name === "Bud"
-      ? PLACEABLES({ island, season, henHouseLevel, barnLevel })["Bud"]
-      : placeable?.name === "Pet"
-        ? PLACEABLES({ island, season, henHouseLevel, barnLevel })["PetNFT"]
-        : PLACEABLES({ island, season, henHouseLevel, barnLevel })[
-            placeable.name
-          ];
+  const Collectible = PLACEABLES({
+    island,
+    season,
+    henHouseLevel,
+    barnLevel,
+    pigpenLevel,
+    placeableId: placeable.id,
+  })[placeable.name];
 
   return (
     <>
@@ -287,25 +320,34 @@ export const Placeable: React.FC<Props> = ({ location }) => {
         <Draggable
           key={`${origin?.x}-${origin?.y}`}
           nodeRef={nodeRef as React.RefObject<HTMLElement>}
-          grid={[GRID_WIDTH_PX * scale.get(), GRID_WIDTH_PX * scale.get()]}
+          grid={[
+            (pixelPerfect ? PIXEL_SCALE : GRID_WIDTH_PX) * scale.get(),
+            (pixelPerfect ? PIXEL_SCALE : GRID_WIDTH_PX) * scale.get(),
+          ]}
           scale={scale.get()}
           onStart={() => {
-            // reset
             send("DRAG");
           }}
           onDrag={(_, data) => {
-            const x = Math.round(data.x / GRID_WIDTH_PX);
-            const y = Math.round(-data.y / GRID_WIDTH_PX);
+            const x = pixelPerfect
+              ? Math.round(data.x / PIXEL_SCALE) / SQUARE_WIDTH
+              : Math.round(data.x / GRID_WIDTH_PX);
+            const y = pixelPerfect
+              ? -Math.round(data.y / PIXEL_SCALE) / SQUARE_WIDTH
+              : Math.round(-data.y / GRID_WIDTH_PX);
 
             detect({ x, y });
             hideHint();
           }}
           onStop={(_, data) => {
-            const x = Math.round(data.x / GRID_WIDTH_PX);
-            const y = Math.round(-data.y / GRID_WIDTH_PX);
+            const x = pixelPerfect
+              ? Math.round(data.x / PIXEL_SCALE) / SQUARE_WIDTH
+              : Math.round(data.x / GRID_WIDTH_PX);
+            const y = pixelPerfect
+              ? -Math.round(data.y / PIXEL_SCALE) / SQUARE_WIDTH
+              : Math.round(-data.y / GRID_WIDTH_PX);
 
             detect({ x, y });
-
             send("DROP");
           }}
           position={position}
@@ -330,6 +372,14 @@ export const Placeable: React.FC<Props> = ({ location }) => {
                 </span>
               </div>
             )}
+            {pixelPerfect && (
+              <div
+                className="flex absolute pointer-events-none z-50 bg-[#000000af] px-1.5 py-0.5 rounded w-max"
+                style={{ bottom: "-24px" }}
+              >
+                <span className="text-white text-xs">{"Pixel perfect"}</span>
+              </div>
+            )}
             <div
               draggable={false}
               className={classNames(
@@ -345,6 +395,7 @@ export const Placeable: React.FC<Props> = ({ location }) => {
               }}
             >
               <Collectible
+                index={0}
                 buildingId={"123"}
                 buildingIndex={0}
                 createdAt={0}
@@ -356,12 +407,8 @@ export const Placeable: React.FC<Props> = ({ location }) => {
                 grid={grid}
                 showTimers={showTimers}
                 skills={bumpkin.skills}
-                id={
-                  placeable?.name === "Bud" || placeable?.name === "Pet"
-                    ? placeable.id
-                    : "123"
-                }
-                location="farm"
+                id={placeable.id ?? "123"}
+                location={location}
                 name={placeable?.name as CollectibleName}
               />
             </div>

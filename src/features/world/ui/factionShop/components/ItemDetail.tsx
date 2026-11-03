@@ -2,7 +2,11 @@ import React, { useContext, useLayoutEffect, useState } from "react";
 import { SUNNYSIDE } from "assets/sunnyside";
 import { Label } from "components/ui/Label";
 import Decimal from "decimal.js-light";
-import { FactionName, InventoryItemName, Keys } from "features/game/types/game";
+import type {
+  FactionName,
+  InventoryItemName,
+  Keys,
+} from "features/game/types/game";
 
 import { Context } from "features/game/GameProvider";
 import { useActor, useSelector } from "@xstate/react";
@@ -10,12 +14,12 @@ import { PIXEL_SCALE } from "features/game/lib/constants";
 import { InnerPanel } from "components/ui/Panel";
 import classNames from "classnames";
 import { Button } from "components/ui/Button";
-import { BuffLabel } from "features/game/types";
+import type { BuffLabel } from "features/game/types";
 import { RequirementLabel } from "components/ui/RequirementsLabel";
 import { gameAnalytics } from "lib/gameAnalytics";
-import { MachineState } from "features/game/lib/gameMachine";
+import type { MachineState } from "features/game/lib/gameMachine";
 import confetti from "canvas-confetti";
-import { BumpkinItem } from "features/game/types/bumpkin";
+import type { BumpkinItem } from "features/game/types/bumpkin";
 import { useAppTranslation } from "lib/i18n/useAppTranslations";
 import { ITEM_DETAILS } from "features/game/types/images";
 import { capitalize } from "lib/utils/capitalize";
@@ -23,9 +27,10 @@ import { capitalize } from "lib/utils/capitalize";
 import { isWearableActive } from "features/game/lib/wearables";
 import {
   FACTION_SHOP_KEYS,
-  FactionShopItem,
-  FactionShopItemName,
+  type FactionShopItem,
+  type FactionShopItemName,
 } from "features/game/types/factionShop";
+import { getSpeedBoostDescription } from "features/game/lib/getItemDescription";
 
 interface ItemOverlayProps {
   item: FactionShopItem | null;
@@ -328,7 +333,12 @@ export const ItemDetail: React.FC<ItemOverlayProps> = ({
                     </div>
 
                     <span className="text-xs leading-none">
-                      {item?.shortDescription}
+                      {(item &&
+                        getSpeedBoostDescription({
+                          item: item.name as InventoryItemName,
+                          game: state,
+                        })) ??
+                        item?.shortDescription}
                     </span>
                     {currency && (
                       <div className="flex flex-1 items-end">

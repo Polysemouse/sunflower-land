@@ -1,12 +1,13 @@
 import Decimal from "decimal.js-light";
-import { ConsumableName } from "features/game/types/consumables";
-import { BoostName } from "features/game/types/game";
-import { GameState } from "features/game/types/game";
+import type { ConsumableName } from "features/game/types/consumables";
+import type { BoostName } from "features/game/types/game";
+import type { GameState } from "features/game/types/game";
 import { ITEM_DETAILS } from "features/game/types/images";
 import React, { type JSX } from "react";
 import { BoostsDisplay } from "./BoostsDisplay";
 import { RequirementLabel } from "../RequirementsLabel";
 import { SquareIcon } from "../SquareIcon";
+import { getItemDescription } from "features/game/lib/getItemDescription";
 
 /**
  * The props for the details for items.
@@ -54,7 +55,12 @@ export const FeedBumpkinDetails: React.FC<Props> = ({
     const item = ITEM_DETAILS[details.item];
     const icon = item.image;
     const title = details.item;
-    const description = item.description;
+    const description = properties?.gameState
+      ? getItemDescription({
+          item: details.item,
+          game: properties.gameState,
+        })
+      : item.description;
 
     return (
       <>
@@ -85,7 +91,7 @@ export const FeedBumpkinDetails: React.FC<Props> = ({
 
     const xpDisplay = !!properties.xp && (
       <div
-        className="flex flex-col items-center cursor-pointer"
+        className="flex flex-row sm:flex-col items-center cursor-pointer"
         onClick={
           isXpBoosted && properties.setShowBoosts
             ? () => properties.setShowBoosts?.(!properties.showBoosts)

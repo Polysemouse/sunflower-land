@@ -2,8 +2,11 @@ import React from "react";
 import { Transition } from "@headlessui/react";
 import { InnerPanel } from "components/ui/Panel";
 import { useAppTranslation } from "lib/i18n/useAppTranslations";
-import { InventoryItemName } from "features/game/types/game";
-import { ITEM_DETAILS } from "features/game/types/images";
+import type { InventoryItemName } from "features/game/types/game";
+import {
+  ITEM_DETAILS,
+  getTranslatedItemName,
+} from "features/game/types/images";
 
 interface Props {
   show: boolean;
@@ -61,7 +64,7 @@ export const IngredientsPopover: React.FC<Props> = ({
                   className="w-3"
                 />
                 <span className="text-xs">
-                  {ITEM_DETAILS[ingredient].translatedName ?? ingredient}
+                  {getTranslatedItemName(ingredient)}
                 </span>
               </div>
             ))}

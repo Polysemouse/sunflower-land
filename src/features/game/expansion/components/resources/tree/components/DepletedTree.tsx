@@ -1,24 +1,31 @@
 import React, { useState } from "react";
 import { GRID_WIDTH_PX, PIXEL_SCALE } from "features/game/lib/constants";
-import { TimeLeftPanel } from "components/ui/TimeLeftPanel";
-import { useAppTranslation } from "lib/i18n/useAppTranslations";
-import { GameState, TemperateSeasonName } from "features/game/types/game";
+import { TimerPopover } from "features/island/common/TimerPopover";
+import type { GameState, TemperateSeasonName } from "features/game/types/game";
+import type { TreeName } from "features/game/types/resources";
 import { STUMP_VARIANTS } from "features/island/lib/alternateArt";
-import { getCurrentBiome, LandBiomeName } from "features/island/biomes/biomes";
+import {
+  getCurrentBiome,
+  type LandBiomeName,
+} from "features/island/biomes/biomes";
+import { SUNNYSIDE } from "assets/sunnyside";
+import { getTranslatedItemName } from "features/game/types/images";
 
 interface Props {
   timeLeft: number;
   island: GameState["island"];
   season: TemperateSeasonName;
+  /** The recovering tree — names it in the popover, as a plot names its crop. */
+  name: TreeName;
 }
 
 const DepletedTreeComponent: React.FC<Props> = ({
   timeLeft,
   island,
   season,
+  name,
 }) => {
   const [showTimeLeft, setShowTimeLeft] = useState(false);
-  const { t } = useAppTranslation();
 
   const biome: LandBiomeName = getCurrentBiome(island);
 
@@ -44,10 +51,11 @@ const DepletedTreeComponent: React.FC<Props> = ({
             top: `${PIXEL_SCALE * -10}px`,
           }}
         >
-          <TimeLeftPanel
-            text={t("resources.recoversIn")}
+          <TimerPopover
+            image={SUNNYSIDE.resource.tree}
+            description={getTranslatedItemName(name)}
+            showPopover={showTimeLeft}
             timeLeft={timeLeft}
-            showTimeLeft={showTimeLeft}
           />
         </div>
       </div>

@@ -1,8 +1,8 @@
-import Decimal from "decimal.js-light";
+import type Decimal from "decimal.js-light";
 import { SUNNYSIDE } from "assets/sunnyside";
 import powerup from "assets/icons/level_up.png";
 import { ITEM_DETAILS } from "./images";
-import { BuffLabel } from ".";
+import type { BuffLabel } from ".";
 
 export type LegacyBadgeName =
   | "Green Thumb"
@@ -58,7 +58,7 @@ export const LEGACY_BADGE_TREE: Record<
       },
       {
         labelType: "vibrant",
-        shortDescription: "+10% Mutant crop chance",
+        shortDescription: "x1.1 Mutant crop chance",
         boostTypeIcon: SUNNYSIDE.icons.lightning,
       },
     ],
@@ -71,7 +71,7 @@ export const LEGACY_BADGE_TREE: Record<
     buff: [
       {
         labelType: "success",
-        shortDescription: "+10% Animal produce",
+        shortDescription: "+0.1 Animal produce",
         boostTypeIcon: powerup,
       },
       {
@@ -90,12 +90,12 @@ export const LEGACY_BADGE_TREE: Record<
     buff: [
       {
         labelType: "info",
-        shortDescription: "-10% Crop growth time",
+        shortDescription: "x0.9 Crop growth time",
         boostTypeIcon: SUNNYSIDE.icons.stopwatch,
       },
       {
         labelType: "vibrant",
-        shortDescription: "+10% Mutant crop chance",
+        shortDescription: "x1.1 Mutant crop chance",
         boostTypeIcon: SUNNYSIDE.icons.lightning,
       },
     ],
@@ -112,7 +112,7 @@ export const LEGACY_BADGE_TREE: Record<
     buff: [
       {
         labelType: "success",
-        shortDescription: "-10% Animal sleep time",
+        shortDescription: "x0.9 Animal sleep time",
         boostTypeIcon: powerup,
       },
       {
@@ -130,7 +130,7 @@ export const LEGACY_BADGE_TREE: Record<
     buff: [
       {
         labelType: "success",
-        shortDescription: "+10% Wood",
+        shortDescription: "x1.1 Wood",
         boostTypeIcon: powerup,
         boostedItemIcon: ITEM_DETAILS.Wood.image,
       },
@@ -144,7 +144,7 @@ export const LEGACY_BADGE_TREE: Record<
     buff: [
       {
         labelType: "success",
-        shortDescription: "+20% Stone",
+        shortDescription: "+0.2 Stone",
         boostTypeIcon: powerup,
         boostedItemIcon: ITEM_DETAILS.Stone.image,
       },
@@ -174,7 +174,7 @@ export const LEGACY_BADGE_TREE: Record<
     buff: [
       {
         labelType: "success",
-        shortDescription: "+50% Gold",
+        shortDescription: "+0.5 Gold",
         boostTypeIcon: powerup,
         boostedItemIcon: ITEM_DETAILS.Gold.image,
       },
@@ -187,12 +187,12 @@ export const LEGACY_BADGE_TREE: Record<
     buff: [
       {
         labelType: "success",
-        shortDescription: "-10% Seeds cost",
+        shortDescription: "x0.9 Seeds cost",
         boostTypeIcon: powerup,
       },
       {
         labelType: "success",
-        shortDescription: "-10% Tools cost",
+        shortDescription: "x0.9 Tools cost",
         boostTypeIcon: powerup,
       },
     ],
@@ -204,7 +204,7 @@ export const LEGACY_BADGE_TREE: Record<
     buff: [
       {
         labelType: "success",
-        shortDescription: "+20% Crop yield",
+        shortDescription: "x1.2 Crop yield",
         boostTypeIcon: powerup,
       },
     ],
@@ -216,7 +216,7 @@ export const LEGACY_BADGE_TREE: Record<
     buff: [
       {
         labelType: "success",
-        shortDescription: "+35% Wood",
+        shortDescription: "x1.35 Wood",
         boostTypeIcon: powerup,
         boostedItemIcon: ITEM_DETAILS.Wood.image,
       },
@@ -229,7 +229,7 @@ export const LEGACY_BADGE_TREE: Record<
     buff: [
       {
         labelType: "success",
-        shortDescription: "-50% FLOWER withdrawal fee",
+        shortDescription: "x0.5 FLOWER withdrawal fee",
         boostTypeIcon: powerup,
       },
     ],

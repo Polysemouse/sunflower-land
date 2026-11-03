@@ -1,8 +1,8 @@
 import { KNOWN_IDS } from "features/game/types";
-import { BumpkinItem, ITEM_IDS } from "features/game/types/bumpkin";
-import { getKeys } from "features/game/types/decorations";
-import { InventoryItemName } from "features/game/types/game";
-import {
+import { type BumpkinItem, ITEM_IDS } from "features/game/types/bumpkin";
+import { getKeys } from "lib/object";
+import type { InventoryItemName } from "features/game/types/game";
+import type {
   CollectionName,
   MarketplaceTradeableName,
 } from "features/game/types/marketplace";
@@ -38,6 +38,10 @@ export function getItemId({
   if (collection === "pets") {
     const [_, id] = name.split("#");
     return Number(id);
+  }
+
+  if (collection === "economies") {
+    return Number(name);
   }
 
   if (collection === "wearables") {

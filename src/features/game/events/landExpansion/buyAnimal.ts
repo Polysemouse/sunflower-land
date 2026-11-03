@@ -1,15 +1,23 @@
 import Decimal from "decimal.js-light";
 import { makeAnimalBuildingKey } from "features/game/lib/animals";
 import { isCollectibleBuilt } from "features/game/lib/collectibleBuilt";
-import { getBumpkinLevel } from "features/game/lib/level";
 import {
-  AnimalBuildingType,
+  getAscensionLevel,
+  meetsLevelRequirement,
+} from "features/game/lib/level";
+import {
+  type AnimalBuildingType,
   ANIMALS,
-  AnimalType,
+  type AnimalType,
 } from "features/game/types/animals";
 import { trackFarmActivity } from "features/game/types/farmActivity";
-import { getKeys } from "features/game/types/decorations";
-import { AnimalBuilding, BoostName, GameState } from "features/game/types/game";
+import { getKeys } from "lib/object";
+import type {
+  AnimalBuilding,
+  AnimalBuildingKey,
+  BoostName,
+  GameState,
+} from "features/game/types/game";
 import { updateBoostUsed } from "features/game/types/updateBoostUsed";
 import { produce } from "immer";
 
@@ -24,6 +32,29 @@ type Options = {
   action: BuyAnimalAction;
   createdAt?: number;
 };
+
+/**
+ * Animal buildings whose capacity is a per-level table rather than the shared
+ * `10 + 5*(level-1)` formula. The Pigpen is deliberately much tighter: 3/6/9
+ * (#7721 Balance Update).
+ */
+const ANIMAL_BUILDING_CAPACITY: Partial<
+  Record<AnimalBuildingKey, Record<number, number>>
+> = {
+  pigpen: { 1: 3, 2: 6, 3: 9 },
+};
+
+/**
+ * An animal building's base capacity at a given level, before collectible
+ * bonuses. Exported so the upgrade modal can advertise the real delta rather
+ * than assuming the shared formula's +5.
+ */
+export const getAnimalBuildingCapacity = (
+  buildingKey: AnimalBuildingKey,
+  level: number,
+): number =>
+  ANIMAL_BUILDING_CAPACITY[buildingKey]?.[level] ??
+  getBaseAnimalCapacity(level);
 
 export const getBaseAnimalCapacity = (level: number): number => {
   const DEFAULT_CAPACITY = 10;
@@ -45,7 +76,10 @@ export const getBoostedAnimalCapacity = (
 
   const building = game[buildingKey] as AnimalBuilding;
   const level = building.level;
-  const baseCapacity = getBaseAnimalCapacity(level);
+  const baseCapacity = getAnimalBuildingCapacity(
+    buildingKey as AnimalBuildingKey,
+    level,
+  );
   const boostsUsed: { name: BoostName; value: string }[] = [];
 
   if (buildingKey === "henHouse") {
@@ -80,6 +114,71 @@ export const getBoostedAnimalCapacity = (
   return { capacity: baseCapacity, boostsUsed };
 };
 
+// Memoizes the most recent over-capacity result. The UI calls
+// getOverCapacityAnimalIds once per animal per render, so without this each
+// animal would re-sort the whole building. Keyed on the animals object and
+// capacity — the only inputs that change the result.
+let overCapacityCache: {
+  animals: AnimalBuilding["animals"];
+  capacity: number;
+  ids: Set<string>;
+} | null = null;
+
+/**
+ * IDs of animals that exceed the building's current capacity and therefore
+ * cannot be fed. This happens when a player buys animals while a capacity
+ * boosting collectible (Chicken Coop / Barn Blueprint) is placed, then removes
+ * or sells that collectible. The OLDEST animals beyond the current capacity are
+ * locked; the newest `capacity` animals remain feedable. Locked animals can
+ * still be cured and sold to bounties.
+ */
+export const getOverCapacityAnimalIds = (
+  buildingKey: AnimalBuildingKey,
+  game: GameState,
+): Set<string> => {
+  const building = game[buildingKey];
+  const { capacity } = getBoostedAnimalCapacity(buildingKey, game);
+
+  if (
+    overCapacityCache &&
+    overCapacityCache.animals === building.animals &&
+    overCapacityCache.capacity === capacity
+  ) {
+    return overCapacityCache.ids;
+  }
+
+  const animals = Object.values(building.animals);
+
+  let ids: Set<string>;
+  if (animals.length <= capacity) {
+    ids = new Set();
+  } else {
+    const lockedCount = animals.length - capacity;
+
+    // Oldest first so the newest `capacity` animals remain feedable. Ties on
+    // createdAt fall back to purchase (insertion) order rather than id.
+    const oldestFirst = animals
+      .map((animal, index) => ({ animal, index }))
+      .sort((a, b) =>
+        a.animal.createdAt !== b.animal.createdAt
+          ? a.animal.createdAt - b.animal.createdAt
+          : a.index - b.index,
+      )
+      .map((entry) => entry.animal);
+
+    ids = new Set(oldestFirst.slice(0, lockedCount).map((animal) => animal.id));
+  }
+
+  overCapacityCache = { animals: building.animals, capacity, ids };
+  return ids;
+};
+
+export const isAnimalFeedable = (
+  buildingKey: AnimalBuildingKey,
+  game: GameState,
+  animalId: string,
+): boolean => !getOverCapacityAnimalIds(buildingKey, game).has(animalId);
+
 export function buyAnimal({
   state,
   action,
@@ -103,11 +202,16 @@ export function buyAnimal({
       throw new Error(`You do not have a ${buildingRequired}`);
     }
 
-    const bumpkinLevel = getBumpkinLevel(bumpkin.experience);
+    const ascension = getAscensionLevel({
+      experience: bumpkin.experience,
+      ascensionLevel: copy.island.ascensionLevel ?? 0,
+    });
 
-    if (bumpkinLevel < levelRequired) {
+    if (!meetsLevelRequirement(ascension, levelRequired)) {
       throw new Error(
-        `Your bumpkin is not at the required level of ${levelRequired}`,
+        levelRequired.ascension > 0
+          ? `Your bumpkin must be Ascension ${levelRequired.ascension}, Level ${levelRequired.level}`
+          : `Your bumpkin is not at the required level of ${levelRequired.level}`,
       );
     }
 

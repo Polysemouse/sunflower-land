@@ -1,22 +1,34 @@
 import seasonal_plaza from "assets/map/seasonal_plaza.json";
 import seasonal_tileset from "assets/map/seasonal_tileset.json";
-import { SceneId } from "../mmoMachine";
-import { BaseScene, NPCBumpkin } from "./BaseScene";
+import type { SceneId } from "../mmoMachine";
+import { BaseScene, type NPCBumpkin } from "./BaseScene";
 import { Label } from "../containers/Label";
 import { interactableModalManager } from "../ui/InteractableModals";
 
 import { PlaceableContainer } from "../containers/PlaceableContainer";
-import { budImageDomain } from "features/island/collectibles/components/Bud";
 import { SOUNDS } from "assets/sound-effects/soundEffects";
-import { NPCName } from "lib/npcs";
-import { FactionName } from "features/game/types/game";
+import type { NPCName } from "lib/npcs";
+import type { FactionName } from "features/game/types/game";
 import { translate } from "lib/i18n/translate";
 import { capitalize } from "lib/utils/capitalize";
 import { getBumpkinHoliday } from "lib/utils/getSeasonWeek";
 import { DogContainer } from "../containers/DogContainer";
-import { PetContainer } from "../containers/PetContainer";
-import { getCurrentChapter, ChapterName } from "features/game/types/chapters";
-import { hasTimeBasedFeatureAccess } from "lib/flags";
+import type { PetContainer } from "../containers/PetContainer";
+import {
+  getCurrentChapter,
+  type ChapterName,
+} from "features/game/types/chapters";
+import { CONFIG } from "lib/config";
+import { SQUARE_WIDTH } from "features/game/lib/constants";
+import { getShowcasedDesigns } from "features/game/actions/getShowcasedDesigns";
+import { hasUnseenDesigns } from "features/social/lib/seenDesigns";
+import type { ShowcasedDesign } from "features/game/types/social";
+import { BumpkinContainer } from "../containers/BumpkinContainer";
+import { getAnimationUrl } from "../lib/animations";
+import { tokenUriBuilder } from "lib/utils/tokenUriBuilder";
+import type { Player } from "../types/Room";
+import { getDailyBudBoxType } from "features/game/lib/budBox";
+import { hasChapterCropWeekAccess } from "features/game/types/chapterCropWeek";
 
 const CHAPTER_BANNERS: Record<ChapterName, string | undefined> = {
   "Solar Flare": undefined,
@@ -32,6 +44,9 @@ const CHAPTER_BANNERS: Record<ChapterName, string | undefined> = {
   "Better Together": "world/better_together_banner.webp",
   "Paw Prints": "world/paw_prints_banner.webp",
   "Crabs and Traps": "world/crap_chapter_banner.webp",
+  "Salt Awakening": "world/salt_awakening_banner.webp",
+  "Ascension Age": "world/ascension_banner.webp",
+  "Cave Dwellers": "world/cave_dwellers_banner.webp",
 };
 
 // Tiled Layer names that get enabled during a chapter
@@ -50,6 +65,9 @@ const CHAPTER_LAYERS: Record<ChapterName, string | undefined> = {
   "Better Together": "Better Together Decoration Base",
   "Paw Prints": "Paw Prints",
   "Crabs and Traps": "Crabs and Traps",
+  "Salt Awakening": "Salt Awakening",
+  "Ascension Age": "Ascension",
+  "Cave Dwellers": "Cave Dwellers",
 };
 
 export type FactionNPC = {
@@ -59,6 +77,27 @@ export type FactionNPC = {
   direction?: "left" | "right";
   faction: Omit<FactionName, "nightshades">;
 };
+
+/**
+ * Standing spots inside the fenced field below the Design Showcase board,
+ * one per showcased designer. The field is the collision block at
+ * x 524-644, y 364-416 on the plaza map.
+ */
+const SHOWCASE_FIELD_SPOTS: {
+  x: number;
+  y: number;
+  direction: "left" | "right";
+}[] = [
+  { x: 540, y: 392, direction: "right" },
+  { x: 584, y: 402, direction: "left" },
+  { x: 628, y: 392, direction: "left" },
+];
+
+/**
+ * Gardeners sit above every map layer (buildings, decorations, the board's
+ * base) but below the board's unread icon (1000000000).
+ */
+const SHOWCASE_GARDENER_DEPTH = 100000000;
 
 export const PLAZA_BUMPKINS: NPCBumpkin[] = [
   {
@@ -146,6 +185,8 @@ export const PLAZA_BUMPKINS: NPCBumpkin[] = [
   },
 ];
 
+const budImageDomain = CONFIG.NETWORK === "mainnet" ? "buds" : "testnet-buds";
+
 export class PlazaScene extends BaseScene {
   sceneId: SceneId = "plaza";
 
@@ -175,17 +216,30 @@ export class PlazaScene extends BaseScene {
     });
   }
 
+  private isBudBoxRewardAvailable(now = Date.now()) {
+    const todayBud = getDailyBudBoxType(now);
+    const hasTodayBud = Object.values(this.gameState.buds ?? {}).some(
+      (bud) => bud.type === todayBud,
+    );
+    const openedAt = this.gameState.pumpkinPlaza.budBox?.openedAt ?? 0;
+    const hasOpenedToday =
+      !!openedAt &&
+      new Date(now).toISOString().substring(0, 10) ===
+        new Date(openedAt).toISOString().substring(0, 10);
+
+    return hasTodayBud && !hasOpenedToday;
+  }
+
   preload() {
     this.load.audio("chime", SOUNDS.notifications.chime);
-
-    this.load.image("vip_gift", "world/vip_gift.png");
-    this.load.image("rarecrows", "world/rarecrows.webp");
 
     this.load.image("page", "world/page.png");
     this.load.image("arrows_to_move", "world/arrows_to_move.png");
 
     this.load.image("shop_icon", "world/shop_disc.png");
     this.load.image("trade_icon", "world/trade_icon.png");
+    this.load.image("showcase_board", "world/showcase_board.png");
+    this.load.image("speaker", "world/speaker.webp");
     this.load.image("balloon", `world/heart_air_balloon.webp`);
 
     this.load.spritesheet("plaza_bud", "world/plaza_bud.png", {
@@ -246,6 +300,8 @@ export class PlazaScene extends BaseScene {
     this.load.image("squirrel_onesie_npc", "world/squirrel_onesie_npc.webp");
 
     this.load.image("ronin_banner", "world/ronin_banner.webp");
+
+    this.load.image("yakkamon", "world/yakkamon.png");
 
     const chapter = getCurrentChapter(Date.now());
     // chapter = "Paw Prints"; // Testing only
@@ -313,17 +369,6 @@ export class PlazaScene extends BaseScene {
       }
     });
 
-    const rarecrows = this.add
-      .sprite(277, 420, "rarecrows")
-      .setDepth(100000000);
-    rarecrows.setInteractive({ cursor: "pointer" }).on("pointerdown", () => {
-      if (this.checkDistanceToSprite(rarecrows, 75)) {
-        interactableModalManager.open("rarecrows");
-      } else {
-        this.currentPlayer?.speak(translate("base.iam.far.away"));
-      }
-    });
-
     const petShop = this.add.sprite(164, 136, "pet_shop");
     petShop.setInteractive({ cursor: "pointer" }).on("pointerdown", () => {
       if (this.checkDistanceToSprite(petShop, 75)) {
@@ -341,6 +386,11 @@ export class PlazaScene extends BaseScene {
         this.currentPlayer?.speak(translate("base.iam.far.away"));
       }
     });
+
+    this.addDesignShowcaseBoard();
+    this.addChapterCropWeekBoard();
+
+    this.addYakkamon();
 
     const prizesLabel = new Label(this, "PRIZES", "gold");
     prizesLabel.setPosition(560, 230);
@@ -446,13 +496,6 @@ export class PlazaScene extends BaseScene {
         .setDepth(1000000000000);
     }
 
-    if (!hasTimeBasedFeatureAccess("PET_CHAPTER_COMPLETE", now)) {
-      const vipGift = this.add.sprite(379, 240, "vip_gift");
-      vipGift.setInteractive({ cursor: "pointer" }).on("pointerdown", () => {
-        interactableModalManager.open("vip_chest");
-      });
-    }
-
     if (this.gameState.inventory["Treasure Key"]) {
       this.add.sprite(106, 140, "key_disc").setDepth(1000000000);
     } else {
@@ -530,7 +573,7 @@ export class PlazaScene extends BaseScene {
       this.add.sprite(825, 50, "locked_disc").setDepth(1000000000);
     }
 
-    const clubHouseLabel = new Label(this, "CLUBHOUSE", "brown");
+    const clubHouseLabel = new Label(this, "CLUBHOUSE", "brown", "gift_icon");
     clubHouseLabel.setPosition(152, 262);
     clubHouseLabel.setDepth(10000000);
     this.add.existing(clubHouseLabel);
@@ -707,7 +750,9 @@ export class PlazaScene extends BaseScene {
       .setInteractive({ cursor: "pointer" })
       .on("pointerdown", () => {
         if (this.checkDistanceToSprite(turtle, 75)) {
-          interactableModalManager.open("bud");
+          interactableModalManager.open(
+            this.isBudBoxRewardAvailable() ? "bud_box_guide" : "bud",
+          );
         } else {
           this.currentPlayer?.speak(translate("base.iam.far.away"));
         }
@@ -738,6 +783,16 @@ export class PlazaScene extends BaseScene {
         }
       });
 
+    const refreshBudBoxIndicator = () => {
+      clubHouseLabel.setIconVisible(this.isBudBoxRewardAvailable());
+    };
+
+    refreshBudBoxIndicator();
+    this.game.events.on("gameStateUpdated", refreshBudBoxIndicator);
+    this.events.once("shutdown", () => {
+      this.game.events.off("gameStateUpdated", refreshBudBoxIndicator);
+    });
+
     if (this.textures.exists("sparkle")) {
       const sparkle = this.add.sprite(567, 191, "sparkle");
       sparkle.setDepth(1000000);
@@ -764,16 +819,11 @@ export class PlazaScene extends BaseScene {
       const sparkle5 = this.add.sprite(634, 191, "sparkle");
       sparkle5.setDepth(1000000);
 
-      // Rarecrows
-      const rarecrowsSparkle = this.add.sprite(277, 410, "sparkle");
-      rarecrowsSparkle.setDepth(100000000);
-
       sparkle.play(`sparkel_anim`, true);
       sparkle2.play(`sparkel_anim`, true);
       sparkle3.play(`sparkel_anim`, true);
       sparkle4.play(`sparkel_anim`, true);
       sparkle5.play(`sparkel_anim`, true);
-      rarecrowsSparkle.play(`sparkel_anim`, true);
     }
 
     // After Paw Prints, items are added on the tiled map itself
@@ -830,6 +880,7 @@ export class PlazaScene extends BaseScene {
 
       snowHornBud.setVisible(!isOpen);
       chest.setVisible(!isOpen);
+      refreshBudBoxIndicator();
 
       if (wasOpen === isOpen) {
         this.mmoService?.state.context.server?.send(0, {
@@ -855,6 +906,210 @@ export class PlazaScene extends BaseScene {
         this.layers["Club House Door"].setVisible(true);
       }
     });
+  }
+
+  /**
+   * Yakkamon opens the pre-registration modal where players claim their sign up
+   * code. Placed on square (12, 18) of the Tiled map - the map is 16px per tile,
+   * and Phaser sprites are centre-anchored, hence the + 8 on each axis. The extra
+   * offsets nudge them off the tile centre to sit nicely against the scenery.
+   */
+  addYakkamon() {
+    const x = 12 * SQUARE_WIDTH + SQUARE_WIDTH / 2 + 10;
+    const y = 18 * SQUARE_WIDTH + SQUARE_WIDTH / 2 - 42;
+
+    const yakkamon = this.add.sprite(x, y, "yakkamon").setDepth(y);
+
+    const label = new Label(this, "YAKKAMON", "gold");
+    label.setPosition(x, y - 21);
+    label.setDepth(10000000);
+    this.add.existing(label);
+
+    yakkamon.setInteractive({ cursor: "pointer" }).on("pointerdown", () => {
+      if (this.checkDistanceToSprite(yakkamon, 75)) {
+        interactableModalManager.open("yakkamon");
+      } else {
+        this.currentPlayer?.speak(translate("base.iam.far.away"));
+      }
+    });
+  }
+
+  /**
+   * Chapter Crop Week cooking leaderboard noticeboard. It stands in the free
+   * nook just right of the spawn statue (tiles 30-32 x 15-18 of
+   * `seasonal_plaza.json`, outside the 7x7 spawn block centred on the statue)
+   * and opens the top-100 event-recipe cooks modal. Only players with event
+   * access see it: admin testers ahead of the start date, everyone during the
+   * week, nobody after it ends.
+   */
+  addChapterCropWeekBoard() {
+    if (!hasChapterCropWeekAccess(this.gameState)) return;
+
+    const board = this.add.sprite(504, 288, "showcase_board").setDepth(1000000);
+
+    // Only the base of the board blocks movement, so players can walk behind it
+    this.physics.world.enable(board);
+    this.colliders?.add(board);
+    (board.body as Phaser.Physics.Arcade.Body)
+      .setSize(40, 8)
+      .setOffset(0, 22)
+      .setImmovable(true)
+      .setCollideWorldBounds(true);
+
+    board.setInteractive({ cursor: "pointer" }).on("pointerdown", () => {
+      if (!this.checkDistanceToSprite(board, 75)) {
+        this.currentPlayer?.speak(translate("base.iam.far.away"));
+        return;
+      }
+
+      interactableModalManager.open("chapter_crop_week_leaderboard");
+    });
+
+    const label = new Label(this, "TOP COOKS", "gold");
+    label.setPosition(504, 267);
+    label.setDepth(10000000);
+    this.add.existing(label);
+  }
+
+  /**
+   * Noticeboard that opens the Farm Design Showcase. It sits at a high depth so
+   * players walk behind it, and gets an unread icon while the showcase holds a
+   * design this player has not opened yet.
+   */
+  addDesignShowcaseBoard() {
+    const board = this.add.sprite(560, 339, "showcase_board").setDepth(1000000);
+
+    // Only the base of the board blocks movement, so players can walk behind it
+    this.physics.world.enable(board);
+    this.colliders?.add(board);
+    (board.body as Phaser.Physics.Arcade.Body)
+      .setSize(40, 8)
+      .setOffset(0, 22)
+      .setImmovable(true)
+      .setCollideWorldBounds(true);
+
+    let unreadIcon: Phaser.GameObjects.Image | undefined;
+
+    board.setInteractive({ cursor: "pointer" }).on("pointerdown", () => {
+      if (!this.checkDistanceToSprite(board, 75)) {
+        this.currentPlayer?.speak(translate("base.iam.far.away"));
+        return;
+      }
+
+      // The modal marks everything it loads as seen
+      unreadIcon?.destroy();
+      unreadIcon = undefined;
+
+      interactableModalManager.open("design_showcase");
+    });
+
+    const token = this.authService.getSnapshot().context.user.rawToken ?? "";
+
+    getShowcasedDesigns({ token })
+      .then((designs) => {
+        if (!board.active) return;
+
+        if (hasUnseenDesigns(designs)) {
+          unreadIcon = this.add.image(560, 321, "speaker").setDepth(1000000000);
+        }
+
+        this.addShowcaseGardeners(designs, () => {
+          unreadIcon?.destroy();
+          unreadIcon = undefined;
+        });
+      })
+      .catch(() => undefined);
+  }
+
+  /**
+   * Spawns the three most recently showcased designers as bumpkins watering
+   * the fenced field below the Design Showcase board. Clicking one opens the
+   * showcase, just like the board itself.
+   */
+  addShowcaseGardeners(designs: ShowcasedDesign[], onOpen: () => void) {
+    const latest = [...designs]
+      .sort((a, b) => b.showcasedAt - a.showcasedAt)
+      .slice(0, SHOWCASE_FIELD_SPOTS.length);
+
+    latest.forEach((design, i) => {
+      const { x, y, direction } = SHOWCASE_FIELD_SPOTS[i];
+      const clothing = { ...design.bumpkin, updatedAt: 0 };
+
+      const gardener: BumpkinContainer = new BumpkinContainer({
+        scene: this,
+        x,
+        y,
+        clothing,
+        direction,
+        onClick: () => {
+          const distance = Phaser.Math.Distance.BetweenPoints(
+            gardener,
+            this.currentPlayer as BumpkinContainer,
+          );
+
+          if (distance > 75) {
+            this.currentPlayer?.speak(translate("base.iam.far.away"));
+            return;
+          }
+
+          onOpen();
+          interactableModalManager.open("design_showcase");
+        },
+      });
+      gardener.setDepth(SHOWCASE_GARDENER_DEPTH);
+
+      this.keepWatering(gardener, clothing);
+    });
+  }
+
+  /**
+   * Loads the outfit's watering spritesheet (BumpkinContainer only bakes
+   * idle/walking/dig/drilling into its own sheets) and keeps the loop playing.
+   * Re-asserted every frame because BumpkinContainer swaps to its own idle
+   * animation once its base sheet finishes loading.
+   */
+  private keepWatering(
+    container: BumpkinContainer,
+    clothing: Player["clothing"],
+  ) {
+    const outfitKey = tokenUriBuilder(clothing);
+    const sheetKey = `watering-${outfitKey}`;
+    const animKey = `watering-anim-${outfitKey}`;
+
+    if (!this.anims.exists(animKey) && !this.textures.exists(sheetKey)) {
+      this.load.spritesheet(sheetKey, getAnimationUrl(clothing, ["watering"]), {
+        frameWidth: 96,
+        frameHeight: 64,
+      });
+      this.load.once(`filecomplete-spritesheet-${sheetKey}`, () => {
+        if (this.anims.exists(animKey) || !this.textures.exists(sheetKey)) {
+          return;
+        }
+
+        this.anims.create({
+          key: animKey,
+          frames: this.anims.generateFrameNumbers(sheetKey),
+          frameRate: 10,
+          repeat: -1,
+        });
+      });
+      this.load.start();
+    }
+
+    const reassert = () => {
+      if (!container.active) {
+        this.events.off("update", reassert);
+        return;
+      }
+
+      const sprite = container.sprite;
+      if (!sprite?.active || !this.anims.exists(animKey)) return;
+
+      if (sprite.anims.getName() !== animKey || !sprite.anims.isPlaying) {
+        sprite.play(animKey, true);
+      }
+    };
+    this.events.on("update", reassert);
   }
 
   syncPlaceables() {

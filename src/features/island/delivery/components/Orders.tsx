@@ -1,5 +1,5 @@
 import { SUNNYSIDE } from "assets/sunnyside";
-import React, { useContext, useEffect, useState } from "react";
+import React, { useContext, useEffect, useRef, useState } from "react";
 import classNames from "classnames";
 import Decimal from "decimal.js-light";
 
@@ -7,21 +7,22 @@ import token from "assets/icons/flower_token.webp";
 import chest from "assets/icons/chest.png";
 import lock from "assets/icons/lock.png";
 import lightning from "assets/icons/lightning.png";
-import chapterPoints from "assets/icons/red_medal_short.webp";
+import chapterPointsIcon from "assets/icons/red_medal_short.webp";
 
 import { DynamicNFT } from "features/bumpkins/components/DynamicNFT";
 import {
-  QuestNPCName,
+  type QuestNPCName,
   TICKET_REWARDS,
+  areBumpkinsOnHoliday,
   generateDeliveryTickets,
   getOrderSellPrice,
 } from "features/game/events/landExpansion/deliver";
 import { PIXEL_SCALE } from "features/game/lib/constants";
-import { getKeys } from "features/game/types/craftables";
-import { GameState, Order } from "features/game/types/game";
+import { getKeys } from "lib/object";
+import type { GameState, Order } from "features/game/types/game";
 import { ITEM_DETAILS } from "features/game/types/images";
 
-import { NPCName, NPC_WEARABLES } from "lib/npcs";
+import { type NPCName, NPC_WEARABLES } from "lib/npcs";
 import {
   getDayOfYear,
   secondsTillReset,
@@ -29,7 +30,7 @@ import {
 } from "lib/utils/time";
 import {
   NPC_DELIVERY_LEVELS,
-  DeliveryNpcName,
+  type DeliveryNpcName,
   acknowledgeOrders,
   generateDeliveryMessage,
   isCoinNPC,
@@ -50,7 +51,12 @@ import { getBumpkinHoliday } from "lib/utils/getSeasonWeek";
 import { useAppTranslation } from "lib/i18n/useAppTranslations";
 import { Loading } from "features/auth/components";
 import { useNavigate } from "react-router";
-import { getBumpkinLevel } from "features/game/lib/level";
+import {
+  getAscensionLevel,
+  meetsLevelRequirement,
+  levelRequirementToTotal,
+  type LevelRequirement,
+} from "features/game/lib/level";
 import { SquareIcon } from "components/ui/SquareIcon";
 import { formatNumber } from "lib/utils/formatNumber";
 import { isMobile } from "mobile-device-detect";
@@ -65,6 +71,8 @@ import { OrderCard } from "./OrderCard";
 import { LockedOrderCard } from "./LockedOrderCard";
 import { pixelVibrantBorderStyle } from "features/game/lib/style";
 import { getChapterTaskPoints } from "features/game/types/tracks";
+import { hasTimeBasedFeatureAccess } from "lib/flags";
+import { BoostsDisplay } from "components/ui/layouts/BoostsDisplay";
 
 // Bumpkins
 export const BEACH_BUMPKINS: NPCName[] = [
@@ -73,9 +81,9 @@ export const BEACH_BUMPKINS: NPCName[] = [
   "finn",
   "finley",
   "miranda",
-  "old salty",
-  "pharaoh",
 ];
+
+export const DIGGING_BUMPKINS: NPCName[] = ["old salty", "pharaoh"];
 
 export const KINGDOM_BUMPKINS: NPCName[] = ["victoria", "jester", "gambit"];
 
@@ -130,6 +138,8 @@ export const DeliveryOrders: React.FC<Props> = ({
 
   const [showSkipDialog, setShowSkipDialog] = useState(false);
   const [isRevealing, setIsRevealing] = useState(false);
+  const [showTicketBoosts, setShowTicketBoosts] = useState(false);
+  const ticketBoostsAnchorRef = useRef<HTMLDivElement>(null);
 
   const now = useNow({ live: true });
   const chapterTicket = getChapterTicket(now);
@@ -149,13 +159,14 @@ export const DeliveryOrders: React.FC<Props> = ({
   }
   const completedAt = npcs?.[previewOrder.from]?.deliveryCompletedAt;
 
-  const dateKey = new Date().toISOString().substring(0, 10);
+  const dateKey = new Date(now).toISOString().substring(0, 10);
 
   const hasClaimedBonus =
     !!completedAt &&
     new Date(completedAt).toISOString().substring(0, 10) === dateKey;
   const canSkip =
-    getDayOfYear(new Date()) !== getDayOfYear(new Date(previewOrder.createdAt));
+    getDayOfYear(new Date(now)) !==
+    getDayOfYear(new Date(previewOrder.createdAt));
 
   const skip = () => {
     setShowSkipDialog(false);
@@ -187,6 +198,7 @@ export const DeliveryOrders: React.FC<Props> = ({
 
   const getLocationName = (npcName: NPCName) => {
     if (RETREAT_BUMPKINS.includes(npcName)) return t("world.retreat");
+    if (DIGGING_BUMPKINS.includes(npcName)) return t("world.digging");
     if (BEACH_BUMPKINS.includes(npcName)) return t("world.beach");
     if (KINGDOM_BUMPKINS.includes(npcName)) return t("world.kingdom");
     return t("world.plaza");
@@ -197,6 +209,7 @@ export const DeliveryOrders: React.FC<Props> = ({
       const customPreposition: Record<string, string> = {
         [t("world.retreat")]: "в",
         [t("world.beach")]: "на",
+        [t("world.digging")]: "на",
         [t("world.kingdom")]: "в",
         [t("world.plaza")]: "на",
       };
@@ -216,11 +229,17 @@ export const DeliveryOrders: React.FC<Props> = ({
   const { holiday } = getBumpkinHoliday({ now });
 
   // Check if matches UTC date
-  const isHoliday = holiday === new Date().toISOString().split("T")[0];
+  const todayDate = new Date(now).toISOString().split("T")[0];
+  const isHoliday = holiday === todayDate;
 
   const nextHolidayInSecs = (new Date(holiday ?? 0).getTime() - now) / 1000;
 
-  const level = getBumpkinLevel(bumpkin?.experience ?? 0);
+  const ascension = getAscensionLevel({
+    experience: bumpkin.experience ?? 0,
+    ascensionLevel: state.island.ascensionLevel ?? 0,
+  });
+  const isBelowLevel = (requirement: LevelRequirement) =>
+    !meetsLevelRequirement(ascension, requirement);
 
   const coinOrders = orders.filter((order) => order.reward.coins);
   const sflOrders = orders.filter((order) => order.reward.sfl);
@@ -230,24 +249,110 @@ export const DeliveryOrders: React.FC<Props> = ({
 
   const nextCoinUnlock = getKeys(NPC_DELIVERY_LEVELS)
     .filter((name) => isCoinNPC(name))
-    .sort((a, b) => (NPC_DELIVERY_LEVELS[a] > NPC_DELIVERY_LEVELS[b] ? 1 : -1))
-    .find((npc) => level < (NPC_DELIVERY_LEVELS?.[npc] ?? 0));
+    .sort((a, b) =>
+      levelRequirementToTotal(NPC_DELIVERY_LEVELS[a]) >
+      levelRequirementToTotal(NPC_DELIVERY_LEVELS[b])
+        ? 1
+        : -1,
+    )
+    .find((npc) => isBelowLevel(NPC_DELIVERY_LEVELS[npc]));
 
   const nextTicketUnlock = getKeys(NPC_DELIVERY_LEVELS)
     .filter((name) => isTicketNPC(name))
-    .sort((a, b) => (NPC_DELIVERY_LEVELS[a] > NPC_DELIVERY_LEVELS[b] ? 1 : -1))
-    .find((npc) => level < (NPC_DELIVERY_LEVELS?.[npc] ?? 0));
+    .sort((a, b) =>
+      levelRequirementToTotal(NPC_DELIVERY_LEVELS[a]) >
+      levelRequirementToTotal(NPC_DELIVERY_LEVELS[b])
+        ? 1
+        : -1,
+    )
+    .find((npc) => isBelowLevel(NPC_DELIVERY_LEVELS[npc]));
 
   const nextSFLUnlock = getKeys(NPC_DELIVERY_LEVELS)
     .filter((name) => isSFLNPC(name))
-    .sort((a, b) => (NPC_DELIVERY_LEVELS[a] > NPC_DELIVERY_LEVELS[b] ? 1 : -1))
-    .find((npc) => level < (NPC_DELIVERY_LEVELS?.[npc] ?? 0));
+    .sort((a, b) =>
+      levelRequirementToTotal(NPC_DELIVERY_LEVELS[a]) >
+      levelRequirementToTotal(NPC_DELIVERY_LEVELS[b])
+        ? 1
+        : -1,
+    )
+    .find((npc) => isBelowLevel(NPC_DELIVERY_LEVELS[npc]));
 
-  const tickets = generateDeliveryTickets({
-    game: state,
-    npc: previewOrder.from,
-    now,
-  });
+  const { amount: baseTickets, boostsUsed: ticketBoostsUsed } =
+    generateDeliveryTickets({
+      game: state,
+      npc: previewOrder.from,
+      now,
+    });
+
+  // During ticket freeze (holiday), quest ticket deliveries are blocked.
+  // Coin deliveries can still be completed but award 0 tickets.
+  // Hide ticket counts on frozen quest orders to avoid mixed messaging.
+  const tickets =
+    isHoliday && !isTicketNPC(previewOrder.from) ? 0 : baseTickets;
+  const ticketDisplay =
+    isHoliday && isTicketNPC(previewOrder.from) && baseTickets > 0
+      ? 0
+      : tickets;
+
+  const getChapterPoints = () => {
+    if (
+      isCoinNPC(previewOrder.from) &&
+      hasTimeBasedFeatureAccess({
+        featureName: "TICKETS_FROM_COIN_NPC",
+        now: previewOrder.createdAt,
+        game: state,
+      })
+    ) {
+      if (areBumpkinsOnHoliday(previewOrder.createdAt)) {
+        return 0;
+      }
+      if (
+        getCurrentChapter(previewOrder.createdAt) !== getCurrentChapter(now)
+      ) {
+        return 0;
+      }
+      return getChapterTaskPoints({
+        task: "coinDelivery",
+        points: 10,
+      });
+    }
+    if (
+      isSFLNPC(previewOrder.from) &&
+      hasTimeBasedFeatureAccess({
+        featureName: "TICKETS_FROM_FLOWER_NPC",
+        now: previewOrder.createdAt,
+        game: state,
+      })
+    ) {
+      if (areBumpkinsOnHoliday(previewOrder.createdAt)) {
+        return 0;
+      }
+      if (
+        getCurrentChapter(previewOrder.createdAt) !== getCurrentChapter(now)
+      ) {
+        return 0;
+      }
+      return getChapterTaskPoints({
+        task: "flowerDelivery",
+        points: 10,
+      });
+    }
+    return getChapterTaskPoints({
+      task: "delivery",
+      points: ticketDisplay,
+    });
+  };
+
+  const chapterPoints = getChapterPoints();
+
+  const isFrozenQuestOrder =
+    isHoliday && isTicketNPC(previewOrder.from) && baseTickets > 0;
+  const hasRewardAmount =
+    previewOrder.reward.coins !== undefined ||
+    previewOrder.reward.sfl !== undefined;
+  const rewardDisplayValue = hasRewardAmount
+    ? makeRewardAmountForLabel(previewOrder)
+    : ticketDisplay;
 
   const chapter = getCurrentChapter(now);
 
@@ -272,13 +377,12 @@ export const DeliveryOrders: React.FC<Props> = ({
           <p className="my-2 ml-1 text-xs">{t("deliveries.intro")}</p>
         </div>
 
-        <Label
-          type="default"
-          className="ml-2 mb-2"
-          icon={SUNNYSIDE.ui.coinsImg}
-        >
-          {t("coins")}
-        </Label>
+        <div className="flex items-center ml-2 mb-2">
+          <Label type="default" icon={SUNNYSIDE.ui.coinsImg}>
+            {t("coins")}
+          </Label>
+          <img src={chapterPointsIcon} className="h-5 ml-0.5" />
+        </div>
         <div className="grid grid-cols-3 sm:grid-cols-4 w-full ml-1">
           {coinOrders.map((order) => {
             return (
@@ -304,7 +408,7 @@ export const DeliveryOrders: React.FC<Props> = ({
               >
                 {chapterTicket}
               </Label>
-              <img src={chapterPoints} className="h-5 mb-2 ml-0.5" />
+              <img src={chapterPointsIcon} className="h-5 mb-2 ml-0.5" />
             </div>
             {isHoliday && (
               <Label type="formula" icon={lock} className="mt-1">
@@ -313,7 +417,7 @@ export const DeliveryOrders: React.FC<Props> = ({
             )}
             <NextHolidayLabel holiday={holiday} now={now} />
           </div>
-          {level <= 8 && (
+          {isBelowLevel({ ascension: 0, level: 9 }) && (
             <span className="text-xs mb-2">
               {t("bumpkin.delivery.earnTickets", {
                 ticket: chapterTicket,
@@ -346,11 +450,14 @@ export const DeliveryOrders: React.FC<Props> = ({
 
         <div className="px-2 mt-2">
           <div className="flex justify-between">
-            <Label type="default" icon={token} className="mb-2">
-              {`FLOWER`}
-            </Label>
+            <div className="flex items-center mb-2">
+              <Label type="default" icon={token}>
+                {`FLOWER`}
+              </Label>
+              <img src={chapterPointsIcon} className="h-5 ml-0.5" />
+            </div>
           </div>
-          {level <= 12 && (
+          {isBelowLevel({ ascension: 0, level: 13 }) && (
             <span className="text-xs mb-2">
               {t("bumpkin.delivery.earnSFL")}
             </span>
@@ -572,18 +679,93 @@ export const DeliveryOrders: React.FC<Props> = ({
                       />
                       <span className="text-xs ml-1">{t("reward")}</span>
                     </div>
-                    <Label type="warning" className="whitespace-nowrap">
-                      <span className={!isMobile ? "text-xxs" : ""}>
-                        {`${tickets || makeRewardAmountForLabel(previewOrder)} ${
-                          previewOrder.reward.coins
-                            ? t("coins")
-                            : previewOrder.reward.sfl
-                              ? "FLOWER"
-                              : chapterTicket
-                        }`}
-                      </span>
-                    </Label>
+                    <div className="flex flex-col items-end gap-1">
+                      {hasRewardAmount && (
+                        <Label type="warning" className="whitespace-nowrap">
+                          <span className={!isMobile ? "text-xxs" : ""}>
+                            {`${rewardDisplayValue} ${
+                              previewOrder.reward.coins
+                                ? t("coins")
+                                : previewOrder.reward.sfl
+                                  ? "FLOWER"
+                                  : chapterTicket
+                            }`}
+                          </span>
+                        </Label>
+                      )}
+                      {(!!ticketDisplay || isFrozenQuestOrder) && (
+                        <div
+                          ref={ticketBoostsAnchorRef}
+                          className={classNames("relative", {
+                            "cursor-pointer": ticketBoostsUsed.length > 0,
+                          })}
+                          role={
+                            ticketBoostsUsed.length > 0 ? "button" : undefined
+                          }
+                          tabIndex={ticketBoostsUsed.length > 0 ? 0 : undefined}
+                          aria-expanded={
+                            ticketBoostsUsed.length > 0
+                              ? showTicketBoosts
+                              : undefined
+                          }
+                          onClick={(e) => {
+                            if (ticketBoostsUsed.length === 0) return;
+                            e.stopPropagation();
+                            setShowTicketBoosts((prev) => !prev);
+                          }}
+                          onKeyDown={(e) => {
+                            if (
+                              ticketBoostsUsed.length === 0 ||
+                              (e.key !== "Enter" && e.key !== " ")
+                            )
+                              return;
+                            e.preventDefault();
+                            e.stopPropagation();
+                            setShowTicketBoosts((prev) => !prev);
+                          }}
+                        >
+                          <Label
+                            type="warning"
+                            className="whitespace-nowrap"
+                            icon={ITEM_DETAILS[chapterTicket].image}
+                          >
+                            <span className={!isMobile ? "text-xxs" : ""}>
+                              {`${
+                                isFrozenQuestOrder ? baseTickets : ticketDisplay
+                              } ${chapterTicket}`}
+                            </span>
+                          </Label>
+                          {ticketBoostsUsed.length > 0 && showTicketBoosts && (
+                            <BoostsDisplay
+                              boosts={ticketBoostsUsed}
+                              show={showTicketBoosts}
+                              state={state}
+                              onClick={() => setShowTicketBoosts(false)}
+                              anchorRef={ticketBoostsAnchorRef}
+                              portalAlign="right"
+                              portalPlacement="auto"
+                            />
+                          )}
+                        </div>
+                      )}
+                    </div>
                   </div>
+                  {getKeys(previewOrder.reward.items ?? {}).length > 0 && (
+                    <div className="flex flex-wrap gap-1 items-center">
+                      {getKeys(previewOrder.reward.items ?? {}).map((item) => (
+                        <Label
+                          key={item}
+                          type="warning"
+                          className="whitespace-nowrap"
+                        >
+                          <span className={!isMobile ? "text-xxs" : ""}>
+                            {`${previewOrder.reward.items?.[item]} ${item}`}
+                          </span>
+                        </Label>
+                      ))}
+                    </div>
+                  )}
+                  {/* Points are displayed below in the purple badge. */}
                 </div>
                 <div className="mb-1">
                   {getActiveCalendarEvent({ calendar: state.calendar }) ===
@@ -609,6 +791,14 @@ export const DeliveryOrders: React.FC<Props> = ({
                               )
                             ) {
                               navigate("/world/retreat");
+                            } else if (
+                              DIGGING_BUMPKINS.includes(
+                                previewOrder?.from as NPCName,
+                              )
+                            ) {
+                              navigate("/world/beach", {
+                                state: { previousSceneId: "digging" },
+                              });
                             } else if (
                               BEACH_BUMPKINS.includes(
                                 previewOrder?.from as NPCName,
@@ -652,22 +842,17 @@ export const DeliveryOrders: React.FC<Props> = ({
                 )}
               </div>
             )}
-            {isHoliday &&
-              !!generateDeliveryTickets({
-                game: state,
-                npc: previewOrder.from,
-                now,
-              }) && (
-                <Label
-                  type="danger"
-                  className="mb-1"
-                  icon={SUNNYSIDE.icons.stopwatch}
-                >
-                  {t("deliveries.closed")}
-                </Label>
-              )}
+            {isHoliday && isTicketNPC(previewOrder.from) && baseTickets > 0 && (
+              <Label
+                type="danger"
+                className="mb-1"
+                icon={SUNNYSIDE.icons.stopwatch}
+              >
+                {t("deliveries.closed")}
+              </Label>
+            )}
           </InnerPanel>
-          {!!tickets && (
+          {!!chapterPoints && (
             <div
               className={classNames(
                 `w-full items-center flex  text-xs p-1 pr-4 mt-1 relative`,
@@ -678,10 +863,8 @@ export const DeliveryOrders: React.FC<Props> = ({
                 ...pixelVibrantBorderStyle,
               }}
             >
-              <img src={chapterPoints} className="h-4 mr-2" />
-              <p className="text-xs">
-                {`+${getChapterTaskPoints({ task: "delivery", tickets: tickets })} ${chapter} points`}
-              </p>
+              <img src={chapterPointsIcon} className="h-4 mr-2" />
+              <p className="text-xs">{`+${chapterPoints} ${chapter} points`}</p>
             </div>
           )}
         </div>
@@ -694,6 +877,7 @@ const NextHolidayLabel: React.FC<{
   holiday: string | undefined;
   now: number;
 }> = ({ holiday }) => {
+  const { t } = useAppTranslation();
   const { totalSeconds: secondsRemaining } = useCountdown(
     new Date(holiday ?? 0).getTime(),
   );
@@ -703,9 +887,11 @@ const NextHolidayLabel: React.FC<{
   if (secondsRemaining > 0 && secondsRemaining < 24 * 60 * 60) {
     return (
       <Label type="danger" icon={lock} className="mt-1">
-        {`${secondsToString(secondsRemaining, {
-          length: "medium",
-        })} left`}
+        {t("vipExpiry.timeLeft", {
+          time: secondsToString(secondsRemaining, {
+            length: "medium",
+          }),
+        })}
       </Label>
     );
   }

@@ -1,24 +1,13 @@
 import Decimal from "decimal.js-light";
-import { Dimensions } from "./buildings";
-import { BB_TO_GEM_RATIO, Inventory } from "./game";
-import { BoostTreasure, DecorationTreasure } from "./treasure";
+import type { Dimensions } from "./buildings";
+import { BB_TO_GEM_RATIO, type Inventory } from "./game";
+import type { BoostTreasure, DecorationTreasure } from "./treasure";
 import { translate } from "lib/i18n/translate";
-import { Template } from "./templates";
-import { BeanName, GiantFruit } from "./beans";
-import { DollName } from "../lib/crafting";
-
-/**
- * getKeys is a ref to Object.keys, but the return is typed literally.
- */
-export const getKeys = Object.keys as <T extends object>(
-  obj: T,
-) => Array<keyof T>;
-/**
- * getValues is a ref to Object.values, but the return is typed literally.
- */
-export const getValues = Object.values as <T extends object>(
-  obj: T,
-) => Array<T[keyof T]>;
+import type { Template } from "./templates";
+import type { BeanName, GiantFruit } from "./beans";
+import type { DollName } from "../lib/crafting";
+import { getKeys } from "lib/object";
+import { RARECROW_TEMPLATES } from "./rarecrows";
 
 export type AchievementDecorationName =
   | "Chef Bear"
@@ -54,10 +43,18 @@ export type LandscapingDecorationName =
   | "Potted Potato"
   | "Potted Pumpkin"
   | "Cactus"
-  | "Basic Bear"
   | "Bonnie's Tombstone"
   | "Grubnash's Tombstone"
-  | "Town Sign";
+  | "Town Sign"
+  | "Big Table"
+  | "Crate"
+  | "Empty Pot"
+  | "High Table"
+  | "Large Podium"
+  | "Long Table"
+  | "Royal Podium"
+  | "Square Table"
+  | "Stool";
 
 export type ShopDecorationName = LandscapingDecorationName;
 
@@ -96,7 +93,36 @@ export type ChapterDecorationName =
   | "Squeaky Chicken"
   | "Moon Fox Statue"
   | "Giant Acorn"
-  | "Diving Helmet";
+  | "Diving Helmet"
+  // Ascension Age
+  | "Salt Rug"
+  | "Ascended Idol"
+  | "Ascended Wheel"
+  | "Astrolabe"
+  | "Coat Rack"
+  | "Lampshade"
+  | "Marble Head"
+  | "Otty the Otter"
+  | "Salt Worker Gnome"
+  | "Shards Turtle"
+  | "Vibraphone"
+  | "Winged Vase"
+  // Cave Dwellers
+  | "Giant Truffle"
+  | "Mining Drill"
+  | "Piggy Bank"
+  | "Straw House"
+  | "Stick House"
+  | "Brick House"
+  | "Big Bad Wolf"
+  | "Pig Plush"
+  | "Pig Doll"
+  // Cave Dwellers track
+  | "Duende in a Bottle"
+  | "Mushroom Log"
+  | "Pot of Luck"
+  | "TNT"
+  | "Warning Sign";
 
 export type EventDecorationName =
   | "Jelly Lamp"
@@ -182,6 +208,7 @@ export type EventDecorationName =
   | "Bronze Friends Trophy"
   | "Silver Friends Trophy"
   | "Gold Friends Trophy"
+  | "Design Trophy"
   | "Cerberus"
   | "Witch's Cauldron"
   | "Raveyard"
@@ -199,7 +226,51 @@ export type EventDecorationName =
   | "Winter Alpaca"
   | "Penguin Surprise"
   | "Frozen Meat"
-  | "Ho Ho oh oh…";
+  | "Ho Ho oh oh…"
+  | "Teeth Toy"
+  | "Fake Treasure"
+  | "Fake Mouse"
+  | "Pet Tree"
+  | "Definitely not a Flower"
+  | "Bumpkin Rug"
+  | "Goblin Rug"
+  | "Pet Rug"
+  | "Jester in a box"
+  | "The Sunflower Man Statue"
+  | "Blue Paint Bucket"
+  | "Green Paint Bucket"
+  | "Purple Paint Bucket"
+  | "Yellow Paint Bucket"
+  | "Color Wheel"
+  | "Dhol Drum"
+  | "Mimic Slime Ball"
+  | "Mimic Winged Slime Ball"
+  | "Pork Jelly"
+  | "Rainbow Pork Jelly"
+  | "Slime Totem"
+  | "Giant Donut"
+  | "Fool's Gold"
+  | "Golden Slime Trophy"
+  | "Silver Slime Trophy"
+  | "Bronze Slime Trophy"
+  | "Corrupted Pumpkin"
+  | "Huge Jack-o'-lantern"
+  | "Haunted TV"
+  | "Zombie Hand Toy"
+  | "Cool Zombie Tombstone"
+  | "Destroyed Sign"
+  | "Skull Candles"
+  | "Plague Crow"
+  | "Skeleton Crow"
+  | "Witch Crow"
+  | "Fisherbird Crow"
+  | "Chained Crow"
+  | "Count Vlad Crow"
+  | "Lual Crow"
+  | "King Crow"
+  | "Devil Crow"
+  | "Pharaoh Crow"
+  | "Cultist Crow";
 
 export type TileName =
   | "Black Tile"
@@ -262,6 +333,13 @@ export const DECORATION_TEMPLATES = {
     isWithdrawable: () => false,
   },
   "Gold Friends Trophy": {
+    dimensions: {
+      width: 1,
+      height: 1,
+    },
+    isWithdrawable: () => false,
+  },
+  "Design Trophy": {
     dimensions: {
       width: 1,
       height: 1,
@@ -604,9 +682,303 @@ export const DECORATION_TEMPLATES = {
     },
     isWithdrawable: () => false,
   },
+  "Basic Bear": {
+    dimensions: {
+      width: 1,
+      height: 1,
+    },
+    isWithdrawable: () => false,
+  },
+  // Salt Awakening
+  "Salt Doll": {
+    dimensions: {
+      width: 1,
+      height: 1,
+    },
+    isWithdrawable: () => false,
+  },
+  "Jacuzzi Bear": {
+    dimensions: {
+      width: 1,
+      height: 1,
+    },
+    isWithdrawable: () => false,
+  },
+  // Letter tiles
+  "Letter A Tile": {
+    dimensions: {
+      width: 1,
+      height: 1,
+    },
+    isWithdrawable: () => false,
+  },
+  "Letter B Tile": {
+    dimensions: {
+      width: 1,
+      height: 1,
+    },
+    isWithdrawable: () => false,
+  },
+  "Letter C Tile": {
+    dimensions: {
+      width: 1,
+      height: 1,
+    },
+    isWithdrawable: () => false,
+  },
+  "Letter D Tile": {
+    dimensions: {
+      width: 1,
+      height: 1,
+    },
+    isWithdrawable: () => false,
+  },
+  "Letter E Tile": {
+    dimensions: {
+      width: 1,
+      height: 1,
+    },
+    isWithdrawable: () => false,
+  },
+  "Letter F Tile": {
+    dimensions: {
+      width: 1,
+      height: 1,
+    },
+    isWithdrawable: () => false,
+  },
+  "Letter G Tile": {
+    dimensions: {
+      width: 1,
+      height: 1,
+    },
+    isWithdrawable: () => false,
+  },
+  "Letter H Tile": {
+    dimensions: {
+      width: 1,
+      height: 1,
+    },
+    isWithdrawable: () => false,
+  },
+  "Letter I Tile": {
+    dimensions: {
+      width: 1,
+      height: 1,
+    },
+    isWithdrawable: () => false,
+  },
+  "Letter J Tile": {
+    dimensions: {
+      width: 1,
+      height: 1,
+    },
+    isWithdrawable: () => false,
+  },
+  "Letter K Tile": {
+    dimensions: {
+      width: 1,
+      height: 1,
+    },
+    isWithdrawable: () => false,
+  },
+  "Letter L Tile": {
+    dimensions: {
+      width: 1,
+      height: 1,
+    },
+    isWithdrawable: () => false,
+  },
+  "Letter M Tile": {
+    dimensions: {
+      width: 1,
+      height: 1,
+    },
+    isWithdrawable: () => false,
+  },
+  "Letter N Tile": {
+    dimensions: {
+      width: 1,
+      height: 1,
+    },
+    isWithdrawable: () => false,
+  },
+  "Letter O Tile": {
+    dimensions: {
+      width: 1,
+      height: 1,
+    },
+    isWithdrawable: () => false,
+  },
+  "Letter P Tile": {
+    dimensions: {
+      width: 1,
+      height: 1,
+    },
+    isWithdrawable: () => false,
+  },
+  "Letter Q Tile": {
+    dimensions: {
+      width: 1,
+      height: 1,
+    },
+    isWithdrawable: () => false,
+  },
+  "Letter R Tile": {
+    dimensions: {
+      width: 1,
+      height: 1,
+    },
+    isWithdrawable: () => false,
+  },
+  "Letter S Tile": {
+    dimensions: {
+      width: 1,
+      height: 1,
+    },
+    isWithdrawable: () => false,
+  },
+  "Letter T Tile": {
+    dimensions: {
+      width: 1,
+      height: 1,
+    },
+    isWithdrawable: () => false,
+  },
+  "Letter U Tile": {
+    dimensions: {
+      width: 1,
+      height: 1,
+    },
+    isWithdrawable: () => false,
+  },
+  "Letter V Tile": {
+    dimensions: {
+      width: 1,
+      height: 1,
+    },
+    isWithdrawable: () => false,
+  },
+  "Letter W Tile": {
+    dimensions: {
+      width: 1,
+      height: 1,
+    },
+    isWithdrawable: () => false,
+  },
+  "Letter X Tile": {
+    dimensions: {
+      width: 1,
+      height: 1,
+    },
+    isWithdrawable: () => false,
+  },
+  "Letter Y Tile": {
+    dimensions: {
+      width: 1,
+      height: 1,
+    },
+    isWithdrawable: () => false,
+  },
+  "Letter Z Tile": {
+    dimensions: {
+      width: 1,
+      height: 1,
+    },
+    isWithdrawable: () => false,
+  },
+  // Rarecrows sunset rewards
+  "Champion Rarecrow": {
+    dimensions: {
+      width: 1,
+      height: 1,
+    },
+    isWithdrawable: () => false,
+  },
+  "OG Rarecrow": {
+    dimensions: {
+      width: 1,
+      height: 1,
+    },
+    isWithdrawable: () => false,
+  },
+  "Loyal Rarecrow": {
+    dimensions: {
+      width: 1,
+      height: 1,
+    },
+    isWithdrawable: () => false,
+  },
+  // Chapter Crop Week #2 (Crystal Cookie) top cooks leaderboard reward
+  "Crystal Cookie Champion": {
+    dimensions: {
+      width: 2,
+      height: 2,
+    },
+    isWithdrawable: () => false,
+  },
+  // Rarecrows game migration
+  ...RARECROW_TEMPLATES,
 } satisfies Record<string, Template>;
 
 export type TemplateDecorationName = keyof typeof DECORATION_TEMPLATES;
+
+export type LetterTileName =
+  | "Letter A Tile"
+  | "Letter B Tile"
+  | "Letter C Tile"
+  | "Letter D Tile"
+  | "Letter E Tile"
+  | "Letter F Tile"
+  | "Letter G Tile"
+  | "Letter H Tile"
+  | "Letter I Tile"
+  | "Letter J Tile"
+  | "Letter K Tile"
+  | "Letter L Tile"
+  | "Letter M Tile"
+  | "Letter N Tile"
+  | "Letter O Tile"
+  | "Letter P Tile"
+  | "Letter Q Tile"
+  | "Letter R Tile"
+  | "Letter S Tile"
+  | "Letter T Tile"
+  | "Letter U Tile"
+  | "Letter V Tile"
+  | "Letter W Tile"
+  | "Letter X Tile"
+  | "Letter Y Tile"
+  | "Letter Z Tile";
+
+export const LETTER_TILES: Record<LetterTileName, object> = {
+  "Letter A Tile": {},
+  "Letter B Tile": {},
+  "Letter C Tile": {},
+  "Letter D Tile": {},
+  "Letter E Tile": {},
+  "Letter F Tile": {},
+  "Letter G Tile": {},
+  "Letter H Tile": {},
+  "Letter I Tile": {},
+  "Letter J Tile": {},
+  "Letter K Tile": {},
+  "Letter L Tile": {},
+  "Letter M Tile": {},
+  "Letter N Tile": {},
+  "Letter O Tile": {},
+  "Letter P Tile": {},
+  "Letter Q Tile": {},
+  "Letter R Tile": {},
+  "Letter S Tile": {},
+  "Letter T Tile": {},
+  "Letter U Tile": {},
+  "Letter V Tile": {},
+  "Letter W Tile": {},
+  "Letter X Tile": {},
+  "Letter Y Tile": {},
+  "Letter Z Tile": {},
+};
 
 export type DecorationName =
   | DollName
@@ -624,6 +996,36 @@ export type DecorationName =
   | GiantFruit;
 
 export const DECORATION_DIMENSIONS: Record<DecorationName, Dimensions> = {
+  // Ascension Age
+  "Salt Rug": { width: 3, height: 2 },
+  "Ascended Idol": { width: 3, height: 2 },
+  "Ascended Wheel": { width: 2, height: 2 },
+  Astrolabe: { width: 2, height: 2 },
+  "Coat Rack": { width: 1, height: 2 },
+  Lampshade: { width: 1, height: 1 },
+  "Marble Head": { width: 1, height: 2 },
+  "Otty the Otter": { width: 1, height: 1 },
+  "Salt Worker Gnome": { width: 1, height: 1 },
+  "Shards Turtle": { width: 1, height: 2 },
+  Vibraphone: { width: 2, height: 2 },
+  "Winged Vase": { width: 1, height: 1 },
+  // Cave Dwellers
+  "Giant Truffle": { width: 2, height: 2 },
+  "Mining Drill": { width: 2, height: 2 },
+  "Piggy Bank": { width: 2, height: 2 },
+  "Straw House": { width: 2, height: 2 },
+  "Stick House": { width: 2, height: 2 },
+  "Brick House": { width: 2, height: 2 },
+  "Big Bad Wolf": { width: 1, height: 2 },
+  "Pig Plush": { width: 1, height: 1 },
+  "Pig Doll": { width: 1, height: 2 },
+  // Cave Dwellers track
+  "Duende in a Bottle": { width: 2, height: 2 },
+  "Mushroom Log": { width: 2, height: 1 },
+  "Pot of Luck": { width: 2, height: 2 },
+  TNT: { width: 1, height: 1 },
+  "Warning Sign": { width: 1, height: 1 },
+
   "Diving Helmet": {
     width: 1,
     height: 2,
@@ -770,10 +1172,6 @@ export const DECORATION_DIMENSIONS: Record<DecorationName, Dimensions> = {
     width: 1,
   },
   Cactus: {
-    height: 1,
-    width: 1,
-  },
-  "Basic Bear": {
     height: 1,
     width: 1,
   },
@@ -1420,7 +1818,231 @@ export const DECORATION_DIMENSIONS: Record<DecorationName, Dimensions> = {
     width: 2,
     height: 2,
   },
+  "Teeth Toy": {
+    width: 2,
+    height: 1,
+  },
+  "Fake Treasure": {
+    width: 2,
+    height: 2,
+  },
+  "Fake Mouse": {
+    width: 1,
+    height: 1,
+  },
+  "Pet Tree": {
+    width: 1,
+    height: 2,
+  },
+  "Definitely not a Flower": {
+    width: 1,
+    height: 2,
+  },
+  "Bumpkin Rug": {
+    width: 2,
+    height: 2,
+  },
+  "Goblin Rug": {
+    width: 2,
+    height: 2,
+  },
+  "Pet Rug": {
+    width: 2,
+    height: 2,
+  },
+  "Jester in a box": {
+    width: 2,
+    height: 2,
+  },
+  "The Sunflower Man Statue": {
+    width: 2,
+    height: 2,
+  },
+  "Big Table": {
+    width: 3,
+    height: 3,
+  },
+  Crate: {
+    width: 1,
+    height: 1,
+  },
+  "Empty Pot": {
+    width: 2,
+    height: 1,
+  },
+  "High Table": {
+    width: 1,
+    height: 2,
+  },
+  "Large Podium": {
+    width: 3,
+    height: 3,
+  },
+  "Long Table": {
+    width: 2,
+    height: 1,
+  },
+  "Royal Podium": {
+    width: 2,
+    height: 2,
+  },
+  "Square Table": {
+    width: 2,
+    height: 2,
+  },
+  Stool: {
+    width: 1,
+    height: 1,
+  },
+  "Blue Paint Bucket": {
+    width: 1,
+    height: 2,
+  },
+  "Green Paint Bucket": {
+    width: 1,
+    height: 2,
+  },
+  "Purple Paint Bucket": {
+    width: 1,
+    height: 2,
+  },
+  "Yellow Paint Bucket": {
+    width: 1,
+    height: 2,
+  },
+  "Color Wheel": {
+    width: 2,
+    height: 2,
+  },
+  "Dhol Drum": {
+    width: 2,
+    height: 2,
+  },
+  "Mimic Slime Ball": {
+    width: 1,
+    height: 1,
+  },
+  "Mimic Winged Slime Ball": {
+    width: 1,
+    height: 1,
+  },
+  "Pork Jelly": {
+    width: 1,
+    height: 1,
+  },
+  "Rainbow Pork Jelly": {
+    width: 1,
+    height: 1,
+  },
+  "Slime Totem": {
+    width: 2,
+    height: 2,
+  },
+  "Giant Donut": {
+    width: 2,
+    height: 2,
+  },
+  "Fool's Gold": {
+    width: 2,
+    height: 2,
+  },
+  "Golden Slime Trophy": {
+    width: 1,
+    height: 2,
+  },
+  "Silver Slime Trophy": {
+    width: 1,
+    height: 2,
+  },
+  "Bronze Slime Trophy": {
+    width: 1,
+    height: 2,
+  },
+  "Corrupted Pumpkin": {
+    width: 2,
+    height: 2,
+  },
+  "Huge Jack-o'-lantern": {
+    width: 2,
+    height: 2,
+  },
+  "Haunted TV": {
+    width: 1,
+    height: 1,
+  },
+  "Zombie Hand Toy": {
+    width: 1,
+    height: 1,
+  },
+  "Cool Zombie Tombstone": {
+    width: 1,
+    height: 2,
+  },
+  "Destroyed Sign": {
+    width: 1,
+    height: 1,
+  },
+  "Skull Candles": {
+    width: 2,
+    height: 2,
+  },
+  "Plague Crow": {
+    width: 1,
+    height: 1,
+  },
+  "Skeleton Crow": {
+    width: 1,
+    height: 1,
+  },
+  "Witch Crow": {
+    width: 1,
+    height: 1,
+  },
+  "Fisherbird Crow": {
+    width: 1,
+    height: 1,
+  },
+  "Chained Crow": {
+    width: 1,
+    height: 1,
+  },
+  "Count Vlad Crow": {
+    width: 1,
+    height: 1,
+  },
+  "Lual Crow": {
+    width: 1,
+    height: 1,
+  },
+  "King Crow": {
+    width: 1,
+    height: 1,
+  },
+  "Devil Crow": {
+    width: 1,
+    height: 1,
+  },
+  "Pharaoh Crow": {
+    width: 1,
+    height: 1,
+  },
+  "Cultist Crow": {
+    width: 1,
+    height: 1,
+  },
 };
+
+export const HOME_LANDSCAPING_DECORATIONS: LandscapingDecorationName[] = [
+  "Big Table",
+  "Crate",
+  "Empty Pot",
+  "High Table",
+  "Large Podium",
+  "Long Table",
+  "Royal Podium",
+  "Square Table",
+  "Stool",
+];
 
 export type Decoration = {
   name: DecorationName;
@@ -1629,13 +2251,6 @@ export const LANDSCAPING_DECORATIONS: Record<
     coins: 80,
     ingredients: {},
   },
-  "Basic Bear": {
-    name: "Basic Bear",
-    description: translate("description.basic.bear"),
-    coins: 200,
-    ingredients: {},
-  },
-
   "Bonnie's Tombstone": {
     name: "Bonnie's Tombstone",
     description: translate("description.bonnies.tombstone"),
@@ -1661,6 +2276,60 @@ export const LANDSCAPING_DECORATIONS: Record<
     ingredients: {
       Wood: new Decimal(100),
     },
+  },
+  "Big Table": {
+    name: "Big Table",
+    description: translate("description.big.table"),
+    coins: 2000,
+    ingredients: {},
+  },
+  Crate: {
+    name: "Crate",
+    description: translate("description.crate"),
+    coins: 500,
+    ingredients: {},
+  },
+  "Empty Pot": {
+    name: "Empty Pot",
+    description: translate("description.empty.pot"),
+    coins: 500,
+    ingredients: {},
+  },
+  "High Table": {
+    name: "High Table",
+    description: translate("description.high.table"),
+    coins: 1000,
+    ingredients: {},
+  },
+  "Large Podium": {
+    name: "Large Podium",
+    description: translate("description.large.podium"),
+    coins: 2000,
+    ingredients: {},
+  },
+  "Long Table": {
+    name: "Long Table",
+    description: translate("description.long.table"),
+    coins: 1000,
+    ingredients: {},
+  },
+  "Royal Podium": {
+    name: "Royal Podium",
+    description: translate("description.royal.podium"),
+    coins: 2500,
+    ingredients: {},
+  },
+  "Square Table": {
+    name: "Square Table",
+    description: translate("description.square.table"),
+    coins: 1000,
+    ingredients: {},
+  },
+  Stool: {
+    name: "Stool",
+    description: translate("description.stool"),
+    coins: 500,
+    ingredients: {},
   },
 };
 

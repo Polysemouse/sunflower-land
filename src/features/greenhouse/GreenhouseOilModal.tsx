@@ -5,7 +5,7 @@ import oilIcon from "assets/resources/oil.webp";
 import barrel from "assets/resources/oil_barrel.webp";
 
 import { Context } from "features/game/GameProvider";
-import { MachineState } from "features/game/lib/gameMachine";
+import type { MachineState } from "features/game/lib/gameMachine";
 
 import { Label } from "components/ui/Label";
 import { Modal } from "components/ui/Modal";
@@ -19,7 +19,7 @@ import {
   OIL_USAGE,
   SEED_TO_PLANT,
 } from "features/game/events/landExpansion/plantGreenhouse";
-import { getKeys } from "features/game/types/craftables";
+import { getKeys } from "lib/object";
 import { useAppTranslation } from "lib/i18n/useAppTranslations";
 import { SUNNYSIDE } from "assets/sunnyside";
 import { formatNumber } from "lib/utils/formatNumber";

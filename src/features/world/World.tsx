@@ -1,20 +1,21 @@
 import { Context } from "features/game/GameProvider";
+import { CONFIG } from "lib/config";
 import { ModalProvider } from "features/game/components/modal/ModalProvider";
 import React, { createContext, useContext, useEffect } from "react";
 import { PhaserComponent } from "./Phaser";
 import { useActor, useInterpret, useSelector } from "@xstate/react";
-import { MachineState } from "features/game/lib/gameMachine";
+import type { MachineState } from "features/game/lib/gameMachine";
 import { Modal } from "components/ui/Modal";
 import { Panel } from "components/ui/Panel";
 import { Outlet, useLocation, useNavigate, useParams } from "react-router";
-import { SceneId } from "./mmoMachine";
+import type { SceneId } from "./mmoMachine";
 import { SUNNYSIDE } from "assets/sunnyside";
 import PubSub from "pubsub-js";
 
 import {
-  MachineInterpreter as MMOMachineInterpreter,
+  type MachineInterpreter as MMOMachineInterpreter,
   mmoMachine,
-  MachineState as MMOMachineState,
+  type MachineState as MMOMachineState,
 } from "./mmoMachine";
 import * as AuthProvider from "features/auth/lib/Provider";
 import { Ocean } from "./ui/Ocean";
@@ -25,15 +26,42 @@ import { useAppTranslation } from "lib/i18n/useAppTranslations";
 import { GameWrapper } from "features/game/expansion/Game";
 
 import { Loading } from "features/auth/components";
-import { GameState } from "features/game/types/game";
+import type { GameState } from "features/game/types/game";
 import { Forbidden } from "features/auth/components/Forbidden";
-import { getBumpkinLevel } from "features/game/lib/level";
+import {
+  getAscensionLevel,
+  meetsLevelRequirement,
+} from "features/game/lib/level";
 import { getActiveFloatingIsland } from "features/game/types/floatingIsland";
+import { hasPlazaAccess } from "features/island/delivery/lib/onboarding";
 import { adminFeatureFlag } from "lib/flags";
 import { useVisiting } from "lib/utils/visitUtils";
+import { useNow } from "lib/utils/hooks/useNow";
 
 interface Props {
   isCommunity?: boolean;
+}
+
+/**
+ * Art mode (no API) loads one offline farm, so every tab would join the MMO
+ * as the same player - and the island puzzles count players by farm id. Give
+ * each tab its own id, kept for the tab's life, so one tester can open a few
+ * tabs and be a crowd.
+ */
+function getArtModeFarmId(): number {
+  const key = "art_mode_farm_id";
+
+  try {
+    const saved = Number(sessionStorage.getItem(key));
+    if (saved > 0) return saved;
+
+    const fresh = 1_000_000 + Math.floor(Math.random() * 1_000_000);
+    sessionStorage.setItem(key, String(fresh));
+
+    return fresh;
+  } catch {
+    return 1_000_000 + Math.floor(Math.random() * 1_000_000);
+  }
 }
 
 export const WorldContext = createContext<{ isCommunity: boolean }>({
@@ -77,37 +105,30 @@ const _isIntroducing = (state: MMOMachineState) =>
 
 type MMOProps = { isCommunity: boolean };
 
-const SCENE_ACCESS: Partial<Record<SceneId, (game: GameState) => boolean>> = {
+const hasWorldLevel = (game: GameState, level: number) =>
+  meetsLevelRequirement(
+    getAscensionLevel({
+      experience: game.bumpkin.experience ?? 0,
+      ascensionLevel: game.island.ascensionLevel ?? 0,
+    }),
+    { ascension: 0, level },
+  );
+
+const SCENE_ACCESS: Partial<
+  Record<SceneId, (game: GameState, now: number) => boolean>
+> = {
   goblin_house: (game) => game.faction?.name === "goblins",
   sunflorian_house: (game) => game.faction?.name === "sunflorians",
   bumpkin_house: (game) => game.faction?.name === "bumpkins",
   nightshade_house: (game) => game.faction?.name === "nightshades",
   love_island: (game) =>
     !!getActiveFloatingIsland({ state: game }) || !!adminFeatureFlag(game),
-  infernos: (game) => {
-    const level = getBumpkinLevel(game.bumpkin?.experience ?? 0);
-    return level >= 30;
-  },
-  plaza: (game) => {
-    const level = getBumpkinLevel(game.bumpkin?.experience ?? 0);
-    return level >= 2;
-  },
-  kingdom: (game) => {
-    const level = getBumpkinLevel(game.bumpkin?.experience ?? 0);
-    return level >= 7;
-  },
-  beach: (game) => {
-    const level = getBumpkinLevel(game.bumpkin?.experience ?? 0);
-    return level >= 4;
-  },
-  woodlands: (game) => {
-    const level = getBumpkinLevel(game.bumpkin?.experience ?? 0);
-    return level >= 6;
-  },
-  retreat: (game) => {
-    const level = getBumpkinLevel(game.bumpkin?.experience ?? 0);
-    return level >= 5;
-  },
+  infernos: (game) => hasWorldLevel(game, 30),
+  plaza: (game) => hasPlazaAccess(game),
+  kingdom: (game) => hasWorldLevel(game, 7),
+  beach: (game) => hasWorldLevel(game, 4),
+  woodlands: (game) => hasWorldLevel(game, 6),
+  retreat: (game) => hasWorldLevel(game, 5),
 };
 
 export const MMO: React.FC<MMOProps> = ({ isCommunity }) => {
@@ -121,18 +142,18 @@ export const MMO: React.FC<MMOProps> = ({ isCommunity }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const { isVisiting } = useVisiting();
+  const now = useNow();
 
   const mmoService = useInterpret(mmoMachine, {
     context: {
       jwt: authState.context.user.rawToken,
-      farmId: gameState.context.farmId,
+      farmId: CONFIG.API_URL ? gameState.context.farmId : getArtModeFarmId(),
       bumpkin: gameState.context.state.bumpkin,
       pets: gameState.context.state.pets,
       faction: gameState.context.state.faction?.name,
       sceneId: (name ?? "plaza") as SceneId,
       experience: gameState.context.state.bumpkin?.experience ?? 0,
       isCommunity,
-      moderation: gameState.context.moderation,
       username: gameState.context.state.username,
     },
   }) as unknown as MMOMachineInterpreter;
@@ -142,7 +163,9 @@ export const MMO: React.FC<MMOProps> = ({ isCommunity }) => {
   useEffect(() => {
     if (
       mmoState.context.sceneId &&
-      !location.pathname.includes("marketplace")
+      !location.pathname.includes("marketplace") &&
+      !location.pathname.includes("chapter") &&
+      !location.pathname.includes("hall-of-fame")
     ) {
       navigate(`/world/${mmoState.context.sceneId}`);
     }
@@ -183,7 +206,7 @@ export const MMO: React.FC<MMOProps> = ({ isCommunity }) => {
 
   if (
     SCENE_ACCESS[name as SceneId] &&
-    !SCENE_ACCESS[name as SceneId]?.(gameState.context.state)
+    !SCENE_ACCESS[name as SceneId]?.(gameState.context.state, now)
   ) {
     return (
       <Panel>

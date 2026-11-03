@@ -7,26 +7,36 @@ import React, { useContext } from "react";
 
 import * as Auth from "features/auth/lib/Provider";
 import {
+  cacheShortcutItems,
   cacheShortcuts,
   getShortcuts,
 } from "features/farming/hud/lib/shortcuts";
-import { startGame, MachineInterpreter } from "./lib/gameMachine";
-import { InventoryItemName } from "./types/game";
+import { startGame, type MachineInterpreter } from "./lib/gameMachine";
+import type { InventoryItemName } from "./types/game";
 import {
   cacheShowAnimationsSetting,
   getShowAnimationsSetting,
 } from "features/farming/hud/lib/animations";
 import {
   cacheEnableQuickSelectSetting,
+  cacheShowFullMoonSeedsInQuickSelectSetting,
   getEnableQuickSelectSetting,
+  getShowFullMoonSeedsInQuickSelectSetting,
 } from "features/farming/hud/lib/quickSelect";
 import {
   cacheShowTimersSetting,
   getShowTimersSetting,
 } from "features/farming/hud/lib/timers";
+import { initInteractionMetrics } from "./lib/interactionMetrics";
+import { ART_MODE } from "features/auth/lib/authMachine";
+import { installPreviewShareHelper } from "./lib/preview/previewShare";
 
 interface GameContext {
   shortcutItem: (item: InventoryItemName) => void;
+  shortcutItems: (
+    items: InventoryItemName[],
+    options?: { activateFirst?: boolean },
+  ) => void;
   shortcuts: InventoryItemName[];
   selectedItem?: InventoryItemName;
   gameService: MachineInterpreter;
@@ -34,6 +44,8 @@ interface GameContext {
   toggleAnimations: () => void;
   enableQuickSelect: boolean;
   toggleQuickSelect: () => void;
+  showFullMoonSeedsInQuickSelect: boolean;
+  toggleFullMoonSeedsInQuickSelect: () => void;
   showTimers: boolean;
   toggleTimers: () => void;
   fromRoute?: string;
@@ -52,6 +64,19 @@ export const GameProvider: React.FC<React.PropsWithChildren> = ({
 
   // TODO - Typescript error
   const gameService = useInterpret(gameMachine) as MachineInterpreter;
+
+  useEffect(() => {
+    initInteractionMetrics();
+  }, []);
+
+  // ART_MODE / PR previews: expose `__sflPreview.link()` on the console so a
+  // tester can copy a URL that reproduces the state they clicked into.
+  useEffect(() => {
+    if (!ART_MODE) return;
+    return installPreviewShareHelper(
+      () => gameService.getSnapshot().context.state,
+    );
+  }, [gameService]);
 
   useEffect(() => {
     const handleRouteChange = () => {
@@ -85,6 +110,8 @@ export const GameProvider: React.FC<React.PropsWithChildren> = ({
   const [enableQuickSelect, setEnableQuickSelect] = useState<boolean>(
     getEnableQuickSelectSetting(),
   );
+  const [showFullMoonSeedsInQuickSelect, setShowFullMoonSeedsInQuickSelect] =
+    useState<boolean>(getShowFullMoonSeedsInQuickSelectSetting());
   const [showTimers, setShowTimers] = useState<boolean>(getShowTimersSetting());
   const [fromRoute, setFromRoute] = useState<string | undefined>();
 
@@ -102,6 +129,22 @@ export const GameProvider: React.FC<React.PropsWithChildren> = ({
     setShortcuts(items);
   }, []);
 
+  const shortcutItems = useCallback(
+    (
+      items: InventoryItemName[],
+      options?: {
+        activateFirst?: boolean;
+      },
+    ) => {
+      if (items.length === 0) return;
+
+      const newShortcuts = cacheShortcutItems(items, options);
+
+      setShortcuts(newShortcuts);
+    },
+    [],
+  );
+
   const toggleAnimations = () => {
     const newValue = !showAnimations;
 
@@ -114,6 +157,13 @@ export const GameProvider: React.FC<React.PropsWithChildren> = ({
 
     setEnableQuickSelect(newValue);
     cacheEnableQuickSelectSetting(newValue);
+  };
+
+  const toggleFullMoonSeedsInQuickSelect = () => {
+    const newValue = !showFullMoonSeedsInQuickSelect;
+
+    setShowFullMoonSeedsInQuickSelect(newValue);
+    cacheShowFullMoonSeedsInQuickSelectSetting(newValue);
   };
 
   const toggleTimers = () => {
@@ -129,6 +179,7 @@ export const GameProvider: React.FC<React.PropsWithChildren> = ({
     <Context.Provider
       value={{
         shortcutItem,
+        shortcutItems,
         shortcuts,
         selectedItem,
         gameService,
@@ -136,6 +187,8 @@ export const GameProvider: React.FC<React.PropsWithChildren> = ({
         toggleAnimations,
         enableQuickSelect,
         toggleQuickSelect,
+        showFullMoonSeedsInQuickSelect,
+        toggleFullMoonSeedsInQuickSelect,
         showTimers,
         toggleTimers,
         fromRoute,

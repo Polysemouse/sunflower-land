@@ -1,7 +1,7 @@
 import mapJSON from "assets/map/nightshade_house.json";
 
-import { SceneId } from "../mmoMachine";
-import { NPCBumpkin } from "./BaseScene";
+import type { SceneId } from "../mmoMachine";
+import type { NPCBumpkin } from "./BaseScene";
 import { FactionHouseScene } from "./FactionHouseScene";
 
 export const NIGHTSHADE_HOUSE_NPCS: NPCBumpkin[] = [
@@ -10,12 +10,6 @@ export const NIGHTSHADE_HOUSE_NPCS: NPCBumpkin[] = [
     y: 205,
     npc: "dusk",
     direction: "left",
-  },
-  {
-    x: 181,
-    y: 161,
-    npc: "shadow",
-    direction: "right",
   },
   {
     x: 296,

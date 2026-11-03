@@ -9,9 +9,12 @@ import { Decimal } from "decimal.js-light";
 import {
   TRADE_LIMITS,
   TRADE_MINIMUMS,
-  TradeResource,
+  type TradeResource,
 } from "features/game/actions/tradeLimits";
-import { ITEM_DETAILS } from "features/game/types/images";
+import {
+  ITEM_DETAILS,
+  getTranslatedItemName,
+} from "features/game/types/images";
 import { useAppTranslation } from "lib/i18n/useAppTranslations";
 import { formatNumber, setPrecision } from "lib/utils/formatNumber";
 
@@ -21,8 +24,13 @@ import tradeIcon from "assets/icons/trade.png";
 import lockIcon from "assets/icons/lock.png";
 import { RequiredReputation } from "features/island/hud/components/reputation/Reputation";
 import { hasReputation, Reputation } from "features/game/lib/reputation";
-import { MachineState } from "features/game/lib/gameMachine";
+import { selectGameState } from "features/game/lib/gameMachine";
 import { Context } from "features/game/GameProvider";
+import { useNow } from "lib/utils/hooks/useNow";
+import {
+  Locked,
+  useIsLocked,
+} from "features/retreat/components/personhood/Locked";
 
 type Props = {
   itemName: TradeResource;
@@ -39,12 +47,6 @@ type Props = {
 const MAX_SFL = 150;
 const LOCAL_STORAGE_KEY = "resourceOfferInputType";
 
-const _hasReputation = (state: MachineState) =>
-  hasReputation({
-    game: state.context.state,
-    reputation: Reputation.Cropkeeper,
-  });
-
 export const ResourceOffer: React.FC<Props> = ({
   itemName,
   floorPrice,
@@ -58,7 +60,15 @@ export const ResourceOffer: React.FC<Props> = ({
 }) => {
   const { t } = useAppTranslation();
   const { gameService } = useContext(Context);
-  const hasTradeReputation = useSelector(gameService, _hasReputation);
+  const game = useSelector(gameService, selectGameState);
+  const now = useNow();
+  const hasTradeReputation = hasReputation({
+    game,
+    reputation: Reputation.Cropkeeper,
+    now,
+  });
+  // A hold stops the account trading; say so instead of a form that fails.
+  const locked = useIsLocked();
   const [pricePerUnit, setPricePerUnit] = useState(0);
   const [inputType, setInputType] = useState<"price" | "pricePerUnit">(
     () =>
@@ -86,6 +96,8 @@ export const ResourceOffer: React.FC<Props> = ({
   // For now, keep offchain
   const maxSFL = new Decimal(price).greaterThan(MAX_SFL);
 
+  if (locked) return <Locked />;
+
   return (
     <>
       <div>
@@ -100,9 +112,7 @@ export const ResourceOffer: React.FC<Props> = ({
         <div className="flex justify-between">
           <div className="flex items-center">
             <Box image={ITEM_DETAILS[itemName].image} disabled />
-            <span className="text-sm">
-              {ITEM_DETAILS[itemName].translatedName ?? itemName}
-            </span>
+            <span className="text-sm">{getTranslatedItemName(itemName)}</span>
           </div>
         </div>
 
@@ -275,7 +285,9 @@ export const ResourceOffer: React.FC<Props> = ({
           }}
         >
           <span className="text-xs">
-            {t("bumpkinTrade.pricePerUnit", { resource: itemName })}
+            {t("bumpkinTrade.pricePerUnit", {
+              resource: getTranslatedItemName(itemName),
+            })}
           </span>
           <p className="text-xs font-secondary">
             {new Decimal(quantity).equals(0)

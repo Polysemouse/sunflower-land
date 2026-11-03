@@ -1,9 +1,9 @@
 import {
-  AchievementTrigger,
+  type AchievementTrigger,
   getEligibleAchievements,
 } from "./getEligibleAchievements";
-import { CropsAndChickensAchievementName } from "../../CropsAndChickensAchievements";
-import { CropsAndChickensScene } from "../CropsAndChickensScene";
+import type { CropsAndChickensAchievementName } from "../../CropsAndChickensAchievements";
+import type { CropsAndChickensScene } from "../CropsAndChickensScene";
 
 /**
  * Unlocks achievements.

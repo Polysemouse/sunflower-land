@@ -5,13 +5,13 @@ import { Panel } from "components/ui/Panel";
 import { Context } from "features/game/GameProvider";
 
 import { NPC_WEARABLES } from "lib/npcs";
-import { getKeys } from "features/game/types/craftables";
+import { getKeys } from "lib/object";
 import { SUNNYSIDE } from "assets/sunnyside";
 import { Message } from "features/farming/mail/components/Message";
-import { ConversationName } from "features/game/types/announcements";
+import type { ConversationName } from "features/game/types/announcements";
 import { CloseButtonPanel } from "features/game/components/CloseablePanel";
 import { useAppTranslation } from "lib/i18n/useAppTranslations";
-import { MachineState } from "features/game/lib/gameMachine";
+import type { MachineState } from "features/game/lib/gameMachine";
 
 const _announcements = (state: MachineState) => state.context.announcements;
 const _mailbox = (state: MachineState) => state.context.state.mailbox;

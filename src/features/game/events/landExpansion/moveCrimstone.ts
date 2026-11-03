@@ -1,5 +1,5 @@
-import { Coordinates } from "features/game/expansion/components/MapPlacement";
-import { GameState, Rock } from "features/game/types/game";
+import type { Coordinates } from "features/game/expansion/components/MapPlacement";
+import type { GameState, Rock } from "features/game/types/game";
 import { canMine } from "features/game/lib/resourceNodes";
 import { produce } from "immer";
 
@@ -21,12 +21,16 @@ type Options = {
   createdAt?: number;
 };
 
-export function isLocked(rock: Rock, createdAt: number): boolean {
+export function isLocked(
+  rock: Rock,
+  game: GameState,
+  createdAt: number,
+): boolean {
   const minedAt = rock.stone.minedAt;
 
   if (!minedAt) return false;
 
-  if (canMine(rock, "Crimstone Rock", createdAt)) return false;
+  if (canMine(rock, "Crimstone Rock", game, createdAt)) return false;
 
   return false;
 }
@@ -47,7 +51,7 @@ export function moveCrimstone({
       throw new Error(MOVE_CRIMSTONE_ERRORS.CRIMSTONE_NOT_PLACED);
     }
 
-    if (isLocked(crimstones[action.id], createdAt)) {
+    if (isLocked(crimstones[action.id], stateCopy, createdAt)) {
       throw new Error(MOVE_CRIMSTONE_ERRORS.AOE_LOCKED);
     }
 

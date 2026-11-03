@@ -2,10 +2,10 @@ import React, { useContext } from "react";
 
 import { useSelector } from "@xstate/react";
 import { PortalContext } from "../../lib/PortalProvider";
-import { PortalMachineState } from "../../lib/cropsAndChickensMachine";
+import type { PortalMachineState } from "../../lib/cropsAndChickensMachine";
 import {
   AVAILABLE_ACHIEVEMENTS,
-  CropsAndChickensAchievementName,
+  type CropsAndChickensAchievementName,
 } from "../../CropsAndChickensAchievements";
 import { SquareIcon } from "components/ui/SquareIcon";
 import { InnerPanel } from "components/ui/Panel";

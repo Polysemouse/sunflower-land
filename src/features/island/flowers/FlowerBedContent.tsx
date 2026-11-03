@@ -1,6 +1,9 @@
 import React, { useContext, useState } from "react";
 
-import { ITEM_DETAILS } from "features/game/types/images";
+import {
+  getTranslatedItemName,
+  ITEM_DETAILS,
+} from "features/game/types/images";
 import { Label } from "components/ui/Label";
 import { Box } from "components/ui/Box";
 import { Button } from "components/ui/Button";
@@ -13,19 +16,26 @@ import {
   FLOWER_CROSS_BREED_AMOUNTS,
   FLOWER_CROSS_BREED_DETAILS,
   FLOWER_SEEDS,
-  FlowerCrossBreedName,
-  FlowerName,
-  FlowerSeedName,
+  type FlowerCrossBreedName,
+  type FlowerName,
+  type FlowerSeedName,
 } from "features/game/types/flowers";
-import { getKeys } from "features/game/types/craftables";
+import { getKeys } from "lib/object";
 import { Context } from "features/game/GameProvider";
-import { useActor } from "@xstate/react";
 import { SquareIcon } from "components/ui/SquareIcon";
 import { secondsToString } from "lib/utils/time";
 import { getFlowerTime } from "features/game/events/landExpansion/plantFlower";
+import { useNow } from "lib/utils/hooks/useNow";
+import type { GameState } from "features/game/types/game";
+import {
+  getPreActionDisplay,
+  PRE_ACTION_TICK_MS,
+} from "features/game/lib/timerDisplay";
+import { getSeedBoostWindows } from "features/game/lib/seedBoostWindows";
 import { useAppTranslation } from "lib/i18n/useAppTranslations";
 import { SEASONAL_SEEDS } from "features/game/types/seeds";
 import { SEASON_ICONS } from "../buildings/components/building/market/SeasonalSeeds";
+import { useSelector } from "@xstate/react";
 
 const isFlower = (name: FlowerCrossBreedName): name is FlowerName =>
   name in FLOWERS;
@@ -35,14 +45,30 @@ interface Props {
   onClose: () => void;
 }
 
+/**
+ * The grow time to show for a seed the player is considering. A live speed
+ * window isn't folded into `getFlowerTime`, so project the real "plant now →
+ * ready in X" (which credits only the part of the grow the Blossom Hourglass
+ * still covers).
+ */
+const useFlowerSeedTime = (state: GameState, seed?: FlowerSeedName) => {
+  const now = useNow({ live: true, intervalMs: PRE_ACTION_TICK_MS });
+
+  if (!seed) return { displaySeconds: 0 };
+
+  return getPreActionDisplay({
+    seconds: getFlowerTime(seed, state, now).seconds,
+    baseSeconds: FLOWER_SEEDS[seed].plantSeconds,
+    namedBoostCount: getFlowerTime(seed, state, now).boostsUsed.length,
+    windows: getSeedBoostWindows(state, seed),
+    at: now,
+  });
+};
+
 export const FlowerBedContent: React.FC<Props> = ({ id, onClose }) => {
   const { t } = useAppTranslation();
   const { gameService } = useContext(Context);
-  const [
-    {
-      context: { state },
-    },
-  ] = useActor(gameService);
+  const state = useSelector(gameService, (state) => state.context.state);
   const { inventory, flowers } = state;
 
   const [selecting, setSelecting] = useState<"seed" | "crossbreed" | null>(
@@ -51,6 +77,7 @@ export const FlowerBedContent: React.FC<Props> = ({ id, onClose }) => {
   const [seed, setSeed] = useState<FlowerSeedName>();
 
   const [crossbreed, setCrossBreed] = useState<FlowerCrossBreedName>();
+  const selectedSeedTime = useFlowerSeedTime(state, seed);
 
   const selectSeed = (name: FlowerSeedName) => {
     setSeed(name);
@@ -144,7 +171,9 @@ export const FlowerBedContent: React.FC<Props> = ({ id, onClose }) => {
                   className="h-4 mr-1"
                 />
                 <span className="text-xs">
-                  {resultFlower ?? "Unknown combination"}
+                  {resultFlower
+                    ? getTranslatedItemName(resultFlower)
+                    : t("flowerBedContent.unknownCombination")}
                 </span>
               </div>
             )}
@@ -173,7 +202,7 @@ export const FlowerBedContent: React.FC<Props> = ({ id, onClose }) => {
                   type="info"
                   className="whitespace-nowrap"
                 >
-                  {secondsToString(getFlowerTime(seed, state).seconds, {
+                  {secondsToString(selectedSeedTime.displaySeconds, {
                     length: "medium",
                   })}
                 </Label>
@@ -262,7 +291,9 @@ export const FlowerBedContent: React.FC<Props> = ({ id, onClose }) => {
                     isSelected={seed === name}
                     disabled={!isInSeason(name)}
                     secondaryImage={
-                      seasons(name).length < 4 && SEASON_ICONS[seasons(name)[0]]
+                      seasons(name).length < 4
+                        ? SEASON_ICONS[seasons(name)[0]]
+                        : undefined
                     }
                   />
                 ))}
@@ -271,20 +302,21 @@ export const FlowerBedContent: React.FC<Props> = ({ id, onClose }) => {
               <div className="space-y-1">
                 <div className="flex justify-between items-center">
                   <Label type="default" icon={ITEM_DETAILS[seed].image}>
-                    {seed}
+                    {getTranslatedItemName(seed)}
                   </Label>
                   {hasSeedRequirements ? (
                     <Label type={"info"} icon={SUNNYSIDE.icons.stopwatch}>
-                      {secondsToString(
-                        getFlowerTime(
-                          seed,
-                          gameService.getSnapshot().context.state,
-                        ).seconds,
-                        { length: "medium" },
-                      )}
+                      {secondsToString(selectedSeedTime.displaySeconds, {
+                        length: "medium",
+                      })}
                     </Label>
                   ) : (
-                    <Label type={"danger"}>{`1 ${seed} required`}</Label>
+                    <Label type={"danger"}>
+                      {t("flowerBedContent.required", {
+                        amount: 1,
+                        item: getTranslatedItemName(seed),
+                      })}
+                    </Label>
                   )}
                 </div>
                 <p className="text-xs">{FLOWER_SEEDS[seed].description}</p>
@@ -295,9 +327,15 @@ export const FlowerBedContent: React.FC<Props> = ({ id, onClose }) => {
 
         {selecting === "crossbreed" && seed && (
           <>
-            <Label type="default" className="mb-1">
-              {t("flowerBedContent.select.crossbreed")}
-            </Label>
+            <div className="flex flex-wrap items-center gap-x-1 gap-y-1 mb-1">
+              <Label type="default" icon={ITEM_DETAILS[seed].image}>
+                {getTranslatedItemName(seed)}
+              </Label>
+              <span className="text-xs">{"+"}</span>
+              <Label type="default">
+                {t("flowerBedContent.select.crossbreed")}
+              </Label>
+            </div>
             <div className="flex flex-wrap mb-2">
               {getKeys(FLOWER_CROSS_BREED_AMOUNTS[seed])
                 .filter(
@@ -320,11 +358,16 @@ export const FlowerBedContent: React.FC<Props> = ({ id, onClose }) => {
               <div>
                 <div className="flex justify-between items-center mb-1">
                   <Label type="default" icon={ITEM_DETAILS[crossbreed].image}>
-                    {crossbreed}
+                    {getTranslatedItemName(crossbreed)}
                   </Label>
                   <Label
                     type={!hasCrossbreedRequirements ? "danger" : "default"}
-                  >{`${FLOWER_CROSS_BREED_AMOUNTS[seed][crossbreed]} ${crossbreed} required`}</Label>
+                  >
+                    {t("flowerBedContent.required", {
+                      amount: FLOWER_CROSS_BREED_AMOUNTS[seed][crossbreed] ?? 0,
+                      item: getTranslatedItemName(crossbreed),
+                    })}
+                  </Label>
                 </div>
                 <p className="text-xs mt-1">
                   {FLOWER_CROSS_BREED_DETAILS[crossbreed]}
@@ -344,7 +387,8 @@ export const FlowerBedContent: React.FC<Props> = ({ id, onClose }) => {
         }
         onClick={() => plant()}
       >
-        {t("plant")} {resultFlower ?? "Flower"}
+        {t("plant")}{" "}
+        {resultFlower ? getTranslatedItemName(resultFlower) : t("crops.flower")}
       </Button>
     </>
   );

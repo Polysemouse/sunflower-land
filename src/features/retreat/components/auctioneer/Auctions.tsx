@@ -1,5 +1,5 @@
 import React from "react";
-import { MachineInterpreter } from "features/game/lib/auctionMachine";
+import type { MachineInterpreter } from "features/game/lib/auctionMachine";
 import { useActor } from "@xstate/react";
 import { ButtonPanel } from "components/ui/Panel";
 import { ITEM_DETAILS } from "features/game/types/images";
@@ -8,12 +8,12 @@ import token from "assets/icons/flower_token.webp";
 
 import { SUNNYSIDE } from "assets/sunnyside";
 import { Label } from "components/ui/Label";
-import { getKeys } from "features/game/types/craftables";
+import { getKeys } from "lib/object";
 import { AuctionsComingSoon } from "./AuctionsComingSoon";
 import { useAppTranslation } from "lib/i18n/useAppTranslations";
 import classNames from "classnames";
 import { isMobile } from "mobile-device-detect";
-import { GameState } from "features/game/types/game";
+import type { GameState } from "features/game/types/game";
 import { getAuctionItemDisplay } from "./lib/getAuctionItemDisplay";
 import { useNow } from "lib/utils/hooks/useNow";
 
@@ -21,11 +21,15 @@ interface Props {
   auctionService: MachineInterpreter;
   onSelect: (id: string) => void;
   game: GameState;
+  scrollContainerRef: React.RefCallback<HTMLDivElement>;
+  onScroll: React.UIEventHandler<HTMLDivElement>;
 }
 export const Auctions: React.FC<Props> = ({
   auctionService,
   onSelect,
   game,
+  scrollContainerRef,
+  onScroll,
 }) => {
   const [auctioneerState] = useActor(auctionService);
   const { t } = useAppTranslation();
@@ -39,14 +43,15 @@ export const Auctions: React.FC<Props> = ({
 
   return (
     <div
+      ref={scrollContainerRef}
+      onScroll={onScroll}
       style={{ maxHeight: "300px" }}
       className="overflow-y-auto scrollable flex flex-wrap pt-1.5 pr-0.5"
     >
       {currentAuctions.map((auction) => {
         const { image, buffLabels, item, typeLabel } = getAuctionItemDisplay({
           auction,
-          skills: game.bumpkin.skills,
-          collectibles: game.collectibles,
+          game: game,
         });
 
         const hasBuff = buffLabels && buffLabels.length > 0;

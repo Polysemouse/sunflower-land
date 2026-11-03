@@ -1,38 +1,41 @@
 import Decimal from "decimal.js-light";
 import { availableWardrobe } from "features/game/events/landExpansion/equip";
 import { isCollectible } from "features/game/events/landExpansion/garbageSold";
-import { getObjectEntries } from "features/game/expansion/lib/utils";
-import { ResourceItem } from "features/game/expansion/placeable/lib/collisionDetection";
+import { getObjectEntries, getValues } from "lib/object";
+import type { ResourceItem } from "features/game/expansion/placeable/lib/collisionDetection";
+import { CHAPTER_MUTANTS } from "features/game/types/chapterMutants";
 import {
-  BuildingName,
+  type BuildingName,
   BUILDINGS_DIMENSIONS,
 } from "features/game/types/buildings";
-import { BumpkinItem } from "features/game/types/bumpkin";
+import type { BumpkinItem } from "features/game/types/bumpkin";
 import {
-  CollectibleName,
+  type CollectibleName,
   COLLECTIBLES_DIMENSIONS,
 } from "features/game/types/craftables";
-import { getKeys } from "features/game/types/craftables";
-import {
+import { FLOWERS, type MutantFlowerName } from "features/game/types/flowers";
+import { getKeys } from "lib/object";
+import type {
+  FarmHands,
   GameState,
   Inventory,
   InventoryItemName,
   Rock,
   Tree,
 } from "features/game/types/game";
-import {
+import type {
   CollectionName,
   MarketplaceTradeableName,
 } from "features/game/types/marketplace";
-import { PetName, PetNFTs } from "features/game/types/pets";
+import type { PetName, PetNFTs } from "features/game/types/pets";
 import {
   RESOURCE_STATE_ACCESSORS,
   RESOURCE_DIMENSIONS,
-  ResourceName,
+  type ResourceName,
   RESOURCE_MULTIPLIER,
-  UpgradeableResource,
+  type UpgradeableResource,
   BASIC_RESOURCES,
-  BasicResourceName,
+  type BasicResourceName,
   RESOURCES_UPGRADES_TO,
   ADVANCED_RESOURCES,
 } from "features/game/types/resources";
@@ -44,6 +47,42 @@ const PLACEABLE_DIMENSIONS = {
   ...COLLECTIBLES_DIMENSIONS,
   ...RESOURCE_DIMENSIONS,
 };
+
+const DECORATIVE_FLOWER_NAMES: CollectibleName[] = [
+  "Dawn Flower",
+  "Rainbow Flower",
+  "Definitely not a Flower",
+];
+
+export const MUTANT_FLOWER_NAMES: MutantFlowerName[] = getValues(
+  CHAPTER_MUTANTS,
+).flatMap(({ Flower }) => (Flower ? [Flower] : []));
+
+export const CHEST_FLOWER_NAMES: CollectibleName[] = [
+  ...DECORATIVE_FLOWER_NAMES,
+  ...MUTANT_FLOWER_NAMES,
+];
+
+const sortChestFlowers = (a: CollectibleName, b: CollectibleName) => {
+  const orderA = CHEST_FLOWER_NAMES.indexOf(a);
+  const orderB = CHEST_FLOWER_NAMES.indexOf(b);
+  const isOrderedA = orderA !== -1;
+  const isOrderedB = orderB !== -1;
+
+  if (isOrderedA && isOrderedB) return orderA - orderB;
+  if (isOrderedA) return -1;
+  if (isOrderedB) return 1;
+
+  return a.localeCompare(b);
+};
+
+export const getChestFlowers = (items: InventoryItemName[]) =>
+  items
+    .filter(
+      (name): name is CollectibleName =>
+        name in FLOWERS || CHEST_FLOWER_NAMES.includes(name as CollectibleName),
+    )
+    .sort(sortChestFlowers);
 
 type ListedItems = Record<
   CollectionName,
@@ -57,6 +96,7 @@ export const getActiveListedItems = (state: GameState): ListedItems => {
       collectibles: {},
       buds: {},
       pets: {},
+      economies: {},
     };
   }
 
@@ -66,7 +106,8 @@ export const getActiveListedItems = (state: GameState): ListedItems => {
 
       getObjectEntries(listing.items).forEach(([itemName, quantity]) => {
         const amount = quantity ?? 0;
-        const collection = listing.collection ?? getCollectionName(itemName);
+        const collection: CollectionName = (listing.collection ??
+          getCollectionName(itemName)) as CollectionName;
 
         acc[collection][itemName] = (acc[collection][itemName] ?? 0) + amount;
       });
@@ -78,6 +119,7 @@ export const getActiveListedItems = (state: GameState): ListedItems => {
       collectibles: {},
       buds: {},
       pets: {},
+      economies: {},
     },
   );
 };
@@ -109,6 +151,14 @@ export const getChestBuds = (
 export const getChestPets = (pets: PetNFTs): PetNFTs => {
   return Object.fromEntries(
     Object.entries(pets ?? {}).filter(([, pet]) => !pet.coordinates),
+  );
+};
+
+export const getChestFarmHands = (farmHands: FarmHands) => {
+  return Object.fromEntries(
+    Object.entries(farmHands.bumpkins ?? {}).filter(
+      ([, farmHand]) => !farmHand.coordinates,
+    ),
   );
 };
 
@@ -159,12 +209,17 @@ export const getChestItemCount = (
   }
 
   if (name in COLLECTIBLES_DIMENSIONS) {
+    const isPlaced = (c: { coordinates?: unknown }) => !!c.coordinates;
     const placed =
-      (state.collectibles[name as CollectibleName]?.filter(
-        (collectible) => collectible.coordinates,
+      (state.collectibles[name as CollectibleName]?.filter(isPlaced).length ??
+        0) +
+      (state.home.collectibles[name as CollectibleName]?.filter(isPlaced)
+        .length ?? 0) +
+      (state.interior?.ground.collectibles[name as CollectibleName]?.filter(
+        isPlaced,
       ).length ?? 0) +
-      (state.home.collectibles[name as CollectibleName]?.filter(
-        (collectible) => collectible.coordinates,
+      (state.interior?.level_one?.collectibles[name as CollectibleName]?.filter(
+        isPlaced,
       ).length ?? 0) +
       (state.petHouse?.pets[name as PetName]?.filter((pet) => pet.coordinates)
         .length ?? 0);
@@ -202,6 +257,19 @@ export const getChestItems = (state: GameState): Inventory => {
   // so this is the final result.
   return availableItems;
 };
+
+/** Sums quantities per item (e.g. when combining basket and chest availability). */
+export function mergeInventories(a: Inventory, b: Inventory): Inventory {
+  const merged: Inventory = { ...a };
+  for (const [item, amount] of getObjectEntries(b)) {
+    const prev = merged[item] ?? new Decimal(0);
+    merged[item] = prev.add(amount ?? new Decimal(0));
+  }
+  return merged;
+}
+
+export const mergeBasketAndChestInventory = (state: GameState): Inventory =>
+  mergeInventories(getBasketItems(state.inventory), getChestItems(state));
 
 /**
  * True when the player has at least one placeable chest item and has not

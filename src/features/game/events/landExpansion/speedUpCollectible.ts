@@ -1,13 +1,20 @@
-import { GameState } from "features/game/types/game";
+import type { GameState } from "features/game/types/game";
 import { produce } from "immer";
-import { CollectibleName } from "features/game/types/craftables";
+import type { CollectibleName } from "features/game/types/craftables";
 import Decimal from "decimal.js-light";
-import { getInstantGems, makeGemHistory } from "./speedUpRecipe";
+import { getCollectiblesAcrossLocations } from "features/game/lib/collectibleBuilt";
+import {
+  chargeCoinsForSpeedUp,
+  getInstantGems,
+  makeGemHistory,
+  type SpeedUpPaymentMethod,
+} from "features/game/lib/getInstantGems";
 
 export type SpeedUpCollectible = {
   type: "collectible.spedUp";
   name: CollectibleName;
   id: string;
+  paymentMethod?: SpeedUpPaymentMethod;
 };
 
 type Options = {
@@ -22,7 +29,8 @@ export function speedUpCollectible({
   createdAt = Date.now(),
 }: Options): GameState {
   return produce(state, (game) => {
-    const collectible = game.collectibles[action.name]?.find(
+    // A collectible can live on any placement surface — search them all by id.
+    const collectible = getCollectiblesAcrossLocations(game, action.name).find(
       (item) => item.id === action.id,
     );
 
@@ -40,15 +48,21 @@ export function speedUpCollectible({
       game,
     });
 
-    if (!game.inventory["Gem"]?.gte(gems)) {
-      throw new Error("Insufficient Gems");
+    if (action.paymentMethod === "coins") {
+      game = chargeCoinsForSpeedUp({ game, gems, createdAt });
+    } else {
+      if (!game.inventory["Gem"]?.gte(gems)) {
+        throw new Error("Insufficient Gems");
+      }
+
+      game.inventory["Gem"] = (game.inventory["Gem"] ?? new Decimal(0)).sub(
+        gems,
+      );
+
+      game = makeGemHistory({ game, amount: gems, createdAt });
     }
 
-    game.inventory["Gem"] = (game.inventory["Gem"] ?? new Decimal(0)).sub(gems);
-
     collectible.readyAt = createdAt;
-
-    game = makeGemHistory({ game, amount: gems });
 
     return game;
   });

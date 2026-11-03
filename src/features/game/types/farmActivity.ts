@@ -1,20 +1,24 @@
-import { GameState, InventoryItemName, RecipeCraftableName } from "./game";
-import { DollName, RecipeCollectibleName } from "../lib/crafting";
-import {
+import type { GameState, InventoryItemName, RecipeCraftableName } from "./game";
+import type { DollName, RecipeCollectibleName } from "../lib/crafting";
+import type {
   ResourceName,
   RockName,
   TreeName,
   UpgradedResourceName,
 } from "./resources";
-import { FishName, MarineMarvelName } from "./fishing";
-import { FullMoonFruit } from "./fruits";
-import { LandBiomeName } from "features/island/biomes/biomes";
-import { PetResourceName } from "./pets";
+import type { FishName, MarineMarvelName } from "./fishing";
+import type { FullMoonFruit } from "./fruits";
+import type { LandBiomeName } from "features/island/biomes/biomes";
+import type { PetResourceName } from "./pets";
 import Decimal from "decimal.js-light";
-import { ConsumableName, CookableName } from "./consumables";
-import { Animal, Food, ToolName } from "./craftables";
-import { CropName, GreenHouseCropName, GreenHouseCropSeedName } from "./crops";
-import {
+import type { ConsumableName, CookableName } from "./consumables";
+import type { Animal, Food, ToolName } from "./craftables";
+import type {
+  CropName,
+  GreenHouseCropName,
+  GreenHouseCropSeedName,
+} from "./crops";
+import type {
   AnimalFoodName,
   AnimalMedicineName,
   AnimalResource,
@@ -22,38 +26,49 @@ import {
   LanternName,
   MegaStoreItemName,
 } from "./game";
-import { BeanName, ExoticCropName } from "./beans";
-import {
+import type { BeanName, ExoticCropName } from "./beans";
+import type {
   HeliosBlacksmithItem,
   PotionHouseItemName,
   TreasureCollectibleItem,
 } from "./collectibles";
-import {
+import type {
   GreenHouseFruitName,
   GreenHouseFruitSeedName,
   PatchFruitName,
   PatchFruitSeedName,
 } from "./fruits";
-import { GarbageName } from "./garbage";
-import { SeedName } from "./seeds";
-import { TreasureToolName, WorkbenchToolName } from "./tools";
-import { BeachBountyTreasure, TreasureName } from "./treasure";
-import { CompostName, ComposterName } from "./composters";
-import { PurchaseableBait } from "./fishing";
-import { FlowerName, FlowerSeedName } from "./flowers";
-import { FactionShopItemName } from "./factionShop";
-import { ShopDecorationName, ChapterDecorationName } from "./decorations";
-import { AnimalType } from "./animals";
-import { ChapterTierItemName } from "./megastore";
-import { WeatherShopItem } from "./calendar";
-import { PetShopItemName } from "./petShop";
-import { MonumentName } from "./monuments";
-import { BumpkinItem } from "./bumpkin";
-import { CrustaceanChum, CrustaceanName, WaterTrapName } from "./crustaceans";
-import { ProcessedResource } from "./processedFood";
-import { ChapterName, ChapterTicket } from "./chapters";
-import { TrackName } from "./tracks";
-import { BonusName } from "./bonuses";
+import type { GarbageName } from "./garbage";
+import type { SeedName } from "./seeds";
+import type { TreasureToolName, WorkbenchToolName } from "./tools";
+import type { BeachBountyTreasure, TreasureName } from "./treasure";
+import type { CompostName, ComposterName, Worm } from "./composters";
+import type { PurchaseableBait } from "./fishing";
+import type { FlowerName, FlowerSeedName } from "./flowers";
+import type { FactionShopItemName } from "./factionShop";
+import type { ShopDecorationName, ChapterDecorationName } from "./decorations";
+import type { AnimalType } from "./animals";
+import type { ChapterTierItemName } from "./megastore";
+import type { WeatherShopItem } from "./calendar";
+import type { PetShopItemName } from "./petShop";
+import type { MonumentName } from "./monuments";
+import type { BumpkinItem } from "./bumpkin";
+import type {
+  CrustaceanChum,
+  CrustaceanName,
+  WaterTrapName,
+} from "./crustaceans";
+import type { ProcessedResource } from "./processedFood";
+import type { ChapterName, ChapterTicket } from "./chapters";
+import type { TrackName } from "./tracks";
+import type { BonusName } from "./bonuses";
+import type { FermentationCollectedActivity } from "./fermentation";
+import type { SpiceRackCollectedActivity } from "./spiceRack";
+import type { AgedFishName, PrimeAgedFishName } from "./fishing";
+
+export type AgingCollectedActivity =
+  | `${AgedFishName} Collected`
+  | `${PrimeAgedFishName} Collected`;
 
 export type CaughtEvent = `${InventoryItemName} Caught`;
 export type HarvestedEvent = `${FlowerName} Harvested`;
@@ -128,11 +143,15 @@ export type CraftedEvent = `${
   | PetShopItemName
   | RecipeCollectibleName
   | BumpkinItem} Crafted`;
+export type CraftingStartedEvent = `${
+  | RecipeCollectibleName
+  | BumpkinItem} Crafting Started`;
 export type ConsumableEvent = `${ConsumableName} Collected`;
 export type SellEvent = `${SellableName} Sold`;
 export type TreasureEvent = `${TreasureName} Dug`;
 export type ComposterCollectEvent = `${CompostName} Collected`;
 export type CompostedEvent = `${ComposterName} Collected`;
+export type WormCollectedEvent = `${Worm} Collected`;
 export type PlantGreenHouseFruitEvent = `${GreenHouseFruitName} Planted`;
 export type PlantGreenHouseCropEvent = `${GreenHouseCropName} Planted`;
 export type AnimalFeedMixedEvent =
@@ -150,17 +169,23 @@ export type FarmActivityName =
   | HarvestedEvent
   | BountiedEvent
   | CraftedEvent
+  | CraftingStartedEvent
   | ResourceBought
   | BiomeBought
+  | `${"Jigsaw" | "Rotate"} Captcha ${"Succeeded" | "Failed"}`
   | "Obsidian Exchanged"
   | "FLOWER Exchanged"
   | "Gems Purchased"
+  | "Starter Pack Purchased"
   | ResourceNodeUpgradeEvent
   | `${PetResourceName} Fetched`
   | PlantGreenHouseFruitEvent
   | PlantGreenHouseCropEvent
   | CookEvent
   | ProcessedEvent
+  | FermentationCollectedActivity
+  | AgingCollectedActivity
+  | SpiceRackCollectedActivity
   | FedEvent
   | BuyEvent
   | CraftedEvent
@@ -190,12 +215,15 @@ export type FarmActivityName =
   | "Egg Collected"
   | "Oil Drilled"
   | "Obsidian Collected"
+  | "Lava Pit Started"
   | "Potion Mixed"
+  | "Salt Harvested"
 
   // Misc
   | "Coins Spent"
   | "Coins Earned"
   | "SFL Spent"
+  | "FLOWER Spent"
   | "SFL Earned"
   | "Mutant Chicken Found"
   | "Building Constructed"
@@ -208,18 +236,26 @@ export type FarmActivityName =
   | "Treasure Dug"
   | "Treasure Searched"
   | "Treasure Drilled"
+  | "Cave Tile Dug"
   | "Love Letter Collected"
   | "Easter Egg Collected"
   | "Chore Completed"
   | "Chore Skipped"
   | "Bud Placed"
   | ComposterCollectEvent
+  | WormCollectedEvent
   | "Crop Fertilised"
   | "Rod Casted"
   | "Farm Cheered"
   | "Farm Helped"
   | `${MonumentName} Completed`
   | "Daily Reward Collected"
+  | "VIP Coins Saved"
+  | "VIP FLOWER Saved"
+  | "VIP Ticket Earned"
+  | "VIP Gift Claimed"
+  | "Recipe Queued"
+  | "VIP XP Earned"
   | "Fish Missed"
   | "Fish Retried"
   | `${WaterTrapName} Collected`
@@ -230,18 +266,19 @@ export type FarmActivityName =
   | `${ChapterName} Points Earned`
   | `${ChapterName} ${TrackName} Milestone Claimed`
   | `${BonusName} Bonus Claimed`
-  | `${CrustaceanName} Caught with ${CrustaceanChum}`;
+  | `${CrustaceanName} Caught with ${CrustaceanChum}`
+  | "Crafting Queue Cancelled"
+  | "Instant Gems Spent"
+  | "Instant Coins Spent";
 
 export function trackFarmActivity(
   activityName: FarmActivityName,
   farmAnalytics: GameState["farmActivity"],
   amount = new Decimal(1),
-) {
-  const previous = farmAnalytics || {};
-  const activityAmount = previous[activityName] || 0;
+): GameState["farmActivity"] {
+  const previous = { ...farmAnalytics };
+  const activityAmount = previous[activityName] ?? 0;
 
-  return {
-    ...previous,
-    [activityName]: amount.add(activityAmount).toNumber(),
-  };
+  previous[activityName] = Math.max(0, amount.add(activityAmount).toNumber());
+  return previous;
 }

@@ -2,6 +2,10 @@ import React, { useContext, useState } from "react";
 import { useSelector } from "@xstate/react";
 
 import { Button } from "components/ui/Button";
+import { ButtonPanel } from "components/ui/Panel";
+import type Decimal from "decimal.js-light";
+import { formatNumber } from "lib/utils/formatNumber";
+import { useAppTranslation } from "lib/i18n/useAppTranslations";
 import { WithdrawFlower } from "./WithdrawFlower";
 import { WithdrawItems } from "./WithdrawItems";
 import { WithdrawWearables } from "./WithdrawWearables";
@@ -10,16 +14,23 @@ import chest from "assets/icons/chest.png";
 import flowerIcon from "assets/icons/flower_token.webp";
 import { WithdrawBuds } from "./WithdrawBuds";
 import { Context } from "features/game/GameProvider";
-import { WithdrawResources } from "./WithdrawResources";
 import { Label } from "components/ui/Label";
 import { PIXEL_SCALE } from "features/game/lib/constants";
-import { MachineState } from "features/game/lib/gameMachine";
+import { TradeCooldownWidget } from "features/game/components/TradeCooldownWidget";
+import {
+  getAccountTradedRestrictionSecondsLeft,
+  isAccountTradedWithin90Days,
+  type MachineState,
+} from "features/game/lib/gameMachine";
 import { translate } from "lib/i18n/translate";
 import { Transaction } from "features/island/hud/Transaction";
 import { FaceRecognition } from "features/retreat/components/personhood/FaceRecognition";
 import { GameWallet } from "features/wallet/Wallet";
 import { WithdrawPets } from "./WithdrawPets";
 import petNFTEgg from "assets/icons/pet_nft_egg.png";
+import vipIcon from "assets/icons/vip.webp";
+import { ModalContext } from "features/game/components/modal/ModalProvider";
+import { useVipAccess } from "lib/utils/hooks/useVipAccess";
 
 const getPageIcon = (page: Page) => {
   switch (page) {
@@ -74,61 +85,108 @@ type Page =
   | "verify"
   | "pets";
 
-const MainMenu: React.FC<{ setPage: (page: Page) => void }> = ({ setPage }) => {
-  return (
-    <div className="flex flex-col justify-center space-y-1">
-      <span className="p-2 mb-1">{translate("withdraw.sync")}</span>
+const MainMenu: React.FC<{
+  setPage: (page: Page) => void;
+  balance: Decimal;
+  /** Non-VIP farms: warn about the marketplace cooldown before they pick. */
+  showMarketplaceCooldownNotice: boolean;
+}> = ({ setPage, balance, showMarketplaceCooldownNotice }) => {
+  const { t } = useAppTranslation();
+  const { openModal } = useContext(ModalContext);
 
-      <div className="flex space-x-1">
-        <Button onClick={() => setPage("tokens")}>
-          <div className="flex items-center">
-            <img src={getPageIcon("tokens")} className="h-4 mr-1" />
-            {getPageText("tokens")}
+  const collections: {
+    key: Page;
+    name: string;
+    icon: string;
+    sub: string;
+  }[] = [
+    {
+      key: "items",
+      name: getPageText("items"),
+      icon: getPageIcon("items"),
+      sub: t("withdraw.menu.collectibles.subtitle"),
+    },
+    {
+      key: "wearables",
+      name: getPageText("wearables"),
+      icon: getPageIcon("wearables"),
+      sub: t("withdraw.menu.wearables.subtitle"),
+    },
+    {
+      key: "buds",
+      name: getPageText("buds"),
+      icon: getPageIcon("buds"),
+      sub: t("withdraw.menu.buds.subtitle"),
+    },
+    {
+      key: "pets",
+      name: getPageText("pets"),
+      icon: getPageIcon("pets"),
+      sub: t("withdraw.menu.pets.subtitle"),
+    },
+  ];
+
+  return (
+    <div className="flex flex-col gap-2 p-1">
+      <span className="text-xs">{t("withdraw.menu.intro")}</span>
+
+      {showMarketplaceCooldownNotice && (
+        <Label
+          type="warning"
+          icon={vipIcon}
+          className="ml-3"
+          onClick={() => openModal("VIP_ITEMS")}
+        >
+          <span className="text-xxs">
+            {t("withdraw.marketplaceCooldown.notice")}
+          </span>
+        </Label>
+      )}
+
+      {/* FLOWER token */}
+      <ButtonPanel
+        onClick={() => setPage("tokens")}
+        className="flex items-center justify-between"
+      >
+        <div className="flex items-center gap-2">
+          <img src={flowerIcon} className="w-8 h-8" />
+          <div className="flex flex-col">
+            <span className="text-sm">{`FLOWER`}</span>
+            <span className="text-xxs">
+              {t("withdraw.menu.flower.subtitle")}
+            </span>
           </div>
-        </Button>
-        <Button onClick={() => setPage("resources")}>
-          <div className="flex items-center">
-            <img src={getPageIcon("resources")} className="h-4 mr-1" />
-            {getPageText("resources")}
-          </div>
-        </Button>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="text-sm font-secondary">
+            {formatNumber(balance, { decimalPlaces: 2 })}
+          </span>
+          <img src={SUNNYSIDE.icons.arrow_right} className="h-3 opacity-60" />
+        </div>
+      </ButtonPanel>
+
+      <span className="text-xxs">{t("withdraw.menu.nftCollections")}</span>
+      <div className="grid grid-cols-2 gap-1">
+        {collections.map((collection) => (
+          <ButtonPanel
+            key={collection.key}
+            variant="card"
+            onClick={() => setPage(collection.key)}
+            className="flex flex-col gap-1"
+          >
+            <img src={collection.icon} className="w-6 h-6" />
+            <span className="text-sm">{collection.name}</span>
+            <span className="text-xxs">{collection.sub}</span>
+          </ButtonPanel>
+        ))}
       </div>
-      <div className="flex space-x-1">
-        <Button onClick={() => setPage("items")}>
-          <div className="flex items-center">
-            <img src={getPageIcon("items")} className="h-4 mr-1" />
-            {getPageText("items")}
-          </div>
-        </Button>
-        <Button onClick={() => setPage("wearables")}>
-          <div className="flex items-center">
-            <img src={getPageIcon("wearables")} className="h-4 mr-1" />
-            {getPageText("wearables")}
-          </div>
-        </Button>
-      </div>
-      <div className="flex space-x-1">
-        <Button onClick={() => setPage("buds")}>
-          <div className="flex items-center">
-            <img src={getPageIcon("buds")} className="h-4 mr-1" />
-            {getPageText("buds")}
-          </div>
-        </Button>
-        <Button onClick={() => setPage("pets")}>
-          <div className="flex items-center">
-            <img src={getPageIcon("pets")} className="h-4 mr-1" />
-            {getPageText("pets")}
-          </div>
-        </Button>
-      </div>
-      <div className="flex space-x-1">
-        <Button onClick={() => setPage("verify")}>
-          <div className="flex items-center">
-            <img src={getPageIcon("verify")} className="h-4 mr-1" />
-            {getPageText("verify")}
-          </div>
-        </Button>
-      </div>
+
+      <Button onClick={() => setPage("verify")}>
+        <div className="flex items-center">
+          <img src={getPageIcon("verify")} className="h-4 mr-1" />
+          {getPageText("verify")}
+        </div>
+      </Button>
     </div>
   );
 };
@@ -166,10 +224,23 @@ const _farmId = (state: MachineState) => state.context.farmId;
 export const Withdraw: React.FC<Props> = ({ onClose }) => {
   const { gameService } = useContext(Context);
   const farmId = useSelector(gameService, _farmId);
+  const balance = useSelector(gameService, (s) => s.context.state.balance);
+  const game = useSelector(gameService, (s) => s.context.state);
+  // The trial doesn't exempt a player, so check for full VIP - matching the
+  // API's own check.
+  const isVip = useVipAccess({ game, type: "full" });
+
+  const accountTradedRecently = useSelector(gameService, (s) =>
+    isAccountTradedWithin90Days(s.context),
+  );
+  const restrictionSecondsLeft = useSelector(gameService, (s) =>
+    getAccountTradedRestrictionSecondsLeft(s.context),
+  );
 
   const [page, setPage] = useState<Page>("main");
 
   const onWithdrawTokens = async (sfl: string, chainId: number) => {
+    if (accountTradedRecently) return;
     gameService.send("TRANSACT", {
       transaction: "transaction.flowerWithdrawn",
       request: {
@@ -181,6 +252,7 @@ export const Withdraw: React.FC<Props> = ({ onClose }) => {
   };
 
   const onWithdrawItems = async (ids: number[], amounts: string[]) => {
+    if (accountTradedRecently) return;
     gameService.send("TRANSACT", {
       transaction: "transaction.itemsWithdrawn",
       request: { farmId, effect: { type: "withdraw.items", amounts, ids } },
@@ -192,6 +264,7 @@ export const Withdraw: React.FC<Props> = ({ onClose }) => {
     wearableIds: number[],
     wearableAmounts: number[],
   ) => {
+    if (accountTradedRecently) return;
     gameService.send("TRANSACT", {
       transaction: "transaction.wearablesWithdrawn",
       request: {
@@ -206,6 +279,7 @@ export const Withdraw: React.FC<Props> = ({ onClose }) => {
   };
 
   const onWithdrawBuds = async (ids: number[]) => {
+    if (accountTradedRecently) return;
     gameService.send("TRANSACT", {
       transaction: "transaction.budWithdrawn",
       request: { effect: { type: "withdraw.buds", budIds: ids } },
@@ -214,6 +288,7 @@ export const Withdraw: React.FC<Props> = ({ onClose }) => {
   };
 
   const onWithdrawPets = async (ids: number[]) => {
+    if (accountTradedRecently) return;
     gameService.send("TRANSACT", {
       transaction: "transaction.petWithdrawn",
       request: { effect: { type: "withdraw.pets", petIds: ids } },
@@ -228,39 +303,71 @@ export const Withdraw: React.FC<Props> = ({ onClose }) => {
 
   return (
     <>
-      {page === "main" && <MainMenu setPage={setPage} />}
-      {page !== "main" && <NavigationMenu page={page} setPage={setPage} />}
+      {page === "main" && (
+        <MainMenu
+          setPage={setPage}
+          balance={balance}
+          showMarketplaceCooldownNotice={!isVip}
+        />
+      )}
+      {/* Collection pages own their back navigation inside WithdrawCollection;
+          other pages keep the shared back/title header. */}
+      {page !== "main" &&
+        !["items", "wearables", "buds", "pets"].includes(page) && (
+          <NavigationMenu page={page} setPage={setPage} />
+        )}
       {page === "tokens" && (
         <GameWallet action="withdrawFlower">
-          <WithdrawFlower onWithdraw={onWithdrawTokens} />
+          <WithdrawFlower
+            onWithdraw={onWithdrawTokens}
+            withdrawDisabled={accountTradedRecently}
+          />
         </GameWallet>
       )}
       {page === "items" && (
         <GameWallet action="withdrawItems">
-          <WithdrawItems onWithdraw={onWithdrawItems} />
-        </GameWallet>
-      )}
-      {page === "resources" && (
-        <GameWallet action="withdrawItems">
-          <WithdrawResources onWithdraw={onClose} />
+          <WithdrawItems
+            onWithdraw={onWithdrawItems}
+            onBack={() => setPage("main")}
+            withdrawDisabled={accountTradedRecently}
+          />
         </GameWallet>
       )}
       {page === "wearables" && (
         <GameWallet action="withdrawItems">
-          <WithdrawWearables onWithdraw={onWithdrawWearables} />
+          <WithdrawWearables
+            onWithdraw={onWithdrawWearables}
+            onBack={() => setPage("main")}
+            withdrawDisabled={accountTradedRecently}
+          />
         </GameWallet>
       )}
       {page === "buds" && (
         <GameWallet action="withdrawItems">
-          <WithdrawBuds onWithdraw={onWithdrawBuds} />
+          <WithdrawBuds
+            onWithdraw={onWithdrawBuds}
+            onBack={() => setPage("main")}
+            withdrawDisabled={accountTradedRecently}
+          />
         </GameWallet>
       )}
       {page === "pets" && (
         <GameWallet action="withdrawItems">
-          <WithdrawPets onWithdraw={onWithdrawPets} />
+          <WithdrawPets
+            onWithdraw={onWithdrawPets}
+            onBack={() => setPage("main")}
+            withdrawDisabled={accountTradedRecently}
+          />
         </GameWallet>
       )}
       {page === "verify" && <FaceRecognition />}
+      {accountTradedRecently && (
+        <div className="mt-2">
+          <TradeCooldownWidget
+            restrictionSecondsLeft={restrictionSecondsLeft}
+          />
+        </div>
+      )}
     </>
   );
 };

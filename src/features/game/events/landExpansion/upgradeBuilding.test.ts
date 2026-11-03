@@ -1,6 +1,11 @@
 import Decimal from "decimal.js-light";
 import { TEST_FARM } from "features/game/lib/constants";
-import { upgradeBuilding } from "./upgradeBuilding";
+import { createInitialAgingShed } from "features/game/lib/agingShed";
+import {
+  BUILDING_UPGRADES,
+  getMaxBuildingUpgradeLevel,
+  upgradeBuilding,
+} from "./upgradeBuilding";
 import { LEVEL_EXPERIENCE } from "features/game/lib/level";
 
 describe("upgradeBuilding", () => {
@@ -269,5 +274,291 @@ describe("upgradeBuilding", () => {
     });
 
     expect(result.farmActivity["Coins Spent"]).toBe(50000);
+  });
+
+  describe("Aging Shed", () => {
+    const agingShedBuildings = {
+      "Aging Shed": [
+        {
+          id: "Aging Shed",
+          coordinates: { x: 0, y: 0 },
+          readyAt: 0,
+          createdAt: 0,
+        },
+      ],
+    };
+
+    it("throws when at max level", () => {
+      expect(() =>
+        upgradeBuilding({
+          state: {
+            ...TEST_FARM,
+            buildings: agingShedBuildings,
+            agingShed: { ...createInitialAgingShed(), level: 6 },
+            coins: 2_000_000,
+          },
+          action: {
+            type: "building.upgraded",
+            buildingType: "Aging Shed",
+          },
+        }),
+      ).toThrow("Building is at max level");
+    });
+
+    it("throws when player does not have enough coins (1 → 2)", () => {
+      expect(() =>
+        upgradeBuilding({
+          state: {
+            ...TEST_FARM,
+            buildings: agingShedBuildings,
+            agingShed: { ...createInitialAgingShed(), level: 1 },
+            coins: 2_999,
+            inventory: {
+              ...TEST_FARM.inventory,
+              Stone: new Decimal(100),
+              Gold: new Decimal(20),
+            },
+          },
+          action: {
+            type: "building.upgraded",
+            buildingType: "Aging Shed",
+          },
+        }),
+      ).toThrow("Insufficient coins for upgrade");
+    });
+
+    it("throws when player does not have enough Stone (1 → 2)", () => {
+      expect(() =>
+        upgradeBuilding({
+          state: {
+            ...TEST_FARM,
+            buildings: agingShedBuildings,
+            agingShed: { ...createInitialAgingShed(), level: 1 },
+            coins: 3_000,
+            inventory: {
+              ...TEST_FARM.inventory,
+              Stone: new Decimal(99),
+              Gold: new Decimal(20),
+            },
+          },
+          action: {
+            type: "building.upgraded",
+            buildingType: "Aging Shed",
+          },
+        }),
+      ).toThrow("Insufficient Stone for upgrade");
+    });
+
+    it("throws when player does not have enough Gold (1 → 2)", () => {
+      expect(() =>
+        upgradeBuilding({
+          state: {
+            ...TEST_FARM,
+            buildings: agingShedBuildings,
+            agingShed: { ...createInitialAgingShed(), level: 1 },
+            coins: 3_000,
+            inventory: {
+              ...TEST_FARM.inventory,
+              Stone: new Decimal(100),
+              Gold: new Decimal(19),
+            },
+          },
+          action: {
+            type: "building.upgraded",
+            buildingType: "Aging Shed",
+          },
+        }),
+      ).toThrow("Insufficient Gold for upgrade");
+    });
+
+    it.each([
+      {
+        name: "1 → 2",
+        fromLevel: 1,
+        toLevel: 2,
+        coinCost: 3_000,
+        startingCoins: 8_000,
+        inventory: {
+          Stone: new Decimal(101),
+          Gold: new Decimal(21),
+        },
+        expectedInventory: {
+          Stone: new Decimal(1),
+          Gold: new Decimal(1),
+        },
+      },
+      {
+        name: "2 → 3",
+        fromLevel: 2,
+        toLevel: 3,
+        coinCost: 4_000,
+        startingCoins: 9_000,
+        inventory: {
+          Wood: new Decimal(501),
+          Stone: new Decimal(501),
+        },
+        expectedInventory: {
+          Wood: new Decimal(1),
+          Stone: new Decimal(1),
+        },
+      },
+      {
+        name: "3 → 4",
+        fromLevel: 3,
+        toLevel: 4,
+        coinCost: 10_000,
+        startingCoins: 15_000,
+        inventory: {
+          Gold: new Decimal(101),
+        },
+        expectedInventory: {
+          Gold: new Decimal(1),
+        },
+      },
+      {
+        name: "4 → 5",
+        fromLevel: 4,
+        toLevel: 5,
+        coinCost: 20_000,
+        startingCoins: 25_000,
+        inventory: {
+          Crimstone: new Decimal(11),
+        },
+        expectedInventory: {
+          Crimstone: new Decimal(1),
+        },
+      },
+      {
+        name: "5 → 6",
+        fromLevel: 5,
+        toLevel: 6,
+        coinCost: 100_000,
+        startingCoins: 105_000,
+        inventory: {},
+        expectedInventory: {},
+      },
+    ])(
+      "applies the correct cost and level for Aging Shed upgrade ($name)",
+      ({
+        fromLevel,
+        toLevel,
+        coinCost,
+        startingCoins,
+        inventory,
+        expectedInventory,
+      }) => {
+        const state = {
+          ...TEST_FARM,
+          buildings: agingShedBuildings,
+          agingShed: { ...createInitialAgingShed(), level: fromLevel },
+          coins: startingCoins,
+          inventory: {
+            ...TEST_FARM.inventory,
+            ...inventory,
+          },
+        };
+
+        const result = upgradeBuilding({
+          state,
+          action: {
+            type: "building.upgraded",
+            buildingType: "Aging Shed",
+          },
+        });
+
+        expect(result.agingShed.level).toEqual(toLevel);
+        expect(result.coins).toEqual(startingCoins - coinCost);
+        expect(result.farmActivity["Coins Spent"]).toBe(coinCost);
+        Object.entries(expectedInventory).forEach(([item, expected]) => {
+          expect(
+            result.inventory[item as keyof typeof result.inventory],
+          ).toEqual(expected);
+        });
+      },
+    );
+
+    it("throws when player does not have enough Wood (2 → 3)", () => {
+      expect(() =>
+        upgradeBuilding({
+          state: {
+            ...TEST_FARM,
+            buildings: agingShedBuildings,
+            agingShed: { ...createInitialAgingShed(), level: 2 },
+            coins: 50_000,
+            inventory: {
+              ...TEST_FARM.inventory,
+              Wood: new Decimal(499),
+              Stone: new Decimal(500),
+            },
+          },
+          action: {
+            type: "building.upgraded",
+            buildingType: "Aging Shed",
+          },
+        }),
+      ).toThrow("Insufficient Wood for upgrade");
+    });
+  });
+});
+
+describe("Pigpen upgrades", () => {
+  // Priced per added slot (Bryn, 2026-10-21), with Mud on top.
+  it("charges the per-slot costs", () => {
+    expect(BUILDING_UPGRADES.Pigpen).toEqual({
+      1: { coins: 0, items: {} },
+      2: {
+        coins: 5000,
+        items: {
+          Wood: new Decimal(450),
+          Iron: new Decimal(45),
+          Gold: new Decimal(35),
+          Crimstone: new Decimal(12),
+          Mud: new Decimal(25),
+        },
+      },
+      3: {
+        coins: 37500,
+        items: {
+          Wood: new Decimal(2250),
+          Iron: new Decimal(135),
+          Gold: new Decimal(90),
+          Crimstone: new Decimal(50),
+          Oil: new Decimal(100),
+          Mud: new Decimal(100),
+        },
+      },
+    });
+  });
+});
+
+describe("getMaxBuildingUpgradeLevel", () => {
+  it("uses the largest numeric tier key, not the number of entries", () => {
+    expect(
+      getMaxBuildingUpgradeLevel({
+        2: { coins: 0, items: {} },
+        3: { coins: 0, items: {} },
+      }),
+    ).toBe(3);
+  });
+
+  it("handles sparse numeric keys (max key can exceed entry count)", () => {
+    expect(
+      getMaxBuildingUpgradeLevel({
+        2: { coins: 0, items: {} },
+        5: { coins: 0, items: {} },
+      }),
+    ).toBe(5);
+  });
+
+  it("returns 1 when only tier 1 is defined", () => {
+    expect(getMaxBuildingUpgradeLevel({ 1: { coins: 0, items: {} } })).toBe(1);
+  });
+
+  it("matches Aging Shed max tier in BUILDING_UPGRADES", () => {
+    expect(getMaxBuildingUpgradeLevel(BUILDING_UPGRADES["Aging Shed"])).toBe(6);
+  });
+
+  it("matches Hen House max tier in BUILDING_UPGRADES", () => {
+    expect(getMaxBuildingUpgradeLevel(BUILDING_UPGRADES["Hen House"])).toBe(3);
   });
 });

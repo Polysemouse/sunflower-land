@@ -1,4 +1,4 @@
-import React, { useContext, useState } from "react";
+import React, { useContext, useEffect, useRef, useState } from "react";
 
 import { PIXEL_SCALE } from "features/game/lib/constants";
 import { Modal } from "components/ui/Modal";
@@ -9,11 +9,15 @@ import { useSelector } from "@xstate/react";
 import {
   FLOWERS,
   FLOWER_SEEDS,
-  FlowerName,
-  FlowerGrowthStage,
+  type FlowerName,
+  type FlowerGrowthStage,
 } from "features/game/types/flowers";
 import { TimerPopover } from "../common/TimerPopover";
-import { ITEM_DETAILS } from "features/game/types/images";
+import {
+  ITEM_DETAILS,
+  getTranslatedItemName,
+} from "features/game/types/images";
+import { getItemDescription } from "features/game/lib/getItemDescription";
 import { NPC_WEARABLES } from "lib/npcs";
 import { Label } from "components/ui/Label";
 import { SUNNYSIDE } from "assets/sunnyside";
@@ -32,9 +36,13 @@ import { RequirementLabel } from "components/ui/RequirementsLabel";
 import { calculateInstaGrowCost } from "features/game/events/landExpansion/instaGrowFlower";
 import { Panel } from "components/ui/Panel";
 import { secondsToString } from "lib/utils/time";
-import { PlantedFlower } from "features/game/types/game";
-import { MachineState } from "features/game/lib/gameMachine";
-import { useCountdown } from "lib/utils/hooks/useCountdown";
+import type { PlantedFlower } from "features/game/types/game";
+import type { MachineState } from "features/game/lib/gameMachine";
+import {
+  areBoostWindowsEqual,
+  getFlowerBoostWindows,
+} from "features/game/lib/boostWindows";
+import { useNodeTimer } from "features/game/lib/useNodeTimer";
 
 interface Props {
   id: string;
@@ -127,6 +135,9 @@ const _farmActivity = (state: MachineState) => state.context.state.farmActivity;
 const _inventory = (state: MachineState) => state.context.state.inventory;
 const _bumpkin = (state: MachineState) => state.context.state.bumpkin;
 const _collectibles = (state: MachineState) => state.context.state.collectibles;
+const _gameState = (state: MachineState) => state.context.state;
+const _flowerBoostWindows = (state: MachineState) =>
+  getFlowerBoostWindows(state.context.state);
 
 const Flower: React.FC<{ flower: PlantedFlower; id: string }> = ({
   flower,
@@ -142,31 +153,86 @@ const Flower: React.FC<{ flower: PlantedFlower; id: string }> = ({
   const [showInstaGrowModal, setShowInstaGrowModal] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
 
+  const nodeRef = useRef<HTMLDivElement>(null);
+
   const farmActivity = useSelector(gameService, _farmActivity);
   const inventory = useSelector(gameService, _inventory);
   const biome = useSelector(gameService, _biome);
   const season = useSelector(gameService, _season);
   const bumpkin = useSelector(gameService, _bumpkin);
   const collectibles = useSelector(gameService, _collectibles);
+  const gameState = useSelector(gameService, _gameState);
+  // Live windowed flower-growth speed boosts (Blossom Hourglass, Moth Shrine).
+  // Only re-renders when the windows actually change, so the countdown reacts to
+  // boosters placed/expired mid-grow.
+  const flowerBoostWindows = useSelector(
+    gameService,
+    _flowerBoostWindows,
+    areBoostWindowsEqual,
+  );
 
-  // Keep growth calculations in seconds to match `useCountdown`, and only use
-  // milliseconds for the countdown target date.
   const growSeconds = FLOWER_SEEDS[FLOWERS[flower.name].seed].plantSeconds;
   const growTimeMs = growSeconds * 1000;
 
-  const { totalSeconds: secondsLeft } = useCountdown(
-    flower.plantedAt + growTimeMs,
-  );
-  const growPercentage = 100 - (Math.max(secondsLeft, 0) / growSeconds) * 100;
+  const baseDurationMs = flower.baseDurationMs;
+  const startedAt = flower.plantedAt;
+
+  // `secondsLeft` is the remaining WORK: it drives the growth stage and the
+  // progress fill — work does not drain at wall-clock rate while a boost window
+  // is running. `countdownSeconds` is the reading shown, and what insta-grow is
+  // priced from (instaGrowFlower charges on readyAt - now).
+  const { workLeftSeconds: secondsLeft, countdownSeconds } = useNodeTimer({
+    startedAt,
+    baseDurationMs,
+    windows: flowerBoostWindows,
+    legacyReadyAt: startedAt + growTimeMs,
+  });
+  // `boostedTime` carries a different quantity in each model:
+  // - windowed: pre-lift banked WORK, folded into the denominator so the bar
+  //   retains its fill across a landscaping lift instead of snapping backward.
+  // - legacy: the DISCOUNT baked in by back-dating `plantedAt`. It is not
+  //   growth already done, so it comes OFF the total — dividing by the full
+  //   `growSeconds` would open the bar near-full on a boosted flower.
+  const totalSeconds =
+    baseDurationMs !== undefined
+      ? (baseDurationMs + (flower.boostedTime ?? 0)) / 1000
+      : Math.max(growSeconds - (flower.boostedTime ?? 0) / 1000, 0);
+  // Guard the zero-duration case (an insta-grown windowed flower has
+  // baseDurationMs === 0): 0 / 0 would be NaN, which makes getGrowthStage fall
+  // through to "sprout" for a flower that is actually ready.
+  const growPercentage =
+    totalSeconds <= 0
+      ? 100
+      : 100 - (Math.max(secondsLeft, 0) / totalSeconds) * 100;
 
   const isGrowing = secondsLeft > 0;
+
+  const popoverVisible = showPopover && isGrowing && !flower.dirty;
+
+  // Elevate the tile's MapPlacement ancestor while the popover is visible so it
+  // renders above sibling flower beds / decorations. Each MapPlacement is its
+  // own depth-sorted stacking context, so the inner z-50 popover would otherwise
+  // be painted over by later-rendered tiles. Mirrors MovableComponent's
+  // selection elevation; the original z-index is restored on hide.
+  useEffect(() => {
+    if (!popoverVisible) return;
+    const mapPlacement = nodeRef.current?.closest<HTMLElement>(
+      "[data-map-placement]",
+    );
+    if (!mapPlacement) return;
+    const originalZIndex = mapPlacement.style.zIndex;
+    mapPlacement.style.zIndex = "10000";
+    return () => {
+      mapPlacement.style.zIndex = originalZIndex;
+    };
+  }, [popoverVisible]);
 
   const stage = getGrowthStage(growPercentage, !!flower.dirty);
 
   const hasHarvestedBefore = !!farmActivity[`${flower.name} Harvested`];
   const reward = flower.reward;
 
-  const instaGrowCost = calculateInstaGrowCost(secondsLeft);
+  const instaGrowCost = calculateInstaGrowCost(countdownSeconds);
   const playerObsidian = inventory.Obsidian ?? new Decimal(0);
 
   const handlePlotClick = () => {
@@ -211,6 +277,7 @@ const Flower: React.FC<{ flower: PlantedFlower; id: string }> = ({
   return (
     <>
       <div
+        ref={nodeRef}
         className="relative w-full h-full cursor-pointer hover:img-highlight"
         onClick={handlePlotClick}
         onMouseEnter={() => setShowPopover(true)}
@@ -237,9 +304,13 @@ const Flower: React.FC<{ flower: PlantedFlower; id: string }> = ({
                   ? ITEM_DETAILS[flower.name].image
                   : SUNNYSIDE.icons.search
               }
-              description={hasHarvestedBefore ? flower.name : "Unknown"}
+              description={
+                hasHarvestedBefore
+                  ? getTranslatedItemName(flower.name)
+                  : t("unknown")
+              }
               showPopover={showPopover}
-              timeLeft={secondsLeft}
+              timeLeft={countdownSeconds}
             />
           </div>
         )}
@@ -255,7 +326,7 @@ const Flower: React.FC<{ flower: PlantedFlower; id: string }> = ({
           >
             <ProgressBar
               percentage={growPercentage}
-              seconds={!flower.dirty ? secondsLeft : undefined}
+              seconds={!flower.dirty ? countdownSeconds : undefined}
               type="progress"
               formatLength="short"
             />
@@ -304,10 +375,8 @@ const Flower: React.FC<{ flower: PlantedFlower; id: string }> = ({
                     {t("reward")}
                   </Label>
                   {(reward.items ?? []).map((item) => {
-                    const boost = COLLECTIBLE_BUFF_LABELS[item.name]?.({
-                      skills: bumpkin.skills,
-                      collectibles: collectibles,
-                    });
+                    const boost =
+                      COLLECTIBLE_BUFF_LABELS[item.name]?.(gameState);
 
                     return (
                       <>
@@ -317,7 +386,10 @@ const Flower: React.FC<{ flower: PlantedFlower; id: string }> = ({
                           className="h-12 mb-2"
                         />
                         <span className="text-xs text-center mb-2">
-                          {ITEM_DETAILS[item.name].description}
+                          {getItemDescription({
+                            item: item.name,
+                            game: gameState,
+                          })}
                         </span>
                         {boost && (
                           <div className="flex flex-col gap-1">
@@ -366,7 +438,7 @@ const Flower: React.FC<{ flower: PlantedFlower; id: string }> = ({
               <Label type="vibrant">{t("instaGrow")}</Label>
               <Label type="info" icon={SUNNYSIDE.icons.stopwatch}>
                 {t("instaGrow.timeRemaining", {
-                  time: secondsToString(secondsLeft, { length: "medium" }),
+                  time: secondsToString(countdownSeconds, { length: "medium" }),
                 })}
               </Label>
             </div>

@@ -1,15 +1,21 @@
-import { GameState } from "features/game/types/game";
+import type { GameState } from "features/game/types/game";
 import {
   makeUpgradableBuildingKey,
-  UpgradableBuildingType,
+  type UpgradableBuildingType,
 } from "./upgradeBuilding";
 import { produce } from "immer";
-import { getInstantGems, makeGemHistory } from "./speedUpRecipe";
+import {
+  chargeCoinsForSpeedUp,
+  getInstantGems,
+  makeGemHistory,
+  type SpeedUpPaymentMethod,
+} from "features/game/lib/getInstantGems";
 import Decimal from "decimal.js-light";
 
 export type SpeedUpUpgradeAction = {
   type: "upgrade.spedUp";
   name: UpgradableBuildingType;
+  paymentMethod?: SpeedUpPaymentMethod;
 };
 
 type Options = {
@@ -41,14 +47,20 @@ export function speedUpUpgrade({
       game,
     });
 
-    if (!game.inventory["Gem"]?.gte(gems)) {
-      throw new Error("Insufficient Gems");
+    if (action.paymentMethod === "coins") {
+      game = chargeCoinsForSpeedUp({ game, gems, createdAt });
+    } else {
+      if (!game.inventory["Gem"]?.gte(gems)) {
+        throw new Error("Insufficient Gems");
+      }
+      game.inventory["Gem"] = (game.inventory["Gem"] ?? new Decimal(0)).sub(
+        gems,
+      );
+
+      game = makeGemHistory({ game, amount: gems, createdAt });
     }
-    game.inventory["Gem"] = (game.inventory["Gem"] ?? new Decimal(0)).sub(gems);
 
     game[buildingKey].upgradeReadyAt = createdAt;
-
-    game = makeGemHistory({ game, amount: gems });
 
     return game;
   });

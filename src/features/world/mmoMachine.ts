@@ -1,17 +1,26 @@
-import { Room, Client } from "colyseus.js";
+import { type Room, Client } from "colyseus.js";
 
-import { assign, createMachine, Interpreter, State } from "xstate";
-import { PlazaRoomState } from "./types/Room";
+import { assign, createMachine, type Interpreter, type State } from "xstate";
+import type { PlazaRoomState } from "./types/Room";
 
 import { CONFIG } from "lib/config";
-import { Bumpkin, FactionName, IslandType } from "features/game/types/game";
-import { Pets } from "features/game/types/pets";
+import type {
+  Bumpkin,
+  FactionName,
+  IslandType,
+} from "features/game/types/game";
+import type { Pets } from "features/game/types/pets";
 import { INITIAL_BUMPKIN } from "features/game/lib/constants";
 import { SPAWNS } from "./lib/spawn";
-import { Moderation } from "features/game/lib/gameMachine";
 import { MAX_PLAYERS } from "./lib/availableRooms";
-import { NPCName } from "lib/npcs";
-import { Coordinates } from "features/game/expansion/components/MapPlacement";
+import type { NPCName } from "lib/npcs";
+import type { Coordinates } from "features/game/expansion/components/MapPlacement";
+import { mfScreen, mfSetScene } from "lib/moonforgeAnalytics";
+
+function trackSceneChange(sceneId: string): void {
+  mfScreen(sceneId);
+  mfSetScene(sceneId);
+}
 
 export type Scenes = {
   crops_and_chickens: Room<PlazaRoomState> | undefined;
@@ -35,6 +44,11 @@ export type Scenes = {
   infernos: Room<PlazaRoomState> | undefined;
   stream: Room<PlazaRoomState> | undefined;
   love_island: Room<PlazaRoomState> | undefined;
+  giveaway_race: Room<PlazaRoomState> | undefined;
+  giveaway_chop: Room<PlazaRoomState> | undefined;
+  giveaway_jump: Room<PlazaRoomState> | undefined;
+  giveaway_trivia: Room<PlazaRoomState> | undefined;
+  giveaway_pop: Room<PlazaRoomState> | undefined;
 };
 
 export type SceneId = keyof Scenes;
@@ -75,7 +89,8 @@ export type ServerId =
   | "sunflorea_magic"
   | "sunflorea_kale"
   | "sunflorea_flower"
-  | "sunflorea_stream";
+  | "sunflorea_stream"
+  | "sunflorea_party_games";
 
 export type ServerName =
   | "Bliss"
@@ -155,7 +170,6 @@ export interface MMOContext {
   experience: number;
   isCommunity?: boolean;
   firstDeliveryNpc?: NPCName;
-  moderation: Moderation;
   totalDeliveries: number;
   dailyStreak: number;
   isVip: boolean;
@@ -235,10 +249,6 @@ export const mmoMachine = createMachine<MMOContext, MMOEvent, MMOState>({
     isVip: false,
     createdAt: 0,
     islandType: "basic",
-    moderation: {
-      kicked: [],
-      muted: [],
-    },
     playerCoordinates: undefined,
   },
   states: {
@@ -286,10 +296,24 @@ export const mmoMachine = createMachine<MMOContext, MMOEvent, MMOState>({
             return { ...server, population };
           });
 
-          // If in stream scene, join stream server
+          // The stream (town hall) has its own dedicated server.
           if (context.sceneId === "stream") {
             const client = new Client(url);
             return { client, serverId: "sunflorea_stream", servers };
+          }
+
+          // Giveaway mini-games share ONE dedicated "party games" server —
+          // separate from the stream/town-hall crowd, but together so everyone
+          // in the event sees each other.
+          if (
+            context.sceneId === "giveaway_race" ||
+            context.sceneId === "giveaway_chop" ||
+            context.sceneId === "giveaway_jump" ||
+            context.sceneId === "giveaway_trivia" ||
+            context.sceneId === "giveaway_pop"
+          ) {
+            const client = new Client(url);
+            return { client, serverId: "sunflorea_party_games", servers };
           }
 
           const server = pickServer(servers);
@@ -339,11 +363,10 @@ export const mmoMachine = createMachine<MMOContext, MMOEvent, MMOState>({
             jwt: context.jwt,
             bumpkin: context.bumpkin,
             farmId: context.farmId,
-            x: SPAWNS().plaza.default.x,
-            y: SPAWNS().plaza.default.y,
+            x: SPAWNS(context.experience).plaza.default.x,
+            y: SPAWNS(context.experience).plaza.default.y,
             sceneId: context.sceneId,
             experience: context.experience,
-            moderation: context.moderation,
             username: context.username,
             faction: context.faction,
             totalDeliveries: context.totalDeliveries,
@@ -398,11 +421,10 @@ export const mmoMachine = createMachine<MMOContext, MMOEvent, MMOState>({
               farmId: context.farmId,
               username: context.username,
               faction: context.faction,
-              x: SPAWNS().plaza.default.x,
-              y: SPAWNS().plaza.default.y,
+              x: SPAWNS(context.experience).plaza.default.x,
+              y: SPAWNS(context.experience).plaza.default.y,
               sceneId: context.sceneId,
               experience: context.experience,
-              moderation: context.moderation,
               totalDeliveries: context.totalDeliveries,
               dailyStreak: context.dailyStreak,
               isVip: context.isVip,
@@ -502,6 +524,7 @@ export const mmoMachine = createMachine<MMOContext, MMOEvent, MMOState>({
               x: event.playerCoordinates.x,
               y: event.playerCoordinates.y,
             }),
+          (_, event) => trackSceneChange(event.sceneId),
         ],
         // If going into or leaving stream scene, we need to reload the server
         target: "connecting",
@@ -520,6 +543,7 @@ export const mmoMachine = createMachine<MMOContext, MMOEvent, MMOState>({
               x: event.playerCoordinates.x,
               y: event.playerCoordinates.y,
             }),
+          (_, event) => trackSceneChange(event.sceneId),
         ],
         // TODO: If going into or leaving stream scene, we need to reload the server
         target: "joined",

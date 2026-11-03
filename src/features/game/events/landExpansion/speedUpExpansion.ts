@@ -1,11 +1,17 @@
-import { GameState } from "features/game/types/game";
+import type { GameState } from "features/game/types/game";
 import { produce } from "immer";
-import { getInstantGems, makeGemHistory } from "./speedUpRecipe";
+import {
+  chargeCoinsForSpeedUp,
+  getInstantGems,
+  makeGemHistory,
+  type SpeedUpPaymentMethod,
+} from "features/game/lib/getInstantGems";
 import Decimal from "decimal.js-light";
 import { hasRequiredIslandExpansion } from "features/game/lib/hasRequiredIslandExpansion";
 
 export type InstantExpand = {
   type: "expansion.spedUp";
+  paymentMethod?: SpeedUpPaymentMethod;
 };
 
 type Options = {
@@ -14,6 +20,16 @@ type Options = {
   createdAt?: number;
 };
 
+/**
+ * Completes an in-progress expansion instantly by paying with gems or coins.
+ *
+ * @param action - Determines the payment method: "coins" to charge coins, or gems by default
+ * @returns The updated game state with the expansion completed
+ * @throws "Expansion not in progress" if no expansion is currently being constructed
+ * @throws "You can't speed up the expansion on this island" if the current island type doesn't support expansion speedup
+ * @throws "Expansion already complete" if the expansion is already done
+ * @throws "Insufficient Gems" if paying with gems and the player doesn't have enough
+ */
 export function speedUpExpansion({
   state,
   action,
@@ -26,7 +42,7 @@ export function speedUpExpansion({
       throw new Error("Expansion not in progress");
     }
 
-    if (hasRequiredIslandExpansion(game.island.type, "desert")) {
+    if (hasRequiredIslandExpansion(game.island.type, "swamp")) {
       throw new Error("You can't speed up the expansion on this island");
     }
 
@@ -40,15 +56,21 @@ export function speedUpExpansion({
       game,
     });
 
-    if (!game.inventory["Gem"]?.gte(gems)) {
-      throw new Error("Insufficient Gems");
+    if (action.paymentMethod === "coins") {
+      game = chargeCoinsForSpeedUp({ game, gems, createdAt });
+    } else {
+      if (!game.inventory["Gem"]?.gte(gems)) {
+        throw new Error("Insufficient Gems");
+      }
+
+      game.inventory["Gem"] = (game.inventory["Gem"] ?? new Decimal(0)).sub(
+        gems,
+      );
+
+      game = makeGemHistory({ game, amount: gems, createdAt });
     }
 
-    game.inventory["Gem"] = (game.inventory["Gem"] ?? new Decimal(0)).sub(gems);
-
     expansion.readyAt = createdAt;
-
-    game = makeGemHistory({ game, amount: gems });
 
     return game;
   });

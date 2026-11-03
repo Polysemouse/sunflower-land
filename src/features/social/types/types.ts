@@ -1,6 +1,6 @@
-import { Equipped } from "features/game/types/bumpkin";
-import { FactionName, IslandType } from "features/game/types/game";
-import { MonumentName } from "features/game/types/monuments";
+import type { Equipped } from "features/game/types/bumpkin";
+import type { FactionName, IslandType } from "features/game/types/game";
+import type { MonumentName } from "features/game/types/monuments";
 
 export type ParticipantInfo = {
   id: number;
@@ -25,6 +25,7 @@ export type Interaction = {
   readAt?: number; // Timestamp when the message was read by the recipient
   id?: string; // Unique identifier for the message
   helpedThemToday?: boolean;
+  cheeredThemToday?: boolean;
 };
 
 export type Milestone = Interaction & {
@@ -42,7 +43,10 @@ export type Player = {
     following: number[];
     followedBy: number[];
     username: string;
+    /** Within-ascension level. Meaningless without `ascension`. */
     level: number;
+    /** Ascension band this level belongs to (0 = pre-ascension). */
+    ascension: number;
     farmCreatedAt: number;
     marketValue: number;
     island: IslandType;

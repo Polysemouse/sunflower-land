@@ -1,13 +1,15 @@
 import { wallet } from "lib/blockchain/wallet";
 import { CONFIG } from "lib/config";
+import { fetchWithRetry } from "lib/fetchWithRetry";
 import { ERRORS } from "lib/errors";
+import { initRequestTokens } from "lib/requestToken";
 import { sanitizeHTTPResponse } from "lib/network";
 import { makeGame } from "../lib/transforms";
-import { GameState, Purchase } from "../types/game";
-import { Announcements } from "../types/announcements";
+import type { GameState, Purchase } from "../types/game";
+import type { Announcements } from "../types/announcements";
 import { getSignupMethod } from "features/auth/actions/createAccount";
-import { Moderation } from "../lib/gameMachine";
-import { LanguageCode } from "lib/i18n/dictionaries/language";
+import type { Moderation } from "../lib/gameMachine";
+import type { LanguageCode } from "lib/i18n/dictionaries/language";
 
 type Request = {
   token: string;
@@ -32,7 +34,7 @@ type Response = {
   nftId?: number;
   purchases: Purchase[];
   discordId?: string;
-  fslId?: string;
+  socialDetails?: SocialDetails;
   oauthNonce: string;
   prices: {
     sfl: {
@@ -40,17 +42,26 @@ type Response = {
       timestamp: number;
     };
   };
-  apiKey: string;
+
+  accountTradedAt?: string;
+  totalHelpedToday: number;
+  banReason?: string;
+  banMessage?: string;
+};
+
+export type SocialDetails = {
+  provider: string;
+  sub: string;
+  email: string;
+  /** When true, this social identity is linked but cannot be used to log in. */
+  disabled?: boolean;
 };
 
 const API_URL = CONFIG.API_URL;
 
 let loadSessionErrors = 0;
 
-export async function loadSession(
-  request: Request,
-  retries = 0,
-): Promise<Response> {
+export async function loadSession(request: Request): Promise<Response> {
   if (loadSessionErrors) {
     await new Promise((res) => setTimeout(res, loadSessionErrors * 5000));
   }
@@ -59,7 +70,7 @@ export async function loadSession(
 
   const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
-  const response = await window.fetch(`${API_URL}/session`, {
+  const response = await fetchWithRetry(`${API_URL}/session`, {
     method: "POST",
     //mode: "no-cors",
     headers: {
@@ -78,22 +89,13 @@ export async function loadSession(
   });
 
   if (response.status === 503) {
-    const data = await response.json();
-    if (data.message === "Temporary maintenance") {
+    const data = await response.json().catch(() => null);
+    if (data?.message === "Temporary maintenance") {
       throw new Error(ERRORS.MAINTENANCE);
-    } else {
-      // Throttling. Do exponential backoff with jitter
-      const backoff = Math.min(1000 * Math.pow(2, retries), 10000);
-      const jitter = Math.random() * 1000;
-
-      await new Promise((resolve) => setTimeout(resolve, backoff + jitter));
-
-      if (retries < 3) {
-        return await loadSession(request, retries + 1);
-      }
-
-      throw new Error(ERRORS.SESSION_SERVER_ERROR);
     }
+
+    // Retries are handled by fetchWithRetry; a 503 here is terminal
+    throw new Error(ERRORS.SESSION_SERVER_ERROR);
   }
 
   if (response.status === 429) {
@@ -101,6 +103,13 @@ export async function loadSession(
   }
 
   if (response.status === 401) {
+    // The BE tags disabled-login as a 401 with a structured body so we
+    // can route the user to the dedicated GoogleLoginDisabled screen
+    // instead of the generic SessionExpired one.
+    const data = await response.json().catch(() => null);
+    if (data?.errorCode === ERRORS.GOOGLE_LOGIN_DISABLED) {
+      throw new Error(ERRORS.GOOGLE_LOGIN_DISABLED);
+    }
     throw new Error(ERRORS.SESSION_EXPIRED);
   }
 
@@ -132,10 +141,16 @@ export async function loadSession(
     nftId,
     purchases,
     discordId,
-    fslId,
+    socialDetails,
     oauthNonce,
     prices,
-    apiKey,
+    accountTradedAt,
+    totalHelpedToday,
+    banReason,
+    banMessage,
+    sessionCode,
+    sessionCodeExpiresAt,
+    startedAt,
   } = await sanitizeHTTPResponse<{
     farm: any;
     startedAt: string;
@@ -154,7 +169,7 @@ export async function loadSession(
     wallet?: string;
     purchases: Purchase[];
     discordId?: string;
-    fslId?: string;
+    socialDetails?: SocialDetails;
     oauthNonce: string;
     prices: {
       sfl: {
@@ -162,8 +177,31 @@ export async function loadSession(
         timestamp: number;
       };
     };
-    apiKey: string;
+    accountTradedAt?: string;
+    totalHelpedToday: number;
+    banReason?: string;
+    banMessage?: string;
+    /**
+     * Request-token code + expiry. Consumed here and handed straight to
+     * the token module — never returned to callers.
+     */
+    sessionCode?: string;
+    sessionCodeExpiresAt?: number;
   }>(response);
+
+  // Initialise request tokens before any protected request can fire. The
+  // code is not part of this function's return value by design. The API
+  // URL and JWT let the layer refresh the code via POST /session-code
+  // before it expires; `startedAt` is the server's clock, which is what
+  // the code's expiry is measured against.
+  const serverTime = Date.parse(startedAt);
+  await initRequestTokens({
+    sessionCode,
+    sessionCodeExpiresAt,
+    apiUrl: API_URL,
+    token: request.token,
+    serverTime: Number.isNaN(serverTime) ? undefined : serverTime,
+  });
 
   saveSession(farm.id);
 
@@ -181,11 +219,14 @@ export async function loadSession(
     wallet,
     nftId,
     purchases,
-    fslId,
     discordId,
+    socialDetails,
     oauthNonce,
     prices,
-    apiKey,
+    accountTradedAt,
+    totalHelpedToday,
+    banReason,
+    banMessage,
   };
 }
 

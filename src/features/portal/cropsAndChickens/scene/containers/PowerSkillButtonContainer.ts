@@ -1,8 +1,8 @@
 import { isTouchDevice } from "features/world/lib/device";
-import { CropsAndChickensScene } from "../CropsAndChickensScene";
+import type { CropsAndChickensScene } from "../CropsAndChickensScene";
 import {
   AVAILABLE_ABILITIES,
-  CropsAndChickensAbilityName,
+  type CropsAndChickensAbilityName,
 } from "../../CropsAndChickensUpgrades";
 import { PIXEL_SCALE } from "features/game/lib/constants";
 

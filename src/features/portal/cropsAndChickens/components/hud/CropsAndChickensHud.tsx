@@ -3,7 +3,7 @@ import { useSelector } from "@xstate/react";
 import { PortalContext } from "../../lib/PortalProvider";
 import { PIXEL_SCALE } from "features/game/lib/constants";
 import { HudContainer } from "components/ui/HudContainer";
-import { PortalMachineState } from "../../lib/cropsAndChickensMachine";
+import type { PortalMachineState } from "../../lib/cropsAndChickensMachine";
 import { CropsAndChickensTimer } from "./CropsAndChickensTimer";
 import { CropsAndChickensSettings } from "./settings/CropsAndChickensSettings";
 import { CropsAndChickensTravel } from "./CropsAndChickensTravel";
@@ -11,7 +11,7 @@ import { CropsAndChickensScores } from "./CropsAndChickensScores";
 import classNames from "classnames";
 import { useAchievementToast } from "../../providers/AchievementToastProvider";
 import { CropsAndChickensTarget } from "./CropsAndChickensTarget";
-import { MinigameAchievement } from "features/game/types/game";
+import type { MinigameAchievement } from "features/game/types/game";
 import { Label } from "components/ui/Label";
 
 const _isJoystickActive = (state: PortalMachineState) =>

@@ -6,14 +6,16 @@ import { Label } from "components/ui/Label";
 import { CraftingRequirements } from "components/ui/layouts/CraftingRequirements";
 import { SplitScreenView } from "components/ui/SplitScreenView";
 import Decimal from "decimal.js-light";
-import { getObjectEntries } from "features/game/expansion/lib/utils";
+import { getKeys, getObjectEntries } from "lib/object";
 import { Context } from "features/game/GameProvider";
 import { EXPIRY_COOLDOWNS } from "features/game/lib/collectibleBuilt";
-import { getKeys } from "features/game/lib/crafting";
 import { COLLECTIBLE_BUFF_LABELS } from "features/game/types/collectibleItemBuffs";
-import { GameState, Inventory } from "features/game/types/game";
+import type { GameState, Inventory } from "features/game/types/game";
 import { ITEM_DETAILS } from "features/game/types/images";
-import { PET_SHOP_ITEMS, PetShopItemName } from "features/game/types/petShop";
+import {
+  PET_SHOP_ITEMS,
+  type PetShopItemName,
+} from "features/game/types/petShop";
 import { useAppTranslation } from "lib/i18n/useAppTranslations";
 import { secondsToString } from "lib/utils/time";
 import React, { useContext, useState } from "react";
@@ -177,10 +179,7 @@ const PetShopActionView: React.FC<{
 }) => {
   const { t } = useAppTranslation();
   const boostDescription = [
-    ...(COLLECTIBLE_BUFF_LABELS[petItem]?.({
-      skills: gameState.bumpkin.skills,
-      collectibles: gameState.collectibles,
-    }) ?? []), // Spread to prevent mutations
+    ...(COLLECTIBLE_BUFF_LABELS[petItem]?.(gameState) ?? []), // Spread to prevent mutations
   ];
   const isPetEgg = (petItem: PetShopItemName): petItem is "Pet Egg" =>
     petItem === "Pet Egg";

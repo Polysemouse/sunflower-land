@@ -1,68 +1,77 @@
 import { useSelector } from "@xstate/react";
 import React, { useContext, useState } from "react";
-import Decimal from "decimal.js-light";
 
-import { BoostName, Wardrobe } from "features/game/types/game";
-
-import { Button } from "components/ui/Button";
-import { Box } from "components/ui/Box";
+import type { BoostName, Wardrobe } from "features/game/types/game";
 
 import { wallet } from "lib/blockchain/wallet";
 
-import { getKeys } from "features/game/types/craftables";
+import { getKeys } from "lib/object";
 import { SUNNYSIDE } from "assets/sunnyside";
-import { BumpkinItem, ITEM_IDS } from "features/game/types/bumpkin";
 import { availableWardrobe } from "features/game/events/landExpansion/equip";
-import { BUMPKIN_RELEASES } from "features/game/types/withdrawables";
+import { type BumpkinItem, ITEM_IDS } from "features/game/types/bumpkin";
+import { WEARABLE_RELEASES } from "features/game/types/withdrawables";
 import { useAppTranslation } from "lib/i18n/useAppTranslations";
 import { Context } from "features/game/GameProvider";
 import { getImageUrl } from "lib/utils/getImageURLS";
-import { MachineState } from "features/game/lib/gameMachine";
-import { Label } from "components/ui/Label";
-import { WalletAddressLabel } from "components/ui/WalletAddressLabel";
-import { PIXEL_SCALE } from "features/game/lib/constants";
+import type { MachineState } from "features/game/lib/gameMachine";
 import { hasReputation, Reputation } from "features/game/lib/reputation";
 import { RequiredReputation } from "features/island/hud/components/reputation/Reputation";
 import { isFaceVerified } from "features/retreat/components/personhood/lib/faceRecognition";
 import { FaceRecognition } from "features/retreat/components/personhood/FaceRecognition";
 import { hasBoostRestriction } from "features/game/types/withdrawRestrictions";
-import { InfoPopover } from "features/island/common/InfoPopover";
 import { secondsToString } from "lib/utils/time";
 import { BUMPKIN_ITEM_BUFF_LABELS } from "features/game/types/bumpkinItemBuffs";
+import { useNow } from "lib/utils/hooks/useNow";
+import { MAX_MINT_AMOUNT } from "lib/blockchain/Withdrawals";
+import vipIcon from "assets/icons/vip.webp";
+
+import { WithdrawCollection } from "./withdraw/WithdrawCollection";
+import type { WithdrawEntry } from "./withdraw/types";
+import {
+  formatWithdrawableDate,
+  getMarketplaceWithdrawBlock,
+} from "features/game/lib/withdrawCooldown";
 
 interface Props {
   onWithdraw: (ids: number[], amounts: number[]) => void;
+  onBack: () => void;
+  withdrawDisabled?: boolean;
 }
 
 const _state = (state: MachineState) => state.context.state;
+const _withdrawCooldowns = (state: MachineState) =>
+  state.context.withdrawCooldowns;
 
-export const WithdrawWearables: React.FC<Props> = ({ onWithdraw }) => {
+export const WithdrawWearables: React.FC<Props> = ({
+  onWithdraw,
+  onBack,
+  withdrawDisabled,
+}) => {
   const { t } = useAppTranslation();
 
   const { gameService } = useContext(Context);
   const state = useSelector(gameService, _state);
+  const withdrawCooldowns = useSelector(gameService, _withdrawCooldowns);
 
+  // Equipped wearables can now be withdrawn (the backend unequips them), so
+  // the ceiling is the full wardrobe count rather than the unequipped count.
+  // Cap at `previousWardrobe + MAX_MINT_AMOUNT` to match the BE per-call mint
+  // cap. The backend mints any shortfall up to `MAX_MINT_AMOUNT` per item.
   const getTrueAvailableWardrobe = () => {
-    let available = availableWardrobe(state);
-
-    available = getKeys(available).reduce((acc, key) => {
-      const currentAmount = available[key] ?? 0;
-      const onChainAmount = state.previousWardrobe[key] ?? 0;
-      return {
-        ...acc,
-        [key]: Math.min(currentAmount, onChainAmount),
-      };
+    return getKeys(state.wardrobe).reduce((acc, key) => {
+      const currentAmount = state.wardrobe[key] ?? 0;
+      const onChain = state.previousWardrobe[key] ?? 0;
+      acc[key] = Math.min(currentAmount, onChain + MAX_MINT_AMOUNT);
+      return acc;
     }, {} as Wardrobe);
-
-    return available;
   };
 
-  const [wardrobe, setWardrobe] = useState<Wardrobe>(
+  const [wardrobe, setWardrobe] = useState<Wardrobe>(() =>
     getTrueAvailableWardrobe(),
   );
   const [selected, setSelected] = useState<Wardrobe>({});
 
-  const [showInfo, setShowInfo] = useState("");
+  const now = useNow();
 
   const withdraw = () => {
     const ids = getKeys(selected).map((item) => ITEM_IDS[item]);
@@ -100,6 +109,21 @@ export const WithdrawWearables: React.FC<Props> = ({ onWithdraw }) => {
     });
   };
 
+  // Translate a target quantity from the stepper into the existing
+  // one-at-a-time transfer model.
+  const onSetQty = (entry: WithdrawEntry, qty: number) => {
+    const itemName = entry.key as BumpkinItem;
+    let diff = qty - (selected[itemName] ?? 0);
+    while (diff > 0) {
+      onAdd(itemName);
+      diff--;
+    }
+    while (diff < 0) {
+      onRemove(itemName);
+      diff++;
+    }
+  };
+
   const getRestrictionStatus = (itemName: BoostName) => {
     const { isRestricted, cooldownTimeLeft } = hasBoostRestriction({
       boostUsedAt: state.boostsUsedAt,
@@ -108,27 +132,16 @@ export const WithdrawWearables: React.FC<Props> = ({ onWithdraw }) => {
     return { isRestricted, cooldownTimeLeft };
   };
 
-  const hasMoreOffChainItems = (itemName: BumpkinItem) => {
-    const wardrobeCount = wardrobe[itemName] ?? 0;
-    const currentAmount = availableWardrobe(state)[itemName] ?? 0;
-    const onChainAmount = state.previousWardrobe[itemName] ?? 0;
-
-    // No items available to select, but there are more off-chain items
-    return wardrobeCount <= 0 && currentAmount > onChainAmount;
-  };
-
   // Precompute/cached values for sorting to avoid repeated expensive calls
   const withdrawableItemCache = getKeys(wardrobe).reduce(
     (cache, itemName) => {
       const { cooldownTimeLeft } = getRestrictionStatus(itemName);
       const isOnCooldown = cooldownTimeLeft > 0;
-      const hasMoreOffChain = hasMoreOffChainItems(itemName);
       const hasBuff = !!BUMPKIN_ITEM_BUFF_LABELS[itemName]?.length;
 
       cache[itemName] = {
         cooldownMs: cooldownTimeLeft,
         isOnCooldown,
-        hasMoreOffChain,
         hasBuff,
       };
 
@@ -138,7 +151,6 @@ export const WithdrawWearables: React.FC<Props> = ({ onWithdraw }) => {
       [key in BumpkinItem]?: {
         cooldownMs: number;
         isOnCooldown: boolean;
-        hasMoreOffChain: boolean;
         hasBuff: boolean;
       };
     },
@@ -161,39 +173,30 @@ export const WithdrawWearables: React.FC<Props> = ({ onWithdraw }) => {
       return a.isOnCooldown ? -1 : 1;
     }
 
-    // 2. Items that have more off-chain than on-chain copies
-    if (a.hasMoreOffChain !== b.hasMoreOffChain) {
-      return a.hasMoreOffChain ? -1 : 1;
-    }
-
-    // 3. Boosted items come before non-boosted items
+    // 2. Boosted items come before non-boosted items
     if (a.hasBuff !== b.hasBuff) {
       return a.hasBuff ? -1 : 1;
     }
 
-    // 4. Otherwise, sort by item IDs
+    // 3. Otherwise, sort by item IDs
     return ITEM_IDS[itemA] - ITEM_IDS[itemB];
   };
 
   const withdrawableItems = [...new Set([...getKeys(wardrobe)])]
     .filter((itemName) => {
-      const withdrawAt = BUMPKIN_RELEASES[itemName]?.withdrawAt;
-      const canWithdraw = !!withdrawAt && withdrawAt <= new Date();
+      const withdrawAt = WEARABLE_RELEASES[itemName]?.withdrawAt;
+      const canWithdraw = !!withdrawAt && withdrawAt <= new Date(now);
       return canWithdraw;
     })
-    .filter(
-      (itemName) =>
-        hasMoreOffChainItems(itemName) || (wardrobe[itemName] ?? 0) > 0,
-    )
+    .filter((itemName) => (wardrobe[itemName] ?? 0) > 0)
     .sort((a, b) => sortWithdrawableItems(a, b));
 
-  const selectedItems = getKeys(selected)
-    .filter((item) => !!selected[item])
-    .sort((a, b) => ITEM_IDS[a] - ITEM_IDS[b]);
+  const selectedItems = getKeys(selected).filter((item) => !!selected[item]);
 
   const hasAccess = hasReputation({
     game: state,
     reputation: Reputation.Seedling,
+    now,
   });
 
   if (!hasAccess) {
@@ -204,132 +207,109 @@ export const WithdrawWearables: React.FC<Props> = ({ onWithdraw }) => {
     return <FaceRecognition />;
   }
 
+  // Keep fully-selected wearables visible in the grid alongside the still
+  // available ones.
+  const entryNames = [
+    ...withdrawableItems,
+    ...selectedItems.filter((name) => !withdrawableItems.includes(name)),
+  ];
+
+  // `availableWardrobe` is the project's source of truth for the unequipped
+  // (spare) count — reuse it rather than recomputing equipped counts here, so
+  // the warning threshold can't drift from equip rules.
+  const available = availableWardrobe(state);
+
+  const entries: WithdrawEntry[] = entryNames.map((itemName) => {
+    const wardrobeCount = wardrobe[itemName] ?? 0;
+    const selectedCount = selected[itemName] ?? 0;
+    const { isRestricted, cooldownTimeLeft } = getRestrictionStatus(itemName);
+    const buffs = BUMPKIN_ITEM_BUFF_LABELS[itemName];
+
+    // Withdrawing beyond the unequipped (spare) count will unequip copies.
+    const safeWithdrawCount = available[itemName] ?? 0;
+    const equippedCount = Math.max(
+      (state.wardrobe[itemName] ?? 0) - safeWithdrawCount,
+      0,
+    );
+
+    const cooldownText = secondsToString(cooldownTimeLeft / 1000, {
+      length: "medium",
+      isShortFormat: true,
+      removeTrailingZeros: true,
+    });
+
+    // Bought on the marketplace recently without VIP - only known once the
+    // API has refused it, see withdrawCooldown.ts.
+    const marketplaceBlockedUntil = getMarketplaceWithdrawBlock({
+      game: state,
+      cooldowns: withdrawCooldowns,
+      name: itemName,
+      now,
+    });
+    const marketplaceDate =
+      marketplaceBlockedUntil !== undefined
+        ? formatWithdrawableDate(marketplaceBlockedUntil)
+        : undefined;
+
+    return {
+      key: itemName,
+      id: ITEM_IDS[itemName],
+      name: itemName,
+      image: getImageUrl(ITEM_IDS[itemName]),
+      total: wardrobeCount + selectedCount,
+      safeWithdrawCount,
+      inUseWarning:
+        equippedCount > 0 ? t("withdraw.equipped.warning") : undefined,
+      locked: isRestricted || marketplaceDate !== undefined,
+      lockReason: isRestricted
+        ? t("withdraw.boostedItem.timeLeft", { time: cooldownText })
+        : marketplaceDate !== undefined
+          ? t("withdraw.marketplaceCooldown.lockReason", {
+              date: marketplaceDate,
+            })
+          : undefined,
+      status: isRestricted
+        ? {
+            type: "warning" as const,
+            icon: SUNNYSIDE.icons.timer,
+            text: t("withdraw.status.cooldown", { time: cooldownText }),
+          }
+        : marketplaceDate !== undefined
+          ? {
+              type: "warning" as const,
+              icon: vipIcon,
+              text: t("withdraw.status.marketplaceCooldown", {
+                date: marketplaceDate,
+              }),
+            }
+          : {
+              type: "success" as const,
+              text: t("withdraw.status.withdrawable"),
+            },
+      buffs: buffs?.length ? buffs : undefined,
+    };
+  });
+
+  const selectedMap = selectedItems.reduce(
+    (acc, itemName) => {
+      acc[itemName] = selected[itemName] ?? 0;
+      return acc;
+    },
+    {} as Record<string, number>,
+  );
+
   return (
-    <>
-      <div className="p-2 mb-2">
-        <Label type="warning" className="mb-2">
-          <span className="text-xs">{t("withdraw.restricted")}</span>
-        </Label>
-        <Label type="default" className="mb-2">
-          {t("withdraw.select.item")}
-        </Label>
-        <div className="flex flex-wrap h-fit -ml-1.5">
-          {withdrawableItems.map((itemName) => {
-            const wardrobeCount = wardrobe[itemName] ?? 0;
-
-            const { isRestricted, cooldownTimeLeft } =
-              getRestrictionStatus(itemName);
-
-            const RestrictionCooldown = cooldownTimeLeft / 1000;
-            const isLocked = isRestricted || wardrobeCount <= 0;
-
-            const shouldShowPopover =
-              isRestricted || hasMoreOffChainItems(itemName);
-
-            const handleBoxClick = () => {
-              if (shouldShowPopover) {
-                setShowInfo((prev) => (prev === itemName ? "" : itemName));
-              }
-            };
-
-            return (
-              <div
-                key={itemName}
-                onClick={handleBoxClick}
-                className="flex relative text-center"
-              >
-                <InfoPopover
-                  className="absolute top-14 text-xxs sm:text-xs"
-                  showPopover={showInfo === itemName}
-                >
-                  {hasMoreOffChainItems(itemName)
-                    ? t("withdraw.requires.storeOnChain")
-                    : isRestricted &&
-                      t("withdraw.boostedItem.timeLeft", {
-                        time: secondsToString(RestrictionCooldown, {
-                          length: "medium",
-                          isShortFormat: true,
-                          removeTrailingZeros: true,
-                        }),
-                      })}
-                </InfoPopover>
-
-                <Box
-                  count={new Decimal(wardrobeCount ?? 0)}
-                  key={itemName}
-                  onClick={() => onAdd(itemName)}
-                  disabled={isLocked}
-                  image={getImageUrl(ITEM_IDS[itemName])}
-                  secondaryImage={
-                    shouldShowPopover ? SUNNYSIDE.icons.lock : undefined
-                  }
-                />
-              </div>
-            );
-          })}
-          {/* Pad with empty boxes */}
-          {withdrawableItems.length < 4 &&
-            new Array(4 - withdrawableItems.length)
-              .fill(null)
-              .map((_, index) => <Box disabled key={index} />)}
-        </div>
-
-        <div className="mt-4">
-          <Label type="default" className="mb-2">
-            {t("selected")}
-          </Label>
-          <div className="flex flex-wrap h-fit mt-2 -ml-1.5">
-            {selectedItems.map((itemName) => {
-              return (
-                <Box
-                  count={new Decimal(selected[itemName] ?? 0)}
-                  key={itemName}
-                  onClick={() => onRemove(itemName)}
-                  image={getImageUrl(ITEM_IDS[itemName])}
-                />
-              );
-            })}
-            {/* Pad with empty boxes */}
-            {selectedItems.length < 4 &&
-              new Array(4 - selectedItems.length)
-                .fill(null)
-                .map((_, index) => <Box disabled key={index} />)}
-          </div>
-        </div>
-
-        <div className="w-full my-3 border-t border-white" />
-        <div className="flex items-center mb-2 text-xs">
-          <img
-            src={SUNNYSIDE.icons.player}
-            className="mr-3"
-            style={{
-              width: `${PIXEL_SCALE * 13}px`,
-            }}
-          />
-          <div className="flex flex-col gap-1">
-            <p>{t("withdraw.send.wallet")}</p>
-            <WalletAddressLabel
-              walletAddress={wallet.getConnection() || "XXXX"}
-            />
-          </div>
-        </div>
-
-        <p className="text-xs">
-          {t("withdraw.opensea")}{" "}
-          <a
-            className="underline hover:text-blue-500"
-            href="https://docs.sunflower-land.com/getting-started/crypto-and-digital-collectibles"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            {t("read.more")}
-          </a>
-        </p>
-      </div>
-
-      <Button onClick={withdraw} disabled={selectedItems.length <= 0}>
-        {t("withdraw")}
-      </Button>
-    </>
+    <WithdrawCollection
+      title={t("wearables")}
+      icon={SUNNYSIDE.icons.wardrobe}
+      entries={entries}
+      selected={selectedMap}
+      onSetQty={onSetQty}
+      onWithdraw={withdraw}
+      withdrawDisabled={withdrawDisabled}
+      walletAddress={wallet.getConnection() || "XXXX"}
+      onBack={onBack}
+      intro={t("withdraw.restricted.description")}
+    />
   );
 };

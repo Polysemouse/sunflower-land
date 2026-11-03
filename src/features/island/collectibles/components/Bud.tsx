@@ -1,11 +1,9 @@
 import React, { useContext } from "react";
 
 import { PIXEL_SCALE } from "features/game/lib/constants";
-import { CONFIG } from "lib/config";
 
 import shadow from "assets/npcs/shadow.png";
-import { TypeTrait } from "features/game/types/buds";
-import classNames from "classnames";
+import type { TypeTrait } from "features/game/types/buds";
 import { Popover, PopoverButton, PopoverPanel } from "@headlessui/react";
 import { SFTDetailPopoverInnerPanel } from "components/ui/SFTDetailPopover";
 import { Label } from "components/ui/Label";
@@ -16,10 +14,8 @@ import { useSelector } from "@xstate/react";
 import useSWR from "swr";
 import { loadTradeable } from "features/marketplace/actions/loadTradeable";
 import { formatNumber } from "lib/utils/formatNumber";
-import { AuthMachineState } from "features/auth/lib/authMachine";
-
-export const budImageDomain =
-  CONFIG.NETWORK === "mainnet" ? "buds" : "testnet-buds";
+import type { AuthMachineState } from "features/auth/lib/authMachine";
+import { getBudImage } from "lib/buds/types";
 
 type Props = {
   id: string;
@@ -98,8 +94,8 @@ export const Bud: React.FC<Props> = ({ id, type }) => {
         <div
           className="absolute cursor-pointer"
           style={{
-            width: `${PIXEL_SCALE * 32}px`,
-            height: `${PIXEL_SCALE * 32}px`,
+            width: `${PIXEL_SCALE * 16}px`,
+            height: `${PIXEL_SCALE * 16}px`,
             bottom: `${PIXEL_SCALE * 0}px`,
             left: `${-PIXEL_SCALE * 0}px`,
           }}
@@ -109,14 +105,19 @@ export const Bud: React.FC<Props> = ({ id, type }) => {
             style={{
               width: `${16 * PIXEL_SCALE}px`,
               bottom: 0,
+              pointerEvents: "none",
             }}
             className="absolute"
           />
           <img
-            src={`https://${budImageDomain}.sunflower-land.com/images/${id}.webp`}
-            className={classNames("absolute w-full -translate-x-1/4", {
-              "top-1": type === "Retreat",
-            })}
+            src={getBudImage(Number(id))}
+            style={{
+              width: `${PIXEL_SCALE * 32}px`,
+              maxWidth: "none",
+              top: `${-PIXEL_SCALE * 16 + (type === "Retreat" ? 4 : 0)}px`,
+              pointerEvents: "none",
+            }}
+            className="absolute -translate-x-1/4"
             alt={`Bud ${id}`}
           />
         </div>
@@ -125,7 +126,7 @@ export const Bud: React.FC<Props> = ({ id, type }) => {
         <SFTDetailPopoverInnerPanel>
           <div className="flex space-x-1 relative">
             <img
-              src={`https://${budImageDomain}.sunflower-land.com/images/${id}.webp`}
+              src={getBudImage(Number(id))}
               className="absolute"
               style={{
                 width: `48px`,

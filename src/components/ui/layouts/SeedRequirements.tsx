@@ -1,30 +1,46 @@
 import Decimal from "decimal.js-light";
 import { INVENTORY_LIMIT } from "features/game/lib/constants";
-import { getBumpkinLevel } from "features/game/lib/level";
 import {
+  getAscensionLevel,
+  type LevelRequirement,
+} from "features/game/lib/level";
+import type {
   BoostName,
   GameState,
   InventoryItemName,
   TemperateSeasonName,
 } from "features/game/types/game";
-import { ITEM_DETAILS } from "features/game/types/images";
+import {
+  ITEM_DETAILS,
+  getTranslatedItemName,
+} from "features/game/types/images";
 import React, { type JSX } from "react";
 import { Label } from "../Label";
 import { RequirementLabel } from "../RequirementsLabel";
 import { SquareIcon } from "../SquareIcon";
-import { formatDateRange } from "lib/utils/time";
+import { formatDateRange, secondsToString } from "lib/utils/time";
 import { SUNNYSIDE } from "assets/sunnyside";
+import classNames from "classnames";
+import {
+  getPreActionDisplay,
+  isPreActionBoosted,
+} from "features/game/lib/timerDisplay";
+import { getCropMachineBoostWindows } from "features/game/lib/boostWindows";
+import {
+  getBoostContributionEntries,
+  getCropMachineBoostContributions,
+} from "features/game/lib/boostContributions";
 import emptyPot from "assets/greenhouse/greenhouse_pot.webp";
 import flowerBed from "assets/flowers/empty_flowerbed.webp";
 
 import { useAppTranslation } from "lib/i18n/useAppTranslations";
 import { ITEM_ICONS } from "features/island/hud/components/inventory/Chest";
-import { Seed, SeedName, SEEDS } from "features/game/types/seeds";
+import { type Seed, type SeedName, SEEDS } from "features/game/types/seeds";
 import {
-  CropName,
-  CropSeedName,
+  type CropName,
+  type CropSeedName,
   getCropCategory,
-  ProduceName,
+  type ProduceName,
 } from "features/game/types/crops";
 import { getCurrentBiome } from "features/island/biomes/biomes";
 import { BoostsDisplay } from "./BoostsDisplay";
@@ -32,6 +48,9 @@ import {
   calculateCropTime,
   CROP_MACHINE_PLOTS,
 } from "features/game/events/landExpansion/supplyCropMachine";
+import { useActiveBuff } from "features/game/types/buffs";
+import { useNow } from "lib/utils/hooks/useNow";
+import { hasFeatureAccess } from "lib/flags";
 
 /**
  * The props for the details for items.
@@ -81,7 +100,7 @@ interface RequirementsProps {
   harvests?: HarvestsRequirementProps;
   time?: { seconds: number; boostsUsed: { name: BoostName; value: string }[] };
   baseTimeSeconds?: number;
-  level?: number;
+  level?: LevelRequirement;
   restriction?: {
     icon: string;
     text: string;
@@ -134,7 +153,7 @@ function getDetails(
       ITEM_ICONS(game.season.season, getCurrentBiome(game.island))[
         details.item
       ] ?? ITEM_DETAILS[details.item].image,
-    name: details.item,
+    name: getTranslatedItemName(details.item),
     limit: limit as Decimal,
   };
 }
@@ -164,6 +183,25 @@ export const SeedRequirements: React.FC<Props> = ({
   showBoosts,
 }) => {
   const { t } = useAppTranslation();
+  const isSeedCropMachine = (seed: SeedName): seed is CropSeedName =>
+    !!details.cropMachineSeeds?.includes(seed);
+
+  const isCropMachineSeed = isSeedCropMachine(details.item);
+
+  // Tick live when a countdown is shown (Chapter Crop Week seed), and for a
+  // crop-machine seed, whose grow time depends on a temporary boost (Tortoise
+  // Shrine) that can expire while the panel is open — that clock must not stop
+  // at the countdown's end. Otherwise the whole panel (incl. boosts) needlessly
+  // re-renders every second.
+  const now = useNow({
+    live: !!details.from || isCropMachineSeed,
+    autoEndAt: isCropMachineSeed ? undefined : details.to?.getTime(),
+  });
+  const { isActive: isPowerHourActive, remainingTime: powerHourRemainingTime } =
+    useActiveBuff({
+      buff: "Power hour",
+      game: gameState,
+    });
 
   const getStock = () => {
     if (!stock) return <></>;
@@ -193,10 +231,6 @@ export const SeedRequirements: React.FC<Props> = ({
   };
 
   const inSeasonSeeds = validSeeds.includes(details.item);
-  const isSeedCropMachine = (seed: SeedName): seed is CropSeedName =>
-    !!details.cropMachineSeeds?.includes(seed);
-
-  const isCropMachineSeed = isSeedCropMachine(details.item);
 
   const getItemDetail = () => {
     const { image: icon, name } = getDetails(gameState, details);
@@ -252,33 +286,87 @@ export const SeedRequirements: React.FC<Props> = ({
     const { coins, showCoinsIfFree, harvests, time, baseTimeSeconds, level } =
       requirements;
 
-    const isTimeBoosted = time?.seconds !== baseTimeSeconds;
+    // Named boosts are already folded into `time.seconds` and can be itemised; a
+    // live speed window shows as a shorter projected time but has no name to
+    // list, so it must not make the block clickable on its own.
+    const hasNamedBoosts = (time?.boostsUsed.length ?? 0) > 0;
+    const isTimeBoosted =
+      !!time &&
+      isPreActionBoosted({
+        displaySeconds: time.seconds,
+        baseSeconds: baseTimeSeconds,
+        hasNamedBoosts,
+      });
 
-    const RequirementLabels: React.FC = () => {
+    // A plain render helper, not a nested component: a component declared here
+    // is a new type every render, so each `now` tick would remount the subtree
+    // and replay the boosts panel's appear transition (it flashes every second).
+    const getRequirementLabels = () => {
       if (isSeedCropMachine(details.item)) {
         const cropMachinePackSize = CROP_MACHINE_PLOTS(gameState);
-        const cropMachineBoostedTime = calculateCropTime(
+
+        // A pack supplied now WILL be windowed under SPEED_BOOSTS — the supply
+        // event converts the machine — so this pre-action preview gates on the
+        // FLAG (there is no pack yet to carry a marker). The Tortoise is then a
+        // live window rather than a baked ×0.9, so it must come out of the
+        // duration here and be credited over the grow instead.
+        const isCropMachineWindowed = hasFeatureAccess(
+          gameState,
+          "SPEED_BOOSTS",
+        );
+        const cropMachineTime = calculateCropTime(
           { type: details.item, amount: cropMachinePackSize },
           gameState,
+          now,
+          { windowed: isCropMachineWindowed },
         );
+        const cropMachineSeconds = cropMachineTime.milliSeconds / 1000;
         const cropMachineBaseTime = baseTimeSeconds;
-        const isCropMachineTimeBoosted =
-          cropMachineBoostedTime.milliSeconds / 1000 !== cropMachineBaseTime;
+
+        // Name the windowed Tortoise by the time it actually saves ("-1hr
+        // 12mins Tortoise Shrine"), matching every other windowed boost in the
+        // seed shop, instead of the legacy "x0.9" multiplier.
+        const cropMachineBoostsUsed = [
+          ...cropMachineTime.boostUsed,
+          ...getBoostContributionEntries({
+            contributions: getCropMachineBoostContributions(gameState),
+            seconds: cropMachineSeconds,
+            at: now,
+            formatSeconds: (seconds) =>
+              secondsToString(seconds, { length: "medium" }),
+          }),
+        ];
+
+        const {
+          displaySeconds: cropMachineDisplaySeconds,
+          hasNamedBoosts: cropMachineHasNamedBoosts,
+          isBoosted: isCropMachineTimeBoosted,
+        } = getPreActionDisplay({
+          seconds: cropMachineSeconds,
+          baseSeconds: cropMachineBaseTime,
+          namedBoostCount: cropMachineBoostsUsed.length,
+          windows: isCropMachineWindowed
+            ? getCropMachineBoostWindows(gameState)
+            : [],
+          at: now,
+        });
 
         return (
           <div
-            className="flex flex-col items-center cursor-pointer"
+            className={classNames("flex flex-col items-center", {
+              "cursor-pointer": cropMachineHasNamedBoosts,
+            })}
             onClick={
-              isCropMachineTimeBoosted
+              cropMachineHasNamedBoosts
                 ? () => setShowBoosts(!showBoosts)
                 : undefined
             }
           >
             <p className="text-xxs">{`Time to grow ${cropMachinePackSize}x: `}</p>
-            {!!cropMachineBoostedTime && isCropMachineTimeBoosted && (
+            {isCropMachineTimeBoosted && (
               <RequirementLabel
                 type="time"
-                waitSeconds={cropMachineBoostedTime.milliSeconds / 1000}
+                waitSeconds={cropMachineDisplaySeconds}
                 boosted
               />
             )}
@@ -290,7 +378,7 @@ export const SeedRequirements: React.FC<Props> = ({
               />
             )}
             <BoostsDisplay
-              boosts={cropMachineBoostedTime.boostUsed ?? []}
+              boosts={cropMachineBoostsUsed}
               show={showBoosts}
               state={gameState}
               onClick={() => setShowBoosts(!showBoosts)}
@@ -301,8 +389,12 @@ export const SeedRequirements: React.FC<Props> = ({
 
       return (
         <div
-          className="flex flex-col items-center cursor-pointer"
-          onClick={isTimeBoosted ? () => setShowBoosts(!showBoosts) : undefined}
+          className={classNames("flex flex-col items-center", {
+            "cursor-pointer": hasNamedBoosts,
+          })}
+          onClick={
+            hasNamedBoosts ? () => setShowBoosts(!showBoosts) : undefined
+          }
         >
           {!!time && isTimeBoosted && (
             <RequirementLabel type="time" waitSeconds={time.seconds} boosted />
@@ -316,7 +408,7 @@ export const SeedRequirements: React.FC<Props> = ({
           )}
           <BoostsDisplay
             boosts={time?.boostsUsed ?? []}
-            show={showBoosts}
+            show={hasNamedBoosts && showBoosts}
             state={gameState}
             onClick={() => setShowBoosts(!showBoosts)}
           />
@@ -327,12 +419,15 @@ export const SeedRequirements: React.FC<Props> = ({
     return (
       <div className="w-full mb-2 flex justify-center gap-x-3 gap-y-0 flex-wrap sm:flex-col sm:items-center sm:flex-nowrap my-1">
         {/* Time requirement display */}
-        <RequirementLabels />
+        {getRequirementLabels()}
         {/* Level requirement */}
         {!!level && (
           <RequirementLabel
             type="level"
-            currentLevel={getBumpkinLevel(gameState.bumpkin?.experience ?? 0)}
+            currentLevel={getAscensionLevel({
+              experience: gameState.bumpkin.experience ?? 0,
+              ascensionLevel: gameState.island.ascensionLevel ?? 0,
+            })}
             requirement={level}
           />
         )}
@@ -375,13 +470,28 @@ export const SeedRequirements: React.FC<Props> = ({
       <div className="flex flex-col h-full px-1 py-0">
         {getStock()}
         {details.from && (
-          <Label
-            icon={SUNNYSIDE.icons.stopwatch}
-            type="warning"
-            className="my-1 mx-auto whitespace-nowrap"
-          >
-            {formatDateRange(details.from, details.to as Date)}
-          </Label>
+          <div className="flex flex-col items-center gap-1 my-1">
+            <Label
+              icon={SUNNYSIDE.icons.stopwatch}
+              type="vibrant"
+              className="mx-auto whitespace-nowrap"
+            >
+              {formatDateRange(details.from, details.to as Date)}
+            </Label>
+            {details.to &&
+              details.to.getTime() > now &&
+              details.from.getTime() <= now && (
+                <Label
+                  icon={SUNNYSIDE.icons.stopwatch}
+                  type="transparent"
+                  className="mx-auto whitespace-nowrap"
+                >
+                  {`${secondsToString((details.to.getTime() - now) / 1000, {
+                    length: "short",
+                  })} ${t("time.left")}`}
+                </Label>
+              )}
+          </div>
         )}
         {getItemDetail()}
         {limit && (
@@ -390,6 +500,15 @@ export const SeedRequirements: React.FC<Props> = ({
           )} ${limit} ${t("statements.perplayer")}`}</p>
         )}
         {getRequirements()}
+        {isPowerHourActive && (
+          <div className="flex flex-col items-center mb-2">
+            <Label type="vibrant" icon={SUNNYSIDE.icons.lightning}>
+              {`Power hour - ${secondsToString(powerHourRemainingTime / 1000, {
+                length: "medium",
+              })}`}
+            </Label>
+          </div>
+        )}
       </div>
       {actionView}
     </div>

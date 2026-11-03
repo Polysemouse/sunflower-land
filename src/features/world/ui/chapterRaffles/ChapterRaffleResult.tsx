@@ -8,7 +8,10 @@ import * as AuthProvider from "features/auth/lib/Provider";
 import { useGame } from "features/game/GameProvider";
 import { SUNNYSIDE } from "assets/sunnyside";
 import { randomID } from "lib/utils/random";
-import { loadRaffleResults, RaffleResults } from "./actions/loadRaffleResults";
+import {
+  loadRaffleResults,
+  type RaffleResults,
+} from "./actions/loadRaffleResults";
 import { RaffleLeaderboardTable } from "../../../retreat/components/auctioneer/RaffleLeaderboardTable";
 import { Button } from "components/ui/Button";
 import { useAppTranslation } from "lib/i18n/useAppTranslations";
@@ -91,7 +94,13 @@ export const ChapterRaffleResult: React.FC<{
 
                   if (isActiveEntry) {
                     gameService.send("auctionRaffle.claimed", {
-                      effect: { type: "auctionRaffle.claimed", raffleId: id },
+                      effect: {
+                        type: "auctionRaffle.claimed",
+                        raffleId: id,
+                        ...(canClaim && raffleWinner
+                          ? { prize: raffleWinner }
+                          : {}),
+                      },
                     });
                   }
                 }}
@@ -136,7 +145,11 @@ export const ChapterRaffleResult: React.FC<{
         <Button
           onClick={() => {
             gameService.send("auctionRaffle.claimed", {
-              effect: { type: "auctionRaffle.claimed", raffleId: id },
+              effect: {
+                type: "auctionRaffle.claimed",
+                raffleId: id,
+                prize: raffleWinner,
+              },
             });
             onClose?.();
           }}

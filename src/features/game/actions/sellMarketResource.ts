@@ -1,6 +1,7 @@
 import { CONFIG } from "lib/config";
 import { ERRORS } from "lib/errors";
-import { GameState, InventoryItemName } from "../types/game";
+import { secureFetch } from "lib/requestToken";
+import type { GameState, InventoryItemName } from "../types/game";
 import { makeGame } from "../lib/transforms";
 
 const API_URL = CONFIG.API_URL;
@@ -62,7 +63,7 @@ type Response = {
 export async function sellMarketResourceRequest(
   request: Request,
 ): Promise<Response> {
-  const response = await window.fetch(`${API_URL}/market/${request.farmId}`, {
+  const response = await secureFetch(`${API_URL}/market/${request.farmId}`, {
     method: "POST",
     headers: {
       "content-type": "application/json;charset=UTF-8",

@@ -13,14 +13,12 @@ import tradeIcon from "assets/icons/trade.png";
 import sflIcon from "assets/icons/flower_token.webp";
 import lockIcon from "assets/icons/lock.png";
 
-import { TradeableDisplay } from "../lib/tradeables";
+import type { TradeableDisplay } from "../lib/tradeables";
 import { Button } from "components/ui/Button";
-import { getBasketItems } from "features/island/hud/components/inventory/utils/inventory";
 import { NumberInput } from "components/ui/NumberInput";
 import { GameWallet } from "features/wallet/Wallet";
 import { formatNumber } from "lib/utils/formatNumber";
-import { InventoryItemName } from "features/game/types/game";
-import { BumpkinItem } from "features/game/types/bumpkin";
+import type { InventoryItemName } from "features/game/types/game";
 import { TradeableSummary } from "./TradeableSummary";
 import { getTradeType } from "../lib/getTradeType";
 import { ResourceList } from "./ResourceList";
@@ -28,40 +26,50 @@ import Decimal from "decimal.js-light";
 
 import {
   isTradeResource,
-  TradeResource,
+  type TradeResource,
 } from "features/game/actions/tradeLimits";
 import { ITEM_DETAILS } from "features/game/types/images";
 import { calculateTradePoints } from "features/game/events/landExpansion/addTradePoints";
-import { MachineState } from "features/game/lib/gameMachine";
+import {
+  isAccountTradedWithin90Days,
+  selectGameState,
+} from "features/game/lib/gameMachine";
 import { getDayOfYear } from "lib/utils/time";
-import { hasReputation, Reputation } from "features/game/lib/reputation";
+import {
+  hasReputation as checkPlayerReputation,
+  Reputation,
+} from "features/game/lib/reputation";
 import { RequiredReputation } from "features/island/hud/components/reputation/Reputation";
 import { SUNNYSIDE } from "assets/sunnyside";
 import { FaceRecognition } from "features/retreat/components/personhood/FaceRecognition";
 import { isFaceVerified } from "features/retreat/components/personhood/lib/faceRecognition";
-
-const _hasTradeReputation = (state: MachineState) =>
-  hasReputation({
-    game: state.context.state,
-    reputation: Reputation.Cropkeeper,
-  });
+import { useNow } from "lib/utils/hooks/useNow";
+import { MAX_RESOURCE_LISTINGS } from "../lib/tradeLimits";
+import {
+  Locked,
+  useIsLocked,
+} from "features/retreat/components/personhood/Locked";
 
 type TradeableListItemProps = {
   authToken: string;
   display: TradeableDisplay;
   id: number;
+  count: number;
   floorPrice: number;
   highestOffer: number;
   onClose: () => void;
+  economy?: string;
 };
 
 export const TradeableListItem: React.FC<TradeableListItemProps> = ({
   authToken,
   display,
   id,
+  count,
   floorPrice,
   highestOffer,
   onClose,
+  economy,
 }) => {
   const { gameService } = useContext(Context);
   const [gameState] = useActor(gameService);
@@ -70,11 +78,24 @@ export const TradeableListItem: React.FC<TradeableListItemProps> = ({
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [showItemInUseWarning, setShowItemInUseWarning] = useState(false);
   const [price, setPrice] = useState(0);
-  const [quantity, setQuantity] = useState(0);
+  const [quantity, setQuantity] = useState(
+    display.type === "economies" ? 1 : 0,
+  );
   /** Number of identical listings to create (1–20). Only for resources */
   const [multiple, setMultiple] = useState(1);
 
-  const hasTradeReputation = useSelector(gameService, _hasTradeReputation);
+  const game = useSelector(gameService, selectGameState);
+  const now = useNow();
+  const hasTradeReputation = checkPlayerReputation({
+    game,
+    reputation: Reputation.Cropkeeper,
+    now,
+  });
+  // A hold stops the account trading; say so instead of a form that fails.
+  const locked = useIsLocked();
+  const accountTradedRecently = useSelector(gameService, (s) =>
+    isAccountTradedWithin90Days(s.context),
+  );
 
   const { state } = gameState.context;
 
@@ -93,47 +114,18 @@ export const TradeableListItem: React.FC<TradeableListItemProps> = ({
   const tradeType = getTradeType({
     collection: display.type,
     id,
-    trade: {
-      sfl: price,
-    },
   });
 
   const isResource =
     isTradeResource(display.name as InventoryItemName) &&
     display.type === "collectibles";
 
-  const hasReputation = hasTradeReputation || dailyListings < 1;
+  const isEconomyToken = display.type === "economies";
+  const ECONOMY_MAX_QUANTITY = 1000;
 
-  // Check inventory count
-  const getCount = () => {
-    switch (display.type) {
-      case "collectibles":
-        if (isResource) {
-          return (
-            getBasketItems(state.inventory)[
-              display.name as InventoryItemName
-            ]?.toNumber() || 0
-          );
-        }
-
-        return (
-          state.inventory[display.name as InventoryItemName]?.toNumber() || 0
-        );
-      case "buds":
-        return state.buds?.[id] ? 1 : 0;
-      case "pets":
-        return state.pets?.nfts?.[id] ? 1 : 0;
-      case "wearables":
-        return state.wardrobe[display.name as BumpkinItem] || 0;
-
-      default:
-        return 0;
-    }
-  };
+  const hasReputationOrDailyQuota = hasTradeReputation || dailyListings < 1;
 
   const getAvailable = () => {
-    const count = getCount();
-
     // Subtract the listed amount
     const totalListed = Object.values(state.trades.listings ?? {}).reduce(
       (acc, listing) => {
@@ -145,14 +137,19 @@ export const TradeableListItem: React.FC<TradeableListItemProps> = ({
     return count - totalListed;
   };
 
-  // For resources: cap at 20 listings per resource; when at 20, only 1 more allowed.
+  // For resources: cap at 20 listings per resource.
   const currentListingCount = isResource
     ? Object.values(state.trades.listings ?? {}).filter(
         (listing) => (listing.items[display.name] ?? 0) > 0,
       ).length
     : 0;
   const maxMultiple =
-    currentListingCount >= 20 ? 1 : Math.min(20, 20 - currentListingCount);
+    currentListingCount >= MAX_RESOURCE_LISTINGS
+      ? 0
+      : Math.min(
+          MAX_RESOURCE_LISTINGS,
+          MAX_RESOURCE_LISTINGS - currentListingCount,
+        );
 
   // Otherwise show the list item UI
   const submitListing = () => {
@@ -165,6 +162,7 @@ export const TradeableListItem: React.FC<TradeableListItemProps> = ({
   };
 
   const confirm = async ({ signature }: { signature?: string }) => {
+    if (accountTradedRecently) return;
     gameService.send("marketplace.listed", {
       effect: {
         type: "marketplace.listed",
@@ -174,6 +172,7 @@ export const TradeableListItem: React.FC<TradeableListItemProps> = ({
         signature,
         quantity: Math.max(1, quantity),
         multiple,
+        ...(display.type === "economies" && economy ? { economy } : {}),
       },
       authToken,
     });
@@ -248,7 +247,10 @@ export const TradeableListItem: React.FC<TradeableListItemProps> = ({
             <Button onClick={() => setShowConfirmation(false)} className="mr-1">
               {t("cancel")}
             </Button>
-            <Button disabled={isLessThanOffer} onClick={() => confirm({})}>
+            <Button
+              disabled={isLessThanOffer || accountTradedRecently}
+              onClick={() => confirm({})}
+            >
               {t("confirm")}
             </Button>
           </div>
@@ -258,7 +260,7 @@ export const TradeableListItem: React.FC<TradeableListItemProps> = ({
 
     let tax = new Decimal(price).mul(MARKETPLACE_TAX);
     if (isResource) {
-      tax = getResourceTax({ game: state }).mul(price);
+      tax = getResourceTax({ game: state, now }).mul(price);
     }
 
     return (
@@ -291,7 +293,10 @@ export const TradeableListItem: React.FC<TradeableListItemProps> = ({
           <Button onClick={() => setShowConfirmation(false)} className="mr-1">
             {t("cancel")}
           </Button>
-          <Button disabled={isLessThanOffer} onClick={() => confirm({})}>
+          <Button
+            disabled={isLessThanOffer || accountTradedRecently}
+            onClick={() => confirm({})}
+          >
             {t("confirm")}
           </Button>
         </div>
@@ -319,6 +324,8 @@ export const TradeableListItem: React.FC<TradeableListItemProps> = ({
     );
   }
 
+  if (locked) return <Locked />;
+
   const usd = gameService.getSnapshot().context.prices.sfl?.usd ?? 0.0;
 
   return (
@@ -330,7 +337,7 @@ export const TradeableListItem: React.FC<TradeableListItemProps> = ({
           })}
         </Label>
 
-        {!hasReputation && (
+        {!hasReputationOrDailyQuota && (
           <RequiredReputation reputation={Reputation.Cropkeeper} />
         )}
       </div>
@@ -353,6 +360,28 @@ export const TradeableListItem: React.FC<TradeableListItemProps> = ({
       ) : (
         <>
           <div className="flex flex-col p-2">
+            {isEconomyToken && (
+              <>
+                <Label type="default" className="mb-1">
+                  {t("marketplace.quantity")}
+                </Label>
+                <div className="my-2 -mx-2">
+                  <NumberInput
+                    value={quantity}
+                    onValueChange={(decimal) =>
+                      setQuantity(
+                        Math.min(
+                          ECONOMY_MAX_QUANTITY,
+                          Math.max(1, Math.floor(decimal.toNumber())),
+                        ),
+                      )
+                    }
+                    maxDecimalPlaces={0}
+                    isOutOfRange={quantity > available || quantity < 1}
+                  />
+                </div>
+              </>
+            )}
             <Label type="default" icon={sflIcon}>
               {t("bumpkinTrade.price")}
             </Label>
@@ -442,7 +471,11 @@ export const TradeableListItem: React.FC<TradeableListItemProps> = ({
           <div className="flex space-x-1">
             <Button onClick={onClose}>{t("close")}</Button>
             <Button
-              disabled={!price}
+              disabled={
+                !price ||
+                accountTradedRecently ||
+                (isEconomyToken && (quantity < 1 || quantity > available))
+              }
               onClick={submitListing}
               className="relative"
             >

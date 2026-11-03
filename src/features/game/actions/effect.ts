@@ -1,8 +1,9 @@
 import { CONFIG } from "lib/config";
 import { ERRORS } from "lib/errors";
-import { GameState } from "../types/game";
+import type { GameState } from "../types/game";
 import { makeGame } from "../lib/transforms";
 import { getRecordHash } from "lib/stateHash";
+import { secureFetch } from "lib/requestToken";
 
 const API_URL = CONFIG.API_URL;
 
@@ -16,12 +17,20 @@ type EffectName =
   | "reward.airdropped"
   | "faceRecognition.started"
   | "faceRecognition.completed"
+  | "captcha.succeeded"
+  | "captcha.failed"
+  | "admin.captchaTriggered"
   | "flower.depositStarted"
   | "sfl.depositStarted"
   | "telegram.linked"
   | "telegram.joined"
+  | "telegram.unlinked"
+  | "discord.unlinked"
+  | "twitter.unlinked"
   | "twitter.followed"
   | "twitter.posted"
+  | "twitter.showcased"
+  | "showcase.removed"
   | "gems.bought"
   | "vip.bought"
   | "username.assigned"
@@ -32,12 +41,12 @@ type EffectName =
   | "withdraw.wearables"
   | "withdraw.buds"
   | "wallet.linked"
+  | "social.linked"
+  | "social.loginToggled"
   | "account.migrated"
   | "moderation.kicked"
   | "moderation.muted"
   | "moderation.unmuted"
-  | "blessing.offered"
-  | "blessing.seeked"
   | "nft.assigned"
   | "admin.NFTAssigned"
   | "marketplace.bulkListingsCancelled"
@@ -52,12 +61,25 @@ type EffectName =
   | "auction.claimed"
   | "auction.bidPlaced"
   | "auction.bidCancelled"
+  | "reset.petRequests"
   | "auctionRaffle.entered"
   | "auctionRaffle.claimed"
   | "marketplace.buyBulkResources"
-  | "leagues.updated"
   | "liquidity.registered"
-  | "appInstall.generate";
+  | "appInstall.generate"
+  | "farmHand.unlocked"
+  | "economies.exchanged"
+  | "giveaway.created"
+  | "giveaway.joined"
+  | "giveaway.progressed"
+  | "giveaway.submitted"
+  | "giveaway.ended"
+  | "giveaway.claimed"
+  | "layout.created"
+  | "layout.edited"
+  | "layout.deleted"
+  | "layout.applied"
+  | "arrangement.saved";
 
 type VisitEffectName = "farm.helped" | "farm.cheered" | "farm.followed";
 
@@ -75,6 +97,16 @@ export type StateMachineEffectName = Exclude<
   | "farm.unfollowed"
   | "message.sent"
   | "liquidity.registered"
+  // Fired inline from the captcha modal - no machine state
+  | "captcha.failed"
+  // Posted directly so they work from the `landscaping` state (which has no
+  // effect states) - see actions/layoutEffects.ts
+  | "layout.created"
+  | "layout.edited"
+  | "layout.deleted"
+  | "layout.applied"
+  // The landscaping sandbox commit - see actions/arrangementEffects.ts
+  | "arrangement.saved"
 >;
 
 export type StateMachineVisitEffectName = VisitEffectName;
@@ -89,27 +121,33 @@ export type StateMachineStateName =
   | "airdroppingReward"
   | "startingFaceRecognition"
   | "completingFaceRecognition"
+  | "solvingCaptcha"
+  | "triggeringCaptcha"
   | "depositingFlower"
   | "depositingSFL"
   | "linkingTelegram"
   | "joiningTelegram"
+  | "unlinkingSocial"
   | "followingTwitter"
   | "postingTwitter"
+  | "showcasingTwitter"
+  | "removingShowcase"
   | "buyingGems"
   | "buyingVIP"
   | "assigningUsername"
   | "changingUsername"
   | "claimingStreamReward"
   | "claimingBlockchainBox"
-  | "offeringBlessing"
-  | "seekingBlessing"
   | "marketplaceBulkListingsCancelling"
   | "marketplaceBulkOffersCancelling"
   | "linkingWallet"
+  | "linkingSocial"
+  | "togglingSocialLogin"
   | "assigningNFT"
   | "cheeringFarm"
   | "followingFarm"
   | "completingProject"
+  | "unlockingFarmhand"
   | "helpingFarm"
   | "claimingAuction"
   | "wakingPet"
@@ -118,9 +156,16 @@ export type StateMachineStateName =
   | "enteringAuctionRaffle"
   | "claimingAuctionRaffle"
   | "marketplaceBuyingBulkResources"
-  | "updatingLeagues"
   | "generatingAppInstall"
-  | "pickingUpWaterTrap";
+  | "pickingUpWaterTrap"
+  | "resettingPetRequests"
+  | "exchangingEconomy"
+  | "creatingGiveaway"
+  | "joiningGiveaway"
+  | "progressingGiveaway"
+  | "submittingGiveaway"
+  | "endingGiveaway"
+  | "claimingGiveaway";
 
 export type StateMachineVisitStateName =
   | "helpingFarm"
@@ -147,38 +192,55 @@ export const STATE_MACHINE_EFFECTS: Record<
   "reward.airdropped": "airdroppingReward",
   "faceRecognition.started": "startingFaceRecognition",
   "faceRecognition.completed": "completingFaceRecognition",
+  "captcha.succeeded": "solvingCaptcha",
+  "admin.captchaTriggered": "triggeringCaptcha",
   "flower.depositStarted": "depositingFlower",
   "sfl.depositStarted": "depositingSFL",
   "telegram.linked": "linkingTelegram",
   "telegram.joined": "joiningTelegram",
+  // One state for all three providers - the UI reads the provider back
+  // from the response (`data.provider`).
+  "telegram.unlinked": "unlinkingSocial",
+  "discord.unlinked": "unlinkingSocial",
+  "twitter.unlinked": "unlinkingSocial",
   "twitter.followed": "followingTwitter",
   "twitter.posted": "postingTwitter",
+  "twitter.showcased": "showcasingTwitter",
+  "showcase.removed": "removingShowcase",
   "gems.bought": "buyingGems",
   "vip.bought": "buyingVIP",
   "username.assigned": "assigningUsername",
   "username.changed": "changingUsername",
   "streamReward.claimed": "claimingStreamReward",
   "blockchainBox.claimed": "claimingBlockchainBox",
-  "blessing.offered": "offeringBlessing",
-  "blessing.seeked": "seekingBlessing",
   "marketplace.bulkListingsCancelled": "marketplaceBulkListingsCancelling",
   "marketplace.bulkOffersCancelled": "marketplaceBulkOffersCancelling",
   "wallet.linked": "linkingWallet",
+  "social.linked": "linkingSocial",
+  "social.loginToggled": "togglingSocialLogin",
   "nft.assigned": "assigningNFT",
   "admin.NFTAssigned": "assigningNFT",
   "farm.cheered": "cheeringFarm",
   "farm.followed": "followingFarm",
   "project.completed": "completingProject",
+  "farmHand.unlocked": "unlockingFarmhand",
   "farm.helped": "helpingFarm",
   "auction.claimed": "claimingAuction",
   "pet.wakeUp": "wakingPet",
   "auction.bidPlaced": "auctionBidding",
   "auction.bidCancelled": "auctionCancelling",
+  "reset.petRequests": "resettingPetRequests",
   "auctionRaffle.entered": "enteringAuctionRaffle",
   "auctionRaffle.claimed": "claimingAuctionRaffle",
   "marketplace.buyBulkResources": "marketplaceBuyingBulkResources",
-  "leagues.updated": "updatingLeagues",
   "appInstall.generate": "generatingAppInstall",
+  "economies.exchanged": "exchangingEconomy",
+  "giveaway.created": "creatingGiveaway",
+  "giveaway.joined": "joiningGiveaway",
+  "giveaway.progressed": "progressingGiveaway",
+  "giveaway.submitted": "submittingGiveaway",
+  "giveaway.ended": "endingGiveaway",
+  "giveaway.claimed": "claimingGiveaway",
 };
 
 export const STATE_MACHINE_VISIT_EFFECTS: Record<
@@ -193,6 +255,41 @@ export const STATE_MACHINE_VISIT_EFFECTS: Record<
 export interface Effect {
   type: EffectName;
   [key: string]: any;
+}
+
+/**
+ * A 400 from the event endpoint. `message` is the backend's errorCode;
+ * `data` is whatever detail it attached (most codes send none, e.g.
+ * `availableAt` for social account cooldowns).
+ */
+export type EffectError = Error & { data?: unknown };
+
+export const createEffectError = (code: string, data?: unknown): EffectError =>
+  Object.assign(new Error(code), data === undefined ? {} : { data });
+
+/**
+ * Keys an effect deletes from the game state. The response is pruned to
+ * the keys that changed and merged over the client state, so a key the
+ * server *removed* would otherwise survive the merge.
+ */
+const REMOVED_STATE_KEYS: Partial<Record<EffectName, (keyof GameState)[]>> = {
+  "telegram.unlinked": ["telegram"],
+  "discord.unlinked": ["discord"],
+  "twitter.unlinked": ["twitter"],
+};
+
+export function stripRemovedStateKeys(
+  effect: Effect,
+  gameState: GameState,
+): GameState {
+  const keys = REMOVED_STATE_KEYS[effect.type];
+  if (!keys?.length) return gameState;
+
+  const stripped = { ...gameState };
+  for (const key of keys) {
+    delete stripped[key];
+  }
+  return stripped;
 }
 
 type Request = {
@@ -210,7 +307,7 @@ export async function postEffect(
     ? await getRecordHash(request.state as unknown as Record<string, unknown>)
     : undefined;
 
-  const response = await window.fetch(`${API_URL}/event/${request.farmId}`, {
+  const response = await secureFetch(`${API_URL}/event/${request.farmId}`, {
     method: "POST",
     headers: {
       "content-type": "application/json;charset=UTF-8",
@@ -233,9 +330,16 @@ export async function postEffect(
   }
 
   if (response.status === 400) {
-    const { errorCode } = await response.json();
+    const body = await response.json().catch(() => null);
 
-    throw new Error(errorCode ?? ERRORS.EFFECT_SERVER_ERROR);
+    // Some rejections (e.g. WITHDRAW_MARKETPLACE_COOLDOWN, the SOCIAL_*
+    // cooldowns) come with detail the UI needs. The message stays the bare
+    // code - call sites compare on it - and the payload rides alongside on
+    // the error object.
+    throw createEffectError(
+      body?.errorCode ?? ERRORS.EFFECT_SERVER_ERROR,
+      body?.data,
+    );
   }
 
   if (response.status !== 200 || !response.ok) {
@@ -253,7 +357,22 @@ export async function postEffect(
     : (gameState as GameState);
 
   return {
-    gameState: makeGame(mergedGameState),
+    gameState: makeGame(stripRemovedStateKeys(request.effect, mergedGameState)),
     data,
   };
+}
+
+/** Client-only effect fields to strip before sending to backend (not in API schema) */
+const CLIENT_ONLY_EFFECT_FIELDS: Partial<Record<EffectName, string[]>> = {
+  "auctionRaffle.claimed": ["prize"],
+};
+
+export function sanitizeEffectForBackend(effect: Effect): Effect {
+  const fieldsToStrip = CLIENT_ONLY_EFFECT_FIELDS[effect.type];
+  if (!fieldsToStrip?.length) return effect;
+  const sanitized = { ...effect };
+  for (const field of fieldsToStrip) {
+    delete sanitized[field];
+  }
+  return sanitized;
 }

@@ -1,9 +1,9 @@
 import Decimal from "decimal.js-light";
 import { isTradeResource } from "features/game/actions/tradeLimits";
 import { KNOWN_IDS } from "features/game/types";
-import { getKeys } from "features/game/types/decorations";
-import { GameState, InventoryItemName } from "features/game/types/game";
-import { MarketplaceTradeableName } from "features/game/types/marketplace";
+import { getKeys } from "lib/object";
+import type { GameState, InventoryItemName } from "features/game/types/game";
+import type { MarketplaceTradeableName } from "features/game/types/marketplace";
 
 const TRADE_POINTS_MULTIPLIER = 0.25; // Value adjustable
 

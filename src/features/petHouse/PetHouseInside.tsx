@@ -7,9 +7,11 @@ import { Button } from "components/ui/Button";
 import { Section, useScrollIntoView } from "lib/utils/hooks/useScrollIntoView";
 import { useNavigate } from "react-router";
 import { Context } from "features/game/GameProvider";
+import { Context as AuthContext } from "features/auth/lib/Provider";
+import type { AuthMachineState } from "features/auth/lib/authMachine";
 import { EXTERIOR_ISLAND_BG } from "features/barn/BarnInside";
 import { getCurrentBiome } from "features/island/biomes/biomes";
-import { MachineState } from "features/game/lib/gameMachine";
+import type { MachineState } from "features/game/lib/gameMachine";
 import { useSelector } from "@xstate/react";
 import { UpgradeBuildingModal } from "features/game/expansion/components/UpgradeBuildingModal";
 import { Hud } from "features/island/hud/Hud";
@@ -18,17 +20,27 @@ import { useVisiting } from "lib/utils/visitUtils";
 import { Placeable } from "features/game/expansion/placeable/Placeable";
 import { MapPlacement } from "features/game/expansion/components/MapPlacement";
 import { Collectible } from "features/island/collectibles/Collectible";
-import {
-  COLLECTIBLES_DIMENSIONS,
-  getKeys,
-} from "features/game/types/craftables";
+import { COLLECTIBLES_DIMENSIONS } from "features/game/types/craftables";
+import { getKeys } from "lib/object";
 import { getGameGrid } from "features/game/expansion/placeable/lib/makeGrid";
 import { PET_HOUSE_BOUNDS } from "features/game/expansion/placeable/lib/collisionDetection";
 import { PetNFT } from "features/island/pets/PetNFT";
 import { VisitingHud } from "features/island/hud/VisitingHud";
 import { PetHouseModal } from "features/island/buildings/components/building/petHouse/PetHouseModal";
+import { PlayerModal } from "features/social/PlayerModal";
+import { Discovery } from "features/social/Discovery";
+import { hasFeatureAccess } from "lib/flags";
+import { useLandscapingGridBackgroundImage } from "features/island/landscaping/LandscapingGrid";
+import {
+  isPetNapping,
+  isPetNeglected,
+  type PetName,
+} from "features/game/types/pets";
+import { useNow } from "lib/utils/hooks/useNow";
 
 import followIcon from "assets/icons/follow.webp";
+import sleepIcon from "assets/icons/sleep.webp";
+import unfollowIcon from "assets/icons/unfollow.webp";
 
 export const PET_HOUSE_IMAGES: Record<
   number,
@@ -46,11 +58,27 @@ const _petHousePets = (state: MachineState) =>
   state.context.state.petHouse?.pets ?? {};
 const _biome = (state: MachineState) =>
   getCurrentBiome(state.context.state.island);
+const _token = (state: AuthMachineState) => state.context.user.rawToken ?? "";
+
+const _loggedInFarmId = (state: MachineState) =>
+  state.context.visitorId ?? state.context.farmId;
+const _visitorState = (state: MachineState) => state.context.visitorState;
+const _state = (state: MachineState) => state.context.state;
 
 export const PetHouseInside: React.FC = () => {
   const { isVisiting } = useVisiting();
   const { gameService } = useContext(Context);
+  const { authService } = useContext(AuthContext);
   const { t } = useAppTranslation();
+
+  const loggedInFarmId = useSelector(gameService, _loggedInFarmId);
+  const visitorState = useSelector(gameService, _visitorState);
+  const state = useSelector(gameService, _state);
+  const hasAirdropAccess = hasFeatureAccess(
+    visitorState ?? state,
+    "AIRDROP_PLAYER",
+  );
+  const token = useSelector(authService, _token);
   const [scrollIntoView] = useScrollIntoView();
   const navigate = useNavigate();
 
@@ -62,6 +90,42 @@ export const PetHouseInside: React.FC = () => {
   const petNFTs = useSelector(gameService, _petNFTs);
   const pets = useSelector(gameService, _petHousePets);
   const biome = useSelector(gameService, _biome);
+  const gridBackgroundImage = useLandscapingGridBackgroundImage();
+  const now = useNow({ live: true });
+
+  const commonPets = state.pets?.common ?? {};
+  const activeCommonPetIds = getKeys(pets).filter((name) =>
+    pets[name]?.some((pet) => !!pet.coordinates),
+  );
+  const activeNFTPetIds = Object.entries(petNFTs)
+    .filter(
+      ([, petNFT]) => !!petNFT.coordinates && petNFT.location === "petHouse",
+    )
+    .map(([id]) => Number(id));
+  const nappingPetIds: Array<PetName | number> = [
+    ...activeCommonPetIds.filter(
+      (name) =>
+        isPetNapping(commonPets[name], now) &&
+        !isPetNeglected(commonPets[name], now),
+    ),
+    ...activeNFTPetIds.filter(
+      (id) =>
+        isPetNapping(petNFTs[id], now) && !isPetNeglected(petNFTs[id], now),
+    ),
+  ];
+  const showQuickPetAll = nappingPetIds.length > 0;
+  const nappingPetNames = nappingPetIds
+    .map((id) =>
+      typeof id === "number" ? petNFTs[id]?.name : commonPets[id]?.name,
+    )
+    .filter(Boolean)
+    .join(", ");
+
+  const handlePetAll = () => {
+    nappingPetIds.forEach((petId) => {
+      gameService.send("pet.pet", { petId });
+    });
+  };
 
   const level = petHouse.level;
   const nextLevel = Math.min(level + 1, 3);
@@ -95,9 +159,9 @@ export const PetHouseInside: React.FC = () => {
         const items = pets[name]!;
         return items
           .filter((pet) => pet.coordinates)
-          .map((pet) => {
+          .map((pet, index) => {
             const { readyAt, createdAt, coordinates, id } = pet;
-            const { x, y } = coordinates!;
+            const { x, y, oX, oY } = coordinates!;
             const dimensions = COLLECTIBLES_DIMENSIONS[name];
 
             return (
@@ -105,11 +169,14 @@ export const PetHouseInside: React.FC = () => {
                 key={`pet-${name}-${id}`}
                 x={x}
                 y={y}
+                oX={oX}
+                oY={oY}
                 height={dimensions?.height ?? 1}
                 width={dimensions?.width ?? 1}
                 z={1}
               >
                 <Collectible
+                  index={index}
                   location="petHouse"
                   name={name}
                   id={id}
@@ -133,13 +200,15 @@ export const PetHouseInside: React.FC = () => {
         ([, petNFT]) => !!petNFT.coordinates && petNFT.location === "petHouse",
       )
       .flatMap(([id, petNFT]) => {
-        const { x, y } = petNFT.coordinates!;
+        const { x, y, oX, oY } = petNFT.coordinates!;
 
         return (
           <MapPlacement
             key={`petNFT-${id}`}
             x={x}
             y={y}
+            oX={oX}
+            oY={oY}
             height={2}
             width={2}
             z={1}
@@ -199,9 +268,7 @@ export const PetHouseInside: React.FC = () => {
                 width: `${bounds.width * GRID_WIDTH_PX}px`,
 
                 backgroundSize: `${GRID_WIDTH_PX}px ${GRID_WIDTH_PX}px`,
-                backgroundImage: `
-            linear-gradient(to right, rgb(255 255 255 / 17%) 1px, transparent 1px),
-            linear-gradient(to bottom, rgb(255 255 255 / 17%) 1px, transparent 1px)`,
+                backgroundImage: gridBackgroundImage,
               }}
             />
 
@@ -252,6 +319,43 @@ export const PetHouseInside: React.FC = () => {
                 />
               </div>
 
+              {showQuickPetAll && (
+                <button
+                  type="button"
+                  aria-label={t("pets.petPet", { pet: nappingPetNames })}
+                  className="absolute cursor-pointer z-10 hover:img-highlight p-0 border-0 bg-transparent"
+                  style={{
+                    width: `${PIXEL_SCALE * 18}px`,
+                    height: `${PIXEL_SCALE * 19}px`,
+                    right: `${15 * PIXEL_SCALE}px`,
+                    top: `${-20 * PIXEL_SCALE}px`,
+                  }}
+                  onClick={handlePetAll}
+                >
+                  <img className="w-full" src={SUNNYSIDE.icons.disc} alt="" />
+                  <img
+                    className="absolute"
+                    src={unfollowIcon}
+                    alt=""
+                    style={{
+                      width: `${PIXEL_SCALE * 10}px`,
+                      right: `${PIXEL_SCALE * 4}px`,
+                      top: `${PIXEL_SCALE * 4}px`,
+                    }}
+                  />
+                  <img
+                    className="absolute"
+                    src={sleepIcon}
+                    alt=""
+                    style={{
+                      width: `${PIXEL_SCALE * 6}px`,
+                      right: `${PIXEL_SCALE * 4}px`,
+                      top: `${PIXEL_SCALE * 4}px`,
+                    }}
+                  />
+                </button>
+              )}
+
               <img
                 src={SUNNYSIDE.icons.upgrade_disc}
                 alt="Upgrade Building"
@@ -281,6 +385,12 @@ export const PetHouseInside: React.FC = () => {
       {!landscaping && !isVisiting && <Hud isFarming location="petHouse" />}
       {landscaping && <LandscapingHud location="petHouse" />}
       {isVisiting && <VisitingHud />}
+      <PlayerModal
+        loggedInFarmId={loggedInFarmId}
+        token={token}
+        hasAirdropAccess={hasAirdropAccess}
+      />
+      <Discovery />
     </>
   );
 };

@@ -3,25 +3,46 @@ import React, { useContext, useEffect, useRef, useState } from "react";
 import { CRIMSTONE_RECOVERY_TIME } from "features/game/lib/constants";
 import { Context } from "features/game/GameProvider";
 
-import { getTimeLeft } from "lib/utils/time";
-import useUiRefresher from "lib/utils/hooks/useUiRefresher";
-import { GameState, InventoryItemName, Rock } from "features/game/types/game";
+import type {
+  GameState,
+  InventoryItemName,
+  Rock,
+} from "features/game/types/game";
 import { useSelector } from "@xstate/react";
-import { MachineState } from "features/game/lib/gameMachine";
+import type { MachineState } from "features/game/lib/gameMachine";
 import Decimal from "decimal.js-light";
 import { canMine } from "features/game/lib/resourceNodes";
 import { RecoveredCrimstone } from "./components/RecoveredCrimstone";
 import { DepletingCrimstone } from "./components/DepletingCrimstone";
 import { DepletedCrimstone } from "./components/DepletedCrimstone";
+import { getCrimstoneStage } from "./getCrimstoneStage";
 import { useSound } from "lib/utils/hooks/useSound";
 import { getCrimstoneDropAmount } from "features/game/events/landExpansion/mineCrimstone";
-import { useNow } from "lib/utils/hooks/useNow";
 import { isWearableActive } from "features/game/lib/wearables";
 import { Transition } from "@headlessui/react";
 import lightning from "assets/icons/lightning.png";
+import {
+  getMineBoostWindows,
+  type BoostWindow,
+} from "features/game/lib/boostWindows";
+import { useNodeTimer } from "features/game/lib/useNodeTimer";
 
 const HITS = 3;
 const tool = "Gold Pickaxe";
+
+// Field comparator for the mine boost windows so the selector skips re-renders
+// without allocating JSON strings per rock on every service update.
+const areBoostWindowsEqual = (a: BoostWindow[], b: BoostWindow[]) =>
+  a.length === b.length &&
+  a.every((window, index) => {
+    const other = b[index];
+    return (
+      other !== undefined &&
+      window.from === other.from &&
+      window.to === other.to &&
+      window.speed === other.speed
+    );
+  });
 
 const HasTool = (
   inventory: Partial<Record<InventoryItemName, Decimal>>,
@@ -39,22 +60,6 @@ const selectGame = (state: MachineState) => state.context.state;
 
 const compareResource = (prev: Rock, next: Rock) => {
   return JSON.stringify(prev) === JSON.stringify(next);
-};
-
-export const getCrimstoneStage = (minesLeft: number, minedAt: number) => {
-  const timeToReset = (CRIMSTONE_RECOVERY_TIME + 24 * 60 * 60) * 1000;
-  const now = Date.now();
-  if (now - minedAt > timeToReset) {
-    return 1;
-  }
-
-  if (minesLeft === 5 && now - minedAt < CRIMSTONE_RECOVERY_TIME * 1000)
-    return 6;
-  if (minesLeft === 5) return 1;
-  if (minesLeft === 4) return 2;
-  if (minesLeft === 3) return 3;
-  if (minesLeft === 2) return 4;
-  return 5;
 };
 
 interface Props {
@@ -93,10 +98,7 @@ export const Crimstone: React.FC<Props> = ({ id }) => {
     (state) => state.context.state.crimstones[id],
     compareResource,
   );
-  const crimstoneStage = getCrimstoneStage(
-    resource.minesLeft,
-    resource.stone.minedAt,
-  );
+
   const inventory = useSelector(
     gameService,
     selectInventory,
@@ -105,15 +107,34 @@ export const Crimstone: React.FC<Props> = ({ id }) => {
       (prev.Logger ?? new Decimal(0)).equals(next.Logger ?? new Decimal(0)),
   );
 
-  const hasTool = HasTool(inventory, state);
-  const readyAt = resource.stone.minedAt + CRIMSTONE_RECOVERY_TIME * 1000;
-  const now = useNow({ live: true, autoEndAt: readyAt });
-  const timeLeft = getTimeLeft(
-    resource.stone.minedAt,
-    CRIMSTONE_RECOVERY_TIME,
-    now,
+  // Live windowed mine-recovery speed boosts (Mole Shrine). Recomputed from full
+  // state but only re-renders when the windows actually change, so the countdown
+  // reacts to boosters placed/expired mid-recover.
+  const mineBoostWindows = useSelector(
+    gameService,
+    (state) => getMineBoostWindows(state.context.state, "Crimstone Rock"),
+    areBoostWindowsEqual,
   );
-  const mined = !canMine(resource, "Crimstone Rock");
+
+  const hasTool = HasTool(inventory, state);
+
+  const { minedAt, baseDurationMs } = resource.stone;
+  const {
+    now,
+    readyAt,
+    countdownSeconds: timeLeft,
+  } = useNodeTimer({
+    startedAt: minedAt,
+    baseDurationMs,
+    windows: mineBoostWindows,
+    legacyReadyAt: minedAt + CRIMSTONE_RECOVERY_TIME * 1000,
+  });
+
+  // Keyed off the wall clock and readyAt, so the art is unaffected by which
+  // reading the timer label is showing.
+  const crimstoneStage = getCrimstoneStage(resource.minesLeft, now, readyAt);
+
+  const mined = !canMine(resource, "Crimstone Rock", state, now);
 
   const [isAnimationRunning, setIsAnimationRunning] = useState(false);
   const [isRecentlyMined, setIsRecentlyMined] = useState(false);
@@ -137,8 +158,6 @@ export const Crimstone: React.FC<Props> = ({ id }) => {
       return () => clearTimeout(timeout);
     }
   }, [isAnimationRunning]);
-
-  useUiRefresher({ active: mined });
 
   const strike = () => {
     if (!hasTool) return;
@@ -172,23 +191,21 @@ export const Crimstone: React.FC<Props> = ({ id }) => {
         ...{ minesLeft: crimstoneStage === 1 ? 5 : resource.minesLeft },
       },
     });
-    const newState = gameService.send("crimstoneRock.mined", {
+    gameService.send("crimstoneRock.mined", {
       index: id,
     });
 
-    if (!newState.matches("hoarding")) {
-      if (showAnimations) {
-        setCollecting(true);
-        harvested.current = crimstoneMined.toNumber();
-      }
+    if (showAnimations) {
+      setCollecting(true);
+      harvested.current = crimstoneMined.toNumber();
+    }
 
-      miningFallAudio();
+    miningFallAudio();
 
-      if (showAnimations) {
-        await new Promise((res) => setTimeout(res, 3000));
-        setCollecting(false);
-        harvested.current = 0;
-      }
+    if (showAnimations) {
+      await new Promise((res) => setTimeout(res, 3000));
+      setCollecting(false);
+      harvested.current = 0;
     }
   };
 
@@ -214,7 +231,8 @@ export const Crimstone: React.FC<Props> = ({ id }) => {
             hasTool={hasTool}
             touchCount={touchCount}
             minesLeft={resource.minesLeft}
-            minedAt={resource.stone.minedAt}
+            now={now}
+            readyAt={readyAt}
           />
         </div>
       )}
@@ -224,7 +242,8 @@ export const Crimstone: React.FC<Props> = ({ id }) => {
         <DepletingCrimstone
           resourceAmount={harvested.current}
           minesLeft={resource.minesLeft}
-          minedAt={resource.stone.minedAt}
+          now={now}
+          readyAt={readyAt}
         />
       )}
 
@@ -233,7 +252,8 @@ export const Crimstone: React.FC<Props> = ({ id }) => {
         <DepletedCrimstone
           timeLeft={timeLeft}
           minesLeft={resource.minesLeft}
-          minedAt={resource.stone.minedAt}
+          now={now}
+          readyAt={readyAt}
         />
       )}
     </div>

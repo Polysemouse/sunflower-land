@@ -1,7 +1,7 @@
 import Decimal from "decimal.js-light";
 import { completeSpecialEventTask } from "./completeSpecialEventTask";
 import { TEST_FARM } from "features/game/lib/constants";
-import { SpecialEventName } from "features/game/types/specialEvents";
+import type { SpecialEventName } from "features/game/types/specialEvents";
 
 describe("completeEventTask", () => {
   const now = Date.now();
@@ -372,6 +372,41 @@ describe("completeEventTask", () => {
     });
 
     expect(state.balance).toEqual(new Decimal(1));
+  });
+
+  it("tracks FLOWER Spent farm activity for sfl requirements", () => {
+    const state = completeSpecialEventTask({
+      createdAt: now,
+      action: {
+        type: "specialEvent.taskCompleted",
+        event: "Lunar New Year",
+        task: 1,
+      },
+      state: {
+        ...TEST_FARM,
+        balance: new Decimal(2),
+        specialEvents: {
+          history: {},
+          current: {
+            "Lunar New Year": {
+              isEligible: true,
+              requiresWallet: false,
+              text: "",
+              startAt: 0,
+              endAt: now + 1,
+              tasks: [
+                {
+                  reward: { wearables: {}, items: {}, sfl: 0, coins: 0 },
+                  requirements: { items: {}, sfl: 1 },
+                },
+              ],
+            },
+          },
+        },
+      },
+    });
+
+    expect(state.farmActivity["FLOWER Spent"]).toEqual(1);
   });
 
   it("marks the task as completed", () => {

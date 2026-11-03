@@ -8,11 +8,11 @@ import { SharkBumpkin } from "./water/SharkBumpkin";
 
 import { SUNNYSIDE } from "assets/sunnyside";
 import { LAND_WIDTH } from "../Land";
+import { getIslandAnchorX } from "../lib/island";
 import { TravelTeaser } from "./TravelTeaser";
 import { DiscordBoat } from "./DiscordBoat";
 import { IslandUpgrader } from "./IslandUpgrader";
 
-import { CONFIG } from "lib/config";
 import { LaTomatina } from "./LaTomatina";
 import { RestockBoat } from "./RestockBoat";
 
@@ -21,7 +21,7 @@ import fins2 from "assets/decorations/fins_green.webp";
 import fins3 from "assets/decorations/fins2.webp";
 import { getActiveCalendarEvent } from "features/game/types/calendar";
 import { useVisiting } from "lib/utils/visitUtils";
-import { MachineState } from "features/game/lib/gameMachine";
+import type { MachineState } from "features/game/lib/gameMachine";
 import { Context } from "features/game/GameProvider";
 import { useSelector } from "@xstate/react";
 
@@ -248,7 +248,11 @@ export const WaterComponent: React.FC<Props> = ({ expansionCount }) => {
         </MapPlacement>
       )}
 
-      <MapPlacement x={-20} y={6} width={4}>
+      {/* Mushroom island sits off the land's left edge and tracks it as the land
+          grows — anchored off the next expansion's edge, capped at the 42-land
+          cap (see getIslandAnchorX), so it always clears the upcoming-expansion
+          scaffolding and spawned items land on it. */}
+      <MapPlacement x={getIslandAnchorX(expansionCount)} y={6} width={4}>
         <img
           src={SUNNYSIDE.land.mushroomIsland}
           className="absolute"
@@ -262,7 +266,7 @@ export const WaterComponent: React.FC<Props> = ({ expansionCount }) => {
 
       {!isVisiting && (
         <>
-          {CONFIG.NETWORK === "mainnet" && <DiscordBoat />}
+          <DiscordBoat />
           <TravelTeaser />
           <IslandUpgrader offset={offset} />
           <RestockBoat />

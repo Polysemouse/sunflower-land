@@ -1,7 +1,13 @@
-import { INITIAL_BUMPKIN, TEST_FARM } from "features/game/lib/constants";
+import {
+  INITIAL_BUMPKIN,
+  INVENTORY_LIMIT,
+  TEST_FARM,
+} from "features/game/lib/constants";
 import {
   CROP_MACHINE_PLOTS,
+  MAX_OIL_CAPACITY_IN_HOURS,
   MAX_OIL_CAPACITY_IN_MILLIS,
+  MAX_QUEUE_SIZE,
   OIL_PER_HOUR_CONSUMPTION,
   calculateCropTime,
   getOilTimeInMillis,
@@ -9,14 +15,26 @@ import {
 } from "./supplyCropMachine";
 import { supplyCropMachineOil } from "./supplyCropMachineOil";
 import Decimal from "decimal.js-light";
-import {
+import type {
   CropMachineBuilding,
   CropMachineQueueItem,
   GameState,
 } from "features/game/types/game";
 import { setPrecision } from "lib/utils/formatNumber";
+import { CONFIG } from "lib/config";
 
 const GAME_STATE: GameState = { ...TEST_FARM, bumpkin: INITIAL_BUMPKIN };
+
+// These suites assert the LEGACY crop machine (boosts baked at supply time,
+// oil earmarked per pack). FE jest runs on amoy where SPEED_BOOSTS is on, so
+// force the flag off here; the windowed model is covered in its own describes.
+const originalNetwork = CONFIG.NETWORK;
+beforeEach(() => {
+  (CONFIG as { NETWORK: "mainnet" | "amoy" }).NETWORK = "mainnet";
+});
+afterEach(() => {
+  (CONFIG as { NETWORK: "mainnet" | "amoy" }).NETWORK = originalNetwork;
+});
 
 describe("supplyCropMachine", () => {
   it("throws an error if Crop Machine does not exist", () => {
@@ -172,6 +190,39 @@ describe("supplyCropMachine", () => {
         },
       }),
     ).toThrow("You can't supply these seeds");
+  });
+
+  it("throws an error when supplying more seeds than the inventory limit", () => {
+    const sunflowerLimit =
+      INVENTORY_LIMIT(GAME_STATE)["Sunflower Seed"] ?? new Decimal(0);
+    const amountExceedingLimit = sunflowerLimit.toNumber() + 1;
+
+    expect(() =>
+      supplyCropMachine({
+        state: {
+          ...GAME_STATE,
+          inventory: {
+            "Sunflower Seed": new Decimal(amountExceedingLimit),
+          },
+          buildings: {
+            "Crop Machine": [
+              {
+                coordinates: { x: 0, y: 0 },
+                createdAt: 0,
+                id: "1",
+                readyAt: 123,
+                unallocatedOilTime: 0,
+              },
+            ],
+          },
+        },
+        action: {
+          type: "cropMachine.supplied",
+          seeds: { type: "Sunflower Seed", amount: amountExceedingLimit },
+          machineId: "1",
+        },
+      }),
+    ).toThrow("Can't supply more seeds than the inventory limit");
   });
 
   it("adds packs successfully when oil in machine exceeds 48h (post-reset over capacity)", () => {
@@ -1451,7 +1502,7 @@ describe("supplyCropMachine", () => {
       action: {
         type: "cropMachine.supplied",
         machineId: "0",
-        seeds: { type: "Pumpkin Seed", amount: 1000 },
+        seeds: { type: "Pumpkin Seed", amount: 750 },
       },
       createdAt: now,
     });
@@ -1521,7 +1572,7 @@ describe("supplyCropMachine", () => {
       action: {
         type: "cropMachine.supplied",
         machineId: "0",
-        seeds: { type: "Pumpkin Seed", amount: 1000 },
+        seeds: { type: "Pumpkin Seed", amount: 750 },
       },
       createdAt: now,
     });
@@ -1799,6 +1850,7 @@ describe("calculateCropTime", () => {
     const { milliSeconds: result } = calculateCropTime(
       { type: "Sunflower Seed", amount: 10 },
       GAME_STATE,
+      Date.now(),
     );
     expect(result).toBe((60 * 10 * 1000) / CROP_MACHINE_PLOTS(GAME_STATE));
   });
@@ -1815,6 +1867,7 @@ describe("calculateCropTime", () => {
           },
         },
       },
+      Date.now(),
     );
 
     expect(result).toBe(
@@ -1834,6 +1887,7 @@ describe("calculateCropTime", () => {
           },
         },
       },
+      Date.now(),
     );
 
     expect(result).toBe(
@@ -1857,10 +1911,66 @@ describe("calculateCropTime", () => {
           ],
         },
       },
+      Date.now(),
     );
 
     expect(result).toBe(
       (60 * 10 * 1000 * 0.5) / CROP_MACHINE_PLOTS(GAME_STATE),
+    );
+  });
+
+  it("reduces crop machine growth time by 10% with an active Tortoise Shrine (legacy baked)", () => {
+    const at = Date.now();
+    const { milliSeconds: result, boostUsed } = calculateCropTime(
+      { type: "Sunflower Seed", amount: 10 },
+      {
+        ...GAME_STATE,
+        collectibles: {
+          "Tortoise Shrine": [
+            {
+              coordinates: { x: 0, y: 0 },
+              createdAt: at,
+              readyAt: 0,
+              id: "0",
+            },
+          ],
+        },
+      },
+      at,
+    );
+
+    expect(result).toBe(
+      (60 * 10 * 1000 * 0.9) / CROP_MACHINE_PLOTS(GAME_STATE),
+    );
+    expect(boostUsed).toContainEqual({
+      name: "Tortoise Shrine",
+      value: "x0.9",
+    });
+  });
+
+  it("does not reduce growth time with an expired Tortoise Shrine", () => {
+    const at = Date.now();
+    const { milliSeconds: result, boostUsed } = calculateCropTime(
+      { type: "Sunflower Seed", amount: 10 },
+      {
+        ...GAME_STATE,
+        collectibles: {
+          "Tortoise Shrine": [
+            {
+              coordinates: { x: 0, y: 0 },
+              createdAt: 0,
+              readyAt: 0,
+              id: "0",
+            },
+          ],
+        },
+      },
+      at,
+    );
+
+    expect(result).toBe((60 * 10 * 1000) / CROP_MACHINE_PLOTS(GAME_STATE));
+    expect(boostUsed).not.toContainEqual(
+      expect.objectContaining({ name: "Tortoise Shrine" }),
     );
   });
 
@@ -1877,10 +1987,439 @@ describe("calculateCropTime", () => {
           },
         },
       },
+      Date.now(),
     );
 
     expect(result).toBe(
       (60 * 10 * 1000 * 0.76) / CROP_MACHINE_PLOTS(GAME_STATE),
     );
+  });
+});
+
+describe("Machinery skill upgrades (ranks)", () => {
+  const withSkills = (skills: GameState["bumpkin"]["skills"]): GameState => ({
+    ...GAME_STATE,
+    bumpkin: { ...GAME_STATE.bumpkin, skills },
+  });
+
+  describe("Field Expansion Module (MAX_QUEUE_SIZE)", () => {
+    // Rank 1 reproduces the pre-upgrade queue size (5 + 5 = 10).
+    it.each([
+      [1, 10],
+      [2, 12],
+      [3, 15],
+    ])("rank %i => queue size %i", (rank, expected) => {
+      expect(
+        MAX_QUEUE_SIZE(withSkills({ "Field Expansion Module": rank })),
+      ).toBe(expected);
+    });
+
+    it("stays at the base of 5 with no skill", () => {
+      expect(MAX_QUEUE_SIZE(withSkills({}))).toBe(5);
+    });
+  });
+
+  describe("Field Extension Module (CROP_MACHINE_PLOTS)", () => {
+    // Rank 1 reproduces the pre-upgrade plot count (10 + 5 = 15).
+    it.each([
+      [1, 15],
+      [2, 17],
+      [3, 20],
+    ])("rank %i => plots %i", (rank, expected) => {
+      expect(
+        CROP_MACHINE_PLOTS(withSkills({ "Field Extension Module": rank })),
+      ).toBe(expected);
+    });
+
+    it("stays at the base of 10 with no skill", () => {
+      expect(CROP_MACHINE_PLOTS(withSkills({}))).toBe(10);
+    });
+  });
+
+  describe("Leak-Proof Tank (MAX_OIL_CAPACITY_IN_HOURS)", () => {
+    // Rank 1 reproduces the pre-upgrade capacity (48 * 3 = 144h).
+    it.each([
+      [1, 144],
+      [2, 192],
+      [3, 240],
+    ])("rank %i => %i hours", (rank, expected) => {
+      expect(
+        MAX_OIL_CAPACITY_IN_HOURS(withSkills({ "Leak-Proof Tank": rank })),
+      ).toBe(expected);
+    });
+
+    it("stays at the base of 48h with no skill", () => {
+      expect(MAX_OIL_CAPACITY_IN_HOURS(withSkills({}))).toBe(48);
+    });
+  });
+
+  describe("Oil Gadget (OIL_PER_HOUR_CONSUMPTION -= reduction)", () => {
+    // Rank 1 reproduces the pre-upgrade -10% (x0.9).
+    it.each([
+      [1, 0.9],
+      [2, 0.85],
+      [3, 0.8],
+    ])("rank %i => %f oil/hour", (rank, expected) => {
+      expect(
+        setPrecision(
+          OIL_PER_HOUR_CONSUMPTION(withSkills({ "Oil Gadget": rank })),
+        ).toNumber(),
+      ).toBe(expected);
+    });
+  });
+
+  describe("Efficiency Extension Module (OIL_PER_HOUR_CONSUMPTION -= reduction)", () => {
+    // Rank 1 reproduces the pre-upgrade -30% (x0.7).
+    it.each([
+      [1, 0.7],
+      [2, 0.6],
+      [3, 0.5],
+    ])("rank %i => %f oil/hour", (rank, expected) => {
+      expect(
+        setPrecision(
+          OIL_PER_HOUR_CONSUMPTION(
+            withSkills({ "Efficiency Extension Module": rank }),
+          ),
+        ).toNumber(),
+      ).toBe(expected);
+    });
+  });
+
+  it("stacks Oil Gadget + Efficiency Extension additively at rank 3 (x0.3)", () => {
+    // 1 - 0.2 (Oil Gadget III) - 0.5 (Efficiency III) = 0.3
+    expect(
+      setPrecision(
+        OIL_PER_HOUR_CONSUMPTION(
+          withSkills({
+            "Oil Gadget": 3,
+            "Efficiency Extension Module": 3,
+          }),
+        ),
+      ).toNumber(),
+    ).toBe(0.3);
+  });
+
+  describe("Crop Processor Unit (oil penalty leg, additive)", () => {
+    // Rank 1 reproduces the pre-upgrade +10%.
+    it.each([
+      [1, 1.1],
+      [2, 1.15],
+      [3, 1.2],
+    ])("rank %i => %f oil/hour", (rank, expected) => {
+      expect(
+        setPrecision(
+          OIL_PER_HOUR_CONSUMPTION(withSkills({ "Crop Processor Unit": rank })),
+        ).toNumber(),
+      ).toBe(expected);
+    });
+  });
+
+  describe("Rapid Rig (oil penalty leg, additive)", () => {
+    // Rank 1 reproduces the pre-upgrade +40%.
+    it.each([
+      [1, 1.4],
+      [2, 1.5],
+      [3, 1.6],
+    ])("rank %i => %f oil/hour", (rank, expected) => {
+      expect(
+        setPrecision(
+          OIL_PER_HOUR_CONSUMPTION(withSkills({ "Rapid Rig": rank })),
+        ).toNumber(),
+      ).toBe(expected);
+    });
+  });
+
+  describe("Crop Processor Unit (growth leg, multiplicative)", () => {
+    // Rank 1 reproduces the pre-upgrade x0.95.
+    it.each([
+      [1, 0.95],
+      [2, 0.9],
+      [3, 0.85],
+    ])("rank %i => x%f growth time", (rank, mult) => {
+      const { milliSeconds } = calculateCropTime(
+        { type: "Sunflower Seed", amount: 10 },
+        withSkills({ "Crop Processor Unit": rank }),
+        Date.now(),
+      );
+      expect(milliSeconds).toBe(
+        (60 * 10 * 1000 * mult) / CROP_MACHINE_PLOTS(GAME_STATE),
+      );
+    });
+  });
+
+  describe("Rapid Rig (growth leg, multiplicative)", () => {
+    // Rank 1 reproduces the pre-upgrade x0.8.
+    it.each([
+      [1, 0.8],
+      [2, 0.7],
+      [3, 0.6],
+    ])("rank %i => x%f growth time", (rank, mult) => {
+      const { milliSeconds } = calculateCropTime(
+        { type: "Sunflower Seed", amount: 10 },
+        withSkills({ "Rapid Rig": rank }),
+        Date.now(),
+      );
+      expect(milliSeconds).toBe(
+        (60 * 10 * 1000 * mult) / CROP_MACHINE_PLOTS(GAME_STATE),
+      );
+    });
+  });
+
+  it("scales BOTH legs of Crop Processor Unit + Rapid Rig at rank 3", () => {
+    const state = withSkills({
+      "Crop Processor Unit": 3,
+      "Rapid Rig": 3,
+    });
+
+    // Oil leg (additive): 1 + 0.2 + 0.6 = 1.8
+    expect(OIL_PER_HOUR_CONSUMPTION(state)).toBeCloseTo(1.8, 5);
+
+    // Growth leg (multiplicative): x0.85 * x0.6 = x0.51
+    const { milliSeconds } = calculateCropTime(
+      { type: "Sunflower Seed", amount: 10 },
+      state,
+      Date.now(),
+    );
+    expect(milliSeconds).toBeCloseTo(
+      (60 * 10 * 1000 * 0.85 * 0.6) / CROP_MACHINE_PLOTS(GAME_STATE),
+      5,
+    );
+  });
+});
+
+describe("supplyCropMachine (windowed SPEED_BOOSTS)", () => {
+  // The file-level pin above forces mainnet for the legacy suites; the
+  // windowed model runs on the amoy default.
+  beforeEach(() => {
+    (CONFIG as { NETWORK: "mainnet" | "amoy" }).NETWORK = "amoy";
+  });
+
+  const now = Date.now();
+  const HOUR = 60 * 60 * 1000;
+  // 10 Sunflower Seeds over 10 plots = 60s of work.
+  const PACK_MS = (60 * 10 * 1000) / CROP_MACHINE_PLOTS(GAME_STATE);
+
+  const shrine = (createdAt: number) => ({
+    "Tortoise Shrine": [
+      { coordinates: { x: -1, y: -1 }, createdAt, readyAt: 0, id: "shrine" },
+    ],
+  });
+
+  const stateWithMachine = (
+    machine: Partial<CropMachineBuilding>,
+    overrides: Partial<GameState> = {},
+  ): GameState => ({
+    ...GAME_STATE,
+    buildings: {
+      "Crop Machine": [
+        {
+          coordinates: { x: 0, y: 0 },
+          createdAt: 0,
+          id: "1",
+          readyAt: 0,
+          ...machine,
+        },
+      ],
+    },
+    inventory: {
+      ...GAME_STATE.inventory,
+      "Sunflower Seed": new Decimal(100),
+      ...overrides.inventory,
+    },
+    ...overrides,
+  });
+
+  it("supplies a windowed pack: Tortoise excluded from the duration AND from boostsUsed, marker fields set", () => {
+    const state = supplyCropMachine({
+      state: {
+        ...stateWithMachine({}),
+        collectibles: shrine(now),
+      },
+      action: {
+        type: "cropMachine.supplied",
+        seeds: { type: "Sunflower Seed", amount: 10 },
+        machineId: "1",
+      },
+      createdAt: now,
+    });
+
+    const machine = state.buildings["Crop Machine"]?.[0];
+    const pack = machine?.queue?.[0];
+
+    // NOT ×0.9 — the shrine is a live window now, not a baked discount.
+    expect(pack?.baseDurationMs).toBe(PACK_MS);
+    expect(pack?.totalGrowTime).toBe(PACK_MS);
+    expect(machine?.oilSettledAt).toBe(now);
+    expect(state.boostsUsedAt?.["Tortoise Shrine"]).toBeUndefined();
+  });
+
+  it("derives the windowed readyAt cache under an active shrine when fuelled", () => {
+    const state = supplyCropMachine({
+      state: {
+        ...stateWithMachine({
+          oilSettledAt: now,
+          unallocatedOilTime: 10 * HOUR,
+        }),
+        collectibles: shrine(now),
+      },
+      action: {
+        type: "cropMachine.supplied",
+        seeds: { type: "Sunflower Seed", amount: 10 },
+        machineId: "1",
+      },
+      createdAt: now,
+    });
+
+    const pack = state.buildings["Crop Machine"]?.[0]?.queue?.[0];
+    expect(pack?.readyAt).toBeCloseTo(now + PACK_MS * 0.9, 5);
+    expect(pack?.startTime).toBe(now);
+    expect(pack?.growTimeRemaining).toBe(0);
+  });
+
+  it("converts a legacy machine atomically on a flag-on supply, reclaiming earmarks into the tank", () => {
+    const state = supplyCropMachine({
+      state: stateWithMachine({
+        unallocatedOilTime: 0,
+        queue: [
+          {
+            crop: "Sunflower",
+            seeds: 10,
+            growTimeRemaining: 0,
+            totalGrowTime: PACK_MS,
+            startTime: now - PACK_MS / 2,
+            readyAt: now + PACK_MS / 2,
+          },
+        ],
+      }),
+      action: {
+        type: "cropMachine.supplied",
+        seeds: { type: "Sunflower Seed", amount: 10 },
+        machineId: "1",
+      },
+      createdAt: now,
+    });
+
+    const machine = state.buildings["Crop Machine"]?.[0];
+    const [oldPack, newPack] = machine?.queue ?? [];
+
+    expect(machine?.oilSettledAt).toBe(now);
+    // The in-flight legacy pack froze at its remaining half...
+    expect(oldPack?.baseDurationMs).toBe(PACK_MS / 2);
+    // ...and keeps its legacy finish exactly (the reclaimed earmark funds it).
+    expect(oldPack?.readyAt).toBe(now + PACK_MS / 2);
+    // The reclaimed fuel covers only the old pack; the new one waits unfunded.
+    expect(newPack?.baseDurationMs).toBe(PACK_MS);
+    expect(newPack?.readyAt).toBeUndefined();
+    expect(newPack?.growTimeRemaining).toBe(PACK_MS);
+  });
+
+  it("recomputes a queued legacy pack on conversion instead of keeping a baked Tortoise Shrine", () => {
+    const BAKED_MS = PACK_MS * 0.9;
+    const state = supplyCropMachine({
+      state: stateWithMachine(
+        {
+          unallocatedOilTime: 0,
+          queue: [
+            {
+              // Started under legacy: keeps its baked remainder.
+              crop: "Sunflower",
+              seeds: 10,
+              growTimeRemaining: 0,
+              totalGrowTime: BAKED_MS,
+              startTime: now - BAKED_MS / 2,
+              readyAt: now + BAKED_MS / 2,
+            },
+            {
+              // Queued, not started: recomputed under the new model.
+              crop: "Sunflower",
+              seeds: 10,
+              growTimeRemaining: 0,
+              totalGrowTime: BAKED_MS,
+              startTime: now + BAKED_MS / 2,
+              readyAt: now + BAKED_MS * 1.5,
+            },
+          ],
+        },
+        { collectibles: shrine(now - HOUR) },
+      ),
+      action: {
+        type: "cropMachine.supplied",
+        seeds: { type: "Sunflower Seed", amount: 10 },
+        machineId: "1",
+      },
+      createdAt: now,
+    });
+
+    const [running, queued] = state.buildings["Crop Machine"]?.[0]?.queue ?? [];
+
+    expect(running?.baseDurationMs).toBe(BAKED_MS / 2);
+    expect(queued?.baseDurationMs).toBe(PACK_MS);
+    expect(queued?.totalGrowTime).toBe(PACK_MS);
+  });
+
+  it("recomputes a queued pack whose stale startTime is past after a legacy lift and re-place", () => {
+    // Legacy placeBuilding shifts readyAt across the downtime but leaves
+    // startTime untouched, so the queued pack's startTime is in the past even
+    // though it is still waiting behind the running pack.
+    const BAKED_MS = PACK_MS * 0.9;
+    const state = supplyCropMachine({
+      state: stateWithMachine(
+        {
+          unallocatedOilTime: 0,
+          queue: [
+            {
+              crop: "Sunflower",
+              seeds: 10,
+              growTimeRemaining: 0,
+              totalGrowTime: BAKED_MS,
+              startTime: now - BAKED_MS,
+              readyAt: now + BAKED_MS / 2,
+            },
+            {
+              crop: "Sunflower",
+              seeds: 10,
+              growTimeRemaining: 0,
+              totalGrowTime: BAKED_MS,
+              startTime: now - BAKED_MS / 4,
+              readyAt: now + BAKED_MS * 1.5,
+            },
+          ],
+        },
+        { collectibles: shrine(now - HOUR) },
+      ),
+      action: {
+        type: "cropMachine.supplied",
+        seeds: { type: "Sunflower Seed", amount: 10 },
+        machineId: "1",
+      },
+      createdAt: now,
+    });
+
+    const [running, queued] = state.buildings["Crop Machine"]?.[0]?.queue ?? [];
+
+    expect(running?.baseDurationMs).toBe(BAKED_MS / 2);
+    expect(queued?.baseDurationMs).toBe(PACK_MS);
+    expect(queued?.totalGrowTime).toBe(PACK_MS);
+  });
+
+  it("keeps a marked machine windowed on mainnet (marker beats flag)", () => {
+    (CONFIG as { NETWORK: "mainnet" | "amoy" }).NETWORK = "mainnet";
+
+    const state = supplyCropMachine({
+      state: stateWithMachine({
+        oilSettledAt: now - HOUR,
+        unallocatedOilTime: HOUR,
+      }),
+      action: {
+        type: "cropMachine.supplied",
+        seeds: { type: "Sunflower Seed", amount: 10 },
+        machineId: "1",
+      },
+      createdAt: now,
+    });
+
+    const machine = state.buildings["Crop Machine"]?.[0];
+    expect(machine?.queue?.[0]?.baseDurationMs).toBe(PACK_MS);
+    expect(machine?.oilSettledAt).toBe(now);
   });
 });

@@ -4,12 +4,11 @@ import { Modal } from "components/ui/Modal";
 import { CloseButtonPanel } from "features/game/components/CloseablePanel";
 import { Context } from "features/game/GameProvider";
 import { ITEM_DETAILS } from "features/game/types/images";
-import { getObjectEntries } from "features/game/expansion/lib/utils";
-import { Pet, PetName, PetNFT } from "features/game/types/pets";
+import { getObjectEntries } from "lib/object";
+import type { Pet, PetName, PetNFT } from "features/game/types/pets";
 import { ManagePets } from "./ManagePets";
 import { OuterPanel } from "components/ui/Panel";
 import { useAppTranslation } from "lib/i18n/useAppTranslations";
-import { hasFeatureAccess } from "lib/flags";
 import { PetGuide, PetGuideButton } from "features/pets/petGuide/PetGuide";
 
 interface Props {
@@ -28,11 +27,8 @@ export const PetHouseModal: React.FC<Props> = ({ show, onClose }) => {
     gameService,
     (state) => state.context.state.petHouse?.pets ?? {},
   );
-  const hasPetsAccess = useSelector(gameService, (state) =>
-    hasFeatureAccess(state.context.state, "PET_HOUSE"),
-  );
 
-  if (!hasPetsAccess || !pets) {
+  if (!pets) {
     return null;
   }
 

@@ -1,12 +1,12 @@
 import Decimal from "decimal.js-light";
-import { Decoration } from "./decorations";
-import { CraftableCollectible, PlaceableLocation } from "./collectibles";
-import { CookableName } from "./consumables";
-import { getObjectEntries } from "../expansion/lib/utils";
-import { GameState, InventoryItemName } from "./game";
-import { Coordinates } from "../expansion/components/MapPlacement";
-import { PetTraits } from "features/pets/data/types";
-import { CONFIG } from "lib/config";
+import type { Decoration } from "./decorations";
+import type { CraftableCollectible, PlaceableLocation } from "./collectibles";
+import type { CookableName } from "./consumables";
+import { getObjectEntries } from "lib/object";
+import type { GameState, InventoryItemName } from "./game";
+import type { Coordinates } from "../expansion/components/MapPlacement";
+import type { PetTraits } from "features/pets/data/types";
+import { getPetNFTRevealConfig } from "./petRevealConfig";
 
 export const SOCIAL_PET_XP_PER_HELP = 5;
 export const SOCIAL_PET_DAILY_XP_LIMIT = 50;
@@ -744,49 +744,6 @@ export function isPetOfTypeFed({
   return isPetOfTypeFed;
 }
 
-type PetNFTRevealConfig = {
-  revealAt: Date;
-  startId: number;
-  endId: number;
-};
-
-const MAINNET_PET_NFT_REVEAL_CONFIG: PetNFTRevealConfig[] = [
-  {
-    revealAt: new Date("2025-11-12T00:00:00.000Z"),
-    startId: 1,
-    endId: 1000,
-  },
-  {
-    revealAt: new Date("2026-01-13T00:00:00.000Z"),
-    startId: 1001,
-    endId: 1250,
-  },
-  {
-    revealAt: new Date("2026-04-12T00:00:00.000Z"),
-    startId: 1251,
-    endId: 1500,
-  },
-  {
-    revealAt: new Date("2025-11-12T00:00:00.000Z"),
-    startId: 2501,
-    endId: 3000,
-  },
-];
-
-const TESTNET_PET_NFT_REVEAL_CONFIG: PetNFTRevealConfig[] = [
-  {
-    revealAt: new Date("2025-11-11T00:00:00.000Z"),
-    startId: 1,
-    endId: 1000,
-  },
-];
-
-const getPetNFTRevealConfig = () => {
-  return CONFIG.NETWORK === "mainnet"
-    ? MAINNET_PET_NFT_REVEAL_CONFIG
-    : TESTNET_PET_NFT_REVEAL_CONFIG;
-};
-
 export function isPetNFTRevealed(petId: number, createdAt: number) {
   return getPetNFTRevealConfig().some(
     (config) =>
@@ -795,6 +752,7 @@ export function isPetNFTRevealed(petId: number, createdAt: number) {
       createdAt >= config.revealAt.getTime(),
   );
 }
+
 export function getPetNFTReleaseDate(petId: number, createdAt: number) {
   const revealAt = getPetNFTRevealConfig().find(
     (config) => petId >= config.startId && petId <= config.endId,

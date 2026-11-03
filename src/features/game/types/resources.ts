@@ -1,7 +1,7 @@
-import { Dimensions } from "./craftables";
+import type { Dimensions } from "./craftables";
 import { translate } from "lib/i18n/translate";
-import { AnimalResource } from "./game";
-import {
+import type { AnimalResource } from "./game";
+import type {
   GameState,
   Tree,
   Rock,
@@ -13,7 +13,7 @@ import {
   OilReserve,
   LavaPit,
 } from "features/game/types/game";
-import { Tool } from "./tools";
+import type { Tool } from "./tools";
 import { Decimal } from "decimal.js-light";
 
 export type CommodityName =
@@ -29,8 +29,12 @@ export type CommodityName =
   | "Wild Mushroom"
   | "Magic Mushroom"
   | "Sunstone"
+  | "Ascension Shard"
   | "Oil"
-  | "Obsidian";
+  | "Obsidian"
+  | "Salt"
+  | "Refined Salt"
+  | "Mud";
 
 export type MushroomName = Extract<
   CommodityName,
@@ -84,6 +88,14 @@ export const COMMODITIES: Record<CommodityName, Commodity> = {
   Obsidian: {
     description: translate("use.craft"),
   },
+  Salt: {
+    description: translate("description.salt"),
+  },
+  "Refined Salt": {
+    description: "Processed salt for pickling and advanced recipes",
+  },
+  "Ascension Shard": { description: translate("description.ascensionShard") },
+  Mud: { description: translate("description.mud") },
 };
 
 export const ANIMAL_RESOURCES: Record<AnimalResource, Commodity> = {
@@ -105,6 +117,12 @@ export const ANIMAL_RESOURCES: Record<AnimalResource, Commodity> = {
   Milk: {
     description: "",
   },
+  "Pig Bristles": {
+    description: "",
+  },
+  Truffle: {
+    description: "",
+  },
 };
 
 export type ResourceName =
@@ -118,7 +136,8 @@ export type ResourceName =
   | "Sunstone Rock"
   | "Flower Bed"
   | "Oil Reserve"
-  | "Lava Pit";
+  | "Lava Pit"
+  | "Ascension Crystal";
 
 export type BasicResourceName =
   | "Stone Rock"
@@ -156,7 +175,8 @@ export type RockName =
   | GoldRockName
   | IronRockName
   | "Sunstone Rock"
-  | "Crimstone Rock";
+  | "Crimstone Rock"
+  | "Ascension Crystal";
 
 type ResourceUpgradeRequirements = Omit<Tool, "type"> & {
   tier: ResourceTier;
@@ -188,6 +208,7 @@ export const RESOURCES: Record<ResourceName, string> = {
   "Sunstone Rock": "Mine sunstone",
   "Oil Reserve": "Drill oil",
   "Lava Pit": "Craft obsidian",
+  "Ascension Crystal": "Upgrade skills",
 };
 
 export const ADVANCED_RESOURCES: Record<
@@ -331,6 +352,7 @@ type ResourceStateRecords = {
   "Tempered Iron Rock": Record<string, Rock>;
   "Pure Gold Rock": Record<string, Rock>;
   "Prime Gold Rock": Record<string, Rock>;
+  "Ascension Crystal": Record<string, FiniteResource>;
 };
 
 export const RESOURCE_STATE_ACCESSORS: {
@@ -358,6 +380,7 @@ export const RESOURCE_STATE_ACCESSORS: {
   "Tempered Iron Rock": (game) => game.iron,
   "Pure Gold Rock": (game) => game.gold,
   "Prime Gold Rock": (game) => game.gold,
+  "Ascension Crystal": (game) => game.ascensionCrystals,
 };
 
 export const RESOURCES_UPGRADES_TO: Partial<
@@ -534,6 +557,10 @@ export const RESOURCE_DIMENSIONS: Record<ResourceName, Dimensions> = {
   "Prime Gold Rock": {
     width: 1,
     height: 1,
+  },
+  "Ascension Crystal": {
+    width: 2,
+    height: 2,
   },
 };
 

@@ -2,15 +2,14 @@ import React, { useState } from "react";
 
 import halfFullOilReserve from "assets/resources/oil/oil_reserve_half.webp";
 import { PIXEL_SCALE } from "features/game/lib/constants";
-import { TimeLeftPanel } from "components/ui/TimeLeftPanel";
-import { useAppTranslation } from "lib/i18n/useAppTranslations";
+import { TimerPopover } from "features/island/common/TimerPopover";
+import { ITEM_DETAILS } from "features/game/types/images";
 
 interface Props {
   timeLeft: number;
 }
 
 export const RecoveringOilReserve: React.FC<Props> = ({ timeLeft }) => {
-  const { t } = useAppTranslation();
   const [showTimeLeft, setShowTimeLeft] = useState(false);
 
   return (
@@ -32,10 +31,11 @@ export const RecoveringOilReserve: React.FC<Props> = ({ timeLeft }) => {
           top: `${PIXEL_SCALE * -16}px`,
         }}
       >
-        <TimeLeftPanel
-          text={t("resources.recoversIn")}
+        <TimerPopover
+          image={ITEM_DETAILS["Oil"].image}
+          description="Oil Reserve"
+          showPopover={showTimeLeft}
           timeLeft={timeLeft}
-          showTimeLeft={showTimeLeft}
         />
       </div>
     </div>

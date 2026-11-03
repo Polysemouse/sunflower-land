@@ -3,18 +3,20 @@ import React, { useContext, useState } from "react";
 import { Modal } from "components/ui/Modal";
 import { Button } from "components/ui/Button";
 import { ConfirmButton } from "components/ui/ConfirmButton";
-import { ITEM_DETAILS } from "features/game/types/images";
+import {
+  ITEM_DETAILS,
+  getTranslatedItemName,
+} from "features/game/types/images";
 import { CloseButtonPanel } from "features/game/components/CloseablePanel";
 
-import powerup from "assets/icons/level_up.png";
 import compost from "assets/composters/compost.png";
 
 import {
   WORM,
-  ComposterName,
+  type ComposterName,
   composterDetails,
   SEASON_COMPOST_REQUIREMENTS,
-  CompostName,
+  type CompostName,
 } from "features/game/types/composters";
 import Decimal from "decimal.js-light";
 import { Context } from "features/game/GameProvider";
@@ -22,8 +24,8 @@ import { useSelector } from "@xstate/react";
 import { SUNNYSIDE } from "assets/sunnyside";
 import { Label } from "components/ui/Label";
 import { secondsToString } from "lib/utils/time";
-import { GameState } from "features/game/types/game";
-import { getKeys } from "features/game/types/craftables";
+import type { GameState } from "features/game/types/game";
+import { getKeys } from "lib/object";
 import { RequirementLabel } from "components/ui/RequirementsLabel";
 import { SquareIcon } from "components/ui/SquareIcon";
 import { OuterPanel } from "components/ui/Panel";
@@ -34,80 +36,21 @@ import {
   getCompostAmount,
   getReadyAt,
 } from "features/game/events/landExpansion/startComposter";
-import { isWearableActive } from "features/game/lib/wearables";
+import {
+  getWormRange,
+  rollWormAmount,
+} from "features/game/events/landExpansion/composterBait";
 import {
   getSpeedUpCost,
   getSpeedUpTime,
 } from "features/game/events/landExpansion/accelerateComposter";
-import { isCollectibleBuilt } from "features/game/lib/collectibleBuilt";
 import { SEASON_ICONS } from "../market/SeasonalSeeds";
 import { RecipeInfoPanel } from "../craftingBox/components/RecipeInfoPanel";
 import { secondsTillWeekReset } from "features/game/lib/factions";
-import { getFruitfulBlendBuff } from "features/game/events/landExpansion/fertiliseFruitPatch";
 import { useNow } from "lib/utils/hooks/useNow";
 import { useCountdown } from "lib/utils/hooks/useCountdown";
 import { BoostsDisplay } from "components/ui/layouts/BoostsDisplay";
-
-const WORM_OUTPUT: Record<ComposterName, { min: number; max: number }> = {
-  "Compost Bin": { min: 2, max: 4 },
-  "Turbo Composter": { min: 2, max: 3 },
-  "Premium Composter": { min: 1, max: 3 },
-};
-
-function getWormOutput({
-  state,
-  building,
-}: {
-  state: GameState;
-  building: ComposterName;
-}) {
-  const { skills } = state.bumpkin;
-  let { min, max } = WORM_OUTPUT[building];
-  if (isWearableActive({ name: "Bucket O' Worms", game: state })) {
-    min += 1;
-    max += 1;
-  }
-
-  // +1 Worm if the player has Wormy Treat skill
-  if (skills["Wormy Treat"]) {
-    min += 1;
-    max += 1;
-  }
-
-  // +2 Bait if the player has Composting Overhaul skill
-  if (skills["Composting Overhaul"]) {
-    min += 2;
-    max += 2;
-  }
-
-  // -1 bait if player has More with less skill (in exchange for +10 fishing limit)
-  if (skills["More With Less"]) {
-    min -= 1;
-    max -= 1;
-  }
-
-  // -3 worms with Composting Revamp
-  if (skills["Composting Revamp"]) {
-    min -= 3;
-    max -= 3;
-  }
-
-  if (isWearableActive({ name: "Saw Fish", game: state })) {
-    min += 1;
-    max += 1;
-  }
-
-  // If min/max somehow goes negative, show as 0
-  if (min < 0) {
-    min = 0;
-  }
-
-  if (max < 0) {
-    max = 0;
-  }
-
-  return { min, max };
-}
+import { getFertiliserBuffLabels } from "features/game/types/collectibleItemBuffs";
 
 export const COMPOSTER_IMAGES: Record<
   ComposterName,
@@ -164,38 +107,44 @@ const Timer: React.FC<{ readyAt: number }> = ({ readyAt }) => {
   );
 };
 
+const LABEL_FERTILISERS = [
+  "Sprout Mix",
+  "Fruitful Blend",
+  "Sproutroot Surprise",
+  "Turbofruit Mix",
+] as const satisfies readonly CompostName[];
+
+const isLabelFertiliser = (
+  fertiliser: CompostName,
+): fertiliser is (typeof LABEL_FERTILISERS)[number] =>
+  LABEL_FERTILISERS.includes(fertiliser as (typeof LABEL_FERTILISERS)[number]);
+
 const FertiliserLabel: React.FC<{
   fertiliser: CompostName;
   state: GameState;
 }> = ({ fertiliser, state }) => {
   const { t } = useAppTranslation();
 
-  if (fertiliser === "Sprout Mix") {
-    return (
-      <Label
-        icon={powerup}
-        secondaryIcon={SUNNYSIDE.icons.plant}
-        type="success"
-        className="text-xs whitespace-pre-line"
-      >
-        {isCollectibleBuilt({ name: "Knowledge Crab", game: state })
-          ? "+0.4"
-          : "+0.2"}{" "}
-        {t("crops")}
-      </Label>
-    );
-  }
+  if (isLabelFertiliser(fertiliser)) {
+    const labels = getFertiliserBuffLabels({
+      fertiliser,
+      game: state,
+    });
 
-  if (fertiliser === "Fruitful Blend") {
     return (
-      <Label
-        icon={powerup}
-        secondaryIcon={ITEM_DETAILS.Apple.image}
-        type="success"
-        className="text-xs whitespace-pre-line"
-      >
-        {`+${getFruitfulBlendBuff(state).amount}`} {t("fruit")}
-      </Label>
+      <div className="flex flex-col gap-1">
+        {labels.map((label, index) => (
+          <Label
+            key={`${fertiliser}-${index}`}
+            icon={label.boostTypeIcon}
+            secondaryIcon={label.boostedItemIcon}
+            type={label.labelType}
+            className="text-xs whitespace-pre-line"
+          >
+            {label.shortDescription}
+          </Label>
+        ))}
+      </div>
     );
   }
 
@@ -229,6 +178,7 @@ const ComposterModalContent: React.FC<{
   const { t } = useAppTranslation();
 
   const state = useSelector(gameService, (state) => state.context.state);
+  const farmId = useSelector(gameService, (state) => state.context.farmId);
 
   const now = useNow({ live: !!readyAt, autoEndAt: readyAt ?? 0 });
   const composting = !!readyAt && readyAt >= now;
@@ -249,7 +199,7 @@ const ComposterModalContent: React.FC<{
     building: composterName,
   });
 
-  const { min, max } = getWormOutput({ state, building: composterName });
+  const { min, max } = getWormRange({ state, building: composterName });
   const { timeToFinishMilliseconds, boostsUsed } = getReadyAt({
     gameState: state,
     composter: composterName,
@@ -289,6 +239,13 @@ const ComposterModalContent: React.FC<{
   }; // We could do without this const but I added it for better security
 
   if (isReady) {
+    const { worms: readyWorms } = rollWormAmount({
+      state,
+      building: composterName,
+      farmId,
+      counter: state.farmActivity[`${worm} Collected`] ?? 0,
+    });
+    const wormLabel = getTranslatedItemName(worm);
     return (
       <>
         <Label
@@ -305,15 +262,21 @@ const ComposterModalContent: React.FC<{
           />
           <div className="mt-2 flex-1">
             <div className="flex flex-wrap">
-              {getKeys(produces).map((name) => (
-                <div
-                  key={name}
-                  className="flex space-x-2 justify-start mr-2 mb-1"
-                >
-                  <img src={ITEM_DETAILS[name].image} className="h-5" />
-                  <Label type="default">{`${produces[name]} ${name}`}</Label>
-                </div>
-              ))}
+              {getKeys(produces)
+                .filter((name) => !(name in WORM))
+                .map((name) => (
+                  <div
+                    key={name}
+                    className="flex space-x-2 justify-start mr-2 mb-1"
+                  >
+                    <img src={ITEM_DETAILS[name].image} className="h-5" />
+                    <Label type="default">{`${produces[name]} ${getTranslatedItemName(name)}`}</Label>
+                  </div>
+                ))}
+              <div className="flex space-x-2 justify-start mr-2 mb-1">
+                <img src={ITEM_DETAILS[worm].image} className="h-5" />
+                <Label type="default">{`${readyWorms} ${wormLabel}`}</Label>
+              </div>
             </div>
             <div className="flex items-center">
               <img src={SUNNYSIDE.icons.confirm} className="h-4 mr-1" />
@@ -351,17 +314,25 @@ const ComposterModalContent: React.FC<{
           <div className="mt-2 flex-1">
             <Timer readyAt={readyAt} />
             <div className="flex flex-wrap my-1">
-              {getKeys(produces).map((name) => (
-                <div
-                  key={name}
-                  className="flex space-x-2 justify-start mr-2 mb-1"
-                >
-                  <img src={ITEM_DETAILS[name].image} className="h-5" />
-                  <Label type="default">
-                    {name in WORM ? `? ${name}s` : `${produces[name]} ${name}`}
-                  </Label>
-                </div>
-              ))}
+              {getKeys(produces)
+                .filter((name) => !(name in WORM))
+                .map((name) => (
+                  <div
+                    key={name}
+                    className="flex space-x-2 justify-start mr-2 mb-1"
+                  >
+                    <img src={ITEM_DETAILS[name].image} className="h-5" />
+                    <Label type="default">{`${produces[name]} ${getTranslatedItemName(name)}`}</Label>
+                  </div>
+                ))}
+              <div className="flex space-x-2 justify-start mr-2 mb-1">
+                <img src={ITEM_DETAILS[worm].image} className="h-5" />
+                <Label type="default">
+                  {max === 0
+                    ? `0 ${getTranslatedItemName(worm)}`
+                    : `${min}-${max} ${getTranslatedItemName(worm)}`}
+                </Label>
+              </div>
             </div>
           </div>
         </div>
@@ -503,7 +474,7 @@ const ComposterModalContent: React.FC<{
             <div className="flex space-x-2 justify-start mr-2">
               <SquareIcon icon={ITEM_DETAILS[produce].image} width={14} />
               <div className="block">
-                <p className="text-xs mb-1">{`${produceAmount} ${produce}`}</p>
+                <p className="text-xs mb-1">{`${produceAmount} ${getTranslatedItemName(produce)}`}</p>
                 <FertiliserLabel fertiliser={produce} state={state} />
               </div>
             </div>
@@ -511,7 +482,9 @@ const ComposterModalContent: React.FC<{
               <SquareIcon icon={ITEM_DETAILS[worm].image} width={14} />
               <div className="block">
                 <p className="text-xs mb-1">
-                  {max === 0 ? `0 ${worm}s` : `${min}-${max} ${worm}s`}
+                  {max === 0
+                    ? `0 ${getTranslatedItemName(worm)}`
+                    : `${min}-${max} ${getTranslatedItemName(worm)}`}
                 </p>
                 <Label
                   icon={SUNNYSIDE.tools.fishing_rod}
@@ -628,7 +601,11 @@ export const ComposterModal: React.FC<Props> = ({
           setShowModal(false);
         }}
         tabs={[
-          { id: "composter", icon: compost, name: "Composter" },
+          {
+            id: "composter",
+            icon: compost,
+            name: getTranslatedItemName(composterName),
+          },
           {
             id: "guide",
             icon: SUNNYSIDE.icons.expression_confused,

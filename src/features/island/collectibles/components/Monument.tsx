@@ -1,5 +1,5 @@
 import React, { useContext, useEffect, useState } from "react";
-import { ImageStyle } from "./template/ImageStyle";
+import type { ImageStyle } from "./template/ImageStyle";
 import { useVisiting } from "lib/utils/visitUtils";
 import { SUNNYSIDE } from "assets/sunnyside";
 import { PIXEL_SCALE } from "features/game/lib/constants";
@@ -11,13 +11,13 @@ import { Modal } from "components/ui/Modal";
 import { ITEM_DETAILS } from "features/game/types/images";
 import { Label } from "components/ui/Label";
 import { useAppTranslation } from "lib/i18n/useAppTranslations";
-import { MachineState } from "features/game/lib/gameMachine";
+import type { MachineState } from "features/game/lib/gameMachine";
 import { useSelector } from "@xstate/react";
 import Decimal from "decimal.js-light";
 import classNames from "classnames";
 import {
   isHelpComplete,
-  MonumentName,
+  type MonumentName,
   REQUIRED_CHEERS,
 } from "features/game/types/monuments";
 import { Popover, PopoverButton, PopoverPanel } from "@headlessui/react";
@@ -26,12 +26,11 @@ import {
   SFTDetailPopoverLabel,
 } from "components/ui/SFTDetailPopover";
 import { _hasCheeredToday, PROJECT_IMAGES } from "./Project";
-import powerup from "assets/icons/level_up.png";
 import { CloseButtonPanel } from "features/game/components/CloseablePanel";
 import { FarmHelped } from "features/island/hud/components/FarmHelped";
 import helpIcon from "assets/icons/help.webp";
 import { COLLECTIBLE_BUFF_LABELS } from "features/game/types/collectibleItemBuffs";
-import { GameState } from "features/game/types/game";
+import type { GameState } from "features/game/types/game";
 
 const ProjectModal: React.FC<{
   project: MonumentName;
@@ -42,10 +41,7 @@ const ProjectModal: React.FC<{
   const { t } = useAppTranslation();
 
   const isProjectComplete = cheers >= REQUIRED_CHEERS[project];
-  const boostLabel = COLLECTIBLE_BUFF_LABELS[project]?.({
-    skills: state.bumpkin.skills,
-    collectibles: state.collectibles,
-  });
+  const boostLabel = COLLECTIBLE_BUFF_LABELS[project]?.(state);
 
   return (
     <Panel>
@@ -76,9 +72,23 @@ const ProjectModal: React.FC<{
       </div>
 
       {isProjectComplete && boostLabel && (
-        <Label type="success" icon={powerup} className="mb-1 ml-2">
-          {boostLabel[0].shortDescription}
-        </Label>
+        <div className="flex flex-col gap-1 mb-1 ml-2 items-start">
+          {boostLabel.map(
+            (
+              { labelType, boostTypeIcon, boostedItemIcon, shortDescription },
+              index,
+            ) => (
+              <Label
+                key={index}
+                type={labelType}
+                icon={boostTypeIcon}
+                secondaryIcon={boostedItemIcon}
+              >
+                {shortDescription}
+              </Label>
+            ),
+          )}
+        </div>
       )}
 
       <Button onClick={onClose}>{t("close")}</Button>
@@ -214,7 +224,7 @@ export const Monument: React.FC<MonumentProps> = (input) => {
                   }}
                 >
                   <div
-                    className="relative mr-2"
+                    className="monument-help-action relative mr-2"
                     style={{ width: `${PIXEL_SCALE * 20}px` }}
                   >
                     <img className="w-full" src={SUNNYSIDE.icons.disc} />

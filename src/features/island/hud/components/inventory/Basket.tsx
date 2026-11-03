@@ -2,28 +2,30 @@ import React, { useRef, useState } from "react";
 import { Box } from "components/ui/Box";
 import { ITEM_DETAILS } from "features/game/types/images";
 import {
-  InventoryItemName,
+  type InventoryItemName,
   FERTILISERS,
   COUPONS,
-  GameState,
+  type GameState,
   EASTER_EGG,
 } from "features/game/types/game";
 import {
   CROP_SEEDS,
-  CropName,
+  type CropName,
   CROPS,
   GREENHOUSE_CROPS,
   GREENHOUSE_SEEDS,
-  GreenHouseCropSeedName,
+  type GreenHouseCropSeedName,
 } from "features/game/types/crops";
 import { getCropPlotTime } from "features/game/events/landExpansion/plant";
-import { getKeys } from "features/game/types/craftables";
+import { getKeys } from "lib/object";
 import { getBasketItems } from "./utils/inventory";
 import {
-  ConsumableName,
+  type ConsumableName,
   CONSUMABLES,
   COOKABLES,
   PIRATE_CAKE,
+  PRIME_AGED_FISH,
+  AGED_FISH,
 } from "features/game/types/consumables";
 import { ANIMAL_RESOURCES, COMMODITIES } from "features/game/types/resources";
 import { BEANS, EXOTIC_CROPS } from "features/game/types/beans";
@@ -32,12 +34,16 @@ import {
   GREENHOUSE_FRUIT,
   PATCH_FRUIT,
   PATCH_FRUIT_SEEDS,
-  PatchFruitSeedName,
+  type PatchFruitSeedName,
 } from "features/game/types/fruits";
 import { SplitScreenView } from "components/ui/SplitScreenView";
 import { SUNNYSIDE } from "assets/sunnyside";
 import { InventoryItemDetails } from "components/ui/layouts/InventoryItemDetails";
-import { SEASONAL_SEEDS, SeedName, SEEDS } from "features/game/types/seeds";
+import {
+  SEASONAL_SEEDS,
+  type SeedName,
+  SEEDS,
+} from "features/game/types/seeds";
 import { getFruitHarvests } from "features/game/events/landExpansion/utils";
 import { getFoodExpBoost } from "features/game/expansion/lib/boosts";
 import { PIXEL_SCALE } from "features/game/lib/constants";
@@ -53,15 +59,21 @@ import {
   CROP_COMPOST,
   FRUIT_COMPOST,
 } from "features/game/types/composters";
-import { FISH, PURCHASEABLE_BAIT } from "features/game/types/fishing";
+import {
+  type FermentationBait,
+  FISH,
+  PURCHASEABLE_BAIT,
+} from "features/game/types/fishing";
 import { Label } from "components/ui/Label";
+import { KNOWN_IDS } from "features/game/types";
+import { useMarketplaceTradeables } from "features/marketplace/lib/useMarketplaceTradeables";
 import {
   FLOWERS,
   FLOWER_SEEDS,
   isFlowerSeed,
 } from "features/game/types/flowers";
 import { useAppTranslation } from "lib/i18n/useAppTranslations";
-import { BUILDING_ORDER } from "features/island/bumpkin/components/NPCModal";
+import { BUILDING_ORDER } from "features/game/lib/availableFood";
 import {
   SEED_TO_PLANT,
   getGreenhouseCropTime,
@@ -73,21 +85,54 @@ import { getFlowerTime } from "features/game/events/landExpansion/plantFlower";
 import { CLUTTER } from "features/game/types/clutter";
 import { PET_RESOURCES } from "features/game/types/pets";
 import { useNow } from "lib/utils/hooks/useNow";
+import { secondsToString } from "lib/utils/time";
+import { getPreActionDisplay } from "features/game/lib/timerDisplay";
+import { getSeedBoostWindows } from "features/game/lib/seedBoostWindows";
+import {
+  getBoostContributionEntries,
+  getSeedBoostContributions,
+} from "features/game/lib/boostContributions";
 import { PROCESSED_RESOURCES } from "features/game/types/processedFood";
 import { CRUSTACEANS_DESCRIPTIONS } from "features/game/types/crustaceans";
+import { FERMENTATION_PRODUCTS } from "features/game/types/fermentationProducts";
+import { BEETLES } from "features/game/types/beetles";
+import {
+  PICKLED_CROPS,
+  type PickledCropName,
+} from "features/game/types/pickled";
+import {
+  SPICE_RACK_PRODUCTS,
+  type SpiceRackProductName,
+} from "features/game/types/spiceRackProducts";
+import { ANIMAL_FEED_BUFF_ITEMS } from "features/game/events/landExpansion/applyAnimalFeedBuff";
+import { InventoryFilters } from "./InventoryFilters";
 
 interface Prop {
   gameState: GameState;
   selected?: InventoryItemName;
   onSelect: (name: InventoryItemName) => void;
+  onOpenMarketplace?: (name: InventoryItemName) => void;
 }
 
-export const Basket: React.FC<Prop> = ({ gameState, selected, onSelect }) => {
+export const Basket: React.FC<Prop> = ({
+  gameState,
+  selected,
+  onSelect,
+  onOpenMarketplace,
+}) => {
   const divRef = useRef<HTMLDivElement>(null);
   const now = useNow({ live: true });
   const [showBoosts, setShowBoosts] = useState(false);
+  const [search, setSearch] = useState("");
+  const [activeCategories, setActiveCategories] = useState<string[]>([]);
+
+  const toggleCategory = (id: string) =>
+    setActiveCategories((prev) =>
+      prev.includes(id) ? prev.filter((c) => c !== id) : [...prev, id],
+    );
 
   const { t } = useAppTranslation();
+  const { isTradeable } = useMarketplaceTradeables();
 
   const { inventory } = gameState;
   const basketMap = getBasketItems(inventory);
@@ -111,6 +156,10 @@ export const Basket: React.FC<Prop> = ({ gameState, selected, onSelect }) => {
   }
 
   const selectedItem = selected ?? getKeys(basketMap)[0] ?? "Sunflower Seed";
+  const canOpenMarketplace = isTradeable({
+    collection: "collectibles",
+    id: KNOWN_IDS[selectedItem],
+  });
 
   const isPatchFruitSeed = (
     selected: InventoryItemName,
@@ -126,30 +175,88 @@ export const Basket: React.FC<Prop> = ({ gameState, selected, onSelect }) => {
 
   const getHarvestTime = (seedName: SeedName) => {
     if (isFlowerSeed(seedName)) {
-      return getFlowerTime(seedName, gameState).seconds;
+      return getFlowerTime(seedName, gameState, now);
     }
 
     if (isPatchFruitSeed(seedName)) {
-      return getFruitPatchTime(seedName, gameState).seconds;
+      return getFruitPatchTime(seedName, gameState, now);
     }
     if (seedName in GREENHOUSE_SEEDS || seedName in GREENHOUSE_FRUIT_SEEDS) {
       const plant = SEED_TO_PLANT[seedName as GreenHouseCropSeedName];
-      const { seconds } = getGreenhouseCropTime({
+      return getGreenhouseCropTime({
         crop: plant,
         game: gameState,
+        now,
       });
-      return seconds;
     }
 
     const crop = SEEDS[seedName].yield as CropName;
-    return getCropPlotTime({
+    const { time: seconds, boostsUsed } = getCropPlotTime({
       crop,
       game: gameState,
       createdAt: now,
-    }).time;
+    });
+    return { seconds, boostsUsed };
+  };
+
+  const getBaseHarvestTime = (seedName: SeedName): number => {
+    if (seedName in FLOWER_SEEDS) {
+      return FLOWER_SEEDS[seedName as keyof typeof FLOWER_SEEDS].plantSeconds;
+    }
+    if (seedName in PATCH_FRUIT_SEEDS) {
+      return PATCH_FRUIT_SEEDS[seedName as keyof typeof PATCH_FRUIT_SEEDS]
+        .plantSeconds;
+    }
+    if (seedName in GREENHOUSE_SEEDS) {
+      return GREENHOUSE_SEEDS[seedName as keyof typeof GREENHOUSE_SEEDS]
+        .plantSeconds;
+    }
+    if (seedName in GREENHOUSE_FRUIT_SEEDS) {
+      return GREENHOUSE_FRUIT_SEEDS[
+        seedName as keyof typeof GREENHOUSE_FRUIT_SEEDS
+      ].plantSeconds;
+    }
+    return CROP_SEEDS[seedName as keyof typeof CROP_SEEDS].plantSeconds;
   };
 
   const harvestCounts = getFruitHarvests(gameState, selectedItem as SeedName);
+
+  const seedHarvestTime = isSeed(selectedItem)
+    ? getHarvestTime(selectedItem)
+    : undefined;
+
+  // A live speed window isn't folded into the grow time — the projected
+  // "plant now → ready in X" credits only the part of the grow the booster
+  // still covers. The windowed boosters aren't in `boostsUsed` (they apply over
+  // the grow rather than being baked into it), so name them for the boost
+  // panel with the time each one actually saves.
+  const seedWindowedBoosts =
+    isSeed(selectedItem) && seedHarvestTime
+      ? getBoostContributionEntries({
+          contributions: getSeedBoostContributions(
+            gameState,
+            selectedItem,
+            now,
+          ),
+          seconds: seedHarvestTime.seconds,
+          at: now,
+          formatSeconds: (seconds) =>
+            secondsToString(seconds, { length: "medium" }),
+        })
+      : [];
+  const seedBoostsUsed = seedHarvestTime
+    ? [...seedHarvestTime.boostsUsed, ...seedWindowedBoosts]
+    : undefined;
+  const seedTimeDisplay =
+    isSeed(selectedItem) && seedHarvestTime
+      ? getPreActionDisplay({
+          seconds: seedHarvestTime.seconds,
+          baseSeconds: getBaseHarvestTime(selectedItem),
+          namedBoostCount: seedBoostsUsed?.length ?? 0,
+          windows: getSeedBoostWindows(gameState, selectedItem),
+          at: now,
+        })
+      : undefined;
 
   const foodExpBoost = isFood(selectedItem)
     ? getFoodExpBoost({
@@ -165,8 +272,12 @@ export const Basket: React.FC<Prop> = ({ gameState, selected, onSelect }) => {
   };
 
   const getItems = <T extends string | number | symbol, K>(
-    items: Record<T, K>,
-  ) => {
+    items: Record<T, K> | T[],
+  ): T[] => {
+    if (Array.isArray(items)) {
+      return items.filter((item) => item in basketMap);
+    }
+
     return getKeys(items).filter((item) => item in basketMap);
   };
 
@@ -190,6 +301,7 @@ export const Basket: React.FC<Prop> = ({ gameState, selected, onSelect }) => {
   const craftingResources = getItems(RECIPE_CRAFTABLES);
   const animalResources = getItems(ANIMAL_RESOURCES);
   const animalFeeds = getItems(ANIMAL_FOODS);
+  const animalFeedBuffs = getItems(ANIMAL_FEED_BUFF_ITEMS);
   const processedFood = getItems(PROCESSED_RESOURCES);
   const crustaceans = getItems(CRUSTACEANS_DESCRIPTIONS);
 
@@ -204,6 +316,8 @@ export const Basket: React.FC<Prop> = ({ gameState, selected, onSelect }) => {
   const pirateCake = getItems(PIRATE_CAKE);
 
   const fertilisers = getItems(FERTILISERS);
+  const fermentationProducts = getItems([...FERMENTATION_PRODUCTS]);
+  const pickledCrops: PickledCropName[] = getItems([...PICKLED_CROPS]);
   const coupons = getItems(COUPONS).sort((a, b) => a.localeCompare(b));
   const easterEggs = getItems(EASTER_EGG);
   const treasure = getItems(SELLABLE_TREASURES);
@@ -212,7 +326,16 @@ export const Basket: React.FC<Prop> = ({ gameState, selected, onSelect }) => {
   const fruitCompost = getItems(FRUIT_COMPOST);
   const worm = getItems(WORM);
   const purchaseableBait = getItems(PURCHASEABLE_BAIT);
+  const fermentedBaits: FermentationBait[] = getItems([
+    "Capsule Bait",
+    "Umbrella Bait",
+    "Crimson Baitfish",
+  ]);
+  const spices: SpiceRackProductName[] = getItems([...SPICE_RACK_PRODUCTS]);
   const fish = getItems(FISH).sort((a, b) => a.localeCompare(b));
+  const agedFish = [...getItems(AGED_FISH), ...getItems(PRIME_AGED_FISH)].sort(
+    (a, b) => a.localeCompare(b),
+  );
   const petResources = getItems(PET_RESOURCES);
 
   const allSeeds = [
@@ -222,7 +345,9 @@ export const Basket: React.FC<Prop> = ({ gameState, selected, onSelect }) => {
     ...greenhouseSeeds,
   ];
   const allTools = [...workbenchTools, ...treasureTools, ...animalTools];
-  const allResources = [...resources, ...craftingResources];
+  const beetles = getItems([...BEETLES]);
+
+  const allResources = [...resources, ...craftingResources, ...beetles];
 
   const clutter = getItems(CLUTTER);
 
@@ -258,131 +383,308 @@ export const Basket: React.FC<Prop> = ({ gameState, selected, onSelect }) => {
     );
   };
 
-  return (
-    <SplitScreenView
-      divRef={divRef}
-      tallMobileContent={true}
-      wideModal={true}
-      showPanel={!!selectedItem}
-      panel={
-        selectedItem && (
-          <InventoryItemDetails
-            game={gameState}
-            details={{
-              item: selectedItem,
-              seasons:
-                selectedItem in SEEDS
-                  ? getKeys(SEASONAL_SEEDS).filter((season) =>
-                      SEASONAL_SEEDS[season].includes(selectedItem as SeedName),
-                    )
-                  : undefined,
-            }}
-            properties={{
-              harvests: isPatchFruitSeed(selectedItem)
-                ? {
-                    minHarvest: harvestCounts[0],
-                    maxHarvest: harvestCounts[1],
-                  }
-                : undefined,
-              xp: foodExpBoost?.boostedExp,
-              xpBoostsUsed: foodExpBoost?.boostsUsed,
-              baseXp: foodExpBoost
-                ? CONSUMABLES[selectedItem as ConsumableName].experience
-                : undefined,
-              ...(foodExpBoost && {
-                showBoosts,
-                setShowBoosts,
-              }),
-              timeSeconds: isSeed(selectedItem)
-                ? getHarvestTime(selectedItem)
-                : undefined,
-              showOpenSeaLink: true,
-            }}
-          />
-        )
-      }
-      content={
-        <>
-          {itemsSection(
-            `${t(`${gameState.season.season}.seeds`)}`,
-            allSeeds.filter((seed) =>
-              SEASONAL_SEEDS[gameState.season.season].includes(seed),
-            ),
-            SEASON_ICONS[gameState.season.season],
-          )}
-          {itemsSection(
-            t("seeds"),
-            allSeeds.filter(
-              (seed) => !SEASONAL_SEEDS[gameState.season.season].includes(seed),
-            ),
-            SUNNYSIDE.icons.seeds,
-          )}
+  const sections: {
+    id: string;
+    label: string;
+    icon: string;
+    items: InventoryItemName[];
+  }[] = [
+    {
+      id: "seasonalSeeds",
+      label: `${t(`${gameState.season.season}.seeds`)}`,
+      icon: SEASON_ICONS[gameState.season.season],
+      items: allSeeds.filter((seed) =>
+        SEASONAL_SEEDS[gameState.season.season].includes(seed),
+      ),
+    },
+    {
+      id: "seeds",
+      label: t("seeds"),
+      icon: SUNNYSIDE.icons.seeds,
+      items: allSeeds.filter(
+        (seed) => !SEASONAL_SEEDS[gameState.season.season].includes(seed),
+      ),
+    },
+    {
+      id: "fertilisers",
+      label: t("fertilisers"),
+      icon: ITEM_DETAILS["Rapid Root"].image,
+      items: Array.from(
+        new Set([
+          ...cropCompost,
+          ...fruitCompost,
+          ...fertilisers,
+          ...fermentationProducts,
+        ]),
+      ),
+    },
+    {
+      id: "tools",
+      label: t("tools"),
+      icon: ITEM_DETAILS["Axe"].image,
+      items: allTools,
+    },
+    {
+      id: "feeds",
+      label: t("feeds"),
+      icon: ITEM_DETAILS.Hay.image,
+      items: animalFeeds,
+    },
+    {
+      id: "spices",
+      label: t("spices"),
+      icon: ITEM_DETAILS["Spice Base"].image,
+      items: spices,
+    },
+    {
+      id: "crops",
+      label: t("crops"),
+      icon: ITEM_DETAILS.Sunflower.image,
+      items: crops,
+    },
+    {
+      id: "fruits",
+      label: t("fruits"),
+      icon: ITEM_DETAILS["Orange"].image,
+      items: fruits,
+    },
+    {
+      id: "flowers",
+      label: t("flowers"),
+      icon: SUNNYSIDE.icons.seedling,
+      items: flowers,
+    },
+    {
+      id: "exotics",
+      label: t("exotics"),
+      icon: ITEM_DETAILS["White Carrot"].image,
+      items: [...exotic, ...exotics],
+    },
+    {
+      id: "resources",
+      label: t("resources"),
+      icon: ITEM_DETAILS["Wood"].image,
+      items: allResources,
+    },
+    {
+      id: "clutter",
+      label: t("clutter"),
+      icon: ITEM_DETAILS.Dung.image,
+      items: clutter,
+    },
+    {
+      id: "petResources",
+      label: t("pet.resources"),
+      icon: ITEM_DETAILS["Acorn"].image,
+      items: petResources,
+    },
+    {
+      id: "animal",
+      label: t("animal"),
+      icon: ITEM_DETAILS.Egg.image,
+      items: animalResources,
+    },
+    {
+      id: "bait",
+      label: t("bait"),
+      icon: ITEM_DETAILS["Earthworm"].image,
+      items: [...worm, ...purchaseableBait, ...fermentedBaits],
+    },
+    {
+      id: "fish",
+      label: t("fish"),
+      icon: ITEM_DETAILS["Anchovy"].image,
+      items: fish,
+    },
+    {
+      id: "agedFish",
+      label: t("agedFish"),
+      icon: ITEM_DETAILS["Aged Anchovy"].image,
+      items: agedFish,
+    },
+    {
+      id: "crustaceans",
+      label: t("crustaceans"),
+      icon: ITEM_DETAILS["Crab"].image,
+      items: crustaceans,
+    },
+    {
+      id: "processedResources",
+      label: t("processedResources"),
+      icon: ITEM_DETAILS["Fish Flake"].image,
+      items: processedFood,
+    },
+    {
+      id: "pickledCrops",
+      label: t("pickledCrops"),
+      icon: ITEM_DETAILS["Pickled Radish"].image,
+      items: pickledCrops,
+    },
+    {
+      id: "foods",
+      label: t("foods"),
+      icon: ITEM_DETAILS["Carrot Cake"].image,
+      items: [...foods, ...pirateCake],
+    },
+    {
+      id: "treasure",
+      label: t("treasure"),
+      icon: ITEM_DETAILS["Pirate Bounty"].image,
+      items: treasure,
+    },
+    {
+      id: "coupons",
+      label: t("coupons"),
+      icon: ITEM_DETAILS["Trading Ticket"].image,
+      items: coupons,
+    },
+    {
+      id: "easterEggs",
+      label: t("easter.eggs"),
+      icon: ITEM_DETAILS["Red Egg"].image,
+      items: easterEggs,
+    },
+  ];
 
-          {itemsSection(
-            t("fertilisers"),
-            [...cropCompost, ...fruitCompost, ...fertilisers],
-            ITEM_DETAILS["Rapid Root"].image,
-          )}
-          {itemsSection(t("tools"), allTools, ITEM_DETAILS["Axe"].image)}
-          {itemsSection(t("crops"), crops, ITEM_DETAILS.Sunflower.image)}
-          {itemsSection(t("fruits"), fruits, ITEM_DETAILS["Orange"].image)}
-          {itemsSection(t("flowers"), flowers, SUNNYSIDE.icons.seedling)}
-          {itemsSection(
-            t("exotics"),
-            [...exotic, ...exotics],
-            ITEM_DETAILS["White Carrot"].image,
-          )}
-          {itemsSection(
-            t("resources"),
-            allResources,
-            ITEM_DETAILS["Wood"].image,
-          )}
-          {itemsSection(t("clutter"), clutter, ITEM_DETAILS.Dung.image)}
-          {itemsSection(
-            t("pet.resources"),
-            petResources,
-            ITEM_DETAILS["Acorn"].image,
-          )}
-          {itemsSection(t("animal"), animalResources, ITEM_DETAILS.Egg.image)}
-          {itemsSection(t("feeds"), animalFeeds, ITEM_DETAILS.Hay.image)}
-          {itemsSection(
-            t("bait"),
-            [...worm, ...purchaseableBait],
-            ITEM_DETAILS["Earthworm"].image,
-          )}
-          {itemsSection(t("fish"), fish, ITEM_DETAILS["Anchovy"].image)}
-          {itemsSection(
-            t("crustaceans"),
-            crustaceans,
-            ITEM_DETAILS["Crab"].image,
-          )}
-          {itemsSection(
-            t("processedResources"),
-            processedFood,
-            ITEM_DETAILS["Fish Flake"].image,
-          )}
-          {itemsSection(
-            t("foods"),
-            [...foods, ...pirateCake],
-            ITEM_DETAILS["Carrot Cake"].image,
-          )}
-          {itemsSection(
-            t("treasure"),
-            treasure,
-            ITEM_DETAILS["Pirate Bounty"].image,
-          )}
-          {itemsSection(
-            t("coupons"),
-            coupons,
-            ITEM_DETAILS["Trading Ticket"].image,
-          )}
-          {itemsSection(
-            t("easter.eggs"),
-            easterEggs,
-            ITEM_DETAILS["Red Egg"].image,
-          )}
-        </>
-      }
-    />
+  const query = search.trim().toLowerCase();
+  const matchesSearch = (item: InventoryItemName) =>
+    !query || item.toLowerCase().includes(query);
+
+  const visibleSections = sections.filter(
+    (section) => section.items.length > 0,
+  );
+
+  const filteredSections = visibleSections
+    .filter(
+      (section) =>
+        activeCategories.length === 0 || activeCategories.includes(section.id),
+    )
+    .map((section) => ({
+      ...section,
+      items: section.items.filter(matchesSearch),
+    }))
+    .filter((section) => section.items.length > 0);
+
+  // Items stay grouped by category unless the player is searching.
+  const grouped = !query;
+  const flatItems = filteredSections.flatMap((section) => section.items);
+
+  // The flat header only names a single section; with several categories
+  // selected we fall back to the generic "All" label.
+  const activeSection =
+    activeCategories.length === 1
+      ? visibleSections.find((s) => s.id === activeCategories[0])
+      : undefined;
+
+  return (
+    <>
+      <InventoryFilters
+        search={search}
+        onSearchChange={setSearch}
+        categories={visibleSections.map(({ id, label, icon }) => ({
+          id,
+          label,
+          icon,
+        }))}
+        activeCategories={activeCategories}
+        onToggleCategory={toggleCategory}
+        onClearCategories={() => setActiveCategories([])}
+      />
+      <SplitScreenView
+        divRef={divRef}
+        tallMobileContent={true}
+        wideModal={true}
+        showPanel={!!selectedItem}
+        panel={
+          selectedItem && (
+            <InventoryItemDetails
+              game={gameState}
+              details={{
+                item: selectedItem,
+                seasons:
+                  selectedItem in SEEDS
+                    ? getKeys(SEASONAL_SEEDS).filter((season) =>
+                        SEASONAL_SEEDS[season].includes(
+                          selectedItem as SeedName,
+                        ),
+                      )
+                    : undefined,
+              }}
+              properties={{
+                harvests: isPatchFruitSeed(selectedItem)
+                  ? {
+                      minHarvest: harvestCounts[0],
+                      maxHarvest: harvestCounts[1],
+                    }
+                  : undefined,
+                xp: foodExpBoost?.boostedExp,
+                xpBoostsUsed: foodExpBoost?.boostsUsed,
+                baseXp: foodExpBoost
+                  ? CONSUMABLES[selectedItem as ConsumableName].experience
+                  : undefined,
+                ...((foodExpBoost || isSeed(selectedItem)) && {
+                  showBoosts,
+                  setShowBoosts,
+                }),
+                timeSeconds: seedTimeDisplay?.displaySeconds,
+                baseTimeSeconds: isSeed(selectedItem)
+                  ? getBaseHarvestTime(selectedItem)
+                  : undefined,
+                timeBoostsUsed: seedBoostsUsed,
+                onMarketplaceClick:
+                  onOpenMarketplace && canOpenMarketplace
+                    ? () => onOpenMarketplace(selectedItem)
+                    : undefined,
+              }}
+            />
+          )
+        }
+        content={
+          grouped ? (
+            <>
+              {filteredSections.map((section) =>
+                itemsSection(section.label, section.items, section.icon),
+              )}
+            </>
+          ) : flatItems.length === 0 ? (
+            <div className="flex flex-col justify-center items-center w-full p-4">
+              <img
+                src={SUNNYSIDE.icons.search}
+                alt=""
+                style={{ width: `${PIXEL_SCALE * 10}px` }}
+              />
+              <span className="text-xs text-center mt-2">
+                {t("inventory.noResults")}
+              </span>
+            </div>
+          ) : (
+            <div className="flex flex-col pl-2 mb-2 w-full">
+              <div className="flex justify-between items-center pr-2 mb-2">
+                <Label
+                  type="default"
+                  icon={activeSection?.icon}
+                  className="mb-1"
+                >
+                  {activeSection?.label ?? t("inventory.all")}
+                </Label>
+                <span className="text-xxs">{flatItems.length}</span>
+              </div>
+              <div className="flex mb-2 flex-wrap -ml-1.5">
+                {flatItems.map((item) => (
+                  <Box
+                    count={inventory[item]}
+                    isSelected={selectedItem === item}
+                    key={item}
+                    onClick={() => handleItemClick(item)}
+                    image={ITEM_DETAILS[item].image}
+                    parentDivRef={divRef}
+                  />
+                ))}
+              </div>
+            </div>
+          )
+        }
+      />
+    </>
   );
 };

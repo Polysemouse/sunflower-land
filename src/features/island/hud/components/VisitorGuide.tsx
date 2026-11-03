@@ -11,15 +11,15 @@ import { Button } from "components/ui/Button";
 import { useAppTranslation } from "lib/i18n/useAppTranslations";
 import Decimal from "decimal.js-light";
 import { InnerPanel } from "components/ui/Panel";
-import { getObjectEntries } from "features/game/expansion/lib/utils";
+import { getObjectEntries } from "lib/object";
 import { HELP_LIMIT_COST } from "features/game/events/landExpansion/increaseHelpLimit";
 import { RequirementLabel } from "components/ui/RequirementsLabel";
 import { secondsTillReset, secondsToString } from "lib/utils/time";
 import { useSelector } from "@xstate/react";
-import { MachineState } from "features/game/lib/gameMachine";
+import type { MachineState } from "features/game/lib/gameMachine";
 import { ProgressBar } from "components/ui/ProgressBar";
 import { PIXEL_SCALE } from "features/game/lib/constants";
-import { getKeys } from "features/game/lib/crafting";
+import { getKeys } from "lib/object";
 import { SmallBox } from "components/ui/SmallBox";
 
 import helpIcon from "assets/icons/help.webp";
@@ -58,6 +58,9 @@ export const VisitorGuide: React.FC<VisitorGuideProps> = ({
   const totalHelpedToday = useSelector(gameService, _totalHelpedToday);
   const username = useSelector(gameService, _username);
   const game = useSelector(gameService, _game);
+
+  const helpLimit = getHelpLimit({ game: visitorState });
+  const helpRemaining = Math.max(helpLimit - totalHelpedToday, 0);
 
   // Make a list of in home vs on land
   const hasHelpedToday = gameState.context.hasHelpedPlayerToday ?? false;
@@ -118,10 +121,6 @@ export const VisitorGuide: React.FC<VisitorGuideProps> = ({
       </InnerPanel>
     );
   }
-
-  const helpLimit = getHelpLimit({
-    game: visitorState,
-  });
 
   const hasHitLimit = hasHitHelpLimit({
     game: visitorState,
@@ -198,11 +197,16 @@ export const VisitorGuide: React.FC<VisitorGuideProps> = ({
     <div className="flex flex-col gap-1">
       <div className="flex items-center justify-between">
         <Label type="default">{username}</Label>
-        <img
-          src={SUNNYSIDE.icons.close}
-          onClick={onClose}
-          className="h-6 cursor-pointer"
-        />
+        <div className="flex items-center gap-1">
+          <Label type="default" icon={SUNNYSIDE.icons.drag}>
+            {`${helpRemaining}/${helpLimit}`}
+          </Label>
+          <img
+            src={SUNNYSIDE.icons.close}
+            onClick={onClose}
+            className="h-6 cursor-pointer"
+          />
+        </div>
       </div>
       <InnerPanel>
         <p className="text-xs sm:text-sm p-1 -mt-0.5">

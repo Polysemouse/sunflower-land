@@ -1,7 +1,7 @@
 import React, { useContext, useState } from "react";
 import { useSelector } from "@xstate/react";
 import { Context } from "features/game/GameProvider";
-import { MachineState } from "features/game/lib/gameMachine";
+import type { MachineState } from "features/game/lib/gameMachine";
 import { PIXEL_SCALE } from "features/game/lib/constants";
 import { Modal } from "components/ui/Modal";
 import { WaterTrapModal } from "./WaterTrapModal";
@@ -13,22 +13,25 @@ import { SUNNYSIDE } from "assets/sunnyside";
 import classNames from "classnames";
 import {
   CRUSTACEAN_CHUM_AMOUNTS,
-  CrustaceanChum,
-  CrustaceanName,
+  type CrustaceanChum,
+  type CrustaceanName,
   WATER_TRAP_ANIMATIONS,
-  WaterTrapName,
+  type WaterTrapName,
   CRUSTACEANS,
   caughtCrustacean,
 } from "features/game/types/crustaceans";
 import { TimerPopover } from "features/island/common/TimerPopover";
-import { ITEM_DETAILS } from "features/game/types/images";
+import {
+  getTranslatedItemName,
+  ITEM_DETAILS,
+} from "features/game/types/images";
 import crabSpot1 from "assets/wharf/crab_spot_1.webp";
 import crabSpot2 from "assets/wharf/crab_spot_2.webp";
-import { getKeys } from "features/game/types/decorations";
+import { getKeys } from "lib/object";
 import Spritesheet from "components/animation/SpriteAnimator";
 import { ZoomContext } from "components/ZoomProvider";
 import type { CrabTrap, GameState } from "features/game/types/game";
-import { getObjectEntries } from "features/game/expansion/lib/utils";
+import { getObjectEntries } from "lib/object";
 
 const _crabTraps: (state: MachineState) => CrabTrap = (state) =>
   state.context.state.crabTraps;
@@ -94,17 +97,20 @@ export const WaterTrapSpot: React.FC<Props> = ({ id }) => {
         caught = caughtCrustacean(waterTrap.type, waterTrap.chum);
       }
       const [caughtItem, caughtAmount] = getObjectEntries(caught)[0];
+      const isNewCatch = (farmActivity[`${caughtItem} Caught`] ?? 0) === 0;
 
       gameService.send({
         type: "waterTrap.collected",
         trapId: id,
       });
 
-      setCollectedCatch({
-        item: caughtItem as CrustaceanName,
-        amount: caughtAmount ?? 1,
-      });
-      setShowCatchModal(true);
+      if (isNewCatch) {
+        setCollectedCatch({
+          item: caughtItem as CrustaceanName,
+          amount: caughtAmount ?? 1,
+        });
+        setShowCatchModal(true);
+      }
     }
   };
 
@@ -130,7 +136,7 @@ export const WaterTrapSpot: React.FC<Props> = ({ id }) => {
   const caught = waterTrap?.caught ? getKeys(waterTrap.caught)[0] : undefined;
   const caughtItem =
     caught &&
-    caught in CRUSTACEANS &&
+    CRUSTACEANS.includes(caught) &&
     (farmActivity[`${caught} Caught`] ?? 0) > 0
       ? caught
       : undefined;
@@ -166,16 +172,16 @@ export const WaterTrapSpot: React.FC<Props> = ({ id }) => {
                   ? ITEM_DETAILS[caughtItem].image
                   : SUNNYSIDE.icons.expression_confused
               }
-              description={caughtItem ? caughtItem : ""}
+              description={caughtItem ? getTranslatedItemName(caughtItem) : ""}
               showPopover={showTimerPopover}
               timeLeft={secondsLeft}
               secondaryImage={
-                waterTrap.chum != null
+                !caughtItem && waterTrap.chum != null
                   ? ITEM_DETAILS[waterTrap.chum].image
                   : undefined
               }
               secondaryDescription={
-                waterTrap.chum != null
+                !caughtItem && waterTrap.chum != null
                   ? `${CRUSTACEAN_CHUM_AMOUNTS[waterTrap.chum]} ${waterTrap.chum}`
                   : undefined
               }

@@ -1,35 +1,31 @@
 import type { GameState } from "features/game/types/game";
 import { CONFIG } from "lib/config";
+import { TEAM_USERNAMES } from "./access";
 
 export const RONIN_AIRDROP_ENDDATE = new Date("2025-11-04T00:00:00Z");
+
+// Ronin Waypoint (and the migration flow / transfer option for it) stops being
+// available after 16th Sept 2026
+export const WAYPOINT_WALLET_ENDDATE = new Date("2026-09-16T00:00:00Z");
+
+export const isWaypointWalletDisabled = () =>
+  Date.now() >= WAYPOINT_WALLET_ENDDATE.getTime();
 
 export const adminFeatureFlag = ({ wardrobe, inventory }: GameState) =>
   CONFIG.NETWORK === "amoy" ||
   (!!((wardrobe["Gift Giver"] ?? 0) > 0) && !!inventory["Beta Pass"]?.gt(0));
 
-// const usernameFeatureFlag = (game: GameState) => {
-//   return (
-//     testnetFeatureFlag() ||
-//     [
-//       "adam",
-//       "tango",
-//       "elias",
-//       "Aeon",
-//       "dcol",
-//       "birb",
-//       "Celinhotv",
-//       "LittleEins",
-//       "Labochi",
-//       "Craig",
-//       "Spencer",
-//     ]
-//       .map((name) => name.toLowerCase())
-//       .includes(game.username?.toLowerCase() ?? "")
-//   );
-// };
+const usernameFeatureFlag = (game: GameState) => {
+  return (
+    testnetFeatureFlag() ||
+    TEAM_USERNAMES.map((name) => name.toLowerCase()).includes(
+      game.username?.toLowerCase() ?? "",
+    )
+  );
+};
 
-const defaultFeatureFlag = ({ inventory }: GameState) =>
-  CONFIG.NETWORK === "amoy" || !!inventory["Beta Pass"]?.gt(0);
+export const betaFeatureFlag = ({ inventory }: GameState) =>
+  CONFIG.NETWORK === "amoy" || !!inventory?.["Beta Pass"]?.gt(0);
 
 export const testnetFeatureFlag = () => CONFIG.NETWORK === "amoy";
 
@@ -40,43 +36,95 @@ const testnetLocalStorageFeatureFlag = (key: string) => () => {
   return testnetFeatureFlag() || localStorageFeatureFlag(key);
 };
 
-const timeBasedFeatureFlag = (date: Date) => (now: number) => {
-  return testnetFeatureFlag() || now >= date.getTime();
-};
-
-const betaTimeBasedFeatureFlag = (date: Date) => (game: GameState) => {
-  return defaultFeatureFlag(game) || Date.now() > date.getTime();
-};
-
-const adminTimeBasedFeatureFlag = (date: Date) => (game: GameState) => {
-  return adminFeatureFlag(game) || Date.now() > date.getTime();
-};
-
 const timePeriodFeatureFlag =
-  ({ start, end }: { start: Date; end: Date }) =>
-  () => {
-    return Date.now() > start.getTime() && Date.now() < end.getTime();
+  ({ start, end }: TimeBasedFeatureWindow) =>
+  () =>
+  (now: number) => {
+    if (end === null) {
+      return testnetFeatureFlag() || now >= start.getTime();
+    }
+
+    return (
+      (testnetFeatureFlag() || now > start.getTime()) && now < end.getTime()
+    );
   };
 
-/**
- * Used for testing production features and dev access
- * @Adam 1
- * @Spencer 3
- * @Craig 39488
- * @Elias 128727
- */
-export const ADMIN_IDS = [1, 3, 39488, 128727];
+const betaTimePeriodFeatureFlag =
+  ({ start, end }: TimeBasedFeatureWindow) =>
+  (game: GameState) =>
+  (now: number) => {
+    if (end === null) {
+      return betaFeatureFlag(game) || now >= start.getTime();
+    }
 
-/**
- * IDs whitelisted to airdrop players
- * @Aeon 29
- * @Dcol 130170
- * @Labochi 7841
- */
-export const MANAGER_IDS = [...ADMIN_IDS, 29, 130170, 7841];
+    return (
+      (betaFeatureFlag(game) || now >= start.getTime()) && now < end.getTime()
+    );
+  };
 
 export type FeatureFlag = (game: GameState) => boolean;
-export type ExperimentName = "ONBOARDING_CHALLENGES" | "GEM_BOOSTS";
+
+/**
+ * @param start - The start date of the feature.
+ * @param end - The end date of the feature. If null, the feature is available indefinitely.
+ */
+export type TimeBasedFeatureWindow = { start: Date; end: Date | null };
+
+export const TIME_BASED_FEATURE_FLAG_WINDOWS = {
+  TICKETS_FROM_COIN_NPC: { start: new Date("2026-02-24T00:00:00Z"), end: null },
+  TICKETS_FROM_FLOWER_NPC: {
+    start: new Date("2026-05-11T00:00:00Z"),
+    end: null,
+  },
+  HALLOWEEN_2026_EVENT_FLAG: {
+    start: new Date("2026-10-26T00:00:00Z"),
+    end: new Date("2026-11-02T00:00:00Z"),
+  },
+  // Ascension Age chapter VIP perk: VIP holders expand their land 10% faster.
+  // Live from Mon 10th Aug 2026 (when the chapter's tasks begin) until the
+  // chapter ends — the end date must match CHAPTERS["Ascension Age"].endDate.
+  // Testnet bypasses the start date so testers can verify ahead of the cutover.
+  ASCENSION_AGE_VIP_EXPANSION: {
+    start: new Date("2026-08-10T00:00:00Z"),
+    end: new Date("2026-11-02T00:00:00Z"),
+  },
+} satisfies Record<string, TimeBasedFeatureWindow>;
+
+/** All time-based flags receive the full window; start-only helpers ignore `end`. */
+export type TimeBasedFeatureFlag = (
+  window: TimeBasedFeatureWindow,
+) => (game: GameState) => (now: number) => boolean;
+
+export type TimeBasedFeatureName = keyof typeof TIME_BASED_FEATURE_FLAG_WINDOWS;
+
+export const TIME_BASED_FEATURE_FLAGS: Record<
+  TimeBasedFeatureName,
+  TimeBasedFeatureFlag
+> = {
+  TICKETS_FROM_COIN_NPC: timePeriodFeatureFlag,
+  TICKETS_FROM_FLOWER_NPC: timePeriodFeatureFlag,
+  HALLOWEEN_2026_EVENT_FLAG: betaTimePeriodFeatureFlag,
+  ASCENSION_AGE_VIP_EXPANSION: timePeriodFeatureFlag,
+};
+
+/**
+ * @param featureName - The name of the feature to check access for.
+ * @param startTime - Instant to evaluate access at (e.g. order `createdAt` or `Date.now()`).
+ * @param game - The game state.
+ * @returns True if the player has access to the feature at `startTime`, false otherwise.
+ */
+export function hasTimeBasedFeatureAccess({
+  featureName,
+  now,
+  game,
+}: {
+  featureName: TimeBasedFeatureName;
+  game: GameState;
+  now: number;
+}) {
+  const window = TIME_BASED_FEATURE_FLAG_WINDOWS[featureName];
+  return TIME_BASED_FEATURE_FLAGS[featureName](window)(game)(now);
+}
 
 /*
  * How to Use:
@@ -87,41 +135,52 @@ export type ExperimentName = "ONBOARDING_CHALLENGES" | "GEM_BOOSTS";
  */
 const FEATURE_FLAGS = {
   // For testing
-  JEST_TEST: defaultFeatureFlag,
+  JEST_TEST: betaFeatureFlag,
 
   // Portal specific
-  CROPS_AND_CHICKENS_BETA_TESTING: defaultFeatureFlag,
+  CROPS_AND_CHICKENS_BETA_TESTING: betaFeatureFlag,
 
   // Permanent Feature Flags
+  ADMIN_DASHBOARDS: usernameFeatureFlag,
   AIRDROP_PLAYER: adminFeatureFlag,
-  HOARDING_CHECK: defaultFeatureFlag,
+
+  // Shows the admin "Create / End Giveaway" controls on the town-hall giveaway
+  // board. The server enforces the real allowlist (GIVEAWAY_ADMIN_FARM_IDS), so
+  // this only gates the UI. Open to everyone in local development.
+  GIVEAWAY_ADMIN: (game: GameState) =>
+    import.meta.env.DEV || usernameFeatureFlag(game) || adminFeatureFlag(game),
   STREAMER_HAT: (game) =>
     (game.wardrobe["Streamer Hat"] ?? 0) > 0 || testnetFeatureFlag(),
 
   // Temporary Feature Flags
-  FACE_RECOGNITION_TEST: defaultFeatureFlag,
+
+  FACE_RECOGNITION_TEST: betaFeatureFlag,
+  // The developer-options button that forces a captcha on your own farm
+  TRIGGER_CAPTCHA: betaFeatureFlag,
   LEDGER: testnetLocalStorageFeatureFlag("ledger"),
 
-  LEAGUES: () => false,
-
   EASTER: () => false,
-
-  HOLIDAYS_EVENT_FLAG: (game) =>
-    betaTimeBasedFeatureFlag(new Date("2025-12-23T00:00:00Z"))(game) &&
-    Date.now() < new Date("2026-01-05T00:00:00Z").getTime(),
 
   STREAM_STAGE_ACCESS: adminFeatureFlag,
 
   MODERATOR: (game) =>
     !!((game.wardrobe.Halo ?? 0) > 0) && !!game.inventory["Beta Pass"]?.gt(0),
 
-  PET_HOUSE: defaultFeatureFlag,
-  CROP_MACHINE_PACK_REMOVAL: defaultFeatureFlag,
-} satisfies Record<string, FeatureFlag>;
+  // Speed-rate (Clash-of-Clans potion) model for time-based boosts — starting
+  // with the Sparrow Shrine on crops. When on, planting stores the new
+  // baseDurationMs + true plantedAt model; when off, boosts stay discount-at-start.
+  SPEED_BOOSTS: betaFeatureFlag,
 
-const TIME_BASED_FEATURE_FLAGS = {
-  PET_CHAPTER_COMPLETE: timeBasedFeatureFlag(new Date("2026-02-02T00:00:00Z")),
-} satisfies Record<string, TimeBasedFeatureFlag>;
+  // Beta testers can grab a Yakkamon pre-registration code before the level
+  // tiers open to everyone else. The server enforces the same rule.
+  YAKKAMON_BETA_ACCESS: betaFeatureFlag,
+
+  // Admin testers (Gift Giver + Beta Pass, or testnet) can buy, grow, cook and
+  // trade the Chapter Crop Week items before CHAPTER_CROP_WEEK.startDate so the
+  // run can be tested on mainnet. Everyone else waits for the event window —
+  // see hasChapterCropWeekAccess. Remove once the event is live for all.
+  CHAPTER_CROP_WEEK_EARLY_ACCESS: adminFeatureFlag,
+} satisfies Record<string, FeatureFlag>;
 
 export type FeatureName = keyof typeof FEATURE_FLAGS;
 
@@ -129,13 +188,12 @@ export const hasFeatureAccess = (game: GameState, featureName: FeatureName) => {
   return FEATURE_FLAGS[featureName](game);
 };
 
-export type TimeBasedFeatureFlag = (now: number) => boolean;
-
-export type TimeBasedFeatureName = keyof typeof TIME_BASED_FEATURE_FLAGS;
-
-export const hasTimeBasedFeatureAccess = (
-  featureName: TimeBasedFeatureName,
-  now: number,
-) => {
-  return TIME_BASED_FEATURE_FLAGS[featureName](now);
-};
+/**
+ * The feature names currently gated behind `betaFeatureFlag` (Beta Pass /
+ * testnet). Derived from FEATURE_FLAGS by identity so this list can't drift
+ * from the flags it's reporting on - a feature only needs to be flagged with
+ * betaFeatureFlag once to show up here, nothing else to maintain.
+ */
+export const BETA_FEATURE_NAMES = (
+  Object.keys(FEATURE_FLAGS) as FeatureName[]
+).filter((name) => FEATURE_FLAGS[name] === betaFeatureFlag);

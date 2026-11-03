@@ -4,16 +4,19 @@ import { NumberInput } from "components/ui/NumberInput";
 import token from "assets/icons/flower_token.webp";
 import Decimal from "decimal.js-light";
 import { ITEM_DETAILS } from "features/game/types/images";
-import { InventoryItemName } from "features/game/types/game";
+import type { InventoryItemName } from "features/game/types/game";
 import { useAppTranslation } from "lib/i18n/useAppTranslations";
 import { isMobile } from "mobile-device-detect";
 import { formatNumber } from "lib/utils/formatNumber";
+import {
+  Locked,
+  useIsLocked,
+} from "features/retreat/components/personhood/Locked";
 
 type Props = {
   resource: InventoryItemName;
   totalResources: number;
   totalPrice: number;
-  maxLimit: number;
   maxAmountToBuy: number;
   onMaxAmountToBuyChange: (value: number) => void;
 };
@@ -22,14 +25,20 @@ export const BulkBuyInterface: React.FC<Props> = ({
   resource,
   totalResources,
   totalPrice,
-  maxLimit,
   maxAmountToBuy,
   onMaxAmountToBuyChange,
 }) => {
   const { t } = useAppTranslation();
-  const atLimit = maxAmountToBuy > maxLimit || maxAmountToBuy < 0;
+  const atLimit = maxAmountToBuy < 0;
   const averagePricePerUnit =
     totalResources > 0 ? totalPrice / totalResources : 0;
+
+  // Buying is a trade, so a hold stops it here rather than at the API. Gated
+  // in the modal itself so both entry points (the header and the listings
+  // table) are covered by one check.
+  const locked = useIsLocked();
+
+  if (locked) return <Locked />;
 
   return (
     <div className="mt-0.5 gap-1">
@@ -53,11 +62,6 @@ export const BulkBuyInterface: React.FC<Props> = ({
                 className="w-[120px]"
               />
             </div>
-          </div>
-          <div className="pl-2 text-[20px] -mt-1.5">
-            {t("marketplace.limit", {
-              maxLimit: formatNumber(maxLimit, { decimalPlaces: 0 }),
-            })}
           </div>
         </div>
         <div className="flex flex-grow-1 flex-col w-1/2 justify-evenly p-1 gap-1 text-xs sm:text-sm">

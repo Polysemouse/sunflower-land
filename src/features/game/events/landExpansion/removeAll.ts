@@ -15,9 +15,10 @@ import { removeStone } from "./removeStone";
 import { removeSunstone } from "./removeSunstone";
 import { removeTree } from "./removeTree";
 import { removeNFT } from "./removeNFT";
-import { getObjectEntries } from "features/game/expansion/lib/utils";
-import { PlaceableLocation } from "features/game/types/collectibles";
-import { GameState } from "features/game/types/game";
+import { removeAscensionCrystal } from "./removeAscensionCrystal";
+import { getObjectEntries } from "lib/object";
+import type { PlaceableLocation } from "features/game/types/collectibles";
+import type { GameState } from "features/game/types/game";
 
 export type RemoveAllAction = {
   type: "items.removed";
@@ -36,13 +37,21 @@ export function removeAll({
   createdAt = Date.now(),
 }: Options): GameState {
   return produce(state, (stateCopy) => {
+    if (action.location === "level_one" && !stateCopy.interior.level_one) {
+      throw new Error("Level one floor has not been unlocked");
+    }
+
     //   Remove Collectibles
     const collectibles =
       action.location === "home"
         ? stateCopy.home.collectibles
         : action.location === "petHouse"
           ? stateCopy.petHouse.pets
-          : stateCopy.collectibles;
+          : action.location === "interior"
+            ? stateCopy.interior.ground.collectibles
+            : action.location === "level_one"
+              ? stateCopy.interior.level_one!.collectibles
+              : stateCopy.collectibles;
 
     getObjectEntries(collectibles).forEach(([name, collectibleGroup]) => {
       if (collectibleGroup) {
@@ -331,6 +340,23 @@ export function removeAll({
             state: stateCopy,
             action: {
               type: "tree.removed",
+              id,
+            },
+            createdAt,
+          });
+        } catch (e) {
+          // Ignore errors
+        }
+      });
+
+      // Remove Ascension Crystals
+      const ascensionCrystals = stateCopy.ascensionCrystals;
+      Object.keys(ascensionCrystals).forEach((id) => {
+        try {
+          stateCopy = removeAscensionCrystal({
+            state: stateCopy,
+            action: {
+              type: "ascensionCrystal.removed",
               id,
             },
             createdAt,

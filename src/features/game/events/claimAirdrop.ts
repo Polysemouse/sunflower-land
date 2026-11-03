@@ -1,9 +1,9 @@
 import Decimal from "decimal.js-light";
-import { getKeys } from "../types/craftables";
-import { GameState } from "../types/game";
+import { getKeys } from "lib/object";
+import type { GameState } from "../types/game";
 
 import cloneDeep from "lodash.clonedeep";
-import { getObjectEntries } from "../expansion/lib/utils";
+import { getObjectEntries } from "lib/object";
 import { removeBuilding } from "./landExpansion/removeBuilding";
 import { removeCollectible } from "./landExpansion/removeCollectible";
 import {
@@ -14,13 +14,13 @@ import {
   isUpgradableResource,
 } from "features/island/hud/components/inventory/utils/inventory";
 import { PLACEABLE_LOCATIONS } from "../types/collectibles";
-import { ResourceItem } from "../expansion/placeable/lib/collisionDetection";
+import type { ResourceItem } from "../expansion/placeable/lib/collisionDetection";
 import { isPetCollectible } from "./landExpansion/placeCollectible";
 import {
   RESOURCE_STATE_ACCESSORS,
   RESOURCE_MULTIPLIER,
 } from "../types/resources";
-import { BUMPKIN_ITEM_PART, BumpkinItem } from "../types/bumpkin";
+import { BUMPKIN_ITEM_PART, type BumpkinItem } from "../types/bumpkin";
 
 export function addVipDays({
   game,
@@ -125,6 +125,10 @@ export function claimAirdrop({
               // Only pet collectibles can be in petHouse
               if (!isPetCollectible(itemName)) return [];
               return game.petHouse?.pets?.[itemName] ?? [];
+            } else if (location === "interior") {
+              return game.interior?.ground.collectibles[itemName] ?? [];
+            } else if (location === "level_one") {
+              return game.interior?.level_one?.collectibles[itemName] ?? [];
             } else {
               return game.collectibles[itemName] ?? [];
             }

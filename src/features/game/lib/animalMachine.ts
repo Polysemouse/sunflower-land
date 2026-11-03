@@ -1,5 +1,6 @@
-import { assign, createMachine, Interpreter, State } from "xstate";
-import { Animal } from "../types/game";
+import { assign, createMachine, type Interpreter, type State } from "xstate";
+import type { Animal } from "../types/game";
+import { getNextLoveAvailableAt } from "../events/landExpansion/loveAnimal";
 
 interface TContext {
   animal?: Animal;
@@ -42,6 +43,11 @@ export type AnimalMachineInterpreter = Interpreter<
   MachineState
 >;
 
+/**
+ * The machine has no access to game state, so it cannot derive a windowed wake
+ * time itself. Components hand it an animal resolved through `resolveAnimal`,
+ * whose `awakeAt` is already the live value — see that helper.
+ */
 const isAnimalSleeping = (context: TContext) => {
   if (!context.animal) return false;
 
@@ -52,12 +58,7 @@ const isAnimalNeedsLove = (context: TContext) => {
   if (!context.animal) return false;
 
   return (
-    context.animal.asleepAt +
-      (context.animal.awakeAt - context.animal.asleepAt) / 3 <
-      Date.now() &&
-    context.animal.lovedAt +
-      (context.animal.awakeAt - context.animal.asleepAt) / 3 <
-      Date.now()
+    getNextLoveAvailableAt(context.animal, context.animal.awakeAt) < Date.now()
   );
 };
 

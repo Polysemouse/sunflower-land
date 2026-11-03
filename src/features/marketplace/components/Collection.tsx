@@ -6,27 +6,32 @@ import { useActor, useSelector } from "@xstate/react";
 import { useLocation, useNavigate, useSearchParams } from "react-router";
 import { ListViewCard } from "./ListViewCard";
 import Decimal from "decimal.js-light";
-import { getTradeableDisplay, TradeableDisplay } from "../lib/tradeables";
+import { getTradeableDisplay, type TradeableDisplay } from "../lib/tradeables";
 import { InnerPanel } from "components/ui/Panel";
 import useSWR, { preload } from "swr";
 import { CONFIG } from "lib/config";
 import { FixedSizeGrid as Grid } from "react-window";
 import AutoSizer from "react-virtualized-auto-sizer";
 import { Context } from "features/game/GameProvider";
-import { MachineState } from "features/game/lib/gameMachine";
-import { InventoryItemName } from "features/game/types/game";
-import { PetCategory, getPetLevel } from "features/game/types/pets";
+import type { MachineState } from "features/game/lib/gameMachine";
+import type { Tradeable } from "features/game/types/marketplace";
+import type { InventoryItemName } from "features/game/types/game";
+import {
+  PET_FETCHES,
+  type PetCategory,
+  getPetLevel,
+} from "features/game/types/pets";
 import { getNFTTraits } from "./TradeableInfo";
-import { PetTraits } from "features/pets/data/types";
-import { Bud } from "lib/buds/types";
+import type { PetTraits } from "features/pets/data/types";
+import type { Bud } from "lib/buds/types";
 import { SUNNYSIDE } from "assets/sunnyside";
 import {
-  BudTrait,
+  type BudTrait,
   getLevelFilterByValue,
   groupTraitFilters,
-  PetTrait,
-  TraitCollection,
-  TraitFilter,
+  type PetTrait,
+  type TraitCollection,
+  type TraitFilter,
   toTraitValueId,
   useTraitFilters,
 } from "../lib/marketplaceFilters";
@@ -34,49 +39,71 @@ import {
   CHAPTER_COLLECTIONS,
   getChapterCollectionForDisplay,
 } from "features/game/types/collections";
-import { getKeys } from "features/game/types/craftables";
-import { BumpkinItem, ITEM_IDS } from "features/game/types/bumpkin";
+import {
+  EVENT_COLLECTIONS,
+  getEventCollectionForDisplay,
+} from "features/game/types/eventCollections";
+import { getKeys } from "lib/object";
+import { type BumpkinItem, ITEM_IDS } from "features/game/types/bumpkin";
 import { KNOWN_IDS } from "features/game/types";
 import {
   BUD_TRAIT_GROUPS,
   createTraitLabelLookup,
   PET_TRAIT_GROUPS,
 } from "../lib/traitOptions";
-import { useTranslation } from "react-i18next";
+import { useAppTranslation } from "lib/i18n/useAppTranslations";
 import { Label } from "components/ui/Label";
+import { marketplaceMinigameItemPath } from "../lib/minigameTradePath";
+import { getBudBoostFilterLabels } from "../lib/budBoostFilters";
 
 const budTraitLabels = createTraitLabelLookup(BUD_TRAIT_GROUPS);
 const petTraitLabels = createTraitLabelLookup(PET_TRAIT_GROUPS);
-const chapterCollectionLookup = getKeys(CHAPTER_COLLECTIONS).reduce<
-  Record<
-    string,
-    {
-      collectibleIds: Set<number>;
-      wearableIds: Set<number>;
-      collectibleNames: Set<string>;
-      wearableNames: Set<string>;
-    }
-  >
->((acc, chapter) => {
-  const { collectibles, wearables } = getChapterCollectionForDisplay(chapter);
+type CollectionLookup = Record<
+  string,
+  {
+    collectibleIds: Set<number>;
+    wearableIds: Set<number>;
+    collectibleNames: Set<string>;
+    wearableNames: Set<string>;
+  }
+>;
 
-  const collectibleNames = collectibles.map((item) => toTraitValueId(item));
-  const wearableNames = wearables.map((item) => toTraitValueId(item));
-  const collectibleIds = collectibles
-    .map((item) => KNOWN_IDS[item])
-    .filter((id): id is number => typeof id === "number");
-  const wearableIds = wearables
-    .map((item) => ITEM_IDS[item])
-    .filter((id): id is number => typeof id === "number");
+const buildCollectionLookup = <T extends string>(
+  names: T[],
+  getItems: (name: T) => {
+    collectibles: InventoryItemName[];
+    wearables: BumpkinItem[];
+  },
+) =>
+  names.reduce<CollectionLookup>((acc, name) => {
+    const { collectibles, wearables } = getItems(name);
 
-  acc[toTraitValueId(chapter)] = {
-    collectibleIds: new Set(collectibleIds),
-    wearableIds: new Set(wearableIds),
-    collectibleNames: new Set(collectibleNames),
-    wearableNames: new Set(wearableNames),
-  };
-  return acc;
-}, {});
+    const collectibleNames = collectibles.map((item) => toTraitValueId(item));
+    const wearableNames = wearables.map((item) => toTraitValueId(item));
+    const collectibleIds = collectibles
+      .map((item) => KNOWN_IDS[item])
+      .filter((id): id is number => typeof id === "number");
+    const wearableIds = wearables
+      .map((item) => ITEM_IDS[item])
+      .filter((id): id is number => typeof id === "number");
+
+    acc[toTraitValueId(name)] = {
+      collectibleIds: new Set(collectibleIds),
+      wearableIds: new Set(wearableIds),
+      collectibleNames: new Set(collectibleNames),
+      wearableNames: new Set(wearableNames),
+    };
+    return acc;
+  }, {});
+
+const chapterCollectionLookup = buildCollectionLookup(
+  getKeys(CHAPTER_COLLECTIONS),
+  getChapterCollectionForDisplay,
+);
+const eventCollectionLookup = buildCollectionLookup(
+  getKeys(EVENT_COLLECTIONS),
+  getEventCollectionForDisplay,
+);
 
 export const collectionFetcher = ([filters, token]: [string, string]) => {
   if (CONFIG.API_URL) return loadMarketplace({ filters, token });
@@ -93,22 +120,70 @@ export const preloadCollections = (token: string, showLimited: boolean) => {
 
 const _state = (state: MachineState) => state.context.state;
 
+type CollectionCardVariant = "default" | "favorites";
+
+type CollectionItemFilter = (
+  item: Tradeable,
+  display: TradeableDisplay,
+) => boolean;
+
+type CollectionItemsSort = (
+  items: Tradeable[],
+  getDisplay: (item: Tradeable) => TradeableDisplay,
+) => void;
+
+const getTradeableKey = (item: Tradeable) =>
+  `${item.collection}:${item.collection === "economies" ? `${item.economy}:` : ""}${item.id}`;
+
+const dedupeTradeables = (items: Tradeable[]) =>
+  Array.from(
+    items
+      .reduce<Map<string, Tradeable>>((uniqueItems, item) => {
+        const key = getTradeableKey(item);
+        const existing = uniqueItems.get(key);
+
+        uniqueItems.set(key, existing ? { ...existing, ...item } : item);
+
+        return uniqueItems;
+      }, new Map())
+      .values(),
+  );
+
 export const Collection: React.FC<{
   search?: string;
   hideLimited?: boolean;
   onNavigated?: () => void;
-}> = ({ search, hideLimited, onNavigated }) => {
+  filtersOverride?: string;
+  filterItem?: CollectionItemFilter;
+  sortItems?: CollectionItemsSort;
+  rowHeight?: number;
+  cardVariant?: CollectionCardVariant;
+  emptyState?: React.ReactNode;
+  topContent?: React.ReactNode;
+}> = ({
+  search,
+  hideLimited,
+  onNavigated,
+  filtersOverride,
+  filterItem,
+  sortItems,
+  rowHeight,
+  cardVariant = "default",
+  emptyState,
+  topContent,
+}) => {
   const { gameService } = useContext(Context);
   const state = useSelector(gameService, _state);
   const { authService } = useContext(Auth.Context);
   const [authState] = useActor(authService);
-  const { t } = useTranslation();
+  const { t } = useAppTranslation();
   const isWorldRoute = useLocation().pathname.includes("/world");
   // Get query string params
   const [queryParams] = useSearchParams();
-  let filters = queryParams.get("filters") ?? "";
+  let filters = filtersOverride ?? queryParams.get("filters") ?? "";
+
   const chapterFilter = queryParams.get("chapter") ?? "";
-  const chapterKey = toTraitValueId(chapterFilter);
+  const eventFilter = queryParams.get("event") ?? "";
   const ownershipParam = queryParams.get("ownership") ?? "";
   const ownershipTokens = ownershipParam
     .split(",")
@@ -206,16 +281,15 @@ export const Collection: React.FC<{
     filters.includes("temporary") && !hideLimited ? ["temporary", token] : null,
     collectionFetcher,
   );
-
   const data = {
-    items: [
-      ...(resources?.items || []),
+    items: dedupeTradeables([
+      ...(resources?.items ?? []),
       ...(collectibles?.items || []),
       ...(wearables?.items || []),
       ...(buds?.items || []),
       ...(!hideLimited ? limited?.items || [] : []),
       ...(pets?.items || []),
-    ],
+    ]),
   };
 
   if (!filters.includes("resources")) {
@@ -273,6 +347,15 @@ export const Collection: React.FC<{
       </InnerPanel>
     );
   }
+
+  const getItemDisplay = (item: Tradeable) =>
+    getTradeableDisplay({
+      id: item.id,
+      type: item.collection,
+      state,
+      experience: item.collection === "pets" ? item.experience : undefined,
+      marketplaceItem: item,
+    });
 
   // Determines if an item matches the search criteria
   const matchesSearchCriteria = (
@@ -353,11 +436,11 @@ export const Collection: React.FC<{
 
   const items =
     data?.items.filter((item) => {
-      const display = getTradeableDisplay({
-        id: item.id,
-        type: item.collection,
-        state,
-      });
+      const display = getItemDisplay(item);
+
+      if (filterItem && !filterItem(item, display)) {
+        return false;
+      }
 
       if (filters.includes("utility") && display.buffs.length === 0) {
         return false;
@@ -367,24 +450,26 @@ export const Collection: React.FC<{
         return false;
       }
 
-      if (chapterFilter) {
-        const chapterItems = chapterCollectionLookup[chapterKey];
-        if (!chapterItems) {
+      if (chapterFilter || eventFilter) {
+        const collectionItems = chapterFilter
+          ? chapterCollectionLookup[toTraitValueId(chapterFilter)]
+          : eventCollectionLookup[toTraitValueId(eventFilter)];
+        if (!collectionItems) {
           return false;
         }
 
         const displayNameId = toTraitValueId(display.name);
         if (item.collection === "collectibles") {
           if (
-            !chapterItems.collectibleIds.has(item.id) &&
-            !chapterItems.collectibleNames.has(displayNameId)
+            !collectionItems.collectibleIds.has(item.id) &&
+            !collectionItems.collectibleNames.has(displayNameId)
           ) {
             return false;
           }
         } else if (item.collection === "wearables") {
           if (
-            !chapterItems.wearableIds.has(item.id) &&
-            !chapterItems.wearableNames.has(displayNameId)
+            !collectionItems.wearableIds.has(item.id) &&
+            !collectionItems.wearableNames.has(displayNameId)
           ) {
             return false;
           }
@@ -451,6 +536,12 @@ export const Collection: React.FC<{
                   selectedValues.includes(category),
                 );
               }
+              case "resource":
+                return PET_FETCHES[petTraits.type].fetches.some(
+                  ({ name, level }) =>
+                    petLevel >= level &&
+                    selectedValues.includes(toTraitValueId(name)),
+                );
               case "aura":
                 return selectedValues.includes(
                   toTraitValueId(petTraits.aura ?? ""),
@@ -520,6 +611,10 @@ export const Collection: React.FC<{
                 return selectedValues.includes(
                   toTraitValueId(budTraits.colour ?? ""),
                 );
+              case "boost":
+                return getBudBoostFilterLabels(budTraits).some((boost) =>
+                  selectedValues.includes(toTraitValueId(boost)),
+                );
               default:
                 return true;
             }
@@ -534,7 +629,11 @@ export const Collection: React.FC<{
       return matchesSearchCriteria(display, search ?? "");
     }) ?? [];
 
+  sortItems?.(items, getItemDisplay);
+
   const getRowHeight = () => {
+    if (rowHeight) return rowHeight;
+
     if (filters === "resources") return 150;
     if (filters.includes("buds") || filters.includes("pets")) return 250;
     return 180;
@@ -542,6 +641,7 @@ export const Collection: React.FC<{
 
   return (
     <InnerPanel className="h-full flex flex-col">
+      {topContent}
       {activeTraitFilters.length > 0 && (
         <div className="flex flex-col gap-2 border-b border-brown-300 p-2 pt-0.5 pb-1">
           <div className="flex items-center gap-2">
@@ -577,92 +677,100 @@ export const Collection: React.FC<{
           </div>
         </div>
       )}
-      <div className="h-full w-full flex-1">
-        <AutoSizer>
-          {({ height, width }) => {
-            const SCROLLBAR_WIDTH = 10;
+      {items.length === 0 && emptyState ? (
+        emptyState
+      ) : (
+        <div className="min-h-0 w-full flex-1">
+          <AutoSizer>
+            {({ height, width }) => {
+              const SCROLLBAR_WIDTH = 10;
 
-            // Function to determine number of columns based on width
-            const getColumnCount = (width: number) => {
-              if (width >= 1280) return 7; // xl
-              if (width >= 1024) return 5; // lg
-              if (width >= 768) return 4; // md
-              if (width >= 640) return 3; // sm
-              return 2; // default
-            };
+              // Function to determine number of columns based on width
+              const getColumnCount = (width: number) => {
+                if (width >= 1280) return 7; // xl
+                if (width >= 1024) return 5; // lg
+                if (width >= 768) return 4; // md
+                if (width >= 640) return 3; // sm
+                return 2; // default
+              };
 
-            const columnCount = getColumnCount(width);
-            const rowCount = Math.ceil(items.length / columnCount);
-            const adjustedWidth = width - SCROLLBAR_WIDTH;
-            const columnWidth = adjustedWidth / columnCount;
+              const columnCount = getColumnCount(width);
+              const rowCount = Math.ceil(items.length / columnCount);
+              const adjustedWidth = width - SCROLLBAR_WIDTH;
+              const columnWidth = adjustedWidth / columnCount;
 
-            const Cell = ({
-              columnIndex,
-              rowIndex,
-              style,
-            }: {
-              columnIndex: number;
-              rowIndex: number;
-              style: React.CSSProperties;
-            }) => {
-              const itemIndex = rowIndex * columnCount + columnIndex;
-              const item = items[itemIndex];
+              const Cell = ({
+                columnIndex,
+                rowIndex,
+                style,
+              }: {
+                columnIndex: number;
+                rowIndex: number;
+                style: React.CSSProperties;
+              }) => {
+                const itemIndex = rowIndex * columnCount + columnIndex;
+                const item = items[itemIndex];
 
-              if (!item) return null;
+                if (!item) return null;
 
-              const display = getTradeableDisplay({
-                type: item.collection,
-                id: item.id,
-                state,
-                experience:
-                  item.collection === "pets" ? item.experience : undefined,
-              });
+                const display = getItemDisplay(item);
 
-              return (
-                <div key={item.id} style={style} className="pr-1 pb-1">
-                  <ListViewCard
-                    details={display}
-                    price={new Decimal(item.floor)}
-                    lastSalePrice={new Decimal(item.lastSalePrice)}
-                    onClick={() => {
-                      const scrollPosition =
-                        gridRef.current?._outerRef.scrollTop;
-                      navigate(
-                        `${isWorldRoute ? "/world" : ""}/marketplace/${item.collection}/${item.id}`,
-                        {
+                const marketplaceBase = `${isWorldRoute ? "/world" : ""}/marketplace`;
+                const detailPath =
+                  item.collection === "economies"
+                    ? marketplaceMinigameItemPath(
+                        marketplaceBase,
+                        item.economy,
+                        item.id,
+                      )
+                    : `${marketplaceBase}/${item.collection}/${item.id}`;
+
+                const rowKey = String(item.id);
+
+                return (
+                  <div key={rowKey} style={style} className="pr-1 pb-1">
+                    <ListViewCard
+                      details={display}
+                      price={new Decimal(item.floor)}
+                      lastSalePrice={new Decimal(item.lastSalePrice)}
+                      onClick={() => {
+                        const scrollPosition =
+                          gridRef.current?._outerRef.scrollTop;
+                        navigate(detailPath, {
                           state: {
                             scrollPosition,
                             route: backRoute,
                           },
-                        },
-                      );
-                      onNavigated?.();
-                    }}
-                    expiresAt={item.expiresAt}
-                  />
-                </div>
-              );
-            };
+                        });
+                        onNavigated?.();
+                      }}
+                      expiresAt={item.expiresAt}
+                      variant={cardVariant}
+                    />
+                  </div>
+                );
+              };
 
-            return (
-              <Grid
-                ref={gridRef}
-                columnCount={columnCount}
-                columnWidth={columnWidth}
-                height={height}
-                rowCount={rowCount}
-                rowHeight={getRowHeight()}
-                width={width}
-                className="scrollable"
-                initialScrollTop={savedScrollPosition}
-                itemData={{ width }}
-              >
-                {Cell}
-              </Grid>
-            );
-          }}
-        </AutoSizer>
-      </div>
+              return (
+                <Grid
+                  ref={gridRef}
+                  columnCount={columnCount}
+                  columnWidth={columnWidth}
+                  height={height}
+                  rowCount={rowCount}
+                  rowHeight={getRowHeight()}
+                  width={width}
+                  className="scrollable"
+                  initialScrollTop={savedScrollPosition}
+                  itemData={{ width }}
+                >
+                  {Cell}
+                </Grid>
+              );
+            }}
+          </AutoSizer>
+        </div>
+      )}
     </InnerPanel>
   );
 };

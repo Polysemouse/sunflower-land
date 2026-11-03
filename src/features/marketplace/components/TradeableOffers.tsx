@@ -3,7 +3,7 @@ import React, { useContext, useState } from "react";
 import { Button } from "components/ui/Button";
 import { Label } from "components/ui/Label";
 import { InnerPanel, Panel } from "components/ui/Panel";
-import { Offer, TradeableDetails } from "features/game/types/marketplace";
+import type { Offer, TradeableDetails } from "features/game/types/marketplace";
 import { useAppTranslation } from "lib/i18n/useAppTranslations";
 
 import sflIcon from "assets/icons/flower_token.webp";
@@ -13,8 +13,8 @@ import { OfferTable } from "./TradeTable";
 import { Loading } from "features/auth/components";
 import { Modal } from "components/ui/Modal";
 import { useSelector } from "@xstate/react";
-import { TradeableDisplay } from "../lib/tradeables";
-import {
+import type { TradeableDisplay } from "../lib/tradeables";
+import type {
   BlockchainEvent,
   Context as ContextType,
   MachineState,
@@ -24,7 +24,7 @@ import { Context } from "features/game/GameProvider";
 import { MakeOffer } from "./MakeOffer";
 import * as Auth from "features/auth/lib/Provider";
 import { AcceptOffer } from "./AcceptOffer";
-import { AuthMachineState } from "features/auth/lib/authMachine";
+import type { AuthMachineState } from "features/auth/lib/authMachine";
 import confetti from "canvas-confetti";
 import { ResourceTable } from "./ResourceTable";
 import { formatNumber } from "lib/utils/formatNumber";
@@ -34,10 +34,10 @@ import { isTradeResource } from "features/game/actions/tradeLimits";
 
 import Decimal from "decimal.js-light";
 import { useParams } from "react-router";
-import { KeyedMutator } from "swr";
+import type { KeyedMutator } from "swr";
 import { getMaxPurchases } from "./Tradeable";
 import { ResourceTaxes } from "./TradeableInfo";
-import { hasVipAccess } from "features/game/lib/vipAccess";
+import { useVipAccess } from "lib/utils/hooks/useVipAccess";
 
 const _hasPendingOfferEffect = (state: MachineState) =>
   state.matches("marketplaceOffering") || state.matches("marketplaceAccepting");
@@ -57,6 +57,8 @@ export const TradeableOffers: React.FC<{
   display: TradeableDisplay;
   itemId: number;
   reload: KeyedMutator<TradeableDetails>;
+  /** When true, making & accepting offers is blocked (e.g. Crystal Leaf without event access). */
+  disabled?: boolean;
 }> = ({
   hideLimited,
   tradeable,
@@ -66,6 +68,7 @@ export const TradeableOffers: React.FC<{
   itemId,
   reload,
   limitedPurchasesLeft,
+  disabled,
 }) => {
   const { authService } = useContext(Auth.Context);
   const { gameService, showAnimations } = useContext(Context);
@@ -94,7 +97,6 @@ export const TradeableOffers: React.FC<{
   const authToken = useSelector(authService, _authToken);
   const balance = useSelector(gameService, _balance);
   const inventory = useSelector(gameService, _inventory);
-  const myOffersCount = useSelector(gameService, _myOffersCount);
   const [showMakeOffer, setShowMakeOffer] = useState(false);
   const [showAcceptOffer, setShowAcceptOffer] = useState(false);
   const [selectedOffer, setSelectedOffer] = useState<Offer>();
@@ -161,13 +163,11 @@ export const TradeableOffers: React.FC<{
   };
 
   const loading = !tradeable;
-  const isResource = isTradeResource(KNOWN_ITEMS[Number(id)]);
+  const isResource =
+    display.type === "collectibles" && isTradeResource(KNOWN_ITEMS[Number(id)]);
+  const isVIP = useVipAccess({ game: gameService.getSnapshot().context.state });
 
-  const vipIsRequired =
-    tradeable?.isVip &&
-    !hasVipAccess({
-      game: gameService.getSnapshot().context.state,
-    });
+  const vipIsRequired = tradeable?.isVip && !isVIP;
 
   return (
     <>
@@ -179,6 +179,11 @@ export const TradeableOffers: React.FC<{
             display={display}
             floorPrice={tradeable?.floor ?? 0}
             onClose={() => setShowMakeOffer(false)}
+            economy={
+              tradeable?.collection === "economies"
+                ? tradeable.economy
+                : undefined
+            }
           />
         </Panel>
       </Modal>
@@ -189,6 +194,7 @@ export const TradeableOffers: React.FC<{
             itemId={itemId}
             display={display}
             offer={(isResource ? selectedOffer : topOffer) as Offer}
+            availableBalance={tradeable?.balance}
             onClose={() => setShowAcceptOffer(false)}
             onOfferAccepted={reload}
           />
@@ -235,6 +241,7 @@ export const TradeableOffers: React.FC<{
                     <Button
                       className="w-full sm:w-fit mr-1"
                       disabled={
+                        disabled ||
                         !tradeable ||
                         !tradeable?.isActive ||
                         limitedPurchasesLeft <= 0
@@ -250,6 +257,7 @@ export const TradeableOffers: React.FC<{
                   {topOffer && tradeable?.isActive && !vipIsRequired && (
                     <Button
                       disabled={
+                        disabled ||
                         topOffer.offeredBy.id === farmId ||
                         limitedTradesLeft <= 0
                       }
@@ -316,7 +324,7 @@ export const TradeableOffers: React.FC<{
                   id={farmId}
                   tableType="offers"
                   onClick={
-                    tradeable.isActive && !vipIsRequired
+                    tradeable.isActive && !vipIsRequired && !disabled
                       ? (offerId) => {
                           handleSelectOffer(offerId);
                           setShowAcceptOffer(true);
@@ -330,6 +338,7 @@ export const TradeableOffers: React.FC<{
           <div className="w-full justify-end flex sm:pb-2 sm:pr-2">
             <Button
               className="w-full sm:w-fit"
+              disabled={disabled}
               onClick={() => setShowMakeOffer(true)}
             >
               {t("marketplace.makeOffer")}

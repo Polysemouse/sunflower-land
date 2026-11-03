@@ -7,10 +7,12 @@ import { PIXEL_SCALE } from "features/game/lib/constants";
 import { NPCIcon } from "features/island/bumpkin/components/NPC";
 import { NPC_WEARABLES } from "lib/npcs";
 import { Label } from "components/ui/Label";
-import { NPCName } from "lib/npcs";
-import { DeliveryNpcName, NPC_DELIVERY_LEVELS } from "../lib/delivery";
+import type { NPCName } from "lib/npcs";
+import { type DeliveryNpcName, NPC_DELIVERY_LEVELS } from "../lib/delivery";
+import { useAppTranslation } from "lib/i18n/useAppTranslations";
 
 export const LockedOrderCard: React.FC<{ npc: NPCName }> = ({ npc }) => {
+  const { t } = useAppTranslation();
   return (
     <div className="py-1 px-1">
       <ButtonPanel
@@ -45,7 +47,9 @@ export const LockedOrderCard: React.FC<{ npc: NPCName }> = ({ npc }) => {
             height: "25px",
           }}
         >
-          {`Lvl ${NPC_DELIVERY_LEVELS[npc as DeliveryNpcName]}`}
+          {t("level.short", {
+            level: NPC_DELIVERY_LEVELS[npc as DeliveryNpcName]?.level,
+          })}
         </Label>
       </ButtonPanel>
     </div>

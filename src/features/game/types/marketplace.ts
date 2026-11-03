@@ -1,10 +1,10 @@
-import { BumpkinItem } from "./bumpkin";
-import { GameState, InventoryItemName, IslandType } from "./game";
+import type { BumpkinItem } from "./bumpkin";
+import type { GameState, InventoryItemName, IslandType } from "./game";
 import { KNOWN_ITEMS } from ".";
 import { TRADE_LIMITS } from "../actions/tradeLimits";
 import { hasVipAccess } from "../lib/vipAccess";
 import { isTemporaryCollectibleActive } from "../lib/collectibleBuilt";
-import { PetNFTName } from "./pets";
+import type { PetNFTName } from "./pets";
 import { setPrecision } from "lib/utils/formatNumber";
 import Decimal from "decimal.js-light";
 
@@ -14,7 +14,12 @@ export const MARKETPLACE_TAX = 0.1;
 // Give it 15 minutes to resolve (cannot cancel while it is being purchased)
 export const TRADE_INITIATION_MS = 15 * 60 * 1000;
 
-export type CollectionName = "collectibles" | "wearables" | "buds" | "pets";
+export type CollectionName =
+  | "collectibles"
+  | "wearables"
+  | "buds"
+  | "pets"
+  | "economies";
 
 export type Tradeable =
   | {
@@ -24,7 +29,8 @@ export type Tradeable =
       isActive: boolean;
       isVip: boolean;
       supply: number | undefined;
-      collection: Exclude<CollectionName, "pets">;
+      balance?: number;
+      collection: Exclude<CollectionName, "pets" | "economies">;
       expiresAt?: number;
     }
   | {
@@ -34,10 +40,99 @@ export type Tradeable =
       isActive: boolean;
       isVip: boolean;
       supply: number | undefined;
+      balance?: number;
       collection: Extract<CollectionName, "pets">;
       expiresAt?: number;
       experience?: number;
+    }
+  | {
+      id: number;
+      floor: number;
+      lastSalePrice: number;
+      isActive: boolean;
+      isVip: boolean;
+      supply: number | undefined;
+      collection: "economies";
+      economy: string;
+      economyLabel: string;
+      currencyName: string;
+      /** From API: `items[currencyName].name` (human-readable marketplace label). */
+      currencyDisplayName?: string;
+      /** From API: `items[currencyName].description`. */
+      currencyDescription?: string;
+      /** Relative to `VITE_PRIVATE_IMAGE_URL` or absolute URL (from API). */
+      image?: string;
+      balance?: number;
+      expiresAt?: number;
+      /** Lifetime FLOWER volume (marketplace activity); omitted on older API responses. */
+      volume?: number;
     };
+
+export type EconomyMinigameRank = {
+  economy: string;
+  economyLabel: string;
+  playerCount: number;
+  marketplaceItemId: number | null;
+  image?: string;
+};
+
+/**
+ * A claimable reward an economy offers in exchange for one of its items.
+ *
+ * Example: trade 5 Chicken Feet (earned inside the "Chicken Rescue" economy)
+ * for 25 Marks. The `id` is opaque to the client and is echoed back when the
+ * player triggers the `economies.exchanged` effect so the backend can credit
+ * the correct reward.
+ */
+export type EconomyExchange = {
+  id: string;
+  /** Slug of the source economy (e.g. "chicken-rescue"). */
+  economySlug: string;
+  /** Display label of the source economy (e.g. "Chicken Rescue"). */
+  economyLabel: string;
+  /** Image url of the item being exchanged. */
+  itemImage?: string;
+  /** Display name of the item being exchanged (e.g. "Chicken Feet"). */
+  itemName: string;
+  /** Quantity of the item required to redeem this exchange. */
+  itemAmount: number;
+  /** Image url of the reward given. */
+  rewardImage?: string;
+  /** Display name of the reward (e.g. "Marks"). */
+  rewardName: string;
+  /** Quantity of the reward granted. */
+  rewardAmount: number;
+  /** Whether the player has already claimed this exchange. */
+  claimed?: boolean;
+};
+
+/** One offer from `GET /data?type=economies` → `exchanges` (matches API). */
+export type EconomyExchangeOffer = {
+  id: string;
+  slug: string;
+  requirements: Record<string, number>;
+  rewards: { items: Record<string, number> };
+  completedAt?: number;
+};
+
+export type PlayerEconomySummary = {
+  balances: Record<string, number>;
+  exchangeCompletions: Record<string, number>;
+};
+
+/** Row from `GET /data?type=economies` (hub list, sorted by player count). */
+export type EconomyListRow = {
+  slug: string;
+  label: string;
+  description: string;
+  playerCount: number;
+  image?: string;
+  marketplaceItemId: number | null;
+  /** Count of config items with `trophy: true` (collectible slots). */
+  trophyTotal: number;
+  /** How many trophy slots the farm has collected (economies hub data only). */
+  trophiesCollected?: number;
+};
 
 export type Offer = {
   tradeId: string;
@@ -136,7 +231,10 @@ export type MarketplaceTrends = {
 export type MarketplaceProfile = {
   id: number;
   username: string;
+  /** Within-ascension level. Meaningless without `ascension`. */
   level: number;
+  /** Ascension band this level belongs to (0 = pre-ascension). */
+  ascension: number;
   tokenUri: string;
   totalTrades: number;
   profit: number;
@@ -193,7 +291,13 @@ export function getPriceHistory({
   const startDate = new Date(from);
   const today = new Date();
 
-  for (let date = startDate; date <= today; date.setDate(date.getDate() + 1)) {
+  // Step in UTC days: the keys are UTC dates, and local-time stepping drifts
+  // a day across a daylight-saving change.
+  for (
+    let date = startDate;
+    date <= today;
+    date.setUTCDate(date.getUTCDate() + 1)
+  ) {
     const dateKey = date.toISOString().split("T")[0];
 
     // Find matching history entry for this date
@@ -304,19 +408,31 @@ export function getMarketPrice({
 
 const ISLAND_RESOURCE_TAXES: Record<IslandType, number> = {
   basic: 1,
-  spring: 0.5,
-  desert: 0.2,
+  spring: 0.55,
+  desert: 0.25,
   volcano: 0.15,
+  swamp: 0.15,
+  // Ascension islands (spooky onward) reuse the swamp value for now.
+  spooky: 0.15,
+  crystal: 0.15,
+  galaxy: 0.15,
+  marble: 0.15,
 };
 
-export function getResourceTax({ game }: { game: GameState }) {
+export function getResourceTax({
+  game,
+  now,
+}: {
+  game: GameState;
+  now: number;
+}) {
   let tax = new Decimal(ISLAND_RESOURCE_TAXES[game.island.type]);
 
-  if (hasVipAccess({ game })) {
+  if (hasVipAccess({ game, now })) {
     tax = tax.mul(0.5);
   }
 
-  if (isTemporaryCollectibleActive({ name: "Trading Shrine", game })) {
+  if (isTemporaryCollectibleActive({ name: "Trading Shrine", game, now })) {
     tax = tax.sub(0.025);
   }
 

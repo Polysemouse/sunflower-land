@@ -3,11 +3,9 @@ import React, { useContext, useEffect, useRef, useState } from "react";
 import { IRON_RECOVERY_TIME } from "features/game/lib/constants";
 import { Context } from "features/game/GameProvider";
 
-import { getTimeLeft } from "lib/utils/time";
-import { InventoryItemName, Rock, Skills } from "features/game/types/game";
-import useUiRefresher from "lib/utils/hooks/useUiRefresher";
+import type { InventoryItemName, Rock, Skills } from "features/game/types/game";
 import { useSelector } from "@xstate/react";
-import { MachineState } from "features/game/lib/gameMachine";
+import type { MachineState } from "features/game/lib/gameMachine";
 import Decimal from "decimal.js-light";
 import { DepletedIron } from "./components/DepletedIron";
 import { DepletingIron } from "./components/DepletingIron";
@@ -15,12 +13,30 @@ import { canMine } from "features/game/lib/resourceNodes";
 import { RecoveredIron } from "./components/RecoveredIron";
 import { useSound } from "lib/utils/hooks/useSound";
 import { getIronDropAmount } from "features/game/events/landExpansion/ironMine";
-import { IronRockName, RockName } from "features/game/types/resources";
-import { useNow } from "lib/utils/hooks/useNow";
+import type { IronRockName, RockName } from "features/game/types/resources";
 import { KNOWN_IDS } from "features/game/types";
+import {
+  getMineBoostWindows,
+  type BoostWindow,
+} from "features/game/lib/boostWindows";
+import { useNodeTimer } from "features/game/lib/useNodeTimer";
 
 const HITS = 3;
 const tool = "Stone Pickaxe";
+
+// Field comparator for the mine boost windows so the selector skips re-renders
+// without allocating JSON strings per rock on every service update.
+const areBoostWindowsEqual = (a: BoostWindow[], b: BoostWindow[]) =>
+  a.length === b.length &&
+  a.every((window, index) => {
+    const other = b[index];
+    return (
+      other !== undefined &&
+      window.from === other.from &&
+      window.to === other.to &&
+      window.speed === other.speed
+    );
+  });
 
 const HasTool = (
   inventory: Partial<Record<InventoryItemName, Decimal>>,
@@ -101,14 +117,25 @@ export const Iron: React.FC<Props> = ({ id }) => {
   );
 
   const skills = useSelector(gameService, selectSkills, compareSkills);
+  // Live windowed mine-recovery speed boosts (Ore Hourglass, Mole Shrine,
+  // totems). Recomputed from full state but only re-renders when the windows
+  // actually change, so the countdown reacts to boosters placed/expired mid-recover.
+  const mineBoostWindows = useSelector(
+    gameService,
+    (state) => getMineBoostWindows(state.context.state, ironRockName),
+    areBoostWindowsEqual,
+  );
 
   const hasTool = HasTool(inventory, resource);
-  const readyAt = resource.stone.minedAt + IRON_RECOVERY_TIME * 1000;
-  const now = useNow({ live: true, autoEndAt: readyAt });
-  const timeLeft = getTimeLeft(resource.stone.minedAt, IRON_RECOVERY_TIME, now);
-  const mined = !canMine(resource, ironRockName);
 
-  useUiRefresher({ active: mined });
+  const { minedAt, baseDurationMs } = resource.stone;
+  const { now, countdownSeconds: timeLeft } = useNodeTimer({
+    startedAt: minedAt,
+    baseDurationMs,
+    windows: mineBoostWindows,
+    legacyReadyAt: minedAt + IRON_RECOVERY_TIME * 1000,
+  });
+  const mined = !canMine(resource, ironRockName, state, now);
 
   const strike = () => {
     if (!hasTool) return;
@@ -143,23 +170,21 @@ export const Iron: React.FC<Props> = ({ id }) => {
           itemId,
         }).amount,
     );
-    const newState = gameService.send("ironRock.mined", {
+    gameService.send("ironRock.mined", {
       index: id,
     });
 
-    if (!newState.matches("hoarding")) {
-      if (showAnimations) {
-        setCollecting(true);
-        harvested.current = ironMined.toNumber();
-      }
+    if (showAnimations) {
+      setCollecting(true);
+      harvested.current = ironMined.toNumber();
+    }
 
-      miningFallAudio();
+    miningFallAudio();
 
-      if (showAnimations) {
-        await new Promise((res) => setTimeout(res, 3000));
-        setCollecting(false);
-        harvested.current = 0;
-      }
+    if (showAnimations) {
+      await new Promise((res) => setTimeout(res, 3000));
+      setCollecting(false);
+      harvested.current = 0;
     }
   };
 

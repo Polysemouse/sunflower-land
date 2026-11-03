@@ -1,29 +1,30 @@
 import Decimal from "decimal.js-light";
-import {
-  COLLECTIBLES_DIMENSIONS,
-  getKeys,
-} from "features/game/types/craftables";
-
+import { COLLECTIBLES_DIMENSIONS } from "features/game/types/craftables";
+import { getKeys } from "lib/object";
 import { trackFarmActivity } from "features/game/types/farmActivity";
 
-import { GameState, Keys } from "../../types/game";
+import type { GameState, Keys } from "../../types/game";
 import {
-  HeliosBlacksmithItem,
+  type HeliosBlacksmithItem,
   HELIOS_BLACKSMITH_ITEMS,
   POTION_HOUSE_ITEMS,
-  PotionHouseItemName,
-  TreasureCollectibleItem,
+  type PotionHouseItemName,
+  type TreasureCollectibleItem,
   TREASURE_COLLECTIBLE_ITEM,
   ARTEFACT_SHOP_KEYS,
   POTION_HOUSE_EXOTIC_CROPS,
-  CraftableCollectible,
+  type CraftableCollectible,
 } from "features/game/types/collectibles";
 import { detectCollision } from "features/game/expansion/placeable/lib/collisionDetection";
 import { produce } from "immer";
-import { ExoticCropName } from "features/game/types/beans";
+import type { ExoticCropName } from "features/game/types/beans";
 import { isExoticCrop } from "features/game/types/crops";
-import { PET_SHOP_ITEMS, PetShopItemName } from "features/game/types/petShop";
-import { Coordinates } from "features/game/expansion/components/MapPlacement";
+import {
+  PET_SHOP_ITEMS,
+  type PetShopItemName,
+} from "features/game/types/petShop";
+import type { Coordinates } from "features/game/expansion/components/MapPlacement";
+import { mfTrack } from "lib/moonforgeAnalytics";
 
 type CraftableCollectibleItem =
   | HeliosBlacksmithItem
@@ -197,6 +198,14 @@ export function craftCollectible({
       [action.name]: oldAmount.add(1) as Decimal,
     };
 
+    if (action.name === "Salt Sculpture") {
+      if (!stateCopy.sculptures) stateCopy.sculptures = {};
+      stateCopy.sculptures["Salt Sculpture"] = {
+        level: 1,
+        upgradedAt: createdAt,
+      };
+    }
+
     if (isKey(action.name)) {
       const keyBoughtAt =
         stateCopy.pumpkinPlaza.keysBought?.treasureShop[action.name]?.boughtAt;
@@ -221,6 +230,8 @@ export function craftCollectible({
         boughtAt: createdAt,
       };
     }
+
+    mfTrack("item_crafted", { item_id: action.name, cost_coins: price });
 
     return stateCopy;
   });

@@ -5,7 +5,7 @@ import { useActor, useSelector } from "@xstate/react";
 import { Context } from "features/game/GameProvider";
 
 import { InnerPanel, OuterPanel } from "components/ui/Panel";
-import { BumpkinProfile } from "./components/BumpkinProfile";
+import { BumpkinProfile } from "./components/bumpkinProfile/BumpkinProfile";
 import { Settings } from "./components/Settings";
 import { PIXEL_SCALE } from "features/game/lib/constants";
 import Decimal from "decimal.js-light";
@@ -13,8 +13,8 @@ import { useAppTranslation } from "lib/i18n/useAppTranslations";
 import { RoundButton } from "components/ui/RoundButton";
 import { SUNNYSIDE } from "assets/sunnyside";
 import { HudContainer } from "components/ui/HudContainer";
-import { useNavigate } from "react-router";
-import { MachineState } from "features/game/lib/gameMachine";
+import { useLocation, useNavigate } from "react-router";
+import type { MachineState } from "features/game/lib/gameMachine";
 import { NPCIcon } from "../bumpkin/components/NPC";
 import { Label } from "components/ui/Label";
 
@@ -22,6 +22,9 @@ import socialPointsIcon from "assets/icons/social_score.webp";
 import loadingIcon from "assets/icons/timer.gif";
 import saveIcon from "assets/icons/save.webp";
 import choreIcon from "assets/icons/chores.webp";
+import farmIcon from "assets/icons/farm.webp";
+import { getInteriorExitRoute } from "features/interior/lib/interiorRoutes";
+import { useVisiting } from "lib/utils/visitUtils";
 import { VisitorGuide } from "./components/VisitorGuide";
 import { Modal } from "components/ui/Modal";
 import { CloseButtonPanel } from "features/game/components/CloseablePanel";
@@ -33,6 +36,28 @@ import { Feed } from "features/social/Feed";
 import { WorldFeedButton } from "features/social/components/WorldFeedButton";
 import classNames from "classnames";
 import { isMobile } from "mobile-device-detect";
+
+/**
+ * `fromRoute` is wherever the player was standing when they started the visit.
+ * Most of those are fine to return to, but the farm-interior surfaces are not:
+ * they render the *current* farm, so dropping back onto one after the visit has
+ * ended leaves the player standing inside a room they never asked to be in.
+ * Send them to their own land instead. `visit` is here for the visit-to-visit
+ * hop, which must not chain back into the farm they just left.
+ *
+ * The last two are the new interior floors — `/interior` and `/level_one`,
+ * which replaced `/home` for players on the interiors experiment.
+ */
+const ENDS_ON_OWN_FARM = [
+  "visit",
+  "home",
+  "barn",
+  "hen-house",
+  "greenhouse",
+  "pet-house",
+  "interior",
+  "level_one",
+];
 
 const _socialPoints = (state: MachineState) => {
   return state.context.state.socialFarming?.points ?? 0;
@@ -77,20 +102,23 @@ export const VisitingHud: React.FC = () => {
 
   const { t } = useAppTranslation();
   const navigate = useNavigate();
+  const { pathname } = useLocation();
+  const { visitedFarmId } = useVisiting();
+
+  /**
+   * The interior floors have no in-world exit button of their own — on the
+   * owner's farm the only way out is the Hud travel button, and the Hud is
+   * swapped for this component while visiting. Without this the sole way out of
+   * someone else's house is to end the visit entirely.
+   */
+  const isInsideVisitedHouse = /\/(interior|level_one)\/?$/.test(pathname);
 
   const handleEndVisit = () => {
     gameService.send("END_VISIT");
 
-    const target =
-      fromRoute &&
-      !fromRoute.includes("visit") &&
-      !fromRoute.includes("home") &&
-      !fromRoute.includes("barn") &&
-      !fromRoute.includes("hen-house") &&
-      !fromRoute.includes("greenhouse") &&
-      !fromRoute.includes("pet-house")
-        ? fromRoute
-        : "/";
+    const target = ENDS_ON_OWN_FARM.some((route) => fromRoute?.includes(route))
+      ? "/"
+      : (fromRoute ?? "/");
 
     navigate(target, { replace: true });
   };
@@ -106,10 +134,22 @@ export const VisitingHud: React.FC = () => {
   };
 
   useEffect(() => {
-    window.addEventListener("popstate", handleEndVisit);
+    const handlePopState = () => {
+      /**
+       * Backing out of a room inside the visited farm — /visit/:id/interior →
+       * /visit/:id — is navigation *within* the visit, so it should just land
+       * the player on the farm they're visiting. Only a pop that leaves the
+       * visit routes altogether ends the visit.
+       */
+      if (window.location.hash.includes("/visit/")) return;
+
+      handleEndVisit();
+    };
+
+    window.addEventListener("popstate", handlePopState);
 
     return () => {
-      window.removeEventListener("popstate", handleEndVisit);
+      window.removeEventListener("popstate", handlePopState);
     };
   }, []);
 
@@ -237,6 +277,26 @@ export const VisitingHud: React.FC = () => {
         )}
       >
         <WorldFeedButton showFeed={showFeed} setShowFeed={setShowFeed} />
+        {isInsideVisitedHouse && (
+          <RoundButton
+            onClick={(e) => {
+              e.stopPropagation();
+              e.preventDefault();
+              navigate(getInteriorExitRoute({ visitedFarmId }));
+            }}
+          >
+            <img
+              src={farmIcon}
+              alt="Back to farm"
+              className="absolute group-active:translate-y-[2px]"
+              style={{
+                width: `${PIXEL_SCALE * 12}px`,
+                left: `${PIXEL_SCALE * 5}px`,
+                top: `${PIXEL_SCALE * 4}px`,
+              }}
+            />
+          </RoundButton>
+        )}
         <RoundButton
           onClick={(e) => {
             e.stopPropagation();

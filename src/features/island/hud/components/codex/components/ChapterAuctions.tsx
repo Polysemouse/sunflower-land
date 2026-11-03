@@ -3,11 +3,11 @@ import React, { useContext, useEffect, useState } from "react";
 import { useActor, useInterpret, useSelector } from "@xstate/react";
 import { SUNNYSIDE } from "assets/sunnyside";
 import {
-  Auction,
-  MachineInterpreter,
+  type Auction,
+  type MachineInterpreter,
   createAuctioneerMachine,
 } from "features/game/lib/auctionMachine";
-import {
+import type {
   AuctionNFT,
   GameState,
   InventoryItemName,
@@ -16,11 +16,11 @@ import * as AuthProvider from "features/auth/lib/Provider";
 import { CloseButtonPanel } from "features/game/components/CloseablePanel";
 import { useAppTranslation } from "lib/i18n/useAppTranslations";
 import { Loading } from "features/auth/components";
-import { BumpkinItem } from "features/game/types/bumpkin";
-import { getKeys } from "features/game/types/decorations";
+import type { BumpkinItem } from "features/game/types/bumpkin";
+import { getKeys } from "lib/object";
 import {
   getCurrentChapter,
-  ChapterName,
+  type ChapterName,
   CHAPTERS,
 } from "features/game/types/chapters";
 import { ButtonPanel, InnerPanel, OuterPanel } from "components/ui/Panel";
@@ -29,16 +29,24 @@ import { ITEM_DETAILS } from "features/game/types/images";
 import lightning from "assets/icons/lightning.png";
 import sfl from "assets/icons/flower_token.webp";
 import chapterIcon from "assets/icons/chapter_icon_3.webp";
+import calendarIcon from "assets/icons/calendar.webp";
 
 import { Label } from "components/ui/Label";
 import { useCountdown } from "lib/utils/hooks/useCountdown";
 import { TimerDisplay } from "features/retreat/components/auctioneer/AuctionDetails";
 import { ModalOverlay } from "components/ui/ModalOverlay";
-import { isMobile } from "mobile-device-detect";
-import { AuthMachineState } from "features/auth/lib/authMachine";
+import { isAndroid, isIOS, isMobile } from "mobile-device-detect";
+import type { AuthMachineState } from "features/auth/lib/authMachine";
 import { getAuctionItemType } from "features/retreat/components/auctioneer/lib/getAuctionItemType";
 import { getAuctionItemDisplay } from "features/retreat/components/auctioneer/lib/getAuctionItemDisplay";
 import { useNow } from "lib/utils/hooks/useNow";
+import {
+  getAndroidCalendarIntentUrl,
+  getAuctionAppleCalendarUrl,
+  getGoogleCalendarUrl,
+} from "lib/utils/calendar";
+import { CONFIG } from "lib/config";
+import { hasExperiment } from "features/game/types/experiments";
 
 type AuctionDetail = {
   supply: number;
@@ -115,8 +123,7 @@ const NextDrop: React.FC<{ auctions: AuctionItems; game: GameState }> = ({
 
   const { image, buffLabels, item } = getAuctionItemDisplay({
     auction: nextDrop,
-    skills: game.bumpkin.skills,
-    collectibles: game.collectibles,
+    game: game,
   });
 
   const nextDropTime = new Date(nextDrop.startAt).toLocaleString("en-AU", {
@@ -236,6 +243,29 @@ const NextDrop: React.FC<{ auctions: AuctionItems; game: GameState }> = ({
   );
 };
 
+/**
+ * iOS → Apple Calendar via the API's .ics, Android → a calendar app that
+ * accepts the intent (else Google Calendar web), otherwise Google Calendar
+ */
+const getCalendarUrl = (drop: Auction, title: string) => {
+  if (isIOS && CONFIG.API_URL) {
+    return getAuctionAppleCalendarUrl(drop.auctionId);
+  }
+
+  const event = {
+    title,
+    startAt: drop.startAt,
+    endAt: drop.endAt,
+    details: "https://sunflower-land.com/play/",
+  };
+
+  if (isAndroid) {
+    return getAndroidCalendarIntentUrl(event);
+  }
+
+  return getGoogleCalendarUrl(event);
+};
+
 const Drops: React.FC<{
   detail: AuctionDetail;
   name: BumpkinItem | InventoryItemName | AuctionNFT;
@@ -248,9 +278,9 @@ const Drops: React.FC<{
 
   const { buffLabels, typeLabel } = getAuctionItemDisplay({
     auction,
-    skills: game.bumpkin.skills,
-    collectibles: game.collectibles,
+    game: game,
   });
+  const hasCalendar = hasExperiment(game, "auctionCalendar");
   const currentChapter = getCurrentChapter(now);
   const chapter = CHAPTERS[currentChapter];
   const chapterSupply = detail.auctions.reduce((acc, drop) => {
@@ -369,11 +399,29 @@ const Drops: React.FC<{
                   </div>
 
                   {drop.startAt > now ? (
-                    <Label type="formula">
-                      {t("season.codex.nextDrop.available", {
-                        dropSupply: drop.supply,
-                      })}
-                    </Label>
+                    <div className="flex items-center">
+                      <Label type="formula">
+                        {t("season.codex.nextDrop.available", {
+                          dropSupply: drop.supply,
+                        })}
+                      </Label>
+                      {hasCalendar && (
+                        <a
+                          href={getCalendarUrl(
+                            drop,
+                            t("auction.calendarEventTitle", {
+                              item: name,
+                            }),
+                          )}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          title={t("auction.addToCalendar")}
+                          className="ml-2"
+                        >
+                          <img src={calendarIcon} className="h-6" />
+                        </a>
+                      )}
+                    </div>
                   ) : (
                     <Label type="danger">{t("statements.soldOut")}</Label>
                   )}
@@ -490,8 +538,7 @@ export const ChapterAuctions: React.FC<Props> = ({
               const { item, image, buffLabels, typeLabel } =
                 getAuctionItemDisplay({
                   auction,
-                  skills: gameState.bumpkin.skills,
-                  collectibles: gameState.collectibles,
+                  game: gameState,
                 });
 
               const remainingAuctions = details.auctions.filter(
@@ -546,9 +593,13 @@ export const ChapterAuctions: React.FC<Props> = ({
                       {remainingLeft === 0 ? (
                         <Label type="danger">{t("season.codex.soldOut")}</Label>
                       ) : remainingLeft <= 50 ? (
-                        <Label type="formula">{`${remainingLeft} left`}</Label>
+                        <Label type="formula">
+                          {t("stock.left", { stock: remainingLeft })}
+                        </Label>
                       ) : (
-                        <Label type="default">{`${remainingLeft} left`}</Label>
+                        <Label type="default">
+                          {t("stock.left", { stock: remainingLeft })}
+                        </Label>
                       )}
                     </div>
                   </div>

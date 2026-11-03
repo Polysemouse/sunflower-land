@@ -1,5 +1,5 @@
 import { OFFLINE_FARM } from "features/game/lib/landData";
-import { assign, createMachine, Interpreter, State } from "xstate";
+import { assign, createMachine, type Interpreter, type State } from "xstate";
 import { CONFIG } from "lib/config";
 import { decodeToken } from "features/auth/actions/login";
 import {
@@ -9,7 +9,7 @@ import {
   DAILY_ATTEMPTS,
   SCORE_TABLE,
 } from "../CropsAndChickensConstants";
-import { GameState } from "features/game/types/game";
+import type { GameState } from "features/game/types/game";
 import { purchaseMinigameItem } from "features/game/events/minigames/purchaseMinigameItem";
 import {
   achievementsUnlocked,
@@ -20,11 +20,11 @@ import {
 import { getJwt, getUrl, loadPortal } from "features/portal/actions/loadPortal";
 import { getAttemptsLeft } from "./cropsAndChickensUtils";
 import { unlockMinigameAchievements } from "features/game/events/minigames/unlockMinigameAchievements";
-import { CropsAndChickensAchievementName } from "../CropsAndChickensAchievements";
+import type { CropsAndChickensAchievementName } from "../CropsAndChickensAchievements";
 import { submitMinigameScore } from "features/game/events/minigames/submitMinigameScore";
 import { startMinigameAttempt } from "features/game/events/minigames/startMinigameAttempt";
-import Decimal from "decimal.js-light";
-import { CropsAndChickensActivityName } from "../CropsAndChickensActivities";
+import type Decimal from "decimal.js-light";
+import type { CropsAndChickensActivityName } from "../CropsAndChickensActivities";
 import { trackMinigameActivities } from "features/game/events/minigames/trackMinigameActivities";
 
 type GameMode = "classic" | "hard";

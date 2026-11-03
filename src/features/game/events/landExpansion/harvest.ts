@@ -1,7 +1,8 @@
-import {
+import type {
   AOE,
   BoostName,
   CriticalHitName,
+  CropFertiliser,
   GameState,
   PlantedCrop,
   Reward,
@@ -9,37 +10,40 @@ import {
   TemperateSeasonName,
 } from "../../types/game";
 import {
-  Crop,
-  CropName,
+  type Crop,
+  type CropName,
   CROPS,
-  GreenHouseCropName,
+  type GreenHouseCropName,
   isAdvancedCrop,
   isBasicCrop,
   isMediumCrop,
   isOvernightCrop,
 } from "../../types/crops";
-import { SEASONAL_SEEDS, SeedName } from "features/game/types/seeds";
+import { SEASONAL_SEEDS, type SeedName } from "features/game/types/seeds";
 import Decimal from "decimal.js-light";
-import { CropPlot } from "features/game/types/game";
+import type { CropPlot } from "features/game/types/game";
 import { produce } from "immer";
 import {
-  Position,
+  type Position,
   isWithinAOE,
 } from "features/game/expansion/placeable/lib/collisionDetection";
 import {
   isCollectibleBuilt,
   isTemporaryCollectibleActive,
 } from "features/game/lib/collectibleBuilt";
+import {
+  computeReadyAt,
+  getCropFertiliserWindows,
+  getCropPlotBoostWindows,
+} from "features/game/lib/boostWindows";
 import { FACTION_ITEMS } from "features/game/lib/factions";
 import {
   getBudYieldBoosts,
   isPlotCrop,
 } from "features/game/lib/getBudYieldBoosts";
 import { isWearableActive } from "features/game/lib/wearables";
-import {
-  getActiveCalendarEvent,
-  getActiveGuardian,
-} from "features/game/types/calendar";
+import { getActiveCalendarEvent } from "features/game/types/calendar";
+import { getActiveGuardian } from "features/game/lib/getActiveGuardian";
 import { COLLECTIBLES_DIMENSIONS } from "features/game/types/craftables";
 import { RESOURCE_DIMENSIONS } from "features/game/types/resources";
 import { setPrecision } from "lib/utils/formatNumber";
@@ -54,11 +58,18 @@ import {
 import { getAffectedWeather } from "./plant";
 import {
   trackFarmActivity,
-  FarmActivityName,
+  type FarmActivityName,
 } from "features/game/types/farmActivity";
 import { isBuffActive } from "features/game/types/buffs";
+import {
+  SKILL_RANKS,
+  getSkillLevel,
+  downgradeChapterCropWeekSkills,
+} from "features/game/types/bumpkinSkills";
+import { CHAPTER_CROP_WEEK_CROP } from "features/game/types/chapterCropWeek";
 import { prngChance } from "lib/prng";
 import { KNOWN_IDS } from "features/game/types";
+import { mfTrack } from "lib/moonforgeAnalytics";
 export type LandExpansionHarvestAction = {
   type: "crop.harvested";
   index: string;
@@ -104,28 +115,94 @@ export const isWinterCrop = (
   return seasonalSeeds.winter.includes(`${cropName} Seed` as SeedName);
 };
 
-export const isReadyToHarvest = (
-  createdAt: number,
+/**
+ * When a planted crop is ready, across both boost models. New crops (with
+ * `baseDurationMs`) derive their ready time live from the crop-plot speed windows
+ * plus any per-plot fertiliser (Rapid Root / Sproutroot Surprise) window; legacy
+ * crops use their back-dated `plantedAt` + base grow time.
+ *
+ * Branching on `baseDurationMs` — NOT the `SPEED_BOOSTS` flag — is intentional:
+ * the marker makes a crop permanently speed-rate, so it keeps windowed timing
+ * (and its baked permanent boosts) even if the flag is rolled back, matching every
+ * other windowed activity. The fertiliser windows are merged unconditionally here
+ * for the same reason as the collectible windows; only the plant / fertilise WRITE
+ * paths gate on the flag.
+ */
+export const getCropReadyAt = (
   plantedCrop: PlantedCrop,
   cropDetails: Crop,
-) => {
-  return createdAt - plantedCrop.plantedAt >= cropDetails.harvestSeconds * 1000;
+  game: GameState,
+  fertiliser?: CropFertiliser,
+): number => {
+  if (plantedCrop.baseDurationMs !== undefined) {
+    return computeReadyAt({
+      startedAt: plantedCrop.plantedAt,
+      baseDurationMs: plantedCrop.baseDurationMs,
+      windows: [
+        ...getCropPlotBoostWindows(game),
+        ...getCropFertiliserWindows(fertiliser),
+      ],
+    });
+  }
+
+  return plantedCrop.plantedAt + cropDetails.harvestSeconds * 1000;
 };
 
-export function isCropGrowing(plot: CropPlot) {
+export const isReadyToHarvest = (
+  now: number,
+  plantedCrop: PlantedCrop,
+  cropDetails: Crop,
+  game: GameState,
+  fertiliser?: CropFertiliser,
+) => {
+  return now >= getCropReadyAt(plantedCrop, cropDetails, game, fertiliser);
+};
+
+export function isCropGrowing(plot: CropPlot, game: GameState) {
   const crop = plot.crop;
   if (!crop) return false;
 
   const cropDetails = CROPS[crop.name];
-  return !isReadyToHarvest(Date.now(), crop, cropDetails);
+  return !isReadyToHarvest(
+    Date.now(),
+    crop,
+    cropDetails,
+    game,
+    plot.fertiliser,
+  );
 }
+
+/**
+ * The crop's real grow duration (ms), used to gate AOE yield-boost
+ * re-availability. New crops derive it from the live speed windows so an active
+ * Sparrow Shrine shortens it to match the actual time-to-harvest (matching how
+ * legacy crops folded the shrine into `boostedTime`); legacy crops keep their
+ * back-dated boosted time.
+ */
+const getCropGrowDurationMs = (
+  cropName: CropName | GreenHouseCropName,
+  plantedCrop: PlantedCrop | undefined,
+  game: GameState,
+  fertiliser?: CropFertiliser,
+): number => {
+  const cropDetails = CROPS[cropName as CropName];
+  return plantedCrop?.baseDurationMs !== undefined
+    ? getCropReadyAt(plantedCrop, cropDetails, game, fertiliser) -
+        plantedCrop.plantedAt
+    : cropDetails.harvestSeconds * 1000 - (plantedCrop?.boostedTime ?? 0);
+};
 
 type CropYieldAmountArgs = {
   crop: CropName | GreenHouseCropName;
   plot?: CropPlot;
   game: GameState;
   createdAt: number;
-  prngArgs: { farmId: number; counter: number };
+  /**
+   * When omitted, all chance-based crit drops resolve to `false`. Use
+   * this for previews / hover tooltips where probabilistic boosts must
+   * not appear.
+   */
+  prngArgs?: { farmId: number; counter: number };
 };
 
 const getMultiplicativeCropYield = ({
@@ -135,16 +212,27 @@ const getMultiplicativeCropYield = ({
 }: CropYieldAmountArgs) => {
   let amount = 1;
   const boostsUsed: { name: BoostName; value: string }[] = [];
+  const chanceBoostsUsed: { name: BoostName; value: string; chance: number }[] =
+    [];
 
   const { inventory } = game;
 
   const itemId = KNOWN_IDS[crop];
-  const criticalDrop = (criticalHitName: CriticalHitName, chance: number) =>
-    prngChance({ ...prngArgs, itemId, chance, criticalHitName });
+  const criticalDrop = (
+    criticalHitName: CriticalHitName,
+    chance: number,
+    value: string,
+  ) => {
+    if (!prngArgs) {
+      chanceBoostsUsed.push({ name: criticalHitName, value, chance });
+      return false;
+    }
+    return prngChance({ ...prngArgs, itemId, chance, criticalHitName });
+  };
 
   if (
     isWearableActive({ name: "Green Amulet", game }) &&
-    criticalDrop("Green Amulet", 10)
+    criticalDrop("Green Amulet", 10, "x10")
   ) {
     amount *= 10;
     boostsUsed.push({ name: "Green Amulet", value: "x10" });
@@ -205,7 +293,7 @@ const getMultiplicativeCropYield = ({
     boostsUsed.push({ name: "Coder", value: "x1.2" });
   }
 
-  return { amount, boostsUsed };
+  return { amount, boostsUsed, chanceBoostsUsed };
 };
 
 /**
@@ -221,32 +309,51 @@ export function getCropYieldAmount({
   amount: number;
   aoe: AOE;
   boostsUsed: { name: BoostName; value: string }[];
+  chanceBoostsUsed: { name: BoostName; value: string; chance: number }[];
 } {
-  const { amount: multiplicativeAmount, boostsUsed } =
-    getMultiplicativeCropYield({
-      crop,
-      game,
-      plot,
-      createdAt,
-      prngArgs,
-    });
+  const {
+    amount: multiplicativeAmount,
+    boostsUsed,
+    chanceBoostsUsed,
+  } = getMultiplicativeCropYield({
+    crop,
+    game,
+    plot,
+    createdAt,
+    prngArgs,
+  });
   let amount = multiplicativeAmount;
 
   const { bumpkin, buds, aoe } = game;
   const updatedAoe = cloneDeep(aoe);
-  const skills = bumpkin?.skills ?? {};
+  // Crystal Leaf (the CHAPTER_CROP_WEEK event crop) ignores upgraded Crops-skill ranks
+  // (base skill still applies) — cap here so every downstream yield/AOE read uses
+  // the neutralised ranks without touching the player's stored skills.
+  const skills =
+    crop === CHAPTER_CROP_WEEK_CROP
+      ? downgradeChapterCropWeekSkills(bumpkin?.skills ?? {})
+      : (bumpkin?.skills ?? {});
   const itemId = KNOWN_IDS[crop];
-  const criticalDrop = (criticalHitName: CriticalHitName, chance: number) =>
-    prngChance({ ...prngArgs, itemId, chance, criticalHitName });
+  const criticalDrop = (
+    criticalHitName: CriticalHitName,
+    chance: number,
+    value: string,
+  ) => {
+    if (!prngArgs) {
+      chanceBoostsUsed.push({ name: criticalHitName, value, chance });
+      return false;
+    }
+    return prngChance({ ...prngArgs, itemId, chance, criticalHitName });
+  };
 
-  if (isBuffActive({ buff: "Power hour", game })) {
+  if (isBuffActive({ buff: "Power hour", game, now: createdAt })) {
     amount += 0.2;
   }
 
   if (
     crop === "Potato" &&
     isCollectibleBuilt({ name: "Peeled Potato", game }) &&
-    criticalDrop("Peeled Potato", 20)
+    criticalDrop("Peeled Potato", 20, "+1")
   ) {
     amount += 1;
     boostsUsed.push({ name: "Peeled Potato", value: "+1" });
@@ -255,7 +362,7 @@ export function getCropYieldAmount({
   if (
     crop === "Potato" &&
     isCollectibleBuilt({ name: "Potent Potato", game }) &&
-    criticalDrop("Potent Potato", 10 / 3)
+    criticalDrop("Potent Potato", 10 / 3, "+10")
   ) {
     amount += 10;
     boostsUsed.push({ name: "Potent Potato", value: "+10" });
@@ -264,7 +371,7 @@ export function getCropYieldAmount({
   if (
     crop === "Sunflower" &&
     isCollectibleBuilt({ name: "Stellar Sunflower", game }) &&
-    criticalDrop("Stellar Sunflower", 10 / 3)
+    criticalDrop("Stellar Sunflower", 10 / 3, "+10")
   ) {
     amount += 10;
     boostsUsed.push({ name: "Stellar Sunflower", value: "+10" });
@@ -273,7 +380,7 @@ export function getCropYieldAmount({
   if (
     crop === "Radish" &&
     isCollectibleBuilt({ name: "Radical Radish", game }) &&
-    criticalDrop("Radical Radish", 10 / 3)
+    criticalDrop("Radical Radish", 10 / 3, "+10")
   ) {
     amount += 10;
     boostsUsed.push({ name: "Radical Radish", value: "+10" });
@@ -377,9 +484,13 @@ export function getCropYieldAmount({
     boostsUsed.push({ name: "Giant Kale", value: "+2" });
   }
 
-  if (plot?.fertiliser?.name === "Sprout Mix") {
+  const sproutMixYieldFertiliser = plot?.fertiliser?.name;
+  if (
+    sproutMixYieldFertiliser === "Sprout Mix" ||
+    sproutMixYieldFertiliser === "Sproutroot Surprise"
+  ) {
     amount += 0.2;
-    boostsUsed.push({ name: "Sprout Mix", value: "+0.2" });
+    boostsUsed.push({ name: sproutMixYieldFertiliser, value: "+0.2" });
     if (isCollectibleBuilt({ name: "Knowledge Crab", game })) {
       amount += 0.2;
       boostsUsed.push({ name: "Knowledge Crab", value: "+0.2" });
@@ -411,7 +522,13 @@ export function getCropYieldAmount({
     boostsUsed.push({ name: "Infernal Pitchfork", value: "+3" });
   }
 
-  if (isTemporaryCollectibleActive({ name: "Legendary Shrine", game })) {
+  if (
+    isTemporaryCollectibleActive({
+      name: "Legendary Shrine",
+      game,
+      now: createdAt,
+    })
+  ) {
     amount += 1;
     boostsUsed.push({ name: "Legendary Shrine", value: "+1" });
   }
@@ -466,21 +583,88 @@ export function getCropYieldAmount({
         updatedAoe,
         "Scary Mike",
         { dx, dy },
-        CROPS[crop].harvestSeconds * 1000 - (plot?.crop?.boostedTime ?? 0),
+        getCropGrowDurationMs(crop, plot?.crop, game, plot?.fertiliser),
         createdAt,
       );
 
       if (canUseAoe) {
         setAOELastUsed(updatedAoe, "Scary Mike", { dx, dy }, createdAt);
 
-        if (game.bumpkin.skills["Horror Mike"]) {
-          amount = amount + 0.3;
-          boostsUsed.push({ name: "Horror Mike", value: "+0.3" });
+        const horrorMikeLevel = getSkillLevel(skills, "Horror Mike");
+        if (horrorMikeLevel) {
+          // Base Scary Mike +0.2 plus the skill's marginal bonus, rounded to
+          // avoid float drift (0.2 + 0.1 = 0.30000000000000004).
+          const total =
+            Math.round(
+              (0.2 + SKILL_RANKS["Horror Mike"].aoeYield[horrorMikeLevel - 1]) *
+                100,
+            ) / 100;
+          amount = amount + total;
+          boostsUsed.push({ name: "Horror Mike", value: `+${total}` });
         } else {
           amount = amount + 0.2;
+          boostsUsed.push({ name: "Scary Mike", value: "+0.2" });
         }
       }
-      boostsUsed.push({ name: "Scary Mike", value: "+0.2" });
+    }
+  }
+
+  // Chonky Scarecrow: adds a rank-scaled yield to basic crops inside the Basic
+  // Scarecrow AOE. This is net-new (the collectible itself only reduces growth
+  // time), and rank 1 grants no yield, so we skip when the bonus is 0. Uses a
+  // dedicated "Chonky Scarecrow" cooldown slot so it never clobbers the Basic
+  // Scarecrow growth-time AOE's slot.
+  const chonkyScarecrowLevel = getSkillLevel(skills, "Chonky Scarecrow");
+  if (
+    chonkyScarecrowLevel &&
+    SKILL_RANKS["Chonky Scarecrow"].aoeYield[chonkyScarecrowLevel - 1] > 0 &&
+    isCollectibleOnFarm({ name: "Basic Scarecrow", game }) &&
+    isPlotCrop(crop) &&
+    isBasicCrop(crop) &&
+    plot &&
+    plot.x !== undefined &&
+    plot.y !== undefined
+  ) {
+    const coordinates = game.collectibles["Basic Scarecrow"]![0].coordinates!;
+
+    const plotPosition = {
+      x: plot.x,
+      y: plot.y,
+      ...RESOURCE_DIMENSIONS["Crop Plot"],
+    };
+
+    const basicScarecrowPosition = {
+      ...COLLECTIBLES_DIMENSIONS["Basic Scarecrow"],
+      ...coordinates,
+    };
+
+    if (
+      isWithinAOE(
+        "Basic Scarecrow",
+        basicScarecrowPosition,
+        plotPosition,
+        skills,
+      )
+    ) {
+      const dx = plot.x - coordinates.x;
+      const dy = plot.y - coordinates.y;
+
+      const canUseAoe = canUseYieldBoostAOE(
+        updatedAoe,
+        "Chonky Scarecrow",
+        { dx, dy },
+        getCropGrowDurationMs(crop, plot?.crop, game, plot?.fertiliser),
+        createdAt,
+      );
+
+      if (canUseAoe) {
+        setAOELastUsed(updatedAoe, "Chonky Scarecrow", { dx, dy }, createdAt);
+
+        const bonus =
+          SKILL_RANKS["Chonky Scarecrow"].aoeYield[chonkyScarecrowLevel - 1];
+        amount = amount + bonus;
+        boostsUsed.push({ name: "Chonky Scarecrow", value: `+${bonus}` });
+      }
     }
   }
 
@@ -515,7 +699,7 @@ export function getCropYieldAmount({
         updatedAoe,
         "Sir Goldensnout",
         { dx, dy },
-        CROPS[crop].harvestSeconds * 1000 - (plot?.crop?.boostedTime ?? 0),
+        getCropGrowDurationMs(crop, plot?.crop, game, plot?.fertiliser),
         createdAt,
       );
 
@@ -564,7 +748,7 @@ export function getCropYieldAmount({
         updatedAoe,
         "Laurie the Chuckle Crow",
         { dx, dy },
-        CROPS[crop].harvestSeconds * 1000 - (plot.crop?.boostedTime ?? 0),
+        getCropGrowDurationMs(crop, plot.crop, game, plot.fertiliser),
         createdAt,
       );
 
@@ -575,14 +759,23 @@ export function getCropYieldAmount({
           { dx, dy },
           createdAt,
         );
-        if (game.bumpkin.skills["Laurie's Gains"]) {
-          amount = amount + 0.3;
-          boostsUsed.push({ name: "Laurie's Gains", value: "+0.3" });
+        const lauriesGainsLevel = getSkillLevel(skills, "Laurie's Gains");
+        if (lauriesGainsLevel) {
+          // Base Laurie +0.2 plus the skill's marginal bonus, rounded to avoid
+          // float drift (0.2 + 0.1 = 0.30000000000000004).
+          const total =
+            Math.round(
+              (0.2 +
+                SKILL_RANKS["Laurie's Gains"].aoeYield[lauriesGainsLevel - 1]) *
+                100,
+            ) / 100;
+          amount = amount + total;
+          boostsUsed.push({ name: "Laurie's Gains", value: `+${total}` });
         } else {
           amount = amount + 0.2;
+          boostsUsed.push({ name: "Laurie the Chuckle Crow", value: "+0.2" });
         }
       }
-      boostsUsed.push({ name: "Laurie the Chuckle Crow", value: "+0.2" });
     }
   }
 
@@ -615,7 +808,7 @@ export function getCropYieldAmount({
         updatedAoe,
         "Queen Cornelia",
         { dx, dy },
-        CROPS[crop].harvestSeconds * 1000 - (plot?.crop?.boostedTime ?? 0),
+        getCropGrowDurationMs(crop, plot?.crop, game, plot?.fertiliser),
         createdAt,
       );
 
@@ -673,7 +866,7 @@ export function getCropYieldAmount({
         updatedAoe,
         "Gnome",
         { dx, dy },
-        CROPS[crop].harvestSeconds * 1000 - (plot?.crop?.boostedTime ?? 0),
+        getCropGrowDurationMs(crop, plot?.crop, game, plot?.fertiliser),
         createdAt,
       );
       if (canUseAoe) {
@@ -719,15 +912,25 @@ export function getCropYieldAmount({
   }
 
   if (plot?.beeSwarm) {
-    let beeSwarmBonus = 0.2;
-    boostsUsed.push({ name: "Bee Swarm Bonus", value: "+0.2" });
-    if (skills["Pollen Power Up"]) {
-      beeSwarmBonus += 0.1;
-      boostsUsed.push({ name: "Pollen Power Up", value: "+0.1" });
+    const count = plot.beeSwarm.count;
+    let perSwarm = 0.2;
+    boostsUsed.push({
+      name: "Bee Swarm Bonus",
+      value: `+${(0.2 * count).toFixed(1)}`,
+    });
+    const pollenPowerUpLevel = getSkillLevel(skills, "Pollen Power Up");
+    if (pollenPowerUpLevel) {
+      const bonus =
+        SKILL_RANKS["Pollen Power Up"].ranks[pollenPowerUpLevel - 1];
+      perSwarm += bonus;
+      boostsUsed.push({
+        name: "Pollen Power Up",
+        // toFixed(2) then back to Number to drop float noise AND trailing
+        // zeros, so rank 1 still reads "+0.1" (not "+0.10").
+        value: `+${Number((bonus * count).toFixed(2))}`,
+      });
     }
-    // Multiply by the amount of stacked beeswarms
-    beeSwarmBonus *= plot.beeSwarm.count;
-    amount += beeSwarmBonus;
+    amount += perSwarm * count;
   }
 
   if (crop === "Soybean" && isCollectibleBuilt({ name: "Soybliss", game })) {
@@ -735,49 +938,56 @@ export function getCropYieldAmount({
     boostsUsed.push({ name: "Soybliss", value: "+1" });
   }
 
-  if (skills["Young Farmer"] && isBasicCrop(crop)) {
-    amount += 0.1;
-    boostsUsed.push({ name: "Young Farmer", value: "+0.1" });
+  const youngFarmerLevel = getSkillLevel(skills, "Young Farmer");
+  if (youngFarmerLevel && isBasicCrop(crop)) {
+    const v = SKILL_RANKS["Young Farmer"].ranks[youngFarmerLevel - 1];
+    amount += v;
+    boostsUsed.push({ name: "Young Farmer", value: `+${v}` });
   }
 
-  if (skills["Experienced Farmer"] && isMediumCrop(crop)) {
-    amount += 0.1;
-    boostsUsed.push({ name: "Experienced Farmer", value: "+0.1" });
+  const experiencedFarmerLevel = getSkillLevel(skills, "Experienced Farmer");
+  if (experiencedFarmerLevel && isMediumCrop(crop)) {
+    const v =
+      SKILL_RANKS["Experienced Farmer"].ranks[experiencedFarmerLevel - 1];
+    amount += v;
+    boostsUsed.push({ name: "Experienced Farmer", value: `+${v}` });
   }
 
-  if (skills["Old Farmer"] && isAdvancedCrop(crop)) {
-    amount += 0.1;
-    boostsUsed.push({ name: "Old Farmer", value: "+0.1" });
+  const oldFarmerLevel = getSkillLevel(skills, "Old Farmer");
+  if (oldFarmerLevel && isAdvancedCrop(crop)) {
+    const v = SKILL_RANKS["Old Farmer"].ranks[oldFarmerLevel - 1];
+    amount += v;
+    boostsUsed.push({ name: "Old Farmer", value: `+${v}` });
   }
 
-  if (skills["Acre Farm"] && isAdvancedCrop(crop)) {
-    amount += 1;
-    boostsUsed.push({ name: "Acre Farm", value: "+1" });
+  const acreFarmLevel = getSkillLevel(skills, "Acre Farm");
+  if (acreFarmLevel) {
+    const { buff, debuff } = SKILL_RANKS["Acre Farm"];
+    const up = buff[acreFarmLevel - 1];
+    const down = debuff[acreFarmLevel - 1];
+    if (isAdvancedCrop(crop)) {
+      amount += up;
+      boostsUsed.push({ name: "Acre Farm", value: `+${up}` });
+    }
+    if (isMediumCrop(crop) || isBasicCrop(crop)) {
+      amount -= down;
+      boostsUsed.push({ name: "Acre Farm", value: `-${down}` });
+    }
   }
 
-  if (skills["Acre Farm"] && isMediumCrop(crop)) {
-    amount -= 0.5;
-    boostsUsed.push({ name: "Acre Farm", value: "-0.5" });
-  }
-
-  if (skills["Acre Farm"] && isBasicCrop(crop)) {
-    amount -= 0.5;
-    boostsUsed.push({ name: "Acre Farm", value: "-0.5" });
-  }
-
-  if (skills["Hectare Farm"] && isAdvancedCrop(crop)) {
-    amount -= 0.5;
-    boostsUsed.push({ name: "Hectare Farm", value: "-0.5" });
-  }
-
-  if (skills["Hectare Farm"] && isMediumCrop(crop)) {
-    amount += 1;
-    boostsUsed.push({ name: "Hectare Farm", value: "+1" });
-  }
-
-  if (skills["Hectare Farm"] && isBasicCrop(crop)) {
-    amount += 1;
-    boostsUsed.push({ name: "Hectare Farm", value: "+1" });
+  const hectareFarmLevel = getSkillLevel(skills, "Hectare Farm");
+  if (hectareFarmLevel) {
+    const { buff, debuff } = SKILL_RANKS["Hectare Farm"];
+    const up = buff[hectareFarmLevel - 1];
+    const down = debuff[hectareFarmLevel - 1];
+    if (isMediumCrop(crop) || isBasicCrop(crop)) {
+      amount += up;
+      boostsUsed.push({ name: "Hectare Farm", value: `+${up}` });
+    }
+    if (isAdvancedCrop(crop)) {
+      amount -= down;
+      boostsUsed.push({ name: "Hectare Farm", value: `-${down}` });
+    }
   }
 
   if (isCollectibleBuilt({ game, name: "Giant Onion" }) && crop === "Onion") {
@@ -817,6 +1027,7 @@ export function getCropYieldAmount({
     amount: Number(setPrecision(amount)),
     aoe: updatedAoe,
     boostsUsed,
+    chanceBoostsUsed,
   };
 }
 
@@ -847,10 +1058,14 @@ export function getReward({
       criticalHitName,
     });
 
+  const goldenSunflowerLevel = getSkillLevel(skills, "Golden Sunflower");
   if (
-    skills["Golden Sunflower"] &&
+    goldenSunflowerLevel &&
     crop === "Sunflower" &&
-    getPrngChance("Golden Sunflower", 1 / 7)
+    getPrngChance(
+      "Golden Sunflower",
+      SKILL_RANKS["Golden Sunflower"].ranks[goldenSunflowerLevel - 1],
+    )
   ) {
     items.push({
       amount: 0.35,
@@ -904,6 +1119,13 @@ export function harvestCropFromPlot({
     throw new Error("Plot does not exist");
   }
 
+  // A lifted plot keeps growing while it sits in the inventory - the pause is
+  // only applied when it is placed back down, so harvesting an unplaced plot
+  // would side-step it entirely.
+  if (plot.x === undefined && plot.y === undefined) {
+    throw new Error("Plot is not placed");
+  }
+
   const cropAffectedBy = getAffectedWeather({
     id: plotId,
     game,
@@ -917,7 +1139,7 @@ export function harvestCropFromPlot({
     throw new Error("Nothing was planted");
   }
 
-  const { name: cropName, plantedAt } = plot.crop;
+  const { name: cropName } = plot.crop;
 
   const counter = game.farmActivity[`${cropName} Harvested`] ?? 0;
 
@@ -935,9 +1157,15 @@ export function harvestCropFromPlot({
         prngArgs: { farmId, counter },
       });
 
-  const { harvestSeconds } = CROPS[cropName];
-
-  if (createdAt - plantedAt < harvestSeconds * 1000) {
+  if (
+    !isReadyToHarvest(
+      createdAt,
+      plot.crop,
+      CROPS[cropName],
+      game,
+      plot.fertiliser,
+    )
+  ) {
     throw new Error("Not ready");
   }
 
@@ -1017,6 +1245,8 @@ export function harvest({
       boostNames: boostsUsed,
       createdAt,
     });
+
+    mfTrack("crop_harvested", { crop_type: cropName, amount });
 
     return stateCopy;
   });

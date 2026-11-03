@@ -78,6 +78,7 @@ const GAME_ANALYTICS_APP_ID = import.meta.env
   .VITE_GAME_ANALYTICS_APP_ID as string;
 const GAME_ANALYTICS_PUB_KEY = import.meta.env
   .VITE_GAME_ANALYTICS_PUB_KEY as string;
+const MOONFORGE_GAME_ID = import.meta.env.VITE_MOONFORGE_GAME_ID as string;
 const PORTAL_APP = import.meta.env.VITE_PORTAL_APP as string;
 const PORTAL_GAME_URL = import.meta.env.VITE_PORTAL_GAME_URL as string;
 
@@ -170,6 +171,7 @@ export const CONFIG = {
   CHRISTMAS_EVENT_DONATION,
   GAME_ANALYTICS_APP_ID,
   GAME_ANALYTICS_PUB_KEY,
+  MOONFORGE_GAME_ID,
   PORTAL_APP,
   PORTAL_GAME_URL,
   SEQUENCE_ACCESS_KEY,

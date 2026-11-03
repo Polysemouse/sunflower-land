@@ -1,17 +1,12 @@
-import {
+import type {
   BoostName,
   CriticalHitName,
   GameState,
 } from "features/game/types/game";
 import { isGreenhouseCrop, MAX_POTS } from "./plantGreenhouse";
-import {
-  GREENHOUSE_CROPS,
-  GreenHouseCropName,
-} from "features/game/types/crops";
-import {
-  GREENHOUSE_FRUIT_SEEDS,
-  GreenHouseFruitName,
-} from "features/game/types/fruits";
+import type { GreenHouseCropName } from "features/game/types/crops";
+import type { GreenHouseFruitName } from "features/game/types/fruits";
+import { isGreenhouseReady } from "./greenhouseReadiness";
 import Decimal from "decimal.js-light";
 
 import { produce } from "immer";
@@ -19,45 +14,28 @@ import { getFruitYield } from "./fruitHarvested";
 import { getCropYieldAmount } from "./harvest";
 import { updateBoostUsed } from "features/game/types/updateBoostUsed";
 import {
-  FarmActivityName,
+  type FarmActivityName,
   trackFarmActivity,
 } from "features/game/types/farmActivity";
 import { prngChance } from "lib/prng";
 import { KNOWN_IDS } from "features/game/types";
 import { isCollectibleBuilt } from "features/game/lib/collectibleBuilt";
 import { isWearableActive } from "features/game/lib/wearables";
-
-export const GREENHOUSE_CROP_TIME_SECONDS: Record<
-  GreenHouseCropName | GreenHouseFruitName,
-  number
-> = {
-  Grape: GREENHOUSE_FRUIT_SEEDS["Grape Seed"].plantSeconds,
-  Olive: GREENHOUSE_CROPS.Olive.harvestSeconds,
-  Rice: GREENHOUSE_CROPS.Rice.harvestSeconds,
-};
-
-export function getReadyAt({
-  plant,
-  createdAt = Date.now(),
-}: {
-  plant: GreenHouseCropName | GreenHouseFruitName;
-  createdAt?: number;
-}) {
-  const seconds = GREENHOUSE_CROP_TIME_SECONDS[plant];
-
-  return createdAt + seconds * 1000;
-}
+import type { GreenhouseCompostName } from "features/game/types/composters";
+import { getSkillLevel, SKILL_RANKS } from "features/game/types/bumpkinSkills";
 
 export function getGreenhouseCropYieldAmount({
   crop,
   game,
   createdAt,
   prngArgs,
+  fertiliser,
 }: {
   crop: GreenHouseCropName | GreenHouseFruitName;
   game: GameState;
   createdAt: number;
   prngArgs: { farmId: number; counter: number };
+  fertiliser?: GreenhouseCompostName;
 }): { amount: number; boostsUsed: { name: BoostName; value: string }[] } {
   let amount = 1;
   const boostsUsed: { name: BoostName; value: string }[] = [];
@@ -96,11 +74,17 @@ export function getGreenhouseCropYieldAmount({
       amount += 0.25;
       boostsUsed.push({ name: "Rice Panda", value: "+0.25" });
     }
+
+    if (crop === "Rice" && isWearableActive({ name: "Rice Shirt", game })) {
+      amount += 1;
+      boostsUsed.push({ name: "Rice Shirt", value: "+1" });
+    }
   } else {
     const { amount: fruitAmount, boostsUsed: fruitBoostsUsed } = getFruitYield({
       name: crop,
       game,
       prngArgs,
+      now: createdAt,
     });
     amount = fruitAmount;
     boostsUsed.push(...fruitBoostsUsed);
@@ -114,7 +98,14 @@ export function getGreenhouseCropYieldAmount({
     bumpkin: { skills },
   } = game;
 
-  if (skills["Greenhouse Gamble"] && criticalDrop("Greenhouse Gamble", 25)) {
+  const greenhouseGambleLevel = getSkillLevel(skills, "Greenhouse Gamble");
+  if (
+    greenhouseGambleLevel &&
+    criticalDrop(
+      "Greenhouse Gamble",
+      SKILL_RANKS["Greenhouse Gamble"].ranks[greenhouseGambleLevel - 1],
+    )
+  ) {
     amount += 1;
     boostsUsed.push({ name: "Greenhouse Gamble", value: "+1" });
   }
@@ -124,19 +115,39 @@ export function getGreenhouseCropYieldAmount({
     boostsUsed.push({ name: "Pharaoh Gnome", value: "+2" });
   }
 
-  if (skills["Glass Room"]) {
-    amount += 0.1;
-    boostsUsed.push({ name: "Glass Room", value: "+0.1" });
+  if (
+    crop === "Grape" &&
+    isWearableActive({ name: "Antique Dress", game }) &&
+    criticalDrop("Antique Dress", 10)
+  ) {
+    amount += 10;
+    boostsUsed.push({ name: "Antique Dress", value: "+10" });
   }
 
-  if (skills["Seeded Bounty"]) {
-    amount += 0.5;
-    boostsUsed.push({ name: "Seeded Bounty", value: "+0.5" });
+  const glassRoomLevel = getSkillLevel(skills, "Glass Room");
+  if (glassRoomLevel) {
+    const v = SKILL_RANKS["Glass Room"].ranks[glassRoomLevel - 1];
+    amount += v;
+    boostsUsed.push({ name: "Glass Room", value: `+${v}` });
   }
 
-  if (skills["Greasy Plants"]) {
-    amount += 1;
-    boostsUsed.push({ name: "Greasy Plants", value: "+1" });
+  const seededBountyLevel = getSkillLevel(skills, "Seeded Bounty");
+  if (seededBountyLevel) {
+    const v = SKILL_RANKS["Seeded Bounty"].ranks[seededBountyLevel - 1];
+    amount += v;
+    boostsUsed.push({ name: "Seeded Bounty", value: `+${v}` });
+  }
+
+  const greasyPlantsLevel = getSkillLevel(skills, "Greasy Plants");
+  if (greasyPlantsLevel) {
+    const v = SKILL_RANKS["Greasy Plants"].yield[greasyPlantsLevel - 1];
+    amount += v;
+    boostsUsed.push({ name: "Greasy Plants", value: `+${v}` });
+  }
+
+  if (fertiliser === "Greenhouse Goodie") {
+    amount += 0.2;
+    boostsUsed.push({ name: "Greenhouse Goodie", value: "+0.2" });
   }
 
   return { amount, boostsUsed };
@@ -166,6 +177,14 @@ export function harvestGreenHouse({
       throw new Error("Greenhouse does not exist");
     }
 
+    // A lifted greenhouse keeps its pots growing while it sits in the inventory -
+    // the pause is only applied when it is placed back down, so harvesting from
+    // an unplaced one would side-step it entirely. The pots live on `game`, not
+    // on the building, so lifting it does not put them out of reach on its own.
+    if (!game.buildings.Greenhouse.some((b) => b.coordinates !== undefined)) {
+      throw new Error("Greenhouse is not placed");
+    }
+
     if (!game.bumpkin) {
       throw new Error("No Bumpkin");
     }
@@ -181,23 +200,31 @@ export function harvestGreenHouse({
       throw new Error("Plant does not exist");
     }
 
-    if (
-      createdAt <
-      getReadyAt({ plant: pot.plant.name, createdAt: pot.plant.plantedAt })
-    ) {
+    if (!isGreenhouseReady(createdAt, pot, game)) {
       throw new Error("Plant is not ready");
     }
 
     // Harvests Crop
     const counter = game.farmActivity[`${pot.plant.name} Harvested`] ?? 0;
-    const { amount: greenhouseProduce, boostsUsed } = pot.plant.amount
+    const { amount: baseProduce, boostsUsed: baseBoosts } = pot.plant.amount
       ? { amount: pot.plant.amount, boostsUsed: [] }
       : getGreenhouseCropYieldAmount({
           crop: pot.plant.name,
           game,
           createdAt,
           prngArgs: { farmId, counter },
+          fertiliser: pot.fertiliser?.name,
         });
+
+    let greenhouseProduce = baseProduce;
+    const boostsUsed = [...baseBoosts];
+    if (
+      pot.fertiliser?.name === "Greenhouse Goodie" &&
+      pot.plant.amount !== undefined
+    ) {
+      greenhouseProduce += 0.2;
+      boostsUsed.push({ name: "Greenhouse Goodie", value: "+0.2" });
+    }
 
     const previousAmount = game.inventory[pot.plant.name] ?? new Decimal(0);
     game.inventory[pot.plant.name] = previousAmount.add(greenhouseProduce);
@@ -213,8 +240,8 @@ export function harvestGreenHouse({
       createdAt,
     });
 
-    // Clears Pot
     delete pot.plant;
+    delete pot.fertiliser;
 
     return game;
   });

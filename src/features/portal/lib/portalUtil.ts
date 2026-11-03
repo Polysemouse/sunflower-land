@@ -1,5 +1,5 @@
-import Decimal from "decimal.js-light";
-import { InventoryItemName } from "features/game/types/game";
+import type Decimal from "decimal.js-light";
+import type { InventoryItemName } from "features/game/types/game";
 import { CONFIG } from "lib/config";
 
 const isInIframe = window.self !== window.top;
@@ -149,6 +149,11 @@ export function authorisePortal() {
 }
 
 export function isValidRedirect(url: string) {
+  // On localhost, accept any redirect URL for development
+  if (window.location.hostname === "localhost") {
+    return true;
+  }
+
   // Define a regular expression for localhost URLs
   const localhostRegex = /^http:\/\/localhost:\d+/;
 

@@ -7,8 +7,8 @@ import { Preloader } from "features/world/scenes/Preloader";
 import { PortalContext } from "./lib/PortalProvider";
 import { useSelector } from "@xstate/react";
 import { CropsAndChickensScene } from "./scene/CropsAndChickensScene";
-import { SceneId } from "features/world/mmoMachine";
-import { PortalMachineState } from "./lib/cropsAndChickensMachine";
+import type { SceneId } from "features/world/mmoMachine";
+import type { PortalMachineState } from "./lib/cropsAndChickensMachine";
 
 const _gameState = (state: PortalMachineState) => state.context.state;
 const _farmId = (state: PortalMachineState) => state.context.farmId;

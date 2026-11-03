@@ -1,7 +1,7 @@
 import Decimal from "decimal.js-light";
-import { INITIAL_STOCK, StockableName } from "features/game/lib/constants";
-import { getKeys } from "features/game/types/decorations";
-import { GameState } from "features/game/types/game";
+import { INITIAL_STOCK, type StockableName } from "features/game/lib/constants";
+import { getKeys } from "lib/object";
+import type { GameState } from "features/game/types/game";
 import { produce } from "immer";
 
 export type ShipmentRestockAction = {
@@ -31,6 +31,9 @@ export const SHIPMENT_STOCK: Partial<Record<StockableName, number>> = {
   "Pepper Seed": 20,
   "Cauliflower Seed": 20,
   "Parsnip Seed": 10,
+  // Chapter Crop Week (limited-time event seed). Previous runs' seeds are
+  // retired and must not be restocked.
+  "Crystal Leaf Seed": 10,
   // Tools
   Axe: 50,
   Pickaxe: 15,

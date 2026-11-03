@@ -1,26 +1,23 @@
 import React, { useContext } from "react";
 import { Button } from "components/ui/Button";
 import { Label } from "components/ui/Label";
-import { Tradeable, Listing } from "features/game/types/marketplace";
+import type { Tradeable, Listing } from "features/game/types/marketplace";
 import { getTradeableDisplay } from "../lib/tradeables";
-import walletIcon from "assets/icons/wallet.png";
 import { Context } from "features/game/GameProvider";
 import { TradeableItemDetails } from "./TradeableSummary";
-import { KNOWN_ITEMS } from "features/game/types";
 import { useSelector } from "@xstate/react";
-import { MachineState } from "features/game/lib/gameMachine";
-import { hasMaxItems } from "features/game/lib/processEvent";
-import Decimal from "decimal.js-light";
-import { ModalContext } from "features/game/components/modal/ModalProvider";
+import type { MachineState } from "features/game/lib/gameMachine";
 import { calculateTradePoints } from "features/game/events/landExpansion/addTradePoints";
 import { useAppTranslation } from "lib/i18n/useAppTranslations";
-
-const _inventory = (state: MachineState) => state.context.state.inventory;
-const _previousInventory = (state: MachineState) =>
-  state.context.state.previousInventory;
-const _wardrobe = (state: MachineState) => state.context.state.wardrobe;
-const _previousWardrobe = (state: MachineState) =>
-  state.context.state.previousWardrobe;
+import {
+  MinigameCurrencyDisclaimerPanel,
+  showsMinigameCurrencyDisclaimer,
+} from "./MinigameCurrencyDisclaimerPanel";
+import {
+  Locked,
+  useIsLocked,
+} from "features/retreat/components/personhood/Locked";
+import { WithdrawCooldownNotice } from "./WithdrawCooldownNotice";
 
 type PurchaseModalContentProps = {
   authToken: string;
@@ -43,36 +40,13 @@ export const PurchaseModalContent: React.FC<PurchaseModalContentProps> = ({
 }) => {
   const { t } = useAppTranslation();
   const { gameService } = useContext(Context);
-  const { openModal } = useContext(ModalContext);
   const state = useSelector(gameService, _state);
-
-  const inventory = useSelector(gameService, _inventory);
-  const previousInventory = useSelector(gameService, _previousInventory);
-  const wardrobe = useSelector(gameService, _wardrobe);
-  const previousWardrobe = useSelector(gameService, _previousWardrobe);
 
   const collection = tradeable.collection;
   const display = getTradeableDisplay({
     id: tradeable.id,
     type: collection,
     state,
-  });
-
-  let updatedInventory = inventory;
-  if (collection === "collectibles") {
-    updatedInventory = {
-      ...inventory,
-      [KNOWN_ITEMS[tradeable.id]]: (
-        inventory[KNOWN_ITEMS[tradeable.id]] ?? new Decimal(0)
-      ).add(listing.quantity),
-    };
-  }
-
-  const hasMax = hasMaxItems({
-    currentInventory: updatedInventory,
-    oldInventory: previousInventory,
-    currentWardrobe: wardrobe,
-    oldWardrobe: previousWardrobe,
   });
 
   const confirm = async () => {
@@ -95,45 +69,20 @@ export const PurchaseModalContent: React.FC<PurchaseModalContentProps> = ({
           points: listing.type === "instant" ? 2 : 4,
         }).multipliedPoints;
 
-  if (hasMax && listing.type === "instant") {
-    return (
-      <>
-        <div className="p-2">
-          <div className="flex justify-between">
-            <Label type="danger" className="mb-2 ml-1" icon={walletIcon}>
-              {t("marketplace.hoarding")}
-            </Label>
-          </div>
-          <p className="mb-3">{t("marketplace.hoarding.description")}</p>
-          <div className="opacity-50">
-            <TradeableItemDetails
-              display={display}
-              sfl={price}
-              quantity={listing.quantity}
-            />
-          </div>
-        </div>
-        <div className="flex space-x-1">
-          <Button onClick={onClose}>{t("cancel")}</Button>
-          <Button
-            onClick={() => {
-              onClose();
-              openModal("STORE_ON_CHAIN");
-            }}
-            className="relative"
-          >
-            <span>{t("gameOptions.blockchainSettings.storeOnChain")}</span>
-          </Button>
-        </div>
-      </>
-    );
-  }
+  // Buying is a trade, so a hold stops it here rather than at the API. Gated
+  // in the modal itself so both entry points (the header and the listings
+  // table) are covered by one check.
+  const locked = useIsLocked();
+
+  if (locked) return <Locked />;
 
   return (
     <>
       <div className="p-2">
         <div className="flex justify-between">
-          <Label type="default" className="mb-2 -ml-1">{`Purchase`}</Label>
+          <Label type="default" className="mb-2 -ml-1">
+            {t("marketplace.purchase")}
+          </Label>
         </div>
         <p className="mb-3">{t("marketplace.areYouSureYouWantToBuy")}</p>
         <TradeableItemDetails
@@ -142,14 +91,14 @@ export const PurchaseModalContent: React.FC<PurchaseModalContentProps> = ({
           quantity={listing.quantity}
           estTradePoints={estTradePoints}
         />
+        {showsMinigameCurrencyDisclaimer(display.name) && (
+          <MinigameCurrencyDisclaimerPanel className="mt-3" />
+        )}
+        <WithdrawCooldownNotice display={display} className="mt-2" />
       </div>
       <div className="flex space-x-1">
         <Button onClick={onClose}>{t("cancel")}</Button>
-        <Button
-          onClick={() => confirm()}
-          disabled={hasMax}
-          className="relative"
-        >
+        <Button onClick={() => confirm()} className="relative">
           <span>{t("confirm")}</span>
         </Button>
       </div>

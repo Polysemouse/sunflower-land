@@ -5,9 +5,15 @@ import {
   OIL_RESERVE_RECOVERY_TIME,
   drillOilReserve,
   getDrilledAt,
+  canDrillOilReserve,
+  getOilReserveReadyAt,
+  getOilDropAmount,
+  getOilRecoveryTimeForDisplay,
 } from "./drillOilReserve";
 import { TEST_FARM } from "features/game/lib/constants";
 import { TEST_BUMPKIN } from "features/game/lib/bumpkinData";
+import { CONFIG } from "lib/config";
+import type { GameState } from "features/game/types/game";
 
 describe("drillOilReserve", () => {
   it("throws an error if the oil reserve does not exist", () => {
@@ -581,7 +587,18 @@ describe("drillOilReserve", () => {
     );
   });
 
-  describe("getDrilledAt", () => {
+  // Legacy (flag-off) back-date model: getDrilledAt returns a past timestamp. Under
+  // SPEED_BOOSTS these permanent boosts are baked into baseDurationMs instead (see
+  // the windowed describe below), so pin these to mainnet.
+  describe("getDrilledAt (legacy back-date, mainnet)", () => {
+    const originalNetwork = CONFIG.NETWORK;
+    beforeAll(() => {
+      (CONFIG as { NETWORK: "mainnet" | "amoy" }).NETWORK = "mainnet";
+    });
+    afterAll(() => {
+      (CONFIG as { NETWORK: "mainnet" | "amoy" }).NETWORK = originalNetwork;
+    });
+
     it("replenishes oil twice as fast with Dev Wrench", () => {
       const now = Date.now();
 
@@ -618,5 +635,399 @@ describe("drillOilReserve", () => {
 
       expect(time).toEqual(now - OIL_RESERVE_RECOVERY_TIME * 0.2 * 1000);
     });
+  });
+
+  // FE + BE jest run amoy, so SPEED_BOOSTS is ON by default here.
+  describe("SPEED_BOOSTS (windowed)", () => {
+    const HOUR = 60 * 60 * 1000;
+    const BASE_MS = OIL_RESERVE_RECOVERY_TIME * 1000;
+
+    it("stores the real drill time + a permanent-only baseDurationMs", () => {
+      const now = Date.now();
+      const game = drillOilReserve({
+        action: { id: "1", type: "oilReserve.drilled" },
+        state: {
+          ...TEST_FARM,
+          inventory: { "Oil Drill": new Decimal(2) },
+          oilReserves: {
+            "1": {
+              x: 1,
+              y: 1,
+              createdAt: 0,
+              drilled: 0,
+              oil: { drilledAt: 0 },
+            },
+          },
+        },
+        createdAt: now,
+      });
+      const reserve = game.oilReserves["1"];
+      expect(reserve.oil.drilledAt).toBe(now);
+      expect(reserve.oil.baseDurationMs).toBe(BASE_MS);
+    });
+
+    it("bakes permanent boosts (Dev Wrench x0.5) into baseDurationMs, not a back-date", () => {
+      const now = Date.now();
+      const game = drillOilReserve({
+        action: { id: "1", type: "oilReserve.drilled" },
+        state: {
+          ...TEST_FARM,
+          inventory: { "Oil Drill": new Decimal(2) },
+          bumpkin: {
+            ...TEST_BUMPKIN,
+            equipped: { ...TEST_BUMPKIN.equipped, tool: "Dev Wrench" },
+          },
+          oilReserves: {
+            "1": {
+              x: 1,
+              y: 1,
+              createdAt: 0,
+              drilled: 0,
+              oil: { drilledAt: 0 },
+            },
+          },
+        },
+        createdAt: now,
+      });
+      const reserve = game.oilReserves["1"];
+      expect(reserve.oil.drilledAt).toBe(now);
+      expect(reserve.oil.baseDurationMs).toBe(BASE_MS * 0.5);
+    });
+
+    it("excludes the Stag Shrine time half from baseDurationMs and boostsUsed", () => {
+      const now = Date.now();
+      const game: GameState = {
+        ...TEST_FARM,
+        collectibles: {
+          "Stag Shrine": [
+            {
+              id: "1",
+              coordinates: { x: 3, y: 3 },
+              createdAt: now,
+              readyAt: now,
+            },
+          ],
+        },
+      };
+      const { time, baseDurationMs, boostsUsed } = getDrilledAt({
+        game,
+        createdAt: now,
+      });
+      expect(time).toBe(now);
+      // Stag Shrine's time half is a window, NOT baked into baseDurationMs.
+      expect(baseDurationMs).toBe(BASE_MS);
+      expect(boostsUsed.map((b) => b.name)).not.toContain("Stag Shrine");
+    });
+
+    it("keeps the +15 Stag Shrine yield on the 3rd drill (yield half stays baked)", () => {
+      const now = Date.now();
+      const game = drillOilReserve({
+        action: { id: "1", type: "oilReserve.drilled" },
+        state: {
+          ...TEST_FARM,
+          inventory: { "Oil Drill": new Decimal(2) },
+          collectibles: {
+            "Stag Shrine": [
+              {
+                id: "1",
+                coordinates: { x: 3, y: 3 },
+                createdAt: now,
+                readyAt: now,
+              },
+            ],
+          },
+          oilReserves: {
+            "1": {
+              x: 1,
+              y: 1,
+              createdAt: 0,
+              drilled: 2,
+              oil: { drilledAt: 0 },
+            },
+          },
+        },
+        createdAt: now,
+      });
+      expect(game.inventory.Oil?.toNumber()).toBe(
+        BASE_OIL_DROP_AMOUNT + OIL_BONUS_DROP_AMOUNT + 15,
+      );
+    });
+
+    it("readies a reserve 1.35x sooner under an active Stag Shrine", () => {
+      const now = Date.now();
+      const game: GameState = {
+        ...TEST_FARM,
+        collectibles: {
+          "Stag Shrine": [
+            {
+              id: "1",
+              coordinates: { x: 3, y: 3 },
+              createdAt: now,
+              readyAt: now,
+            },
+          ],
+        },
+        oilReserves: {
+          "1": {
+            x: 1,
+            y: 1,
+            createdAt: now,
+            drilled: 1,
+            oil: { drilledAt: now, baseDurationMs: BASE_MS },
+          },
+        },
+      };
+      const reserve = game.oilReserves["1"];
+      const readyAt = getOilReserveReadyAt(reserve, game);
+      // The whole recovery falls inside the 7-day Stag window → base / 1.35.
+      expect(readyAt - now).toBeCloseTo(BASE_MS / 1.35, 0);
+      expect(canDrillOilReserve(reserve, game, readyAt + 1)).toBe(true);
+      expect(canDrillOilReserve(reserve, game, readyAt - 1)).toBe(false);
+    });
+
+    it("credits an expired/partial Stag Shrine window to an in-progress reserve", () => {
+      const T0 = Date.now();
+      const base = 20 * HOUR;
+      const game: GameState = {
+        ...TEST_FARM,
+        collectibles: {
+          "Stag Shrine": [
+            {
+              id: "1",
+              coordinates: { x: 3, y: 3 },
+              createdAt: T0,
+              removedAt: T0 + 10 * HOUR, // active only the first 10h
+              readyAt: T0,
+            },
+          ],
+        },
+        oilReserves: {
+          "1": {
+            x: 1,
+            y: 1,
+            createdAt: T0,
+            drilled: 1,
+            oil: { drilledAt: T0, baseDurationMs: base },
+          },
+        },
+      };
+      // 10h @1.35 = 13.5h of work, leaving 6.5h @1x → readyAt = T0 + 16.5h.
+      expect(getOilReserveReadyAt(game.oilReserves["1"], game)).toBe(
+        T0 + 16.5 * HOUR,
+      );
+    });
+
+    it("is not drillable exactly at readyAt (strict >)", () => {
+      const now = Date.now();
+      const game: GameState = {
+        ...TEST_FARM,
+        oilReserves: {
+          "1": {
+            x: 1,
+            y: 1,
+            createdAt: now,
+            drilled: 1,
+            oil: { drilledAt: now, baseDurationMs: BASE_MS },
+          },
+        },
+      };
+      const reserve = game.oilReserves["1"];
+      const readyAt = getOilReserveReadyAt(reserve, game); // no window → now + base
+      expect(readyAt).toBe(now + BASE_MS);
+      expect(canDrillOilReserve(reserve, game, readyAt)).toBe(false);
+      expect(canDrillOilReserve(reserve, game, readyAt + 1)).toBe(true);
+    });
+  });
+
+  // getOilReserveReadyAt keys off the baseDurationMs marker, NOT the flag, so a
+  // reserve drilled while the flag was on keeps windowed timing on rollback.
+  describe("getOilReserveReadyAt keeps windowed timing on mainnet", () => {
+    const originalNetwork = CONFIG.NETWORK;
+    beforeAll(() => {
+      (CONFIG as { NETWORK: "mainnet" | "amoy" }).NETWORK = "mainnet";
+    });
+    afterAll(() => {
+      (CONFIG as { NETWORK: "mainnet" | "amoy" }).NETWORK = originalNetwork;
+    });
+
+    it("uses computeReadyAt for a baseDurationMs reserve even flag-off", () => {
+      const now = Date.now();
+      const base = OIL_RESERVE_RECOVERY_TIME * 1000;
+      const game: GameState = {
+        ...TEST_FARM,
+        collectibles: {
+          "Stag Shrine": [
+            {
+              id: "1",
+              coordinates: { x: 3, y: 3 },
+              createdAt: now,
+              readyAt: now,
+            },
+          ],
+        },
+        oilReserves: {
+          "1": {
+            x: 1,
+            y: 1,
+            createdAt: now,
+            drilled: 1,
+            oil: { drilledAt: now, baseDurationMs: base },
+          },
+        },
+      };
+      expect(
+        getOilReserveReadyAt(game.oilReserves["1"], game) - now,
+      ).toBeCloseTo(base / 1.35, 0);
+    });
+  });
+
+  // Regression: a fresh drill rebuilds the timer, so a flag-off re-drill CLEARS any
+  // prior windowed marker and reverts the reserve to legacy — mirrors stone/tree
+  // re-mine/re-chop, and prevents a stale marker (e.g. Grease Lightning's 0) from
+  // mis-timing the next recovery.
+  describe("flag-off re-drill reverts a windowed reserve to legacy", () => {
+    const originalNetwork = CONFIG.NETWORK;
+    beforeAll(() => {
+      (CONFIG as { NETWORK: "mainnet" | "amoy" }).NETWORK = "mainnet";
+    });
+    afterAll(() => {
+      (CONFIG as { NETWORK: "mainnet" | "amoy" }).NETWORK = originalNetwork;
+    });
+
+    const BASE_MS = OIL_RESERVE_RECOVERY_TIME * 1000;
+
+    it("clears a Grease-Lightning'd (baseDurationMs 0) marker instead of leaving it stale", () => {
+      const now = Date.now();
+      const game = drillOilReserve({
+        action: { id: "1", type: "oilReserve.drilled" },
+        state: {
+          ...TEST_FARM,
+          inventory: { "Oil Drill": new Decimal(2) },
+          oilReserves: {
+            "1": {
+              x: 1,
+              y: 1,
+              createdAt: 0,
+              drilled: 1,
+              oil: { drilledAt: 1, baseDurationMs: 0 },
+            },
+          },
+        },
+        createdAt: now,
+      });
+      const reserve = game.oilReserves["1"];
+      // Marker cleared → legacy. No boosts → drilledAt == now (buffMs 0).
+      expect(reserve.oil.baseDurationMs).toBeUndefined();
+      expect(reserve.oil.drilledAt).toBe(now);
+      // No longer instantly ready.
+      expect(canDrillOilReserve(reserve, game, now)).toBe(false);
+      expect(getOilReserveReadyAt(reserve, game)).toBe(now + BASE_MS);
+    });
+
+    it("clears a stale marker and back-dates with permanent boosts (Dev Wrench x0.5)", () => {
+      const now = Date.now();
+      const game = drillOilReserve({
+        action: { id: "1", type: "oilReserve.drilled" },
+        state: {
+          ...TEST_FARM,
+          inventory: { "Oil Drill": new Decimal(2) },
+          bumpkin: {
+            ...TEST_BUMPKIN,
+            equipped: { ...TEST_BUMPKIN.equipped, tool: "Dev Wrench" },
+          },
+          oilReserves: {
+            "1": {
+              x: 1,
+              y: 1,
+              createdAt: 0,
+              drilled: 1,
+              // A stale marker from a prior windowed cycle.
+              oil: { drilledAt: 1, baseDurationMs: 999 },
+            },
+          },
+        },
+        createdAt: now,
+      });
+      const reserve = game.oilReserves["1"];
+      // Marker cleared; legacy back-date folds in the permanent Dev Wrench (x0.5).
+      expect(reserve.oil.baseDurationMs).toBeUndefined();
+      expect(reserve.oil.drilledAt).toBe(now - BASE_MS * 0.5);
+    });
+  });
+
+  describe("Machinery skill upgrades (ranks)", () => {
+    const reserveNoBonus = {
+      x: 1,
+      y: 1,
+      createdAt: 0,
+      drilled: 0,
+      oil: { drilledAt: 0 },
+    };
+
+    describe("Oil Extraction (getOilDropAmount +yield)", () => {
+      // Rank 1 reproduces the pre-upgrade +1.
+      it.each([
+        [1, 1],
+        [2, 1.5],
+        [3, 2],
+      ])("rank %i => +%f Oil", (rank, bonus) => {
+        const { amount } = getOilDropAmount(
+          {
+            ...TEST_FARM,
+            bumpkin: {
+              ...TEST_FARM.bumpkin,
+              skills: { "Oil Extraction": rank },
+            },
+          },
+          reserveNoBonus,
+          Date.now(),
+        );
+        expect(amount).toBe(BASE_OIL_DROP_AMOUNT + bonus);
+      });
+    });
+
+    describe("Oil Be Back (getOilRecoveryTimeForDisplay xtime)", () => {
+      // Rank 1 reproduces the pre-upgrade x0.8.
+      it.each([
+        [1, 0.8],
+        [2, 0.7],
+        [3, 0.6],
+      ])("rank %i => x%f recovery time", (rank, mult) => {
+        const { recoveryTimeMs } = getOilRecoveryTimeForDisplay({
+          now: Date.now(),
+          game: {
+            ...TEST_FARM,
+            bumpkin: {
+              ...TEST_FARM.bumpkin,
+              skills: { "Oil Be Back": rank },
+            },
+          },
+        });
+        expect(recoveryTimeMs).toBeCloseTo(
+          OIL_RESERVE_RECOVERY_TIME * mult * 1000,
+          5,
+        );
+      });
+    });
+  });
+});
+
+describe("Ladybug Cow", () => {
+  it("gives +1 Oil", () => {
+    const { amount, boostsUsed } = getOilDropAmount(
+      {
+        ...TEST_FARM,
+        collectibles: {
+          "Ladybug Cow": [
+            { id: "1", createdAt: 0, coordinates: { x: 0, y: 0 }, readyAt: 0 },
+          ],
+        },
+      },
+      { createdAt: 0, drilled: 0, oil: { drilledAt: 0 } },
+      Date.now(),
+    );
+
+    expect(amount).toEqual(BASE_OIL_DROP_AMOUNT + 1);
+    expect(boostsUsed).toContainEqual({ name: "Ladybug Cow", value: "+1" });
   });
 });

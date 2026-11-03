@@ -1,7 +1,7 @@
 import React, { useContext, useEffect, useRef, useState } from "react";
 
 import Spritesheet, {
-  SpriteSheetInstance,
+  type SpriteSheetInstance,
 } from "components/animation/SpriteAnimator";
 
 import strikeSheet from "assets/resources/crimstone/crimstone_rock_spark.png";
@@ -18,32 +18,30 @@ import crimstone_4 from "assets/resources/crimstone/crimstone_rock_4.webp";
 import crimstone_5 from "assets/resources/crimstone/crimstone_rock_5.webp";
 import { ZoomContext } from "components/ZoomProvider";
 
-import { MachineState } from "features/game/lib/gameMachine";
-import { getBumpkinLevel } from "features/game/lib/level";
-import { getCrimstoneStage } from "../Crimstone";
+import { getCrimstoneStage } from "../getCrimstoneStage";
 import { useAppTranslation } from "lib/i18n/useAppTranslations";
 import { useSound } from "lib/utils/hooks/useSound";
+import { getTranslatedItemName } from "features/game/types/images";
 
 const tool = "Gold Pickaxe";
 
 const STRIKE_SHEET_FRAME_WIDTH = 48;
 const STRIKE_SHEET_FRAME_HEIGHT = 48;
 
-const _bumpkinLevel = (state: MachineState) =>
-  getBumpkinLevel(state.context.state.bumpkin?.experience ?? 0);
-
 interface Props {
   hasTool: boolean;
   touchCount: number;
   minesLeft: number;
-  minedAt: number;
+  now: number;
+  readyAt: number;
 }
 
 const RecoveredCrimstoneComponent: React.FC<Props> = ({
   hasTool,
   touchCount,
   minesLeft,
-  minedAt,
+  now,
+  readyAt,
 }) => {
   const { scale } = useContext(ZoomContext);
   const [showEquipTool, setShowEquipTool] = useState(false);
@@ -66,7 +64,7 @@ const RecoveredCrimstoneComponent: React.FC<Props> = ({
     crimstone_3,
     crimstone_4,
     crimstone_5,
-  ][getCrimstoneStage(minesLeft, minedAt) - 1];
+  ][getCrimstoneStage(minesLeft, now, readyAt) - 1];
 
   useEffect(() => {
     if (touchCount > 0) {
@@ -168,7 +166,7 @@ const RecoveredCrimstoneComponent: React.FC<Props> = ({
           <InnerPanel className="absolute whitespace-nowrap w-fit z-50">
             <div className="text-xs mx-1 p-1">
               <span>
-                {t("craft")} {tool.toLowerCase()}
+                {t("craft")} {getTranslatedItemName(tool).toLowerCase()}
               </span>
             </div>
           </InnerPanel>

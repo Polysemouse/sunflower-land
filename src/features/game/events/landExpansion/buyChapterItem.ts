@@ -1,17 +1,21 @@
 import Decimal from "decimal.js-light";
-import { GameState, InventoryItemName } from "features/game/types/game";
+import type { GameState, InventoryItemName } from "features/game/types/game";
 
 import { produce } from "immer";
-import { getCurrentChapter, CHAPTERS } from "features/game/types/chapters";
-import { BumpkinItem } from "features/game/types/bumpkin";
+import {
+  getCurrentChapter,
+  CHAPTERS,
+  type ChapterName,
+} from "features/game/types/chapters";
+import type { BumpkinItem } from "features/game/types/bumpkin";
 import {
   MEGASTORE,
-  ChapterStore,
-  ChapterStoreCollectible,
-  ChapterStoreItem,
-  ChapterStoreTier,
-  ChapterStoreWearable,
-  ChapterTierItemName,
+  type ChapterStore,
+  type ChapterStoreCollectible,
+  type ChapterStoreItem,
+  type ChapterStoreTier,
+  type ChapterStoreWearable,
+  type ChapterTierItemName,
 } from "features/game/types/megastore";
 import { SFLDiscount } from "features/game/lib/SFLDiscount";
 import { trackFarmActivity } from "features/game/types/farmActivity";
@@ -56,6 +60,19 @@ function getItemName(item: ChapterStoreItem): ChapterTierItemName {
   return isCollectible(item) ? item.collectible : item.wearable;
 }
 
+// How many copies of a store item the player currently owns — collectibles are
+// counted from the inventory, wearables from the wardrobe. This is the basis
+// for `inventoryLimit`, which (unlike the chapter-scoped `limit`) caps total
+// ownership regardless of how or when the copies were acquired.
+export function getStoreItemOwnedCount(
+  game: GameState,
+  item: ChapterStoreItem,
+): number {
+  return isCollectible(item)
+    ? (game.inventory[item.collectible]?.toNumber() ?? 0)
+    : (game.wardrobe[item.wearable] ?? 0);
+}
+
 // Helper to create farm activity name from chapter item
 function toBoughtActivityName(
   itemName: ChapterTierItemName,
@@ -78,6 +95,37 @@ export function isBoughtWithinCurrentChapter(
   return (
     boughtDate >= chapterTime.startDate && boughtDate <= chapterTime.endDate
   );
+}
+
+// Returns how many times the item has been bought from the megastore in the
+// current chapter. The canonical source is `megastore.purchases`, but state
+// written before this counter existed falls back to `farmActivity[\`X Bought\`]`
+// when either `boughtAt[X]` is within the current chapter, or `boughtAt[X]` is
+// missing entirely (legacy migration: assume the prior purchase happened in
+// the current chapter — the call site has already verified the item is offered
+// in the current chapter's megastore).
+export function getChapterPurchaseCount({
+  game,
+  itemName,
+  currentChapter,
+  now,
+}: {
+  game: GameState;
+  itemName: ChapterTierItemName;
+  currentChapter: ChapterName;
+  now: number;
+}): number {
+  const record = game.megastore?.purchases?.[itemName];
+  if (record && record.chapter === currentChapter) return record.count;
+
+  const boughtAt = game.megastore?.boughtAt[itemName];
+  const activityName = toBoughtActivityName(itemName);
+  const activityCount = (game.farmActivity[activityName] as number) ?? 0;
+
+  if (isBoughtWithinCurrentChapter(boughtAt, now)) return activityCount;
+  if (boughtAt === undefined && activityCount > 0) return activityCount;
+
+  return 0;
 }
 
 export function buyChapterItem({
@@ -173,48 +221,47 @@ export function buyChapterItem({
       }
     }
 
-    // Check if Pet Egg was already bought within the current chapter (one per chapter limit)
-    if (itemName === "Pet Egg") {
-      const petEggBoughtAt = copy.megastore?.boughtAt["Pet Egg"];
-      const petEggPurchaseCount = copy.farmActivity["Pet Egg Bought"] ?? 0;
+    // Items with an explicit `limit` are capped at that purchase count for the
+    // chapter (chapter-scoped via `getChapterPurchaseCount`). Items without a
+    // `limit` are unlimited (subject to any cooldown).
+    // Captured here so the post-purchase increment doesn't double-count via
+    // the `farmActivity` backfill once `trackFarmActivity` has bumped it.
+    let chapterPurchaseCountBefore = 0;
 
-      // Primary check: boughtAt timestamp is within current chapter
-      if (isBoughtWithinCurrentChapter(petEggBoughtAt, createdAt)) {
-        throw new Error("Pet Egg already bought this chapter");
-      }
-
-      // Fallback for legacy data: if farmActivity shows a purchase but boughtAt is missing,
-      // and we're in the chapter where Pet Egg was introduced, treat conservatively
-      if (!petEggBoughtAt && petEggPurchaseCount > 0) {
-        const petEggChapter = CHAPTERS["Paw Prints"];
-        const nowDate = new Date(createdAt);
-        const isInPetEggChapter =
-          nowDate >= petEggChapter.startDate &&
-          nowDate <= petEggChapter.endDate;
-
-        if (isInPetEggChapter) {
-          // Pet Egg was only introduced in Paw Prints, so any prior purchase must be from this chapter
-          throw new Error("Pet Egg already bought this chapter");
-        }
+    if (item.limit !== undefined) {
+      chapterPurchaseCountBefore = getChapterPurchaseCount({
+        game: copy,
+        itemName,
+        currentChapter,
+        now: createdAt,
+      });
+      if (chapterPurchaseCountBefore >= item.limit) {
+        throw new Error("Purchase limit reached");
       }
     }
 
-    // Ensure items without a cooldown, can only be bought once (except Pet Egg which uses chapter-based validation)
-    if (!item.cooldownMs && itemName !== "Pet Egg") {
-      const itemCrafted = copy.farmActivity[activityName];
-
-      if (itemCrafted) {
-        throw new Error("This item has already been crafted");
+    // Items with an explicit `inventoryLimit` cap how many copies a player may
+    // ever own. This blocks re-buying an item the player already holds — even
+    // one acquired in a previous chapter or from another source.
+    if (item.inventoryLimit !== undefined) {
+      if (getStoreItemOwnedCount(copy, item) >= item.inventoryLimit) {
+        throw new Error("Inventory limit reached");
       }
     }
 
     // Check if player has enough resources
-    const { sfl, items } = item.cost;
+    const { sfl, items, coins = 0 } = item.cost;
 
-    const _sfl = SFLDiscount(state, new Decimal(sfl));
+    const _sfl = SFLDiscount(state, new Decimal(sfl), createdAt);
 
     if (copy.balance.lessThan(_sfl)) {
       throw new Error("Insufficient SFL");
+    }
+
+    const currentCoins = copy.coins ?? 0;
+
+    if (coins > 0 && currentCoins < coins) {
+      throw new Error("Insufficient coins");
     }
 
     let costItemName: keyof typeof items;
@@ -229,6 +276,16 @@ export function buyChapterItem({
 
     // Deduct resources
     copy.balance = copy.balance.minus(_sfl);
+    if (_sfl.gt(0)) {
+      copy.farmActivity = trackFarmActivity(
+        "FLOWER Spent",
+        copy.farmActivity,
+        _sfl,
+      );
+    }
+    if (coins > 0) {
+      copy.coins = currentCoins - coins;
+    }
     for (costItemName in items) {
       const amount = items[costItemName];
       if (amount === undefined) continue;
@@ -264,6 +321,16 @@ export function buyChapterItem({
     }
 
     copy.megastore.boughtAt[itemName] = createdAt;
+
+    if (item.limit !== undefined) {
+      copy.megastore.purchases = {
+        ...(copy.megastore.purchases ?? {}),
+        [itemName]: {
+          chapter: currentChapter,
+          count: chapterPurchaseCountBefore + 1,
+        },
+      };
+    }
 
     return copy;
   });

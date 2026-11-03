@@ -7,22 +7,26 @@ import trade from "assets/icons/trade.png";
 
 import { Context } from "features/game/GameProvider";
 import { useSelector } from "@xstate/react";
-import { getKeys } from "features/game/types/decorations";
+import { getKeys } from "lib/object";
 import { getTradeableDisplay } from "../../lib/tradeables";
 import { useLocation, useNavigate, useParams } from "react-router";
 import { useAppTranslation } from "lib/i18n/useAppTranslations";
-import { InventoryItemName } from "features/game/types/game";
+import type { InventoryItemName } from "features/game/types/game";
 import { Modal } from "components/ui/Modal";
 import { ClaimPurchase } from "./ClaimPurchase";
-import { MachineState } from "features/game/lib/gameMachine";
-import { AuthMachineState } from "features/auth/lib/authMachine";
+import type { MachineState } from "features/game/lib/gameMachine";
+import type { AuthMachineState } from "features/auth/lib/authMachine";
 import { RemoveListing } from "../RemoveListing";
 import { tradeToId } from "features/marketplace/lib/offers";
 import { isTradeResource } from "features/game/actions/tradeLimits";
 import { MyTableRow } from "./MyTableRow";
-import { MARKETPLACE_TAX } from "features/game/types/marketplace";
+import {
+  type CollectionName,
+  MARKETPLACE_TAX,
+} from "features/game/types/marketplace";
 import { Button } from "components/ui/Button";
 import { BulkRemoveTrades } from "../BulkRemoveListings";
+import { MAX_RESOURCE_LISTINGS } from "../../lib/tradeLimits";
 
 const _isCancellingOffer = (state: MachineState) =>
   state.matches("marketplaceListingCancelling");
@@ -31,9 +35,24 @@ const _authToken = (state: AuthMachineState) =>
   state.context.user.rawToken as string;
 const _state = (state: MachineState) => state.context.state;
 
-export const MyListings: React.FC = () => {
+type Props = {
+  fullHeight?: boolean;
+};
+
+export const MyListings: React.FC<Props> = ({ fullHeight = false }) => {
   const { t } = useAppTranslation();
-  const params = useParams();
+  const params = useParams<{
+    collection?: CollectionName;
+    id?: string;
+    economy?: string;
+  }>();
+
+  const routeCollection: CollectionName | undefined =
+    params.economy != null && params.id != null && params.collection == null
+      ? "economies"
+      : params.collection;
+
+  const routeEconomy = params.economy;
   const { gameService } = useContext(Context);
 
   const { authService } = useContext(Auth.Context);
@@ -55,7 +74,7 @@ export const MyListings: React.FC = () => {
   const listings = trades.listings ?? {};
 
   const filteredListings =
-    params.id && params.collection
+    params.id && routeCollection
       ? Object.fromEntries(
           Object.entries(listings).filter(([_, listing]) => {
             const listingItemId = tradeToId({
@@ -64,16 +83,34 @@ export const MyListings: React.FC = () => {
                 items: listing.items,
               },
             });
-
+            const listingCollection = listing.collection as string;
+            if (routeCollection === "economies") {
+              return (
+                listingCollection === "economies" &&
+                listing.economy === routeEconomy &&
+                listingItemId === Number(params.id)
+              );
+            }
             return (
-              listing.collection === params.collection &&
+              listing.collection === routeCollection &&
               listingItemId === Number(params.id)
             );
           }),
         )
       : listings;
 
-  if (getKeys(filteredListings).length === 0) return null;
+  const filteredListingIds = getKeys(filteredListings);
+  const selectedListing = filteredListings[filteredListingIds[0]];
+  const selectedItemName = selectedListing
+    ? (getKeys(selectedListing.items ?? {})[0] as InventoryItemName)
+    : undefined;
+  const showResourceListingCount =
+    !!params.id &&
+    routeCollection === "collectibles" &&
+    !!selectedItemName &&
+    isTradeResource(selectedItemName);
+
+  if (filteredListingIds.length === 0) return null;
 
   const claim = () => {
     const listing = listings[claimId as string];
@@ -123,16 +160,28 @@ export const MyListings: React.FC = () => {
             sfl={listings[claimId as string].sfl}
             onClaim={claim}
             onClose={() => setClaimId(undefined)}
+            hasPendingTransaction={!!state.transaction}
           />
         )}
       </Modal>
 
-      <InnerPanel className="mb-1">
-        <div className="p-2">
+      <InnerPanel
+        className={fullHeight ? "flex h-full min-h-0 flex-col" : "mb-1"}
+      >
+        <div
+          className={fullHeight ? "flex h-full min-h-0 flex-col p-2" : "p-2"}
+        >
           <div className="flex items-center justify-between mb-2">
-            <Label type="default" icon={trade}>
-              {t("marketplace.myListings")}
-            </Label>
+            <div className="flex items-center gap-1">
+              <Label type="default" icon={trade}>
+                {t("marketplace.myListings")}
+              </Label>
+              {showResourceListingCount && (
+                <Label type="default">
+                  {`${filteredListingIds.length}/${MAX_RESOURCE_LISTINGS}`}
+                </Label>
+              )}
+            </div>
             <Button
               className="w-fit h-8 rounded-none"
               onClick={() => setBulkCancel(true)}
@@ -142,12 +191,18 @@ export const MyListings: React.FC = () => {
               </p>
             </Button>
           </div>
-          <div className="flex flex-wrap">
-            {getKeys(filteredListings).length === 0 ? (
+          <div
+            className={fullHeight ? "flex min-h-0 flex-1" : "flex flex-wrap"}
+          >
+            {filteredListingIds.length === 0 ? (
               <p className="text-sm">{t("marketplace.noMyListings")}</p>
             ) : (
-              <div className="w-full relative border-collapse mb-2 max-h-[200px] scrollable overflow-y-auto overflow-x-hidden">
-                {getKeys(filteredListings).map((id, index) => {
+              <div
+                className={`w-full relative border-collapse mb-2 scrollable overflow-y-auto overflow-x-hidden ${
+                  fullHeight ? "h-full min-h-0" : "max-h-[200px]"
+                }`}
+              >
+                {filteredListingIds.map((id, index) => {
                   const listing = listings[id];
                   const itemName = getKeys(
                     listing.items ?? {},
@@ -189,11 +244,17 @@ export const MyListings: React.FC = () => {
                       isResource={isResource}
                       fee={listing.tax ?? listing.sfl * MARKETPLACE_TAX}
                       onCancel={() => setRemoveListingId(id)}
-                      onRowClick={() =>
-                        navigate(
-                          `${isWorldRoute ? "/world" : ""}/marketplace/${details.type}/${itemId}`,
-                        )
-                      }
+                      onRowClick={() => {
+                        const base = `${isWorldRoute ? "/world" : ""}/marketplace`;
+                        const listingCol = listing.collection as string;
+                        if (listingCol === "economies" && listing.economy) {
+                          navigate(
+                            `${base}/economies/${listing.economy}/${itemId}`,
+                          );
+                          return;
+                        }
+                        navigate(`${base}/${details.type}/${itemId}`);
+                      }}
                       onClaim={() => setClaimId(id)}
                     />
                   );

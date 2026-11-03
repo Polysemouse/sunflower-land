@@ -4,8 +4,8 @@ import { PIXEL_SCALE } from "features/game/lib/constants";
 import { Context } from "features/game/GameProvider";
 import {
   PATCH_FRUIT_SEEDS,
-  PatchFruitName,
-  PatchFruitSeedName,
+  type PatchFruitName,
+  type PatchFruitSeedName,
 } from "features/game/types/fruits";
 import { FruitTree } from "./FruitTree";
 import Decimal from "decimal.js-light";
@@ -14,8 +14,10 @@ import {
   getWoodReward,
 } from "features/game/events/landExpansion/fruitTreeRemoved";
 import { useSelector } from "@xstate/react";
-import { MachineState } from "features/game/lib/gameMachine";
-import {
+import { useNow } from "lib/utils/hooks/useNow";
+import { PRE_ACTION_TICK_MS } from "features/game/lib/timerDisplay";
+import type { MachineState } from "features/game/lib/gameMachine";
+import type {
   FruitPatch as Patch,
   InventoryItemName,
   GameState,
@@ -24,13 +26,14 @@ import { isCollectibleBuilt } from "features/game/lib/collectibleBuilt";
 import { ResourceDropAnimator } from "components/animation/ResourceDropAnimator";
 
 import powerup from "assets/icons/level_up.png";
+import { SUNNYSIDE } from "assets/sunnyside";
 import { FRUIT_PATCH_VARIANTS } from "../lib/alternateArt";
 import { useSound } from "lib/utils/hooks/useSound";
-import { getKeys } from "features/game/types/decorations";
+import { getKeys } from "lib/object";
 import { QuickSelect } from "features/greenhouse/QuickSelect";
 import { Transition } from "@headlessui/react";
 import { useAppTranslation } from "lib/i18n/useAppTranslations";
-import { SEASONAL_SEEDS, SeedName } from "features/game/types/seeds";
+import { SEASONAL_SEEDS, type SeedName } from "features/game/types/seeds";
 import { SeasonalSeed } from "../plots/components/SeasonalSeed";
 import { Modal } from "components/ui/Modal";
 import { isFullMoonBerry } from "features/game/events/landExpansion/seedBought";
@@ -76,8 +79,18 @@ interface Props {
 }
 
 export const FruitPatch: React.FC<Props> = ({ id }) => {
-  const { gameService, selectedItem, shortcutItem, enableQuickSelect } =
-    useContext(Context);
+  // The Legendary Shrine's +1 fruit only applies while the shrine is active, so
+  // the harvest preview needs a LIVE clock — a mount snapshot would keep
+  // promising the bonus long after the shrine expired. One tick a minute is
+  // enough for a boost that flips at most a few times a day.
+  const now = useNow({ live: true, intervalMs: PRE_ACTION_TICK_MS });
+  const {
+    gameService,
+    selectedItem,
+    shortcutItem,
+    enableQuickSelect,
+    showFullMoonSeedsInQuickSelect,
+  } = useContext(Context);
   const farmId = useSelector(gameService, _farmId);
   const { t } = useAppTranslation();
 
@@ -119,7 +132,10 @@ export const FruitPatch: React.FC<Props> = ({ id }) => {
   const hasAxes = HasAxes(inventory, game);
 
   const plantTree = async (item?: InventoryItemName) => {
-    if (item === "Fruitful Blend" && !fertiliser) {
+    if (
+      (item === "Fruitful Blend" || item === "Turbofruit Mix") &&
+      !fertiliser
+    ) {
       fertilise();
       return;
     }
@@ -144,14 +160,12 @@ export const FruitPatch: React.FC<Props> = ({ id }) => {
       return;
     }
 
-    const newState = gameService.send("fruit.planted", {
+    gameService.send("fruit.planted", {
       index: id,
       seed: item,
     });
 
-    if (!newState.matches("hoarding")) {
-      plantAudio();
-    }
+    plantAudio();
   };
 
   const fertilise = () => {
@@ -170,27 +184,26 @@ export const FruitPatch: React.FC<Props> = ({ id }) => {
         name: fruit?.name as PatchFruitName,
         fertiliser: fertiliser?.name,
         prngArgs: { farmId, counter: activityCount },
+        now,
       }).amount;
 
-    const newState = gameService.send("fruit.harvested", {
+    gameService.send("fruit.harvested", {
       index: id,
     });
 
-    if (!newState.matches("hoarding")) {
-      setCollectingFruit(true);
-      setCollectedFruitName(fruit?.name);
-      fruitHarvested.current += amount;
+    setCollectingFruit(true);
+    setCollectedFruitName(fruit?.name);
+    fruitHarvested.current += amount;
 
-      harvestAudio();
-      setPlayShakingAnimation(true);
+    harvestAudio();
+    setPlayShakingAnimation(true);
 
-      await new Promise((res) => setTimeout(res, 3000));
+    await new Promise((res) => setTimeout(res, 3000));
 
-      setCollectingFruit(false);
-      setCollectedFruitName(undefined);
-      fruitHarvested.current = 0;
-      setPlayShakingAnimation(false);
-    }
+    setCollectingFruit(false);
+    setCollectedFruitName(undefined);
+    fruitHarvested.current = 0;
+    setPlayShakingAnimation(false);
   };
 
   const removeTree = async () => {
@@ -202,23 +215,21 @@ export const FruitPatch: React.FC<Props> = ({ id }) => {
     )
       shortcutItem("Axe");
 
-    const newState = gameService.send("fruitTree.removed", {
+    gameService.send("fruitTree.removed", {
       index: id,
       selectedItem: "Axe",
     });
 
-    if (!newState.matches("hoarding")) {
-      const { woodReward } = getWoodReward({ state: game });
-      setCollectingWood(true);
-      setCollectedWoodAmount(woodReward);
+    const { woodReward } = getWoodReward({ state: game });
+    setCollectingWood(true);
+    setCollectedWoodAmount(woodReward);
 
-      treeFallAudio();
+    treeFallAudio();
 
-      await new Promise((res) => setTimeout(res, 3000));
+    await new Promise((res) => setTimeout(res, 3000));
 
-      setCollectingWood(false);
-      setCollectedWoodAmount(undefined);
-    }
+    setCollectingWood(false);
+    setCollectedWoodAmount(undefined);
   };
 
   return (
@@ -238,6 +249,7 @@ export const FruitPatch: React.FC<Props> = ({ id }) => {
         {/* Fruit tree stages */}
         <FruitTree
           plantedFruit={fruit}
+          fertiliser={fertiliser}
           plantTree={() => plantTree(selectedItem)}
           harvestFruit={harvestFruit}
           removeTree={removeTree}
@@ -247,7 +259,7 @@ export const FruitPatch: React.FC<Props> = ({ id }) => {
         />
 
         {/* Fertiliser */}
-        {!!fertiliser && (
+        {fertiliser?.name === "Fruitful Blend" && (
           <img
             className="absolute z-10 pointer-events-none"
             src={powerup}
@@ -257,6 +269,28 @@ export const FruitPatch: React.FC<Props> = ({ id }) => {
               right: `${PIXEL_SCALE * 2}px`,
             }}
           />
+        )}
+        {fertiliser?.name === "Turbofruit Mix" && (
+          <>
+            <img
+              className="absolute z-10 pointer-events-none"
+              src={powerup}
+              style={{
+                width: `${PIXEL_SCALE * 5}px`,
+                bottom: `${PIXEL_SCALE * 16}px`,
+                left: `${PIXEL_SCALE * 2}px`,
+              }}
+            />
+            <img
+              className="absolute z-10 pointer-events-none"
+              src={SUNNYSIDE.icons.stopwatch}
+              style={{
+                width: `${PIXEL_SCALE * 6}px`,
+                bottom: `${PIXEL_SCALE * 16}px`,
+                right: `${PIXEL_SCALE * 2}px`,
+              }}
+            />
+          </>
         )}
 
         {/* Fruit drop animation */}
@@ -292,7 +326,7 @@ export const FruitPatch: React.FC<Props> = ({ id }) => {
             .filter(
               (seed) =>
                 SEASONAL_SEEDS[game.season.season].includes(seed) ||
-                isFullMoonBerry(seed),
+                (showFullMoonSeedsInQuickSelect && isFullMoonBerry(seed)),
             )
             .map((seed) => ({
               name: seed as InventoryItemName,

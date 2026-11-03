@@ -4,22 +4,22 @@ import { SUNNYSIDE } from "assets/sunnyside";
 import tradeOffs from "src/assets/icons/tradeOffs.png";
 import { Label } from "components/ui/Label";
 import { InnerPanel } from "components/ui/Panel";
-import { CollectibleName, getKeys } from "features/game/types/craftables";
-import { GameState } from "features/game/types/game";
+import type { CollectibleName } from "features/game/types/craftables";
+import { getKeys } from "lib/object";
+import type { BoostName, GameState } from "features/game/types/game";
 import { ITEM_DETAILS } from "features/game/types/images";
 import { useAppTranslation } from "lib/i18n/useAppTranslations";
 import { SquareIcon } from "components/ui/SquareIcon";
 import { pixelDarkBorderStyle } from "features/game/lib/style";
 import { BUMPKIN_ITEM_BUFF_LABELS } from "features/game/types/bumpkinItemBuffs";
 import { getRemainingReels } from "features/game/events/landExpansion/castRod";
-import { BuffLabel } from "features/game/types";
-import { BumpkinItem, ITEM_IDS } from "features/game/types/bumpkin";
+import type { BuffLabel } from "features/game/types";
+import { type BumpkinItem, ITEM_IDS } from "features/game/types/bumpkin";
 import {
   BUMPKIN_REVAMP_SKILL_TREE,
-  BumpkinRevampSkillName,
-  BumpkinSkillRevamp,
+  type BumpkinRevampSkillName,
+  type BumpkinSkillRevamp,
 } from "features/game/types/bumpkinSkills";
-import { getImageUrl } from "lib/utils/getImageURLS";
 import {
   INNER_CANVAS_WIDTH,
   SkillBox,
@@ -28,22 +28,25 @@ import { getSkillImage } from "features/bumpkins/components/revamp/SkillPathDeta
 import { PIXEL_SCALE } from "features/game/lib/constants";
 import { COLLECTIBLE_BUFF_LABELS } from "features/game/types/collectibleItemBuffs";
 import { isCollectible } from "features/game/events/landExpansion/garbageSold";
+import { getDailyFishingLimit } from "features/game/types/fishing";
+import { getWearableImage } from "features/game/lib/getWearableImage";
+import { useNow } from "lib/utils/hooks/useNow";
 
 interface BoostReelItem {
   location: string;
   buff: BuffLabel[];
 }
 
+type FishingReelBoostName =
+  | BumpkinItem
+  | CollectibleName
+  | BumpkinRevampSkillName;
+
 const BoostReelItems: (
   state: GameState,
-) => Partial<
-  Record<BumpkinItem | CollectibleName | BumpkinRevampSkillName, BoostReelItem>
-> = (state) => ({
+) => Partial<Record<FishingReelBoostName, BoostReelItem>> = (state) => ({
   "Reelmaster's Chair": {
-    buff: COLLECTIBLE_BUFF_LABELS["Reelmaster's Chair"]?.({
-      skills: state.bumpkin.skills,
-      collectibles: state.collectibles,
-    }) as BuffLabel[],
+    buff: COLLECTIBLE_BUFF_LABELS["Reelmaster's Chair"]?.(state) as BuffLabel[],
     location: "Marketplace",
   },
   "Angler Waders": {
@@ -58,6 +61,14 @@ const BoostReelItems: (
     buff: [BUMPKIN_REVAMP_SKILL_TREE["Fisherman's 10 Fold"].boosts.buff],
     location: "Fishing Skill Tree",
   },
+  Nautilus: {
+    buff: COLLECTIBLE_BUFF_LABELS["Nautilus"]?.(state) as BuffLabel[],
+    location: "Marine Marvel",
+  },
+  "Deep Sea Slug": {
+    buff: COLLECTIBLE_BUFF_LABELS["Deep Sea Slug"]?.(state) as BuffLabel[],
+    location: "Marine Marvel",
+  },
   "More With Less": {
     buff: Object.values(BUMPKIN_REVAMP_SKILL_TREE["More With Less"].boosts),
     location: "Fishing Skill Tree",
@@ -66,37 +77,62 @@ const BoostReelItems: (
     buff: BUMPKIN_ITEM_BUFF_LABELS["Saw Fish"] as BuffLabel[],
     location: "Stella's Megastore",
   },
+  "Otty the Otter": {
+    buff: COLLECTIBLE_BUFF_LABELS["Otty the Otter"]?.(state) as BuffLabel[],
+    location: "Stella's Megastore",
+  },
 });
 
-const isWearable = (
-  item: BumpkinItem | CollectibleName | BumpkinRevampSkillName,
-): item is BumpkinItem => {
+const isWearable = (item: FishingReelBoostName): item is BumpkinItem => {
   return getKeys(ITEM_IDS).includes(item as BumpkinItem);
 };
 
-const isSkill = (
-  item: BumpkinItem | CollectibleName | BumpkinRevampSkillName,
-): item is BumpkinRevampSkillName =>
+const isSkill = (item: FishingReelBoostName): item is BumpkinRevampSkillName =>
   getKeys(BUMPKIN_REVAMP_SKILL_TREE).includes(item as BumpkinRevampSkillName);
 
 const getItemImage = (item: BumpkinItem | CollectibleName): string => {
   if (!item) return "";
 
   if (isWearable(item)) {
-    return getImageUrl(ITEM_IDS[item]);
+    return getWearableImage(item);
   }
 
   return ITEM_DETAILS[item].image;
 };
 
+const InactiveIconFrame: React.FC<{ icon: string }> = ({ icon }) => (
+  <div
+    className="bg-brown-600 relative"
+    style={{
+      width: `${PIXEL_SCALE * (INNER_CANVAS_WIDTH + 4)}px`,
+      height: `${PIXEL_SCALE * (INNER_CANVAS_WIDTH + 4)}px`,
+      marginTop: `${PIXEL_SCALE * 3}px`,
+      marginBottom: `${PIXEL_SCALE * 2}px`,
+      marginLeft: `${PIXEL_SCALE * 2}px`,
+      marginRight: `${PIXEL_SCALE * 3}px`,
+      ...pixelDarkBorderStyle,
+    }}
+  >
+    <SquareIcon icon={icon} width={INNER_CANVAS_WIDTH} className="silhouette" />
+  </div>
+);
+
 const getItemIcon = (
-  item: BumpkinItem | CollectibleName | BumpkinRevampSkillName,
+  item: FishingReelBoostName,
+  isActive: boolean,
 ): JSX.Element => {
   if (isSkill(item)) {
     const { tree, image, boosts, requirements, npc, power } =
       BUMPKIN_REVAMP_SKILL_TREE[item] as BumpkinSkillRevamp;
     const { tier } = requirements;
     const { boostedItemIcon, boostTypeIcon } = boosts.buff;
+
+    if (!isActive) {
+      return (
+        <InactiveIconFrame icon={getSkillImage(image, boostedItemIcon, tree)} />
+      );
+    }
+
     return (
       <SkillBox
         className="mb-1"
@@ -123,6 +159,10 @@ const getItemIcon = (
       />
     );
   } else {
+    if (!isActive) {
+      return <InactiveIconFrame icon={getItemImage(item)} />;
+    }
+
     return (
       <div
         className={"bg-brown-600 relative"}
@@ -154,6 +194,14 @@ export const FishermanExtras: React.FC<{
   const { t } = useAppTranslation();
 
   const reelsLeft = getRemainingReels(state);
+  // The daily limit rolls over at UTC midnight, so this must stay live —
+  // a captured timestamp would leave the boost highlights stale after a reset.
+  const now = useNow({ live: true });
+  const { boostsUsed } = getDailyFishingLimit(state, now);
+  const activeBoosts = new Set<BoostName>(
+    boostsUsed.map((boost) => boost.name),
+  );
+
   return (
     <>
       <InnerPanel className="mb-1">
@@ -173,31 +221,33 @@ export const FishermanExtras: React.FC<{
         </span>
       </InnerPanel>
       <InnerPanel className="flex flex-col mb-1 overflow-y-scroll overflow-x-hidden scrollable max-h-[330px]">
-        {Object.entries(BoostReelItems(state)).map(([name, item]) => (
-          <div key={name} className="flex -ml-1">
-            {getItemIcon(
-              name as BumpkinItem | CollectibleName | BumpkinRevampSkillName,
-            )}
-            <div className="flex flex-col justify-center space-y-1">
-              <div className="flex flex-col space-y-0.5">
-                <span className="text-xs">{name}</span>
-                <span className="text-xxs italic">{item.location}</span>
-              </div>
-              <div className="flex flex-col gap-1 mr-2">
-                {item.buff.map((buff, index) => (
-                  <Label
-                    key={index}
-                    type={buff.labelType}
-                    icon={buff.boostTypeIcon}
-                    secondaryIcon={buff.boostedItemIcon}
-                  >
-                    {buff.shortDescription}
-                  </Label>
-                ))}
+        {Object.entries(BoostReelItems(state)).map(([name, item]) => {
+          const isActive = activeBoosts.has(name as BoostName);
+
+          return (
+            <div key={name} className="flex -ml-1">
+              {getItemIcon(name as FishingReelBoostName, isActive)}
+              <div className="flex flex-col justify-center space-y-1">
+                <div className="flex flex-col space-y-0.5">
+                  <span className="text-xs">{name}</span>
+                  <span className="text-xxs italic">{item.location}</span>
+                </div>
+                <div className="flex flex-col gap-1 mr-2">
+                  {item.buff.map((buff, index) => (
+                    <Label
+                      key={index}
+                      type={buff.labelType}
+                      icon={buff.boostTypeIcon}
+                      secondaryIcon={buff.boostedItemIcon}
+                    >
+                      {buff.shortDescription}
+                    </Label>
+                  ))}
+                </div>
               </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </InnerPanel>
     </>
   );

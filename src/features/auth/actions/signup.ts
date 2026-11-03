@@ -1,6 +1,8 @@
 import { CONFIG } from "lib/config";
+import { fetchWithRetry } from "lib/fetchWithRetry";
 import { ERRORS } from "lib/errors";
 import { getMetaBrowserIdentifiers } from "lib/analytics/meta";
+import type { BumpkinParts } from "lib/utils/tokenUriBuilder";
 
 export type UTM = {
   source?: string;
@@ -19,6 +21,7 @@ type Request = {
   transactionId: string;
   referrerId: string | null;
   utm?: UTM;
+  equipment?: BumpkinParts;
 };
 
 export async function signUp({
@@ -26,10 +29,11 @@ export async function signUp({
   transactionId,
   referrerId,
   utm = {},
+  equipment,
 }: Request) {
   const { fbp, fbc } = getMetaBrowserIdentifiers();
 
-  const response = await window.fetch(`${CONFIG.API_URL}/signup`, {
+  const response = await fetchWithRetry(`${CONFIG.API_URL}/signup`, {
     method: "POST",
     headers: {
       "content-type": "application/json;charset=UTF-8",
@@ -43,6 +47,7 @@ export async function signUp({
         fbp: fbp,
         fbc: fbc,
       },
+      equipped: equipment ?? undefined,
     }),
   });
 

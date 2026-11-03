@@ -1,6 +1,6 @@
 import { SUNNYSIDE } from "assets/sunnyside";
 import { CROP_LIFECYCLE } from "features/island/plots/lib/plant";
-import { BumpkinItem } from "./bumpkin";
+import type { BumpkinItem } from "./bumpkin";
 
 import powerup from "assets/icons/level_up.png";
 import lightning from "assets/icons/lightning.png";
@@ -10,12 +10,12 @@ import baits from "assets/composters/baits.png";
 import { ITEM_DETAILS } from "./images";
 import { translate } from "lib/i18n/translate";
 import { getChapterTicket, CHAPTERS, getCurrentChapter } from "./chapters";
-import { SEASON_ICONS } from "features/island/buildings/components/building/market/SeasonalSeeds";
+import { SEASON_DETAILS } from "./calendar";
 import { isCollectible } from "../events/landExpansion/garbageSold";
-import { TranslationKeys } from "lib/i18n/dictionaries/types";
+import type { TranslationKeys } from "lib/i18n/dictionaries/types";
 import { CHAPTER_TICKET_BOOST_ITEMS } from "../events/landExpansion/completeNPCChore";
-import { getObjectEntries } from "../expansion/lib/utils";
-import { BuffLabel } from ".";
+import { getObjectEntries } from "lib/object";
+import type { BuffLabel } from ".";
 
 export const SPECIAL_ITEM_LABELS: Partial<Record<BumpkinItem, BuffLabel[]>> = {
   Halo: [
@@ -862,7 +862,7 @@ export const BUMPKIN_ITEM_BUFF_LABELS: Partial<
       shortDescription: translate("description.blossomWard.boost"),
       labelType: "success",
       boostTypeIcon: powerup,
-      boostedItemIcon: SEASON_ICONS["spring"],
+      boostedItemIcon: SEASON_DETAILS.spring.icon,
     },
   ],
   "Solflare Aegis": [
@@ -870,7 +870,7 @@ export const BUMPKIN_ITEM_BUFF_LABELS: Partial<
       shortDescription: translate("description.solflareAegis.boost"),
       labelType: "info",
       boostTypeIcon: SUNNYSIDE.icons.stopwatch,
-      boostedItemIcon: SEASON_ICONS["summer"],
+      boostedItemIcon: SEASON_DETAILS.summer.icon,
     },
   ],
   "Autumn's Embrace": [
@@ -878,7 +878,7 @@ export const BUMPKIN_ITEM_BUFF_LABELS: Partial<
       shortDescription: translate("description.autumnsEmbrace.boost"),
       labelType: "info",
       boostTypeIcon: SUNNYSIDE.icons.stopwatch,
-      boostedItemIcon: SEASON_ICONS["autumn"],
+      boostedItemIcon: SEASON_DETAILS.autumn.icon,
     },
   ],
   "Frozen Heart": [
@@ -886,7 +886,7 @@ export const BUMPKIN_ITEM_BUFF_LABELS: Partial<
       shortDescription: translate("description.frozenHeart.boost"),
       labelType: "success",
       boostTypeIcon: powerup,
-      boostedItemIcon: SEASON_ICONS["winter"],
+      boostedItemIcon: SEASON_DETAILS.winter.icon,
     },
   ],
   "Oracle Syringe": [
@@ -930,6 +930,75 @@ export const BUMPKIN_ITEM_BUFF_LABELS: Partial<
       labelType: "success",
       boostTypeIcon: powerup,
       boostedItemIcon: ITEM_DETAILS["Rapid Root"].image,
+    },
+  ],
+  "Duende Hat": [
+    {
+      shortDescription: translate("description.duendeHat.boost"),
+      labelType: "info",
+      boostTypeIcon: SUNNYSIDE.icons.stopwatch,
+      boostedItemIcon: ITEM_DETAILS["Crop Plot"].image,
+    },
+    {
+      shortDescription: translate("description.duendeHat.boost.2"),
+      labelType: "info",
+      boostTypeIcon: SUNNYSIDE.icons.stopwatch,
+      boostedItemIcon: ITEM_DETAILS["Fruit Patch"].image,
+    },
+  ],
+  "Hercules Beetle Hat": [
+    {
+      shortDescription: translate("description.herculesBeetleHat.boost"),
+      labelType: "vibrant",
+      boostTypeIcon: lightning,
+      boostedItemIcon: ITEM_DETAILS.Obsidian.image,
+    },
+    {
+      shortDescription: translate("description.grinxsHammer.warning"),
+      labelType: "danger",
+      boostTypeIcon: SUNNYSIDE.icons.cancel,
+    },
+  ],
+  "Firefly Aura": [
+    {
+      shortDescription: translate("description.fireflyAura.boost"),
+      labelType: "info",
+      boostTypeIcon: SUNNYSIDE.icons.stopwatch,
+      boostedItemIcon: ITEM_DETAILS["Lava Pit"].image,
+    },
+    {
+      shortDescription: translate("description.fireflyAura.boost.2"),
+      labelType: "info",
+      boostTypeIcon: SUNNYSIDE.icons.stopwatch,
+      boostedItemIcon: ITEM_DETAILS["Lava Pit"].image,
+    },
+  ],
+  "Antique Dress": [
+    {
+      shortDescription: translate("description.antiqueDress.boost"),
+      labelType: "info",
+      boostTypeIcon: SUNNYSIDE.icons.stopwatch,
+      boostedItemIcon: ITEM_DETAILS.Grape.image,
+    },
+    {
+      shortDescription: translate("description.antiqueDress.boost.2"),
+      labelType: "success",
+      boostTypeIcon: powerup,
+      boostedItemIcon: ITEM_DETAILS.Grape.image,
+    },
+  ],
+  Harpoon: [
+    {
+      shortDescription: translate("description.harpoon.boost"),
+      labelType: "success",
+      boostTypeIcon: powerup,
+      boostedItemIcon: ITEM_DETAILS.Rod.image,
+    },
+    {
+      shortDescription: translate("description.harpoon.boost.2"),
+      labelType: "success",
+      boostTypeIcon: powerup,
+      boostedItemIcon: ITEM_DETAILS.Rod.image,
     },
   ],
   "Lava Swimwear": [
@@ -1056,6 +1125,118 @@ export const BUMPKIN_ITEM_BUFF_LABELS: Partial<
       boostTypeIcon: powerup,
     },
   ],
+
+  "Pistol Shrimp": [
+    {
+      shortDescription: translate("description.pistolShrimp.boost"),
+      labelType: "vibrant",
+      boostTypeIcon: lightning,
+      boostedItemIcon: SUNNYSIDE.icons.fish,
+    },
+  ],
+  "Shrimp Onesie": [
+    {
+      shortDescription: translate("description.shrimpOnesie.boost"),
+      labelType: "vibrant",
+      boostTypeIcon: lightning,
+      boostedItemIcon: SUNNYSIDE.icons.fish,
+    },
+  ],
+  "Bubble Aura": [
+    {
+      shortDescription: translate("description.bubbleAura.boost"),
+      labelType: "info",
+      boostTypeIcon: SUNNYSIDE.icons.stopwatch,
+      boostedItemIcon: SUNNYSIDE.icons.fish,
+    },
+    {
+      shortDescription: translate("description.bubbleAura.boost.two"),
+      labelType: "vibrant",
+      boostTypeIcon: lightning,
+      boostedItemIcon: SUNNYSIDE.icons.fish,
+    },
+  ],
+  "Deep Sea Salt Cave Background": [
+    {
+      shortDescription: translate(
+        "description.deepSeaSaltCaveBackground.boost",
+      ),
+      labelType: "success",
+      boostTypeIcon: powerup,
+      boostedItemIcon: ITEM_DETAILS.Salt.image,
+    },
+  ],
+  "Moon Hair": [
+    {
+      shortDescription: translate("description.moonHair.boost"),
+      labelType: "success",
+      boostTypeIcon: powerup,
+    },
+    {
+      shortDescription: translate("description.moonHair.boost.2"),
+      labelType: "success",
+      boostTypeIcon: powerup,
+    },
+  ],
+  "Surfer Hair": [
+    {
+      shortDescription: translate("description.surferHair.boost"),
+      labelType: "success",
+      boostTypeIcon: powerup,
+      boostedItemIcon: ITEM_DETAILS.Salt.image,
+    },
+  ],
+  "Rice Shirt": [
+    {
+      shortDescription: translate("description.riceShirt.boost"),
+      labelType: "success",
+      boostTypeIcon: powerup,
+      boostedItemIcon: ITEM_DETAILS.Oil.image,
+    },
+    {
+      shortDescription: translate("description.riceShirt.boost.2"),
+      labelType: "success",
+      boostTypeIcon: powerup,
+      boostedItemIcon: ITEM_DETAILS.Rice.image,
+    },
+  ],
+  "Alchemist Apron": [
+    {
+      shortDescription: translate("description.alchemistApron.boost"),
+      labelType: "success",
+      boostTypeIcon: powerup,
+    },
+  ],
+  "Salt Bottle Onesie": [
+    {
+      shortDescription: translate("description.saltBottleOnesie.boost"),
+      labelType: "success",
+      boostTypeIcon: powerup,
+    },
+  ],
+  "Pig Onesie": [
+    {
+      shortDescription: translate("description.pigOnesie.boost"),
+      labelType: "success",
+      boostTypeIcon: powerup,
+    },
+  ],
+  "Ascension Staff": [
+    {
+      shortDescription: translate("description.ascensionStaff.boost"),
+      labelType: "info",
+      boostTypeIcon: SUNNYSIDE.icons.stopwatch,
+    },
+  ],
+  "Fish Trap": [
+    {
+      shortDescription: translate("description.fishTrap.boost"),
+      labelType: "info",
+      boostTypeIcon: SUNNYSIDE.icons.stopwatch,
+    },
+  ],
+
+  // Add items above this line
   ...SPECIAL_ITEM_LABELS,
   ...Object.fromEntries(
     getObjectEntries(CHAPTER_TICKET_BOOST_ITEMS)
@@ -1066,7 +1247,7 @@ export const BUMPKIN_ITEM_BUFF_LABELS: Partial<
         const translationKey =
           `description.bonus${ticket.replace(/\s+/g, "")}.boost` as TranslationKeys;
 
-        return Object.values(items)
+        return Object.values(items ?? {})
           .filter((item) => !isCollectible(item))
           .map((item) => [
             item,

@@ -3,15 +3,14 @@ import React, { useContext, useEffect, useRef, useState } from "react";
 import { STONE_RECOVERY_TIME } from "features/game/lib/constants";
 import { Context } from "features/game/GameProvider";
 
-import { getTimeLeft } from "lib/utils/time";
-import {
+import type {
   GameState,
   InventoryItemName,
   Rock,
   Skills,
 } from "features/game/types/game";
 import { useSelector } from "@xstate/react";
-import { MachineState } from "features/game/lib/gameMachine";
+import type { MachineState } from "features/game/lib/gameMachine";
 import Decimal from "decimal.js-light";
 import { DepletedStone } from "./components/DepletedStone";
 import { DepletingStone } from "./components/DepletingStone";
@@ -23,12 +22,30 @@ import {
   getRequiredPickaxeAmount,
   getStoneDropAmount,
 } from "features/game/events/landExpansion/stoneMine";
-import { RockName, StoneRockName } from "features/game/types/resources";
-import { useNow } from "lib/utils/hooks/useNow";
+import type { RockName, StoneRockName } from "features/game/types/resources";
 import { KNOWN_IDS } from "features/game/types";
+import {
+  getMineBoostWindows,
+  type BoostWindow,
+} from "features/game/lib/boostWindows";
+import { useNodeTimer } from "features/game/lib/useNodeTimer";
 
 const HITS = 3;
 const tool = "Pickaxe";
+
+// Field comparator for the mine boost windows so the selector skips re-renders
+// without allocating JSON strings per rock on every service update.
+const areBoostWindowsEqual = (a: BoostWindow[], b: BoostWindow[]) =>
+  a.length === b.length &&
+  a.every((window, index) => {
+    const other = b[index];
+    return (
+      other !== undefined &&
+      window.from === other.from &&
+      window.to === other.to &&
+      window.speed === other.speed
+    );
+  });
 
 const HasTool = (
   inventory: Partial<Record<InventoryItemName, Decimal>>,
@@ -115,15 +132,24 @@ export const Stone: React.FC<Props> = ({ id }) => {
   const skills = useSelector(gameService, selectSkills, compareSkills);
   const season = useSelector(gameService, _selectSeason);
   const island = useSelector(gameService, _selectIsland);
-  const hasTool = HasTool(inventory, game, id);
-  const readyAt = resource.stone.minedAt + STONE_RECOVERY_TIME * 1000;
-  const now = useNow({ live: true, autoEndAt: readyAt });
-  const timeLeft = getTimeLeft(
-    resource.stone.minedAt,
-    STONE_RECOVERY_TIME,
-    now,
+  // Live windowed mine-recovery speed boosts (Ore Hourglass, Badger Shrine,
+  // totems). Recomputed from full state but only re-renders when the windows
+  // actually change, so the countdown reacts to boosters placed/expired mid-recover.
+  const mineBoostWindows = useSelector(
+    gameService,
+    (state) => getMineBoostWindows(state.context.state, name),
+    areBoostWindowsEqual,
   );
-  const mined = !canMine(resource, name);
+  const hasTool = HasTool(inventory, game, id);
+
+  const { minedAt, baseDurationMs } = resource.stone;
+  const { now, countdownSeconds: timeLeft } = useNodeTimer({
+    startedAt: minedAt,
+    baseDurationMs,
+    windows: mineBoostWindows,
+    legacyReadyAt: minedAt + STONE_RECOVERY_TIME * 1000,
+  });
+  const mined = !canMine(resource, name, game, now);
 
   const strike = () => {
     if (!hasTool) return;
@@ -161,23 +187,21 @@ export const Stone: React.FC<Props> = ({ id }) => {
         }).amount,
     );
 
-    const newState = gameService.send("stoneRock.mined", {
+    gameService.send("stoneRock.mined", {
       index: id,
     });
 
-    if (!newState.matches("hoarding")) {
-      if (showAnimations) {
-        setCollecting(true);
-        harvested.current = stoneMined.toNumber();
-      }
+    if (showAnimations) {
+      setCollecting(true);
+      harvested.current = stoneMined.toNumber();
+    }
 
-      miningFallAudio();
+    miningFallAudio();
 
-      if (showAnimations) {
-        await new Promise((res) => setTimeout(res, 3000));
-        setCollecting(false);
-        harvested.current = 0;
-      }
+    if (showAnimations) {
+      await new Promise((res) => setTimeout(res, 3000));
+      setCollecting(false);
+      harvested.current = 0;
     }
   };
 

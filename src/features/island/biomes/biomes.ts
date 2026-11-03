@@ -1,9 +1,11 @@
 import Decimal from "decimal.js-light";
-import { Decoration } from "features/game/types/decorations";
-import { GameState, IslandType } from "features/game/types/game";
+import type { Decoration } from "features/game/types/decorations";
+import type { GameState, IslandType } from "features/game/types/game";
 import { capitalize } from "lib/utils/capitalize";
 
-export type LandBiomeName = `${Capitalize<IslandType>} Biome`;
+export type LandBiomeName =
+  | `${Capitalize<Exclude<IslandType, "marble">>} Biome`
+  | "Marble Age Biome";
 
 export type Biome = Omit<Decoration, "name"> & {
   name: LandBiomeName;
@@ -44,15 +46,47 @@ export const LAND_BIOMES: Record<LandBiomeName, Biome> = {
   },
   "Volcano Biome": {
     name: "Volcano Biome",
-    ingredients: {
-      Gem: new Decimal(2000),
-      Leather: new Decimal(1500),
-      Obsidian: new Decimal(25),
-    },
+    ingredients: {},
     description: "",
-    disabled: true,
+    requires: "swamp",
+  },
+  "Swamp Biome": {
+    name: "Swamp Biome",
+    ingredients: {},
+    description: "",
+    requires: "spooky",
+  },
+  "Spooky Biome": {
+    name: "Spooky Biome",
+    ingredients: {},
+    description: "",
+    requires: "crystal",
+  },
+  "Crystal Biome": {
+    name: "Crystal Biome",
+    ingredients: {},
+    description: "",
+    requires: "galaxy",
+  },
+  "Galaxy Biome": {
+    name: "Galaxy Biome",
+    ingredients: {},
+    description: "",
+    requires: "marble",
+  },
+  "Marble Age Biome": {
+    name: "Marble Age Biome",
+    ingredients: {},
+    description: "",
+    requires: "marble",
   },
 };
 export function getCurrentBiome(island: GameState["island"]): LandBiomeName {
-  return island.biome ?? (`${capitalize(island.type)} Biome` as LandBiomeName);
+  return (
+    island.biome ??
+    // Marble is the only island whose biome isn't `${Capitalize<type>} Biome`.
+    (island.type === "marble"
+      ? "Marble Age Biome"
+      : (`${capitalize(island.type)} Biome` as LandBiomeName))
+  );
 }

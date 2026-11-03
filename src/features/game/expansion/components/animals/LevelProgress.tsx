@@ -3,15 +3,18 @@ import React, { useEffect, useState } from "react";
 import { AnimatedBar } from "components/ui/ProgressBar";
 import {
   ANIMAL_LEVELS,
-  AnimalLevel,
-  AnimalType,
+  type AnimalLevel,
+  type AnimalType,
 } from "features/game/types/animals";
-import { getAnimalLevel, isMaxLevel } from "features/game/lib/animals";
-import { TState } from "features/game/lib/animalMachine";
+import {
+  getAnimalLevel,
+  getAnimalMaxLevel,
+  isMaxLevel,
+} from "features/game/lib/animals";
+import type { TState } from "features/game/lib/animalMachine";
 import { Transition } from "@headlessui/react";
 import { useAppTranslation } from "lib/i18n/useAppTranslations";
-import { Animal } from "features/game/types/game";
-import { getKeys } from "features/game/types/decorations";
+import type { Animal } from "features/game/types/game";
 
 type Props = {
   animal: Animal;
@@ -21,8 +24,11 @@ type Props = {
   onLevelUp: () => void;
 };
 
-const getMaxLevelCycleProgress = (animal: AnimalType, experience: number) => {
-  const maxLevel = (getKeys(ANIMAL_LEVELS[animal]).length - 1) as AnimalLevel;
+const getMaxLevelCycleProgress = (
+  animal: AnimalType,
+  experience: number,
+  maxLevel: AnimalLevel,
+) => {
   const maxLevelXp = ANIMAL_LEVELS[animal][maxLevel];
   const oneLevelBeforeMaxXp =
     ANIMAL_LEVELS[animal][(maxLevel - 1) as AnimalLevel];
@@ -93,7 +99,11 @@ export const LevelProgress = ({
     }
 
     if (isMaxLevel(animal.type, level)) {
-      return getMaxLevelCycleProgress(animal.type, experience);
+      return getMaxLevelCycleProgress(
+        animal.type,
+        experience,
+        getAnimalMaxLevel(animal.type),
+      );
     }
 
     const currentThreshold =

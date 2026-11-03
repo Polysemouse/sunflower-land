@@ -3,24 +3,29 @@ import { Label } from "components/ui/Label";
 import { ModalOverlay } from "components/ui/ModalOverlay";
 import React, { useState } from "react";
 import {
-  HOLIDAY_EVENT_ITEMS,
-  EventStoreCollectible,
-  EventStoreItem,
-  EventStoreTier,
-  EventStoreWearable,
-} from "features/game/types/holidayEventShop";
+  HALLOWEEN_2026_EVENT_ITEMS,
+  type EventStoreCollectible,
+  type EventStoreItem,
+  type EventStoreTier,
+  type EventStoreWearable,
+} from "features/game/types/halloween2026EventShop";
 
 import { ItemsList } from "./eventmegastore_components/ItemsList";
 import { ItemDetail } from "./eventmegastore_components/ItemDetail";
 import { ITEM_IDS } from "features/game/types/bumpkin";
 import { ITEM_DETAILS } from "features/game/types/images";
 import { getImageUrl } from "lib/utils/getImageURLS";
-import { BuffLabel } from "features/game/types";
+import type { BuffLabel } from "features/game/types";
 import { BUMPKIN_ITEM_BUFF_LABELS } from "features/game/types/bumpkinItemBuffs";
 import { COLLECTIBLE_BUFF_LABELS } from "features/game/types/collectibleItemBuffs";
 import { FACTION_SHOP_KEYS } from "features/game/types/factionShop";
 import { OPEN_SEA_WEARABLES } from "metadata/metadata";
-import { GameState } from "features/game/types/game";
+import type { GameState } from "features/game/types/game";
+import { SUNNYSIDE } from "assets/sunnyside";
+import { getTimeLeft, secondsToString } from "lib/utils/time";
+import { useAppTranslation } from "lib/i18n/useAppTranslations";
+import { useNow } from "lib/utils/hooks/useNow";
+import { getItemDescription as getGameItemDescription } from "features/game/lib/getItemDescription";
 interface Props {
   onClose?: () => void;
   readonly?: boolean;
@@ -59,19 +64,19 @@ export const getItemBuffLabel = (
     return BUMPKIN_ITEM_BUFF_LABELS[item.wearable];
   }
 
-  return COLLECTIBLE_BUFF_LABELS[item.collectible]?.({
-    skills: state.bumpkin.skills,
-    collectibles: state.collectibles,
-  });
+  return COLLECTIBLE_BUFF_LABELS[item.collectible]?.(state);
 };
-export const getItemDescription = (item: EventStoreItem | null): string => {
+export const getItemDescription = (
+  item: EventStoreItem | null,
+  game: GameState,
+): string => {
   if (!item) return "";
 
   if (isWearablesItem(item)) {
     return OPEN_SEA_WEARABLES[item.wearable].description;
   }
 
-  return ITEM_DETAILS[item.collectible].description;
+  return getGameItemDescription({ item: item.collectible, game });
 };
 
 export const EventStore: React.FC<Props> = ({ readonly, state }) => {
@@ -82,18 +87,34 @@ export const EventStore: React.FC<Props> = ({ readonly, state }) => {
     setSelectedTier(tier);
   };
 
-  const EVENTMEGASTORE = HOLIDAY_EVENT_ITEMS;
+  const now = useNow({ live: true });
+  const startDate = new Date("2026-10-22T00:00:00.000Z");
+  const endDate = new Date("2026-11-02T00:00:00.000Z");
+
+  const totalSecondsAvailable =
+    (endDate.getTime() - startDate.getTime()) / 1000;
+
+  const timeRemaining = getTimeLeft(
+    startDate.getTime(),
+    totalSecondsAvailable,
+    now,
+  );
+  const { t } = useAppTranslation();
+  const EVENTMEGASTORE = HALLOWEEN_2026_EVENT_ITEMS;
 
   // Basic-Epic
   const basicAllItems = EVENTMEGASTORE.basic.items;
   const rareAllItems = EVENTMEGASTORE.rare.items;
   const epicAllItems = EVENTMEGASTORE.epic.items;
   const megaItems = EVENTMEGASTORE.mega.items;
+  const extraItems = EVENTMEGASTORE.extra.items;
 
   return (
     <>
       <ModalOverlay
         show={!!selectedItem}
+        panelPosition="auto"
+        lockBackgroundScroll
         onBackdropClick={() => setSelectedItem(null)}
       >
         <ItemDetail
@@ -115,10 +136,18 @@ export const EventStore: React.FC<Props> = ({ readonly, state }) => {
         <Label type="default" className="mb-1">
           {"Event Store"}
         </Label>
+        <Label icon={SUNNYSIDE.icons.stopwatch} type="danger" className="mb-1">
+          {t("megaStore.timeRemaining", {
+            timeRemaining: secondsToString(timeRemaining, {
+              length: "medium",
+              removeTrailingZeros: true,
+            }),
+          })}
+        </Label>
       </div>
       <div
         className={classNames("flex flex-col p-2 pt-1", {
-          ["max-h-[300px] overflow-y-auto scrollable "]: !readonly,
+          ["max-h-[450px] overflow-y-auto scrollable "]: !readonly,
         })}
       >
         <ItemsList
@@ -142,6 +171,12 @@ export const EventStore: React.FC<Props> = ({ readonly, state }) => {
           itemsLabel={"Mega Items"}
           tier="mega"
           items={megaItems}
+          onItemClick={handleClickItem}
+        />
+        <ItemsList
+          itemsLabel={"Extra Item"}
+          tier="extra"
+          items={extraItems}
           onItemClick={handleClickItem}
         />
       </div>

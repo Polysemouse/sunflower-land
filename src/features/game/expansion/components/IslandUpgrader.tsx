@@ -1,4 +1,4 @@
-import React, { Fragment, useContext, useState } from "react";
+import React, { Fragment, useContext, useEffect, useState } from "react";
 
 import { GRID_WIDTH_PX, PIXEL_SCALE } from "features/game/lib/constants";
 import { NPCPlaceable } from "features/island/bumpkin/components/NPC";
@@ -6,41 +6,61 @@ import { NPC_WEARABLES } from "lib/npcs";
 import { Modal } from "components/ui/Modal";
 import { CloseButtonPanel } from "features/game/components/CloseablePanel";
 import { Context } from "features/game/GameProvider";
+import { loadLayouts } from "features/game/actions/loadLayouts";
+import {
+  applyLayoutEffect,
+  createLayoutEffect,
+  flushPendingActions,
+} from "features/game/actions/layoutEffects";
+import { Checkbox } from "components/ui/Checkbox";
+import { MAX_SAVED_LAYOUTS, type SavedLayout } from "features/game/types/game";
 import { MapPlacement } from "./MapPlacement";
 
 import { Button } from "components/ui/Button";
 import { SUNNYSIDE } from "assets/sunnyside";
-import { ITEM_DETAILS } from "features/game/types/images";
+import {
+  ITEM_DETAILS,
+  getTranslatedItemName,
+} from "features/game/types/images";
+import coinsIcon from "assets/icons/coins.webp";
 import { Label } from "components/ui/Label";
 import { Panel } from "components/ui/Panel";
 import { useActor, useSelector } from "@xstate/react";
-import { ISLAND_UPGRADE } from "features/game/events/landExpansion/upgradeFarm";
-import { CollectibleName, getKeys } from "features/game/types/craftables";
+import {
+  ISLAND_UPGRADE,
+  isLandUpgradable,
+  getAscensionUpgradeCost,
+  ASCENSION_BUMPKIN_LEVEL,
+} from "features/game/events/landExpansion/upgradeFarm";
+import {
+  getAscensionLevel,
+  LEVELS_PER_ASCENSION,
+} from "features/game/lib/level";
+import type { CollectibleName } from "features/game/types/craftables";
+import { getKeys } from "lib/object";
 import { createPortal } from "react-dom";
 import confetti from "canvas-confetti";
-import { IslandType } from "features/game/types/game";
+import type { AscensionIslandType, IslandType } from "features/game/types/game";
+import { ASCENSION_ISLANDS, getIslandName } from "features/game/types/game";
 import { Section, useScrollIntoView } from "lib/utils/hooks/useScrollIntoView";
 import { useAppTranslation } from "lib/i18n/useAppTranslations";
 import { Transition } from "@headlessui/react";
-import { formatDateTime } from "lib/utils/time";
 import { translate } from "lib/i18n/translate";
 import { Loading } from "features/auth/components";
 import { EXPIRY_COOLDOWNS } from "features/game/lib/collectibleBuilt";
-import { MachineState } from "features/game/lib/gameMachine";
-import { useNow } from "lib/utils/hooks/useNow";
-
-const UPGRADE_DATES: Record<IslandType, number | null> = {
-  basic: new Date(0).getTime(),
-  spring: new Date("2024-05-15T00:00:00Z").getTime(),
-  desert: new Date("2025-02-03T00:00:00Z").getTime(),
-  volcano: null, // Next prestige after volcano
-};
+import type { MachineState } from "features/game/lib/gameMachine";
+import { hasRequiredIslandExpansion } from "features/game/lib/hasRequiredIslandExpansion";
 
 export const UPGRADE_RAFTS: Record<IslandType, string | null> = {
   basic: SUNNYSIDE.land.springRaft,
   spring: SUNNYSIDE.land.desertRaft,
   desert: SUNNYSIDE.land.volcanoRaft,
-  volcano: null, // Next prestige after volcano
+  volcano: SUNNYSIDE.land.swampRaft,
+  swamp: SUNNYSIDE.land.spookyRaft,
+  spooky: SUNNYSIDE.land.crystalRaft,
+  crystal: SUNNYSIDE.land.galaxyRaft,
+  galaxy: SUNNYSIDE.land.marbleRaft,
+  marble: SUNNYSIDE.land.marbleRaft,
 };
 
 const UPGRADE_PREVIEW: Record<IslandType, string | null> = {
@@ -48,6 +68,12 @@ const UPGRADE_PREVIEW: Record<IslandType, string | null> = {
   spring: SUNNYSIDE.announcement.springPrestige,
   desert: SUNNYSIDE.announcement.desertPrestige,
   volcano: SUNNYSIDE.announcement.volcanoPrestige,
+  swamp: SUNNYSIDE.announcement.volcanoPrestige,
+  // Ascension islands (spooky onward) reuse the swamp value for now.
+  spooky: SUNNYSIDE.announcement.volcanoPrestige,
+  crystal: SUNNYSIDE.announcement.volcanoPrestige,
+  galaxy: SUNNYSIDE.announcement.volcanoPrestige,
+  marble: SUNNYSIDE.announcement.volcanoPrestige,
 };
 
 const UPGRADE_MESSAGES: Record<IslandType, string | null> = {
@@ -55,6 +81,12 @@ const UPGRADE_MESSAGES: Record<IslandType, string | null> = {
   spring: translate("islandupgrade.welcomePetalParadise"),
   desert: translate("islandupgrade.welcomeDesertIsland"),
   volcano: translate("islandupgrade.welcomeVolcanoIsland"),
+  swamp: translate("islandupgrade.welcomeVolcanoIsland"),
+  // Ascension islands (spooky onward) reuse the swamp value for now.
+  spooky: translate("islandupgrade.welcomeVolcanoIsland"),
+  crystal: translate("islandupgrade.welcomeVolcanoIsland"),
+  galaxy: translate("islandupgrade.welcomeVolcanoIsland"),
+  marble: translate("islandupgrade.welcomeVolcanoIsland"),
 };
 
 const UPGRADE_DESCRIPTIONS: Record<IslandType, string | null> = {
@@ -62,24 +94,86 @@ const UPGRADE_DESCRIPTIONS: Record<IslandType, string | null> = {
   spring: translate("islandupgrade.exoticResourcesDescription"),
   desert: translate("islandupgrade.desertResourcesDescription"),
   volcano: translate("islandupgrade.volcanoResourcesDescription"),
+  swamp: translate("islandupgrade.volcanoResourcesDescription"),
+  // Ascension islands (spooky onward) reuse the swamp value for now.
+  spooky: translate("islandupgrade.volcanoResourcesDescription"),
+  crystal: translate("islandupgrade.volcanoResourcesDescription"),
+  galaxy: translate("islandupgrade.volcanoResourcesDescription"),
+  marble: translate("islandupgrade.volcanoResourcesDescription"),
 };
+
+// Swamp ascension launch date — shown as a teaser on the locked "coming soon"
+// label until the upgrade opens to everyone.
+const SWAMP_LAUNCH_DATE = new Date("2026-08-03"); // 3rd August 2026
+
+// Swamp (terminal ascension island) isn't in ISLAND_UPGRADE, so fall back to an
+// empty upgrade to keep the unconditional reads below type-safe and crash-free.
+const NO_ISLAND_UPGRADE: Pick<
+  (typeof ISLAND_UPGRADE)[keyof typeof ISLAND_UPGRADE],
+  "items" | "expansions"
+> = { expansions: 0, items: {} };
 
 const IslandUpgraderModal: React.FC<{
   onClose: () => void;
-  onUpgrade: () => void;
+  onUpgrade: (options: { saveLayout: boolean }) => void;
 }> = ({ onClose, onUpgrade }) => {
   const { gameService } = useContext(Context);
   const [gameState] = useActor(gameService);
-  const now = useNow();
 
   const [showConfirmation, setShowConfirmation] = useState(false);
+  // "Save my current layout" prompt (ascensions only). The save is a normal
+  // cap-counted layout, so the slot state decides checkbox vs hint.
+  const [saveLayout, setSaveLayout] = useState(true);
+  const [layoutSlotsFull, setLayoutSlotsFull] = useState(false);
 
-  const { island, inventory, collectibles, home } = gameState.context.state;
-  const upgrade = ISLAND_UPGRADE[island.type];
+  const { island, inventory, collectibles, home, coins, bumpkin } =
+    gameState.context.state;
+
+  const upgrade = isLandUpgradable(island.type)
+    ? ISLAND_UPGRADE[island.type]
+    : NO_ISLAND_UPGRADE;
   const { t } = useAppTranslation();
 
   const remainingExpansions =
     upgrade.expansions - (inventory["Basic Land"]?.toNumber() ?? 0);
+
+  // Computed up here so the confirmation panel below can switch its copy too.
+  const nextIsland = isLandUpgradable(island.type)
+    ? ISLAND_UPGRADE[island.type].upgrade
+    : undefined;
+  const isAscensionUpgrade =
+    !!nextIsland &&
+    (ASCENSION_ISLANDS as readonly string[]).includes(nextIsland);
+
+  // Ascension islands also require a minimum Bumpkin level.
+  // Mirror the server gate: maxed current band — level 150 for the first
+  // ascension (band 0), level 50 of the current band for every re-ascension.
+  const hasRequiredLevel =
+    !isAscensionUpgrade ||
+    getAscensionLevel({
+      experience: bumpkin.experience ?? 0,
+      ascensionLevel: island.ascensionLevel ?? 0,
+    }).isReadyToAscend;
+
+  useEffect(() => {
+    if (!isAscensionUpgrade) return;
+
+    let cancelled = false;
+    const token = gameService.getSnapshot().context.rawToken as string;
+
+    loadLayouts({ token })
+      .then((data) => {
+        if (cancelled) return;
+        setLayoutSlotsFull(data.layouts.length >= MAX_SAVED_LAYOUTS);
+      })
+      // Best-effort — on failure the checkbox stays and the save may no-op.
+      .catch(() => undefined);
+
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAscensionUpgrade]);
 
   if (showConfirmation) {
     return (
@@ -88,13 +182,51 @@ const IslandUpgraderModal: React.FC<{
           {t("warning")}
         </Label>
         <div className="p-2">
-          <p className="text-sm">{t("islandupgrade.confirmUpgrade")}</p>
-          <p className="text-xs mt-2">{t("islandupgrade.warning1")}</p>
+          <p className="text-sm">
+            {isAscensionUpgrade
+              ? t("islandupgrade.confirmAscend")
+              : t("islandupgrade.confirmUpgrade")}
+          </p>
+          {/* First ascension (volcano onward) keeps the arrangement in place;
+              later ascensions reset to the initial land, with an explicit
+              re-apply offer afterwards - see transitionToIsland. */}
+          <p className="text-xs mt-2">
+            {isAscensionUpgrade
+              ? island.type === "volcano"
+                ? t("islandupgrade.warningAscend")
+                : t("islandupgrade.warningAscendReset")
+              : t("islandupgrade.warning1")}
+          </p>
+          {isAscensionUpgrade &&
+            (layoutSlotsFull ? (
+              <p className="text-xs mt-2">
+                {t("islandupgrade.saveLayoutSlotsFull")}
+              </p>
+            ) : (
+              <div className="flex items-center gap-2 mt-2">
+                <Checkbox
+                  checked={saveLayout}
+                  onChange={setSaveLayout}
+                  aria-label={t("islandupgrade.saveLayoutPrompt")}
+                />
+                <span className="text-xs">
+                  {t("islandupgrade.saveLayoutPrompt")}
+                </span>
+              </div>
+            ))}
         </div>
 
         <div className="flex">
           <Button onClick={() => setShowConfirmation(false)}>{t("no")}</Button>
-          <Button className="ml-1" onClick={onUpgrade}>
+          <Button
+            className="ml-1"
+            onClick={() =>
+              onUpgrade({
+                saveLayout:
+                  isAscensionUpgrade && !layoutSlotsFull && saveLayout,
+              })
+            }
+          >
             {t("yes")}
           </Button>
         </div>
@@ -125,23 +257,48 @@ const IslandUpgraderModal: React.FC<{
     return getKeys(temporaryCollectibles).length > 0;
   };
 
-  const upgradeDate = UPGRADE_DATES[island.type];
-  const hasUpgrade = upgradeDate !== null;
-  const isReady = hasUpgrade && upgradeDate <= now;
+  const hasUpgrade = isLandUpgradable(island.type);
 
-  const hasResources = getKeys(upgrade.items).every(
-    (name) => inventory[name]?.gte(upgrade.items[name] ?? 0) ?? false,
+  // Ascension upgrades carry their (level-scaled) cost in getAscensionUpgradeCost,
+  // not in ISLAND_UPGRADE[...].items (which is empty for them).
+  const { items: upgradeItems, coins: upgradeCoins } = isAscensionUpgrade
+    ? getAscensionUpgradeCost((island.ascensionLevel ?? 0) + 1)
+    : { items: upgrade.items, coins: 0 };
+
+  // Localised launch date (US vs rest-of-world ordering from the browser locale).
+  // SWAMP_LAUNCH_DATE is parsed as UTC midnight, so format in UTC too — otherwise
+  // negative-UTC locales (the Americas) render the previous calendar day.
+  const comingSoonDate = SWAMP_LAUNCH_DATE.toLocaleDateString(
+    navigator.language,
+    { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" },
   );
+
+  const hasResources =
+    getKeys(upgradeItems).every(
+      (name) => inventory[name]?.gte(upgradeItems[name] ?? 0) ?? false,
+    ) && coins >= upgradeCoins;
 
   return (
     <CloseButtonPanel bumpkinParts={NPC_WEARABLES.grubnuk} onClose={onClose}>
       <div className="p-2">
         <div className="flex items-center  mb-2 ">
-          <p className="text-sm mr-2">{t("islandupgrade.upgradeIsland")}</p>
+          <p className="text-sm mr-2">
+            {isAscensionUpgrade
+              ? t("islandupgrade.ascendIsland")
+              : t("islandupgrade.upgradeIsland")}
+          </p>
           <img src={SUNNYSIDE.icons.heart} className="h-6" />
         </div>
-        <p className="text-xs mb-2">{t("islandupgrade.newOpportunities")}</p>
-        <p className="text-xs mb-2">{t("islandupgrade.confirmation")}</p>
+        <p className="text-xs mb-2">
+          {isAscensionUpgrade
+            ? t("islandupgrade.ascendIntro")
+            : t("islandupgrade.newOpportunities")}
+        </p>
+        <p className="text-xs mb-2">
+          {isAscensionUpgrade
+            ? t("islandupgrade.ascendConfirmation")
+            : t("islandupgrade.confirmation")}
+        </p>
         <img
           src={UPGRADE_PREVIEW[gameState.context.state.island.type] as string}
           className="w-full rounded-md"
@@ -153,62 +310,79 @@ const IslandUpgraderModal: React.FC<{
             type="danger"
             className="mr-3 my-2"
           >
-            {t("coming.soon")}
+            {isAscensionUpgrade
+              ? t("islandupgrade.comingSoon", { date: comingSoonDate })
+              : t("coming.soon")}
           </Label>
         )}
 
         {hasUpgrade && (
           <>
-            <div className="flex items-center mt-2 mb-1 flex-wrap">
-              {!isReady && (
-                <Label
-                  icon={SUNNYSIDE.icons.stopwatch}
-                  type="danger"
-                  className="mr-3 my-2 whitespace-nowrap"
-                >
-                  {`${t("coming.soon")} - ${formatDateTime(
-                    new Date(upgradeDate).toISOString(),
-                  )}`}
-                </Label>
-              )}
+            <div className="flex items-center mt-2 mb-1 flex-wrap gap-x-2 gap-y-1">
               {remainingExpansions > 0 && (
                 <Label
                   icon={SUNNYSIDE.land.island}
                   type="danger"
-                  className="mr-3 whitespace-nowrap"
+                  className="whitespace-nowrap"
                 >
-                  {`${remainingExpansions} Expansions Remaining`}
+                  {t("islandupgrade.expansionsRemaining", {
+                    remaining: remainingExpansions,
+                  })}
                 </Label>
               )}
 
-              {isReady && hasUnexpiredItemsPlaced() && (
+              {!hasRequiredLevel && (
                 <Label
-                  icon={SUNNYSIDE.icons.expression_alerted}
+                  icon={SUNNYSIDE.icons.player}
                   type="danger"
-                  className="mr-3 mb-1"
+                  className="whitespace-nowrap"
                 >
+                  {island.ascensionLevel
+                    ? t("islandupgrade.ascensionLevelRequired", {
+                        level: LEVELS_PER_ASCENSION,
+                      })
+                    : t("islandupgrade.levelRequired", {
+                        level: ASCENSION_BUMPKIN_LEVEL,
+                      })}
+                </Label>
+              )}
+
+              {hasUnexpiredItemsPlaced() && (
+                <Label icon={SUNNYSIDE.icons.expression_alerted} type="danger">
                   {t("islandupgrade.tempItemWarning")}
                 </Label>
               )}
-              {getKeys(upgrade.items).map((name) => (
+              {getKeys(upgradeItems).map((name) => (
                 <Label
                   key={name}
                   icon={ITEM_DETAILS[name].image}
-                  className="mr-3 whitespace-nowrap"
+                  className="whitespace-nowrap"
                   type={
-                    inventory[name]?.gte(upgrade.items[name] ?? 0)
+                    inventory[name]?.gte(upgradeItems[name] ?? 0)
                       ? "default"
                       : "danger"
                   }
-                >{`${upgrade.items[name]} x ${name}`}</Label>
+                >{`${upgradeItems[name]} x ${getTranslatedItemName(name)}`}</Label>
               ))}
+              {upgradeCoins > 0 && (
+                <Label
+                  icon={coinsIcon}
+                  className="whitespace-nowrap"
+                  type={coins >= upgradeCoins ? "default" : "danger"}
+                >
+                  {`${upgradeCoins} x ${t("coins")}`}
+                </Label>
+              )}
             </div>
           </>
         )}
       </div>
       <Button
         disabled={
-          !hasUpgrade || !hasResources || !isReady || remainingExpansions > 0
+          !hasUpgrade ||
+          !hasResources ||
+          !hasRequiredLevel ||
+          remainingExpansions > 0
         }
         onClick={() => setShowConfirmation(true)}
       >
@@ -224,27 +398,60 @@ interface Props {
 
 const _islandType = (state: MachineState) =>
   state.context.state.island?.type ?? "basic";
+const _ascensionLevel = (state: MachineState) =>
+  state.context.state.island?.ascensionLevel ?? 0;
 const _expansionCount = (state: MachineState) =>
   state.context.state.inventory["Basic Land"]?.toNumber() ?? 3;
-
 export const IslandUpgrader: React.FC<Props> = ({ offset }) => {
   const { t } = useAppTranslation();
 
   const { gameService, showAnimations } = useContext(Context);
 
   const islandType = useSelector(gameService, _islandType);
+  const ascensionLevel = useSelector(gameService, _ascensionLevel);
   const expansionCount = useSelector(gameService, _expansionCount);
 
   const [showModal, setShowModal] = useState(false);
   const [showTravelAnimation, setShowTravelAnimation] = useState(false);
   const [showUpgraded, setShowUpgraded] = useState(false);
+  // The layout offered for one-tap re-apply in the post-upgrade modal
+  // (later ascensions only, and only when the pointer resolves).
+  const [reapplyLayout, setReapplyLayout] = useState<SavedLayout | undefined>();
+  const [reapplying, setReapplying] = useState(false);
 
   const [scrollIntoView] = useScrollIntoView();
 
-  const onUpgrade = async () => {
-    setShowTravelAnimation(true);
+  const onUpgrade = async ({ saveLayout }: { saveLayout: boolean }) => {
+    // Captured before the upgrade mutates the island.
+    const wasAscensionUpgrade = hasRequiredIslandExpansion(
+      islandType,
+      "volcano",
+    );
+    const wasFirstAscension = islandType === "volcano";
 
-    await new Promise((resolve) => setTimeout(resolve, 2000));
+    setShowTravelAnimation(true);
+    const travelWait = new Promise((resolve) => setTimeout(resolve, 2000));
+
+    // "Save my current layout": snapshot the pre-ascension farm as a normal
+    // saved layout, marked as the post-ascension re-apply target. Flush
+    // first so the server snapshot includes any unsent local actions.
+    if (saveLayout) {
+      try {
+        await flushPendingActions(gameService);
+        const { farmId, rawToken, state } = gameService.getSnapshot().context;
+        await createLayoutEffect({
+          farmId: farmId as number,
+          token: rawToken as string,
+          state,
+          markAscension: true,
+        });
+      } catch {
+        // Non-fatal — the upgrade continues; a layout can be saved later
+        // from the Saved Layouts modal.
+      }
+    }
+
+    await travelWait;
 
     setShowModal(false);
     gameService.send("PAUSE");
@@ -256,6 +463,20 @@ export const IslandUpgrader: React.FC<Props> = ({ offset }) => {
 
     await new Promise((resolve) => setTimeout(resolve, 1000));
 
+    // Later ascensions reset the land — offer a one-tap re-apply of the
+    // saved ascension layout in the post-upgrade modal.
+    if (wasAscensionUpgrade && !wasFirstAscension) {
+      try {
+        const token = gameService.getSnapshot().context.rawToken as string;
+        const data = await loadLayouts({ token });
+        setReapplyLayout(
+          data.layouts.find((layout) => layout.id === data.ascensionLayoutId),
+        );
+      } catch {
+        // Non-fatal — the player can apply it from the Saved Layouts modal.
+      }
+    }
+
     setShowUpgraded(true);
 
     gameService.send("PLAY");
@@ -264,6 +485,34 @@ export const IslandUpgrader: React.FC<Props> = ({ offset }) => {
 
     setShowTravelAnimation(false);
     if (showAnimations) confetti();
+  };
+
+  const onReapplyLayout = async () => {
+    if (!reapplyLayout || reapplying) return;
+
+    setReapplying(true);
+
+    try {
+      // Waits for the upgrade's autosave to land, so the server applies the
+      // layout to the post-ascension farm.
+      await flushPendingActions(gameService);
+
+      const { farmId, rawToken, state } = gameService.getSnapshot().context;
+      const result = await applyLayoutEffect({
+        farmId: farmId as number,
+        token: rawToken as string,
+        id: reapplyLayout.id,
+        state,
+      });
+
+      gameService.send({ type: "LAYOUT_APPLIED", state: result.gameState });
+    } catch {
+      // Non-fatal — the player can apply it from the Saved Layouts modal.
+    } finally {
+      setReapplying(false);
+      setReapplyLayout(undefined);
+      setShowUpgraded(false);
+    }
   };
 
   const nextExpansion = expansionCount + 1;
@@ -321,6 +570,20 @@ export const IslandUpgrader: React.FC<Props> = ({ offset }) => {
     if (islandType === "desert" && nextExpansion === 26) {
       return { x: 1, y: -11 };
     }
+    // Until the volcano cap (30 expansions) the raft sits on the side and the
+    // modal blocks the upgrade ("X Expansions Remaining"); once maxed it moves
+    // to the top-right scaffolding, ready to prestige to swamp.
+    // TODO: confirm the scaffolding coordinate in-game.
+    if (islandType === "volcano") {
+      return nextExpansion === 31 ? { x: -1, y: 20 } : { x: 9, y: 9 };
+    }
+
+    if (
+      hasRequiredIslandExpansion(islandType, "swamp") &&
+      nextExpansion === 43
+    ) {
+      return { x: -40, y: -16 };
+    }
 
     return { x: 7, y: 0 };
   };
@@ -334,6 +597,18 @@ export const IslandUpgrader: React.FC<Props> = ({ offset }) => {
 
   const upgradeRaft = UPGRADE_RAFTS[islandType];
   const preview = UPGRADE_PREVIEW[islandType];
+
+  // Ascension islands (swamp onward) share the volcano welcome copy, so surface
+  // the real island name plus the ascension level instead of a hardcoded title.
+  const isAscensionIsland = ASCENSION_ISLANDS.includes(
+    islandType as AscensionIslandType,
+  );
+  const welcomeMessage = isAscensionIsland
+    ? t("islandupgrade.welcomeAscensionIsland", {
+        island: getIslandName(islandType),
+        level: ascensionLevel,
+      })
+    : UPGRADE_MESSAGES[islandType];
 
   return (
     <>
@@ -365,14 +640,23 @@ export const IslandUpgrader: React.FC<Props> = ({ offset }) => {
       <Modal show={showUpgraded}>
         <CloseButtonPanel bumpkinParts={NPC_WEARABLES.grubnuk}>
           <div className="p-2">
-            <p className="text-sm mb-2">{UPGRADE_MESSAGES[islandType]}</p>
+            <p className="text-sm mb-2">{welcomeMessage}</p>
             <p className="text-xs mb-2">{UPGRADE_DESCRIPTIONS[islandType]}</p>
             {preview && (
               <img src={preview} className="w-full rounded-md mb-2" />
             )}
             <p className="text-xs mb-2">{t("islandupgrade.itemsReturned")}</p>
           </div>
-          <Button onClick={() => setShowUpgraded(false)}>
+          {reapplyLayout && (
+            <Button
+              disabled={reapplying}
+              className="mb-1"
+              onClick={onReapplyLayout}
+            >
+              {t("islandupgrade.reapplyLayout", { name: reapplyLayout.name })}
+            </Button>
+          )}
+          <Button disabled={reapplying} onClick={() => setShowUpgraded(false)}>
             {t("continue")}
           </Button>
         </CloseButtonPanel>

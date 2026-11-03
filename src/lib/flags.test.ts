@@ -1,18 +1,22 @@
 import Decimal from "decimal.js-light";
-import { hasFeatureAccess } from "./flags";
+import { hasFeatureAccess, hasTimeBasedFeatureAccess } from "./flags";
 import { TEST_FARM } from "features/game/lib/constants";
-
-import * as config from "./config";
+import { CONFIG } from "./config";
+import type { GameState } from "features/game/types/game";
 
 describe("hasFeatureAccess", () => {
-  const spy = jest.spyOn((config as any).default, "CONFIG", "get");
+  let previousNetwork: (typeof CONFIG)["NETWORK"];
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    previousNetwork = CONFIG.NETWORK;
+    CONFIG.NETWORK = "mainnet";
+  });
+
+  afterEach(() => {
+    CONFIG.NETWORK = previousNetwork;
   });
 
   it("returns true for a beta feature if the player has a beta pass", () => {
-    spy.mockReturnValue({ NETWORK: "mainnet" });
     expect(
       hasFeatureAccess(
         {
@@ -25,12 +29,135 @@ describe("hasFeatureAccess", () => {
   });
 
   it("returns false for a beta feature if the player does not have a beta pass", () => {
-    spy.mockReturnValue({ NETWORK: "mainnet" });
     expect(hasFeatureAccess(TEST_FARM, "JEST_TEST")).toBe(false);
   });
 
   it("returns true if on amoy and does not have a beta pass", () => {
-    spy.mockReturnValue({ NETWORK: "amoy" });
+    CONFIG.NETWORK = "amoy";
     expect(hasFeatureAccess(TEST_FARM, "JEST_TEST")).toBe(true);
+  });
+
+  // Regression: buff-label/empty-state callers (e.g. the Pet Guide Shrines tab)
+  // invoke feature-gated code with `{} as GameState` (no inventory). On mainnet
+  // the beta flag must read inventory safely and return false, not crash.
+  it("does not throw for a beta feature when the game has no inventory", () => {
+    expect(() =>
+      hasFeatureAccess({} as GameState, "SPEED_BOOSTS"),
+    ).not.toThrow();
+    expect(hasFeatureAccess({} as GameState, "SPEED_BOOSTS")).toBe(false);
+  });
+});
+
+describe("hasTimeBasedFeatureAccess", () => {
+  let previousNetwork: (typeof CONFIG)["NETWORK"];
+
+  beforeEach(() => {
+    previousNetwork = CONFIG.NETWORK;
+    CONFIG.NETWORK = "mainnet";
+  });
+
+  afterEach(() => {
+    CONFIG.NETWORK = previousNetwork;
+    jest.useRealTimers();
+  });
+
+  describe("TICKETS_FROM_COIN_NPC", () => {
+    it("is false before the start date", () => {
+      expect(
+        hasTimeBasedFeatureAccess({
+          featureName: "TICKETS_FROM_COIN_NPC",
+          now: new Date("2026-02-23T23:59:59Z").getTime(),
+          game: TEST_FARM,
+        }),
+      ).toBe(false);
+    });
+
+    it("is true on the start date", () => {
+      expect(
+        hasTimeBasedFeatureAccess({
+          featureName: "TICKETS_FROM_COIN_NPC",
+          now: new Date("2026-02-24T00:00:00Z").getTime(),
+          game: TEST_FARM,
+        }),
+      ).toBe(true);
+    });
+  });
+
+  describe("HALLOWEEN_2026_EVENT_FLAG", () => {
+    it("is false for players without beta before the event start", () => {
+      expect(
+        hasTimeBasedFeatureAccess({
+          featureName: "HALLOWEEN_2026_EVENT_FLAG",
+          now: new Date("2026-10-20T12:00:00Z").getTime(),
+          game: TEST_FARM,
+        }),
+      ).toBe(false);
+    });
+
+    it("is true for players with beta before the event start", () => {
+      expect(
+        hasTimeBasedFeatureAccess({
+          featureName: "HALLOWEEN_2026_EVENT_FLAG",
+          now: new Date("2026-10-20T12:00:00Z").getTime(),
+          game: {
+            ...TEST_FARM,
+            inventory: {
+              ...TEST_FARM.inventory,
+              "Beta Pass": new Decimal(1),
+            },
+          },
+        }),
+      ).toBe(true);
+    });
+
+    it("is true at the exact public start instant without beta", () => {
+      expect(
+        hasTimeBasedFeatureAccess({
+          featureName: "HALLOWEEN_2026_EVENT_FLAG",
+          now: new Date("2026-10-26T00:00:00Z").getTime(),
+          game: TEST_FARM,
+        }),
+      ).toBe(true);
+    });
+
+    it("is true during the window after public start for players without beta", () => {
+      expect(
+        hasTimeBasedFeatureAccess({
+          featureName: "HALLOWEEN_2026_EVENT_FLAG",
+          now: new Date("2026-10-29T12:00:00Z").getTime(),
+          game: TEST_FARM,
+        }),
+      ).toBe(true);
+    });
+
+    it("is false from the end date onward", () => {
+      expect(
+        hasTimeBasedFeatureAccess({
+          featureName: "HALLOWEEN_2026_EVENT_FLAG",
+          now: new Date("2026-11-02T00:00:00Z").getTime(),
+          game: TEST_FARM,
+        }),
+      ).toBe(false);
+      expect(
+        hasTimeBasedFeatureAccess({
+          featureName: "HALLOWEEN_2026_EVENT_FLAG",
+          now: new Date("2026-11-04T00:00:00Z").getTime(),
+          game: TEST_FARM,
+        }),
+      ).toBe(false);
+    });
+  });
+
+  it("HALLOWEEN_2026 is true at mocked wall clock during the window", () => {
+    jest.useFakeTimers();
+    const t = new Date("2026-10-29T12:00:00Z").getTime();
+    jest.setSystemTime(t);
+    expect(
+      hasTimeBasedFeatureAccess({
+        featureName: "HALLOWEEN_2026_EVENT_FLAG",
+        now: t,
+        game: TEST_FARM,
+      }),
+    ).toBe(true);
   });
 });

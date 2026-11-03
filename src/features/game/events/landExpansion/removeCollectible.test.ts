@@ -1,7 +1,7 @@
 import Decimal from "decimal.js-light";
 import { TEST_FARM } from "features/game/lib/constants";
 import { EXPIRY_COOLDOWNS } from "features/game/lib/collectibleBuilt";
-import { GameState } from "features/game/types/game";
+import type { GameState } from "features/game/types/game";
 import {
   removeCollectible,
   REMOVE_COLLECTIBLE_ERRORS,
@@ -128,6 +128,7 @@ describe("removeCollectible", () => {
         readyAt: 0,
       },
     ]);
+    expect(gameState.farmActivity["Collectible Removed"]).toBe(1);
   });
 
   it("it prevents a genie lamp from being removed if it is in use", () => {
@@ -225,5 +226,137 @@ describe("removeCollectible", () => {
         removedAt: now,
       },
     ]);
+  });
+
+  it("removes a collectible placed in the interior (ground)", () => {
+    const now = 1700000000000;
+    const gameState = removeCollectible({
+      state: {
+        ...GAME_STATE,
+        interior: {
+          ground: {
+            collectibles: {
+              "Abandoned Bear": [
+                {
+                  id: "ground-1",
+                  coordinates: { x: 0, y: 0 },
+                  createdAt: 0,
+                  readyAt: 0,
+                },
+              ],
+            },
+          },
+        },
+      },
+      action: {
+        location: "interior",
+        type: "collectible.removed",
+        name: "Abandoned Bear",
+        id: "ground-1",
+      },
+      createdAt: now,
+    });
+
+    expect(gameState.interior.ground.collectibles["Abandoned Bear"]).toEqual([
+      {
+        id: "ground-1",
+        createdAt: 0,
+        readyAt: 0,
+        removedAt: now,
+      },
+    ]);
+  });
+
+  it("does not remove an interior collectible with an unknown id", () => {
+    expect(() =>
+      removeCollectible({
+        state: {
+          ...GAME_STATE,
+          interior: {
+            ground: {
+              collectibles: {
+                "Abandoned Bear": [
+                  {
+                    id: "ground-1",
+                    coordinates: { x: 0, y: 0 },
+                    createdAt: 0,
+                    readyAt: 0,
+                  },
+                ],
+              },
+            },
+          },
+        },
+        action: {
+          location: "interior",
+          type: "collectible.removed",
+          name: "Abandoned Bear",
+          id: "missing",
+        },
+      }),
+    ).toThrow(REMOVE_COLLECTIBLE_ERRORS.INVALID_COLLECTIBLE);
+  });
+
+  it("removes a collectible placed in level_one", () => {
+    const now = 1700000000000;
+    const gameState = removeCollectible({
+      state: {
+        ...GAME_STATE,
+        interior: {
+          ground: { collectibles: {} },
+          expansion: "level-one-start",
+          level_one: {
+            collectibles: {
+              "Abandoned Bear": [
+                {
+                  id: "lo-1",
+                  coordinates: { x: 0, y: 0 },
+                  createdAt: 0,
+                  readyAt: 0,
+                },
+              ],
+            },
+          },
+        },
+      },
+      action: {
+        location: "level_one",
+        type: "collectible.removed",
+        name: "Abandoned Bear",
+        id: "lo-1",
+      },
+      createdAt: now,
+    });
+
+    expect(
+      gameState.interior.level_one!.collectibles["Abandoned Bear"],
+    ).toEqual([
+      {
+        id: "lo-1",
+        createdAt: 0,
+        readyAt: 0,
+        removedAt: now,
+      },
+    ]);
+  });
+
+  it("rejects removing on level_one before the upgrade has been bought", () => {
+    expect(() =>
+      removeCollectible({
+        state: {
+          ...GAME_STATE,
+          interior: {
+            ground: { collectibles: {} },
+            // level_one purposely missing
+          },
+        },
+        action: {
+          location: "level_one",
+          type: "collectible.removed",
+          name: "Abandoned Bear",
+          id: "lo-1",
+        },
+      }),
+    ).toThrow("Level one floor has not been unlocked");
   });
 });

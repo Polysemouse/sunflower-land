@@ -1,13 +1,12 @@
-import React, { FC, useState } from "react";
-
+import React, { type FC, useState } from "react";
 import { createContext } from "react";
 import { Modal } from "components/ui/Modal";
-import { StoreOnChainModal } from "./components/StoreOnChainModal";
 import { SpeakingModal } from "../SpeakingModal";
 import { NPC_WEARABLES } from "lib/npcs";
 import { translate } from "lib/i18n/translate";
 import { CurrenciesModal } from "features/island/hud/components/CurrenciesModal";
 import { VIPItems } from "./components/VIPItems";
+import { VIPSavings } from "./components/VIPSavings";
 import { OuterPanel, Panel } from "components/ui/Panel";
 import { ReputationSystem } from "features/island/hud/components/reputation/Reputation";
 import { Telegram } from "features/auth/components/Telegram/Telegram";
@@ -15,30 +14,40 @@ import { Twitter } from "features/auth/components/Twitter/Twitter";
 import { ReferralContent } from "features/island/hud/components/referral/Referral";
 import { CloseButtonPanel } from "../CloseablePanel";
 import { DiscordBonus } from "features/game/expansion/components/DiscordBoat";
-import { Streams } from "./components/Streams";
-import { Rewards } from "features/island/hud/components/referral/Rewards";
+import { DailyRewardChest } from "features/game/expansion/components/dailyReward/DailyReward";
 import { ChapterTracks } from "features/world/ui/tracks/ChapterTracks";
+import { MarketplaceTutorialModal } from "./MarketplaceTutorialModal";
 type GlobalModal =
   | "BUY_GEMS"
   | "DISCORD"
   | "BUY_BANNER"
-  | "STORE_ON_CHAIN"
   | "FIRST_EXPANSION"
   | "CHAPTER_TRACKS"
   | "NEXT_EXPANSION"
   | "SECOND_LEVEL"
   | "FIREPIT"
   | "BETTY"
+  | "FIRST_DELIVERY"
+  | "BETTY_BUY"
+  | "BETTY_PLANT"
+  | "FIREPIT_RHUBARB"
+  | "FIREPIT_SPEEDUP"
+  | "FIREPIT_EAT"
   | "BLACKSMITH"
+  | "BLACKSMITH_PLACE"
+  | "NATIVE_BONUS"
+  | "PETE_CHOP"
+  | "PETE_EXPAND"
+  | "EXPAND_LAND"
   | "VIP_ITEMS"
+  | "VIP_SAVINGS"
   | "REPUTATION"
   | "TELEGRAM"
   | "TWITTER"
   | "REFERRAL"
-  | "STREAMS"
   | "DEPOSIT"
   | "DAILY_REWARD"
-  | "EARN";
+  | "MARKETPLACE_TUTORIAL";
 
 export const ModalContext = createContext<{
   openModal: (type: GlobalModal) => void;
@@ -91,14 +100,16 @@ export const ModalProvider: FC<React.PropsWithChildren> = ({ children }) => {
         </Panel>
       </Modal>
 
+      <Modal show={opened === "VIP_SAVINGS"} onHide={handleClose}>
+        <CloseButtonPanel onClose={handleClose}>
+          <VIPSavings showBuyButton />
+        </CloseButtonPanel>
+      </Modal>
+
       <Modal show={opened === "CHAPTER_TRACKS"} onHide={handleClose}>
         <OuterPanel>
           <ChapterTracks />
         </OuterPanel>
-      </Modal>
-
-      <Modal show={opened === "STORE_ON_CHAIN"} onHide={handleClose}>
-        <StoreOnChainModal onClose={handleClose} />
       </Modal>
 
       <Modal show={opened === "REPUTATION"} onHide={handleClose}>
@@ -115,10 +126,6 @@ export const ModalProvider: FC<React.PropsWithChildren> = ({ children }) => {
 
       <Modal show={opened === "REFERRAL"} onHide={handleClose}>
         <ReferralContent onHide={handleClose} />
-      </Modal>
-
-      <Modal show={opened === "STREAMS"} onHide={handleClose}>
-        <Streams onClose={handleClose} />
       </Modal>
 
       <Modal show={opened === "FIRST_EXPANSION"}>
@@ -157,7 +164,7 @@ export const ModalProvider: FC<React.PropsWithChildren> = ({ children }) => {
               text: translate("betty.market-intro.one"),
             },
             {
-              text: translate("betty.market-intro.two"),
+              text: translate("betty.market-intro.harvest"),
             },
           ]}
           onClose={handleClose}
@@ -165,14 +172,85 @@ export const ModalProvider: FC<React.PropsWithChildren> = ({ children }) => {
         />
       </Modal>
 
+      {/* Betty announces the first delivery but points at Peggy, so the
+          player never confuses her market stall with the Plaza drop-off. */}
+      <Modal show={opened === "FIRST_DELIVERY"}>
+        <SpeakingModal
+          message={[
+            {
+              text: translate("betty.market-intro.delivery"),
+            },
+          ]}
+          onClose={handleClose}
+          bumpkinParts={NPC_WEARABLES.betty}
+        />
+      </Modal>
+
+      <Modal show={opened === "BETTY_BUY"}>
+        <SpeakingModal
+          message={[
+            {
+              text: translate("betty.market-intro.buy"),
+            },
+          ]}
+          onClose={handleClose}
+          bumpkinParts={NPC_WEARABLES.betty}
+        />
+      </Modal>
+
+      <Modal show={opened === "BETTY_PLANT"}>
+        <SpeakingModal
+          message={[
+            {
+              text: translate("betty.market-intro.plant"),
+            },
+          ]}
+          onClose={handleClose}
+          bumpkinParts={NPC_WEARABLES.betty}
+        />
+      </Modal>
+
+      <Modal show={opened === "FIREPIT_RHUBARB"}>
+        <SpeakingModal
+          message={[
+            {
+              text: translate("firepit-intro.rhubarb"),
+            },
+          ]}
+          onClose={handleClose}
+          bumpkinParts={NPC_WEARABLES.bruce}
+        />
+      </Modal>
+
+      <Modal show={opened === "FIREPIT_SPEEDUP"}>
+        <SpeakingModal
+          message={[
+            {
+              text: translate("firepit-intro.speedUp"),
+            },
+          ]}
+          onClose={handleClose}
+          bumpkinParts={NPC_WEARABLES.bruce}
+        />
+      </Modal>
+
+      <Modal show={opened === "FIREPIT_EAT"}>
+        <SpeakingModal
+          message={[
+            {
+              text: translate("firepit-intro.eat"),
+            },
+          ]}
+          onClose={handleClose}
+          bumpkinParts={NPC_WEARABLES.bruce}
+        />
+      </Modal>
+
       <Modal show={opened === "FIREPIT"}>
         <SpeakingModal
           message={[
             {
-              text: translate("firepit-intro.one"),
-            },
-            {
-              text: translate("firepit-intro.two"),
+              text: translate("firepit-intro.cook"),
             },
           ]}
           onClose={handleClose}
@@ -184,13 +262,68 @@ export const ModalProvider: FC<React.PropsWithChildren> = ({ children }) => {
         <SpeakingModal
           message={[
             {
-              text: translate("pete.craftScarecrow.one"),
+              text: translate("blacksmith.scarecrow.craft"),
+            },
+          ]}
+          onClose={handleClose}
+          bumpkinParts={NPC_WEARABLES.blacksmith}
+        />
+      </Modal>
+      <Modal show={opened === "BLACKSMITH_PLACE"}>
+        <SpeakingModal
+          message={[
+            {
+              text: translate("blacksmith.scarecrow.place"),
+            },
+          ]}
+          onClose={handleClose}
+          bumpkinParts={NPC_WEARABLES.blacksmith}
+        />
+      </Modal>
+      <Modal show={opened === "PETE_CHOP"}>
+        <SpeakingModal
+          message={[
+            {
+              text: translate("pete.chopTrees"),
+            },
+          ]}
+          onClose={handleClose}
+          bumpkinParts={NPC_WEARABLES["pumpkin' pete"]}
+        />
+      </Modal>
+      <Modal show={opened === "PETE_EXPAND"}>
+        <SpeakingModal
+          message={[
+            {
+              text: translate("pete.expandAgain"),
+            },
+          ]}
+          onClose={handleClose}
+          bumpkinParts={NPC_WEARABLES["pumpkin' pete"]}
+        />
+      </Modal>
+      <Modal show={opened === "EXPAND_LAND"}>
+        <SpeakingModal
+          message={[
+            {
+              text: translate("grimbly.expandLand.one"),
             },
             {
-              text: translate("pete.craftScarecrow.two"),
+              text: translate("grimbly.expandLand.two"),
+            },
+          ]}
+          onClose={handleClose}
+          bumpkinParts={NPC_WEARABLES.grimbly}
+        />
+      </Modal>
+      <Modal show={opened === "NATIVE_BONUS"}>
+        <SpeakingModal
+          message={[
+            {
+              text: translate("pete.nativeBonus.one"),
             },
             {
-              text: translate("pete.craftScarecrow.three"),
+              text: translate("pete.nativeBonus.two"),
             },
           ]}
           onClose={handleClose}
@@ -201,13 +334,7 @@ export const ModalProvider: FC<React.PropsWithChildren> = ({ children }) => {
         <SpeakingModal
           message={[
             {
-              text: translate("pete.levelthree.one"),
-            },
-            {
-              text: translate("pete.levelthree.two"),
-            },
-            {
-              text: translate("pete.levelthree.three"),
+              text: translate("pete.levelTwo.codex"),
             },
           ]}
           onClose={handleClose}
@@ -215,7 +342,11 @@ export const ModalProvider: FC<React.PropsWithChildren> = ({ children }) => {
         />
       </Modal>
 
-      <Rewards show={opened === "EARN"} onHide={handleClose} tab={"Earn"} />
+      <Modal show={opened === "MARKETPLACE_TUTORIAL"}>
+        <MarketplaceTutorialModal onClose={handleClose} />
+      </Modal>
+
+      <DailyRewardChest show={opened === "DAILY_REWARD"} onHide={handleClose} />
     </ModalContext.Provider>
   );
 };

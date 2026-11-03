@@ -1,5 +1,5 @@
 import { SUNNYSIDE } from "assets/sunnyside";
-import React, { useContext, useEffect, useCallback } from "react";
+import React, { useContext, useEffect, useCallback, useRef } from "react";
 import sflIcon from "assets/icons/flower_token.webp";
 import { MarketplaceNavigation } from "./components/home/MarketplaceHome";
 import { useLocation, useNavigate } from "react-router";
@@ -7,26 +7,47 @@ import { PIXEL_SCALE } from "features/game/lib/constants";
 import { OuterPanel } from "components/ui/Panel";
 import { Context } from "features/game/GameProvider";
 import { useAppTranslation } from "lib/i18n/useAppTranslations";
-import { MachineState } from "features/game/lib/gameMachine";
+import type { MachineState } from "features/game/lib/gameMachine";
 import { useSelector } from "@xstate/react";
 import { MarketplaceIntroduction } from "./components/MarketplaceIntroduction";
 import { formatNumber } from "lib/utils/formatNumber";
+import { PlayerModal } from "features/social/PlayerModal";
+import * as Auth from "features/auth/lib/Provider";
+import { getMarketplaceNavigationState } from "./lib/navigation";
+import { getMarketplaceReturnRoute } from "./lib/marketplaceReturnRoute";
 
 const _balance = (state: MachineState) => state.context.state.balance;
+const _farmId = (state: MachineState) => state.context.farmId ?? 0;
 
 export const Marketplace: React.FC = () => {
   const { gameService, fromRoute } = useContext(Context);
+  const { authService } = useContext(Auth.Context);
   const balance = useSelector(gameService, _balance);
+  const farmId = useSelector(gameService, _farmId);
+  const token =
+    (authService.getSnapshot().context.user?.rawToken as string) ?? "";
   const navigate = useNavigate();
   const location = useLocation();
   const { t } = useAppTranslation();
+  // Product navigation replaces location.state, so retain the state from when
+  // the marketplace was opened until it is closed.
+  const marketplaceNavigation = useRef(
+    getMarketplaceNavigationState(location.state),
+  );
 
   const handleClose = useCallback(() => {
-    const defaultRoute = location.pathname.includes("/world")
-      ? "/world/plaza"
-      : "/";
+    const returnTo = getMarketplaceReturnRoute({
+      pathname: location.pathname,
+      navigation: marketplaceNavigation.current,
+      fromRoute,
+    });
 
-    fromRoute ? navigate(fromRoute) : navigate(defaultRoute);
+    navigate(returnTo, {
+      replace: true,
+      state: marketplaceNavigation.current?.restore
+        ? { marketplaceRestore: marketplaceNavigation.current.restore }
+        : undefined,
+    });
   }, [location.pathname, fromRoute, navigate]);
 
   // exit marketplace if Escape key is pressed
@@ -46,6 +67,11 @@ export const Marketplace: React.FC = () => {
 
   return (
     <>
+      <PlayerModal
+        loggedInFarmId={farmId}
+        token={token}
+        hasAirdropAccess={false}
+      />
       <MarketplaceIntroduction />
       <div className="bg-[#181425] w-full h-full safe-area-inset-top safe-area-inset-bottom">
         <OuterPanel className="h-full">

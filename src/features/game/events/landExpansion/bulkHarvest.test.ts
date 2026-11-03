@@ -1,9 +1,9 @@
 import Decimal from "decimal.js-light";
 import { INITIAL_FARM } from "../../lib/constants";
-import { GameState } from "../../types/game";
+import type { GameState } from "../../types/game";
 import { bulkHarvest, getCropsToHarvest } from "./bulkHarvest";
 import { TEST_BUMPKIN } from "features/game/lib/bumpkinData";
-import { CropName } from "../../types/crops";
+import type { CropName } from "../../types/crops";
 import dictionary from "lib/i18n/dictionaries/dictionary.json";
 
 const FARM_WITH_PLOTS: GameState = {
@@ -340,6 +340,29 @@ describe("getPlotsToHarvest", () => {
     expect(readyPlots).toHaveProperty("2");
     expect(readyPlots).not.toHaveProperty("3");
     expect(readyPlots).not.toHaveProperty("4");
+  });
+
+  it("includes a windowed crop fertilised with Rapid Root at its boosted ready time", () => {
+    const baseDurationMs = 2000;
+    const plantedAt = dateNow - 1002; // > half of baseDuration ago
+    const state: GameState = {
+      ...GAME_STATE,
+      crops: {
+        "1": {
+          x: 1,
+          y: 1,
+          createdAt: 0,
+          crop: { name: "Sunflower" as CropName, plantedAt, baseDurationMs },
+          fertiliser: { name: "Rapid Root", fertilisedAt: plantedAt },
+        },
+      },
+    };
+
+    // Rapid Root is a 2x speed window, so the crop is ready at half its
+    // baseDuration. The bulk detector must forward plot.fertiliser to see this;
+    // without it the crop looks unready until its un-boosted (2x longer) time.
+    const { readyPlots } = getCropsToHarvest(state, dateNow);
+    expect(readyPlots).toHaveProperty("1");
   });
 
   it("returns empty object when no crops are ready", () => {

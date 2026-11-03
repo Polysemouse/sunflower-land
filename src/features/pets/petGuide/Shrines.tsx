@@ -6,12 +6,11 @@ import { PIXEL_SCALE } from "features/game/lib/constants";
 import { Label } from "components/ui/Label";
 import { PET_SHOP_ITEMS } from "features/game/types/petShop";
 import { COLLECTIBLE_BUFF_LABELS } from "features/game/types/collectibleItemBuffs";
-import { PET_SHRINES, PetShrineName } from "features/game/types/pets";
-import { InventoryItemName } from "features/game/types/game";
+import { PET_SHRINES, type PetShrineName } from "features/game/types/pets";
+import type { GameState, InventoryItemName } from "features/game/types/game";
 import classNames from "classnames";
-import { getKeys } from "features/game/lib/crafting";
+import { getKeys, getObjectEntries } from "lib/object";
 import { useAppTranslation } from "lib/i18n/useAppTranslations";
-import { getObjectEntries } from "features/game/expansion/lib/utils";
 import Decimal from "decimal.js-light";
 
 export const Shrines: React.FC<{ onBack: () => void }> = ({ onBack }) => {
@@ -34,8 +33,7 @@ export const Shrines: React.FC<{ onBack: () => void }> = ({ onBack }) => {
 
   const shrines = shrineNames.map<Shrine>((name) => {
     const shopItem = PET_SHOP_ITEMS[name];
-    const buffLabels =
-      COLLECTIBLE_BUFF_LABELS[name]?.({ skills: {}, collectibles: {} }) || [];
+    const buffLabels = COLLECTIBLE_BUFF_LABELS[name]?.({} as GameState) || [];
     const effect = buffLabels.map((buff) => buff.shortDescription);
 
     const ingredients = shopItem.ingredients

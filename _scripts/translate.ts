@@ -4,11 +4,11 @@ import * as path from "path";
 
 import ENGLISH_TERMS from "../src/lib/i18n/dictionaries/dictionary.json";
 import {
-  LanguageCode,
+  type LanguageCode,
   LANGUAGE_DETAILS,
 } from "../src/lib/i18n/dictionaries/language";
-import { getKeys } from "../src/features/game/types/decorations";
-import { TranslationKeys } from "../src/lib/i18n/dictionaries/types";
+import type { TranslationKeys } from "../src/lib/i18n/dictionaries/types";
+import { getKeys } from "../src/lib/object";
 
 import {
   TranslateClient,
@@ -153,7 +153,7 @@ async function translateTerms(targetLanguage: LanguageCode) {
 
   fs.writeFile(
     languageJson,
-    JSON.stringify(translatedTerms, null, 2),
+    `${JSON.stringify(translatedTerms, null, 2)}\n`,
     () => undefined,
   );
 }
@@ -163,7 +163,7 @@ async function englishToJSON() {
     __dirname,
     `../src/lib/i18n/dictionaries/en.json`,
   );
-  fs.writeFileSync(languageJson, JSON.stringify(ENGLISH_TERMS, null, 2));
+  fs.writeFileSync(languageJson, `${JSON.stringify(ENGLISH_TERMS, null, 2)}\n`);
 }
 
 async function runTranslations() {

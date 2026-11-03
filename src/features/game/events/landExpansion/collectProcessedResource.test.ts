@@ -2,12 +2,15 @@ import Decimal from "decimal.js-light";
 import { TEST_BUMPKIN } from "features/game/lib/bumpkinData";
 import { INITIAL_FARM } from "features/game/lib/constants";
 import { FISH_PROCESSING_TIME_SECONDS } from "features/game/types/fishProcessing";
-import { GameState } from "features/game/types/game";
+import type { GameState } from "features/game/types/game";
 import {
   collectProcessedResource,
-  CollectProcessedResourceAction,
+  type CollectProcessedResourceAction,
+  getProcessedResourceAmount,
 } from "./collectProcessedResource";
-import { ProcessingBuildingName } from "features/game/types/buildings";
+import type { ProcessingBuildingName } from "features/game/types/buildings";
+import type * as PrngModule from "lib/prng";
+import type * as GameTypesModule from "features/game/types";
 
 const createdAt = Date.now();
 
@@ -32,6 +35,42 @@ const SPRING_STATE: GameState = {
 };
 
 describe("collectProcessedFood", () => {
+  it("throws if the building is not placed", () => {
+    // A lifted building keeps processing until it is placed back down, where the
+    // pause is applied. Collecting from one in the inventory would skip it.
+    expect(() =>
+      collectProcessedResource({
+        state: {
+          ...SPRING_STATE,
+          buildings: {
+            ...SPRING_STATE.buildings,
+            "Fish Market": [
+              {
+                id: "123",
+                createdAt: 0,
+                readyAt: 0,
+                removedAt: createdAt - 1000,
+                processing: [
+                  {
+                    name: "Fish Flake",
+                    readyAt: createdAt - 500,
+                    startedAt: createdAt - 5000,
+                  },
+                ],
+              },
+            ],
+          },
+        },
+        action: {
+          type: "processedResource.collected",
+          buildingId: "123",
+          buildingName: "Fish Market" as ProcessingBuildingName,
+        } as CollectProcessedResourceAction,
+        createdAt,
+        farmId: 1,
+      }),
+    ).toThrow("Fish Market is not placed");
+  });
   it("throws if the building is not a food processing building", () => {
     expect(() => {
       collectProcessedResource({
@@ -41,6 +80,7 @@ describe("collectProcessedFood", () => {
           buildingId: "123",
           buildingName: "Fire Pit" as ProcessingBuildingName,
         },
+        farmId: 1,
       });
     }).toThrow("Invalid resource processing building");
   });
@@ -75,6 +115,7 @@ describe("collectProcessedFood", () => {
           buildingId: "123",
           buildingName: "Fish Market",
         },
+        farmId: 1,
       });
     }).toThrow("No processed food ready");
   });
@@ -88,6 +129,7 @@ describe("collectProcessedFood", () => {
           buildingId: "missing",
           buildingName: "Fish Market",
         },
+        farmId: 1,
       });
     }).toThrow("Fish Market does not exist");
   });
@@ -125,10 +167,261 @@ describe("collectProcessedFood", () => {
         buildingName: "Fish Market",
       } as CollectProcessedResourceAction,
       createdAt,
+      farmId: 1,
     });
 
     expect(updated.inventory["Fish Flake"]).toEqual(new Decimal(1));
     const processing = updated.buildings["Fish Market"]?.[0].processing ?? [];
     expect(processing).toHaveLength(0);
+  });
+
+  describe("Bubble Aura yield bonus", () => {
+    const readyAt =
+      createdAt - FISH_PROCESSING_TIME_SECONDS["Fish Flake"] * 1000;
+
+    const stateWith = (params: {
+      auraEquipped: boolean;
+      processedCounter?: number;
+    }): GameState => ({
+      ...SPRING_STATE,
+      bumpkin: {
+        ...SPRING_STATE.bumpkin!,
+        equipped: {
+          ...SPRING_STATE.bumpkin!.equipped,
+          aura: params.auraEquipped
+            ? "Bubble Aura"
+            : SPRING_STATE.bumpkin!.equipped.aura,
+        },
+      },
+      farmActivity:
+        params.processedCounter !== undefined
+          ? {
+              ...SPRING_STATE.farmActivity,
+              "Fish Flake Processed": params.processedCounter,
+            }
+          : SPRING_STATE.farmActivity,
+      buildings: {
+        ...SPRING_STATE.buildings,
+        "Fish Market": [
+          {
+            id: "123",
+            coordinates: { x: 0, y: 0 },
+            createdAt,
+            processing: [
+              {
+                name: "Fish Flake",
+                startedAt:
+                  readyAt - FISH_PROCESSING_TIME_SECONDS["Fish Flake"] * 1000,
+                readyAt,
+                requirements: {},
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    // The PRNG is deterministic given (farmId, itemId, counter, chance, name).
+    // We sweep counters until we deterministically observe a hit and a miss for
+    // the same farm + item + chance, so the test pins both branches.
+    it("yields exactly 1 when Bubble Aura is not equipped (no roll)", () => {
+      const updated = collectProcessedResource({
+        state: stateWith({ auraEquipped: false }),
+        action: {
+          type: "processedResource.collected",
+          buildingId: "123",
+          buildingName: "Fish Market",
+        } as CollectProcessedResourceAction,
+        createdAt,
+        farmId: 42,
+      });
+      expect(updated.inventory["Fish Flake"]).toEqual(new Decimal(1));
+    });
+
+    it("yields 2 when the prng roll passes (deterministic hit counter)", () => {
+      const { prngChance } = jest.requireActual(
+        "lib/prng",
+      ) as typeof PrngModule;
+      const { KNOWN_IDS } = jest.requireActual(
+        "features/game/types",
+      ) as typeof GameTypesModule;
+      const farmId = 42;
+      let hitCounter = -1;
+      for (let counter = 0; counter < 200; counter++) {
+        if (
+          prngChance({
+            farmId,
+            itemId: KNOWN_IDS["Fish Flake"],
+            counter,
+            chance: 20,
+            criticalHitName: "Bubble Aura",
+          })
+        ) {
+          hitCounter = counter;
+          break;
+        }
+      }
+      expect(hitCounter).toBeGreaterThanOrEqual(0);
+
+      const updated = collectProcessedResource({
+        state: stateWith({
+          auraEquipped: true,
+          processedCounter: hitCounter,
+        }),
+        action: {
+          type: "processedResource.collected",
+          buildingId: "123",
+          buildingName: "Fish Market",
+        } as CollectProcessedResourceAction,
+        createdAt,
+        farmId,
+      });
+      expect(updated.inventory["Fish Flake"]).toEqual(new Decimal(2));
+    });
+
+    it("yields 1 when the prng roll fails (deterministic miss counter)", () => {
+      const { prngChance } = jest.requireActual(
+        "lib/prng",
+      ) as typeof PrngModule;
+      const { KNOWN_IDS } = jest.requireActual(
+        "features/game/types",
+      ) as typeof GameTypesModule;
+      const farmId = 42;
+      let missCounter = -1;
+      for (let counter = 0; counter < 200; counter++) {
+        if (
+          !prngChance({
+            farmId,
+            itemId: KNOWN_IDS["Fish Flake"],
+            counter,
+            chance: 20,
+            criticalHitName: "Bubble Aura",
+          })
+        ) {
+          missCounter = counter;
+          break;
+        }
+      }
+      expect(missCounter).toBeGreaterThanOrEqual(0);
+
+      const updated = collectProcessedResource({
+        state: stateWith({
+          auraEquipped: true,
+          processedCounter: missCounter,
+        }),
+        action: {
+          type: "processedResource.collected",
+          buildingId: "123",
+          buildingName: "Fish Market",
+        } as CollectProcessedResourceAction,
+        createdAt,
+        farmId,
+      });
+      expect(updated.inventory["Fish Flake"]).toEqual(new Decimal(1));
+    });
+  });
+
+  describe("getProcessedResourceAmount counter override", () => {
+    const auraState: GameState = {
+      ...SPRING_STATE,
+      bumpkin: {
+        ...SPRING_STATE.bumpkin!,
+        equipped: {
+          ...SPRING_STATE.bumpkin!.equipped,
+          aura: "Bubble Aura",
+        },
+      },
+    };
+
+    // Predictor scenario: two pending same-resource jobs are forecast in a
+    // single batch by passing successive counter values. Each counter must
+    // drive its own independent Bubble Aura roll — they must not correlate.
+    it("uses the explicit counter so adjacent values can produce different rolls", () => {
+      const { prngChance } = jest.requireActual(
+        "lib/prng",
+      ) as typeof PrngModule;
+      const { KNOWN_IDS } = jest.requireActual(
+        "features/game/types",
+      ) as typeof GameTypesModule;
+      const farmId = 42;
+
+      let hitCounter = -1;
+      let missCounter = -1;
+      for (let c = 0; c < 500; c++) {
+        const roll = prngChance({
+          farmId,
+          itemId: KNOWN_IDS["Fish Flake"],
+          counter: c,
+          chance: 20,
+          criticalHitName: "Bubble Aura",
+        });
+        if (roll && hitCounter === -1) hitCounter = c;
+        if (!roll && missCounter === -1) missCounter = c;
+        if (hitCounter !== -1 && missCounter !== -1) break;
+      }
+      expect(hitCounter).toBeGreaterThanOrEqual(0);
+      expect(missCounter).toBeGreaterThanOrEqual(0);
+
+      const hit = getProcessedResourceAmount({
+        game: auraState,
+        resource: "Fish Flake",
+        farmId,
+        counter: hitCounter,
+      });
+      const miss = getProcessedResourceAmount({
+        game: auraState,
+        resource: "Fish Flake",
+        farmId,
+        counter: missCounter,
+      });
+
+      expect(hit.amount).toEqual(new Decimal(2));
+      expect(hit.boostsUsed).toEqual([{ name: "Bubble Aura", value: "+1" }]);
+      expect(miss.amount).toEqual(new Decimal(1));
+      expect(miss.boostsUsed).toEqual([]);
+    });
+
+    it("ignores farmActivity when an explicit counter is passed", () => {
+      const { prngChance } = jest.requireActual(
+        "lib/prng",
+      ) as typeof PrngModule;
+      const { KNOWN_IDS } = jest.requireActual(
+        "features/game/types",
+      ) as typeof GameTypesModule;
+      const farmId = 42;
+
+      let hitCounter = -1;
+      let missCounter = -1;
+      for (let c = 0; c < 500; c++) {
+        const roll = prngChance({
+          farmId,
+          itemId: KNOWN_IDS["Fish Flake"],
+          counter: c,
+          chance: 20,
+          criticalHitName: "Bubble Aura",
+        });
+        if (roll && hitCounter === -1) hitCounter = c;
+        if (!roll && missCounter === -1) missCounter = c;
+        if (hitCounter !== -1 && missCounter !== -1) break;
+      }
+
+      // farmActivity says the hit counter, but caller threads the miss counter.
+      const stateWithHitActivity: GameState = {
+        ...auraState,
+        farmActivity: {
+          ...auraState.farmActivity,
+          "Fish Flake Processed": hitCounter,
+        },
+      };
+
+      const result = getProcessedResourceAmount({
+        game: stateWithHitActivity,
+        resource: "Fish Flake",
+        farmId,
+        counter: missCounter,
+      });
+      expect(result.amount).toEqual(new Decimal(1));
+      expect(result.boostsUsed).toEqual([]);
+    });
   });
 });

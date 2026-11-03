@@ -1,12 +1,12 @@
 import Decimal from "decimal.js-light";
 import { produce } from "immer";
 
-import { CropName, CROPS } from "../../types/crops";
-import { CropPlot, GameState } from "../../types/game";
+import { type CropName, CROPS } from "../../types/crops";
+import type { CropPlot, GameState } from "../../types/game";
 import { getAffectedWeather } from "./plant";
 import { harvestCropFromPlot, isReadyToHarvest } from "./harvest";
 import { updateBoostUsed } from "../../types/updateBoostUsed";
-import { BoostName } from "../../types/game";
+import type { BoostName } from "../../types/game";
 
 export type BulkHarvestAction = {
   type: "crops.bulkHarvested";
@@ -29,7 +29,15 @@ export const getCropsToHarvest = (state: GameState, now = Date.now()) => {
     // Exclude plots destroyed by tornado, tsunami, greatFreeze
     if (getAffectedWeather({ id: plotId, game: state })) return;
 
-    if (isReadyToHarvest(now, plot.crop, CROPS[plot.crop.name])) {
+    if (
+      isReadyToHarvest(
+        now,
+        plot.crop,
+        CROPS[plot.crop.name],
+        state,
+        plot.fertiliser,
+      )
+    ) {
       readyPlots[plotId] = plot;
       readyCrops[plot.crop.name] = (readyCrops[plot.crop.name] || 0) + 1;
     }

@@ -1,11 +1,11 @@
 import Decimal from "decimal.js-light";
 import { isCollectibleBuilt } from "features/game/lib/collectibleBuilt";
-import { EXOTIC_CROPS, ExoticCropName } from "features/game/types/beans";
+import { EXOTIC_CROPS, type ExoticCropName } from "features/game/types/beans";
 import { trackFarmActivity } from "features/game/types/farmActivity";
-import { BoostName, GameState } from "features/game/types/game";
+import type { BoostName, GameState } from "features/game/types/game";
 import {
-  SellableTreasure,
-  BeachBountyTreasure,
+  type SellableTreasure,
+  type BeachBountyTreasure,
   SELLABLE_TREASURES,
 } from "features/game/types/treasure";
 import { isExoticCrop } from "features/game/types/crops";
@@ -61,7 +61,7 @@ export function sellTreasure({ state, action }: Options) {
       throw new Error("Not for sale");
     }
 
-    if (!new Decimal(amount).isInteger()) {
+    if (!new Decimal(amount).isInteger() || amount <= 0) {
       throw new Error("Invalid amount");
     }
 

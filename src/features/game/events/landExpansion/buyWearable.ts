@@ -1,11 +1,11 @@
 import Decimal from "decimal.js-light";
 import { SFLDiscount } from "features/game/lib/SFLDiscount";
 import { ARTEFACT_SHOP_WEARABLES } from "features/game/types/artefactShop";
-import { BumpkinItem } from "features/game/types/bumpkin";
+import type { BumpkinItem } from "features/game/types/bumpkin";
 import { trackFarmActivity } from "features/game/types/farmActivity";
-import { getKeys } from "features/game/types/craftables";
+import { getKeys } from "lib/object";
 
-import { GameState } from "features/game/types/game";
+import type { GameState } from "features/game/types/game";
 import { STYLIST_WEARABLES } from "features/game/types/stylist";
 import { produce } from "immer";
 
@@ -56,7 +56,11 @@ export function buyWearable({
     }
 
     const price =
-      SFLDiscount(stateCopy, new Decimal(wearable.coins)).toNumber() ?? 0;
+      SFLDiscount(
+        stateCopy,
+        new Decimal(wearable.coins),
+        createdAt,
+      ).toNumber() ?? 0;
 
     if (price && stateCopy.coins < price) {
       throw new Error("Insufficient coins");

@@ -1,10 +1,13 @@
 import React, { useState } from "react";
 import { PIXEL_SCALE } from "features/game/lib/constants";
-import { TimeLeftPanel } from "components/ui/TimeLeftPanel";
-import { useAppTranslation } from "lib/i18n/useAppTranslations";
-import { IronRockName } from "features/game/types/resources";
+import { TimerPopover } from "features/island/common/TimerPopover";
+import {
+  ITEM_DETAILS,
+  getTranslatedItemName,
+} from "features/game/types/images";
+import type { IronRockName } from "features/game/types/resources";
 import { READONLY_RESOURCE_COMPONENTS } from "features/island/resources/Resource";
-import { GameState, TemperateSeasonName } from "features/game/types/game";
+import type { GameState, TemperateSeasonName } from "features/game/types/game";
 
 interface Props {
   season: TemperateSeasonName;
@@ -19,7 +22,6 @@ const DepletedIronComponent: React.FC<Props> = ({
   timeLeft,
   name,
 }) => {
-  const { t } = useAppTranslation();
   const [showTimeLeft, setShowTimeLeft] = useState(false);
   const Image = READONLY_RESOURCE_COMPONENTS({
     season,
@@ -42,10 +44,11 @@ const DepletedIronComponent: React.FC<Props> = ({
             top: `${PIXEL_SCALE * -20}px`,
           }}
         >
-          <TimeLeftPanel
-            text={t("resources.recoversIn")}
+          <TimerPopover
+            image={ITEM_DETAILS["Iron"].image}
+            description={getTranslatedItemName(name)}
+            showPopover={showTimeLeft}
             timeLeft={timeLeft}
-            showTimeLeft={showTimeLeft}
           />
         </div>
       </div>

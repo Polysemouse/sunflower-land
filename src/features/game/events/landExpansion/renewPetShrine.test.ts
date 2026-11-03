@@ -3,7 +3,7 @@ import {
   isTemporaryCollectibleActive,
 } from "features/game/lib/collectibleBuilt";
 import { INITIAL_FARM } from "features/game/lib/constants";
-import { GameState } from "features/game/types/game";
+import type { GameState } from "features/game/types/game";
 import { PET_SHRINES } from "features/game/types/pets";
 import { renewPetShrine } from "./renewPetShrine";
 
@@ -129,7 +129,11 @@ describe("renewPetShrine", () => {
     };
 
     expect(
-      isTemporaryCollectibleActive({ name: "Fox Shrine", game: state }),
+      isTemporaryCollectibleActive({
+        name: "Fox Shrine",
+        game: state,
+        now: Date.now(),
+      }),
     ).toBe(false);
 
     const newState = renewPetShrine({
@@ -148,7 +152,51 @@ describe("renewPetShrine", () => {
     expect(foxShrine?.createdAt).toBe(now);
 
     expect(
-      isTemporaryCollectibleActive({ name: "Fox Shrine", game: newState }),
+      isTemporaryCollectibleActive({
+        name: "Fox Shrine",
+        game: newState,
+        now: Date.now(),
+      }),
     ).toBe(true);
+  });
+
+  it("records the previous window in boostHistory when renewing a windowed pet shrine", () => {
+    const cooldown = EXPIRY_COOLDOWNS["Sparrow Shrine"];
+    const expiredCreatedAt = now - cooldown;
+    const state: GameState = {
+      ...INITIAL_FARM,
+      collectibles: {
+        "Sparrow Shrine": [
+          {
+            id: "1",
+            createdAt: expiredCreatedAt,
+            coordinates: { x: 1, y: 1 },
+            readyAt: expiredCreatedAt,
+          },
+        ],
+      },
+      inventory: { ...PET_SHRINES["Sparrow Shrine"].ingredients },
+    };
+
+    const newState = renewPetShrine({
+      state,
+      action: {
+        type: "petShrine.renewed",
+        name: "Sparrow Shrine",
+        location: "farm",
+        id: "1",
+      },
+      createdAt: now,
+    });
+
+    const shrine = newState.collectibles["Sparrow Shrine"]?.find(
+      (collectible) => collectible.id === "1",
+    );
+    // createdAt reset to now…
+    expect(shrine?.createdAt).toBe(now);
+    // …and the OLD window preserved so in-progress crops keep their credit.
+    expect(newState.boostHistory?.["Sparrow Shrine"]).toEqual([
+      { from: expiredCreatedAt, to: expiredCreatedAt + cooldown },
+    ]);
   });
 });

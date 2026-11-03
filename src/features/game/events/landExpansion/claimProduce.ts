@@ -3,16 +3,16 @@ import { produce } from "immer";
 import {
   ANIMAL_RESOURCE_DROP,
   ANIMALS,
-  AnimalType,
+  type AnimalType,
 } from "features/game/types/animals";
-import { GameState } from "features/game/types/game";
+import type { GameState } from "features/game/types/game";
 import {
   getAnimalLevel,
   getBoostedAwakeAt,
   getResourceDropAmount,
 } from "features/game/lib/animals";
 import { makeAnimalBuildingKey } from "features/game/lib/animals";
-import { getKeys } from "features/game/types/craftables";
+import { getKeys } from "lib/object";
 import { trackFarmActivity } from "features/game/types/farmActivity";
 import { updateBoostUsed } from "features/game/types/updateBoostUsed";
 
@@ -66,11 +66,15 @@ export function claimProduce({
         baseAmount: baseAmount.toNumber(),
         resource,
         multiplier: animal.multiplier ?? 0,
+        animal,
       });
+
+      const amountToAdd = new Decimal(boostedAmount ?? 0);
+      const resourceBoosts = [...boostsUsed];
 
       copy.inventory[resource] = (
         copy.inventory[resource] ?? new Decimal(0)
-      ).add(boostedAmount ?? new Decimal(0));
+      ).add(amountToAdd);
 
       copy.farmActivity = trackFarmActivity(
         `${resource} Collected`,
@@ -79,7 +83,7 @@ export function claimProduce({
 
       copy.boostsUsedAt = updateBoostUsed({
         game: copy,
-        boostNames: boostsUsed,
+        boostNames: resourceBoosts,
         createdAt,
       });
     });
@@ -97,19 +101,44 @@ export function claimProduce({
     }
 
     animal.asleepAt = createdAt;
-    const { awakeAt, boostsUsed } = getBoostedAwakeAt({
+    // The treat is read BEFORE its charge is spent below, so a Truffle
+    // Seasoning's last charge still shortens this sleep.
+    const { awakeAt, baseDurationMs, boostsUsed } = getBoostedAwakeAt({
       animalType: animal.type,
       createdAt,
       game: copy,
+      feedBuff: animal.feedBuff,
     });
     animal.awakeAt = awakeAt;
+    // Windowed: keep the real `asleepAt` and the permanent-boost-only duration,
+    // so the shrines are credited live. Flag-off the marker is dropped, which
+    // reverts the animal to the legacy baked `awakeAt` on its next sleep.
+    if (baseDurationMs !== undefined) {
+      animal.baseDurationMs = baseDurationMs;
+    } else {
+      delete animal.baseDurationMs;
+    }
     copy.boostsUsedAt = updateBoostUsed({
       game: copy,
       boostNames: boostsUsed,
       createdAt,
     });
     animal.state = "idle";
-    animal.multiplier = 1;
+
+    if (animal.feedBuff) {
+      animal.feedBuff.harvestsRemaining -= 1;
+      if (animal.feedBuff.harvestsRemaining <= 0) {
+        delete animal.feedBuff;
+      }
+    }
+
+    // Mud's charges count down exactly like a treat's: one per claim.
+    if (animal.mud) {
+      animal.mud.harvestsRemaining -= 1;
+      if (animal.mud.harvestsRemaining <= 0) {
+        delete animal.mud;
+      }
+    }
 
     return copy;
   });

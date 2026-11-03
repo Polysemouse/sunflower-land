@@ -8,7 +8,7 @@ import React, {
 import { useActor, useSelector } from "@xstate/react";
 import { Button } from "components/ui/Button";
 import { OuterPanel } from "components/ui/Panel";
-import {
+import type {
   LandscapingPlaceable,
   MachineInterpreter,
 } from "features/game/expansion/placeable/landscapingMachine";
@@ -22,33 +22,40 @@ import { ITEM_DETAILS } from "features/game/types/images";
 import Decimal from "decimal.js-light";
 import { detectCollision } from "features/game/expansion/placeable/lib/collisionDetection";
 import {
-  CollectibleName,
+  type CollectibleName,
   COLLECTIBLES_DIMENSIONS,
-  getKeys,
 } from "features/game/types/craftables";
+import { getKeys } from "lib/object";
 import {
-  BuildingName,
+  type BuildingName,
   BUILDINGS_DIMENSIONS,
-  Dimensions,
+  type Dimensions,
 } from "features/game/types/buildings";
 import { ANIMAL_DIMENSIONS } from "features/game/types/craftables";
-import { PlaceableLocation } from "features/game/types/collectibles";
+import type { PlaceableLocation } from "features/game/types/collectibles";
 import { Label } from "components/ui/Label";
 import { RESOURCE_DIMENSIONS } from "features/game/types/resources";
-import { LANDSCAPING_DECORATIONS } from "features/game/types/decorations";
+import {
+  HOME_LANDSCAPING_DECORATIONS,
+  LANDSCAPING_DECORATIONS,
+} from "features/game/types/decorations";
 import { useAppTranslation } from "lib/i18n/useAppTranslations";
 import { ITEM_ICONS } from "features/island/hud/components/inventory/Chest";
-import { GameState, TemperateSeasonName } from "features/game/types/game";
+import type { GameState, TemperateSeasonName } from "features/game/types/game";
 import {
   isBuildingUpgradable,
   makeUpgradableBuildingKey,
-  UpgradableBuildingType,
+  type UpgradableBuildingType,
 } from "features/game/events/landExpansion/upgradeBuilding";
 import { getCurrentBiome } from "features/island/biomes/biomes";
 import { EXPIRY_COOLDOWNS } from "features/game/lib/collectibleBuilt";
-import { Coordinates } from "features/game/expansion/components/MapPlacement";
+import type { Coordinates } from "features/game/expansion/components/MapPlacement";
 import { COMPETITION_POINTS } from "features/game/types/competitions";
 import { useNow } from "lib/utils/hooks/useNow";
+import {
+  needsPlacementConfirmation,
+  PlacementConfirmationModal,
+} from "features/game/expansion/placeable/PlacementConfirmationModal";
 import {
   getPetType,
   getPlacedCommonPetTypesInPetHouse,
@@ -57,6 +64,8 @@ import {
   PET_HOUSE_CAPACITY,
   PET_TYPES,
 } from "features/game/types/pets";
+import { ModalContext } from "features/game/components/modal/ModalProvider";
+import { isPlacingFirstScarecrow } from "features/island/buildings/components/building/workBench/lib/onboarding";
 
 interface Props {
   location: PlaceableLocation;
@@ -103,6 +112,7 @@ const calculateNextPlacement = ({
 
 export const PlaceableController: React.FC<Props> = ({ location }) => {
   const { gameService } = useContext(Context);
+  const { openModal } = useContext(ModalContext);
   const child = gameService.getSnapshot().children
     .landscaping as MachineInterpreter;
   const { t } = useAppTranslation();
@@ -126,6 +136,7 @@ export const PlaceableController: React.FC<Props> = ({ location }) => {
   const [previousPosition, setPreviousPosition] = useState<
     Coordinates | undefined
   >();
+  const [pendingConfirmation, setPendingConfirmation] = useState(false);
 
   const now = useNow();
 
@@ -207,8 +218,13 @@ export const PlaceableController: React.FC<Props> = ({ location }) => {
   const isWrongLocation = placeable?.name
     ? (location === "home" &&
         ((!COLLECTIBLES_DIMENSIONS[placeable.name as CollectibleName] &&
-          placeable.name !== "Bud") ||
-          placeable.name in LANDSCAPING_DECORATIONS ||
+          placeable.name !== "Bud" &&
+          placeable.name !== "FarmHand" &&
+          placeable.name !== "Bumpkin") ||
+          (placeable.name in LANDSCAPING_DECORATIONS &&
+            !HOME_LANDSCAPING_DECORATIONS.includes(
+              placeable.name as (typeof HOME_LANDSCAPING_DECORATIONS)[number],
+            )) ||
           placeable.name === "Magic Bean")) ||
       (location === "petHouse" && !isPetCollectible && !isPetNFT)
     : false;
@@ -217,7 +233,6 @@ export const PlaceableController: React.FC<Props> = ({ location }) => {
     placeable?.name === "Fox Shrine" &&
     now < COMPETITION_POINTS.BUILDING_FRIENDSHIPS.endAt;
 
-  // Combined check for whether placement is blocked
   const isPlacementBlocked =
     collisionDetected ||
     isWrongLocation ||
@@ -235,25 +250,28 @@ export const PlaceableController: React.FC<Props> = ({ location }) => {
         ...RESOURCE_DIMENSIONS,
         Bud: { width: 1, height: 1 },
         Pet: { width: 2, height: 2 },
+        FarmHand: { width: 1, height: 1 },
+        Bumpkin: { width: 1, height: 1 },
       }[placeable.name];
     }
     return { width: 0, height: 0 };
   }, [placeable]);
 
-  const handleConfirmPlacement = useCallback(() => {
-    // prevents multiple toasts while spam clicking place button
-    if (!placingState) {
-      return;
-    }
-
+  const executePlacement = useCallback(() => {
     const state = gameService.getSnapshot().context.state;
 
     if (!placeable) return;
 
+    // Read before the placement lands: afterwards the scarecrow is on the farm.
+    const isFirstScarecrow = isPlacingFirstScarecrow(state, placeable.name);
+
     const items = getChestItems(state);
 
     const available =
-      placeable?.name === "Bud" || placeable?.name === "Pet"
+      placeable?.name === "Bud" ||
+      placeable?.name === "Pet" ||
+      placeable?.name === "FarmHand" ||
+      placeable?.name === "Bumpkin"
         ? new Decimal(1)
         : (items[placeable.name] ?? new Decimal(0));
 
@@ -281,7 +299,12 @@ export const PlaceableController: React.FC<Props> = ({ location }) => {
       placeMore = false;
     }
 
-    if (placeable?.name === "Bud" || placeable?.name === "Pet") {
+    if (
+      placeable?.name === "Bud" ||
+      placeable?.name === "Pet" ||
+      placeable?.name === "FarmHand" ||
+      placeable?.name === "Bumpkin"
+    ) {
       placeMore = false;
     } else {
       const previous = state.inventory[placeable.name] ?? new Decimal(0);
@@ -319,18 +342,36 @@ export const PlaceableController: React.FC<Props> = ({ location }) => {
       send({ type: "PLACE", location });
       setPreviousPosition(coordinates);
     }
+
+    // Tutorial: scarecrow down, Pete sends the player to expand again.
+    if (isFirstScarecrow) {
+      openModal("PETE_EXPAND");
+    }
   }, [
     coordinates,
     dimensions,
     gameService,
     location,
     maximum,
+    openModal,
     placeable,
-    placingState,
     previousPosition,
     requirements,
     send,
   ]);
+
+  const handleConfirmPlacement = useCallback(() => {
+    // prevents multiple toasts while spam clicking place button
+    if (!placingState) return;
+    if (!placeable) return;
+
+    if (needsPlacementConfirmation(placeable.name)) {
+      setPendingConfirmation(true);
+      return;
+    }
+
+    executePlacement();
+  }, [placingState, placeable, executePlacement]);
 
   const handleCancelPlacement = useCallback(() => {
     send("BACK");
@@ -390,7 +431,13 @@ export const PlaceableController: React.FC<Props> = ({ location }) => {
     season: TemperateSeasonName,
     level?: number,
   ) => {
-    if (placeable && (placeable === "Bud" || placeable === "Pet")) {
+    if (
+      placeable &&
+      (placeable === "Bud" ||
+        placeable === "Pet" ||
+        placeable === "FarmHand" ||
+        placeable === "Bumpkin")
+    ) {
       return "";
     }
     if (!placeable) return "";
@@ -404,7 +451,10 @@ export const PlaceableController: React.FC<Props> = ({ location }) => {
 
   const items = getChestItems(state);
   const available =
-    placeable?.name === "Bud" || placeable?.name === "Pet"
+    placeable?.name === "Bud" ||
+    placeable?.name === "Pet" ||
+    placeable?.name === "FarmHand" ||
+    placeable?.name === "Bumpkin"
       ? new Decimal(1)
       : (items[placeable.name] ?? new Decimal(0));
 
@@ -514,6 +564,17 @@ export const PlaceableController: React.FC<Props> = ({ location }) => {
           </Button>
         </div>
       </OuterPanel>
+
+      {pendingConfirmation && placeable && (
+        <PlacementConfirmationModal
+          itemName={placeable.name}
+          onCancel={() => setPendingConfirmation(false)}
+          onConfirm={() => {
+            setPendingConfirmation(false);
+            executePlacement();
+          }}
+        />
+      )}
     </div>
   );
 };

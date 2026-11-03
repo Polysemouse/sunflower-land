@@ -1,14 +1,26 @@
-import { Decimal } from "decimal.js-light";
-import { getObjectEntries } from "../expansion/lib/utils";
-import { MAX_INVENTORY_ITEMS } from "../lib/processEvent";
-import { TRADE_LIMITS } from "./tradeLimits";
+import { isTradeResource, TRADE_LIMITS, TRADE_MINIMUMS } from "./tradeLimits";
 
-describe("TRADE_LIMITS", () => {
-  it("allows the hoarding limit to be at least 3x more than the trade limits", () => {
-    getObjectEntries(TRADE_LIMITS).forEach(([item, quantity]) => {
-      const maxInventory = MAX_INVENTORY_ITEMS[item] ?? new Decimal(0);
-      const tradeLimit = quantity ?? 0;
-      expect(Number(maxInventory)).toBeGreaterThanOrEqual(tradeLimit * 3);
+describe("Cave Dwellers resources", () => {
+  const items = [
+    "Green Beetle",
+    "Blue Beetle",
+    "Pink Beetle",
+    "Amber Beetle",
+    "Pig Bristles",
+    "Truffle",
+  ] as const;
+
+  it("lists the four Beetles, Pig Bristles and Truffle as trade resources", () => {
+    items.forEach((item) => {
+      expect(isTradeResource(item)).toBe(true);
+      expect(TRADE_LIMITS[item]).toBeGreaterThan(0);
+      expect(TRADE_MINIMUMS[item]).toBeGreaterThan(0);
+      expect(TRADE_MINIMUMS[item]).toBeLessThanOrEqual(TRADE_LIMITS[item]);
     });
+  });
+
+  it("keeps Mud non-tradable", () => {
+    expect("Mud" in TRADE_LIMITS).toBe(false);
+    expect(isTradeResource("Mud")).toBe(false);
   });
 });

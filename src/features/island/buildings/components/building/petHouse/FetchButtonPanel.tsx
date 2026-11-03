@@ -1,12 +1,13 @@
 import React from "react";
 import { ButtonPanel } from "components/ui/Panel";
 import { Label } from "components/ui/Label";
-import { PetResourceName } from "features/game/types/pets";
+import type { PetResourceName } from "features/game/types/pets";
 import { ITEM_DETAILS } from "features/game/types/images";
 import { SUNNYSIDE } from "assets/sunnyside";
 import { PIXEL_SCALE } from "features/game/lib/constants";
+import { formatFetchYield } from "features/game/lib/formatFetchYield";
 import classNames from "classnames";
-import Decimal from "decimal.js-light";
+import type Decimal from "decimal.js-light";
 
 const INNER_CANVAS_WIDTH = 12;
 
@@ -19,7 +20,9 @@ export interface FetchButtonPanelProps {
   selected?: boolean;
   locked?: boolean;
   className?: string;
-  fetchAmount: number;
+  fetchAmount: Decimal;
+  /** Planned number of fetches to run (shown as an "xN" badge in bulk mode). */
+  plannedAmount?: number;
 }
 
 export const FetchButtonPanel: React.FC<FetchButtonPanelProps> = ({
@@ -32,6 +35,7 @@ export const FetchButtonPanel: React.FC<FetchButtonPanelProps> = ({
   locked,
   className,
   fetchAmount,
+  plannedAmount,
 }) => {
   const fetchImage = ITEM_DETAILS[fetch]?.image;
 
@@ -48,6 +52,18 @@ export const FetchButtonPanel: React.FC<FetchButtonPanelProps> = ({
       >
         {inventoryCount.toString()}
       </Label>
+      {/* Planned fetch count - top left (bulk fetch mode) */}
+      {typeof plannedAmount === "number" && plannedAmount > 0 && (
+        <Label
+          className="absolute z-20 -top-2 -left-1"
+          type="success"
+          style={{
+            height: "24px",
+          }}
+        >
+          {`x${plannedAmount}`}
+        </Label>
+      )}
       <ButtonPanel
         className={classNames(
           "flex flex-row p-0 overflow-hidden items-center relative",
@@ -92,7 +108,9 @@ export const FetchButtonPanel: React.FC<FetchButtonPanelProps> = ({
               alt="Energy"
               className="w-4 h-4 object-contain shrink-0"
             />
-            <span className="text-brown-800">{fetchAmount}</span>
+            <span className="text-brown-800">
+              {formatFetchYield(fetchAmount)}
+            </span>
           </div>
           <div className="flex items-center gap-1 text-xs">
             <img

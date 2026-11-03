@@ -8,9 +8,9 @@ import { Decimal } from "decimal.js-light";
 import {
   TRADE_LIMITS,
   TRADE_MINIMUMS,
-  TradeResource,
+  type TradeResource,
 } from "features/game/actions/tradeLimits";
-import { InventoryItemName } from "features/game/types/game";
+import type { InventoryItemName } from "features/game/types/game";
 import { ITEM_DETAILS } from "features/game/types/images";
 import { useAppTranslation } from "lib/i18n/useAppTranslations";
 import { formatNumber, setPrecision } from "lib/utils/formatNumber";
@@ -24,10 +24,10 @@ import { useGame } from "features/game/GameProvider";
 import { getResourceTax } from "features/game/types/marketplace";
 import { Popover, PopoverButton, PopoverPanel } from "@headlessui/react";
 import { InnerPanel } from "components/ui/Panel";
+import { useNow } from "lib/utils/hooks/useNow";
+import { MAX_RESOURCE_LISTINGS } from "../lib/tradeLimits";
 
 const LISTING_MULTIPLE_MIN = 1;
-const MAX_LISTINGS_OF_RESOURCE_FOR_BULK = 20;
-
 type Props = {
   inventoryCount: Decimal;
   itemName: TradeResource;
@@ -102,8 +102,10 @@ export const ResourceList: React.FC<Props> = ({
   // For now, keep offchain
   const maxSFL = new Decimal(price).greaterThan(MAX_SFL);
 
+  const now = useNow();
   const tax = getResourceTax({
     game: gameState.context.state,
+    now,
   });
 
   if (gameState.context.state.island.type === "basic") {
@@ -186,7 +188,7 @@ export const ResourceList: React.FC<Props> = ({
         </div>
 
         <div className="flex">
-          <div className="flex">
+          <div className="flex flex-1 min-w-0">
             <div className="w-1/2 mr-1">
               <div className="flex items-center">
                 <Label
@@ -356,7 +358,7 @@ export const ResourceList: React.FC<Props> = ({
               <InnerPanel>
                 <p className="text-xxs w-40 px-0.5">
                   {t("marketplace.maxBulk", {
-                    max: MAX_LISTINGS_OF_RESOURCE_FOR_BULK,
+                    max: MAX_RESOURCE_LISTINGS,
                   })}
                 </p>
               </InnerPanel>

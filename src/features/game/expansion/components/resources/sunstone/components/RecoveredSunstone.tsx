@@ -1,7 +1,7 @@
 import React, { useContext, useEffect, useRef, useState } from "react";
 
 import Spritesheet, {
-  SpriteSheetInstance,
+  type SpriteSheetInstance,
 } from "components/animation/SpriteAnimator";
 
 import strikeSheet from "assets/resources/sunstone/sunstone_rock_spark.png";
@@ -24,9 +24,10 @@ import sunstone_10 from "assets/resources/sunstone/sunstone_rock_10.webp";
 
 import { ZoomContext } from "components/ZoomProvider";
 
-import { getSunstoneStage } from "../Sunstone";
+import { getSunstoneStage } from "../getSunstoneStage";
 import { useAppTranslation } from "lib/i18n/useAppTranslations";
 import { useSound } from "lib/utils/hooks/useSound";
+import { getTranslatedItemName } from "features/game/types/images";
 
 const tool = "Gold Pickaxe";
 
@@ -172,7 +173,7 @@ export const RecoveredSunstone: React.FC<Props> = ({
           <InnerPanel className="absolute whitespace-nowrap w-fit z-50">
             <div className="text-xs mx-1 p-1">
               <span>
-                {t("craft")} {tool.toLowerCase()}
+                {t("craft")} {getTranslatedItemName(tool).toLowerCase()}
               </span>
             </div>
           </InnerPanel>

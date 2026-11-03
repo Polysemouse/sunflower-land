@@ -1,6 +1,6 @@
-import { CropsAndChickensChickenName } from "./CropsAndChickensChickenName";
-import { CropsAndChickensCropName } from "./CropsAndChickensConstants";
-import {
+import type { CropsAndChickensChickenName } from "./CropsAndChickensChickenName";
+import type { CropsAndChickensCropName } from "./CropsAndChickensConstants";
+import type {
   CropsAndChickensBoostName,
   CropsAndChickensAbilityName,
 } from "./CropsAndChickensUpgrades";

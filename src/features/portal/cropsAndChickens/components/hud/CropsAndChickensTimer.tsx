@@ -10,7 +10,7 @@ import {
   TIME_TICKING_PREPARATION_SECONDS,
 } from "../../CropsAndChickensConstants";
 import { Label } from "components/ui/Label";
-import { PortalMachineState } from "../../lib/cropsAndChickensMachine";
+import type { PortalMachineState } from "../../lib/cropsAndChickensMachine";
 
 const _endAt = (state: PortalMachineState) => state.context.endAt;
 

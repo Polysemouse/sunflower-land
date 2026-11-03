@@ -3,7 +3,7 @@ import React, { useContext, useState } from "react";
 import { SUNNYSIDE } from "assets/sunnyside";
 
 import { PIXEL_SCALE } from "features/game/lib/constants";
-import { BuildingProps } from "../Building";
+import type { BuildingProps } from "../Building";
 import { BuildingImageWrapper } from "../BuildingImageWrapper";
 import { Modal } from "components/ui/Modal";
 import { TentModal } from "./TentModal";
@@ -12,12 +12,14 @@ import { interpretTokenUri } from "lib/utils/tokenUriBuilder";
 import { useSelector } from "@xstate/react";
 import { Context } from "features/game/GameProvider";
 import classNames from "classnames";
-import { BuildingName } from "features/game/types/buildings";
-import { MachineState } from "features/game/lib/gameMachine";
-import { PlacedItem } from "features/game/types/game";
-import { OnChainBumpkin } from "lib/blockchain/BumpkinDetails";
+import type { BuildingName } from "features/game/types/buildings";
+import type { MachineState } from "features/game/lib/gameMachine";
+import type { PlacedItem } from "features/game/types/game";
+import type { OnChainBumpkin } from "lib/blockchain/BumpkinDetails";
 import { useVisiting } from "lib/utils/visitUtils";
 import { useNavigate } from "react-router";
+import { getHomeRoute } from "features/island/buildings/lib/getHomeRoute";
+import { saveIslandScrollPosition } from "features/game/expansion/lib/islandScroll";
 
 const selectBuildings = (state: MachineState) => state.context.state.buildings;
 
@@ -47,11 +49,9 @@ export const Tent: React.FC<BuildingProps> = ({ buildingId, isBuilt }) => {
 
   const handleClick = () => {
     if (isBuilt && bumpkin) {
-      if (isVisiting) {
-        navigate(`/visit/${gameService.getSnapshot().context.farmId}/home`);
-      } else {
-        navigate("/home");
-      }
+      saveIslandScrollPosition();
+      const { state, farmId } = gameService.getSnapshot().context;
+      navigate(getHomeRoute({ game: state, isVisiting, farmId }));
       setShowModal(true);
     }
   };

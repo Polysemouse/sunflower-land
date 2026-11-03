@@ -1,5 +1,7 @@
 import React, { useContext } from "react";
 import { useSelector } from "@xstate/react";
+import { useNow } from "lib/utils/hooks/useNow";
+import { PRE_ACTION_TICK_MS } from "features/game/lib/timerDisplay";
 import { SUNNYSIDE } from "assets/sunnyside";
 import { Label } from "components/ui/Label";
 import { InnerPanel } from "components/ui/Panel";
@@ -12,15 +14,18 @@ import {
   getRequiredFeedAmount,
 } from "features/game/events/pets/feedPet";
 import { Context } from "features/game/GameProvider";
-import { MachineState } from "features/game/lib/gameMachine";
-import { CookableName } from "features/game/types/consumables";
-import { ITEM_DETAILS } from "features/game/types/images";
+import type { MachineState } from "features/game/lib/gameMachine";
+import type { CookableName } from "features/game/types/consumables";
+import {
+  ITEM_DETAILS,
+  getTranslatedItemName,
+} from "features/game/types/images";
 import {
   getPetLevel,
   getPetRequestXP,
   isPetNFT,
-  Pet,
-  PetNFT,
+  type Pet,
+  type PetNFT,
 } from "features/game/types/pets";
 import { useAppTranslation } from "lib/i18n/useAppTranslations";
 
@@ -38,6 +43,11 @@ type Props = {
 const _game = (state: MachineState) => state.context.state;
 
 export const PetFeed: React.FC<Props> = ({ data, onFeed, onResetClick }) => {
+  // The Hound Shrine's +100 XP only applies while the shrine is active, so the
+  // food XP preview needs a live clock - a mount snapshot would keep promising
+  // the bonus after it lapsed. One tick a minute is enough for a boost that
+  // flips at most a few times a day.
+  const now = useNow({ live: true, intervalMs: PRE_ACTION_TICK_MS });
   const { gameService } = useContext(Context);
   const { t } = useAppTranslation();
 
@@ -47,10 +57,6 @@ export const PetFeed: React.FC<Props> = ({ data, onFeed, onResetClick }) => {
 
   const { level } = getPetLevel(data.experience);
   const foodRequests = getPetFoodRequests(data, level);
-  const lastFedAt = data.requests.fedAt;
-  const todayDate = new Date().toISOString().split("T")[0];
-  const lastFedAtDate = new Date(lastFedAt ?? 0).toISOString().split("T")[0];
-  const fedToday = lastFedAtDate === todayDate;
 
   const isFoodRequested = (food: CookableName) => foodRequests.includes(food);
 
@@ -69,8 +75,12 @@ export const PetFeed: React.FC<Props> = ({ data, onFeed, onResetClick }) => {
 
   const getRequestDetails = (food: CookableName) => {
     const isRequested = isFoodRequested(food);
+    // `foodFed` is reset with each day's requests and is the only check the
+    // feed event applies, so it decides whether this request is complete. The
+    // `fedAt` timestamp can sit on the previous UTC day for a feed saved just
+    // after the rollover, which would otherwise re-enable a refused button.
     const isComplete =
-      isRequested && fedToday && data.requests.foodFed?.includes(food);
+      isRequested && (data.requests.foodFed?.includes(food) ?? false);
 
     const baseFoodXp = getPetRequestXP(food);
     const foodXp = getPetExperience({
@@ -79,6 +89,7 @@ export const PetFeed: React.FC<Props> = ({ data, onFeed, onResetClick }) => {
       petLevel: level,
       petData: data,
       food,
+      now,
     });
     const petEnergy = getPetEnergy({
       game,
@@ -149,7 +160,7 @@ export const PetFeed: React.FC<Props> = ({ data, onFeed, onResetClick }) => {
                       ? t("pets.upcomingRequest", {
                           level: getPetUnlockLevel(data, level, food),
                         })
-                      : food}
+                      : getTranslatedItemName(food)}
                   </p>
                   {isRequested &&
                     (requiredFeedAmount === 0 ? (

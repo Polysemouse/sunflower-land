@@ -6,7 +6,7 @@ import { SUNNYSIDE } from "assets/sunnyside";
 import { goHome } from "features/portal/lib/portalUtil";
 import { useAppTranslation } from "lib/i18n/useAppTranslations";
 import { ConfirmationModal } from "components/ui/ConfirmationModal";
-import { PortalMachineState } from "../../lib/cropsAndChickensMachine";
+import type { PortalMachineState } from "../../lib/cropsAndChickensMachine";
 import { NPC_WEARABLES } from "lib/npcs";
 import { useSound } from "lib/utils/hooks/useSound";
 import classNames from "classnames";

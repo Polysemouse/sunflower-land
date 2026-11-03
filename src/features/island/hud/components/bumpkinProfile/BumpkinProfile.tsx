@@ -5,29 +5,27 @@ import { useActor } from "@xstate/react";
 import { BumpkinModal } from "features/bumpkins/components/BumpkinModal";
 import { DynamicNFT } from "features/bumpkins/components/DynamicNFT";
 import { Context } from "features/game/GameProvider";
-import {
-  getBumpkinLevel,
-  getExperienceToNextLevel,
-  isMaxLevel,
-} from "features/game/lib/level";
+import { getAscensionLevel } from "features/game/lib/level";
 import {
   acknowledgeSkillPoints,
   hasUnacknowledgedSkillPoints,
 } from "features/island/bumpkin/lib/skillPointStorage";
 import Spritesheet, {
-  SpriteSheetInstance,
+  type SpriteSheetInstance,
 } from "components/animation/SpriteAnimator";
-import { Bumpkin } from "features/game/types/game";
+import type { Bumpkin } from "features/game/types/game";
 import classNames from "classnames";
 import { SUNNYSIDE } from "assets/sunnyside";
 import { SpringValue } from "@react-spring/web";
 import { useSound } from "lib/utils/hooks/useSound";
 import {
-  BumpkinRevampSkillName,
-  BumpkinSkillRevamp,
+  type BumpkinRevampSkillName,
+  type BumpkinSkillRevamp,
   getPowerSkills,
 } from "features/game/types/bumpkinSkills";
 import { getSkillCooldown } from "features/game/events/landExpansion/skillUsed";
+import { Label } from "components/ui/Label";
+import { useAppTranslation } from "lib/i18n/useAppTranslations";
 
 const DIMENSIONS = {
   original: 80,
@@ -52,6 +50,11 @@ const DIMENSIONS = {
     marginLeft: 109,
     marginTop: 82.5,
   },
+  // Mirrors the level box on the left side of the profile circle
+  ascension: {
+    marginLeft: 22,
+    marginTop: 78,
+  },
   username: {
     width: 200,
     height: 12,
@@ -68,10 +71,13 @@ const DIMENSIONS = {
 const SPRITE_STEPS = 51;
 
 interface AvatarProps {
-  bumpkin?: Bumpkin;
+  bumpkin: Bumpkin;
   showSkillPointAlert?: boolean;
   onClick?: () => void;
   powerSkillsReady: boolean;
+  // On ascension islands the badge shows the within-ascension level (1..50);
+  // otherwise the legacy Bumpkin level (capped at the pre-ascension max).
+  ascensionLevel?: number;
 }
 
 export const BumpkinAvatar: React.FC<AvatarProps> = ({
@@ -79,28 +85,29 @@ export const BumpkinAvatar: React.FC<AvatarProps> = ({
   showSkillPointAlert,
   onClick,
   powerSkillsReady,
+  ascensionLevel = 0,
 }) => {
   const { showAnimations } = useContext(Context);
+  const { t } = useAppTranslation();
 
   const progressBarEl = useRef<SpriteSheetInstance>(undefined);
 
   const experience = bumpkin?.experience ?? 0;
-  const level = getBumpkinLevel(experience);
+  const ascension = getAscensionLevel({ experience, ascensionLevel });
+  const level = ascension.level;
 
   useEffect(() => {
     goToProgress();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [level, experience]);
+  }, [level, experience, ascensionLevel]);
 
   const goToProgress = () => {
     if (progressBarEl.current) {
-      const experience = bumpkin?.experience ?? 0;
-      const { currentExperienceProgress, experienceToNextLevel } =
-        getExperienceToNextLevel(experience);
+      const { currentExperienceProgress, experienceToNextLevel } = ascension;
 
       let percent = currentExperienceProgress / experienceToNextLevel;
       // Progress bar cant go further than 100%
-      if (isMaxLevel(experience)) {
+      if (ascension.isReadyToAscend) {
         percent = 1;
       }
 
@@ -186,6 +193,20 @@ export const BumpkinAvatar: React.FC<AvatarProps> = ({
           {level}
         </div>
 
+        {ascensionLevel >= 1 && (
+          <div
+            className="col-start-1 row-start-1 z-20 w-fit h-fit"
+            style={{
+              marginLeft: `${DIMENSIONS.ascension.marginLeft}px`,
+              marginTop: `${DIMENSIONS.ascension.marginTop}px`,
+            }}
+          >
+            <Label type="info" className="text-xxs">
+              {t("level.ascension.badge", { ascension: ascensionLevel })}
+            </Label>
+          </div>
+        )}
+
         {(showSkillPointAlert || powerSkillsReady) && (
           <img
             src={SUNNYSIDE.icons.expression_alerted}
@@ -219,8 +240,12 @@ export const BumpkinProfile: React.FC = () => {
   } = gameState;
 
   const experience = state.bumpkin?.experience ?? 0;
-  const level = getBumpkinLevel(experience);
-  const showSkillPointAlert = hasUnacknowledgedSkillPoints(state.bumpkin);
+  const ascensionLevel = state.island.ascensionLevel ?? 0;
+  const level = getAscensionLevel({
+    experience,
+    ascensionLevel,
+  }).level;
+  const showSkillPointAlert = hasUnacknowledgedSkillPoints(state);
 
   useEffect(() => {
     goToProgress();
@@ -232,7 +257,7 @@ export const BumpkinProfile: React.FC = () => {
     setViewSkillsTab(showSkillPointAlert);
     setShowModal(true);
     if (showSkillPointAlert) {
-      acknowledgeSkillPoints(state.bumpkin);
+      acknowledgeSkillPoints(state);
     }
   };
 
@@ -240,7 +265,7 @@ export const BumpkinProfile: React.FC = () => {
     if (progressBarEl.current) {
       const experience = state.bumpkin?.experience ?? 0;
       const { currentExperienceProgress, experienceToNextLevel } =
-        getExperienceToNextLevel(experience);
+        getAscensionLevel({ experience, ascensionLevel });
 
       let percent = currentExperienceProgress / experienceToNextLevel;
       // Progress bar cant go further than 100%
@@ -264,8 +289,6 @@ export const BumpkinProfile: React.FC = () => {
     (skill) => !!skills[skill.name as BumpkinRevampSkillName],
   );
 
-  const hasPowerSkills = powerSkillsUnlocked.length > 0;
-
   const powerSkillsReady = powerSkillsUnlocked
     .filter((skill: BumpkinSkillRevamp) => {
       const fertiliserSkill: BumpkinRevampSkillName[] = [
@@ -279,6 +302,7 @@ export const BumpkinProfile: React.FC = () => {
       const boostedCooldown = getSkillCooldown({
         cooldown: skill.requirements.cooldown ?? 0,
         state,
+        skillName: skill.name as BumpkinRevampSkillName,
       });
       const nextSkillUse =
         (previousPowerUseAt?.[skill.name as BumpkinRevampSkillName] ?? 0) +
@@ -291,14 +315,12 @@ export const BumpkinProfile: React.FC = () => {
       {/* Bumpkin modal */}
       <Modal show={showModal} onHide={handleHideModal} size="lg">
         <BumpkinModal
-          initialTab={viewSkillsTab ? "skills" : "info"}
+          initialTab={viewSkillsTab ? "skills" : "feed"}
           onClose={handleHideModal}
           readonly={gameState.matches("visiting")}
           bumpkin={gameState.context.state.bumpkin as Bumpkin}
           inventory={gameState.context.state.inventory}
           gameState={gameState.context.state}
-          powerSkillsReady={powerSkillsReady}
-          hasPowerSkills={hasPowerSkills}
         />
       </Modal>
 
@@ -307,6 +329,7 @@ export const BumpkinProfile: React.FC = () => {
       <div className="scale-[0.7] absolute left-0 top-0">
         <BumpkinAvatar
           bumpkin={state.bumpkin}
+          ascensionLevel={ascensionLevel}
           onClick={handleShowHomeModal}
           showSkillPointAlert={
             showSkillPointAlert && !gameState.matches("visiting")

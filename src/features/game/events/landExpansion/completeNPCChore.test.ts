@@ -1,8 +1,8 @@
-import { GameState } from "features/game/types/game";
+import type { GameState } from "features/game/types/game";
 import { completeNPCChore } from "./completeNPCChore";
 import { INITIAL_BUMPKIN, TEST_FARM } from "features/game/lib/constants";
 import Decimal from "decimal.js-light";
-import { NpcChore } from "features/game/types/choreBoard";
+import type { NpcChore } from "features/game/types/choreBoard";
 
 describe("completeNPCChore", () => {
   const CHORE: NpcChore = {
@@ -481,5 +481,41 @@ describe("completeNPCChore", () => {
     });
 
     expect(newState.inventory["Timeshard"]).toEqual(new Decimal(4));
+  });
+
+  it("stacks Duende Set boost at Cave Dwellers", () => {
+    const mockDate = new Date("2026-11-10T00:00:00Z");
+    jest.useFakeTimers();
+    jest.setSystemTime(mockDate);
+    const state: GameState = {
+      ...TEST_FARM,
+      bumpkin: {
+        ...INITIAL_BUMPKIN,
+        equipped: {
+          ...INITIAL_BUMPKIN.equipped,
+          shoes: "Duende Shoes",
+          pants: "Duende Pants",
+          shirt: "Duende Shirt",
+        },
+      },
+      farmActivity: { "Tree Chopped": 1 },
+      inventory: {},
+      choreBoard: {
+        chores: {
+          "pumpkin' pete": {
+            ...CHORE,
+            reward: { items: { "Duende Cap": 1 } },
+          },
+        },
+      },
+    };
+
+    const newState = completeNPCChore({
+      state,
+      action: { type: "chore.fulfilled", npcName: "pumpkin' pete" },
+      createdAt: mockDate.getTime(),
+    });
+
+    expect(newState.inventory["Duende Cap"]).toEqual(new Decimal(4));
   });
 });

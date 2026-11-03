@@ -11,17 +11,20 @@ import { Box } from "components/ui/Box";
 import { Button } from "components/ui/Button";
 import { Label } from "components/ui/Label";
 import { InnerPanel, Panel } from "components/ui/Panel";
-import {
+import type {
   GameState,
   Inventory,
   InventoryItemName,
 } from "features/game/types/game";
-import { ITEM_DETAILS } from "features/game/types/images";
+import {
+  getTranslatedItemName,
+  ITEM_DETAILS,
+} from "features/game/types/images";
 import {
   CHUM_AMOUNTS,
-  Chum,
-  FishName,
-  FishingBait,
+  type Chum,
+  type FishName,
+  type FishingBait,
   getSeasonalGuaranteedCatch,
   isGuaranteedBait,
 } from "features/game/types/fishing";
@@ -35,10 +38,11 @@ import Decimal from "decimal.js-light";
 import {
   getReelsPackGemPrice,
   getRemainingReels,
+  getRodCost,
 } from "features/game/events/landExpansion/castRod";
 import { isFishFrenzy, isFullMoon } from "features/game/types/calendar";
 import { SEASON_ICONS } from "../buildings/components/building/market/SeasonalSeeds";
-import { hasVipAccess } from "features/game/lib/vipAccess";
+import { useVipAccess } from "lib/utils/hooks/useVipAccess";
 import { Checkbox } from "components/ui/Checkbox";
 import { SmallBox } from "components/ui/SmallBox";
 import { ChumSelection } from "./ChumSelection";
@@ -53,6 +57,9 @@ const BAIT: FishingBait[] = [
   "Earthworm",
   "Grub",
   "Red Wiggler",
+  "Capsule Bait",
+  "Umbrella Bait",
+  "Crimson Baitfish",
   "Fishing Lure",
   "Fish Flake",
   "Fish Stick",
@@ -118,7 +125,7 @@ export const BaitSelection: React.FC<Props> = ({ onCast, state }) => {
     ...getChestItems(state),
   };
 
-  const isVip = hasVipAccess({ game: state });
+  const isVip = useVipAccess({ game: state });
   const currentSeason = state.season.season;
   const now = useNow();
 
@@ -191,7 +198,27 @@ export const BaitSelection: React.FC<Props> = ({ onCast, state }) => {
 
   const fishingLimitReached = reelsLeft <= 0 || effectiveMultiplier > reelsLeft;
   const hasAncientRod = isWearableActive({ name: "Ancient Rod", game: state });
-  const rodsRequired = hasAncientRod ? 0 : effectiveMultiplier;
+
+  // Shrimp Onesie: every 15th lifetime reel awards +1 of every fish caught on
+  // that reel. The actual bonus is computed server-side in castRod against the
+  // "Rod Casted" farm activity counter; here we just preview how many of the
+  // upcoming reels in this cast would land on a milestone.
+  const SHRIMP_ONESIE_REEL_INTERVAL = 15;
+  const shrimpOnesieActive = isWearableActive({
+    name: "Shrimp Onesie",
+    game: state,
+  });
+  const previousCasts = state.farmActivity["Rod Casted"] ?? 0;
+  const shrimpOnesieMilestones = shrimpOnesieActive
+    ? Math.floor(
+        (previousCasts + effectiveMultiplier) / SHRIMP_ONESIE_REEL_INTERVAL,
+      ) - Math.floor(previousCasts / SHRIMP_ONESIE_REEL_INTERVAL)
+    : 0;
+
+  const { rodCost: rodsRequired } = getRodCost({
+    game: state,
+    multiplier: effectiveMultiplier,
+  });
   // Get reels required to make the cast
   const packsRequired = fishingLimitReached ? getExtraReelPacksRequired() : 0;
   // Get the gems cost for the reels
@@ -223,9 +250,9 @@ export const BaitSelection: React.FC<Props> = ({ onCast, state }) => {
     setShowConfirmationModal(false);
   };
 
-  const missingRod =
-    !hasAncientRod &&
-    (!state.inventory["Rod"] || state.inventory.Rod.lt(rodsRequired));
+  const missingRod = (state.inventory["Rod"] ?? new Decimal(0)).lt(
+    rodsRequired,
+  );
   const guaranteedCatchOptions = selectedBait
     ? getGuaranteedOptions(selectedBait)
     : [];
@@ -346,6 +373,15 @@ export const BaitSelection: React.FC<Props> = ({ onCast, state }) => {
                 ? t("fishing.oneReelLeft")
                 : t("fishing.reelsLeft", { reelsLeft })}
             </Label>
+            {shrimpOnesieMilestones > 0 && (
+              <Label icon={lightning} type="vibrant">
+                {shrimpOnesieMilestones === 1
+                  ? t("fishing.shrimpOnesie.singleReel")
+                  : t("fishing.shrimpOnesie.bulkReel", {
+                      reels: shrimpOnesieMilestones,
+                    })}
+              </Label>
+            )}
           </div>
         </InnerPanel>
         <DropdownPanel
@@ -353,7 +389,7 @@ export const BaitSelection: React.FC<Props> = ({ onCast, state }) => {
             value: bait,
             label: (
               <div className="flex flex-col gap-1">
-                <p className="text-xs">{`${effectiveMultiplier} x ${bait} (${items[bait]?.toString() ?? 0})`}</p>
+                <p className="text-xs">{`${effectiveMultiplier} x ${getTranslatedItemName(bait)} (${items[bait]?.toString() ?? 0})`}</p>
                 <p className="text-xxs">{ITEM_DETAILS[bait].description}</p>
               </div>
             ),
@@ -365,7 +401,9 @@ export const BaitSelection: React.FC<Props> = ({ onCast, state }) => {
         />
         {notEnoughBait && (
           <Label className="ml-1" type="danger">
-            {t("fishing.dont.have.enough.bait", { bait: selectedBait })}
+            {t("fishing.dont.have.enough.bait", {
+              bait: getTranslatedItemName(selectedBait),
+            })}
           </Label>
         )}
         {selectedBait && isGuaranteedBait(selectedBait) && guaranteedCatch && (
@@ -397,7 +435,7 @@ export const BaitSelection: React.FC<Props> = ({ onCast, state }) => {
 
         <InnerPanel>
           <div className="flex flex-col justify-between space-y-2">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <Label type="default" className="text-xs ml-1" icon={multiCast}>
                 {t("fishing.multiCast")}
               </Label>
@@ -450,7 +488,7 @@ export const BaitSelection: React.FC<Props> = ({ onCast, state }) => {
                   >
                     {t("fishermanModal.chum", {
                       count: CHUM_AMOUNTS[chum] * effectiveMultiplier,
-                      type: chum,
+                      type: getTranslatedItemName(chum),
                     })}
                   </Label>
                 </div>

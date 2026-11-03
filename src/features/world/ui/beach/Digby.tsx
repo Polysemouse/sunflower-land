@@ -3,40 +3,41 @@ import { SUNNYSIDE } from "assets/sunnyside";
 import { Label } from "components/ui/Label";
 import { Context } from "features/game/GameProvider";
 import {
-  DiggingFormation,
+  type DiggingFormation,
   DIGGING_FORMATIONS,
   getArtefactsFound,
+  getDailyDigLimit,
+  getRemainingDigs,
   CHAPTER_ARTEFACT,
   hasClaimedReward,
-  DiggingFormationName,
+  type DiggingFormationName,
 } from "features/game/types/desert";
 import { ITEM_DETAILS } from "features/game/types/images";
 import { NPC_WEARABLES } from "lib/npcs";
 import { secondsTillReset, secondsToString } from "lib/utils/time";
-import React, { useContext, useEffect, useState } from "react";
+import React, { useContext, useEffect, useRef, useState } from "react";
 import powerup from "assets/icons/level_up.png";
 import gift from "assets/icons/gift.png";
 import rewardIcon from "assets/icons/stock.webp";
 
-import { GameState } from "features/game/types/game";
-import { getKeys } from "features/game/types/decorations";
+import type { GameState } from "features/game/types/game";
+import { getKeys } from "lib/object";
 import { useAppTranslation } from "lib/i18n/useAppTranslations";
 import { Button } from "components/ui/Button";
 import { CloseButtonPanel } from "features/game/components/CloseablePanel";
 import { NoticeboardItems } from "../kingdom/KingdomNoticeboard";
 import { COLLECTIBLE_BUFF_LABELS } from "features/game/types/collectibleItemBuffs";
-import { BuffLabel } from "features/game/types";
+import type { BuffLabel } from "features/game/types";
 import { SquareIcon } from "components/ui/SquareIcon";
 import { getImageUrl } from "lib/utils/getImageURLS";
-import { BumpkinItem, ITEM_IDS } from "features/game/types/bumpkin";
+import { type BumpkinItem, ITEM_IDS } from "features/game/types/bumpkin";
 import { pixelDarkBorderStyle } from "features/game/lib/style";
-import { CollectibleName } from "features/game/types/craftables";
+import type { CollectibleName } from "features/game/types/craftables";
 import Decimal from "decimal.js-light";
-import { getRemainingDigs } from "features/island/hud/components/DesertDiggingDisplay";
 import { BUMPKIN_ITEM_BUFF_LABELS } from "features/game/types/bumpkinItemBuffs";
 import { ResizableBar } from "components/ui/ProgressBar";
 import { Revealed } from "features/game/components/Revealed";
-import { ChestRevealing, ChestRewardType } from "../chests/ChestRevealing";
+import { ChestRevealing, type ChestRewardType } from "../chests/ChestRevealing";
 import { gameAnalytics } from "lib/gameAnalytics";
 import {
   getCurrentChapter,
@@ -45,6 +46,8 @@ import {
 import { ChestRewardsList } from "components/ui/ChestRewardsList";
 import { ModalOverlay } from "components/ui/ModalOverlay";
 import { useNow } from "lib/utils/hooks/useNow";
+import { BoostsDisplay } from "components/ui/layouts/BoostsDisplay";
+import classNames from "classnames";
 
 export function hasReadDigbyIntro() {
   return !!localStorage.getItem("digging.intro");
@@ -121,14 +124,72 @@ export const Pattern: React.FC<{
   );
 };
 
-const CountdownLabel = () => (
-  <Label className="ml-1" type="info" icon={SUNNYSIDE.icons.stopwatch}>
-    {`${secondsToString(secondsTillReset(), {
-      length: "medium",
-      removeTrailingZeros: true,
-    })} left`}
-  </Label>
-);
+const CountdownLabel = () => {
+  const { t } = useAppTranslation();
+
+  return (
+    <Label className="ml-1" type="info" icon={SUNNYSIDE.icons.stopwatch}>
+      {t("vipExpiry.timeLeft", {
+        time: secondsToString(secondsTillReset(), {
+          length: "medium",
+          removeTrailingZeros: true,
+        }),
+      })}
+    </Label>
+  );
+};
+
+const DigsLeftLabel: React.FC<{ game: GameState }> = ({ game }) => {
+  const { t } = useAppTranslation();
+  const [showBoosts, setShowBoosts] = useState(false);
+  const anchorRef = useRef<HTMLDivElement>(null);
+
+  const digsLeft = getRemainingDigs(game);
+  const { boostsUsed } = getDailyDigLimit(game);
+  const hasBoosts = boostsUsed.length > 0;
+
+  return (
+    <div
+      ref={anchorRef}
+      className={classNames("relative", { "cursor-pointer": hasBoosts })}
+      role={hasBoosts ? "button" : undefined}
+      tabIndex={hasBoosts ? 0 : undefined}
+      aria-expanded={hasBoosts ? showBoosts : undefined}
+      onClick={(e) => {
+        if (!hasBoosts) return;
+        e.stopPropagation();
+        setShowBoosts((prev) => !prev);
+      }}
+      onKeyDown={(e) => {
+        if (!hasBoosts || (e.key !== "Enter" && e.key !== " ")) return;
+        e.preventDefault();
+        e.stopPropagation();
+        setShowBoosts((prev) => !prev);
+      }}
+    >
+      <Label
+        type={digsLeft > 0 ? "default" : "danger"}
+        icon={SUNNYSIDE.tools.sand_shovel}
+        secondaryIcon={hasBoosts ? SUNNYSIDE.icons.lightning : undefined}
+      >
+        {digsLeft > 0
+          ? t("desert.hud.digsLeft", { digsLeft })
+          : t("desert.hud.noDigsLeft")}
+      </Label>
+      {hasBoosts && showBoosts && (
+        <BoostsDisplay
+          boosts={boostsUsed}
+          show={showBoosts}
+          state={game}
+          onClick={() => setShowBoosts(false)}
+          anchorRef={anchorRef}
+          portalAlign="right"
+          portalPlacement="auto"
+        />
+      )}
+    </div>
+  );
+};
 
 export function getStreaks({
   game,
@@ -234,9 +295,12 @@ export const DailyPuzzle: React.FC = () => {
   return (
     <>
       <div className="p-1">
-        <div className="flex justify-between mb-1">
+        <div className="flex flex-wrap items-center justify-between gap-1 mb-1">
           <Label type="default">{t("digby.puzzle")}</Label>
-          <CountdownLabel />
+          <div className="flex flex-wrap items-center justify-end gap-1 ml-auto">
+            <DigsLeftLabel game={gameState.context.state} />
+            <CountdownLabel />
+          </div>
         </div>
         <span className="text-xs mt-2">{t("digby.today")}</span>
         <div
@@ -367,17 +431,13 @@ const BoostDigItems: (
   now,
 ) => ({
   "Pharaoh Chicken": {
-    buff: COLLECTIBLE_BUFF_LABELS["Pharaoh Chicken"]?.({
-      skills: state.bumpkin.skills,
-      collectibles: state.collectibles,
-    }) as BuffLabel[],
+    buff: COLLECTIBLE_BUFF_LABELS["Pharaoh Chicken"]?.(state) as BuffLabel[],
     location: "Marketplace",
   },
   "Heart of Davy Jones": {
-    buff: COLLECTIBLE_BUFF_LABELS["Heart of Davy Jones"]?.({
-      skills: state.bumpkin.skills,
-      collectibles: state.collectibles,
-    }) as BuffLabel[],
+    buff: COLLECTIBLE_BUFF_LABELS["Heart of Davy Jones"]?.(
+      state,
+    ) as BuffLabel[],
     location: "Marketplace",
   },
   "Bionic Drill": {
@@ -385,10 +445,7 @@ const BoostDigItems: (
     location: "Artefact Shop",
   },
   Meerkat: {
-    buff: COLLECTIBLE_BUFF_LABELS.Meerkat?.({
-      skills: state.bumpkin.skills,
-      collectibles: state.collectibles,
-    }) as BuffLabel[],
+    buff: COLLECTIBLE_BUFF_LABELS.Meerkat?.(state) as BuffLabel[],
     location: "Megastore",
   },
   ...(getCurrentChapter(now) === "Pharaoh's Treasure"
@@ -502,7 +559,6 @@ export const Digby: React.FC<{ onClose: () => void }> = ({ onClose }) => {
   const [showConfirm, setShowConfirm] = useState(false);
 
   const inventory = gameState.context.state.inventory;
-  const digsLeft = getRemainingDigs(gameState.context.state);
 
   const artefactsFound = getArtefactsFound({
     game: gameState.context.state,
@@ -596,11 +652,7 @@ export const Digby: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                 <div className="p-1">
                   <div className="flex items-center justify-between space-x-1 mb-1">
                     <Label type="default">{t("desert.extraDigs")}</Label>
-                    <Label type="default" icon={SUNNYSIDE.tools.sand_shovel}>
-                      <span className="text">
-                        {t("desert.hud.digsLeft", { digsLeft })}
-                      </span>
-                    </Label>
+                    <DigsLeftLabel game={gameState.context.state} />
                   </div>
                   <span className="text-xs my-2">
                     {t("digby.moreDigsIntro")}

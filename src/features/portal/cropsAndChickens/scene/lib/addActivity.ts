@@ -1,6 +1,6 @@
-import { CropsAndChickensScene } from "../CropsAndChickensScene";
-import { CropsAndChickensActivityName } from "../../CropsAndChickensActivities";
-import Decimal from "decimal.js-light";
+import type { CropsAndChickensScene } from "../CropsAndChickensScene";
+import type { CropsAndChickensActivityName } from "../../CropsAndChickensActivities";
+import type Decimal from "decimal.js-light";
 
 /**
  * Adds an activity to the scene.

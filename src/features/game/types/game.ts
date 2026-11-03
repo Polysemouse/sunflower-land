@@ -1,15 +1,16 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { Decimal } from "decimal.js-light";
+import type { Decimal } from "decimal.js-light";
 
-import {
+import type {
   CropName,
   CropSeedName,
   GreenHouseCropName,
   GreenHouseCropSeedName,
 } from "./crops";
 
-import { CollectibleName, CraftableName, Food } from "./craftables";
-import {
+import type { CollectibleName, CraftableName, Food } from "./craftables";
+import type { ExperimentName } from "./experiments";
+import type {
   UpgradedResourceName,
   CommodityName,
   MushroomName,
@@ -17,107 +18,167 @@ import {
   ResourceTier,
   TreeName,
 } from "./resources";
-import { LegacyBadgeName } from "./skills";
-import { BuildingName } from "./buildings";
-import { GameEvent } from "../events";
-import { BumpkinItem, Equipped as BumpkinParts } from "./bumpkin";
-import { ConsumableName, CookableName } from "./consumables";
-import { ProcessedResource } from "./processedFood";
-import { BumpkinSkillName, BumpkinRevampSkillName } from "./bumpkinSkills";
-import { AchievementName } from "./achievements";
-import { DecorationName } from "./decorations";
-import { BeanName, ExoticCropName, GiantFruit, MutantCropName } from "./beans";
-import {
+import type { LegacyBadgeName } from "./skills";
+import type { BuildingName } from "./buildings";
+import type { GameEvent } from "../events";
+import type { BumpkinItem, Equipped as BumpkinParts } from "./bumpkin";
+import type { ConsumableName, CookableName } from "./consumables";
+import type { ProcessedResource } from "./processedFood";
+import type { BumpkinSkillName, BumpkinRevampSkillName } from "./bumpkinSkills";
+import type { AchievementName } from "./achievements";
+import type { DecorationName } from "./decorations";
+import type {
+  BeanName,
+  ExoticCropName,
+  GiantFruit,
+  MutantCropName,
+} from "./beans";
+import type {
   FullMoonFruit,
   GreenHouseFruitName,
   GreenHouseFruitSeedName,
   PatchFruitName,
   PatchFruitSeedName,
 } from "./fruits";
-import { BeachBountyTreasure, TreasureName } from "./treasure";
-import {
+import type { BeachBountyTreasure, TreasureName } from "./treasure";
+import type {
   GoblinBlacksmithItemName,
   GoblinPirateItemName,
   HeliosBlacksmithItem,
   MegaStoreCollectibleName,
+  PlaceableLocation,
   PotionHouseItemName,
   PurchasableItems,
   SoldOutCollectibleName,
   TreasureCollectibleItem,
 } from "./collectibles";
-import { TreasureToolName, WorkbenchToolName } from "./tools";
-import { ConversationName } from "./announcements";
-import { NPCName } from "lib/npcs";
-import {
+import type { TreasureToolName, WorkbenchToolName } from "./tools";
+import type { ConversationName } from "./announcements";
+import type { NPCName } from "lib/npcs";
+import type {
   ChapterBanner,
   ChapterTicket,
   ChapterName,
   ChapterRaffleTicket,
 } from "./chapters";
-import { Bud } from "./buds";
-import {
+import type { Bud } from "./buds";
+import type {
   CompostName,
   CropCompostName,
   FruitCompostName,
+  GreenhouseCompostName,
   Worm,
 } from "./composters";
-import { FarmActivityName } from "./farmActivity";
-import { MilestoneName } from "./milestones";
-import {
+import type { FarmActivityName } from "./farmActivity";
+import type { MilestoneName } from "./milestones";
+import type {
+  AgedFishName,
+  PrimeAgedFishName,
   FishName,
   FishingBait,
   MarineMarvelName,
   OldFishName,
 } from "./fishing";
-import { MinigameName } from "./minigames";
-import {
+import type { MinigameName } from "./minigames";
+import type {
   FlowerCrossBreedName,
   FlowerName,
   FlowerSeedName,
   MutantFlowerName,
 } from "./flowers";
+import type { FermentationProductName } from "./fermentationProducts";
+import type { SpiceRackProductName } from "./spiceRackProducts";
+import type { BeetleName } from "./beetles";
+import type { CaveTile } from "./cavePatch";
+import type { PickledCropName } from "./pickled";
 import { translate } from "lib/i18n/translate";
-import { SpecialEvents } from "./specialEvents";
-import { TradeableName } from "../actions/sellMarketResource";
-import { MinigameCurrency } from "../events/minigames/purchaseMinigameItem";
-import { FactionShopCollectibleName, FactionShopFoodName } from "./factionShop";
-import { DiggingFormationName } from "./desert";
-import { ExperimentName } from "lib/flags";
-import {
+import { capitalize } from "lib/utils/capitalize";
+import type { SpecialEvents } from "./specialEvents";
+import type { TradeableName } from "../actions/sellMarketResource";
+import type { MinigameCurrency } from "../events/minigames/purchaseMinigameItem";
+import type {
+  FactionShopCollectibleName,
+  FactionShopFoodName,
+} from "./factionShop";
+import type { DiggingFormationName } from "./desert";
+import type {
   BudNFTName,
   CollectionName,
   MarketplaceTradeableName,
 } from "./marketplace";
-import { GameTransaction } from "./transactions";
-import { CompetitionName, CompetitionProgress } from "./competitions";
-import { AnimalType } from "./animals";
-import { ChoreBoard } from "./choreBoard";
-import { DollName, RecipeCollectibleName, Recipes } from "../lib/crafting";
-import { ChapterCollectibleName, ChapterTierItemName } from "./megastore";
-import { TradeFood } from "../events/landExpansion/redeemTradeReward";
-import {
+import type { GameTransaction } from "./transactions";
+import type { LevelRequirement } from "features/game/lib/level";
+import type { CompetitionName, CompetitionProgress } from "./competitions";
+import type { AnimalType } from "./animals";
+import type { ChoreBoard } from "./choreBoard";
+import type { DollName, RecipeCollectibleName, Recipes } from "../lib/crafting";
+
+import type { ChapterCollectibleName, ChapterTierItemName } from "./megastore";
+import type { TradeFood } from "../events/landExpansion/redeemTradeReward";
+import type {
   CalendarEvent,
   CalendarEventName,
   SeasonalEventName,
 } from "./calendar";
-import { VipBundle } from "../lib/vipAccess";
-import { InGameTaskName } from "../events/landExpansion/completeSocialTask";
-import { TwitterPost, TwitterPostName } from "./social";
-import { NetworkName } from "../events/landExpansion/updateNetwork";
-import { RewardBoxes, RewardBoxName } from "./rewardBoxes";
-import { FloatingIslandShop, FloatingShopItemName } from "./floatingIsland";
-import { Blessing } from "../lib/blessings";
-import { LandBiomeName } from "features/island/biomes/biomes";
-import { MonumentName } from "./monuments";
-import { AOEItemName } from "../expansion/placeable/lib/collisionDetection";
-import { Coordinates } from "../expansion/components/MapPlacement";
-import { ClutterName } from "./clutter";
-import { PetName, PetResourceName, Pets } from "./pets";
-import { RockName } from "./resources";
-import { PetShopItemName } from "./petShop";
-import { League } from "features/leagues/leagues";
-import { Buff, BuffName } from "./buffs";
-import { CrustaceanChum, CrustaceanName, WaterTrapName } from "./crustaceans";
+import type { VipBundle } from "../lib/vipAccess";
+import type { InGameTaskName } from "../events/landExpansion/completeSocialTask";
+import type { TwitterPost, TwitterPostName } from "./social";
+import type { NetworkName } from "../events/landExpansion/updateNetwork";
+import type { RewardBoxes, RewardBoxName } from "./rewardBoxes";
+import type {
+  FloatingIslandGameName,
+  FloatingIslandShop,
+  FloatingShopItemName,
+} from "./floatingIsland";
+import type { LandBiomeName } from "features/island/biomes/biomes";
+import type { MonumentName } from "./monuments";
+import type { AOEItemName } from "../expansion/placeable/lib/collisionDetection";
+import type { Coordinates } from "../expansion/components/MapPlacement";
+import type { ClutterName } from "./clutter";
+import type { PetName, PetResourceName, Pets } from "./pets";
+import type { RockName } from "./resources";
+import type { PetShopItemName } from "./petShop";
+import type { Buff, BuffName } from "./buffs";
+import type {
+  CrustaceanChum,
+  CrustaceanName,
+  WaterTrapName,
+} from "./crustaceans";
+import type { SaltFarm } from "./salt";
+import type { AgingShed } from "../lib/agingShed";
+import type { SculptureName } from "./saltSculpture";
+
+export type CraftingQueueItem = {
+  id: string;
+  readyAt: number;
+  /**
+   * Absolute anchor: this craft began at this instant because the Crafting Box was
+   * free when it was queued. ABSENT means CHAINED — its start IS the derived time
+   * the box next frees up, which is what lets a boost placed mid-queue pull every
+   * queued craft forward (see `resolveCraftingQueueTimings`). Legacy items, queued
+   * before the speed-rate model, always carry one.
+   */
+  startedAt?: number;
+  /**
+   * The craft's un-boosted duration with PERMANENT boosts (Sol & Luna, Architect
+   * Ruler) already folded in. Present only on crafts queued under the speed-rate
+   * model; its absence selects the legacy baked timing, so the read path keys off
+   * this marker, NOT the `SPEED_BOOSTS` flag — matching every other activity.
+   *
+   * Zero means a Fox Shrine instant proc: no work to do, so it is ready at its own
+   * anchor and never occupies the box.
+   */
+  baseDurationMs?: number;
+} & (
+  | {
+      type: "collectible";
+      name: RecipeCollectibleName;
+    }
+  | {
+      type: "wearable";
+      name: BumpkinItem;
+    }
+);
 
 export type Reward = {
   coins?: number;
@@ -143,6 +204,11 @@ export type CropFertiliser = {
 
 export type FruitFertiliser = {
   name: FruitCompostName;
+  fertilisedAt: number;
+};
+
+export type GreenhouseFertiliser = {
+  name: GreenhouseCompostName;
   fertilisedAt: number;
 };
 
@@ -223,7 +289,10 @@ export type MutantChicken =
   | "Love Chicken"
   | "Janitor Chicken"
   | "Sleepy Chicken"
-  | "Squid Chicken";
+  | "Squid Chicken"
+  | "Flamingo Chicken"
+  | "Ascended Chicken"
+  | "Mushroom Chicken";
 
 export type MutantCow =
   | "Mootant"
@@ -231,7 +300,10 @@ export type MutantCow =
   | "Dr Cow"
   | "Baby Cow"
   | "Astronaut Cow"
-  | "Mermaid Cow";
+  | "Mermaid Cow"
+  | "Spa Cow"
+  | "Ascended Cow"
+  | "Ladybug Cow";
 
 export type MutantSheep =
   | "Toxic Tuft"
@@ -239,7 +311,10 @@ export type MutantSheep =
   | "Nurse Sheep"
   | "Baby Sheep"
   | "Astronaut Sheep"
-  | "Mermaid Sheep";
+  | "Mermaid Sheep"
+  | "Spa Sheep"
+  | "Ascended Sheep"
+  | "Beetle Sheep";
 
 export type MutantAnimal = MutantChicken | MutantCow | MutantSheep;
 
@@ -259,6 +334,7 @@ export type Coupons =
   | "Sunflower Supporter"
   | "Potion Ticket"
   | "Bud Ticket"
+  | "Skill Reset Ticket"
   | "Bud Seedling"
   | "Community Coin"
   | "Arcade Token"
@@ -276,7 +352,14 @@ export type Coupons =
   | "Halloween Ticket 2025"
   | "Holiday Token 2025"
   | "Holiday Ticket 2025"
+  | "April Fools Token 2026"
+  | "April Fools Ticket 2026"
+  | "Colors Token 2026"
+  | "Colors Ticket 2026"
+  | "Halloween Token 2026"
+  | "Halloween Ticket 2026"
   | "Cheer"
+  | "CluckCoin"
   | Keys
   | ChapterTicket
   | ChapterRaffleTicket
@@ -332,6 +415,9 @@ export const COUPONS: Record<Coupons, { description: string }> = {
   },
   "Bud Ticket": {
     description: translate("description.bud.ticket"),
+  },
+  "Skill Reset Ticket": {
+    description: translate("description.skillResetTicket"),
   },
   "Bud Seedling": {
     description: translate("description.bud.seedling"),
@@ -416,6 +502,7 @@ export const COUPONS: Record<Coupons, { description: string }> = {
   },
   Bracelet: { description: "" },
   Cheer: { description: translate("description.cheer") },
+  CluckCoin: { description: translate("description.cluck.coin") },
   "Pet Cookie": { description: translate("description.petCookie") },
   Floater: { description: "Collected during the Crabs and Traps." },
   "Paw Prints Raffle Ticket": {
@@ -435,6 +522,36 @@ export const COUPONS: Record<Coupons, { description: string }> = {
   },
   "Holiday Ticket 2025": {
     description: translate("description.holidayTicket2025"),
+  },
+  "April Fools Token 2026": {
+    description: translate("description.aprilFoolsToken2026"),
+  },
+  "April Fools Ticket 2026": {
+    description: translate("description.aprilFoolsTicket2026"),
+  },
+  "Salt Rock": { description: "Collected during the Salt Awakening." },
+  "Salt Awakening Raffle Ticket": {
+    description: "A raffle ticket for the Salt Awakening chapter.",
+  },
+  "Shiny Feather": { description: translate("description.shinyFeather") },
+  "Ascension Age Raffle Ticket": {
+    description: translate("description.ascensionAgeRaffleTicket"),
+  },
+  "Duende Cap": { description: translate("description.duendeCap") },
+  "Cave Dwellers Raffle Ticket": {
+    description: translate("description.caveDwellersRaffleTicket"),
+  },
+  "Colors Token 2026": {
+    description: translate("description.colorsToken2026"),
+  },
+  "Colors Ticket 2026": {
+    description: translate("description.colorsTicket2026"),
+  },
+  "Halloween Token 2026": {
+    description: translate("description.halloweenToken2025"),
+  },
+  "Halloween Ticket 2026": {
+    description: translate("description.halloweenTicket2025"),
   },
 };
 
@@ -472,6 +589,9 @@ export type Bumpkin = {
   previousFreeSkillResetAt?: number;
   previousPowerUseAt?: Partial<Record<BumpkinRevampSkillName, number>>;
   paidSkillResets?: number;
+  coordinates?: Coordinates;
+  location?: Exclude<PlaceableLocation, "petHouse">;
+  flipped?: boolean;
 };
 
 export type SpecialEvent = "Chef Apron" | "Chef Hat";
@@ -619,6 +739,8 @@ export type InventoryItemName =
   | FishingBait
   | CompostName
   | FishName
+  | AgedFishName
+  | PrimeAgedFishName
   | MarineMarvelName
   | OldFishName
   | FlowerName
@@ -636,6 +758,7 @@ export type InventoryItemName =
   | ChapterCollectibleName
   | TradeFood
   | ChapterBanner
+  | "Creator Banner"
   | RewardBoxName
   | LandBiomeName
   | MonumentName
@@ -645,7 +768,11 @@ export type InventoryItemName =
   | PetResourceName
   | PetShopItemName
   | CrustaceanName
-  | ChapterRaffleTicket;
+  | ChapterRaffleTicket
+  | PickledCropName
+  | FermentationProductName
+  | SpiceRackProductName
+  | BeetleName;
 
 export type Inventory = Partial<Record<InventoryItemName, Decimal>>;
 
@@ -682,6 +809,13 @@ export type Wood = {
   reward?: Omit<Reward, "sfl">;
   criticalHit?: CriticalHit;
   amount?: number;
+  /**
+   * Unboosted-by-windowed-collectibles recovery duration (ms), with all
+   * permanent (discount-at-start) boosts already folded in. Present only on
+   * trees chopped under the speed-rate model; its presence selects
+   * `computeReadyAt` over the legacy back-dated `choppedAt` readiness check.
+   */
+  baseDurationMs?: number;
 };
 
 export type CriticalHitName =
@@ -700,6 +834,13 @@ export type PlantedCrop = {
   reward?: Omit<Reward, "sfl">;
   amount?: number;
   boostedTime?: number;
+  /**
+   * Unboosted-by-windowed-collectibles grow duration (ms), with all other
+   * (discount-at-start) boosts already folded in. Present only on crops planted
+   * under the speed-rate model; its presence selects `computeReadyAt` over the
+   * legacy back-dated `plantedAt`/`boostedTime` readiness check.
+   */
+  baseDurationMs?: number;
 };
 
 export type PlantedFruit = {
@@ -709,11 +850,45 @@ export type PlantedFruit = {
   harvestedAt: number;
   criticalHit?: CriticalHit;
   amount?: number;
+  /**
+   * Display-only in both models (readiness ignores it), but it carries a
+   * different quantity in each — the patch UI branches on `baseDurationMs`:
+   * - Windowed: WORK (ms) banked when the patch was lifted mid-grow/replenish
+   *   (windowed fruit freeze accrued WORK, not wall-clock progress, while the
+   *   patch sits in inventory). Already subtracted from `baseDurationMs`, so
+   *   the bar folds it back into its total.
+   * - Legacy: the total DISCOUNT (ms) baked in by back-dating the active
+   *   phase's start — plant/replenish-time boosts plus any mid-cycle
+   *   Turbofruit Mix. It is NOT growth already done, so the bar un-back-dates
+   *   with it; without that a heavily boosted patch opens its bar near-full.
+   *   Same meaning (and reason) as `PlantedCrop.boostedTime`.
+   * Replaced when a new phase begins (harvest → replenish); absent when the
+   *   phase had no boost at all.
+   */
+  boostedTime?: number;
+  /**
+   * Unboosted-by-windowed-collectibles grow/replenish duration (ms), with all
+   * permanent (discount-at-start) boosts already folded in. Present only on
+   * fruit planted/harvested under the speed-rate model; its presence — NOT the
+   * `SPEED_BOOSTS` flag — selects `computeReadyAt` (over the legacy back-dated
+   * `plantedAt`/`harvestedAt` readiness check), so a fruit planted while the flag
+   * was on keeps windowed timing on rollback and retains its baked permanent
+   * boosts. Applies to whichever phase is active (`harvestedAt || plantedAt`).
+   */
+  baseDurationMs?: number;
 };
 
 type OptionalCoordinates = {
   x?: number;
   y?: number;
+  /**
+   * Sub-tile pixel offset for rendering only, expressed as integer source
+   * pixels (range -8..8). One unit = one source pixel = PIXEL_SCALE screen
+   * pixels. Set by the pixel-perfect placement feature. Collision/AOE/
+   * adjacency logic ignores these and reads the integer x/y above.
+   */
+  oX?: number;
+  oY?: number;
 };
 
 export type Tree = {
@@ -730,6 +905,13 @@ export type Stone = {
   criticalHit?: CriticalHit;
   amount?: number;
   boostedTime?: number;
+  /**
+   * Unboosted-by-windowed-collectibles recovery duration (ms), with all
+   * permanent (discount-at-start) boosts already folded in. Present only on
+   * rocks mined under the speed-rate model; its presence selects
+   * `computeReadyAt` over the legacy back-dated `minedAt` readiness check.
+   */
+  baseDurationMs?: number;
 };
 
 export type FiniteResource = {
@@ -747,6 +929,20 @@ export type Rock = {
 
 export type Oil = {
   drilledAt: number;
+  /**
+   * Unboosted-by-windowed-collectibles recovery duration (ms), with all
+   * permanent (discount-at-start) boosts already folded in. Present only on
+   * reserves drilled under the speed-rate model; its presence selects
+   * `computeReadyAt` over the legacy back-dated `drilledAt` readiness check.
+   * Oil has no progress-fill bar (countdown only), so — like `Wood` — it
+   * carries no `boostedTime`.
+   *
+   * Lifecycle: each drill rebuilds the timer, so a flag-off re-drill CLEARS this
+   * and reverts the reserve to legacy — mirrors the stone/tree resource nodes
+   * (`rock.stone` rebuild / `delete tree.wood.baseDurationMs`). The read path stays
+   * windowed on the marker's presence until that next drill.
+   */
+  baseDurationMs?: number;
 };
 
 export type OilReserve = {
@@ -773,10 +969,34 @@ export type GreenhousePlant = {
   plantedAt: number;
   criticalHit?: CriticalHit;
   amount?: number;
+  /**
+   * Display-only in both models (readiness ignores it), but it carries a
+   * different quantity in each — the pot UI branches on `baseDurationMs`:
+   * - Windowed: WORK (ms) banked when the Greenhouse building was moved
+   *   mid-grow (windowed plants freeze accrued WORK, not wall-clock progress,
+   *   while the building sits in inventory). Already subtracted from
+   *   `baseDurationMs`, so the bar folds it back into its total.
+   * - Legacy: the total DISCOUNT (ms) baked in by back-dating `plantedAt` —
+   *   plant-time boosts plus any mid-grow Greenhouse Glow. It is NOT growth
+   *   already done, so the bar un-back-dates with it; without that a heavily
+   *   boosted plant opens its bar near-full. Same meaning (and same reason) as
+   *   `PlantedCrop.boostedTime`. Absent when nothing boosted the grow.
+   */
+  boostedTime?: number;
+  /**
+   * Unboosted-by-windowed-collectibles grow duration (ms), with all permanent
+   * (discount-at-start) boosts already folded in. Present only on plants sown
+   * under the speed-rate model; its presence — NOT the `SPEED_BOOSTS` flag —
+   * selects `computeReadyAt` (over the legacy back-dated `plantedAt` readiness
+   * check), so a plant sown while the flag was on keeps windowed timing on
+   * rollback and retains its baked permanent boosts.
+   */
+  baseDurationMs?: number;
 };
 
 export type GreenhousePot = {
   plant?: GreenhousePlant;
+  fertiliser?: GreenhouseFertiliser;
 };
 
 export type FruitPatch = {
@@ -788,12 +1008,33 @@ export type FruitPatch = {
 
 export type BuildingProduct = {
   name: CookableName | ProcessedResource;
+  /**
+   * Stable identity for the queue entry. Recipes used to be addressed by their
+   * `readyAt`, which stops working once that value is derived live from the boost
+   * windows (see `cookingReadiness`). Absent on recipes queued before this existed —
+   * callers fall back to matching on `readyAt` for those.
+   */
+  id?: string;
   readyAt: number;
+  /**
+   * @deprecated Use per-item quantity fields instead.
+   */
   amount?: number;
   boost?: Partial<Record<InventoryItemName, number>>;
-  skills?: Partial<Record<BumpkinRevampSkillName, boolean>>;
+  // The rank of a skill applied when the recipe was cooked, so per-rank effects
+  // (e.g. Double Nom's +food) collect at the rank paid for. Legacy recipes store
+  // `true` (treated as rank 1); new recipes store the numeric rank.
+  skills?: Partial<Record<BumpkinRevampSkillName, boolean | number>>;
   timeRemaining?: number;
   startedAt?: number;
+  /**
+   * The recipe's un-boosted cook time with PERMANENT boosts (wearables, Desert
+   * Gnome, Fast Feasts/Frosted Cakes, building oil) already folded in. Present only
+   * on recipes queued under the speed-rate model; its absence selects the legacy
+   * baked timing, so the read path keys off this marker, NOT the `SPEED_BOOSTS`
+   * flag — matching every other activity.
+   */
+  baseDurationMs?: number;
   requirements?: Inventory;
 };
 
@@ -811,7 +1052,13 @@ export type Cancelled = Partial<{
 
 export type PlacedItem = {
   id: string;
-  coordinates?: { x: number; y: number };
+  /**
+   * Tile coordinates of the placed item. x/y are integer tiles.
+   * oX/oY are optional integer source-pixel offsets (range -8..8) used for
+   * rendering only — pixel-perfect placement. Collision/AOE/adjacency ignore
+   * them and read the integer x/y.
+   */
+  coordinates?: { x: number; y: number; oX?: number; oY?: number };
   readyAt?: number;
   createdAt?: number;
   removedAt?: number;
@@ -820,6 +1067,24 @@ export type PlacedItem = {
   processing?: BuildingProduct[];
   oil?: number;
   flipped?: boolean;
+  /**
+   * Weather-protection collectible (e.g. Tornado Pinwheel) consumed by its
+   * calendar event. Stays placed/owned but grants no protection until renewed.
+   */
+  used?: boolean;
+  /**
+   * Extra active time (ms) bought on top of a temporary collectible's base
+   * cooldown via `collectible.extended`. Banked on the placement rather than
+   * shifting `createdAt`, so the boost window simply runs longer instead of
+   * losing the time already served. Cleared when the placement is renewed.
+   */
+  extendedMs?: number;
+  /**
+   * When a season Guardian was last placed, so its sunshower boost only covers
+   * the time it was actually out — see `syncGuardianPlacements`. Absent on a
+   * Guardian placed before this was tracked (counts as placed since 0).
+   */
+  placedAt?: number;
 };
 
 export type ShakeItem = PlacedItem & { shakenAt?: number };
@@ -858,11 +1123,32 @@ export type CropMachineQueueItem = {
   criticalHit?: CriticalHit;
   amount?: number;
   pausedTimeRemaining?: number;
+  /**
+   * Remaining WORK (permanent-boosted ms, temporary boosts excluded) as of the
+   * machine's `oilSettledAt`. Presence = this pack is windowed (SPEED_BOOSTS):
+   * its timing derives from `resolveCropMachine` and the stored
+   * `startTime`/`growsUntil`/`readyAt`/`growTimeRemaining` become refreshed
+   * caches. Deleted when the pack completes, at which point `readyAt` becomes
+   * immutable history. Permanent per-pack marker — read paths key off it, NOT
+   * the flag, so a windowed pack keeps windowed timing on a flag rollback.
+   */
+  baseDurationMs?: number;
 };
 
 export type CropMachineBuilding = PlacedItem & {
   queue?: CropMachineQueueItem[];
   unallocatedOilTime?: number;
+  /**
+   * Presence = this MACHINE is windowed (SPEED_BOOSTS). The tank is
+   * machine-wide, so the fuel ledger's discriminator is too: when set,
+   * `unallocatedOilTime` means the WHOLE tank — wall-clock ms of unburned fuel,
+   * with no per-pack earmarks — as of this instant, and every windowed pack's
+   * `baseDurationMs` is its remaining work as of this instant. Advanced by
+   * `settleCropMachine` on every crop-machine event. On a legacy machine
+   * (unset), `unallocatedOilTime` keeps its original meaning: oil-work not yet
+   * earmarked to a pack by `updateCropMachine`.
+   */
+  oilSettledAt?: number;
 };
 
 type CustomBuildings = {
@@ -880,6 +1166,100 @@ type PlacedBuildings<Name extends BuildingName> = {
 
 export type Buildings = Partial<PlacedBuildings<BuildingName>>;
 
+/**
+ * A single restorable position within a {@link SavedLayout}. Mirrors the
+ * coordinate shape used by placed items (integer tile x/y + optional render
+ * offsets oX/oY).
+ */
+export type LayoutCoordinates = {
+  x: number;
+  y: number;
+  oX?: number;
+  oY?: number;
+};
+
+/**
+ * A placed collectible/building reduced to what a layout restores: which item
+ * (`id`), where (`coordinates`) and its orientation (`flipped`). Derived from
+ * {@link PlacedItem} so it stays in step with the source shape, without the
+ * per-item state (crafting, readyAt, oil, …) a layout doesn't need.
+ */
+export type LayoutPlacement = Pick<PlacedItem, "id" | "flipped"> & {
+  coordinates: LayoutCoordinates;
+};
+
+/**
+ * A restorable position for a placeable that can also be flipped (the player's
+ * Bumpkin and FarmHands). Buds/Pet NFTs aren't flippable so they store bare
+ * {@link LayoutCoordinates} instead.
+ */
+export type LayoutFlippablePlacement = LayoutCoordinates & {
+  flipped?: boolean;
+};
+
+/**
+ * A named snapshot of the player's farm arrangement (`location: "farm"`).
+ * Items are keyed by `id` so applying a layout repositions the player's
+ * existing items. Collectibles/buildings mirror the live `name -> PlacedItem[]`
+ * buckets (capturing `flipped`); resources mirror the live `Record<id, {...}>`
+ * buckets whose coordinates live as top-level x/y. Stored server-side in the
+ * `layouts` collection; created/applied via the layout effects
+ * (actions/layoutEffects.ts).
+ */
+export type SavedLayout = {
+  /**
+   * Stable server-assigned id (uuid). Layouts are addressed by id on the
+   * wire — array indices would race across async effect round-trips.
+   */
+  id: string;
+  name: string;
+  createdAt: number;
+  updatedAt: number;
+  collectibles: Partial<Record<CollectibleName, LayoutPlacement[]>>;
+  buildings: Partial<Record<BuildingName, LayoutPlacement[]>>;
+  resources: {
+    trees: Record<string, LayoutCoordinates>;
+    stones: Record<string, LayoutCoordinates>;
+    gold: Record<string, LayoutCoordinates>;
+    iron: Record<string, LayoutCoordinates>;
+    crimstones: Record<string, LayoutCoordinates>;
+    sunstones: Record<string, LayoutCoordinates>;
+    ascensionCrystals: Record<string, LayoutCoordinates>;
+    oilReserves: Record<string, LayoutCoordinates>;
+    crops: Record<string, LayoutCoordinates>;
+    fruitPatches: Record<string, LayoutCoordinates>;
+    beehives: Record<string, LayoutCoordinates>;
+    flowerBeds: Record<string, LayoutCoordinates>;
+    lavaPits: Record<string, LayoutCoordinates>;
+  };
+  /** Placed Buds, keyed by bud id (not flippable). Farm-placed only. */
+  buds?: Record<string, LayoutCoordinates>;
+  /** Placed Pet NFTs, keyed by pet nft id (not flippable). Farm-placed only. */
+  petNFTs?: Record<string, LayoutCoordinates>;
+  /** Placed FarmHands (extra bumpkins), keyed by id. Farm-placed only. */
+  farmHands?: Record<string, LayoutFlippablePlacement>;
+  /** The player's own Bumpkin (single). Present only when placed on the farm. */
+  bumpkin?: LayoutFlippablePlacement;
+  /**
+   * Land extent at save time, so a preview can size itself to the land and draw
+   * the right biome art even after the farm later expands or ascends.
+   */
+  land?: {
+    /** Land expansion count (`inventory["Basic Land"]`) — picks the image level. */
+    expansions: number;
+    /** Island/biome — resolves the land sprite via `getCurrentBiome`. */
+    island: GameState["island"];
+  };
+};
+
+/**
+ * Maximum number of saved layouts a player can keep. The live farm is the
+ * working arrangement, not a saved layout — these slots are separate from it.
+ */
+export const MAX_SAVED_LAYOUTS = 3;
+/** Maximum character length of a saved layout name. */
+export const MAX_LAYOUT_NAME_LENGTH = 30;
+
 export type ExpansionConstruction = {
   createdAt: number;
   readyAt: number;
@@ -889,7 +1269,7 @@ export interface ExpansionRequirements {
   resources: Partial<Record<InventoryItemName, number>>;
   coins?: number;
   seconds: number;
-  bumpkinLevel: number;
+  bumpkinLevel: LevelRequirement;
 }
 
 export type Airdrop = {
@@ -927,6 +1307,9 @@ export type Bid = {
   ingredients: Partial<Record<InventoryItemName, number>>;
   biddedAt: number;
   tickets: number;
+  // Set when placing the bid incremented "FLOWER Spent" - bids placed
+  // before that tracking existed must not decrement it on cancel/refund
+  flowerSpentTracked?: boolean;
 } & (
   | {
       type: "collectible";
@@ -963,11 +1346,13 @@ export type FlowerShop = {
 
 export type FarmHand = {
   equipped: BumpkinParts;
+  coordinates?: Coordinates;
+  location?: "farm" | "home" | "interior" | "level_one";
+  flipped?: boolean;
 };
 
 export type Mushroom = {
   name: MushroomName;
-  amount: number;
   x: number;
   y: number;
 };
@@ -1016,12 +1401,20 @@ export type LanternName =
   | "Betty Lantern"
   | "Bumpkin Lantern";
 
+/** The four tier feeds only Pigs eat (types/pigFeeds.ts). */
+export type PigFeedName =
+  | "Basic Slop"
+  | "Hearty Slop"
+  | "Rich Slop"
+  | "Gourmet Slop";
+
 export type AnimalFoodName =
   | "Hay"
   | "Kernel Blend"
   | "NutriBarley"
   | "Mixed Grain"
-  | "Omnifeed";
+  | "Omnifeed"
+  | PigFeedName;
 
 export type AnimalMedicineName = "Barn Delight";
 
@@ -1036,7 +1429,10 @@ export type BedName =
   | "Royal Bed"
   | "Pearl Bed"
   | "Double Bed"
-  | "Messy Bed";
+  | "Messy Bed"
+  | "Salt Crystal Bed"
+  | "Cloud Bed"
+  | "Spooky Bed";
 
 export type RecipeCraftableName =
   | "Cushion"
@@ -1143,6 +1539,7 @@ export type NPCS = Partial<Record<NPCName, NPCData>>;
 export type NPCData = {
   deliveryCount: number;
   deliveryCompletedAt?: number;
+  skippedCount?: number;
   questCompletedAt?: number;
   friendship?: {
     updatedAt: number;
@@ -1233,6 +1630,11 @@ export type CommunityIsland = {
   };
 };
 
+export type MinigamePrizeTier = {
+  score: number;
+  items: Partial<Record<InventoryItemName, number>>;
+};
+
 export type MinigamePrize = {
   startAt: number;
   endAt: number;
@@ -1240,12 +1642,20 @@ export type MinigamePrize = {
   coins: number;
   items: Partial<Record<InventoryItemName, number>>;
   wearables: Wardrobe;
+  /**
+   * Ascending by score. When set, a claim pays the highest tier the latest
+   * run (`MinigameHistory.lastScore`) reached instead of `items`; `score` and
+   * `items` mirror the lowest tier.
+   */
+  tiers?: MinigamePrizeTier[];
 };
 
 export type MinigameHistory = {
   highscore: number;
   attempts: number;
   prizeClaimedAt?: number;
+  /** The latest run's score - only recorded while today's prize has tiers */
+  lastScore?: number;
 };
 
 export type MinigameAchievement = {
@@ -1278,6 +1688,7 @@ export type TradeListing = {
   tax?: number; // Defaults to 10% of the sfl
   createdAt: number;
   collection: CollectionName;
+  economy?: string;
   boughtAt?: number;
   buyerId?: number;
   signature?: string;
@@ -1294,6 +1705,7 @@ export type TradeOffer = {
   sfl: number;
   tax?: number; // Defaults to 10% of the sfl
   collection: CollectionName;
+  economy?: string;
   createdAt: number;
   fulfilledAt?: number;
   fulfilledById?: number;
@@ -1309,6 +1721,18 @@ type FishingSpot = {
   bait?: FishingBait;
   chum?: InventoryItemName;
   caught?: Partial<Record<InventoryItemName, number>>;
+  /**
+   * Per-fish breakdown of bonus units the Shrimp Onesie added during this
+   * cast. Already included in `caught`; surfaced separately so the catch
+   * UI can attribute the extra fish to the wearable.
+   */
+  shrimpOnesieBonus?: Partial<Record<InventoryItemName, number>>;
+  /**
+   * Per-fish breakdown of bonus units Otty the Otter added during this cast.
+   * Already included in `caught`; surfaced separately so the catch UI can
+   * attribute the extra fish to the collectible.
+   */
+  ottyBonus?: Partial<Record<InventoryItemName, number>>;
   guaranteedCatch?: FishName;
   maps?: Partial<Record<MarineMarvelName, number>>;
   /**
@@ -1364,6 +1788,7 @@ export type Christmas = {
 
 export type Currency =
   | "SFL"
+  | "Coins"
   | "Gem"
   | "Crimstone"
   | "Sunstone"
@@ -1373,7 +1798,9 @@ export type Currency =
   | "Easter Token 2025"
   | "Colors Token 2025"
   | "Halloween Token 2025"
-  | "Holiday Token 2025";
+  | "Holiday Token 2025"
+  | "April Fools Token 2026"
+  | "Colors Token 2026";
 
 export type ShopItemBase = {
   shortDescription: string;
@@ -1410,21 +1837,214 @@ export type MegaStore = {
   collectibles: CollectiblesItem[];
 };
 
-export type IslandType = "basic" | "spring" | "desert" | "volcano";
+export const ISLAND_TYPES = ["basic", "spring", "desert", "volcano"] as const;
+export type BasicIslandType = (typeof ISLAND_TYPES)[number];
+
+export const ASCENSION_ISLANDS = [
+  "swamp",
+  "spooky",
+  "crystal",
+  "galaxy",
+  "marble",
+] as const;
+export type AscensionIslandType = (typeof ASCENSION_ISLANDS)[number];
+
+export const ISLAND_EXPANSIONS = [
+  ...ISLAND_TYPES,
+  ...ASCENSION_ISLANDS,
+] as const;
+
+export type IslandType = (typeof ISLAND_EXPANSIONS)[number];
 
 /**
- * The order of the islands is important as it determines the levels of the islands.
- * Each new island should be added to the end of the array.
+ * Islands that are displayed under a custom name rather than `"{Type} Island"`.
+ * Use {@link getIslandName} for any player-facing island label so these stay
+ * consistent across the UI.
  */
-export const ISLAND_EXPANSIONS: IslandType[] = [
-  "basic",
-  "spring",
-  "desert",
-  "volcano",
-];
+export const ISLAND_DISPLAY_NAMES: Partial<Record<IslandType, string>> = {
+  spring: "Petal Paradise",
+  marble: "Marble Age",
+};
+
+/**
+ * The player-facing display name for an island: its custom name if it has one,
+ * otherwise the title-cased generic `"{Type} Island"`.
+ */
+export const getIslandName = (island: IslandType): string =>
+  ISLAND_DISPLAY_NAMES[island] ?? `${capitalize(island)} Island`;
 
 export type Home = {
   collectibles: Collectibles;
+};
+
+/**
+ * Interior is an entirely separate placement surface from Home.
+ * See `src/features/interior/` and `src/features/game/expansion/placeable/lib/interiorLayouts.ts`.
+ *
+ * Unlike Home, the interior uses a per-island tile mask (rooms have non-rectangular shapes)
+ * and a bottom-left-anchored coordinate system starting at (0,0).
+ *
+ * Each interior is split into one or more LEVELS — for now there's just `ground`,
+ * but future expansions (upstairs, basement, etc.) plug in alongside it without
+ * changing the existing data.
+ */
+export type InteriorLevel = {
+  collectibles: Collectibles;
+};
+
+/**
+ * Post-volcano home expansion tiers. Players unlock these sequentially via
+ * the `interior.upgrade` event. The list is intentionally one continuous
+ * progression and is *not* level-specific in the type — when level_two
+ * artwork ships we simply add its tier values here and the same `expansion`
+ * field on `Interior` continues to track progress.
+ *
+ * Names mirror the asset filenames in `src/assets/buildings/level-one-*.webp`.
+ */
+export type HomeExpansionTier =
+  | "level-one-start"
+  | "level-one-2"
+  | "level-one-3"
+  | "level-one-4"
+  | "level-one-5"
+  | "level-one-6"
+  | "level-one-full";
+
+export type LevelOne = {
+  collectibles: Collectibles;
+};
+
+export type InteriorLevelName = "ground" | "level_one";
+
+export type Interior = {
+  ground: InteriorLevel;
+  /**
+   * Present once the player has bought their first post-volcano upgrade.
+   * Lives at the /level_one route. Independent placements from `ground`.
+   */
+  level_one?: LevelOne;
+  /**
+   * Tracks which home-expansion tier the player has unlocked. Lives on the
+   * top-level Interior (not on a specific floor) so it can be shared across
+   * future levels. Undefined = no expansion bought yet.
+   */
+  expansion?: HomeExpansionTier;
+};
+
+/** The three Myco Bin recipes; see `CAVE_RECIPES` for their composition. */
+export type CaveRecipeName = "Mushroom" | "Beetle" | "Mud";
+
+/**
+ * A running (or finished) Myco Bin batch. The 25-tile board is derived
+ * from `seed`, and every tile count is fixed by the recipe (see `CAVE_RECIPES`).
+ * `readyAt = startedAt + 12h`.
+ */
+export type CaveBatch = {
+  recipe: CaveRecipeName;
+  startedAt: number;
+  readyAt: number;
+  /**
+   * Server-rolled 128-bit layout seed (32 hex chars); the board is
+   * `generateCavePatch(recipe, seed)`. Owner-only: stripped from visitor and
+   * community payloads. Absent on the client until the save that follows
+   * `cave.batchStarted` returns.
+   */
+  seed?: string;
+  /** Dug tiles keyed "x,y", with what each held (see `CaveDugTile`). */
+  dug?: Record<string, CaveDugTile>;
+  /** The board-shaping Cave skills this batch started with. */
+  skills?: CaveBatchSkills;
+};
+
+/**
+ * Cave skills that shape a batch's board, snapshotted when the batch starts so
+ * a board never changes once it is seeded (a later rank-up cannot move tiles
+ * that were already dug). Absent when none applied.
+ */
+export type CaveBatchSkills = {
+  /** Mushroom Bloom: Mushroom tiles added in place of Mud. */
+  extraMushroomTiles?: number;
+  /** Beetle Nest: Beetle tiles added in place of Mud. */
+  extraBeetleTiles?: number;
+  /** Rare Breeds: Beetle rarity weights (percent) replacing the base table. */
+  beetleRarity?: Record<BeetleName, number>;
+};
+
+/**
+ * A dug tile. `tile` and `clue` are what the dig revealed, recorded because
+ * the undug part of the board is re-sampled on every dig (`revealCavePatch`).
+ * Tiles dug before boards were sampled have neither: they are read from the
+ * seed's board (`generateCavePatch`).
+ */
+export type CaveDugTile = { dugAt: number; tile?: CaveTile; clue?: number };
+
+/**
+ * A Myco Bin machine inside the Cave. One is created with each tier; it
+ * sits directly above its own 5x5 digging patch. `batch` is present while a
+ * batch is growing, ready or being dug, until the next batch replaces it.
+ */
+export type CaveMachine = {
+  batch?: CaveBatch;
+};
+
+/** The next tier being built. Its machine appears once it is completed. */
+export type CaveConstruction = {
+  tier: number;
+  startedAt: number;
+  readyAt: number;
+};
+
+/**
+ * What the player has bought from the Goblin Cave Merchant: claims per offer
+ * slot, keyed by the visit index (`cave.merchantVisit.index`). Only the current
+ * visit is kept.
+ */
+export type CaveMerchant = {
+  purchases: Record<string, Partial<Record<number, number>>>;
+};
+
+/** One trade the Goblin Cave Merchant offers this visit. */
+export type CaveMerchantOffer = {
+  /** 1-based; Cave tier N unlocks slots 1..N. */
+  slot: number;
+  cost: { item: InventoryItemName; amount: number };
+  reward: { item: InventoryItemName; amount: number };
+  /** Claims per player per visit. */
+  limit: number;
+  curiosity: boolean;
+};
+
+/**
+ * The Merchant's visit open (or last opened) when the farm was loaded, and
+ * its stock. Built by the API on every load and never saved, like Love
+ * Island's shop: how the stock is priced and rolled stays on the server.
+ */
+export type CaveMerchantVisitState = {
+  /** Visit 0 opens at launch. */
+  index: number;
+  opensAt: number;
+  closesAt: number;
+  nextOpensAt: number;
+  /** A long enough wait that this visit's deals are badged generous. */
+  generous: boolean;
+  /** All eight slots while he is in town, none while he is away. */
+  offers: CaveMerchantOffer[];
+};
+
+/**
+ * The Cave: a React interior room entered from the world-map node. Absent
+ * until the player builds it, so the `toDomain` fallback can never create one.
+ * `tier` unlocks additional machine + patch slots; `machines` are explicit
+ * records keyed by slot id ("1"–"8").
+ */
+export type Cave = {
+  builtAt: number;
+  tier: number;
+  machines: Record<string, CaveMachine>;
+  construction?: CaveConstruction;
+  merchant?: CaveMerchant;
+  /** Computed by the API on load, never saved (see `CaveMerchantVisitState`). */
+  merchantVisit?: CaveMerchantVisitState;
 };
 
 export type PlantedFlower = {
@@ -1435,6 +2055,30 @@ export type PlantedFlower = {
   reward?: Reward;
   criticalHit?: CriticalHit;
   amount?: number;
+  /**
+   * Display-only in both models (readiness ignores it), but it carries a
+   * different quantity in each — the bed UI branches on `baseDurationMs`:
+   * - Windowed: WORK (ms) banked when the bed was lifted mid-grow (windowed
+   *   flowers freeze accrued WORK, not wall-clock progress, while the bed sits
+   *   in inventory). Already subtracted from `baseDurationMs`, so the bar folds
+   *   it back into its total.
+   * - Legacy: the total DISCOUNT (ms) baked in by back-dating `plantedAt` —
+   *   plant-time boosts, plus the full grow time on an insta-grow. It is NOT
+   *   growth already done, so the bar un-back-dates with it; without that a
+   *   heavily boosted flower opens its bar near-full. Same meaning (and reason)
+   *   as `PlantedCrop.boostedTime`.
+   * Flowers are one-shot, so it never needs resetting; absent when unboosted.
+   */
+  boostedTime?: number;
+  /**
+   * Unboosted-by-windowed-collectibles grow duration (ms), with all permanent
+   * (discount-at-start) boosts already folded in. Present only on flowers planted
+   * under the speed-rate model; its presence — NOT the `SPEED_BOOSTS` flag —
+   * selects `computeReadyAt` (over the legacy back-dated `plantedAt` readiness
+   * check), so a flower planted while the flag was on keeps windowed timing on
+   * rollback and retains its baked permanent boosts.
+   */
+  baseDurationMs?: number;
 };
 
 export type FlowerBed = {
@@ -1545,7 +2189,7 @@ type KeysBoughtAt = Partial<Record<Keys, { boughtAt: number }>>;
 type Stores = "factionShop" | "treasureShop" | "megastore";
 export type KeysBought = Record<Stores, KeysBoughtAt>;
 
-export type AnimalBuildingKey = "henHouse" | "barn";
+export type AnimalBuildingKey = "henHouse" | "barn" | "pigpen";
 export type UpgradableBuildingKey =
   | AnimalBuildingKey
   | "waterWell"
@@ -1557,8 +2201,29 @@ export type AnimalResource =
   | "Wool"
   | "Merino Wool"
   | "Feather"
-  | "Milk";
+  | "Milk"
+  | "Pig Bristles"
+  | "Truffle";
 export type AnimalState = "idle" | "happy" | "sad" | "ready" | "sick";
+
+export type AnimalFeedBuffName =
+  | "Salt Lick"
+  | "Honey Treat"
+  | "Truffle Seasoning";
+
+export type AnimalFeedBuff = {
+  name: AnimalFeedBuffName;
+  harvestsRemaining: number;
+};
+
+/**
+ * A Pig's Mud: bonus feed XP and no sickness until its charges run out. Charges
+ * work exactly like a spice-rack treat's - one is spent per produce claim - but
+ * in a separate slot from `feedBuff`, so a treat can run on top of it.
+ */
+export type AnimalMud = {
+  harvestsRemaining: number;
+};
 
 export type Animal = {
   id: string;
@@ -1567,11 +2232,27 @@ export type Animal = {
   createdAt: number;
   experience: number;
   asleepAt: number;
+  /**
+   * The animal's wake time. Under the speed-rate model (`baseDurationMs` set)
+   * this is a non-authoritative CACHE of the wake time projected at sleep — the
+   * live value is derived by `getAnimalReadyAt`, since a shrine placed or burned
+   * mid-sleep moves it. Legacy (unmarked) animals, and any animal woken
+   * instantly, carry the authoritative value here.
+   */
   awakeAt: number;
   lovedAt: number;
   item: LoveAnimalItem;
+  /**
+   * The sleep's un-boosted work with permanent boosts folded in. Present only on
+   * sleeps started under the speed-rate model; its absence selects the legacy
+   * baked `awakeAt` (the read path keys off the marker, NOT the flag). No
+   * `boostedTime` counterpart — animal sleep has no progress bar.
+   */
+  baseDurationMs?: number;
   multiplier?: number;
   reward?: Reward;
+  feedBuff?: AnimalFeedBuff;
+  mud?: AnimalMud;
 };
 
 export type AnimalBuilding = UpgradableBuilding & {
@@ -1591,6 +2272,16 @@ export type PetHouseBuilding = UpgradableBuilding & {
 export type Bank = {
   taxFreeSFL: number;
   withdrawnAmount: number;
+  /**
+   * How much of the player's FLOWER balance came from a deposit and has not
+   * been spent yet.
+   *
+   * Deposited FLOWER is never locked in the game - a player can always withdraw
+   * up to this amount without meeting the reputation requirement. Increases on
+   * deposit, decreases whenever FLOWER leaves the balance (spends, trades and
+   * withdrawals).
+   */
+  unlockedFlower?: number;
 };
 
 export type TemperateSeasonName = "spring" | "summer" | "autumn" | "winter";
@@ -1632,6 +2323,7 @@ export type LavaPit = {
 export type VIP = {
   bundles: { name: VipBundle; boughtAt: number }[];
   expiresAt: number;
+  trialStartedAt?: number;
 };
 
 export type Chain = "ronin";
@@ -1652,6 +2344,7 @@ export type BoostName =
 
 export type SpecialBoostName =
   | `${SeasonalEventName}`
+  | "Buckaroo"
   | "Power hour"
   | "VIP Access"
   | "Faction Pet"
@@ -1661,9 +2354,24 @@ export type SpecialBoostName =
   | "Tier 3 Bonus"
   | "Streak Bonus"
   | "Bee Swarm Bonus"
-  | "Building Oil";
+  | "Building Oil"
+  | "Double Delivery";
 
 export type BoostUsedAt = Partial<Record<BoostName, number>>;
+
+/**
+ * A finalised [from, to] interval during which a boost was active. Stored in
+ * `GameState.boostHistory` so the boost's contribution to in-progress timers
+ * survives its source going away — a temporary collectible being burned
+ * (deleted) or renewed (createdAt reset), a season Guardian being lifted, the
+ * sunshower calendar entry being deleted after its day, or a Power Hour buff
+ * being replaced by the next one. Activity-agnostic — the per-activity speed is
+ * applied when the window is read.
+ */
+export type BoostHistoryWindow = { from: number; to: number };
+
+/** The boosts `GameState.boostHistory` records windows for. */
+export type BoostHistoryName = CollectibleName | "Sunshower" | "Power hour";
 
 type ClutterCoordinates = {
   type: ClutterName;
@@ -1721,6 +2429,8 @@ export type FarmHands = {
 
 export interface GameState {
   home: Home;
+  interior: Interior;
+  cave?: Cave;
   bank: Bank;
 
   buffs?: Partial<Record<BuffName, Buff>>;
@@ -1739,8 +2449,31 @@ export interface GameState {
 
   verified?: boolean;
 
+  /**
+   * When the player last accepted the Terms & Conditions (epoch ms).
+   *
+   * Undefined for players who have never accepted them. Re-acceptance is
+   * forced once the acceptance is older than
+   * {@link TCS_ACKNOWLEDGEMENT_DURATION} - see the `termsAndConditions` state
+   * in `gameMachine`.
+   */
+  tcsAcknowledged?: number;
+
+  /**
+   * Anti-botting captcha progress. The API raises and lowers `required`.
+   * Per-game success/fail counts live in `farmActivity`.
+   */
+  captcha?: {
+    /** Whether the player must solve a captcha before continuing */
+    required?: boolean;
+    /** When the player last solved a captcha */
+    solvedAt?: number;
+    /** When the player last failed an attempt - drives the lockout */
+    failedAt?: number;
+  };
+
   gems: {
-    history?: Record<string, { spent: number }>;
+    history?: Record<string, { spent: number; coinsSpent?: number }>;
   };
 
   flower: {
@@ -1756,6 +2489,7 @@ export interface GameState {
     previousExpansions?: number;
     sunstones?: number;
     biome?: LandBiomeName;
+    ascensionLevel?: number;
   };
 
   username?: string;
@@ -1764,6 +2498,21 @@ export interface GameState {
       setAt?: number;
     };
     network?: NetworkName;
+    economiesEnabled?: boolean;
+    interiorsEnabled?: boolean;
+    /** Opt-in experiments; unset falls back to EXPERIMENT_DEFAULTS. */
+    experiments?: Partial<Record<ExperimentName, boolean>>;
+    toolShop?: {
+      buyAllEnabled?: boolean;
+      buyAll?: Partial<
+        Record<
+          WorkbenchToolName,
+          {
+            blocked?: boolean;
+          }
+        >
+      >;
+    };
   };
   coins: number;
   balance: Decimal;
@@ -1788,6 +2537,7 @@ export interface GameState {
   stock: Inventory;
   stockExpiry: StockExpiry;
   boostsUsedAt?: BoostUsedAt;
+  boostHistory?: Partial<Record<BoostHistoryName, BoostHistoryWindow[]>>;
 
   // When an item is burnt, what the prize was
   mysteryPrizes: Partial<Record<InventoryItemName, Reveal[]>>;
@@ -1798,6 +2548,7 @@ export interface GameState {
   iron: Record<string, Rock>;
   crimstones: Record<string, FiniteResource>;
   sunstones: Record<string, FiniteResource>;
+  ascensionCrystals: Record<string, FiniteResource>;
   oilReserves: Record<string, OilReserve>;
 
   crops: Record<string, CropPlot>;
@@ -1880,7 +2631,7 @@ export interface GameState {
   auctioneer: Auctioneer;
   chores?: ChoresV2;
   kingdomChores: KingdomChores;
-  mushrooms: Mushrooms;
+  mushrooms?: Mushrooms;
   potionHouse?: PotionHouse;
 
   bounties: Bounties;
@@ -1927,18 +2678,27 @@ export interface GameState {
   desert: Desert;
 
   ban: {
-    status: "investigating" | "permanent" | "ok";
+    /**
+     * `lock` is a support hold and `investigating` a soft ban. Neither stops
+     * play; both stop value leaving the account (withdrawals, trades,
+     * transfers). Verifying socials and a face lifts a soft ban; only support
+     * lifts a lock.
+     */
+    status: "investigating" | "permanent" | "ok" | "lock";
     isSocialVerified?: boolean;
   };
 
-  experiments: ExperimentName[];
   henHouse: AnimalBuilding;
   barn: AnimalBuilding;
+  pigpen: AnimalBuilding;
   waterWell: UpgradableBuilding;
+  agingShed: AgingShed;
   petHouse: PetHouseBuilding;
 
   craftingBox: {
     status: "pending" | "idle" | "crafting";
+    queue?: CraftingQueueItem[];
+    /** @deprecated Derive from queue[0] via getCraftingBoxCurrent */
     item?:
       | {
           collectible: RecipeCollectibleName;
@@ -1948,8 +2708,10 @@ export interface GameState {
           collectible?: never;
           wearable: BumpkinItem;
         };
-    startedAt: number;
-    readyAt: number;
+    /** @deprecated Derive from queue[0] */
+    startedAt?: number;
+    /** @deprecated Derive from queue[0] */
+    readyAt?: number;
     recipes: Partial<Recipes>;
   };
   season: Season;
@@ -1991,6 +2753,12 @@ export interface GameState {
       coins?: number;
       sfl?: number;
     };
+    /**
+     * VIP referral milestone thresholds (1, 5, 10, 20 … 90) that have been
+     * claimed, mapped to the timestamp (ms) they were claimed at. Used to make
+     * each milestone prize claimable exactly once.
+     */
+    vipMilestonesClaimed?: Partial<Record<number, number>>;
   };
   socialTasks?: {
     completed: Partial<Record<InGameTaskName, { completedAt: number }>>;
@@ -2006,22 +2774,40 @@ export interface GameState {
     shop: FloatingIslandShop;
     boughtAt?: Partial<Record<FloatingShopItemName, number>>;
     petalPuzzleSolvedAt?: number;
+    /**
+     * Love Charm prizes claimed from the daily island puzzles. Only the
+     * current UTC day's claims are kept - used to enforce the daily Love
+     * Charm cap and the maximum number of claims per day.
+     */
+    prizeClaims?: {
+      claimedAt: number;
+      amount: number;
+      /** Which puzzle paid out - lets the client enforce per-game rules. */
+      game?: FloatingIslandGameName;
+      /** The puzzle's round - each `{ game, roundId }` is claimable once. */
+      roundId?: number;
+    }[];
   };
   megastore?: {
     boughtAt: Partial<Record<ChapterTierItemName, number>>;
+    // Per-item, per-chapter purchase count. Used by the `limit` enforcement
+    // so a recurring item from a previous chapter doesn't stay blocked.
+    purchases?: Partial<
+      Record<ChapterTierItemName, { chapter: ChapterName; count: number }>
+    >;
   };
   withdrawals?: {
     amount: number;
   };
-  blessing: Blessing;
 
   aoe: AOE;
   socialFarming: SocialFarming;
   pets?: Pets;
 
-  prototypes?: {
-    leagues?: League;
-  };
+  saltFarm: SaltFarm;
+  sculptures?: Partial<
+    Record<SculptureName, { level: number; upgradedAt?: number }>
+  >;
 }
 
 export type AOE = Partial<
@@ -2039,7 +2825,8 @@ export type FaceRecognitionEvent =
         faceId: string;
         farmId: number;
       }[];
-    };
+    }
+  | { event: "ownerChanged"; createdAt: number };
 
 export interface Context {
   state?: GameState;

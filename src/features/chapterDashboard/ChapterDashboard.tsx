@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useContext } from "react";
 import { useLocation, useNavigate } from "react-router";
 import { useSafeAreaPaddingTop } from "lib/utils/hooks/useSafeAreaPaddingTop";
 
-import logo from "assets/brand/crabs_and_traps.png";
+import logo from "assets/brand/ascension_age.png";
 
 import { OuterPanel } from "components/ui/Panel";
 import { PIXEL_SCALE } from "features/game/lib/constants";
@@ -10,8 +10,8 @@ import { SUNNYSIDE } from "assets/sunnyside";
 import { useSelector } from "@xstate/react";
 import { Context as GameContext } from "features/game/GameProvider";
 import * as AuthProvider from "features/auth/lib/Provider";
-import { AuthMachineState } from "features/auth/lib/authMachine";
-import { MachineState } from "features/game/lib/gameMachine";
+import type { AuthMachineState } from "features/auth/lib/authMachine";
+import type { MachineState } from "features/game/lib/gameMachine";
 import { useNow } from "lib/utils/hooks/useNow";
 import { getCurrentChapter } from "features/game/types/chapters";
 import { MutantsSection } from "./components/MutantsSection";
@@ -25,7 +25,6 @@ import { ChapterIntroSection } from "./components/ChapterIntroSection";
 import { ChapterTracksPreview } from "features/world/ui/tracks/ChapterTracks";
 import { ChapterTimer } from "./components/ChapterTimer";
 import { ChapterMarketplaceWidget } from "./components/ChapterMarketplaceWidget";
-import { SocialRewardsWidget } from "./components/SocialRewardsWidget";
 
 const _farmId = (state: MachineState) => state.context.farmId;
 const _gameState = (state: MachineState) => state.context.state;
@@ -38,7 +37,7 @@ const _token = (state: AuthMachineState) =>
 export const ChapterDashboard: React.FC = () => {
   const navigate = useNavigate();
   const { pathname } = useLocation();
-  const { gameService } = useContext(GameContext);
+  const { gameService, fromRoute } = useContext(GameContext);
   const { authService } = useContext(AuthProvider.Context);
   const farmId = useSelector(gameService, _farmId);
   const gameState = useSelector(gameService, _gameState);
@@ -50,13 +49,20 @@ export const ChapterDashboard: React.FC = () => {
   const effectiveFarmId = farmId || 1;
   const effectiveToken = token || "offline";
 
-  const showClose = pathname.includes("/game") || pathname === "/chapter";
+  const showClose =
+    pathname.includes("/game") ||
+    pathname.includes("/world") ||
+    pathname === "/chapter";
 
   const safeAreaPaddingTop = useSafeAreaPaddingTop(50);
 
   const handleClose = useCallback(() => {
+    if (pathname.includes("/world")) {
+      navigate(fromRoute ?? "/world/plaza");
+      return;
+    }
     navigate(-1);
-  }, [navigate]);
+  }, [navigate, pathname, fromRoute]);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -132,7 +138,7 @@ export const ChapterDashboard: React.FC = () => {
                 gameState={gameState}
                 token={effectiveToken}
               />
-              <RafflesSection chapter={chapter} token={effectiveToken} />
+              <RafflesSection token={effectiveToken} />
               <MutantsSection chapter={chapter} />
             </div>
 
@@ -158,7 +164,6 @@ export const ChapterDashboard: React.FC = () => {
               token={effectiveToken}
             />
             <ChapterMarketplaceWidget />
-            <SocialRewardsWidget />
           </div>
         </div>
       </OuterPanel>

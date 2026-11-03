@@ -5,7 +5,7 @@ import { SomethingWentWrong } from "./components/SomethingWentWrong";
 import { DuplicateUser } from "./components/DuplicateUser";
 import { Congestion } from "./components/Congestion";
 import { SessionExpired } from "./components/SessionExpired";
-import { ErrorCode, ERRORS } from "lib/errors";
+import { type ErrorCode, ERRORS, isSocialLinkError } from "lib/errors";
 import { TooManyRequests } from "./components/TooManyRequests";
 import { Maintenance } from "./components/Maintenance";
 import { MultipleDevices } from "./components/MultipleDevices";
@@ -20,6 +20,12 @@ import { MarketplaceTransferInProgress } from "./components/MarketplaceTransferI
 import { MarketplaceListingNotClaimed } from "./components/MarketplaceListingNotClaimed";
 import { ClientOutdated } from "./components/ClientOutdated";
 import { DuplicateWithdraw } from "./components/DuplicateWithdraw";
+import { SocialIdentityHasFarm } from "./components/SocialIdentityHasFarm";
+import { LinkedWalletHasFarm } from "./components/LinkedWalletHasFarm";
+import { GoogleLoginDisabled } from "./components/GoogleLoginDisabled";
+import { TwitterShowcaseError } from "./components/TwitterShowcaseError";
+import { MarketplaceWithdrawCooldown } from "./components/MarketplaceWithdrawCooldown";
+import { SocialLinkError } from "./components/SocialLinkError";
 
 interface Props {
   errorCode: ErrorCode;
@@ -43,6 +49,10 @@ export const ErrorMessage: React.FC<Props> = ({ errorCode }) => {
     return <DuplicateWithdraw />;
   }
 
+  if (errorCode === ERRORS.WITHDRAW_MARKETPLACE_COOLDOWN) {
+    return <MarketplaceWithdrawCooldown />;
+  }
+
   if (errorCode === ERRORS.NO_FARM) {
     return <Beta />;
   }
@@ -55,8 +65,32 @@ export const ErrorMessage: React.FC<Props> = ({ errorCode }) => {
     return <DuplicateUser />;
   }
 
+  if (errorCode === ERRORS.SOCIAL_IDENTITY_HAS_FARM) {
+    return <SocialIdentityHasFarm />;
+  }
+
+  if (errorCode === ERRORS.LINKED_WALLET_HAS_FARM) {
+    return <LinkedWalletHasFarm />;
+  }
+
+  if (errorCode === ERRORS.GOOGLE_LOGIN_DISABLED) {
+    return <GoogleLoginDisabled />;
+  }
+
+  if (
+    errorCode === ERRORS.TWITTER_NOT_CONNECTED ||
+    errorCode === ERRORS.TWITTER_ALREADY_SHOWCASED ||
+    errorCode === ERRORS.TWITTER_INVALID_URL
+  ) {
+    return <TwitterShowcaseError errorCode={errorCode} />;
+  }
+
   if (errorCode === ERRORS.DISCORD_NOT_ON_SERVER) {
     return <NotOnDiscordServer />;
+  }
+
+  if (isSocialLinkError(errorCode)) {
+    return <SocialLinkError errorCode={errorCode} />;
   }
 
   if (errorCode === ERRORS.NETWORK_CONGESTED) {
@@ -67,7 +101,10 @@ export const ErrorMessage: React.FC<Props> = ({ errorCode }) => {
     return <SessionExpired />;
   }
 
-  if (errorCode === ERRORS.TOO_MANY_REQUESTS) {
+  if (
+    errorCode === ERRORS.TOO_MANY_REQUESTS ||
+    errorCode === ERRORS.EFFECT_TOO_MANY_REQUESTS
+  ) {
     return <TooManyRequests />;
   }
 
@@ -79,7 +116,13 @@ export const ErrorMessage: React.FC<Props> = ({ errorCode }) => {
     return <MultipleDevices />;
   }
 
-  if (errorCode === ERRORS.AUTOSAVE_CLOCK_ERROR) {
+  // The event API only answers 400 with EF-002 when the request's
+  // `createdAt` falls outside its clock window, so it is the same device
+  // clock problem autosave reports as AS-002.
+  if (
+    errorCode === ERRORS.AUTOSAVE_CLOCK_ERROR ||
+    errorCode === ERRORS.EFFECT_BAD_REQUEST
+  ) {
     return <ClockIssue />;
   }
 

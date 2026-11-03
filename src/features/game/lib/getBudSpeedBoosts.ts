@@ -1,8 +1,8 @@
-import { getObjectEntries } from "../expansion/lib/utils";
-import { Bud } from "../types/buds";
-import { GameState } from "../types/game";
-import { BudNFTName } from "../types/marketplace";
-import { Resource, getAuraBoost, isCrop } from "./getBudYieldBoosts";
+import { getObjectEntries } from "lib/object";
+import type { Bud } from "../types/buds";
+import type { GameState } from "../types/game";
+import type { BudNFTName } from "../types/marketplace";
+import { type Resource, getAuraBoost, isCrop } from "./getBudYieldBoosts";
 
 const getTypeBoost = (bud: Bud, resource: Resource): number => {
   if (isCrop(resource) && bud.type === "Saphiro") {

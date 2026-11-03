@@ -1,377 +1,482 @@
 import Decimal from "decimal.js-light";
 import { LEVEL_EXPERIENCE } from "features/game/lib/level";
-import { BUILDINGS, Ingredient } from "features/game/types/buildings";
-import { INITIAL_BUMPKIN, TEST_FARM } from "../../lib/constants";
-import { GameState } from "../../types/game";
+import { BUILDINGS } from "features/game/types/buildings";
+import { INITIAL_FARM, TEST_FARM } from "../../lib/constants";
+import type { GameState } from "../../types/game";
 import {
   constructBuilding,
   CONSTRUCT_BUILDING_ERRORS,
 } from "./constructBuilding";
 import { TEST_BUMPKIN } from "features/game/lib/bumpkinData";
+import { makeAnimalBuildingKey } from "features/game/lib/animals";
+import { getBoostedAnimalCapacity } from "./buyAnimal";
 
 const GAME_STATE: GameState = {
   ...TEST_FARM,
-  inventory: {},
-  buildings: {},
+  inventory: {
+    ...TEST_FARM.inventory,
+    "Basic Land": new Decimal(5),
+  },
 };
 
-const dateNow = Date.now();
+const date = Date.now();
 
 describe("Construct building", () => {
-  it("does not construct if build level is not reached", () => {
+  const dateNow = Date.now();
+
+  it("ensures level requirements for Kitchen are met", () => {
     expect(() =>
       constructBuilding({
         state: {
           ...GAME_STATE,
-          bumpkin: {
-            ...INITIAL_BUMPKIN,
-            experience: LEVEL_EXPERIENCE[1],
+          bumpkin: { ...TEST_BUMPKIN, experience: 0 },
+          inventory: {
+            ...GAME_STATE.inventory,
+            "Basic Land": new Decimal(2),
           },
         },
         action: {
-          id: "123",
           type: "building.constructed",
-          name: "Water Well",
+          id: "123",
+          name: "Kitchen",
           coordinates: {
-            x: 0,
-            y: 0,
+            x: 2,
+            y: 2,
           },
         },
+        createdAt: dateNow,
       }),
-    ).toThrow(CONSTRUCT_BUILDING_ERRORS.MAX_BUILDINGS_REACHED);
+    ).toThrow(CONSTRUCT_BUILDING_ERRORS.BUMPKIN_LEVEL_NOT_MET);
   });
 
-  it("does not construct if max building limit is reached", () => {
+  it("does not craft Water Well if there is insufficient ingredients", () => {
     expect(() =>
       constructBuilding({
         state: {
           ...GAME_STATE,
-          bumpkin: {
-            ...INITIAL_BUMPKIN,
-            experience: LEVEL_EXPERIENCE[20],
-          },
-          inventory: {
-            "Water Well": new Decimal(4),
-            "Basic Land": new Decimal(20),
-          },
-          buildings: {
-            "Water Well": [
-              {
-                coordinates: { x: 1, y: 1 },
-                createdAt: Date.now(),
-                readyAt: Date.now() + 30 * 1000,
-                id: "1",
-              },
-              {
-                coordinates: { x: 3, y: 3 },
-                createdAt: Date.now(),
-                readyAt: Date.now() + 30 * 1000,
-                id: "2",
-              },
-              {
-                coordinates: { x: 1, y: 3 },
-                createdAt: Date.now(),
-                readyAt: Date.now() + 30 * 1000,
-                id: "3",
-              },
-              {
-                coordinates: { x: 3, y: 1 },
-                createdAt: Date.now(),
-                readyAt: Date.now() + 30 * 1000,
-                id: "4",
-              },
-            ],
-          },
-        },
-        action: {
-          id: "123",
-          type: "building.constructed",
-          name: "Water Well",
-          coordinates: {
-            x: 0,
-            y: 0,
-          },
-        },
-      }),
-    ).toThrow(CONSTRUCT_BUILDING_ERRORS.MAX_BUILDINGS_REACHED);
-  });
-
-  it("does not construct if max building limit is reached in inventory", () => {
-    expect(() =>
-      constructBuilding({
-        state: {
-          ...GAME_STATE,
-          bumpkin: {
-            ...INITIAL_BUMPKIN,
-            experience: LEVEL_EXPERIENCE[20],
-          },
-          inventory: {
-            "Water Well": new Decimal(4),
-            "Basic Land": new Decimal(20),
-          },
           buildings: {},
-        },
-        action: {
-          id: "123",
-          type: "building.constructed",
-          name: "Water Well",
-          coordinates: {
-            x: 0,
-            y: 0,
+          coins: 1000,
+          bumpkin: {
+            ...TEST_BUMPKIN,
+            experience: LEVEL_EXPERIENCE[5],
           },
         },
+        action: {
+          type: "building.constructed",
+          id: "123",
+          name: "Water Well",
+          coordinates: {
+            x: 2,
+            y: 1,
+          },
+        },
+        createdAt: dateNow,
       }),
-    ).toThrow(CONSTRUCT_BUILDING_ERRORS.MAX_BUILDINGS_REACHED);
+    ).toThrow("Insufficient ingredient: Wood");
   });
 
-  it("does not construct if not enough SFL", () => {
+  it("does not craft Fire Pit when bumpkin level does not satisfy unlock (Infinity)", () => {
     expect(() =>
       constructBuilding({
         state: {
           ...GAME_STATE,
-          bumpkin: {
-            ...INITIAL_BUMPKIN,
-            experience: LEVEL_EXPERIENCE[20],
-          },
+          buildings: {},
           inventory: {
             Wood: new Decimal(100),
             Stone: new Decimal(100),
-            "Basic Land": new Decimal(10),
+            "Basic Land": new Decimal(5),
           },
-          balance: new Decimal(0),
         },
         action: {
-          id: "123",
           type: "building.constructed",
-          name: "Water Well",
+          id: "123",
+          name: "Fire Pit",
           coordinates: {
-            x: 0,
-            y: 0,
+            x: 2,
+            y: 2,
           },
         },
+        createdAt: dateNow,
+      }),
+    ).toThrow(CONSTRUCT_BUILDING_ERRORS.BUMPKIN_LEVEL_NOT_MET);
+  });
+
+  it("does not craft item with insufficient coins", () => {
+    expect(() =>
+      constructBuilding({
+        state: {
+          ...GAME_STATE,
+          buildings: {},
+          trees: {},
+          stones: {},
+          inventory: {
+            Wood: new Decimal(100),
+            Stone: new Decimal(100),
+            "Basic Land": new Decimal(6),
+          },
+          bumpkin: { ...TEST_BUMPKIN, experience: 20000000 },
+          coins: 0,
+        },
+        action: {
+          type: "building.constructed",
+          id: "123",
+          name: "Kitchen",
+          coordinates: {
+            x: 2,
+            y: 1,
+          },
+        },
+        createdAt: dateNow,
       }),
     ).toThrow(CONSTRUCT_BUILDING_ERRORS.NOT_ENOUGH_COINS);
   });
 
-  it("does not construct if not enough ingredients", () => {
+  it("crafts item with sufficient coins", () => {
     expect(() =>
       constructBuilding({
         state: {
           ...GAME_STATE,
-          bumpkin: {
-            ...INITIAL_BUMPKIN,
-            experience: LEVEL_EXPERIENCE[20],
-          },
+          buildings: {},
+          trees: {},
+          stones: {},
           inventory: {
-            Wood: new Decimal(0.1),
-            Stone: new Decimal(0.1),
-            "Basic Land": new Decimal(10),
+            Wood: new Decimal(100),
+            Stone: new Decimal(100),
+            "Basic Land": new Decimal(5),
           },
-          coins: 1000,
+          bumpkin: {
+            ...TEST_BUMPKIN,
+            experience: 10000000,
+          },
+          coins: 100,
         },
         action: {
           id: "123",
           type: "building.constructed",
-          name: "Water Well",
+          name: "Kitchen",
           coordinates: {
-            x: 0,
-            y: 0,
+            x: 2,
+            y: 1,
           },
         },
+        createdAt: dateNow,
       }),
-    ).toThrow(`${CONSTRUCT_BUILDING_ERRORS.NOT_ENOUGH_INGREDIENTS}Wood`);
+    ).not.toThrow();
   });
 
-  it("constructs building", () => {
-    const waterWell = BUILDINGS["Water Well"][0];
-    const initialWood = new Decimal(100);
-    const initialStone = new Decimal(101);
-    const initialCoins = 1000;
-
+  it("constructs into the chest when no coordinates are given", () => {
     const state = constructBuilding({
       state: {
         ...GAME_STATE,
-        bumpkin: {
-          ...INITIAL_BUMPKIN,
-          experience: LEVEL_EXPERIENCE[20],
-        },
+        buildings: {},
+        trees: {},
+        stones: {},
         inventory: {
-          Wood: initialWood,
-          Stone: initialStone,
-          "Basic Land": new Decimal(10),
+          Wood: new Decimal(100),
+          Stone: new Decimal(100),
+          "Basic Land": new Decimal(5),
         },
-        coins: initialCoins,
+        bumpkin: {
+          ...TEST_BUMPKIN,
+          experience: 10000000,
+        },
+        coins: 100,
       },
       action: {
         id: "123",
         type: "building.constructed",
-        name: "Water Well",
-        coordinates: {
-          x: 0,
-          y: 0,
-        },
+        name: "Kitchen",
       },
+      createdAt: dateNow,
     });
 
-    expect(state.inventory["Water Well"]).toEqual(new Decimal(1));
-    expect(state.buildings["Water Well"]?.length).toEqual(1);
+    expect(state.inventory.Kitchen).toEqual(new Decimal(1));
+    expect(state.buildings.Kitchen).toEqual([
+      expect.objectContaining({ id: "123", createdAt: dateNow }),
+    ]);
+    expect(state.buildings.Kitchen![0].coordinates).toBeUndefined();
+  });
 
-    const { ingredients } = waterWell;
+  it("adds the building to the inventory", () => {
+    const state = constructBuilding({
+      state: {
+        ...GAME_STATE,
+        buildings: {},
+        trees: {},
+        stones: {},
+        bumpkin: {
+          ...TEST_BUMPKIN,
+          experience: 10000000,
+        },
+        coins: 1000,
+        inventory: {
+          Wood: new Decimal(30),
+          Stone: new Decimal(100),
+          "Basic Land": new Decimal(5),
+        },
+      },
+      action: {
+        type: "building.constructed",
+        name: "Kitchen",
+        id: "123",
+        coordinates: {
+          x: 2,
+          y: 1,
+        },
+      },
+      createdAt: dateNow,
+    });
 
-    const { amount: woodRequired } = ingredients.find(
-      ({ item }) => item === "Wood",
-    ) as Ingredient;
-
-    expect(state.inventory.Wood).toEqual(initialWood.minus(woodRequired));
-    expect(state.coins).toEqual(initialCoins - waterWell.coins);
+    expect(state.inventory["Kitchen"]).toEqual(new Decimal(1));
   });
 
   it("does not affect existing inventory", () => {
     const state = constructBuilding({
       state: {
         ...GAME_STATE,
+        bumpkin: {
+          ...TEST_BUMPKIN,
+          experience: 10000000,
+        },
+        buildings: {},
+        trees: {},
+        stones: {},
+        coins: 1000,
         inventory: {
           Wood: new Decimal(100),
           Stone: new Decimal(100),
           Radish: new Decimal(50),
-          "Basic Land": new Decimal(10),
+          "Basic Land": new Decimal(5),
         },
-        bumpkin: {
-          ...INITIAL_BUMPKIN,
-          experience: 1000000,
-        },
-        coins: 1000,
       },
       action: {
-        id: "123",
         type: "building.constructed",
-        name: "Water Well",
+        name: "Kitchen",
+        id: "123",
         coordinates: {
-          x: 0,
-          y: 0,
+          x: 2,
+          y: 1,
         },
       },
+      createdAt: dateNow,
     });
 
-    expect(state.inventory["Water Well"]).toEqual(new Decimal(1));
+    expect(state.inventory["Kitchen"]).toEqual(new Decimal(1));
     expect(state.inventory["Radish"]).toEqual(new Decimal(50));
   });
 
-  it("adds the building to the buildings data structure correctly", () => {
+  it("adds the building to the buildings data structure", () => {
     const state = constructBuilding({
       state: {
         ...GAME_STATE,
-        coins: 1000,
-        buildings: {},
-        inventory: {
-          Wood: new Decimal(20),
-          Stone: new Decimal(100),
-          "Basic Land": new Decimal(10),
-        },
         bumpkin: {
-          ...INITIAL_BUMPKIN,
-          experience: 1000000,
+          ...TEST_BUMPKIN,
+          experience: 10000000,
+        },
+        buildings: {},
+        coins: 1000,
+        inventory: {
+          Wood: new Decimal(30),
+          Stone: new Decimal(100),
+          "Basic Land": new Decimal(5),
         },
       },
       action: {
-        id: "123",
         type: "building.constructed",
+        name: "Kitchen",
+        id: "123",
+        coordinates: {
+          x: 1,
+          y: 1,
+        },
+      },
+      createdAt: date,
+    });
+
+    expect(state.buildings["Kitchen"]).toHaveLength(1);
+    expect(state.buildings["Kitchen"]?.[0]).toEqual({
+      id: expect.any(String),
+      coordinates: { x: 1, y: 1 },
+      readyAt: expect.any(Number),
+      createdAt: date,
+    });
+  });
+
+  it("burns coins on construct building", () => {
+    const building = BUILDINGS.Kitchen;
+    const coins = 10000;
+
+    const state = constructBuilding({
+      state: {
+        ...GAME_STATE,
+        buildings: {},
+        coins,
+        inventory: {
+          Wood: new Decimal(30),
+          Stone: new Decimal(100),
+          "Basic Land": new Decimal(5),
+        },
+        bumpkin: {
+          ...TEST_BUMPKIN,
+          experience: 10000000,
+        },
+      },
+      action: {
+        type: "building.constructed",
+        id: "123",
+        name: "Kitchen",
+        coordinates: {
+          x: 1,
+          y: 1,
+        },
+      },
+      createdAt: dateNow,
+    });
+    expect(state.coins).toEqual(coins - building.coins);
+  });
+
+  it("burns ingredients on construct building", () => {
+    const state = constructBuilding({
+      state: {
+        ...GAME_STATE,
+        buildings: {},
+        coins: 1000,
+        inventory: {
+          Wood: new Decimal(20),
+          Stone: new Decimal(15),
+          "Basic Land": new Decimal(5),
+        },
+        bumpkin: { ...TEST_BUMPKIN, experience: LEVEL_EXPERIENCE[5] },
+      },
+      action: {
+        type: "building.constructed",
+        id: "123",
         name: "Water Well",
         coordinates: {
           x: 1,
-          y: 2,
+          y: 1,
         },
       },
       createdAt: dateNow,
     });
 
-    expect(state.buildings["Water Well"]).toHaveLength(1);
-    expect(state.buildings["Water Well"]?.[0]).toEqual({
-      id: expect.any(String),
-      coordinates: { x: 1, y: 2 },
-      readyAt: dateNow + 60 * 5 * 1000,
-      createdAt: dateNow,
-    });
+    expect(state.inventory["Wood"]).toEqual(new Decimal(15));
+    expect(state.inventory["Stone"]).toEqual(new Decimal(15));
   });
 
-  it("does not affect existing buildings when constructing new Water Well", () => {
-    const buildings = {
-      "Water Well": [
-        {
-          coordinates: { x: 1, y: 1 },
-          createdAt: dateNow,
-          readyAt: dateNow + 30 * 1000,
-          id: "1",
+  it("does not construct when the building is already placed", () => {
+    expect(() =>
+      constructBuilding({
+        state: {
+          ...GAME_STATE,
+          coins: 1000,
+          inventory: {
+            Wood: new Decimal(20),
+            Stone: new Decimal(15),
+            "Basic Land": new Decimal(5),
+          },
+          bumpkin: { ...TEST_BUMPKIN, experience: LEVEL_EXPERIENCE[8] },
+          buildings: {
+            ...GAME_STATE.buildings,
+            "Water Well": [
+              {
+                coordinates: { x: 3, y: 3 },
+                createdAt: Date.now(),
+                readyAt: Date.now(),
+                id: "existing-well",
+              },
+            ],
+          },
         },
-      ],
+        action: {
+          type: "building.constructed",
+          id: "123",
+          name: "Water Well",
+          coordinates: {
+            x: 1,
+            y: 1,
+          },
+        },
+        createdAt: 0,
+      }),
+    ).toThrow(CONSTRUCT_BUILDING_ERRORS.BUILDING_ALREADY_BUILT);
+  });
+
+  it("does not affect other buildings when constructing a Water Well", () => {
+    const buildings = {
       Workbench: [
         {
-          coordinates: { x: 2, y: 2 },
-          createdAt: dateNow,
-          readyAt: dateNow + 5 * 60 * 1000,
+          coordinates: { x: 4, y: 2 },
+          createdAt: date,
+          readyAt: date + 5 * 60 * 1000,
           id: "2",
         },
       ],
     };
 
-    const waterWell = BUILDINGS["Water Well"][0];
     const createdAt = Date.now();
 
     const state = constructBuilding({
       state: {
         ...GAME_STATE,
+        trees: {},
+        stones: {},
         coins: 1000,
-        bumpkin: {
-          ...INITIAL_BUMPKIN,
-          experience: LEVEL_EXPERIENCE[20],
-        },
         inventory: {
           Wood: new Decimal(20),
           Stone: new Decimal(15),
-          "Basic Land": new Decimal(10),
+          "Basic Land": new Decimal(5),
         },
-        buildings: {
-          ...buildings,
-        },
+        bumpkin: { ...TEST_BUMPKIN, experience: LEVEL_EXPERIENCE[8] },
+        buildings,
       },
       action: {
         id: "123",
         type: "building.constructed",
         name: "Water Well",
         coordinates: {
-          x: 1,
-          y: 2,
+          x: 2,
+          y: 1,
         },
       },
       createdAt,
     });
 
-    expect(state.buildings).toEqual({
-      "Water Well": [
-        {
-          coordinates: { x: 1, y: 1 },
-          createdAt: dateNow,
-          readyAt: dateNow + 30 * 1000,
-          id: "1",
+    expect(state.buildings["Water Well"]).toHaveLength(1);
+    expect(state.buildings["Water Well"]?.[0]).toMatchObject({
+      id: "123",
+      coordinates: { x: 2, y: 1 },
+      createdAt,
+    });
+    expect(state.buildings.Workbench).toEqual(buildings.Workbench);
+  });
+
+  describe("BumpkinActivity", () => {
+    it("Increments 1 to Kitchen Constructed", () => {
+      const state = constructBuilding({
+        state: {
+          ...GAME_STATE,
+          coins: 1000,
+          buildings: {},
+          inventory: {
+            Wood: new Decimal(30),
+            Stone: new Decimal(15),
+            "Basic Land": new Decimal(5),
+          },
+          bumpkin: { ...TEST_BUMPKIN, experience: 100000 },
         },
-        {
+        action: {
           id: "123",
+          type: "building.constructed",
+          name: "Kitchen",
           coordinates: {
             x: 1,
-            y: 2,
+            y: 1,
           },
-          createdAt,
-          readyAt: createdAt + waterWell.constructionSeconds * 1000,
         },
-      ],
-      Workbench: [
-        {
-          coordinates: { x: 2, y: 2 },
-          createdAt: dateNow,
-          readyAt: dateNow + 5 * 60 * 1000,
-          id: "2",
-        },
-      ],
+        createdAt: date,
+      });
+      expect(state.farmActivity["Building Constructed"]).toEqual(1);
     });
   });
 
@@ -387,7 +492,7 @@ describe("Construct building", () => {
             Iron: new Decimal(125),
             Crimstone: new Decimal(50),
           },
-          bumpkin: { ...INITIAL_BUMPKIN, experience: LEVEL_EXPERIENCE[64] },
+          bumpkin: { ...TEST_BUMPKIN, experience: LEVEL_EXPERIENCE[64] },
         },
         action: {
           type: "building.constructed",
@@ -407,13 +512,15 @@ describe("Construct building", () => {
         state: {
           ...GAME_STATE,
           buildings: {},
+          trees: {},
+          stones: {},
           coins: 8000,
           inventory: {
             Wood: new Decimal(1250),
             Iron: new Decimal(125),
             Crimstone: new Decimal(50),
           },
-          bumpkin: { ...INITIAL_BUMPKIN, experience: LEVEL_EXPERIENCE[64] },
+          bumpkin: { ...TEST_BUMPKIN, experience: LEVEL_EXPERIENCE[64] },
           island: {
             type: "desert",
           },
@@ -431,6 +538,119 @@ describe("Construct building", () => {
       }),
     ).not.toThrow();
   });
+
+  it("constructs a barn", () => {
+    const state = constructBuilding({
+      state: {
+        ...GAME_STATE,
+        buildings: {},
+        coins: 8000,
+        inventory: {
+          Wood: new Decimal(151),
+          Iron: new Decimal(11),
+          Gold: new Decimal(11),
+          "Basic Land": new Decimal(5),
+        },
+        bumpkin: { ...TEST_BUMPKIN, experience: LEVEL_EXPERIENCE[64] },
+        island: {
+          type: "desert",
+        },
+      },
+      action: {
+        type: "building.constructed",
+        id: "123",
+        name: "Barn",
+        coordinates: {
+          x: 1,
+          y: 1,
+        },
+      },
+      createdAt: dateNow,
+    });
+
+    expect(state.buildings["Barn"]).toHaveLength(1);
+    expect(state.inventory.Wood).toEqual(new Decimal(1));
+    expect(state.inventory.Iron).toEqual(new Decimal(1));
+    expect(state.inventory.Gold).toEqual(new Decimal(1));
+  });
+
+  it.each(["Barn", "Hen House"] as const)(
+    "seeds a new account's %s with its starter herd on construction",
+    (name) => {
+      const buildingKey = makeAnimalBuildingKey(name);
+
+      // A new account ships with empty animal buildings; the herd arrives when
+      // the player builds the building.
+      expect(INITIAL_FARM[buildingKey].animals).toEqual({});
+
+      const state = constructBuilding({
+        state: {
+          ...INITIAL_FARM,
+          buildings: {},
+          coins: 8000,
+          inventory: {
+            Wood: new Decimal(1000),
+            Iron: new Decimal(100),
+            Gold: new Decimal(100),
+            "Basic Land": new Decimal(5),
+          },
+          bumpkin: { ...TEST_BUMPKIN, experience: LEVEL_EXPERIENCE[64] },
+        },
+        action: {
+          type: "building.constructed",
+          id: "123",
+          name,
+          coordinates: { x: 1, y: 1 },
+        },
+        createdAt: dateNow,
+      });
+
+      const animals = Object.values(state[buildingKey].animals);
+
+      expect(animals).toHaveLength(3);
+      expect(animals.every((animal) => animal.createdAt === dateNow)).toBe(
+        true,
+      );
+    },
+  );
+
+  it.each(["Barn", "Hen House"] as const)(
+    "does not re-seed a %s that already has its starter herd",
+    (name) => {
+      // Hen House and Barn are seeded by INITIAL_FARM at account creation, so
+      // an existing player's herd is already in state before the building is
+      // ever built. The empty-record guard must leave it alone - otherwise
+      // constructing the building would hand them a second herd.
+      const buildingKey = makeAnimalBuildingKey(name);
+      const before = GAME_STATE[buildingKey].animals;
+
+      expect(Object.keys(before)).toHaveLength(3);
+
+      const state = constructBuilding({
+        state: {
+          ...GAME_STATE,
+          buildings: {},
+          coins: 8000,
+          inventory: {
+            Wood: new Decimal(1000),
+            Iron: new Decimal(100),
+            Gold: new Decimal(100),
+            "Basic Land": new Decimal(5),
+          },
+          bumpkin: { ...TEST_BUMPKIN, experience: LEVEL_EXPERIENCE[64] },
+        },
+        action: {
+          type: "building.constructed",
+          id: "123",
+          name,
+          coordinates: { x: 1, y: 1 },
+        },
+        createdAt: dateNow,
+      });
+
+      expect(state[buildingKey].animals).toEqual(before);
+    },
+  );
 
   it("gives the player 5 Kernel Blend when a barn is constructed", () => {
     const state = constructBuilding({
@@ -484,7 +704,7 @@ describe("Construct building", () => {
       action: {
         type: "building.constructed",
         id: "123",
-        name: "Barn",
+        name: "Hen House",
         coordinates: {
           x: 1,
           y: 1,
@@ -500,16 +720,17 @@ describe("Construct building", () => {
     const state = constructBuilding({
       state: {
         ...GAME_STATE,
-        coins: 200,
-        bumpkin: {
-          ...INITIAL_BUMPKIN,
-          experience: LEVEL_EXPERIENCE[30],
-        },
+        buildings: {},
+        coins: 8000,
         inventory: {
-          Wood: new Decimal(150),
-          Iron: new Decimal(10),
-          Gold: new Decimal(10),
-          "Basic Land": new Decimal(10),
+          Wood: new Decimal(151),
+          Iron: new Decimal(11),
+          Gold: new Decimal(11),
+          "Basic Land": new Decimal(5),
+        },
+        bumpkin: { ...TEST_BUMPKIN, experience: LEVEL_EXPERIENCE[64] },
+        island: {
+          type: "desert",
         },
       },
       action: {
@@ -517,13 +738,224 @@ describe("Construct building", () => {
         type: "building.constructed",
         name: "Barn",
         coordinates: {
-          x: 0,
-          y: 0,
+          x: 1,
+          y: 1,
         },
       },
       createdAt: dateNow,
     });
 
     expect(state.farmActivity["Coins Spent"]).toBe(200);
+  });
+});
+
+describe("constructBuilding: Pigpen gating", () => {
+  const dateNow = Date.now();
+
+  const farm: GameState = {
+    ...GAME_STATE,
+    bumpkin: { ...TEST_BUMPKIN, experience: 1_000_000 },
+    coins: 100_000,
+    island: { ...GAME_STATE.island, type: "spring" },
+    inventory: {
+      ...GAME_STATE.inventory,
+      Wood: new Decimal(1000),
+      Iron: new Decimal(100),
+      Gold: new Decimal(100),
+      Mud: new Decimal(100),
+    },
+  };
+
+  const build = (state: GameState) =>
+    constructBuilding({
+      state,
+      action: {
+        type: "building.constructed",
+        name: "Pigpen",
+        id: "1",
+        coordinates: { x: 0, y: 0 },
+      },
+      createdAt: dateNow,
+    });
+
+  // The Pigpen is testnet-only, and jest runs on amoy, so the flag is on for
+  // every test below without any inventory item granting it.
+  it("builds a Pigpen", () => {
+    expect(build(farm).buildings.Pigpen).toHaveLength(1);
+  });
+
+  it("requires Spring Island", () => {
+    // The spec houses Pigs on Spring Island, so the Pigpen cannot be raised on
+    // the starting island even by a player who is otherwise eligible.
+    expect(() =>
+      build({ ...farm, island: { ...farm.island, type: "basic" } }),
+    ).toThrow("You do not have the required island expansion");
+  });
+
+  it("requires Mud to construct", () => {
+    expect(() =>
+      build({
+        ...farm,
+        inventory: { ...farm.inventory, Mud: new Decimal(0) },
+      }),
+    ).toThrow("Insufficient ingredient: Mud");
+  });
+
+  it("seeds the empty pigpen with three Pigs on construction", () => {
+    // game.pigpen ships EMPTY so no existing farm is handed free Pigs when the
+    // field lands; the starter herd arrives when the player actually builds it.
+    expect(farm.pigpen.animals).toEqual({});
+
+    const pigs = Object.values(build(farm).pigpen.animals);
+
+    expect(pigs).toHaveLength(3);
+    expect(pigs.every((pig) => pig.type === "Pig")).toBe(true);
+    expect(pigs.every((pig) => pig.createdAt === dateNow)).toBe(true);
+  });
+
+  it("fills a level-1 Pigpen with the starter herd", () => {
+    // #7721 gives three free starter Pigs AND a level-1 capacity of 3, so a new
+    // Pigpen is full: buying a Pig waits for the first upgrade (Elias,
+    // 2026-10-12). Pinned so a retune of either number is a deliberate edit.
+    const state = build(farm);
+    const { capacity } = getBoostedAnimalCapacity("pigpen", state);
+
+    expect(Object.keys(state.pigpen.animals).length).toEqual(capacity);
+  });
+
+  it("does not disturb an existing herd when the building is constructed", () => {
+    // The seed is guarded on an empty record, so a herd can never be wiped or
+    // duplicated by a (re)construction.
+    const existing = { ...farm.pigpen.animals };
+    const state = build({
+      ...farm,
+      pigpen: {
+        level: 1,
+        animals: {
+          "9": {
+            id: "9",
+            type: "Pig",
+            state: "idle",
+            createdAt: 1,
+            experience: 500,
+            asleepAt: 0,
+            awakeAt: 0,
+            lovedAt: 0,
+            item: "Petting Hand",
+          },
+        },
+      },
+    });
+
+    expect(existing).toEqual({});
+    expect(Object.keys(state.pigpen.animals)).toEqual(["9"]);
+    expect(state.pigpen.animals["9"].experience).toEqual(500);
+  });
+});
+
+describe("constructBuilding: Cave", () => {
+  const dateNow = Date.now();
+
+  const farm: GameState = {
+    ...GAME_STATE,
+    bumpkin: { ...TEST_BUMPKIN, experience: LEVEL_EXPERIENCE[11] },
+    coins: 1_000,
+    island: { ...GAME_STATE.island, type: "spring" },
+    inventory: {
+      ...GAME_STATE.inventory,
+      Wood: new Decimal(100),
+      Stone: new Decimal(100),
+    },
+  };
+
+  const build = (state: GameState) =>
+    constructBuilding({
+      state,
+      action: {
+        type: "building.constructed",
+        name: "Cave",
+        id: "1",
+        coordinates: { x: 0, y: 0 },
+      },
+      createdAt: dateNow,
+    });
+
+  it("builds a Cave", () => {
+    const state = build(farm);
+
+    expect(state.buildings.Cave).toHaveLength(1);
+    expect(state.buildings.Cave?.[0].readyAt).toEqual(
+      dateNow + BUILDINGS.Cave.constructionSeconds * 1000,
+    );
+  });
+
+  it("takes an hour to build the entrance", () => {
+    const state = build(farm);
+
+    expect(state.buildings.Cave?.[0].readyAt).toEqual(dateNow + 60 * 60 * 1000);
+  });
+
+  it("charges the Cave blueprint", () => {
+    const state = build(farm);
+
+    expect(state.coins).toEqual(farm.coins - BUILDINGS.Cave.coins);
+    expect(state.inventory.Wood).toEqual(
+      farm.inventory.Wood!.minus(BUILDINGS.Cave.ingredients.Wood!),
+    );
+    expect(state.inventory.Stone).toEqual(
+      farm.inventory.Stone!.minus(BUILDINGS.Cave.ingredients.Stone!),
+    );
+  });
+
+  it("creates the Tier I Cave on construction", () => {
+    // The cave.* reducers all require game.cave, so it must exist as soon as
+    // the building does.
+    expect(farm.cave).toBeUndefined();
+
+    expect(build(farm).cave).toEqual({
+      builtAt: dateNow,
+      tier: 1,
+      machines: { "1": {} },
+    });
+  });
+
+  it("keeps an existing Cave", () => {
+    const cave: GameState["cave"] = {
+      builtAt: 1,
+      tier: 3,
+      machines: { "1": {}, "2": {}, "3": {} },
+    };
+
+    expect(build({ ...farm, cave }).cave).toEqual(cave);
+  });
+
+  it("does not create a Cave for other buildings", () => {
+    const state = constructBuilding({
+      state: farm,
+      action: {
+        type: "building.constructed",
+        name: "Water Well",
+        id: "1",
+        coordinates: { x: 0, y: 0 },
+      },
+      createdAt: dateNow,
+    });
+
+    expect(state.cave).toBeUndefined();
+  });
+
+  it("requires Spring Island", () => {
+    expect(() =>
+      build({ ...farm, island: { ...farm.island, type: "basic" } }),
+    ).toThrow("You do not have the required island expansion");
+  });
+
+  it("requires the Bumpkin level that unlocks Spring Island", () => {
+    expect(() =>
+      build({
+        ...farm,
+        bumpkin: { ...TEST_BUMPKIN, experience: LEVEL_EXPERIENCE[10] },
+      }),
+    ).toThrow(CONSTRUCT_BUILDING_ERRORS.BUMPKIN_LEVEL_NOT_MET);
   });
 });

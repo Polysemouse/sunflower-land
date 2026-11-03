@@ -1,16 +1,111 @@
 import Decimal from "decimal.js-light";
 
-import { INITIAL_BUMPKIN, TEST_FARM } from "features/game/lib/constants";
-import { CropSeedName, CROP_SEEDS } from "features/game/types/crops";
-import { GameState } from "features/game/types/game";
+import {
+  INITIAL_BUMPKIN,
+  INVENTORY_LIMIT,
+  TEST_FARM,
+} from "features/game/lib/constants";
+import { type CropSeedName, CROP_SEEDS } from "features/game/types/crops";
+import type { GameState } from "features/game/types/game";
 
-import { seedBought } from "./seedBought";
+import { getBuyPrice, seedBought } from "./seedBought";
 import { SEEDS } from "features/game/types/seeds";
+import { CHAPTER_CROP_WEEK } from "features/game/types/chapterCropWeek";
+import { CONFIG } from "lib/config";
 
-const GAME_STATE: GameState = TEST_FARM;
+// TEST_FARM's raw inventory doesn't carry planting-spot counts (Crop Plot,
+// Fruit Patch, Flower Bed, Greenhouse) even though it owns crops/plots -
+// tests that buy a seed without asserting a specific planting-spot scenario
+// need these present so they aren't blocked by that unrelated gap.
+const GAME_STATE: GameState = {
+  ...TEST_FARM,
+  inventory: {
+    ...TEST_FARM.inventory,
+    "Crop Plot": new Decimal(20),
+    "Fruit Patch": new Decimal(5),
+    "Flower Bed": new Decimal(5),
+    Greenhouse: new Decimal(1),
+  },
+};
 
 describe("seedBought", () => {
   const dateNow = Date.now();
+
+  describe("Chapter Crop Week seed", () => {
+    // adminFeatureFlag is always on for testnet (CI runs with VITE_NETWORK=amoy),
+    // so pin mainnet to exercise the real Gift Giver + Beta Pass rule.
+    let previousNetwork: (typeof CONFIG)["NETWORK"];
+    beforeEach(() => {
+      previousNetwork = CONFIG.NETWORK;
+      CONFIG.NETWORK = "mainnet";
+    });
+    afterEach(() => {
+      CONFIG.NETWORK = previousNetwork;
+    });
+
+    const beforeStart =
+      CHAPTER_CROP_WEEK.startDate.getTime() - 24 * 60 * 60 * 1000;
+    const stocked: GameState = {
+      ...GAME_STATE,
+      coins: 1000,
+      stock: { ...GAME_STATE.stock, "Crystal Leaf Seed": new Decimal(10) },
+    };
+    const buy = (state: GameState, createdAt: number) =>
+      seedBought({
+        state,
+        action: { type: "seed.bought", item: "Crystal Leaf Seed", amount: 1 },
+        createdAt,
+      });
+
+    it("cannot be bought by regular players before the event starts", () => {
+      expect(() => buy(stocked, beforeStart)).toThrow(
+        "Chapter Crop Week is not active",
+      );
+    });
+
+    it("can be bought by admin testers before the event starts", () => {
+      const admin: GameState = {
+        ...stocked,
+        wardrobe: { ...stocked.wardrobe, "Gift Giver": 1 },
+        inventory: { ...stocked.inventory, "Beta Pass": new Decimal(1) },
+      };
+      const state = buy(admin, beforeStart);
+      expect(state.inventory["Crystal Leaf Seed"]).toEqual(new Decimal(1));
+    });
+
+    it("can be bought by everyone once the event starts", () => {
+      const state = buy(stocked, CHAPTER_CROP_WEEK.startDate.getTime());
+      expect(state.inventory["Crystal Leaf Seed"]).toEqual(new Decimal(1));
+    });
+
+    it("never sells a seed from a previous Chapter Crop Week, even in stock", () => {
+      const retiredInStock: GameState = {
+        ...stocked,
+        wardrobe: { ...stocked.wardrobe, "Gift Giver": 1 },
+        inventory: { ...stocked.inventory, "Beta Pass": new Decimal(1) },
+        stock: { ...stocked.stock, "Saltwort Seed": new Decimal(10) },
+      };
+
+      expect(() =>
+        seedBought({
+          state: retiredInStock,
+          action: { type: "seed.bought", item: "Saltwort Seed", amount: 1 },
+          createdAt: CHAPTER_CROP_WEEK.startDate.getTime(),
+        }),
+      ).toThrow("This seed is no longer available");
+    });
+
+    it("cannot be bought by anyone after the event ends", () => {
+      const admin: GameState = {
+        ...stocked,
+        wardrobe: { ...stocked.wardrobe, "Gift Giver": 1 },
+        inventory: { ...stocked.inventory, "Beta Pass": new Decimal(1) },
+      };
+      expect(() => buy(admin, CHAPTER_CROP_WEEK.endDate.getTime())).toThrow(
+        "Chapter Crop Week is not active",
+      );
+    });
+  });
 
   it("throws an error if item is not a seed", () => {
     expect(() =>
@@ -96,6 +191,63 @@ describe("seedBought", () => {
         },
       }),
     ).toThrow("Insufficient tokens");
+  });
+
+  it("throws an error when buying would exceed inventory limit", () => {
+    const sunflowerLimit =
+      INVENTORY_LIMIT(GAME_STATE)["Sunflower Seed"] ?? new Decimal(0);
+
+    expect(() =>
+      seedBought({
+        state: {
+          ...GAME_STATE,
+          inventory: {
+            ...GAME_STATE.inventory,
+            "Sunflower Seed": sunflowerLimit,
+          },
+          stock: {
+            "Sunflower Seed": new Decimal(1),
+          },
+          coins: 100,
+        },
+        action: {
+          type: "seed.bought",
+          item: "Sunflower Seed",
+          amount: 1,
+        },
+      }),
+    ).toThrow("Can't buy more seeds than the inventory limit");
+  });
+
+  it("allows buying up to the limit even if inventory has a stray fractional remainder below it", () => {
+    const sunflowerLimit =
+      INVENTORY_LIMIT(GAME_STATE)["Sunflower Seed"] ?? new Decimal(0);
+
+    // Simulates a historical bug that left a fractional amount in the
+    // inventory (seeds are always meant to be whole units). The player is
+    // still one whole seed under the limit and should be able to buy.
+    const state = seedBought({
+      state: {
+        ...GAME_STATE,
+        inventory: {
+          ...GAME_STATE.inventory,
+          "Sunflower Seed": sunflowerLimit.minus(1).plus(0.5),
+        },
+        stock: {
+          "Sunflower Seed": new Decimal(1),
+        },
+        coins: 100,
+      },
+      action: {
+        type: "seed.bought",
+        item: "Sunflower Seed",
+        amount: 1,
+      },
+    });
+
+    expect(state.inventory["Sunflower Seed"]).toEqual(
+      sunflowerLimit.minus(1).plus(0.5).plus(1),
+    );
   });
 
   it("subtracts the coins on purchase", () => {
@@ -344,6 +496,78 @@ describe("seedBought", () => {
     expect(state.inventory[item]).toEqual(oldAmount.add(amount));
   });
 
+  // Seedy Business — greenhouse seed cost x0.85/x0.8/x0.75 (rank 1 == now).
+  it.each([
+    [1, 0.85],
+    [2, 0.8],
+    [3, 0.75],
+  ])(
+    "discounts greenhouse seed cost with Seedy Business at rank %i",
+    (rank, multiplier) => {
+      const item = "Rice Seed";
+      const { price } = getBuyPrice(item, SEEDS[item], {
+        ...GAME_STATE,
+        bumpkin: {
+          ...INITIAL_BUMPKIN,
+          skills: { "Seedy Business": rank },
+        },
+      });
+
+      expect(price).toEqual(SEEDS[item].price * multiplier);
+    },
+  );
+
+  // Flower Sale — flower seed cost x0.8/x0.75/x0.7 (rank 1 == now).
+  it.each([
+    [1, 0.8],
+    [2, 0.75],
+    [3, 0.7],
+  ])(
+    "discounts flower seed cost with Flower Sale at rank %i",
+    (rank, multiplier) => {
+      const item = "Sunpetal Seed";
+      const { price } = getBuyPrice(item, SEEDS[item], {
+        ...GAME_STATE,
+        bumpkin: {
+          ...INITIAL_BUMPKIN,
+          skills: { "Flower Sale": rank },
+        },
+      });
+
+      expect(price).toEqual(SEEDS[item].price * multiplier);
+    },
+  );
+
+  it.each([
+    [1, 0.9],
+    [2, 0.85],
+    [3, 0.8],
+  ])(
+    "discounts fruit seed cost with Fruity Heaven skill at rank %i",
+    (rank, multiplier) => {
+      const coins = 100;
+      const item = "Blueberry Seed";
+      const state = seedBought({
+        state: {
+          ...GAME_STATE,
+          coins,
+          bumpkin: {
+            ...INITIAL_BUMPKIN,
+            experience: 100000000,
+            skills: { "Fruity Heaven": rank },
+          },
+        },
+        action: {
+          item,
+          amount: 1,
+          type: "seed.bought",
+        },
+      });
+
+      expect(state.coins).toEqual(coins - SEEDS[item].price * multiplier);
+    },
+  );
+
   it("purchases flower seeds for free when Hungry Caterpillar is placed and ready", () => {
     const state = seedBought({
       state: {
@@ -541,16 +765,17 @@ describe("seedBought", () => {
       }),
     ).not.toThrow();
   });
-  it("requires Fruit Patch to buy a fruit seed", () => {
+  // Regression: a farm that has never unlocked a Fruit Patch has no
+  // "Fruit Patch" key in inventory at all (not a 0) - the check must
+  // treat a missing key the same as zero, not skip the guard.
+  it("requires Fruit Patch to buy a fruit seed when the inventory key is missing entirely", () => {
     expect(() =>
       seedBought({
         state: {
           ...GAME_STATE,
           bumpkin: { ...INITIAL_BUMPKIN, experience: 100000000 },
           coins: Infinity,
-          inventory: {
-            "Fruit Patch": new Decimal(0),
-          },
+          inventory: {},
           season: {
             season: "autumn",
             startedAt: 0,
@@ -563,28 +788,6 @@ describe("seedBought", () => {
         },
       }),
     ).toThrow("You do not have the planting spot needed to plant this seed");
-
-    expect(() =>
-      seedBought({
-        state: {
-          ...GAME_STATE,
-          bumpkin: { ...INITIAL_BUMPKIN, experience: 100000000 },
-          coins: Infinity,
-          inventory: {
-            "Fruit Patch": new Decimal(1),
-          },
-          season: {
-            season: "autumn",
-            startedAt: 0,
-          },
-        },
-        action: {
-          type: "seed.bought",
-          item: "Apple Seed",
-          amount: 1,
-        },
-      }),
-    ).not.toThrow();
   });
 
   it("requires full moon to buy full moon berry seeds", () => {
@@ -605,7 +808,7 @@ describe("seedBought", () => {
       state: {
         ...GAME_STATE,
         coins: 10,
-        inventory: {},
+        inventory: { "Crop Plot": new Decimal(1) },
         bumpkin: {
           ...INITIAL_BUMPKIN,
           equipped: { ...INITIAL_BUMPKIN.equipped, suit: "Ladybug Suit" },

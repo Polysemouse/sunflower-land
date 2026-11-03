@@ -1,15 +1,17 @@
-import { GameState } from "../../types/game";
-import { CollectibleName, getKeys } from "features/game/types/craftables";
-import { PlaceableLocation } from "features/game/types/collectibles";
-import { HourglassType } from "features/island/collectibles/components/Hourglass";
+import type { GameState } from "../../types/game";
+import type { CollectibleName } from "features/game/types/craftables";
+import type { PlaceableLocation } from "features/game/types/collectibles";
+import type { HourglassType } from "features/island/collectibles/components/Hourglass";
 import Decimal from "decimal.js-light";
 import { produce } from "immer";
 import { PET_SHRINES } from "features/game/types/pets";
 import {
-  EXPIRY_COOLDOWNS,
-  TemporaryCollectibleName,
+  getCollectibleExpiry,
+  type TemporaryCollectibleName,
 } from "features/game/lib/collectibleBuilt";
 import { isPetCollectible } from "./placeCollectible";
+import { getKeys } from "lib/object";
+import { appendBoostHistory } from "features/game/lib/boostWindows";
 
 export type BurnCollectibleAction = {
   type: "collectible.burned";
@@ -64,6 +66,14 @@ export function burnCollectible({
           );
         }
         return stateCopy.petHouse.pets[name];
+      } else if (location === "interior") {
+        return stateCopy.interior.ground.collectibles[name];
+      } else if (location === "level_one") {
+        const levelOne = stateCopy.interior.level_one;
+        if (!levelOne) {
+          throw new Error("Level one floor has not been unlocked");
+        }
+        return levelOne.collectibles[name];
       } else {
         return stateCopy.collectibles[name];
       }
@@ -83,11 +93,25 @@ export function burnCollectible({
       throw new Error("Collectible does not exist");
     }
 
-    const cooldown = EXPIRY_COOLDOWNS[action.name as TemporaryCollectibleName];
+    const expiresAt = getCollectibleExpiry({
+      name: action.name as TemporaryCollectibleName,
+      collectible: collectibleToRemove,
+      game: stateCopy,
+    });
 
-    if ((collectibleToRemove.createdAt ?? 0) + cooldown > createdAt) {
+    if (expiresAt > createdAt) {
       throw new Error("Collectible is still active");
     }
+
+    // Preserve this booster's active window before its record is deleted, so any
+    // in-progress timer it boosted keeps the earned credit (see boostWindows).
+    const burnedCreatedAt = collectibleToRemove.createdAt ?? 0;
+    appendBoostHistory(
+      stateCopy,
+      action.name as TemporaryCollectibleName,
+      { from: burnedCreatedAt, to: expiresAt },
+      createdAt,
+    );
 
     collectibleGroup = collectibleGroup.filter(
       (collectible) => collectible.id !== collectibleToRemove.id,
@@ -103,6 +127,10 @@ export function burnCollectible({
           );
         }
         delete stateCopy.petHouse.pets[action.name];
+      } else if (action.location === "interior") {
+        delete stateCopy.interior.ground.collectibles[action.name];
+      } else if (action.location === "level_one") {
+        delete stateCopy.interior.level_one!.collectibles[action.name];
       } else {
         delete stateCopy.collectibles[action.name];
       }
@@ -116,6 +144,11 @@ export function burnCollectible({
           );
         }
         stateCopy.petHouse.pets[action.name] = collectibleGroup;
+      } else if (action.location === "interior") {
+        stateCopy.interior.ground.collectibles[action.name] = collectibleGroup;
+      } else if (action.location === "level_one") {
+        stateCopy.interior.level_one!.collectibles[action.name] =
+          collectibleGroup;
       } else {
         stateCopy.collectibles[action.name] = collectibleGroup;
       }

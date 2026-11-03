@@ -6,24 +6,27 @@ import { Button } from "components/ui/Button";
 import { useActor } from "@xstate/react";
 import * as AuthProvider from "features/auth/lib/Provider";
 import { CONFIG } from "lib/config";
-import { ButtonPanel, InnerPanel, OuterPanel } from "components/ui/Panel";
+import { ButtonPanel, OuterPanel } from "components/ui/Panel";
 import { useAppTranslation } from "lib/i18n/useAppTranslations";
 import { secondsToString } from "lib/utils/time";
 import { SUNNYSIDE } from "assets/sunnyside";
 import {
   TWITTER_HASHTAGS,
   TWITTER_REWARDS,
-  TwitterPostName,
+  type TwitterPostName,
 } from "features/game/types/social";
-import { getKeys } from "features/game/types/decorations";
+import { getKeys } from "lib/object";
 import { ITEM_DETAILS } from "features/game/types/images";
-import { TranslationKeys } from "lib/i18n/dictionaries/types";
+import type { TranslationKeys } from "lib/i18n/dictionaries/types";
 import saveIcon from "assets/icons/save.webp";
 import { getBumpkinBanner } from "./actions/getBumpkinBanner";
 import { Loading } from "../Loading";
 import { TextInput } from "components/ui/TextInput";
 import { useNow } from "lib/utils/hooks/useNow";
-import { hasVipAccess } from "features/game/lib/vipAccess";
+import { useVipAccess } from "lib/utils/hooks/useVipAccess";
+import { SocialUnlinkGate } from "../SocialUnlink";
+import { rememberSocialLinkAttempt } from "../../lib/socialLink";
+import type { ContentComponentProps } from "features/island/hud/components/settings-menu/types";
 
 const TWITTER_POST_DESCRIPTIONS: Record<TwitterPostName, TranslationKeys> = {
   FARM: "twitter.post.farm",
@@ -39,13 +42,16 @@ export const Twitter: React.FC<{ onClose: () => void }> = ({ onClose }) => (
 
 const VERIFY_COOLDOWN_MS = 15 * 60 * 1000;
 
-const TwitterRewards: React.FC = () => {
+export const TwitterRewards: React.FC<Partial<ContentComponentProps>> = ({
+  onSubMenuClick,
+}) => {
   const [selected, setSelected] = useState<TwitterPostName>();
   const { gameState } = useGame();
   const now = useNow();
   const { t } = useAppTranslation();
 
   const twitter = gameState.context.state.twitter;
+  const isVip = useVipAccess({ game: gameState.context.state });
 
   if (selected) {
     return (
@@ -54,14 +60,12 @@ const TwitterRewards: React.FC = () => {
   }
 
   return (
-    <InnerPanel className="p-2  mt-1">
+    <SocialUnlinkGate
+      provider="twitter"
+      onDone={() => onSubMenuClick?.("linkedAccounts")}
+    >
       <div className="flex gap-1 items-center mb-2">
         <Label type="default">{t("twitter.share.earn")}</Label>
-        {twitter?.isAuthorised && (
-          <Label type="success" className="mr-2">
-            {t("twitter.connected")}
-          </Label>
-        )}
       </div>
 
       <p className="text-xs mb-2 px-2">{t("twitter.rewards.description")}</p>
@@ -71,7 +75,10 @@ const TwitterRewards: React.FC = () => {
           (twitter?.tweets?.[key]?.completedAt ?? 0) >
           now - 7 * 24 * 60 * 60 * 1000;
 
-        const rewards = TWITTER_REWARDS[key].items(gameState.context.state);
+        const rewards = TWITTER_REWARDS[key].items(
+          gameState.context.state,
+          now,
+        );
 
         return (
           <ButtonPanel
@@ -107,9 +114,7 @@ const TwitterRewards: React.FC = () => {
       })}
 
       <div className="mb-1 mx-1">
-        {!hasVipAccess({ game: gameState.context.state }) && (
-          <p className="text-xs">{t("twitter.rewards.vip")}</p>
-        )}
+        {!isVip && <p className="text-xs">{t("twitter.rewards.vip")}</p>}
         <span
           className="underline text-xs cursor-pointer "
           onClick={() => {
@@ -119,7 +124,7 @@ const TwitterRewards: React.FC = () => {
           {`x.com/0xsunflowerland`}
         </span>
       </div>
-    </InnerPanel>
+    </SocialUnlinkGate>
   );
 };
 
@@ -152,7 +157,7 @@ const TwitterPost: React.FC<{ name: TwitterPostName; onClose: () => void }> = ({
 
   if (!twitter?.isAuthorised) {
     return (
-      <InnerPanel className="p-1  mt-1">
+      <>
         <Label type="default" className="mb-2">
           {t("twitter.share.earn")}
         </Label>
@@ -161,20 +166,22 @@ const TwitterPost: React.FC<{ name: TwitterPostName; onClose: () => void }> = ({
             const redirectUrl = `${CONFIG.API_URL}/oauth/twitter`;
             const nonce = gameState.context.oauthNonce;
 
-            const url = `https://twitter.com/i/oauth2/authorize?response_type=code&client_id=${CONFIG.TWITTER_CLIENT_ID}&redirect_uri=${redirectUrl}&scope=tweet.read%20users.read%20follows.read%20offline.access&state=${nonce}&code_challenge=challenge&code_challenge_method=plain`;
+            const url = `https://x.com/i/oauth2/authorize?response_type=code&client_id=${CONFIG.TWITTER_CLIENT_ID}&redirect_uri=${redirectUrl}&scope=tweet.read%20users.read%20follows.read%20offline.access&state=${nonce}&code_challenge=challenge&code_challenge_method=plain`;
 
+            // The API's error redirect does not say which provider failed
+            rememberSocialLinkAttempt("twitter");
             window.location.href = url;
           }}
         >
           {t("twitter.connect")}
         </Button>
-      </InnerPanel>
+      </>
     );
   }
 
   if (!twitter.followedAt) {
     return (
-      <InnerPanel className="p-1  mt-1">
+      <>
         <Label type="default" className="mb-2">
           {t("twitter.share.earn")}
         </Label>
@@ -195,7 +202,7 @@ const TwitterPost: React.FC<{ name: TwitterPostName; onClose: () => void }> = ({
             {t("twitter.follow")}
           </Button>
         </div>
-      </InnerPanel>
+      </>
     );
   }
 
@@ -207,7 +214,7 @@ const TwitterPost: React.FC<{ name: TwitterPostName; onClose: () => void }> = ({
 
   if (showConfirm) {
     return (
-      <InnerPanel className="p-2  mt-1">
+      <>
         <Label type="default" className="mb-2">
           {t("twitter.verify.ready")}
         </Label>
@@ -233,7 +240,7 @@ const TwitterPost: React.FC<{ name: TwitterPostName; onClose: () => void }> = ({
             {t("twitter.verify.button")}
           </Button>
         </div>
-      </InnerPanel>
+      </>
     );
   }
 
@@ -242,7 +249,7 @@ const TwitterPost: React.FC<{ name: TwitterPostName; onClose: () => void }> = ({
   const inCooldown = cooldown > 0;
   // Stage 2 - testing only
   return (
-    <InnerPanel className="p-2  mt-1">
+    <>
       <Component
         onClose={onClose}
         onVerify={inCooldown ? undefined : () => setShowConfirm(true)}
@@ -257,7 +264,7 @@ const TwitterPost: React.FC<{ name: TwitterPostName; onClose: () => void }> = ({
           </p>
         </>
       )}
-    </InnerPanel>
+    </>
   );
 };
 
@@ -275,7 +282,7 @@ const TwitterFarm: React.FC<{ onClose: () => void; onVerify?: () => void }> = ({
   const hasCompleted =
     (twitter?.tweets?.FARM?.completedAt ?? 0) > now - 7 * 24 * 60 * 60 * 1000;
 
-  const rewards = TWITTER_REWARDS.FARM.items(gameState.context.state);
+  const rewards = TWITTER_REWARDS.FARM.items(gameState.context.state, now);
 
   return (
     <>
@@ -350,6 +357,7 @@ const TwitterBanner: React.FC<{
   const [authState] = useActor(authService);
   const { gameState } = useGame();
   const { t } = useAppTranslation();
+  const now = useNow();
 
   const [image, setImage] = useState<string>();
 
@@ -395,7 +403,7 @@ const TwitterBanner: React.FC<{
     }
   };
 
-  const rewards = TWITTER_REWARDS[postName].items(gameState.context.state);
+  const rewards = TWITTER_REWARDS[postName].items(gameState.context.state, now);
 
   return (
     <>

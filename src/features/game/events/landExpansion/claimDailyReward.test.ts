@@ -65,6 +65,29 @@ describe("claimDailyReward", () => {
     expect(state.inventory["Cheer"]).toEqual(new Decimal(3));
     expect(state.inventory[getChapterTicket(now)]).toEqual(new Decimal(1));
   });
+
+  it("gives VIP players a bonus daily reward based on level", () => {
+    const now = new Date("2025-01-01T05:00:00.000Z").getTime();
+    const state = claimDailyReward({
+      state: {
+        ...INITIAL_FARM,
+        bumpkin: {
+          ...TEST_BUMPKIN,
+          experience: LEVEL_3_EXPERIENCE, // level 3
+        },
+        vip: {
+          trialStartedAt: now - 24 * 60 * 60 * 1000,
+          expiresAt: 0,
+          bundles: [],
+        },
+      },
+      action: { type: "dailyReward.claimed" },
+      createdAt: now,
+    });
+
+    expect(state.inventory["Bumpkin Broth"]).toEqual(new Decimal(1));
+  });
+
   it("keeps streak for first 7 days even if a day is missed", () => {
     const now = new Date("2025-01-10T05:00:00.000Z").getTime();
     const state = claimDailyReward({
@@ -179,6 +202,41 @@ describe("claimDailyReward", () => {
     expect(state.buffs?.["Power hour"]).toBeDefined();
     expect(state.inventory["Cheer"]).toEqual(new Decimal(3));
     expect(state.inventory[getChapterTicket(now)]).toEqual(new Decimal(1));
+  });
+
+  it("archives the previous Power Hour when the weekly buff is claimed again", () => {
+    const now = new Date("2025-02-05T05:00:00.000Z").getTime();
+    const previousStartedAt = now - 2 * 24 * 60 * 60 * 1000;
+    const state = claimDailyReward({
+      state: {
+        ...INITIAL_FARM,
+        bumpkin: {
+          ...TEST_BUMPKIN,
+          experience: LEVEL_3_EXPERIENCE,
+        },
+        buffs: {
+          "Power hour": {
+            startedAt: previousStartedAt,
+            durationMS: 60 * 60 * 1000,
+          },
+        },
+        dailyRewards: {
+          streaks: 1, // claiming weekly day 2 (Growth Boost - buff)
+          chest: {
+            collectedAt: now - 24 * 60 * 60 * 1000,
+            code: 1,
+          },
+        },
+        farmActivity: { "Daily Reward Collected": 10 },
+      },
+      action: { type: "dailyReward.claimed" },
+      createdAt: now,
+    });
+
+    expect(state.buffs?.["Power hour"]?.startedAt).toBe(now);
+    expect(state.boostHistory?.["Power hour"]).toEqual([
+      { from: previousStartedAt, to: previousStartedAt + 60 * 60 * 1000 },
+    ]);
   });
 
   it("scales weekly tool rewards with higher level", () => {
@@ -340,6 +398,70 @@ describe("claimDailyReward", () => {
     expect(state.inventory["Gem"]).toEqual(new Decimal(320));
     expect(state.inventory["Cheer"]).toEqual(new Decimal(3));
     expect(state.inventory["Luxury Key"]).toEqual(new Decimal(1));
+    expect(state.inventory[getChapterTicket(now)]).toEqual(new Decimal(1));
+  });
+
+  it("should claim day 1095", () => {
+    const now = new Date("2025-01-01T05:00:00.000Z").getTime();
+    const state = claimDailyReward({
+      state: {
+        ...INITIAL_FARM,
+        inventory: {},
+        bumpkin: {
+          ...TEST_BUMPKIN,
+          experience: LEVEL_3_EXPERIENCE,
+        },
+        dailyRewards: {
+          streaks: 1094,
+          chest: {
+            collectedAt: now - 24 * 60 * 60 * 1000,
+            code: 1,
+          },
+        },
+      },
+      action: { type: "dailyReward.claimed" },
+      createdAt: now,
+    });
+
+    expect(state.dailyRewards?.streaks).toBe(1095);
+    expect(state.dailyRewards?.chest?.collectedAt).toEqual(now);
+    expect(state.inventory["Pirate Cake"]).toEqual(new Decimal(15));
+    expect(state.inventory["Treasure Key"]).toEqual(new Decimal(2));
+    expect(state.inventory["Rare Key"]).toEqual(new Decimal(2));
+    expect(state.inventory["Luxury Key"]).toEqual(new Decimal(2));
+    expect(state.inventory["Cheer"]).toEqual(new Decimal(3));
+    expect(state.inventory[getChapterTicket(now)]).toEqual(new Decimal(1));
+  });
+
+  it("should claim day 1460", () => {
+    const now = new Date("2025-01-01T05:00:00.000Z").getTime();
+    const state = claimDailyReward({
+      state: {
+        ...INITIAL_FARM,
+        inventory: {},
+        bumpkin: {
+          ...TEST_BUMPKIN,
+          experience: LEVEL_3_EXPERIENCE,
+        },
+        dailyRewards: {
+          streaks: 1459,
+          chest: {
+            collectedAt: now - 24 * 60 * 60 * 1000,
+            code: 1,
+          },
+        },
+      },
+      action: { type: "dailyReward.claimed" },
+      createdAt: now,
+    });
+
+    expect(state.dailyRewards?.streaks).toBe(1460);
+    expect(state.dailyRewards?.chest?.collectedAt).toEqual(now);
+    expect(state.inventory["Pizza Margherita"]).toEqual(new Decimal(10));
+    expect(state.inventory["Super Totem"]).toEqual(new Decimal(1));
+    expect(state.inventory["Gem"]).toEqual(new Decimal(500));
+    expect(state.inventory["Luxury Key"]).toEqual(new Decimal(2));
+    expect(state.inventory["Cheer"]).toEqual(new Decimal(3));
     expect(state.inventory[getChapterTicket(now)]).toEqual(new Decimal(1));
   });
 

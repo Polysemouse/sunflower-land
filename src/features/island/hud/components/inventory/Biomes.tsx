@@ -6,10 +6,10 @@ import { ITEM_DETAILS } from "features/game/types/images";
 import {
   getCurrentBiome,
   LAND_BIOMES,
-  LandBiomeName,
+  type LandBiomeName,
 } from "features/island/biomes/biomes";
-import { GameState } from "features/game/types/game";
-import { getKeys } from "features/game/types/decorations";
+import type { GameState } from "features/game/types/game";
+import { getKeys } from "lib/object";
 import Decimal from "decimal.js-light";
 import { InventoryItemDetails } from "components/ui/layouts/InventoryItemDetails";
 import { Button } from "components/ui/Button";

@@ -99,6 +99,30 @@ describe("shipmentRestocked", () => {
     expect(state.stock["Eggplant Seed"]).toEqual(new Decimal(50));
   });
 
+  it("restocks the Crystal Leaf event seed for free", () => {
+    const now = Date.now();
+    const state = shipmentRestock({
+      action: {
+        type: "shipment.restocked",
+      },
+      state: {
+        ...INITIAL_FARM,
+        stock: {
+          ...INITIAL_FARM.stock,
+          "Crystal Leaf Seed": new Decimal(5),
+        },
+        shipments: {
+          restockedAt: new Date("2023-04-04").getTime(),
+        },
+      },
+      createdAt: now,
+    });
+
+    expect(state.stock["Crystal Leaf Seed"]).toEqual(
+      new Decimal((SHIPMENT_STOCK["Crystal Leaf Seed"] ?? 0) + 5),
+    );
+  });
+
   it("only restocks a shipment once per day", () => {
     expect(() =>
       shipmentRestock({

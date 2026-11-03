@@ -1,17 +1,30 @@
 import Decimal from "decimal.js-light";
-import { GameState } from "features/game/types/game";
+import type { GameState } from "features/game/types/game";
 
 import { produce } from "immer";
 
 import { trackFarmActivity } from "features/game/types/farmActivity";
 import {
-  EventShopItemName,
+  type EventShopItemName,
   isEventShopCollectible,
   MINIGAME_SHOP_ITEMS,
 } from "features/game/types/minigameShop";
-import { MinigameName } from "features/game/types/minigames";
-import { getObjectEntries } from "features/game/expansion/lib/utils";
+import type { MinigameName } from "features/game/types/minigames";
+import { getObjectEntries } from "lib/object";
 import { hasVipAccess } from "features/game/lib/vipAccess";
+import {
+  type EventStore,
+  HALLOWEEN_2026_EVENT_ITEMS,
+} from "features/game/types/halloween2026EventShop";
+
+/**
+ * Tiered event stores: a tier opens once the player has bought at least its
+ * `requirement` different items from the store (any tier). Same tiers as the
+ * event store screen.
+ */
+const MINIGAME_SHOP_TIERS: Partial<Record<MinigameName, EventStore>> = {
+  "halloween-2026-game-2": HALLOWEEN_2026_EVENT_ITEMS,
+};
 
 export type BuyMinigameItemAction = {
   type: "minigameItem.bought";
@@ -22,10 +35,14 @@ export type BuyMinigameItemAction = {
 type Options = {
   state: Readonly<GameState>;
   action: BuyMinigameItemAction;
-  createdAt?: number;
+  createdAt: number;
 };
 
-export function buyEventShopItem({ state, action }: Options): GameState {
+export function buyEventShopItem({
+  state,
+  action,
+  createdAt,
+}: Options): GameState {
   return produce(state, (stateCopy) => {
     const { name } = action;
 
@@ -49,12 +66,41 @@ export function buyEventShopItem({ state, action }: Options): GameState {
       throw new Error("Item not found in Shopx");
     }
 
+    const tiers = MINIGAME_SHOP_TIERS[action.id];
+
+    if (tiers) {
+      const tier = getObjectEntries(tiers).find(([, { items }]) =>
+        items.some(
+          (tierItem) =>
+            ("wearable" in tierItem
+              ? tierItem.wearable
+              : tierItem.collectible) === action.name,
+        ),
+      );
+
+      if (!tier) {
+        throw new Error("Item is not in a tier");
+      }
+
+      const [tierName, tierData] = tier;
+      const requirement = "requirement" in tierData ? tierData.requirement : 0;
+
+      // Different items bought from this store so far, any tier
+      const bought =
+        Object.keys(minigame.shop?.items ?? {}).length +
+        Object.keys(minigame.shop?.wearables ?? {}).length;
+
+      if (bought < requirement) {
+        throw new Error(`${tierName} tier is locked`);
+      }
+    }
+
     const { sfl, items } = item.cost;
 
     if (sfl) {
       let cost = sfl;
 
-      if (hasVipAccess({ game: stateCopy })) {
+      if (hasVipAccess({ game: stateCopy, now: createdAt })) {
         cost = cost * 0.5;
       }
 
@@ -64,6 +110,11 @@ export function buyEventShopItem({ state, action }: Options): GameState {
       }
 
       stateCopy.balance = balance.sub(new Decimal(cost));
+      stateCopy.farmActivity = trackFarmActivity(
+        "FLOWER Spent",
+        stateCopy.farmActivity,
+        new Decimal(cost),
+      );
     }
 
     getObjectEntries(items).forEach(([item, amount]) => {

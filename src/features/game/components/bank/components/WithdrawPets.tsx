@@ -1,62 +1,117 @@
 import { useSelector } from "@xstate/react";
-import React, { useContext, useState } from "react";
+import React, { useContext, useMemo, useState } from "react";
 
 import { Button } from "components/ui/Button";
-import { Box } from "components/ui/Box";
 import { Modal } from "components/ui/Modal";
 import { Panel } from "components/ui/Panel";
 
 import { wallet } from "lib/blockchain/wallet";
 
-import { getKeys } from "features/game/types/craftables";
+import { getKeys } from "lib/object";
 import { SUNNYSIDE } from "assets/sunnyside";
 
 import { useAppTranslation } from "lib/i18n/useAppTranslations";
 import { Context } from "features/game/GameProvider";
-import { MachineState } from "features/game/lib/gameMachine";
+import type { MachineState } from "features/game/lib/gameMachine";
 import { Label } from "components/ui/Label";
-import { WalletAddressLabel } from "components/ui/WalletAddressLabel";
-import { PIXEL_SCALE } from "features/game/lib/constants";
 import { hasReputation, Reputation } from "features/game/lib/reputation";
 import { RequiredReputation } from "features/island/hud/components/reputation/Reputation";
 import { hasBoostRestriction } from "features/game/types/withdrawRestrictions";
-import { InfoPopover } from "features/island/common/InfoPopover";
 import { secondsToString } from "lib/utils/time";
-import { BoostName } from "features/game/types/game";
+import type { BoostName } from "features/game/types/game";
 import { getPetImage } from "features/island/pets/lib/petShared";
 import {
   getPetNFTReleaseDate,
   isPetNFTRevealed,
 } from "features/game/types/pets";
+import { getPetReleases } from "features/game/types/withdrawables";
 import { useNow } from "lib/utils/hooks/useNow";
+import petNFTEgg from "assets/icons/pet_nft_egg.png";
+import vipIcon from "assets/icons/vip.webp";
 
-// const imageDomain = CONFIG.NETWORK === "mainnet" ? "pets" : "testnet-pets";
+import { WithdrawCollection } from "./withdraw/WithdrawCollection";
+import type { WithdrawEntry } from "./withdraw/types";
+import {
+  formatWithdrawableDate,
+  getMarketplaceWithdrawBlock,
+} from "features/game/lib/withdrawCooldown";
 
 interface Props {
   onWithdraw: (ids: number[]) => void;
+  onBack: () => void;
+  withdrawDisabled?: boolean;
 }
 
 const _state = (state: MachineState) => state.context.state;
+const _withdrawCooldowns = (state: MachineState) =>
+  state.context.withdrawCooldowns;
 
-export const WithdrawPets: React.FC<Props> = ({ onWithdraw }) => {
+export const WithdrawPets: React.FC<Props> = ({
+  onWithdraw,
+  onBack,
+  withdrawDisabled,
+}) => {
   const { t } = useAppTranslation();
 
   const { gameService } = useContext(Context);
   const state = useSelector(gameService, _state);
+  const withdrawCooldowns = useSelector(gameService, _withdrawCooldowns);
 
   const nfts = state.pets?.nfts ?? {};
 
+  // Placed pets can now be withdrawn (the backend removes the pet NFT
+  // entirely), so they are no longer filtered out here.
   const [unselected, setUnselected] = useState<number[]>(
-    getKeys(nfts)
-      .filter((nftId) => !nfts[nftId].coordinates)
-      .map(Number),
+    getKeys(nfts).map(Number),
   );
   const [selected, setSelected] = useState<number[]>([]);
-  const [showInfo, setShowInfo] = useState("");
   const [confirmationStep, setConfirmationStep] = useState<1 | 2 | null>(null);
   const [showConfirmationModal, setShowConfirmationModal] = useState(false);
 
   const now = useNow();
+
+  const { petsToShow, petRowById } = useMemo(() => {
+    const nowDate = new Date(now);
+    type Row = {
+      isRevealed: boolean;
+      revealDate: Date | undefined;
+      withdrawAt: Date | undefined;
+      isRevealedButNotWithdrawable: boolean;
+    };
+    const petRowById = new Map<number, Row>();
+
+    const withdrawable: number[] = [];
+    const revealedLocked: number[] = [];
+    const unrevealed: number[] = [];
+
+    for (const petId of unselected) {
+      const isRevealed = isPetNFTRevealed(petId, now);
+      const { withdrawAt } = getPetReleases(petId);
+      const revealDate = getPetNFTReleaseDate(petId, now);
+      const isRevealedButNotWithdrawable =
+        isRevealed && !!withdrawAt && withdrawAt > nowDate;
+
+      petRowById.set(petId, {
+        isRevealed,
+        revealDate,
+        withdrawAt,
+        isRevealedButNotWithdrawable,
+      });
+
+      if (!isRevealed) {
+        unrevealed.push(petId);
+      } else if (isRevealedButNotWithdrawable) {
+        revealedLocked.push(petId);
+      } else if (!withdrawAt || withdrawAt <= nowDate) {
+        withdrawable.push(petId);
+      }
+    }
+
+    return {
+      petsToShow: [...withdrawable, ...revealedLocked, ...unrevealed],
+      petRowById,
+    };
+  }, [unselected, now]);
 
   const onAdd = (petId: number) => {
     setUnselected((prev) => prev.filter((pet) => pet !== petId));
@@ -71,6 +126,7 @@ export const WithdrawPets: React.FC<Props> = ({ onWithdraw }) => {
   const hasAccess = hasReputation({
     game: state,
     reputation: Reputation.Seedling,
+    now,
   });
 
   if (!hasAccess) {
@@ -90,23 +146,24 @@ export const WithdrawPets: React.FC<Props> = ({ onWithdraw }) => {
   };
 
   const sortWithdrawableItems = (a: number, b: number) => {
-    const itemA = getPetName(a) as BoostName;
-    const itemB = getPetName(b) as BoostName;
-    const aCooldownMs = getRestrictionStatus(itemA).cooldownTimeLeft;
-    const bCooldownMs = getRestrictionStatus(itemB).cooldownTimeLeft;
+    const aCooldownMs = getRestrictionStatus(
+      getPetName(a) as BoostName,
+    ).cooldownTimeLeft;
+    const bCooldownMs = getRestrictionStatus(
+      getPetName(b) as BoostName,
+    ).cooldownTimeLeft;
 
     const aIsOnCooldown = aCooldownMs > 0;
     const bIsOnCooldown = bCooldownMs > 0;
 
-    // 1. Buds on cooldown come first
+    // 1. Pets on cooldown come first, by most cooldown time left
     if (aIsOnCooldown && bIsOnCooldown) {
-      // 2. Among those, sort by most cooldown time left
       return bCooldownMs - aCooldownMs;
     }
     if (aIsOnCooldown !== bIsOnCooldown) {
       return aIsOnCooldown ? -1 : 1;
     }
-    // 3. Otherwise, sort by pet IDs
+    // 2. Otherwise, sort by pet ID
     return a - b;
   };
 
@@ -156,6 +213,121 @@ export const WithdrawPets: React.FC<Props> = ({ onWithdraw }) => {
     ? confirmationConfig[confirmationStep]
     : null;
 
+  const onSetQty = (entry: WithdrawEntry, qty: number) => {
+    const petId = entry.id;
+    const isSelected = selected.includes(petId);
+    if (qty >= 1 && !isSelected) onAdd(petId);
+    if (qty <= 0 && isSelected) onRemove(petId);
+  };
+
+  // Cooldown-restricted pets first (longest first), then by ID — matching the
+  // previous behaviour. Selected pets stay visible, appended after.
+  const petIds = [...petsToShow].sort(sortWithdrawableItems).concat(selected);
+
+  const entries: WithdrawEntry[] = petIds.map((petId) => {
+    const petName = getPetName(petId);
+    const { isRestricted, cooldownTimeLeft } = getRestrictionStatus(
+      petName as BoostName,
+    );
+
+    const row = petRowById.get(petId);
+    const isRevealed = row?.isRevealed ?? true;
+    const revealDate = row?.revealDate;
+    const withdrawAt = row?.withdrawAt;
+    const isRevealedButNotWithdrawable =
+      row?.isRevealedButNotWithdrawable ?? false;
+
+    // Bought on the marketplace recently without VIP - only known once the
+    // API has refused it, see withdrawCooldown.ts. The API keys pets by the
+    // same `Pet #id` label we display.
+    const marketplaceBlockedUntil = getMarketplaceWithdrawBlock({
+      game: state,
+      cooldowns: withdrawCooldowns,
+      name: petName,
+      now,
+    });
+    const marketplaceDate =
+      marketplaceBlockedUntil !== undefined
+        ? formatWithdrawableDate(marketplaceBlockedUntil)
+        : undefined;
+
+    const locked =
+      isRestricted ||
+      !isRevealed ||
+      isRevealedButNotWithdrawable ||
+      marketplaceDate !== undefined;
+
+    const cooldownText = secondsToString(cooldownTimeLeft / 1000, {
+      length: "medium",
+      isShortFormat: true,
+      removeTrailingZeros: true,
+    });
+
+    const lockReason = isRestricted
+      ? t("withdraw.boostedItem.timeLeft", { time: cooldownText })
+      : !isRevealed && revealDate
+        ? t("withdraw.pet.notRevealed", {
+            date: revealDate.toLocaleDateString(),
+          })
+        : isRevealedButNotWithdrawable && withdrawAt
+          ? t("withdraw.pet.withdrawableFrom", {
+              date: withdrawAt.toLocaleDateString(),
+            })
+          : marketplaceDate !== undefined
+            ? t("withdraw.marketplaceCooldown.lockReason", {
+                date: marketplaceDate,
+              })
+            : undefined;
+
+    // A placed pet is removed from the farm when withdrawn — warn on select.
+    const isPlaced = !!nfts[petId]?.coordinates;
+
+    return {
+      key: `pet-${petId}`,
+      id: petId,
+      name: petName,
+      image: getPetImage("happy", petId),
+      total: 1,
+      unique: true,
+      safeWithdrawCount: isPlaced ? 0 : 1,
+      inUseWarning: isPlaced ? t("withdraw.placedPet.warning") : undefined,
+      locked,
+      lockReason,
+      status: isRestricted
+        ? {
+            type: "warning" as const,
+            icon: SUNNYSIDE.icons.timer,
+            text: t("withdraw.status.cooldown", { time: cooldownText }),
+          }
+        : !isRevealed || isRevealedButNotWithdrawable
+          ? {
+              type: "warning" as const,
+              icon: SUNNYSIDE.icons.timer,
+              text: t("withdraw.status.soon"),
+            }
+          : marketplaceDate !== undefined
+            ? {
+                type: "warning" as const,
+                icon: vipIcon,
+                text: t("withdraw.status.marketplaceCooldown", {
+                  date: marketplaceDate,
+                }),
+              }
+            : {
+                type: "success" as const,
+                text: t("withdraw.status.withdrawable"),
+              },
+    };
+  });
+
+  const selectedMap = selected.reduce(
+    (acc, petId) => {
+      acc[`pet-${petId}`] = 1;
+      return acc;
+    },
+    {} as Record<string, number>,
+  );
+
   return (
     <>
       {showConfirmationModal && currentConfirmation && (
@@ -182,133 +354,18 @@ export const WithdrawPets: React.FC<Props> = ({ onWithdraw }) => {
           </Panel>
         </Modal>
       )}
-      <div className="p-2 mb-2">
-        <Label type="warning" className="mb-2">
-          <span className="text-xs">{t("withdraw.restricted")}</span>
-        </Label>
-        <Label type="default" className="mb-2">
-          {t("withdraw.pets")}
-        </Label>
-        <div className="flex flex-wrap h-fit -ml-1.5">
-          {unselected
-            .slice()
-            .sort((a, b) => sortWithdrawableItems(a, b))
-            .map((petId) => {
-              const petName = getPetName(petId);
-              const { isRestricted, cooldownTimeLeft } = getRestrictionStatus(
-                petName as BoostName,
-              );
-              const RestrictionCooldown = cooldownTimeLeft / 1000;
-
-              const handleBoxClick = () => {
-                if (isRestricted || !isRevealed) {
-                  setShowInfo((prev) => (prev === petName ? "" : petName));
-                }
-              };
-
-              const isRevealed = isPetNFTRevealed(petId, now);
-              const revealDate = getPetNFTReleaseDate(petId, now);
-
-              return (
-                <div
-                  key={petName}
-                  onClick={handleBoxClick}
-                  className="flex relative"
-                >
-                  <InfoPopover
-                    className="absolute top-14 text-xxs sm:text-xs"
-                    showPopover={showInfo === `Pet #${petId}`}
-                  >
-                    {isRestricted
-                      ? t("withdraw.boostedItem.timeLeft", {
-                          time: secondsToString(RestrictionCooldown, {
-                            length: "medium",
-                            isShortFormat: true,
-                            removeTrailingZeros: true,
-                          }),
-                        })
-                      : !isRevealed && revealDate
-                        ? t("withdraw.pet.notRevealed", {
-                            date: revealDate.toLocaleDateString(),
-                          })
-                        : undefined}
-                  </InfoPopover>
-
-                  <Box
-                    key={`pet-${petId}`}
-                    onClick={() => onAdd(petId)}
-                    image={getPetImage("happy", petId)}
-                    disabled={isRestricted || !isRevealed}
-                    secondaryImage={
-                      isRestricted || !isRevealed
-                        ? SUNNYSIDE.icons.lock
-                        : undefined
-                    }
-                  />
-                </div>
-              );
-            })}
-          {/* Pad with empty boxes */}
-          {unselected.length < 4 &&
-            new Array(4 - unselected.length)
-              .fill(null)
-              .map((_, index) => <Box disabled key={index} />)}
-        </div>
-
-        <div className="mt-4">
-          <Label type="default" className="mb-2">
-            {t("selected")}
-          </Label>
-          <div className="flex flex-wrap h-fit mt-2 -ml-1.5">
-            {selected.map((petId) => (
-              <Box
-                key={`pet-${petId}`}
-                onClick={() => onRemove(petId)}
-                image={getPetImage("happy", petId)}
-                iconClassName="w-5"
-              />
-            ))}
-            {/* Pad with empty boxes */}
-            {selected.length < 4 &&
-              new Array(4 - selected.length)
-                .fill(null)
-                .map((_, index) => <Box disabled key={index} />)}
-          </div>
-        </div>
-
-        <div className="w-full my-3 border-t border-white" />
-        <div className="flex items-center mb-2 text-xs">
-          <img
-            src={SUNNYSIDE.icons.player}
-            className="mr-3"
-            style={{
-              width: `${PIXEL_SCALE * 13}px`,
-            }}
-          />
-          <div className="flex flex-col gap-1">
-            <p>{t("withdraw.send.wallet")}</p>
-            <WalletAddressLabel
-              walletAddress={wallet.getConnection() || "XXXX"}
-            />
-          </div>
-        </div>
-
-        <p className="text-xs">
-          {t("withdraw.opensea")}{" "}
-          <a
-            className="underline hover:text-blue-500"
-            href="https://docs.sunflower-land.com/getting-started/crypto-and-digital-collectibles"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            {t("read.more")}
-          </a>
-        </p>
-      </div>
-
-      <Button onClick={handleOpenConfirmation} disabled={selected.length <= 0}>
-        {t("withdraw")}
-      </Button>
+      <WithdrawCollection
+        title={t("pets")}
+        icon={petNFTEgg}
+        entries={entries}
+        selected={selectedMap}
+        onSetQty={onSetQty}
+        onWithdraw={handleOpenConfirmation}
+        withdrawDisabled={withdrawDisabled}
+        walletAddress={wallet.getConnection() || "XXXX"}
+        onBack={onBack}
+        intro={t("withdraw.restricted.description")}
+      />
     </>
   );
 };

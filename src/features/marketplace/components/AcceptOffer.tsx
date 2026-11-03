@@ -5,40 +5,44 @@ import { Label } from "components/ui/Label";
 import {
   getResourceTax,
   MARKETPLACE_TAX,
-  Offer,
+  type Offer,
 } from "features/game/types/marketplace";
 import { useAppTranslation } from "lib/i18n/useAppTranslations";
 
 import { useSelector } from "@xstate/react";
 import { GameWallet } from "features/wallet/Wallet";
-import { TradeableDisplay } from "../lib/tradeables";
+import type { TradeableDisplay } from "../lib/tradeables";
 import confetti from "canvas-confetti";
 import { getBasketItems } from "features/island/hud/components/inventory/utils/inventory";
 import { KNOWN_ITEMS } from "features/game/types";
 import { ITEM_NAMES } from "features/game/types/bumpkin";
 import {
-  BlockchainEvent,
-  Context as ContextType,
-  MachineState,
+  type BlockchainEvent,
+  type Context as ContextType,
+  isAccountTradedWithin90Days,
+  selectGameState,
 } from "features/game/lib/gameMachine";
 import { useOnMachineTransition } from "lib/utils/hooks/useOnMachineTransition";
 import { Context } from "features/game/GameProvider";
 import { TradeableSummary } from "./TradeableSummary";
 import { calculateTradePoints } from "features/game/events/landExpansion/addTradePoints";
-import { InventoryItemName } from "features/game/types/game";
+import type { InventoryItemName } from "features/game/types/game";
 import { hasReputation, Reputation } from "features/game/lib/reputation";
 import { RequiredReputation } from "features/island/hud/components/reputation/Reputation";
 import { isFaceVerified } from "features/retreat/components/personhood/lib/faceRecognition";
 import { FaceRecognition } from "features/retreat/components/personhood/FaceRecognition";
 import { isTradeResource } from "features/game/actions/tradeLimits";
+import {
+  MinigameCurrencyDisclaimerPanel,
+  showsMinigameCurrencyDisclaimer,
+} from "./MinigameCurrencyDisclaimerPanel";
 import { SUNNYSIDE } from "assets/sunnyside";
 import Decimal from "decimal.js-light";
-const _state = (state: MachineState) => state.context.state;
-const _hasReputation = (state: MachineState) =>
-  hasReputation({
-    game: state.context.state,
-    reputation: Reputation.Cropkeeper,
-  });
+import { useNow } from "lib/utils/hooks/useNow";
+import {
+  Locked,
+  useIsLocked,
+} from "features/retreat/components/personhood/Locked";
 
 const AcceptOfferContent: React.FC<{
   onClose: () => void;
@@ -46,13 +50,32 @@ const AcceptOfferContent: React.FC<{
   display: TradeableDisplay;
   offer: Offer;
   itemId: number;
+  availableBalance?: number;
   onOfferAccepted: () => void;
-}> = ({ onClose, display, itemId, authToken, offer, onOfferAccepted }) => {
+}> = ({
+  onClose,
+  display,
+  itemId,
+  authToken,
+  offer,
+  availableBalance,
+  onOfferAccepted,
+}) => {
   const { t } = useAppTranslation();
 
   const { gameService } = useContext(Context);
-  const state = useSelector(gameService, _state);
-  const hasReputation = useSelector(gameService, _hasReputation);
+  const state = useSelector(gameService, selectGameState);
+  const now = useNow();
+  const hasTradeReputation = hasReputation({
+    game: state,
+    reputation: Reputation.Cropkeeper,
+    now,
+  });
+  // A hold stops the account trading; say so instead of a form that fails.
+  const locked = useIsLocked();
+  const accountTradedRecently = useSelector(gameService, (s) =>
+    isAccountTradedWithin90Days(s.context),
+  );
 
   useOnMachineTransition<ContextType, BlockchainEvent>(
     gameService,
@@ -69,6 +92,7 @@ const AcceptOfferContent: React.FC<{
   );
 
   const confirm = async () => {
+    if (accountTradedRecently) return;
     gameService.send("marketplace.offerAccepted", {
       effect: {
         type: "marketplace.offerAccepted",
@@ -104,6 +128,12 @@ const AcceptOfferContent: React.FC<{
     hasItem = !!state.pets?.nfts?.[itemId];
   }
 
+  if (display.type === "economies") {
+    // Economy token balances live in the API-provided `balance`, not the
+    // game inventory, so check against that rather than `state.inventory`.
+    hasItem = (availableBalance ?? 0) >= offer.quantity;
+  }
+
   const estTradePoints =
     offer.sfl === 0
       ? 0
@@ -128,12 +158,14 @@ const AcceptOfferContent: React.FC<{
     );
   }
 
+  if (locked) return <Locked />;
+
   let tax = new Decimal(offer.sfl).mul(MARKETPLACE_TAX);
   if (
     display.type === "collectibles" &&
     isTradeResource(display.name as InventoryItemName)
   ) {
-    tax = getResourceTax({ game: state }).mul(offer.sfl);
+    tax = getResourceTax({ game: state, now }).mul(offer.sfl);
   }
 
   return (
@@ -143,7 +175,7 @@ const AcceptOfferContent: React.FC<{
           <Label type="default" className="-ml-1">
             {t("marketplace.acceptOffer")}
           </Label>
-          {!hasReputation && (
+          {!hasTradeReputation && (
             <RequiredReputation reputation={Reputation.Cropkeeper} />
           )}
         </div>
@@ -154,11 +186,14 @@ const AcceptOfferContent: React.FC<{
           quantity={offer.quantity}
           estTradePoints={estTradePoints}
         />
+        {showsMinigameCurrencyDisclaimer(display.name) && (
+          <MinigameCurrencyDisclaimerPanel className="mt-3" />
+        )}
       </div>
 
       {!hasItem && (
         <Label type="danger" className="my-2">
-          {`You do not have ${display.name}`}
+          {`You do not have ${display.translatedName ?? display.name}`}
         </Label>
       )}
 
@@ -167,7 +202,7 @@ const AcceptOfferContent: React.FC<{
           {t("cancel")}
         </Button>
         <Button
-          disabled={!hasReputation || !hasItem}
+          disabled={!hasTradeReputation || !hasItem || accountTradedRecently}
           onClick={() => confirm()}
           className="relative"
         >
@@ -184,8 +219,17 @@ export const AcceptOffer: React.FC<{
   display: TradeableDisplay;
   offer: Offer;
   itemId: number;
+  availableBalance?: number;
   onOfferAccepted: () => void;
-}> = ({ onClose, authToken, display, offer, itemId, onOfferAccepted }) => {
+}> = ({
+  onClose,
+  authToken,
+  display,
+  offer,
+  itemId,
+  availableBalance,
+  onOfferAccepted,
+}) => {
   if (offer.type === "onchain") {
     return (
       <GameWallet action="marketplace">
@@ -195,6 +239,7 @@ export const AcceptOffer: React.FC<{
           display={display}
           offer={offer}
           itemId={itemId}
+          availableBalance={availableBalance}
           onOfferAccepted={onOfferAccepted}
         />
       </GameWallet>
@@ -208,6 +253,7 @@ export const AcceptOffer: React.FC<{
       display={display}
       offer={offer}
       itemId={itemId}
+      availableBalance={availableBalance}
       onOfferAccepted={onOfferAccepted}
     />
   );

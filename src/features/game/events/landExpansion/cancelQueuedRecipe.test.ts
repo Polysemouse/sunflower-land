@@ -3,13 +3,13 @@ import {
   cancelQueuedRecipe,
   getCurrentCookingItem,
 } from "./cancelQueuedRecipe";
-import {
+import type {
   BuildingProduct,
   GameState,
   Inventory,
   PlacedItem,
 } from "features/game/types/game";
-import { CookableName, COOKABLES } from "features/game/types/consumables";
+import { type CookableName, COOKABLES } from "features/game/types/consumables";
 import { cook, getOilConsumption } from "./cook";
 import { EXPIRY_COOLDOWNS } from "features/game/lib/collectibleBuilt";
 import { choseSkill } from "./choseSkill";
@@ -137,6 +137,52 @@ describe("cancelQueuedRecipe", () => {
       }),
     ).toThrow(
       `Recipe ${queueItem.name} with readyAt ${carrotCakeReadyAt} is currently being cooked`,
+    );
+  });
+
+  it("throws an error if the recipe has already finished cooking", () => {
+    const now = new Date("2025-01-01").getTime();
+    // A finished-but-uncollected head. It is NOT the "currently cooking" item
+    // (that is the first not-ready recipe, Cornbread), so it slips past that
+    // guard. Cancelling it used to strip the head anchor and leave the promoted
+    // recipe as a startless windowed head — the stuck-at-0-secs kitchen bug.
+    const finishedHead = {
+      name: "Honey Cake",
+      readyAt: now - 1000,
+    } as BuildingProduct;
+
+    expect(() =>
+      cancelQueuedRecipe({
+        state: {
+          ...INITIAL_FARM,
+          buildings: {
+            Bakery: [
+              {
+                id: "1",
+                coordinates: { x: 0, y: 0 },
+                readyAt: 0,
+                createdAt: 0,
+                crafting: [
+                  finishedHead,
+                  {
+                    name: "Cornbread",
+                    readyAt: now + 1000,
+                  },
+                ],
+              },
+            ],
+          },
+        },
+        action: {
+          type: "recipe.cancelled",
+          buildingName: "Bakery",
+          buildingId: "1",
+          queueItem: finishedHead,
+        },
+        createdAt: now,
+      }),
+    ).toThrow(
+      `Recipe ${finishedHead.name} has already finished cooking and cannot be cancelled`,
     );
   });
 
@@ -641,6 +687,139 @@ describe("cancelQueuedRecipe", () => {
     expect(cancelledState.inventory.Tomato).toEqual(new Decimal(25));
     expect(cancelledState.inventory.Kale).toEqual(new Decimal(20));
   });
+
+  it("refunds ingredients at the Double Nom rank stored on the recipe, not the live rank", () => {
+    const now = new Date("2025-01-01").getTime();
+
+    const state: GameState = {
+      ...INITIAL_FARM,
+      inventory: {
+        Egg: new Decimal(0),
+      },
+      bumpkin: {
+        ...INITIAL_FARM.bumpkin,
+        // Live rank is 1, but the queued recipe was cooked at rank 3
+        skills: { "Double Nom": 1 },
+      },
+      buildings: {
+        "Fire Pit": [
+          {
+            id: "1",
+            coordinates: { x: 0, y: 0 },
+            readyAt: 0,
+            createdAt: 0,
+            crafting: [
+              {
+                name: "Boiled Eggs",
+                readyAt: now + 60 * 1000, // currently cooking
+              },
+              {
+                name: "Boiled Eggs",
+                readyAt: now + 120 * 1000, // queued (cancellable)
+                skills: { "Double Nom": 3 },
+              },
+            ],
+          },
+        ],
+      },
+    };
+
+    const queuedItem = state.buildings["Fire Pit"]?.[0]?.crafting?.[1];
+
+    const cancelledState = cancelQueuedRecipe({
+      state,
+      action: {
+        type: "recipe.cancelled",
+        buildingName: "Fire Pit",
+        buildingId: "1",
+        queueItem: queuedItem as BuildingProduct,
+      },
+      createdAt: now,
+    });
+
+    // Boiled Eggs base 10 Egg x4 (Double Nom rank 3 stored on the recipe)
+    expect(cancelledState.inventory.Egg).toEqual(new Decimal(40));
+  });
+});
+
+// `baseDurationMs` is snapshotted at cook time, like the Double Nom rank. Rewriting
+// the queue must not re-derive it from today's permanent boosts, or swapping a
+// wearable and cancelling something unrelated silently lengthens what is queued.
+describe("recalculateQueue snapshot handling", () => {
+  const now = Date.now();
+  const HOUR = 60 * 60 * 1000;
+  const SNAPSHOT = 12_345;
+
+  const cancelSecond = () =>
+    cancelQueuedRecipe({
+      state: {
+        ...INITIAL_FARM,
+        buildings: {
+          "Fire Pit": [
+            {
+              id: "1",
+              coordinates: { x: 0, y: 0 },
+              readyAt: 0,
+              createdAt: 0,
+              crafting: [
+                {
+                  id: "cooking",
+                  name: "Boiled Eggs",
+                  startedAt: now,
+                  baseDurationMs: 1 * HOUR,
+                  readyAt: now + 1 * HOUR,
+                },
+                {
+                  id: "doomed",
+                  name: "Mashed Potato",
+                  baseDurationMs: 1 * HOUR,
+                  readyAt: now + 2 * HOUR,
+                },
+                {
+                  // Already windowed: its duration was fixed when it was queued.
+                  id: "windowed",
+                  name: "Mashed Potato",
+                  baseDurationMs: SNAPSHOT,
+                  readyAt: now + 2 * HOUR + SNAPSHOT,
+                },
+                {
+                  // Legacy: no marker, so it SHOULD be migrated on rewrite.
+                  id: "legacy",
+                  name: "Mashed Potato",
+                  readyAt: now + 3 * HOUR,
+                },
+              ],
+            },
+          ],
+        },
+      },
+      action: {
+        type: "recipe.cancelled",
+        buildingName: "Fire Pit",
+        buildingId: "1",
+        queueItem: {
+          id: "doomed",
+          name: "Mashed Potato",
+          baseDurationMs: 1 * HOUR,
+          readyAt: now + 2 * HOUR,
+        },
+      },
+      createdAt: now,
+    });
+
+  it("keeps a queued recipe's snapshotted baseDurationMs", () => {
+    const queue = cancelSecond().buildings["Fire Pit"]?.[0].crafting ?? [];
+    const windowed = queue.find((recipe) => recipe.id === "windowed");
+
+    expect(windowed?.baseDurationMs).toEqual(SNAPSHOT);
+  });
+
+  it("still migrates a legacy recipe it rewrites", () => {
+    const queue = cancelSecond().buildings["Fire Pit"]?.[0].crafting ?? [];
+    const legacy = queue.find((recipe) => recipe.id === "legacy");
+
+    expect(legacy?.baseDurationMs).toBeGreaterThan(0);
+  });
 });
 
 describe("getCurrentCookingItem", () => {
@@ -673,11 +852,64 @@ describe("getCurrentCookingItem", () => {
     const item = getCurrentCookingItem({
       building,
       createdAt: now,
+      game: INITIAL_FARM,
     });
 
+    // The Cornbread at index 0 is already done, so the first Carrot Cake is cooking.
     expect(item).toEqual({
-      name: "Carrot Cake",
+      index: 1,
+      recipe: { name: "Carrot Cake", readyAt: carrotCakeOneReadyAt },
       readyAt: carrotCakeOneReadyAt,
     });
+  });
+
+  it("picks the recipe the WINDOWS say is cooking, not the stored cache", () => {
+    const now = new Date("2025-01-01").getTime();
+    const HOUR = 60 * 60 * 1000;
+
+    const building: PlacedItem = {
+      id: "1",
+      coordinates: { x: 0, y: 0 },
+      readyAt: 0,
+      createdAt: 0,
+      crafting: [
+        {
+          id: "done",
+          name: "Boiled Eggs" as CookableName,
+          startedAt: now - 1 * HOUR,
+          baseDurationMs: 1 * HOUR,
+          // Stale: 1h of work at 2x finished an hour ago.
+          readyAt: now + 1 * HOUR,
+        },
+        {
+          id: "next",
+          name: "Boiled Eggs" as CookableName,
+          baseDurationMs: 4 * HOUR,
+          readyAt: now + 5 * HOUR,
+        },
+      ],
+    };
+
+    const item = getCurrentCookingItem({
+      building,
+      createdAt: now,
+      game: {
+        ...INITIAL_FARM,
+        collectibles: {
+          ...INITIAL_FARM.collectibles,
+          "Gourmet Hourglass": [
+            {
+              id: "1",
+              coordinates: { x: 1, y: 1 },
+              createdAt: now - 1 * HOUR,
+              readyAt: now - 1 * HOUR,
+            },
+          ],
+        },
+      },
+    });
+
+    expect(item?.index).toEqual(1);
+    expect(item?.recipe.id).toEqual("next");
   });
 });

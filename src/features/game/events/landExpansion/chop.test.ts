@@ -3,13 +3,18 @@ import { TEST_BUMPKIN } from "features/game/lib/bumpkinData";
 import { EXPIRY_COOLDOWNS } from "features/game/lib/collectibleBuilt";
 import { INITIAL_FARM, TREE_RECOVERY_TIME } from "features/game/lib/constants";
 import { KNOWN_IDS } from "features/game/types";
-import { GameState, Tree } from "features/game/types/game";
+import type { GameState, Tree } from "features/game/types/game";
 import { prngChance } from "lib/prng";
+import { CONFIG } from "lib/config";
 import {
   chop,
-  LandExpansionChopAction,
+  type LandExpansionChopAction,
   getWoodDropAmount,
   getChoppedAt,
+  getReward,
+  getTreeRecoveryTimeForDisplay,
+  canChop,
+  getTreeReadyAt,
 } from "./chop";
 
 const now = Date.now();
@@ -38,6 +43,17 @@ const GAME_STATE: GameState = {
 };
 
 describe("chop", () => {
+  // These tests assert the LEGACY back-dated recovery (the discount is baked into
+  // choppedAt at chop time). FE jest runs on amoy where SPEED_BOOSTS is on, so
+  // force the flag off here; the windowed model is covered in its own describe.
+  const originalNetwork = CONFIG.NETWORK;
+  beforeEach(() => {
+    (CONFIG as { NETWORK: "mainnet" | "amoy" }).NETWORK = "mainnet";
+  });
+  afterEach(() => {
+    (CONFIG as { NETWORK: "mainnet" | "amoy" }).NETWORK = originalNetwork;
+  });
+
   const dateNow = now;
   const farmId = 1;
 
@@ -176,7 +192,7 @@ describe("chop", () => {
 
     // Find a starting counter where neither tree triggers Native
     function findNonNativeStartCounter() {
-      for (let counter = 0; counter < 100; counter++) {
+      for (let counter = 8; counter < 100; counter++) {
         const firstNative = prngChance({
           farmId,
           itemId,
@@ -267,7 +283,7 @@ describe("chop", () => {
 
     // Find a counter that triggers Native (20% chance)
     function findNativeCounter() {
-      for (let counter = 0; counter < 100; counter++) {
+      for (let counter = 8; counter < 100; counter++) {
         if (
           prngChance({
             farmId,
@@ -554,7 +570,7 @@ describe("chop", () => {
 
     // Helper to find a counter that doesn't trigger Native
     function findNonNativeCounter() {
-      for (let counter = 0; counter < 100; counter++) {
+      for (let counter = 8; counter < 100; counter++) {
         if (
           !prngChance({
             farmId,
@@ -573,6 +589,7 @@ describe("chop", () => {
     it("adds the discord bonus", () => {
       const counter = findNonNativeCounter();
       const { amount } = getWoodDropAmount({
+        now: Date.now(),
         game: {
           ...INITIAL_FARM,
           bumpkin: TEST_BUMPKIN,
@@ -590,6 +607,7 @@ describe("chop", () => {
     it("adds the wood nymph wendy bonus", () => {
       const counter = findNonNativeCounter();
       const { amount } = getWoodDropAmount({
+        now: Date.now(),
         game: {
           ...INITIAL_FARM,
           bumpkin: TEST_BUMPKIN,
@@ -617,6 +635,7 @@ describe("chop", () => {
     it("adds the Tiki Totem bonus", () => {
       const counter = findNonNativeCounter();
       const { amount } = getWoodDropAmount({
+        now: Date.now(),
         game: {
           ...INITIAL_FARM,
           bumpkin: TEST_BUMPKIN,
@@ -644,6 +663,7 @@ describe("chop", () => {
     it("adds the Faction Shield bonus +0.25 Wood", () => {
       const counter = findNonNativeCounter();
       const { amount } = getWoodDropAmount({
+        now: Date.now(),
         game: {
           ...INITIAL_FARM,
           inventory: {},
@@ -674,6 +694,7 @@ describe("chop", () => {
     it("gives +0.1 wood when you have Squirrel in your inventory", () => {
       const counter = findNonNativeCounter();
       const { amount } = getWoodDropAmount({
+        now: Date.now(),
         game: {
           ...INITIAL_FARM,
           inventory: { Squirrel: new Decimal(1) },
@@ -701,6 +722,7 @@ describe("chop", () => {
     it("Faction Shield bonus does not apply when not in the pledged faction", () => {
       const counter = findNonNativeCounter();
       const { amount } = getWoodDropAmount({
+        now: Date.now(),
         game: {
           ...INITIAL_FARM,
           collectibles: {},
@@ -730,6 +752,7 @@ describe("chop", () => {
     it("Faction Shield bonus does not apply when no pledged faction", () => {
       const counter = findNonNativeCounter();
       const { amount } = getWoodDropAmount({
+        now: Date.now(),
         game: {
           ...INITIAL_FARM,
           collectibles: {},
@@ -753,7 +776,7 @@ describe("chop", () => {
     it("adds Native bonus drop via PRNG", () => {
       // Find a counter that triggers Native
       function findNativeCounter() {
-        for (let counter = 0; counter < 100; counter++) {
+        for (let counter = 8; counter < 100; counter++) {
           if (
             prngChance({
               farmId,
@@ -771,6 +794,7 @@ describe("chop", () => {
 
       const nativeCounter = findNativeCounter();
       const { amount } = getWoodDropAmount({
+        now: Date.now(),
         game: INITIAL_FARM,
         farmId,
         itemId,
@@ -784,6 +808,7 @@ describe("chop", () => {
     it("drops 10% more with Lumberjack badge (LEGACY)", () => {
       const counter = findNonNativeCounter();
       const { amount } = getWoodDropAmount({
+        now: Date.now(),
         game: {
           ...INITIAL_FARM,
           inventory: { Lumberjack: new Decimal(1) },
@@ -825,6 +850,7 @@ describe("chop", () => {
 
       const toughTreeCounter = findToughTreeOnlyCounter();
       const { amount } = getWoodDropAmount({
+        now: Date.now(),
         game: {
           ...INITIAL_FARM,
           bumpkin: {
@@ -844,6 +870,7 @@ describe("chop", () => {
     it("applies a +.1 wood drop with Lumberjack's Extra skill", () => {
       const counter = findNonNativeCounter();
       const { amount } = getWoodDropAmount({
+        now: Date.now(),
         game: {
           ...INITIAL_FARM,
           bumpkin: {
@@ -887,6 +914,7 @@ describe("chop", () => {
 
     const state: GameState = {
       ...INITIAL_FARM,
+      inventory: { ...INITIAL_FARM.inventory, Axe: new Decimal(10) },
       bumpkin: {
         ...INITIAL_FARM.bumpkin,
         skills: { "Tree Turnaround": 1 },
@@ -984,9 +1012,7 @@ describe("chop", () => {
           },
         },
         createdAt: now,
-        farmId,
-        itemId: 0,
-        counter: 0,
+        prngArgs: { farmId, itemId: 0, counter: 0 },
       });
 
       const boostedRecoveryTime =
@@ -1013,9 +1039,7 @@ describe("chop", () => {
           },
         },
         createdAt: now,
-        farmId,
-        itemId: 0,
-        counter: 0,
+        prngArgs: { farmId, itemId: 0, counter: 0 },
       });
 
       expect(createdAt).toEqual(now);
@@ -1031,9 +1055,7 @@ describe("chop", () => {
           },
         },
         createdAt: now,
-        farmId,
-        itemId: 0,
-        counter: 0,
+        prngArgs: { farmId, itemId: 0, counter: 0 },
       });
 
       const treeTimeWithBoost = TREE_RECOVERY_TIME * 1000 * 0.1;
@@ -1073,9 +1095,7 @@ describe("chop", () => {
           },
         },
         createdAt: now,
-        farmId,
-        itemId,
-        counter,
+        prngArgs: { farmId, itemId, counter },
       });
 
       expect(time).toEqual(now - TREE_RECOVERY_TIME * 1000);
@@ -1097,9 +1117,7 @@ describe("chop", () => {
           },
         },
         createdAt: now,
-        farmId,
-        itemId: 0,
-        counter: 0,
+        prngArgs: { farmId, itemId: 0, counter: 0 },
       });
 
       expect(time).toEqual(now - TREE_RECOVERY_TIME * 0.25 * 1000);
@@ -1121,9 +1139,7 @@ describe("chop", () => {
           },
         },
         createdAt: now,
-        farmId,
-        itemId: 0,
-        counter: 0,
+        prngArgs: { farmId, itemId: 0, counter: 0 },
       });
 
       expect(time).toEqual(now);
@@ -1212,9 +1228,7 @@ describe("chop", () => {
         },
       },
       createdAt: now,
-      farmId,
-      itemId: 0,
-      counter: 0,
+      prngArgs: { farmId, itemId: 0, counter: 0 },
     });
 
     expect(time).toEqual(now - (TREE_RECOVERY_TIME * 1000) / 2);
@@ -1236,9 +1250,7 @@ describe("chop", () => {
         },
       },
       createdAt: now,
-      farmId,
-      itemId: 0,
-      counter: 0,
+      prngArgs: { farmId, itemId: 0, counter: 0 },
     });
 
     expect(time).toEqual(now - (TREE_RECOVERY_TIME * 1000) / 2);
@@ -1268,9 +1280,7 @@ describe("chop", () => {
         },
       },
       createdAt: now,
-      farmId,
-      itemId: 0,
-      counter: 0,
+      prngArgs: { farmId, itemId: 0, counter: 0 },
     });
 
     const buff = TREE_RECOVERY_TIME - TREE_RECOVERY_TIME * 0.5;
@@ -1302,9 +1312,7 @@ describe("chop", () => {
         },
       },
       createdAt: now,
-      farmId,
-      itemId: 0,
-      counter: 0,
+      prngArgs: { farmId, itemId: 0, counter: 0 },
     });
 
     const buff = TREE_RECOVERY_TIME - TREE_RECOVERY_TIME * 0.5 * 0.5;
@@ -1445,7 +1453,7 @@ describe("chop", () => {
       // Test that incrementing counter changes the outcome
       const results: boolean[] = [];
 
-      for (let counter = 0; counter < 100; counter++) {
+      for (let counter = 8; counter < 100; counter++) {
         results.push(
           prngChance({
             farmId,
@@ -1626,5 +1634,735 @@ describe("chop", () => {
         highCounter + 1,
       );
     });
+  });
+});
+
+describe("chop — SPEED_BOOSTS speed windows", () => {
+  const farmId = 1;
+  const ONE_HOUR = 60 * 60 * 1000;
+  const BASE_MS = TREE_RECOVERY_TIME * 1000;
+  const originalNetwork = CONFIG.NETWORK;
+
+  beforeEach(() => {
+    (CONFIG as { NETWORK: "mainnet" | "amoy" }).NETWORK = "amoy";
+  });
+  afterEach(() => {
+    (CONFIG as { NETWORK: "mainnet" | "amoy" }).NETWORK = originalNetwork;
+  });
+
+  it("stores the real chop time + base recovery (no back-dating) with no boosts", () => {
+    const game = chop({
+      farmId,
+      state: {
+        ...GAME_STATE,
+        bumpkin: TEST_BUMPKIN,
+        inventory: { Axe: new Decimal(1) },
+      },
+      createdAt: now,
+      action: { type: "timber.chopped", item: "Axe", index: "0" },
+    });
+
+    const tree = game.trees[0];
+    expect(tree.wood.choppedAt).toEqual(now);
+    expect(tree.wood.baseDurationMs).toEqual(BASE_MS);
+  });
+
+  it("folds permanent boosts (Tree Charge) into baseDurationMs, not back-dating", () => {
+    const { time, baseDurationMs } = getChoppedAt({
+      game: {
+        ...INITIAL_FARM,
+        bumpkin: { ...TEST_BUMPKIN, skills: { "Tree Charge": 1 } },
+      },
+      createdAt: now,
+      prngArgs: { farmId, itemId: 0, counter: 0 },
+    });
+
+    expect(time).toEqual(now);
+    expect(baseDurationMs).toEqual(BASE_MS * 0.9);
+  });
+
+  it("excludes the Timber Hourglass from baseDurationMs (applied as a window)", () => {
+    const { time, baseDurationMs } = getChoppedAt({
+      game: {
+        ...INITIAL_FARM,
+        collectibles: {
+          "Timber Hourglass": [
+            {
+              id: "1",
+              createdAt: now - 100,
+              coordinates: { x: 1, y: 1 },
+              readyAt: now - 100,
+            },
+          ],
+        },
+      },
+      createdAt: now,
+      prngArgs: { farmId, itemId: 0, counter: 0 },
+    });
+
+    expect(time).toEqual(now);
+    // Not reduced — the 1.35× is derived live over the recovery instead.
+    expect(baseDurationMs).toEqual(BASE_MS);
+  });
+
+  it("recovers 1.35× faster with an active Timber Hourglass (getTreeReadyAt)", () => {
+    const tree: Tree = {
+      wood: { choppedAt: now, baseDurationMs: BASE_MS },
+      x: 1,
+      y: 1,
+    };
+    const game: GameState = {
+      ...INITIAL_FARM,
+      collectibles: {
+        "Timber Hourglass": [
+          {
+            id: "1",
+            createdAt: now,
+            coordinates: { x: 1, y: 1 },
+            readyAt: now,
+          },
+        ],
+      },
+    };
+
+    expect(getTreeReadyAt(tree, game)).toBeCloseTo(now + BASE_MS / 1.35, 0);
+  });
+
+  it("credits only the overlap for a Timber Hourglass placed mid-recovery (retroactive)", () => {
+    // Chopped 1h ago with no boost: 1h of work already accrued at 1×.
+    const tree: Tree = {
+      wood: { choppedAt: now - ONE_HOUR, baseDurationMs: BASE_MS },
+      x: 1,
+      y: 1,
+    };
+    const game: GameState = {
+      ...INITIAL_FARM,
+      collectibles: {
+        "Timber Hourglass": [
+          {
+            id: "1",
+            createdAt: now,
+            coordinates: { x: 1, y: 1 },
+            readyAt: now,
+          },
+        ],
+      },
+    };
+
+    // Remaining 1h of work now accrues at 1.35×.
+    expect(getTreeReadyAt(tree, game)).toBeCloseTo(now + ONE_HOUR / 1.35, 0);
+  });
+
+  it("merges Super Totem & Time Warp Totem so they don't stack (2×, not 4×)", () => {
+    const tree: Tree = {
+      wood: { choppedAt: now, baseDurationMs: BASE_MS },
+      x: 1,
+      y: 1,
+    };
+    const game: GameState = {
+      ...INITIAL_FARM,
+      collectibles: {
+        "Super Totem": [
+          {
+            id: "1",
+            createdAt: now,
+            coordinates: { x: 1, y: 1 },
+            readyAt: now,
+          },
+        ],
+        "Time Warp Totem": [
+          {
+            id: "2",
+            createdAt: now,
+            coordinates: { x: 2, y: 2 },
+            readyAt: now,
+          },
+        ],
+      },
+    };
+
+    expect(getTreeReadyAt(tree, game)).toBeCloseTo(now + BASE_MS / 2, 0);
+  });
+
+  it("speeds recovery 1.35× with an active Badger Shrine", () => {
+    const tree: Tree = {
+      wood: { choppedAt: now, baseDurationMs: BASE_MS },
+      x: 1,
+      y: 1,
+    };
+    const game: GameState = {
+      ...INITIAL_FARM,
+      collectibles: {
+        "Badger Shrine": [
+          {
+            id: "1",
+            createdAt: now,
+            coordinates: { x: 1, y: 1 },
+            readyAt: now,
+          },
+        ],
+      },
+    };
+
+    expect(getTreeReadyAt(tree, game)).toBeCloseTo(now + BASE_MS / 1.35, 0);
+  });
+
+  it("canChop respects the windowed ready time", () => {
+    const tree: Tree = {
+      wood: { choppedAt: now, baseDurationMs: BASE_MS },
+      x: 1,
+      y: 1,
+    };
+    const game: GameState = {
+      ...INITIAL_FARM,
+      collectibles: {
+        "Timber Hourglass": [
+          {
+            id: "1",
+            createdAt: now,
+            coordinates: { x: 1, y: 1 },
+            readyAt: now,
+          },
+        ],
+      },
+    };
+    const readyAt = getTreeReadyAt(tree, game);
+
+    expect(canChop(tree, game, readyAt - 1)).toBe(false);
+    expect(canChop(tree, game, readyAt + 1)).toBe(true);
+  });
+
+  it("falls back to base recovery for a legacy tree (no baseDurationMs)", () => {
+    const tree: Tree = { wood: { choppedAt: now }, x: 1, y: 1 };
+    expect(getTreeReadyAt(tree, INITIAL_FARM)).toEqual(now + BASE_MS);
+  });
+});
+
+describe("getTreeReadyAt — baseDurationMs is a permanent per-tree marker", () => {
+  const BASE_MS = TREE_RECOVERY_TIME * 1000;
+  const originalNetwork = CONFIG.NETWORK;
+
+  beforeEach(() => {
+    (CONFIG as { NETWORK: "mainnet" | "amoy" }).NETWORK = "mainnet";
+  });
+  afterEach(() => {
+    (CONFIG as { NETWORK: "mainnet" | "amoy" }).NETWORK = originalNetwork;
+  });
+
+  it("keeps using baseDurationMs with SPEED_BOOSTS off (no rollback to full base)", () => {
+    // A tree chopped while the flag was on stored its real choppedAt + a
+    // permanent-boost-only baseDurationMs (here half the base). With the flag
+    // off it must STILL ready at choppedAt + baseDurationMs, not choppedAt +
+    // full base recovery — the marker is intentionally flag-independent.
+    const tree: Tree = {
+      wood: { choppedAt: now, baseDurationMs: BASE_MS / 2 },
+      x: 1,
+      y: 1,
+    };
+
+    expect(getTreeReadyAt(tree, INITIAL_FARM)).toEqual(now + BASE_MS / 2);
+  });
+});
+
+// Rank-scaled Trees chopping skills. The skill's RANK is the number stored in
+// bumpkin.skills[name] (1/2/3); the source scales the effect via getSkillLevel +
+// SKILL_RANKS[name].ranks[level-1]. The PRNG proc skills (Tough Tree, Money Tree,
+// Tree Turnaround) only scale their CHANCE per rank — the magnitude (×3 wood,
+// 200 coins, instant recovery) stays fixed. Because prngChance's underlying value
+// depends only on (farmId, itemId, counter, criticalHitName) and `chance` is just
+// the threshold, we locate a genuine boundary counter where the higher rank's
+// chance procs but the lower rank's does not (same technique as the Golden
+// Sunflower tests in harvest.test.ts). The rank is read regardless of the
+// SPEED_BOOSTS flag, and every function exercised here (getWoodDropAmount,
+// getReward, getTreeRecoveryTimeForDisplay's Tree Charge/Tree Turnaround
+// branches) is flag-independent, so no NETWORK juggling is required.
+describe("chop — Trees skill rank upgrades", () => {
+  const farmId = 1;
+  const itemId = KNOWN_IDS["Tree"];
+  const BASE_RECOVERY_MS = TREE_RECOVERY_TIME * 1000;
+  const SEARCH_RANGE = 100_000;
+
+  describe("Lumberjack's Extra — additive wood yield per rank", () => {
+    function findNonNativeCounter() {
+      for (let counter = 8; counter < 100; counter++) {
+        if (
+          !prngChance({
+            farmId,
+            itemId,
+            counter,
+            chance: 20,
+            criticalHitName: "Native",
+          })
+        ) {
+          return counter;
+        }
+      }
+      return 0;
+    }
+
+    const woodAtRank = (rank: number, counter: number) =>
+      getWoodDropAmount({
+        now: Date.now(),
+        game: {
+          ...INITIAL_FARM,
+          bumpkin: {
+            ...TEST_BUMPKIN,
+            skills: { "Lumberjack's Extra": rank },
+          },
+        },
+        farmId,
+        itemId,
+        counter,
+        tree: undefined,
+      }).amount.toNumber();
+
+    it("adds +0.15 wood at rank 2", () => {
+      expect(woodAtRank(2, findNonNativeCounter())).toEqual(1.15);
+    });
+
+    it("adds +0.2 wood at rank 3", () => {
+      expect(woodAtRank(3, findNonNativeCounter())).toEqual(1.2);
+    });
+  });
+
+  describe("Tree Charge — recovery-time multiplier per rank", () => {
+    const recoveryAtRank = (rank: number) =>
+      getTreeRecoveryTimeForDisplay({
+        now: Date.now(),
+        game: {
+          ...INITIAL_FARM,
+          bumpkin: { ...TEST_BUMPKIN, skills: { "Tree Charge": rank } },
+        },
+      }).recoveryTimeMs;
+
+    it("recovers at base × 0.875 at rank 2", () => {
+      expect(recoveryAtRank(2)).toEqual(TREE_RECOVERY_TIME * 0.875 * 1000);
+    });
+
+    it("recovers at base × 0.85 at rank 3", () => {
+      expect(recoveryAtRank(3)).toEqual(TREE_RECOVERY_TIME * 0.85 * 1000);
+    });
+  });
+
+  describe("Tough Tree — triple-wood proc rate per rank", () => {
+    // rank1 = 10%, rank2 = 20%, rank3 = 30%. Magnitude is a fixed ×3.
+    const woodAtRank = (rank: number, counter: number) =>
+      getWoodDropAmount({
+        now: Date.now(),
+        game: {
+          ...INITIAL_FARM,
+          bumpkin: { ...TEST_BUMPKIN, skills: { "Tough Tree": rank } },
+        },
+        farmId,
+        itemId,
+        counter,
+        tree: undefined,
+      }).amount.toNumber();
+
+    it("triples wood at rank 2 where rank 1 would not (PRNG boundary)", () => {
+      let boundaryCounter = -1;
+      for (let counter = 0; counter < SEARCH_RANGE; counter++) {
+        const procsAtRank1 = prngChance({
+          farmId,
+          itemId,
+          counter,
+          chance: 10,
+          criticalHitName: "Tough Tree",
+        });
+        const procsAtRank2 = prngChance({
+          farmId,
+          itemId,
+          counter,
+          chance: 20,
+          criticalHitName: "Tough Tree",
+        });
+        // Exclude Native (+1 wood) so the assertion is clean.
+        const nativeProcs = prngChance({
+          farmId,
+          itemId,
+          counter,
+          chance: 20,
+          criticalHitName: "Native",
+        });
+        if (procsAtRank2 && !procsAtRank1 && !nativeProcs) {
+          boundaryCounter = counter;
+          break;
+        }
+      }
+      if (boundaryCounter < 0) {
+        throw new Error(
+          `Could not find a rank-2-only Tough Tree counter in ${SEARCH_RANGE} attempts`,
+        );
+      }
+
+      expect(woodAtRank(1, boundaryCounter)).toEqual(1); // no ×3
+      expect(woodAtRank(2, boundaryCounter)).toEqual(3); // ×3
+    });
+
+    it("triples wood at rank 3 where rank 2 would not (PRNG boundary)", () => {
+      let boundaryCounter = -1;
+      for (let counter = 0; counter < SEARCH_RANGE; counter++) {
+        const procsAtRank2 = prngChance({
+          farmId,
+          itemId,
+          counter,
+          chance: 20,
+          criticalHitName: "Tough Tree",
+        });
+        const procsAtRank3 = prngChance({
+          farmId,
+          itemId,
+          counter,
+          chance: 30,
+          criticalHitName: "Tough Tree",
+        });
+        const nativeProcs = prngChance({
+          farmId,
+          itemId,
+          counter,
+          chance: 20,
+          criticalHitName: "Native",
+        });
+        if (procsAtRank3 && !procsAtRank2 && !nativeProcs) {
+          boundaryCounter = counter;
+          break;
+        }
+      }
+      if (boundaryCounter < 0) {
+        throw new Error(
+          `Could not find a rank-3-only Tough Tree counter in ${SEARCH_RANGE} attempts`,
+        );
+      }
+
+      expect(woodAtRank(2, boundaryCounter)).toEqual(1); // no ×3
+      expect(woodAtRank(3, boundaryCounter)).toEqual(3); // ×3
+    });
+
+    it("keeps the ×3 magnitude fixed across ranks (only the proc rate scales)", () => {
+      // A counter that procs at the LOWEST chance (10%) also procs at 20% and
+      // 30% (the threshold is monotone), so the triple applies at every rank.
+      let counterAllRanks = -1;
+      for (let counter = 0; counter < SEARCH_RANGE; counter++) {
+        const procsAtRank1 = prngChance({
+          farmId,
+          itemId,
+          counter,
+          chance: 10,
+          criticalHitName: "Tough Tree",
+        });
+        const nativeProcs = prngChance({
+          farmId,
+          itemId,
+          counter,
+          chance: 20,
+          criticalHitName: "Native",
+        });
+        if (procsAtRank1 && !nativeProcs) {
+          counterAllRanks = counter;
+          break;
+        }
+      }
+      if (counterAllRanks < 0) {
+        throw new Error(
+          `Could not find an all-ranks Tough Tree counter in ${SEARCH_RANGE} attempts`,
+        );
+      }
+
+      expect(woodAtRank(1, counterAllRanks)).toEqual(3);
+      expect(woodAtRank(2, counterAllRanks)).toEqual(3);
+      expect(woodAtRank(3, counterAllRanks)).toEqual(3);
+    });
+  });
+
+  describe("Money Tree — coin proc rate per rank", () => {
+    // rank1 = 1%, rank2 = 2%, rank3 = 3%. Magnitude is a fixed 200 coins.
+    const coinsAtRank = (rank: number, counter: number) =>
+      getReward({
+        skills: { "Money Tree": rank },
+        farmId,
+        itemId,
+        counter,
+      }).reward?.coins;
+
+    it("rewards 200 coins at rank 2 where rank 1 would not (PRNG boundary)", () => {
+      let boundaryCounter = -1;
+      for (let counter = 0; counter < SEARCH_RANGE; counter++) {
+        const procsAtRank1 = prngChance({
+          farmId,
+          itemId,
+          counter,
+          chance: 1,
+          criticalHitName: "Money Tree",
+        });
+        const procsAtRank2 = prngChance({
+          farmId,
+          itemId,
+          counter,
+          chance: 2,
+          criticalHitName: "Money Tree",
+        });
+        if (procsAtRank2 && !procsAtRank1) {
+          boundaryCounter = counter;
+          break;
+        }
+      }
+      if (boundaryCounter < 0) {
+        throw new Error(
+          `Could not find a rank-2-only Money Tree counter in ${SEARCH_RANGE} attempts`,
+        );
+      }
+
+      expect(coinsAtRank(1, boundaryCounter)).toBeUndefined();
+      expect(coinsAtRank(2, boundaryCounter)).toEqual(200);
+    });
+
+    it("rewards 200 coins at rank 3 where rank 2 would not (PRNG boundary)", () => {
+      let boundaryCounter = -1;
+      for (let counter = 0; counter < SEARCH_RANGE; counter++) {
+        const procsAtRank2 = prngChance({
+          farmId,
+          itemId,
+          counter,
+          chance: 2,
+          criticalHitName: "Money Tree",
+        });
+        const procsAtRank3 = prngChance({
+          farmId,
+          itemId,
+          counter,
+          chance: 3,
+          criticalHitName: "Money Tree",
+        });
+        if (procsAtRank3 && !procsAtRank2) {
+          boundaryCounter = counter;
+          break;
+        }
+      }
+      if (boundaryCounter < 0) {
+        throw new Error(
+          `Could not find a rank-3-only Money Tree counter in ${SEARCH_RANGE} attempts`,
+        );
+      }
+
+      expect(coinsAtRank(2, boundaryCounter)).toBeUndefined();
+      expect(coinsAtRank(3, boundaryCounter)).toEqual(200);
+    });
+
+    it("keeps the 200-coin magnitude fixed across ranks (only the proc rate scales)", () => {
+      let counterAllRanks = -1;
+      for (let counter = 0; counter < SEARCH_RANGE; counter++) {
+        if (
+          prngChance({
+            farmId,
+            itemId,
+            counter,
+            chance: 1,
+            criticalHitName: "Money Tree",
+          })
+        ) {
+          counterAllRanks = counter;
+          break;
+        }
+      }
+      if (counterAllRanks < 0) {
+        throw new Error(
+          `Could not find an all-ranks Money Tree counter in ${SEARCH_RANGE} attempts`,
+        );
+      }
+
+      expect(coinsAtRank(1, counterAllRanks)).toEqual(200);
+      expect(coinsAtRank(2, counterAllRanks)).toEqual(200);
+      expect(coinsAtRank(3, counterAllRanks)).toEqual(200);
+    });
+  });
+
+  describe("Tree Turnaround — instant-recovery proc rate per rank", () => {
+    // rank1 = 15%, rank2 = 25%, rank3 = 35%. Magnitude is a fixed instant
+    // recovery (recoveryTimeMs = 0); otherwise the base recovery applies.
+    const recoveryAtRank = (rank: number, counter: number) =>
+      getTreeRecoveryTimeForDisplay({
+        now: Date.now(),
+        game: {
+          ...INITIAL_FARM,
+          bumpkin: { ...TEST_BUMPKIN, skills: { "Tree Turnaround": rank } },
+        },
+        prngArgs: { farmId, itemId, counter },
+      }).recoveryTimeMs;
+
+    it("regrows instantly at rank 2 where rank 1 would not (PRNG boundary)", () => {
+      let boundaryCounter = -1;
+      for (let counter = 0; counter < SEARCH_RANGE; counter++) {
+        const procsAtRank1 = prngChance({
+          farmId,
+          itemId,
+          counter,
+          chance: 15,
+          criticalHitName: "Tree Turnaround",
+        });
+        const procsAtRank2 = prngChance({
+          farmId,
+          itemId,
+          counter,
+          chance: 25,
+          criticalHitName: "Tree Turnaround",
+        });
+        if (procsAtRank2 && !procsAtRank1) {
+          boundaryCounter = counter;
+          break;
+        }
+      }
+      if (boundaryCounter < 0) {
+        throw new Error(
+          `Could not find a rank-2-only Tree Turnaround counter in ${SEARCH_RANGE} attempts`,
+        );
+      }
+
+      expect(recoveryAtRank(1, boundaryCounter)).toEqual(BASE_RECOVERY_MS);
+      expect(recoveryAtRank(2, boundaryCounter)).toEqual(0);
+    });
+
+    it("regrows instantly at rank 3 where rank 2 would not (PRNG boundary)", () => {
+      let boundaryCounter = -1;
+      for (let counter = 0; counter < SEARCH_RANGE; counter++) {
+        const procsAtRank2 = prngChance({
+          farmId,
+          itemId,
+          counter,
+          chance: 25,
+          criticalHitName: "Tree Turnaround",
+        });
+        const procsAtRank3 = prngChance({
+          farmId,
+          itemId,
+          counter,
+          chance: 35,
+          criticalHitName: "Tree Turnaround",
+        });
+        if (procsAtRank3 && !procsAtRank2) {
+          boundaryCounter = counter;
+          break;
+        }
+      }
+      if (boundaryCounter < 0) {
+        throw new Error(
+          `Could not find a rank-3-only Tree Turnaround counter in ${SEARCH_RANGE} attempts`,
+        );
+      }
+
+      expect(recoveryAtRank(2, boundaryCounter)).toEqual(BASE_RECOVERY_MS);
+      expect(recoveryAtRank(3, boundaryCounter)).toEqual(0);
+    });
+
+    it("keeps the instant magnitude fixed across ranks (only the proc rate scales)", () => {
+      let counterAllRanks = -1;
+      for (let counter = 0; counter < SEARCH_RANGE; counter++) {
+        if (
+          prngChance({
+            farmId,
+            itemId,
+            counter,
+            chance: 15,
+            criticalHitName: "Tree Turnaround",
+          })
+        ) {
+          counterAllRanks = counter;
+          break;
+        }
+      }
+      if (counterAllRanks < 0) {
+        throw new Error(
+          `Could not find an all-ranks Tree Turnaround counter in ${SEARCH_RANGE} attempts`,
+        );
+      }
+
+      expect(recoveryAtRank(1, counterAllRanks)).toEqual(0);
+      expect(recoveryAtRank(2, counterAllRanks)).toEqual(0);
+      expect(recoveryAtRank(3, counterAllRanks)).toEqual(0);
+    });
+  });
+});
+
+describe("tutorial wood script", () => {
+  const farmId = 1;
+  const itemId = KNOWN_IDS["Tree"];
+  const tree: Tree = { createdAt: now, wood: { choppedAt: 0 }, x: 1, y: 1 };
+  const game: GameState = {
+    ...INITIAL_FARM,
+    inventory: {},
+    bumpkin: TEST_BUMPKIN,
+  };
+
+  const dropAt = (counter: number, t: Tree = tree, id = itemId) =>
+    getWoodDropAmount({ game, farmId, itemId: id, counter, tree: t, now });
+
+  const nativeRoll = (counter: number, id = itemId) =>
+    prngChance({
+      farmId,
+      itemId: id,
+      counter,
+      chance: 20,
+      criticalHitName: "Native",
+    });
+
+  it("gives exactly 1 wood on each of the first three chops", () => {
+    expect([0, 1, 2].map((c) => dropAt(c).amount.toNumber())).toEqual([
+      1, 1, 1,
+    ]);
+  });
+
+  it("gives 1,1,1,2,2 on chops four to eight", () => {
+    expect([3, 4, 5, 6, 7].map((c) => dropAt(c).amount.toNumber())).toEqual([
+      1, 1, 1, 2, 2,
+    ]);
+  });
+
+  it("reports the scripted +1 as the Native bonus", () => {
+    expect(dropAt(5).boostsUsed).toEqual([]);
+    expect(dropAt(6).boostsUsed).toEqual([{ name: "Native", value: "+1" }]);
+    expect(dropAt(7).boostsUsed).toEqual([{ name: "Native", value: "+1" }]);
+  });
+
+  it("hands over to the PRNG from the ninth chop", () => {
+    const counters = Array.from({ length: 100 }, (_, i) => i + 8);
+    const hit = counters.find((c) => nativeRoll(c));
+    const miss = counters.find((c) => !nativeRoll(c));
+    if (hit === undefined || miss === undefined) {
+      throw new Error("Could not find both PRNG outcomes past the script");
+    }
+
+    expect(dropAt(hit).amount).toEqual(new Decimal(2));
+    expect(dropAt(miss).amount).toEqual(new Decimal(1));
+  });
+
+  it("does not script non-basic trees", () => {
+    const ancientId = KNOWN_IDS["Ancient Tree"];
+    const ancient: Tree = { ...tree, name: "Ancient Tree" };
+
+    [5, 6, 7].forEach((counter) => {
+      const expected = nativeRoll(counter, ancientId) ? 2 : 1;
+      expect(dropAt(counter, ancient, ancientId).amount.toNumber()).toBe(
+        expected,
+      );
+    });
+  });
+
+  it("credits the scripted 2 wood when the seventh basic tree is chopped", () => {
+    const state = chop({
+      farmId,
+      state: {
+        ...GAME_STATE,
+        bumpkin: TEST_BUMPKIN,
+        inventory: { Axe: new Decimal(1) },
+        farmActivity: { "Basic Tree Chopped": 6 },
+      },
+      createdAt: now,
+      action: {
+        type: "timber.chopped",
+        item: "Axe",
+        index: "0",
+      } as LandExpansionChopAction,
+    });
+
+    expect(state.inventory.Wood).toEqual(new Decimal(2));
   });
 });

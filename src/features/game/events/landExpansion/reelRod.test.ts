@@ -109,4 +109,81 @@ describe("reelRod", () => {
       2,
     );
   });
+
+  it("updates boostsUsedAt with Anemone Flower when maps present and collectible built", () => {
+    const createdAt = 12345;
+    const state = reelRod({
+      action: { type: "rod.reeled" },
+      state: {
+        ...farm,
+        collectibles: {
+          "Anemone Flower": [
+            {
+              id: "1",
+              coordinates: { x: 0, y: 0 },
+              createdAt: 0,
+              readyAt: 0,
+            },
+          ],
+        },
+        fishing: {
+          wharf: {
+            caught: { Anchovy: 1 },
+            castedAt: 100011000,
+            maps: { "Starlight Tuna": 1 },
+          },
+        },
+        inventory: {
+          Rod: new Decimal(3),
+          Earthworm: new Decimal(1),
+          Sunflower: new Decimal(500),
+        },
+      },
+      createdAt,
+    });
+
+    expect(state.boostsUsedAt?.["Anemone Flower"]).toEqual(createdAt);
+  });
+
+  it("does not update boostsUsedAt when Anemone Flower not built", () => {
+    const state = reelRod({
+      action: { type: "rod.reeled" },
+      state: {
+        ...farm,
+        fishing: {
+          wharf: {
+            caught: { Anchovy: 1 },
+            castedAt: 100011000,
+            maps: { "Starlight Tuna": 1 },
+          },
+        },
+        inventory: {
+          Rod: new Decimal(3),
+          Earthworm: new Decimal(1),
+          Sunflower: new Decimal(500),
+        },
+      },
+    });
+
+    expect(state.boostsUsedAt?.["Anemone Flower"]).toBeUndefined();
+  });
+  it("clears the Otty the Otter bonus breakdown from the wharf", () => {
+    const state = reelRod({
+      action: { type: "rod.reeled" },
+      state: {
+        ...farm,
+        fishing: {
+          ...farm.fishing,
+          wharf: {
+            castedAt: Date.now(),
+            caught: { Anchovy: 2 },
+            ottyBonus: { Anchovy: 1 },
+          },
+        },
+      },
+    });
+
+    expect(state.fishing.wharf.ottyBonus).toBeUndefined();
+    expect(state.inventory.Anchovy).toEqual(new Decimal(2));
+  });
 });

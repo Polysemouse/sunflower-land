@@ -1,7 +1,7 @@
 import Decimal from "decimal.js-light";
 import { screenTracker } from "lib/utils/screen";
 import { CROPS } from "../../types/crops";
-import { GameState, InventoryItemName } from "../../types/game";
+import type { GameState, InventoryItemName } from "../../types/game";
 import { isReadyToHarvest } from "./harvest";
 import { produce } from "immer";
 
@@ -61,7 +61,9 @@ export function removeCrop({ state, action, createdAt = Date.now() }: Options) {
     }
 
     const cropDetails = CROPS[crop.name];
-    if (isReadyToHarvest(createdAt, crop, cropDetails)) {
+    if (
+      isReadyToHarvest(createdAt, crop, cropDetails, stateCopy, plot.fertiliser)
+    ) {
       throw new Error(REMOVE_CROP_ERRORS.READY_TO_HARVEST);
     }
 

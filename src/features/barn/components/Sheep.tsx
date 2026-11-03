@@ -1,32 +1,41 @@
-import React, { useContext, useEffect, useState } from "react";
+import React, { useContext, useEffect, useMemo, useRef, useState } from "react";
+import { isBeetle } from "features/game/types/beetles";
 import { SUNNYSIDE } from "assets/sunnyside";
 import { GRID_WIDTH_PX, PIXEL_SCALE } from "features/game/lib/constants";
-import { MachineState } from "features/game/lib/gameMachine";
+import type { MachineState } from "features/game/lib/gameMachine";
 import { Context } from "features/game/GameProvider";
 import { useInterpret, useSelector } from "@xstate/react";
+import { useNow } from "lib/utils/hooks/useNow";
+import { PRE_ACTION_TICK_MS } from "features/game/lib/timerDisplay";
 import { capitalize } from "lib/utils/capitalize";
 import {
   animalMachine,
-  AnimalMachineInterpreter,
-  TState as AnimalMachineState,
+  type AnimalMachineInterpreter,
+  type TState as AnimalMachineState,
 } from "features/game/lib/animalMachine";
 import {
   getAnimalFavoriteFood,
   getAnimalLevel,
   getBoostedFoodQuantity,
-  isAnimalFood,
+  getFeedItem,
+  isFoodForAnimal,
+  getFeedQuantity,
+  resolveAnimal,
 } from "features/game/lib/animals";
 import classNames from "classnames";
 import { RequestBubble } from "features/game/expansion/components/animals/RequestBubble";
 import { LevelProgress } from "features/game/expansion/components/animals/LevelProgress";
 import { ANIMAL_EMOTION_ICONS } from "./Cow";
-import {
+import type {
+  AnimalFeedBuffName,
   AnimalFoodName,
   AnimalMedicineName,
   InventoryItemName,
   LoveAnimalItem,
   MutantAnimal,
 } from "features/game/types/game";
+import { isAnimalFeedBuffItem } from "features/game/events/landExpansion/applyAnimalFeedBuff";
+import { AnimalFeedBuffBadge } from "features/game/expansion/components/animals/AnimalFeedBuffBadge";
 import { Transition } from "@headlessui/react";
 import { useAppTranslation } from "lib/i18n/useAppTranslations";
 import { ProduceDrops } from "features/game/expansion/components/animals/ProduceDrops";
@@ -36,17 +45,20 @@ import Decimal from "decimal.js-light";
 import {
   getBarnDelightCost,
   handleFoodXP,
+  getFeedBatchSize,
   REQUIRED_FOOD_QTY,
 } from "features/game/events/landExpansion/feedAnimal";
 import { getAnimalXP } from "features/game/events/landExpansion/loveAnimal";
+import { isAnimalFeedable } from "features/game/events/landExpansion/buyAnimal";
 import { MutantAnimalModal } from "features/farming/animals/components/MutantAnimalModal";
-import { isCollectibleBuilt } from "features/game/lib/collectibleBuilt";
+import { MutantSparkles } from "features/farming/animals/components/MutantSparkles";
+import { isAnimalCoveredByGoldenAsset } from "features/game/events/landExpansion/feedAllAnimals";
 import { isWearableActive } from "features/game/lib/wearables";
 import { Modal } from "components/ui/Modal";
 import { SleepingAnimalModal } from "./SleepingAnimalModal";
+import { LockedAnimalModal } from "./LockedAnimalModal";
 import { CloseButtonPanel } from "features/game/components/CloseablePanel";
 import { OuterPanel } from "components/ui/Panel";
-import glow from "public/world/glow.png";
 
 const _animalState = (state: AnimalMachineState) =>
   // Casting here because we know the value is always a string rather than an object
@@ -62,9 +74,22 @@ export const Sheep: React.FC<{ id: string; disabled: boolean }> = ({
   id,
   disabled,
 }) => {
+  // The Collie Shrine's -5% feed cost only applies while the shrine is active,
+  // so the required-food display needs a LIVE clock — a mount snapshot would
+  // keep showing the discount after the shrine expired. One tick a minute is
+  // enough for a boost that flips at most a few times a day.
+  const now = useNow({ live: true, intervalMs: PRE_ACTION_TICK_MS });
   const { gameService, selectedItem, shortcutItem } = useContext(Context);
 
-  const sheep = useSelector(gameService, _sheep(id));
+  const storedSheep = useSelector(gameService, _sheep(id));
+  const game = useSelector(gameService, _game);
+  // The animal machine has no access to game state, so every consumer below —
+  // the machine included — is handed the animal with its live windowed wake time
+  // substituted in. Read-only: nothing here writes an animal back.
+  const sheep = useMemo(
+    () => resolveAnimal(storedSheep, game),
+    [storedSheep, game],
+  );
   const sheepService = useInterpret(animalMachine, {
     context: {
       animal: sheep,
@@ -73,13 +98,15 @@ export const Sheep: React.FC<{ id: string; disabled: boolean }> = ({
 
   const sheepState = useSelector(sheepService, _animalState);
   const inventory = useSelector(gameService, _inventory);
-  const game = useSelector(gameService, _game);
   const [showDrops, setShowDrops] = useState(false);
   const [showNoFoodSelected, setShowNoFoodSelected] = useState(false);
   const [showAnimalDetails, setShowAnimalDetails] = useState(false);
   const [showNotEnoughFood, setShowNotEnoughFood] = useState(false);
   const [showNoMedicine, setShowNoMedicine] = useState(false);
+  const [showLockedDetails, setShowLockedDetails] = useState(false);
   const [showFeedXP, setShowFeedXP] = useState(false);
+  // Captured when feeding: a level-up changes what the same feed is worth.
+  const [feedXPAmount, setFeedXPAmount] = useState(0);
   const [showLoveItem, setShowLoveItem] = useState<LoveAnimalItem>();
   const [showMutantAnimalModal, setShowMutantAnimalModal] = useState(false);
 
@@ -97,16 +124,25 @@ export const Sheep: React.FC<{ id: string; disabled: boolean }> = ({
   const ready = sheepState === "ready";
   const sick = sheepState === "sick" || sheep.state === "sick";
   const idle = sheepState === "idle";
+  // Over-capacity animals (e.g. the Barn Blueprint was removed/sold after
+  // buying animals) cannot be fed. They go dormant (rendered like a sleeping
+  // animal) but can still be cured and sold to bounties.
+  const isLocked = !isAnimalFeedable("barn", game, id);
 
-  const { foodQuantity: requiredFoodQty } = getBoostedFoodQuantity({
+  // One click feeds the whole batch that gets the Sheep ready.
+  const feedBatchSize = getFeedBatchSize({ state: game, animal: sheep });
+  const { foodQuantity: quantityPerFeed } = getBoostedFoodQuantity({
     animalType: "Sheep",
     foodQuantity: REQUIRED_FOOD_QTY.Sheep,
     game,
+    animal: sheep,
+    now,
   });
+  const requiredFoodQty = quantityPerFeed.mul(feedBatchSize);
 
-  const hasGoldenSheep = isCollectibleBuilt({
-    name: "Golden Sheep",
-    game,
+  const hasGoldenSheep = isAnimalCoveredByGoldenAsset({
+    state: game,
+    animalType: "Sheep",
   });
 
   const hasOracleSyringeEquipped = isWearableActive({
@@ -136,7 +172,70 @@ export const Sheep: React.FC<{ id: string; disabled: boolean }> = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sheep.state]);
 
+  const lastSynced = useRef({
+    state: sheep.state,
+    experience: sheep.experience,
+  });
+
+  // Sync the local machine when game state changes underneath it,
+  // e.g. via the Feed All button (bulk feed/cure/claim without a click).
+  useEffect(() => {
+    const prev = lastSynced.current;
+    lastSynced.current = { state: sheep.state, experience: sheep.experience };
+
+    if (prev.state === sheep.state && prev.experience === sheep.experience) {
+      return;
+    }
+
+    const machineState = () => sheepService.getSnapshot().value;
+
+    if (machineState() === "sick" && sheep.state !== "sick") {
+      sheepService.send({ type: "CURE", animal: sheep });
+    }
+
+    // A bulk claim happens without a click — play the same drop animation
+    // and sounds as a manual claim before the sprite transitions.
+    const animateBulkClaim = async (
+      event: "CLAIM_PRODUCE" | "INSTANT_WAKE_UP",
+    ) => {
+      setShowDrops(true);
+      playProduceDrop();
+      await new Promise((resolve) => setTimeout(resolve, 500));
+      playSheepCollect();
+      await new Promise((resolve) => setTimeout(resolve, 900));
+      playLevelUp();
+      sheepService.send({ type: event, animal: sheep });
+      setShowDrops(false);
+    };
+
+    if (machineState() === "ready" && sheep.state === "idle") {
+      animateBulkClaim("CLAIM_PRODUCE");
+    }
+
+    if (
+      ["idle", "happy", "sad"].includes(machineState() as string) &&
+      sheep.state === "idle" &&
+      Date.now() < sheep.awakeAt
+    ) {
+      // Bulk feeding can level an animal to ready and claim its produce in
+      // the same event; INSTANT_WAKE_UP re-derives the machine state from
+      // the animal, which maps an asleep animal to "sleeping".
+      animateBulkClaim("INSTANT_WAKE_UP");
+    }
+
+    if (
+      ["idle", "happy", "sad"].includes(machineState() as string) &&
+      ["happy", "sad", "ready"].includes(sheep.state) &&
+      machineState() !== sheep.state
+    ) {
+      sheepService.send({ type: "FEED", animal: sheep });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sheep.state, sheep.experience]);
+
   const feedSheep = (item?: InventoryItemName) => {
+    setFeedXPAmount(getAnimalXPEarned(item));
+
     const updatedState = gameService.send({
       type: "animal.fed",
       animal: "Sheep",
@@ -147,7 +246,13 @@ export const Sheep: React.FC<{ id: string; disabled: boolean }> = ({
     setShowFeedXP(true);
     setTimeout(() => setShowFeedXP(false), 700);
 
-    const updatedSheep = updatedState.context.state.barn.animals[id];
+    // Resolve before handing it to the machine: the raw record carries the
+    // stale cached `awakeAt`, and the machine's sleep guard has no game state
+    // of its own to re-derive from.
+    const updatedSheep = resolveAnimal(
+      updatedState.context.state.barn.animals[id],
+      updatedState.context.state,
+    );
 
     sheepService.send({
       type: "FEED",
@@ -178,7 +283,13 @@ export const Sheep: React.FC<{ id: string; disabled: boolean }> = ({
     setShowLoveItem(item as LoveAnimalItem);
     setTimeout(() => setShowLoveItem(undefined), 700);
 
-    const updatedSheep = updatedState.context.state.barn.animals[id];
+    // Resolve before handing it to the machine: the raw record carries the
+    // stale cached `awakeAt`, and the machine's sleep guard has no game state
+    // of its own to re-derive from.
+    const updatedSheep = resolveAnimal(
+      updatedState.context.state.barn.animals[id],
+      updatedState.context.state,
+    );
 
     sheepService.send({
       type: "LOVE",
@@ -195,7 +306,13 @@ export const Sheep: React.FC<{ id: string; disabled: boolean }> = ({
       id: sheep.id,
     });
 
-    const updatedSheep = updatedState.context.state.barn.animals[id];
+    // Resolve before handing it to the machine: the raw record carries the
+    // stale cached `awakeAt`, and the machine's sleep guard has no game state
+    // of its own to re-derive from.
+    const updatedSheep = resolveAnimal(
+      updatedState.context.state.barn.animals[id],
+      updatedState.context.state,
+    );
 
     sheepService.send({
       type: "CLAIM_PRODUCE",
@@ -211,7 +328,13 @@ export const Sheep: React.FC<{ id: string; disabled: boolean }> = ({
       id: sheep.id,
     });
 
-    const updatedSheep = updatedState.context.state.barn.animals[id];
+    // Resolve before handing it to the machine: the raw record carries the
+    // stale cached `awakeAt`, and the machine's sleep guard has no game state
+    // of its own to re-derive from.
+    const updatedSheep = resolveAnimal(
+      updatedState.context.state.barn.animals[id],
+      updatedState.context.state,
+    );
 
     sheepService.send({
       type: "CURE",
@@ -277,10 +400,45 @@ export const Sheep: React.FC<{ id: string; disabled: boolean }> = ({
 
   const handleClick = async () => {
     if (disabled) return;
+    // A bulk-claim animation is in flight: the sprite still looks awake but
+    // the game-state animal is already asleep, so any feed/claim event would
+    // throw. Ignore clicks until the animation resolves.
+    if (showDrops) return;
+
+    const showNoFoodPrompt = async () => {
+      setShowNoFoodSelected(true);
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+      setShowNoFoodSelected(false);
+    };
 
     if (sick) return onSickClick();
 
-    if (needsLove) return onLoveClick();
+    if (needsLove) {
+      if (!hasGoldenSheep) return onLoveClick();
+
+      handleShowDetails();
+      return;
+    }
+
+    const hasBuffSelected = selectedItem && isAnimalFeedBuffItem(selectedItem);
+
+    if (hasBuffSelected) {
+      const buffItem = selectedItem as AnimalFeedBuffName;
+      const buffCount = inventory[buffItem] ?? new Decimal(0);
+      if (!sheep.feedBuff && buffCount.gte(1)) {
+        gameService.send({
+          type: "animal.feedBuffApplied",
+          animal: "Sheep",
+          id: sheep.id,
+          item: buffItem,
+        });
+        playFeedAnimal();
+        return;
+      }
+
+      await showNoFoodPrompt();
+      return;
+    }
 
     if (sleeping) {
       handleShowDetails();
@@ -293,48 +451,70 @@ export const Sheep: React.FC<{ id: string; disabled: boolean }> = ({
       return onReadyClick();
     }
 
-    const hasFoodSelected = selectedItem && isAnimalFood(selectedItem);
+    // Defensive: never let the capacity lock block curing a sick animal
+    // (sick is handled above via onSickClick); only normal feeding is gated.
+    // Locked animals behave like sleeping ones: clicking opens an info modal.
+    if (isLocked && !sick) {
+      setShowLockedDetails(true);
+      return;
+    }
 
     if (hasGoldenSheep) {
       feedSheep();
       return;
     }
 
+    // Auto-select the favourite food when it is held so a stale selection
+    // (e.g. Hay left over from the barn) never feeds the wrong item.
+    const feedItem = getFeedItem({
+      animal: "Sheep",
+      selectedItem,
+      favouriteFood: favFood,
+      inventory,
+      requiredQty: requiredFoodQty,
+    });
+    if (feedItem && feedItem !== selectedItem) {
+      shortcutItem(feedItem);
+    }
+
+    const hasFoodSelected =
+      feedItem && (isFoodForAnimal("Sheep", feedItem) || isBeetle(feedItem));
+
     if (hasFoodSelected) {
-      const foodCount =
-        inventory[selectedItem as AnimalFoodName] ?? new Decimal(0);
-      if (foodCount.lt(requiredFoodQty)) {
+      const foodCount = inventory[feedItem as AnimalFoodName] ?? new Decimal(0);
+      if (foodCount.lt(getFeedQuantity(feedItem, requiredFoodQty))) {
         setShowNotEnoughFood(true);
         await new Promise((resolve) => setTimeout(resolve, 1000));
         setShowNotEnoughFood(false);
         return;
       }
 
-      feedSheep(selectedItem);
+      feedSheep(feedItem);
       return;
     }
 
-    setShowNoFoodSelected(true);
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-    setShowNoFoodSelected(false);
+    await showNoFoodPrompt();
   };
 
   const getInfoPopoverMessage = () => {
     if (showNoFoodSelected) return t("animal.noFoodMessage");
     if (showNoMedicine) return t("animal.noMedicine");
     if (showNotEnoughFood)
-      return t("animal.notEnoughFood", { amount: requiredFoodQty });
+      return t("animal.notEnoughFood", {
+        amount: getFeedQuantity(selectedItem, requiredFoodQty),
+      });
   };
 
-  const getAnimalXPEarned = () => {
+  const getAnimalXPEarned = (item?: InventoryItemName) => {
     const { foodXp } = handleFoodXP({
       state: game,
       animal: "Sheep",
       level,
-      food: hasGoldenSheep ? favFood : (selectedItem as AnimalFoodName),
+      food: hasGoldenSheep ? favFood : (item as AnimalFoodName),
     });
 
-    return foodXp;
+    // A Beetle is one per click; anything else is the whole batch.
+    return item && isBeetle(item) ? foodXp : foodXp * feedBatchSize;
   };
 
   const animalImageInfo = () => {
@@ -359,6 +539,14 @@ export const Sheep: React.FC<{ id: string; disabled: boolean }> = ({
       };
     }
 
+    // Locked (over-capacity) animals are dormant - show them sleeping.
+    if (isLocked) {
+      return {
+        image: SUNNYSIDE.animals.sheepSleeping,
+        width: PIXEL_SCALE * 13,
+      };
+    }
+
     return {
       image: SUNNYSIDE.animals.sheepIdle,
       width: PIXEL_SCALE * 11,
@@ -370,29 +558,25 @@ export const Sheep: React.FC<{ id: string; disabled: boolean }> = ({
     if (needsLove) return sheep.item;
     return favFood;
   };
-  const showRequestBubble = sick || needsLove || idle;
+  const showRequestBubble =
+    sick || (needsLove && !hasGoldenSheep) || (idle && !isLocked && !showDrops);
 
   if (sheepState === "initial") return null;
 
   const level = getAnimalLevel(sheep.experience, "Sheep");
 
   const xpIndicatorColor =
-    favFood === selectedItem || selectedItem === "Omnifeed" || hasGoldenSheep
+    favFood === selectedItem ||
+    selectedItem === "Omnifeed" ||
+    (!!selectedItem && isBeetle(selectedItem)) ||
+    hasGoldenSheep
       ? "#71e358"
       : "#fff";
-  const xpIndicatorAmount = getAnimalXPEarned();
 
   const { animalXP } = getAnimalXP({
     state: game,
     name: showLoveItem!,
     animal: "Sheep",
-  });
-
-  const { foodXp } = handleFoodXP({
-    state: game,
-    animal: "Sheep",
-    level,
-    food: selectedItem as AnimalFoodName,
   });
 
   return (
@@ -408,22 +592,6 @@ export const Sheep: React.FC<{ id: string; disabled: boolean }> = ({
         />
       )}
 
-      {/* Upcoming Mutant Sign */}
-      {mutantName && (
-        <img
-          src={glow}
-          className="absolute animate-pulsate pointer-events-none"
-          style={{
-            bottom: "-22px",
-            left: "-25px",
-            width: "160%",
-            height: "160%",
-            maxWidth: `${GRID_WIDTH_PX * 40}px`,
-            maxHeight: `${GRID_WIDTH_PX * 40}px`,
-          }}
-        />
-      )}
-
       <div
         className="relative flex items-center justify-center cursor-pointer"
         style={{
@@ -432,8 +600,10 @@ export const Sheep: React.FC<{ id: string; disabled: boolean }> = ({
         }}
       >
         <div className="relative w-full h-full">
+          <AnimalFeedBuffBadge feedBuff={sheep.feedBuff} />
           {showDrops && (
             <ProduceDrops
+              animal={sheep}
               multiplier={sheep.multiplier ?? 0}
               level={level}
               animalType="Sheep"
@@ -453,6 +623,8 @@ export const Sheep: React.FC<{ id: string; disabled: boolean }> = ({
               "absolute ml-[1px] mt-[2px] top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2",
             )}
           />
+          {/* Upcoming Mutant Sign */}
+          {mutantName && <MutantSparkles />}
           {/* Emotion */}
           {!idle && !needsLove && !sick && (
             <img
@@ -472,7 +644,22 @@ export const Sheep: React.FC<{ id: string; disabled: boolean }> = ({
               top={PIXEL_SCALE * 1}
               left={PIXEL_SCALE * 23}
               request={requestBubbleRequest()}
-              quantity={idle && !hasGoldenSheep ? requiredFoodQty : undefined}
+              quantity={
+                idle && !hasGoldenSheep ? requiredFoodQty.toNumber() : undefined
+              }
+            />
+          )}
+          {/* Over-capacity lock */}
+          {isLocked && (
+            <img
+              src={SUNNYSIDE.icons.lock}
+              alt={t("animal.overCapacity")}
+              className="absolute z-20 pointer-events-none"
+              style={{
+                width: `${PIXEL_SCALE * 7}px`,
+                top: `${PIXEL_SCALE * 1}px`,
+                right: `${PIXEL_SCALE * 1}px`,
+              }}
             />
           )}
           <Modal
@@ -489,6 +676,17 @@ export const Sheep: React.FC<{ id: string; disabled: boolean }> = ({
                 awakeAt={sheep.awakeAt}
                 onClose={() => setShowAnimalDetails(false)}
               />
+            </CloseButtonPanel>
+          </Modal>
+          <Modal
+            show={showLockedDetails}
+            onHide={() => setShowLockedDetails(false)}
+          >
+            <CloseButtonPanel
+              container={OuterPanel}
+              onClose={() => setShowLockedDetails(false)}
+            >
+              <LockedAnimalModal animal={sheep} />
             </CloseButtonPanel>
           </Modal>
           <InfoPopover
@@ -531,7 +729,7 @@ export const Sheep: React.FC<{ id: string; disabled: boolean }> = ({
               color: xpIndicatorColor,
             }}
           >
-            {!!xpIndicatorAmount && `+${xpIndicatorAmount}`}
+            {!!feedXPAmount && `+${feedXPAmount}`}
           </span>
         </Transition>
         <Transition

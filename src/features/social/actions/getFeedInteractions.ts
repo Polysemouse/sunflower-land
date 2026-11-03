@@ -1,6 +1,7 @@
 import { CONFIG } from "lib/config";
-import { Interaction } from "../types/types";
-import { FeedFilter } from "../Feed";
+import { fetchWithRetry } from "lib/fetchWithRetry";
+import type { Interaction } from "../types/types";
+import type { FeedFilter } from "../Feed";
 
 type Request = {
   token: string;
@@ -30,7 +31,7 @@ export const getFeedInteractions = async ({
     url.searchParams.set("filter", filter);
   }
 
-  const res = await fetch(url.toString(), {
+  const res = await fetchWithRetry(url.toString(), {
     headers: {
       Authorization: `Bearer ${token}`,
     },

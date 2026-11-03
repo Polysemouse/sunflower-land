@@ -1,5 +1,5 @@
-import { ChapterName } from "features/game/types/chapters";
-import { BuffLabel } from ".";
+import type { ChapterName } from "features/game/types/chapters";
+import type { BuffLabel } from ".";
 
 export type CodexCategoryName =
   | "Fish"
@@ -20,7 +20,6 @@ export type CodexCategoryName =
   | "Marks"
   | "Chore Board"
   | "Social Points"
-  | "Leagues"
   | "Collections";
 
 export type CollectionGroup = "fish";

@@ -8,9 +8,12 @@ import {
   getFactionWeekday,
 } from "features/game/lib/factions";
 import { isWearableActive } from "features/game/lib/wearables";
-import { BoostType, BoostValue } from "features/game/types/boosts";
-import { ConsumableName, CONSUMABLES } from "features/game/types/consumables";
+import type { BoostType, BoostValue } from "features/game/types/boosts";
 import {
+  type ConsumableName,
+  CONSUMABLES,
+} from "features/game/types/consumables";
+import type {
   BoostName,
   FactionPetRequest,
   GameState,
@@ -132,6 +135,11 @@ export function feedFactionPet({
     const request = requests[action.requestIndex];
     const foodBalance = stateCopy.inventory[request.food] ?? new Decimal(0);
     const { amount = 1 } = action;
+
+    if (!Number.isInteger(amount) || amount <= 0) {
+      throw new Error("Invalid amount");
+    }
+
     const requestAmount = request.quantity * amount;
     const week = getWeekKey({ date: new Date(createdAt) });
     const day = getFactionWeekday(createdAt);

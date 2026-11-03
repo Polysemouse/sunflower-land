@@ -5,30 +5,50 @@ import { Modal } from "components/ui/Modal";
 import { Context } from "features/game/GameProvider";
 import { ITEM_DETAILS } from "features/game/types/images";
 import { useTranslation } from "react-i18next";
-import { MachineState } from "features/game/lib/gameMachine";
+import type { MachineState } from "features/game/lib/gameMachine";
 import { useSelector } from "@xstate/react";
 import { BuildingImageWrapper } from "../BuildingImageWrapper";
 import { CraftingBoxModalContent } from "./components/CraftingBoxModalContent";
 import { ProgressBar } from "components/ui/ProgressBar";
-import { useCountdown } from "lib/utils/hooks/useCountdown";
+import type { CraftingQueueItem } from "features/game/types/game";
+import type { BoostWindow } from "features/game/lib/boostWindows";
+import { useNodeTimer } from "features/game/lib/useNodeTimer";
+import { useCraftingQueue } from "./components/useCraftingQueue";
 
 import craftingBoxAnimation from "assets/buildings/crafting_box_animation.webp";
-import { useNow } from "lib/utils/hooks/useNow";
 
 interface CraftingTimerProps {
-  readyAt: number;
-  startedAt: number;
+  item: CraftingQueueItem;
+  startedAt: number | undefined;
+  windows: BoostWindow[];
 }
 
 const CraftingTimer: React.FC<CraftingTimerProps> = ({
-  readyAt,
+  item,
   startedAt,
+  windows,
 }) => {
-  const { totalSeconds: secondsLeft } = useCountdown(readyAt);
-  const totalRunningSeconds = Math.max((readyAt - startedAt) / 1000, 1);
-  const elapsedSeconds = Math.max(totalRunningSeconds - secondsLeft, 0);
+  // One timer for both models. A windowed craft (`baseDurationMs` set) ticks at
+  // the boosted rate; a legacy one falls through to the plain countdown on
+  // `readyAt`.
+  const { workLeftSeconds, countdownSeconds } = useNodeTimer({
+    startedAt: startedAt ?? item.readyAt,
+    baseDurationMs: item.baseDurationMs,
+    windows,
+    legacyReadyAt: item.readyAt,
+  });
+
+  // How full the bar is tracks remaining WORK, never the displayed reading - the
+  // two differ whenever a boost is running.
+  const totalSeconds =
+    item.baseDurationMs === undefined
+      ? Math.max((item.readyAt - (startedAt ?? item.readyAt)) / 1000, 1)
+      : Math.max(item.baseDurationMs / 1000, 1);
+  const leftSeconds =
+    item.baseDurationMs === undefined ? countdownSeconds : workLeftSeconds;
+
   const percentage = Math.min(
-    (elapsedSeconds / totalRunningSeconds) * 100,
+    ((totalSeconds - leftSeconds) / totalSeconds) * 100,
     100,
   );
 
@@ -45,7 +65,7 @@ const CraftingTimer: React.FC<CraftingTimerProps> = ({
         percentage={percentage}
         type="progress"
         formatLength="short"
-        seconds={secondsLeft}
+        seconds={countdownSeconds}
         style={{
           width: `${PIXEL_SCALE * 14}px`,
         }}
@@ -54,12 +74,7 @@ const CraftingTimer: React.FC<CraftingTimerProps> = ({
   );
 };
 
-const _craftingStatus = (state: MachineState) =>
-  state.context.state.craftingBox.status;
-const _craftingReadyAt = (state: MachineState) =>
-  state.context.state.craftingBox.readyAt;
-const _craftingStartedAt = (state: MachineState) =>
-  state.context.state.craftingBox.startedAt;
+const _craftingBox = (state: MachineState) => state.context.state.craftingBox;
 
 export const CraftingBox: React.FC = () => {
   const [showModal, setShowModal] = useState(false);
@@ -68,15 +83,19 @@ export const CraftingBox: React.FC = () => {
 
   const { gameService, showTimers } = useContext(Context);
 
-  const craftingStatus = useSelector(gameService, _craftingStatus);
-  const craftingReadyAt = useSelector(gameService, _craftingReadyAt);
-  const craftingStartedAt = useSelector(gameService, _craftingStartedAt);
-  const now = useNow({ live: true, autoEndAt: craftingReadyAt });
+  const craftingBox = useSelector(gameService, _craftingBox);
 
-  const isCrafting =
-    craftingStatus === "crafting" && craftingReadyAt && craftingReadyAt > now;
-  const isReady =
-    craftingStatus === "crafting" && craftingReadyAt && craftingReadyAt <= now;
+  // The island building, the modal and the queue slots all read their timings
+  // from this one hook, so they cannot disagree about what is ready.
+  const { craftingQueue, timings, windows, inProgress, readyProducts } =
+    useCraftingQueue(craftingBox);
+
+  const hasReadyItem = readyProducts.length > 0;
+  const hasInProgressItem = inProgress.length > 0;
+  const nextInProgress = inProgress[0];
+  const nextInProgressIndex = craftingQueue.findIndex(
+    (item) => item.id === nextInProgress?.id,
+  );
 
   const handleOpen = () => {
     gameService.send("SAVE");
@@ -97,7 +116,7 @@ export const CraftingBox: React.FC = () => {
         >
           <img
             src={
-              craftingStatus === "crafting" && !isReady
+              hasInProgressItem
                 ? craftingBoxAnimation
                 : ITEM_DETAILS["Crafting Box"].image
             }
@@ -109,14 +128,15 @@ export const CraftingBox: React.FC = () => {
               bottom: `${PIXEL_SCALE * 0}px`,
             }}
           />
-          {showTimers && isCrafting && craftingReadyAt && craftingStartedAt && (
+          {showTimers && hasInProgressItem && nextInProgress && (
             <CraftingTimer
-              readyAt={craftingReadyAt}
-              startedAt={craftingStartedAt}
+              item={nextInProgress}
+              startedAt={timings[nextInProgressIndex]?.startedAt}
+              windows={windows}
             />
           )}
         </div>
-        {isReady && (
+        {hasReadyItem && (
           <img
             src={SUNNYSIDE.icons.expression_alerted}
             className="absolute -top-8 ready -ml-[5px] left-1/2 transform -translate-x-1/2 z-20"

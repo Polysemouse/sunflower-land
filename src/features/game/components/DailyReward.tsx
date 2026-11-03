@@ -1,5 +1,5 @@
 import { Button } from "components/ui/Button";
-import { Label, LabelType } from "components/ui/Label";
+import { Label, type LabelType } from "components/ui/Label";
 import React, { useState } from "react";
 import { useGame } from "../GameProvider";
 import { ButtonPanel } from "components/ui/Panel";
@@ -8,14 +8,17 @@ import {
   getDailyRewardStreak,
   isDailyRewardReady,
 } from "../events/landExpansion/claimDailyReward";
-import { DailyRewardName, getRewardsForStreak } from "../types/dailyRewards";
-import { InventoryItemName } from "../types/game";
-import { getKeys } from "../lib/crafting";
+import {
+  type DailyRewardName,
+  getRewardsForStreak,
+} from "../types/dailyRewards";
+import type { InventoryItemName } from "../types/game";
+import { getKeys } from "lib/object";
 import { ClaimReward } from "../expansion/components/ClaimReward";
 import { SUNNYSIDE } from "assets/sunnyside";
 import { secondsTillReset, secondsToString } from "lib/utils/time";
 import { useAppTranslation } from "lib/i18n/useAppTranslations";
-import { MachineState } from "../lib/gameMachine";
+import type { MachineState } from "../lib/gameMachine";
 import { useSelector } from "@xstate/react";
 import { useNow } from "lib/utils/hooks/useNow";
 import { gameAnalytics } from "lib/gameAnalytics";
@@ -26,9 +29,16 @@ import basicResourceBox from "assets/rewardBoxes/basic_resource_box.png";
 import basicFishingBox from "assets/rewardBoxes/basic_fishing_box.png";
 import basicBuffBox from "assets/rewardBoxes/basic_buff_box.png";
 import basicXPBox from "assets/rewardBoxes/basic_xp_box.png";
-import { BuffName } from "../types/buffs";
+import type { BuffName } from "../types/buffs";
 import coinsIcon from "assets/icons/coins_stack.webp";
-import { getBumpkinLevel } from "../lib/level";
+import vipIcon from "assets/icons/vip.webp";
+import {
+  getAscensionLevel,
+  getTotalBumpkinLevel,
+  meetsLevelRequirement,
+} from "../lib/level";
+import { getVipDailyBonusItem } from "../lib/vipAccess";
+import { useVipAccess } from "lib/utils/hooks/useVipAccess";
 
 export const DAILY_REWARD_IMAGES: Record<DailyRewardName, string> = {
   "default-reward": SUNNYSIDE.icons.expression_confused,
@@ -48,6 +58,8 @@ export const DAILY_REWARD_IMAGES: Record<DailyRewardName, string> = {
   "weekly-mega-box": ITEM_DETAILS["Weekly Mega Box"].image,
   "streak-one-year": streakBox,
   "streak-two-year": streakBox,
+  "streak-three-year": streakBox,
+  "streak-four-year": streakBox,
 };
 
 const _bumpkinExperience = (state: MachineState) =>
@@ -91,7 +103,13 @@ export const DailyRewardClaim: React.FC<{ showClose?: boolean }> = ({
   const currentDate = new Date(now).toISOString().substring(0, 10);
 
   const [showClaim, setShowClaim] = useState(false);
-  const hasUnlocked = getBumpkinLevel(bumpkinExperience) >= 3;
+  const hasUnlocked = meetsLevelRequirement(
+    getAscensionLevel({
+      experience: bumpkinExperience,
+      ascensionLevel: gameState.island.ascensionLevel ?? 0,
+    }),
+    { ascension: 0, level: 3 },
+  );
 
   const claim = () => {
     const lastCollectedAt =
@@ -120,6 +138,7 @@ export const DailyRewardClaim: React.FC<{ showClose?: boolean }> = ({
     !isDailyRewardReady({
       dailyRewards,
       bumpkinExperience,
+      ascensionLevel: gameState.island.ascensionLevel ?? 0,
       now,
     }) && hasUnlocked;
 
@@ -148,6 +167,7 @@ export const DailyRewardClaim: React.FC<{ showClose?: boolean }> = ({
       }).rewards,
     };
   });
+  const hasVip = useVipAccess({ game: gameState });
 
   if (showClaim) {
     const items = rewards[0].reward.reduce(
@@ -161,6 +181,17 @@ export const DailyRewardClaim: React.FC<{ showClose?: boolean }> = ({
       },
       {} as Partial<Record<InventoryItemName, number>>,
     );
+
+    // VIP gift item is keyed to the historical 1..200 scale, so use the monotonic
+    // total level (ascension-aware) to match the actual claim logic.
+    const level = getTotalBumpkinLevel({
+      experience: bumpkinExperience,
+      ascensionLevel: gameState.island.ascensionLevel ?? 0,
+    });
+    const vipGiftItem = hasVip ? getVipDailyBonusItem(level) : null;
+    if (vipGiftItem) {
+      items[vipGiftItem] = (items[vipGiftItem] ?? 0) + 1;
+    }
 
     const coins = rewards[0].reward.reduce((acc, reward) => {
       return acc + (reward.coins ?? 0);
@@ -188,6 +219,7 @@ export const DailyRewardClaim: React.FC<{ showClose?: boolean }> = ({
           xp,
           buff: buffs[0],
         }}
+        vipGiftItem={vipGiftItem ?? undefined}
         onClaim={() => {
           claim();
         }}
@@ -263,6 +295,12 @@ export const DailyRewardClaim: React.FC<{ showClose?: boolean }> = ({
                     className="h-16"
                   />
                 </div>
+              </div>
+              <div className="flex items-center justify-center gap-1">
+                <img src={vipIcon} className="h-3 w-3" alt="" />
+                <span className="text-xxs">
+                  {t("dailyReward.bonusVipGift")}
+                </span>
               </div>
             </ButtonPanel>
           );

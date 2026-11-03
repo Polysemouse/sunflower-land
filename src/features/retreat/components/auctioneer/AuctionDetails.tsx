@@ -7,11 +7,11 @@ import { Label } from "components/ui/Label";
 import { ITEM_DETAILS } from "features/game/types/images";
 import { getReturnValues, useCountdown } from "lib/utils/hooks/useCountdown";
 import Decimal from "decimal.js-light";
-import { getKeys } from "features/game/types/craftables";
+import { getKeys } from "lib/object";
 import { SUNNYSIDE } from "assets/sunnyside";
-import { Auction } from "features/game/lib/auctionMachine";
+import type { Auction } from "features/game/lib/auctionMachine";
 import { useAppTranslation } from "lib/i18n/useAppTranslations";
-import { GameState } from "features/game/types/game";
+import type { GameState } from "features/game/types/game";
 import classNames from "classnames";
 import { getMintedChapterLimit } from "./lib/getMintedChapterLimit";
 import { getAuctionItemType } from "./lib/getAuctionItemType";
@@ -117,8 +117,7 @@ export const AuctionDetails: React.FC<Props> = ({
   const { image, buffLabels, item, typeLabel, description } =
     getAuctionItemDisplay({
       auction,
-      skills: game.bumpkin.skills,
-      collectibles: game.collectibles,
+      game: game,
     });
 
   const isCollectible =

@@ -1,15 +1,20 @@
 import Decimal from "decimal.js-light";
+import { getSkillLevel, SKILL_RANKS } from "features/game/types/bumpkinSkills";
 import { isCollectibleBuilt } from "features/game/lib/collectibleBuilt";
 import { DOLLS, RECIPE_CRAFTABLES } from "features/game/lib/crafting";
 import { isWearableActive } from "features/game/lib/wearables";
 import { ANIMALS } from "features/game/types/animals";
 import { EXOTIC_CROPS } from "features/game/types/beans";
-import { getKeys } from "features/game/types/decorations";
+import { getKeys } from "lib/object";
 import { trackFarmActivity } from "features/game/types/farmActivity";
-import { FISH, FishName } from "features/game/types/fishing";
-import { FLOWERS, FlowerName } from "features/game/types/flowers";
-import { FULL_MOON_FRUITS, FullMoonFruit } from "features/game/types/fruits";
+import { FISH, type FishName } from "features/game/types/fishing";
+import { FLOWERS, type FlowerName } from "features/game/types/flowers";
 import {
+  FULL_MOON_FRUITS,
+  type FullMoonFruit,
+} from "features/game/types/fruits";
+import type {
+  BoostName,
   BountyRequest,
   DollBounty,
   ExoticBounty,
@@ -27,7 +32,7 @@ import {
 } from "features/game/types/chapters";
 import {
   SELLABLE_TREASURES,
-  BeachBountyTreasure,
+  type BeachBountyTreasure,
 } from "features/game/types/treasure";
 import { produce } from "immer";
 import { isCollectible } from "./garbageSold";
@@ -35,7 +40,10 @@ import { CHAPTER_TICKET_BOOST_ITEMS } from "./completeNPCChore";
 import { getCountAndType } from "features/island/hud/components/inventory/utils/inventory";
 import { getChapterTaskPoints } from "features/game/types/tracks";
 import { handleChapterAnalytics } from "features/game/lib/trackAnalytics";
-import { CRUSTACEANS, CrustaceanName } from "features/game/types/crustaceans";
+import {
+  CRUSTACEANS,
+  type CrustaceanName,
+} from "features/game/types/crustaceans";
 
 export const BOUNTY_CATEGORIES = {
   "Flower Bounties": (bounty: BountyRequest): bounty is FlowerBounty =>
@@ -98,7 +106,7 @@ export function generateBountyTicket({
   const chapter = getCurrentChapter(now);
   const chapterBoost = CHAPTER_TICKET_BOOST_ITEMS[chapter];
 
-  Object.values(chapterBoost).forEach((item) => {
+  Object.values(chapterBoost ?? {}).forEach((item) => {
     if (isCollectible(item)) {
       if (isCollectibleBuilt({ game, name: item })) {
         amount += 1;
@@ -113,6 +121,45 @@ export function generateBountyTicket({
   return amount;
 }
 
+/**
+ * Which chapter-ticket boosts are currently active for a bounty's ticket
+ * reward, for display only. Mirrors generateBountyTicket's boost logic
+ * without changing its return shape (17 call sites rely on it being a
+ * plain number).
+ */
+export function getBountyTicketBoosts({
+  game,
+  bounty,
+  now = Date.now(),
+}: {
+  game: GameState;
+  bounty: BountyRequest;
+  now?: number;
+}): { name: BoostName; value: string }[] {
+  const boostsUsed: { name: BoostName; value: string }[] = [];
+
+  if (!(bounty.items?.[getChapterTicket(now)] ?? 0)) {
+    return boostsUsed;
+  }
+
+  const chapter = getCurrentChapter(now);
+  const chapterBoost = CHAPTER_TICKET_BOOST_ITEMS[chapter];
+
+  Object.values(chapterBoost ?? {}).forEach((item) => {
+    if (isCollectible(item)) {
+      if (isCollectibleBuilt({ game, name: item })) {
+        boostsUsed.push({ name: item, value: "+1" });
+      }
+    } else {
+      if (isWearableActive({ game, name: item })) {
+        boostsUsed.push({ name: item, value: "+1" });
+      }
+    }
+  });
+
+  return boostsUsed;
+}
+
 export function generateBountyCoins({
   game,
   bounty,
@@ -125,12 +172,32 @@ export function generateBountyCoins({
 
   const isAnimalBounty = bounty.name in ANIMALS;
 
-  if (game.bumpkin.skills["Bountiful Bounties"] && isAnimalBounty) {
-    multiplier += 0.5;
+  const bountifulBountiesLevel = getSkillLevel(
+    game.bumpkin.skills,
+    "Bountiful Bounties",
+  );
+  if (bountifulBountiesLevel && isAnimalBounty) {
+    multiplier +=
+      SKILL_RANKS["Bountiful Bounties"].ranks[bountifulBountiesLevel - 1];
   }
 
   coins *= multiplier;
   return { coins };
+}
+
+export function canSellBounty(state: GameState, requestId: string): boolean {
+  const request = state.bounties.requests.find((deal) => deal.id === requestId);
+  if (!request) return false;
+
+  const completed = state.bounties.completed.find((c) => c.id === requestId);
+  if (completed) return false;
+
+  const { count: availableCount } = getCountAndType(state, request.name);
+  const required = BOUNTY_CATEGORIES["Mark Bounties"](request)
+    ? request.quantity
+    : 1;
+
+  return availableCount.gte(required);
 }
 
 export function sellBounty({
@@ -138,38 +205,25 @@ export function sellBounty({
   action,
   createdAt = Date.now(),
 }: Options): GameState {
+  // Single source of truth for sell eligibility — covers "request doesn't
+  // exist", "already completed", and "insufficient inventory" in one place.
+  if (!canSellBounty(state, action.requestId)) {
+    throw new Error("Cannot sell bounty");
+  }
+
   return produce(state, (draft) => {
+    // canSellBounty already guaranteed the request exists.
     const request = draft.bounties.requests.find(
       (deal) => deal.id === action.requestId,
-    );
-
-    if (!request) {
-      throw new Error("Bounty does not exist");
-    }
-
-    const completed = draft.bounties.completed.find(
-      (c) => c.id === action.requestId,
-    );
-    if (completed) {
-      throw new Error("Bounty already completed");
-    }
+    )!;
 
     const tickets = generateBountyTicket({
       game: draft,
       bounty: request,
+      now: createdAt,
     });
 
-    // Remove the item from the inventory
     const item = draft.inventory[request.name] ?? new Decimal(0);
-    const { count: availableCount } = getCountAndType(draft, request.name);
-
-    if (
-      availableCount.lt(
-        BOUNTY_CATEGORIES["Mark Bounties"](request) ? request.quantity : 1,
-      )
-    ) {
-      throw new Error("You do not have the ingredients to sell this bounty");
-    }
 
     if (BOUNTY_CATEGORIES["Mark Bounties"](request)) {
       draft.inventory[request.name] = item.minus(request.quantity);
@@ -215,11 +269,11 @@ export function sellBounty({
       const chapter = getCurrentChapter(createdAt);
       const pointsAwarded = getChapterTaskPoints({
         task: "bounty",
-        tickets: tickets,
+        points: tickets,
       });
       handleChapterAnalytics({
         task: "bounty",
-        tickets: tickets,
+        points: tickets,
         farmActivity: draft.farmActivity,
         createdAt,
       });

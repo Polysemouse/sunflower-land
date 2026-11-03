@@ -9,7 +9,7 @@ import { useSound } from "lib/utils/hooks/useSound";
 import darkModeIcon from "assets/icons/dark_mode.png";
 import lightModeIcon from "assets/icons/light_mode.png";
 import { PortalContext } from "../../../lib/PortalProvider";
-import { PortalMachineState } from "../../../lib/cropsAndChickensMachine";
+import type { PortalMachineState } from "../../../lib/cropsAndChickensMachine";
 import { useSelector } from "@xstate/react";
 import classNames from "classnames";
 import { isTouchDevice } from "features/world/lib/device";

@@ -1,15 +1,18 @@
 import React, { useContext, useState } from "react";
 import { SUNNYSIDE } from "assets/sunnyside";
-import { ExpansionConstruction } from "features/game/types/game";
+import type { ExpansionConstruction } from "features/game/types/game";
 import { PIXEL_SCALE } from "features/game/lib/constants";
 import { Context } from "features/game/GameProvider";
 import { ProgressBar } from "components/ui/ProgressBar";
 import { Modal } from "components/ui/Modal";
 import { Expanding } from "components/ui/layouts/ExpansionRequirements";
-import { getInstantGems } from "features/game/events/landExpansion/speedUpRecipe";
 import { gameAnalytics } from "lib/gameAnalytics";
 import { Panel } from "components/ui/Panel";
 import { useCountdown } from "lib/utils/hooks/useCountdown";
+import { useSelector } from "@xstate/react";
+import type { MachineState } from "features/game/lib/gameMachine";
+
+const _state = (state: MachineState) => state.context.state;
 
 interface Props {
   expansion: ExpansionConstruction;
@@ -20,25 +23,22 @@ interface Props {
  */
 export const Pontoon: React.FC<Props> = ({ expansion }) => {
   const { gameService, showTimers } = useContext(Context);
+  const state = useSelector(gameService, _state);
+  const readyAt = expansion.readyAt;
 
-  const { totalSeconds: secondsLeft } = useCountdown(expansion.readyAt);
+  const { totalSeconds: secondsLeft } = useCountdown(readyAt);
 
   const [showModal, setShowModal] = useState(false);
 
-  const onInstantExpand = () => {
-    const readyAt =
-      gameService.getSnapshot().context.state.expansionConstruction?.readyAt ??
-      0;
-    const gems = getInstantGems({
-      readyAt: readyAt as number,
-      game: gameService.getSnapshot().context.state,
-    });
-
-    gameService.send("expansion.spedUp");
+  const onInstantExpand = (
+    cost: number,
+    paymentMethod: "gems" | "coins" = "gems",
+  ) => {
+    gameService.send("expansion.spedUp", { paymentMethod });
 
     gameAnalytics.trackSink({
-      currency: "Gem",
-      amount: gems,
+      currency: paymentMethod === "coins" ? "Coins" : "Gem",
+      amount: cost,
       item: "Instant Expand",
       type: "Fee",
     });
@@ -55,7 +55,8 @@ export const Pontoon: React.FC<Props> = ({ expansion }) => {
         <Panel>
           <Expanding
             onClose={() => setShowModal(false)}
-            state={gameService.getSnapshot().context.state}
+            state={state}
+            readyAt={readyAt}
             onInstantExpanded={onInstantExpand}
           />
         </Panel>

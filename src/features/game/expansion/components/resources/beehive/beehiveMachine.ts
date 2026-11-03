@@ -1,6 +1,11 @@
 import { DEFAULT_HONEY_PRODUCTION_TIME } from "features/game/lib/updateBeehives";
-import { Beehive, GameState } from "features/game/types/game";
-import { Interpreter, State, createMachine, assign } from "xstate";
+import {
+  getActiveFlower,
+  getCurrentHoneyProduced,
+  getCurrentSpeed,
+} from "features/game/lib/beehiveProduction";
+import type { Beehive, GameState } from "features/game/types/game";
+import { type Interpreter, type State, createMachine, assign } from "xstate";
 
 export type AttachedFlower = {
   id: string;
@@ -56,45 +61,24 @@ export type MachineInterpreter = Interpreter<
   BeehiveState
 >;
 
-export const getActiveFlower = (hive: Beehive) => {
-  const now = Date.now();
-  const activeFlower = hive.flowers.find((flower) => {
-    return flower.attachedAt <= now && flower.attachedUntil > now;
-  });
+const isFlowerProducing = (attachedFlower?: AttachedFlower) => {
+  if (!attachedFlower) return false;
+  if (attachedFlower.attachedAt > Date.now()) return false;
+  if (attachedFlower.attachedUntil < Date.now()) return false;
 
-  return activeFlower;
+  return true;
 };
 
-export const getCurrentHoneyProduced = (hive: Beehive) => {
-  const attachedFlowers = hive.flowers
-    .slice()
-    .sort((a, b) => a.attachedAt - b.attachedAt);
+const getSyncedHiveContext = (hive: Beehive) => {
+  const attachedFlower = getActiveFlower(hive);
 
-  return attachedFlowers.reduce((produced, attachedFlower) => {
-    const start = Math.max(hive.honey.updatedAt, attachedFlower.attachedAt);
-    const end = Math.min(Date.now(), attachedFlower.attachedUntil);
-
-    // Prevent future dates
-    const honey = Math.max(end - start, 0) * (attachedFlower.rate ?? 1);
-
-    return (produced += honey);
-  }, hive.honey.produced);
-};
-
-export const getCurrentSpeed = (hive: Beehive) => {
-  const attachedFlowers = hive.flowers
-    .slice()
-    .sort((a, b) => a.attachedAt - b.attachedAt);
-
-  return attachedFlowers.reduce((rate, attachedFlower) => {
-    if (
-      attachedFlower.attachedUntil <= Date.now() ||
-      attachedFlower.attachedAt > Date.now()
-    )
-      return rate;
-
-    return (rate += attachedFlower.rate ?? 1);
-  }, 0);
+  return {
+    hive,
+    honeyProduced: getCurrentHoneyProduced(hive),
+    currentSpeed: getCurrentSpeed(hive),
+    attachedFlower,
+    isProducing: isFlowerProducing(attachedFlower),
+  };
 };
 
 export const beehiveMachine = createMachine<
@@ -186,6 +170,10 @@ export const beehiveMachine = createMachine<
       },
       honeyReady: {
         on: {
+          UPDATE_HIVE: {
+            target: "prepareHive",
+            actions: "updateHive",
+          },
           HARVEST_HONEY: {
             target: "prepareHive",
             actions: "harvestHoney",
@@ -211,29 +199,17 @@ export const beehiveMachine = createMachine<
       checkAndUpdateHoney: assign({
         honeyProduced: ({ hive }) => getCurrentHoneyProduced(hive),
         currentSpeed: ({ hive }) => getCurrentSpeed(hive),
-        isProducing: ({ attachedFlower }) => {
-          if (!attachedFlower) return false;
-          if (attachedFlower.attachedAt > Date.now()) return false;
-          if (attachedFlower.attachedUntil < Date.now()) return false;
-
-          return true;
-        },
+        isProducing: ({ attachedFlower }) => isFlowerProducing(attachedFlower),
       }),
       updateActiveFlower: assign({
         attachedFlower: ({ hive }) => getActiveFlower(hive),
       }),
-      updateHive: assign({
-        hive: (_, event) => {
-          return (event as UpdateHive).updatedHive;
-        },
-      }),
-      harvestHoney: assign({
-        hive: (_, event) => {
-          return (event as UpdateHive).updatedHive;
-        },
-        honeyProduced: (_, event) =>
-          (event as UpdateHive).updatedHive.honey.produced,
-      }),
+      updateHive: assign((_, event) =>
+        getSyncedHiveContext((event as UpdateHive).updatedHive),
+      ),
+      harvestHoney: assign((_, event) =>
+        getSyncedHiveContext((event as HarvestHoney).updatedHive),
+      ),
       removeActiveFlower: assign((_) => ({
         attachedFlower: undefined,
       })),
@@ -256,11 +232,3 @@ export const beehiveMachine = createMachine<
     },
   },
 );
-
-export function areBeehivesEmpty(game: GameState): boolean {
-  const beehiveProducing = Object.values(game.beehives).every(
-    (hive) =>
-      getCurrentHoneyProduced(hive) <= DEFAULT_HONEY_PRODUCTION_TIME * 0.01,
-  );
-  return beehiveProducing;
-}

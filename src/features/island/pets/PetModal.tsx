@@ -1,13 +1,13 @@
 import React, { useContext, useEffect, useState } from "react";
 import {
   isPetNFT,
-  Pet,
-  PetNFT,
-  PetType,
+  type Pet,
+  type PetNFT,
+  type PetType,
   getPetType,
   PET_CATEGORIES,
   getPetLevel,
-  PetResourceName,
+  type PetResourceName,
 } from "features/game/types/pets";
 import { Modal } from "components/ui/Modal";
 import { InnerPanel, OuterPanel } from "components/ui/Panel";
@@ -20,9 +20,9 @@ import { ResizableBar } from "components/ui/ProgressBar";
 import { useAppTranslation } from "lib/i18n/useAppTranslations";
 import { Button } from "components/ui/Button";
 import { Context } from "features/game/GameProvider";
-import { MachineState } from "features/game/lib/gameMachine";
+import type { MachineState } from "features/game/lib/gameMachine";
 import { useSelector } from "@xstate/react";
-import { CookableName } from "features/game/types/consumables";
+import type { CookableName } from "features/game/types/consumables";
 import { ResetFoodRequests } from "./ResetFoodRequests";
 import { PetFeed } from "./PetFeed";
 import { PetFetch } from "./PetFetch";
@@ -37,11 +37,17 @@ import levelUp from "assets/icons/level_up.png";
 import xpIcon from "assets/icons/xp.png";
 import { Checkbox } from "components/ui/Checkbox";
 import { PetGuide, PetGuideButton } from "features/pets/petGuide/PetGuide";
-import { getObjectEntries } from "features/game/expansion/lib/utils";
-import { capitalize } from "lib/utils/capitalize";
+import { getObjectEntries } from "lib/object";
+import {
+  getPetCategoryLabel,
+  getPetTraitLabel,
+  getPetTypeLabel,
+} from "./lib/petLabels";
 import { useNow } from "lib/utils/hooks/useNow";
 import { isWearableActive } from "features/game/lib/wearables";
 import { getPetFoodRequests } from "features/game/events/pets/feedPet";
+import * as Auth from "features/auth/lib/Provider";
+import type { AuthMachineState } from "features/auth/lib/authMachine";
 
 interface Props {
   show: boolean;
@@ -53,6 +59,8 @@ interface Props {
 }
 
 const _inventory = (state: MachineState) => state.context.state.inventory;
+const _authToken = (state: AuthMachineState) =>
+  state.context.user.rawToken as string;
 
 export const PetModal: React.FC<Props> = ({
   show,
@@ -61,6 +69,7 @@ export const PetModal: React.FC<Props> = ({
   isTypeFed,
 }) => {
   const { gameService } = useContext(Context);
+  const { authService } = useContext(Auth.Context);
   const { t } = useAppTranslation();
   const [display, setDisplay] = useState<
     "feeding" | "fetching" | "resetting" | "typeFed" | "guide"
@@ -90,6 +99,8 @@ export const PetModal: React.FC<Props> = ({
   }, [show, isTypeFed]);
 
   const inventory = useSelector(gameService, _inventory);
+  const authToken = useSelector(authService, _authToken);
+
   const isNFTPet = isPetNFT(data);
   const petId = isNFTPet ? data.id : data?.name;
 
@@ -126,12 +137,9 @@ export const PetModal: React.FC<Props> = ({
   };
 
   const handleResetRequests = () => {
-    gameService.send("REVEAL", {
-      event: {
-        type: "reset.petRequests",
-        petId,
-        createdAt: new Date(now),
-      },
+    gameService.send("reset.petRequests", {
+      effect: { type: "reset.petRequests", petId },
+      authToken,
     });
   };
 
@@ -202,30 +210,30 @@ export const PetModal: React.FC<Props> = ({
               {/* Pet Type and Categories */}
               <div className="flex flex-wrap gap-1 mb-2">
                 <Label type="info" className="text-xs">
-                  {getPetType(data)}
+                  {getPetTypeLabel(type)}
                 </Label>
                 <Label type="chill" className="text-xs">
-                  {petCategory.primary}
+                  {getPetCategoryLabel(petCategory.primary)}
                 </Label>
                 {petCategory.secondary && (
                   <Label type="formula" className="text-xs">
-                    {petCategory.secondary}
+                    {getPetCategoryLabel(petCategory.secondary)}
                   </Label>
                 )}
                 {petCategory.tertiary && (
                   <Label type="vibrant" className="text-xs">
-                    {petCategory.tertiary}
+                    {getPetCategoryLabel(petCategory.tertiary)}
                   </Label>
                 )}
                 {isNFTPet &&
                   data.traits &&
-                  getObjectEntries(data.traits)
-                    .filter(([key]) => key !== "type")
-                    .map(([key, value]) => (
+                  getObjectEntries(data.traits).map(([key, value]) =>
+                    key === "type" ? null : (
                       <Label type="default" className="text-xs" key={key}>
-                        {`${value} ${key !== "aura" ? capitalize(key) : ""}`}
+                        {getPetTraitLabel(key, value)}
                       </Label>
-                    ))}
+                    ),
+                  )}
               </div>
 
               {/* Level and Experience */}

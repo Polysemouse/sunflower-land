@@ -2,7 +2,6 @@ import React, { useContext } from "react";
 import { Button } from "components/ui/Button";
 import { ITEM_DETAILS } from "features/game/types/images";
 import { Context } from "features/game/GameProvider";
-import { useActor } from "@xstate/react";
 import { ModalContext } from "features/game/components/modal/ModalProvider";
 import stockIcon from "assets/icons/stock.webp";
 import { gameAnalytics } from "lib/gameAnalytics";
@@ -12,12 +11,14 @@ import { TimerDisplay } from "features/retreat/components/auctioneer/AuctionDeta
 import { Label } from "components/ui/Label";
 import confetti from "canvas-confetti";
 import { Box } from "components/ui/Box";
-import { INITIAL_STOCK, StockableName } from "features/game/lib/constants";
+import { INITIAL_STOCK, type StockableName } from "features/game/lib/constants";
 import {
   RestockItems,
-  RestockNPC,
+  type RestockNPC,
 } from "features/game/events/landExpansion/npcRestock";
 import { capitalize } from "lodash";
+import { getObjectEntries } from "lib/object";
+import { useSelector } from "@xstate/react";
 
 interface RestockModalProps {
   onClose: () => void;
@@ -38,11 +39,7 @@ export const NPCRestockModal: React.FC<RestockModalProps> = ({
   const { openModal } = useContext(ModalContext);
 
   const { gameService, showAnimations } = useContext(Context);
-  const [
-    {
-      context: { state },
-    },
-  ] = useActor(gameService);
+  const state = useSelector(gameService, (state) => state.context.state);
 
   const { gemPrice, shopName, restockItem, categoryLabel } = RestockItems[npc];
   const canRestock = state.inventory["Gem"]?.gte(gemPrice);
@@ -53,9 +50,7 @@ export const NPCRestockModal: React.FC<RestockModalProps> = ({
       return;
     }
 
-    gameService.send("npc.restocked", {
-      npc,
-    });
+    gameService.send("npc.restocked", { npc });
 
     gameAnalytics.trackSink({
       currency: "Gem",
@@ -69,8 +64,9 @@ export const NPCRestockModal: React.FC<RestockModalProps> = ({
   };
 
   const { labelText, icon } = categoryLabel;
+  const restockables = INITIAL_STOCK(state);
 
-  const restockItems = Object.entries(INITIAL_STOCK(state)).filter(
+  const restockItems = getObjectEntries(restockables).filter(
     (item) => item[0] in restockItem,
   );
 

@@ -7,15 +7,15 @@ import { useIsPWA } from "lib/utils/hooks/useIsPWA";
 import { isMobile } from "mobile-device-detect";
 import { useContext, useEffect, useState } from "react";
 import {
-  Connector,
-  CreateConnectorFn,
+  type Connector,
+  type CreateConnectorFn,
   useConnect,
   useConnection,
   useConnections,
   useDisconnect,
   useConnectors,
 } from "wagmi";
-import { ConnectErrorType } from "wagmi/actions";
+import type { ConnectErrorType } from "wagmi/actions";
 import { RoninButtons } from "./buttons/RoninButtons";
 import { OtherWalletsButton } from "./buttons/OtherWalletsButton";
 import { InjectedProviderButtons } from "./buttons/InjectedProviderButtons";
@@ -30,7 +30,6 @@ import { Context as AuthContext } from "features/auth/lib/Provider";
 import { GoogleButton } from "features/auth/components/buttons/GoogleButton";
 import { Loading } from "features/auth/components";
 import { CONFIG } from "lib/config";
-import { FSLButton } from "features/auth/components/buttons/FSLButton";
 import { WechatButton } from "features/auth/components/buttons/WechatButton";
 import { SignMessage } from "./SignMessage";
 import { FarcasterButton } from "./buttons/FarcasterButton";
@@ -129,13 +128,9 @@ const displayUriListener = (uri: string) => {
 export const WalletWall: React.FC<{
   header?: React.ReactNode;
   screen?: "signin" | "signup" | "walletWall";
-  onSignMessage: ({
-    address,
-    signature,
-  }: {
-    address: string;
-    signature: string;
-  }) => void;
+  onSignMessage:
+    | (({ address, signature }: { address: string; signature: string }) => void)
+    | null;
 }> = ({ header, screen = "walletWall", onSignMessage }) => {
   const { authService } = useContext(AuthContext);
   const { t } = useAppTranslation();
@@ -143,13 +138,11 @@ export const WalletWall: React.FC<{
   const [page, setPage] = useState<"home" | "other" | "ronin">("home");
   const [showLoading, setShowLoading] = useState(false);
   const [hasClickedWallet, setHasClickedWallet] = useState(false);
-  const [deprecatedLogin, setDeprecatedLogin] = useState<
-    "wechat" | "fsl" | null
-  >(null);
+  const [deprecatedLogin, setDeprecatedLogin] = useState<"wechat" | null>(null);
 
   const { isConnecting, isConnected } = useConnection();
-  const { mutate: connect, reset, error, isError } = useConnect();
-  const { mutate: disconnect } = useDisconnect();
+  const { mutateAsync: asyncConnect, reset, error, isError } = useConnect();
+  const { mutateAsync: asyncDisconnect } = useDisconnect();
   const connections = useConnections();
   const connectors = useConnectors();
 
@@ -184,12 +177,7 @@ export const WalletWall: React.FC<{
   const isLoginScreen = screen === "signin" || screen === "signup";
   const showWechat = !isMobile && screen !== "signup";
 
-  const deprecatedLoginTitle =
-    deprecatedLogin === "fsl"
-      ? "FSL ID"
-      : deprecatedLogin === "wechat"
-        ? "WeChat"
-        : "";
+  const deprecatedLoginTitle = deprecatedLogin === "wechat" ? "WeChat" : "";
 
   const openDiscord = () => {
     window.open(
@@ -199,16 +187,19 @@ export const WalletWall: React.FC<{
     );
   };
 
-  const onConnect = (connector: Connector | CreateConnectorFn) => {
+  const onConnect = async (connector: Connector | CreateConnectorFn) => {
     setHasClickedWallet(true);
-    connect({ connector });
+    // Disconnect first
+    await onDisconnect();
+    // Connect
+    await asyncConnect({ connector });
   };
 
-  const onDisconnect = () => {
-    disconnect();
-    connections.forEach((connection) =>
-      disconnect({ connector: connection.connector }),
-    );
+  const onDisconnect = async () => {
+    await asyncDisconnect();
+    for (const connection of connections) {
+      await asyncDisconnect({ connector: connection.connector });
+    }
   };
 
   if (showLoading) {
@@ -216,14 +207,14 @@ export const WalletWall: React.FC<{
   }
 
   if (isConnecting) {
-    return <ConnectingToWallet disconnect={disconnect} />;
+    return <ConnectingToWallet disconnect={onDisconnect} />;
   }
 
   if (isError) {
     return <ConnectError error={error} disconnect={reset} />;
   }
 
-  if (isConnected && (!isLoginScreen || hasClickedWallet)) {
+  if (isConnected && onSignMessage && (!isLoginScreen || hasClickedWallet)) {
     return (
       <SignMessage onSignMessage={onSignMessage} onDisconnect={onDisconnect} />
     );
@@ -303,13 +294,6 @@ export const WalletWall: React.FC<{
                 }}
               />
               <SequenceButton onConnect={onConnect} />
-              {isLoginScreen && (
-                <FSLButton
-                  onClick={() => {
-                    setDeprecatedLogin("fsl");
-                  }}
-                />
-              )}
               <OtherWalletsButton
                 onClick={() => setPage("home")}
                 title={t("walletWall.showLess")}
@@ -393,13 +377,6 @@ export const WalletWall: React.FC<{
               <WechatButton
                 onClick={() => {
                   setDeprecatedLogin("wechat");
-                }}
-              />
-            )}
-            {isLoginScreen && (
-              <FSLButton
-                onClick={() => {
-                  setDeprecatedLogin("fsl");
                 }}
               />
             )}

@@ -1,8 +1,8 @@
-import { GameState, Rock } from "features/game/types/game";
+import type { GameState, Rock } from "features/game/types/game";
 import {
   ADVANCED_RESOURCES,
-  UpgradedResourceName,
-  StoneRockName,
+  type UpgradedResourceName,
+  type StoneRockName,
   RESOURCE_MULTIPLIER,
 } from "features/game/types/resources";
 import { produce } from "immer";
@@ -10,7 +10,11 @@ import {
   findExistingUnplacedNode,
   getAvailableNodes,
 } from "features/game/lib/resourceNodes";
-import { Coordinates } from "features/game/expansion/components/MapPlacement";
+import {
+  getMineBoostWindows,
+  pauseWindowedTimer,
+} from "features/game/lib/boostWindows";
+import type { Coordinates } from "features/game/expansion/components/MapPlacement";
 
 export type PlaceStoneAction = {
   type: "stone.placed";
@@ -53,9 +57,14 @@ export function placeStone({
       };
 
       if (updatedStone.stone && updatedStone.removedAt) {
-        const existingProgress =
-          updatedStone.removedAt - updatedStone.stone.minedAt;
-        updatedStone.stone.minedAt = createdAt - existingProgress;
+        // Pause recovery across the lift (windowed banking or legacy back-date).
+        updatedStone.stone.minedAt = pauseWindowedTimer({
+          timer: updatedStone.stone,
+          startedAt: updatedStone.stone.minedAt,
+          removedAt: updatedStone.removedAt,
+          createdAt,
+          windows: getMineBoostWindows(game, action.name),
+        });
       }
       delete updatedStone.removedAt;
 

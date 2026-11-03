@@ -3,11 +3,9 @@ import React, { useContext, useEffect, useRef, useState } from "react";
 import { GOLD_RECOVERY_TIME } from "features/game/lib/constants";
 import { Context } from "features/game/GameProvider";
 
-import { getTimeLeft } from "lib/utils/time";
-import { InventoryItemName, Rock, Skills } from "features/game/types/game";
-import useUiRefresher from "lib/utils/hooks/useUiRefresher";
+import type { InventoryItemName, Rock, Skills } from "features/game/types/game";
 import { useSelector } from "@xstate/react";
-import { MachineState } from "features/game/lib/gameMachine";
+import type { MachineState } from "features/game/lib/gameMachine";
 import Decimal from "decimal.js-light";
 import { DepletedGold } from "./components/DepletedGold";
 import { DepletingGold } from "./components/DepletingGold";
@@ -15,14 +13,32 @@ import { RecoveredGold } from "./components/RecoveredGold";
 import { canMine } from "features/game/lib/resourceNodes";
 import { useSound } from "lib/utils/hooks/useSound";
 import { getGoldDropAmount } from "features/game/events/landExpansion/mineGold";
-import { GoldRockName } from "features/game/types/resources";
-import { useNow } from "lib/utils/hooks/useNow";
+import type { GoldRockName } from "features/game/types/resources";
 import { Transition } from "@headlessui/react";
 import lightning from "assets/icons/lightning.png";
 import { KNOWN_IDS } from "features/game/types";
+import {
+  getMineBoostWindows,
+  type BoostWindow,
+} from "features/game/lib/boostWindows";
+import { useNodeTimer } from "features/game/lib/useNodeTimer";
 
 const HITS = 3;
 const tool = "Iron Pickaxe";
+
+// Field comparator for the mine boost windows so the selector skips re-renders
+// without allocating JSON strings per rock on every service update.
+const areBoostWindowsEqual = (a: BoostWindow[], b: BoostWindow[]) =>
+  a.length === b.length &&
+  a.every((window, index) => {
+    const other = b[index];
+    return (
+      other !== undefined &&
+      window.from === other.from &&
+      window.to === other.to &&
+      window.speed === other.speed
+    );
+  });
 
 const HasTool = (
   inventory: Partial<Record<InventoryItemName, Decimal>>,
@@ -103,13 +119,26 @@ export const Gold: React.FC<Props> = ({ id }) => {
   const season = useSelector(gameService, _selectSeason);
   const island = useSelector(gameService, _selectIsland);
   const farmId = useSelector(gameService, selectFarmId);
-  const readyAt = resource.stone.minedAt + GOLD_RECOVERY_TIME * 1000;
-  const now = useNow({ live: true, autoEndAt: readyAt });
+  const goldRockName = (resource.name ?? "Gold Rock") as GoldRockName;
+  // Live windowed mine-recovery speed boosts (Ore Hourglass, Mole Shrine,
+  // totems). Recomputed from full state but only re-renders when the windows
+  // actually change, so the countdown reacts to boosters placed/expired mid-recover.
+  const mineBoostWindows = useSelector(
+    gameService,
+    (state) => getMineBoostWindows(state.context.state, goldRockName),
+    areBoostWindowsEqual,
+  );
 
   const hasTool = HasTool(inventory, resource);
-  const goldRockName = (resource.name ?? "Gold Rock") as GoldRockName;
-  const timeLeft = getTimeLeft(resource.stone.minedAt, GOLD_RECOVERY_TIME, now);
-  const mined = !canMine(resource, goldRockName);
+
+  const { minedAt, baseDurationMs } = resource.stone;
+  const { now, countdownSeconds: timeLeft } = useNodeTimer({
+    startedAt: minedAt,
+    baseDurationMs,
+    windows: mineBoostWindows,
+    legacyReadyAt: minedAt + GOLD_RECOVERY_TIME * 1000,
+  });
+  const mined = !canMine(resource, goldRockName, state, now);
 
   const [isAnimationRunning, setIsAnimationRunning] = useState(false);
   const [isRecentlyMined, setIsRecentlyMined] = useState(false);
@@ -138,8 +167,6 @@ export const Gold: React.FC<Props> = ({ id }) => {
       return () => clearTimeout(timeout);
     }
   }, [isAnimationRunning]);
-
-  useUiRefresher({ active: mined });
 
   const strike = () => {
     if (!hasTool) return;
@@ -174,23 +201,21 @@ export const Gold: React.FC<Props> = ({ id }) => {
           counter: currentCounter,
         }).amount,
     );
-    const newState = gameService.send("goldRock.mined", {
+    gameService.send("goldRock.mined", {
       index: id,
     });
 
-    if (!newState.matches("hoarding")) {
-      if (showAnimations) {
-        setCollecting(true);
-        harvested.current = goldMined.toNumber();
-      }
+    if (showAnimations) {
+      setCollecting(true);
+      harvested.current = goldMined.toNumber();
+    }
 
-      miningFallAudio();
+    miningFallAudio();
 
-      if (showAnimations) {
-        await new Promise((res) => setTimeout(res, 3000));
-        setCollecting(false);
-        harvested.current = 0;
-      }
+    if (showAnimations) {
+      await new Promise((res) => setTimeout(res, 3000));
+      setCollecting(false);
+      harvested.current = 0;
     }
   };
 

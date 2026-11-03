@@ -10,7 +10,7 @@ import { Forbidden } from "features/auth/components/Forbidden";
 import { LandExpansion } from "features/game/expansion/LandExpansion";
 import { CONFIG } from "lib/config";
 import { Builder } from "features/builder/Builder";
-import { AuthMachineState } from "features/auth/lib/authMachine";
+import type { AuthMachineState } from "features/auth/lib/authMachine";
 import { ZoomProvider } from "components/ZoomProvider";
 import { LoadingFallback } from "./LoadingFallback";
 import { Panel } from "components/ui/Panel";
@@ -29,12 +29,36 @@ import { FlowerDashboard } from "features/flowerDashboard/FlowerDashboard";
 import { EconomyDashboard } from "features/economyDashboard/EconomyDashboard";
 import { RetentionDashboard } from "features/retentionDashboard/RetentionDashboard";
 import { ChapterDashboard } from "features/chapterDashboard/ChapterDashboard";
+import { EconomyHub } from "features/economyHub/EconomyHub";
+import { GameWrapper } from "features/game/expansion/Game";
+import { Interior } from "features/interior/Interior";
+import { LevelOne } from "features/interior/LevelOne";
+import { Cave } from "features/cave/Cave";
 import { ModalProvider } from "features/game/components/modal/ModalProvider";
 import { FeedProvider } from "features/social/FeedContext";
+import { MinigameDashboard } from "features/minigame/MinigameDashboard";
+import {
+  PlayerEconomyEditor,
+  PlayerEconomyEditorCreate,
+  PlayerEconomyEditorEdit,
+} from "features/playerEconomyEditor/PlayerEconomyEditor";
 
 // Lazy load routes
 const World = lazy(() =>
   import("features/world/World").then((m) => ({ default: m.World })),
+);
+
+const GiveawayApp = lazy(() =>
+  import("features/giveaway/GiveawayApp").then((m) => ({
+    default: m.GiveawayApp,
+  })),
+);
+
+// Only reached from the Kingdom noticeboard, so keep it out of the startup bundle
+const HallOfFame = lazy(() =>
+  import("features/hallOfFame/HallOfFame").then((m) => ({
+    default: m.HallOfFame,
+  })),
 );
 
 const selectState = (state: AuthMachineState) => ({
@@ -139,6 +163,22 @@ export const Navigation: React.FC = () => {
                                       </div>
                                     }
                                   />
+                                  <Route
+                                    path="chapter"
+                                    element={
+                                      <div className="absolute inset-0 z-50">
+                                        <ChapterDashboard />
+                                      </div>
+                                    }
+                                  />
+                                  <Route
+                                    path="hall-of-fame"
+                                    element={
+                                      <div className="absolute inset-0 z-50">
+                                        <HallOfFame />
+                                      </div>
+                                    }
+                                  />
                                   <Route path=":name" element={null} />
                                 </Route>
                                 <Route
@@ -183,11 +223,107 @@ export const Navigation: React.FC = () => {
                                 />
                                 <Route
                                   path="/chapter"
-                                  element={<ChapterDashboard />}
+                                  element={
+                                    <GameWrapper>
+                                      <ChapterDashboard />
+                                    </GameWrapper>
+                                  }
                                 />
                                 <Route
                                   path="/game/chapter"
-                                  element={<ChapterDashboard />}
+                                  element={
+                                    <GameWrapper>
+                                      <ChapterDashboard />
+                                    </GameWrapper>
+                                  }
+                                />
+                                <Route
+                                  path="/economy-hub"
+                                  element={
+                                    <GameWrapper>
+                                      <EconomyHub />
+                                    </GameWrapper>
+                                  }
+                                />
+                                <Route
+                                  path="/economy/:slug"
+                                  element={<MinigameDashboard />}
+                                />
+                                <Route
+                                  path="/economy-editor"
+                                  element={<PlayerEconomyEditor />}
+                                />
+                                <Route
+                                  path="/economy-editor/create"
+                                  element={<PlayerEconomyEditorCreate />}
+                                />
+                                <Route
+                                  path="/economy-editor/edit/:slug"
+                                  element={<PlayerEconomyEditorEdit />}
+                                />
+                                <Route
+                                  path="/giveaway/play/:id"
+                                  element={
+                                    <GameWrapper>
+                                      <GiveawayApp />
+                                    </GameWrapper>
+                                  }
+                                />
+                                <Route
+                                  path="/interior"
+                                  element={
+                                    <GameWrapper>
+                                      <Interior />
+                                    </GameWrapper>
+                                  }
+                                />
+                                <Route
+                                  path="/level_one"
+                                  element={
+                                    <GameWrapper>
+                                      <LevelOne />
+                                    </GameWrapper>
+                                  }
+                                />
+                                <Route
+                                  path="/cave"
+                                  element={
+                                    <GameWrapper>
+                                      <Cave />
+                                    </GameWrapper>
+                                  }
+                                />
+                                {/*
+                                  Visiting someone with the interiors experiment
+                                  on lands here rather than on their /home.
+
+                                  Deliberately top-level rather than inside
+                                  Game's visiting <Routes>: that tree renders
+                                  inside LandExpansion's ScrollContainer and
+                                  GameBoard, and GameBoard already applies the
+                                  ZoomContext scale. Interior/LevelOne bring
+                                  their own scroll container and their own
+                                  scaled canvas, so nesting them there gives
+                                  two scrollers and a doubled zoom. React
+                                  Router ranks these above the `/visit/*`
+                                  LandExpansion route, so they win regardless
+                                  of ordering.
+                                */}
+                                <Route
+                                  path="/visit/:id/interior"
+                                  element={
+                                    <GameWrapper>
+                                      <Interior />
+                                    </GameWrapper>
+                                  }
+                                />
+                                <Route
+                                  path="/visit/:id/level_one"
+                                  element={
+                                    <GameWrapper>
+                                      <LevelOne />
+                                    </GameWrapper>
+                                  }
                                 />
                                 <Route
                                   path="*"

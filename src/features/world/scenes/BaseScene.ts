@@ -1,27 +1,30 @@
-import Phaser, { Physics } from "phaser";
+import Phaser, { type Physics } from "phaser";
 import VirtualJoystick from "phaser3-rex-plugins/plugins/virtualjoystick.js";
 
 import { SQUARE_WIDTH } from "features/game/lib/constants";
 import { BumpkinContainer } from "../containers/BumpkinContainer";
 import { PetContainer } from "../containers/PetContainer";
-import { PetNFTType } from "features/game/types/pets";
+import type { PetNFTType } from "features/game/types/pets";
 import { interactableModalManager } from "../ui/InteractableModals";
-import { NPCName, NPC_WEARABLES } from "lib/npcs";
+import { type NPCName, NPC_WEARABLES } from "lib/npcs";
 import { npcModalManager } from "../ui/NPCModals";
-import { BumpkinParts } from "lib/utils/tokenUriBuilder";
-import { EventObject } from "xstate";
+import type { BumpkinParts } from "lib/utils/tokenUriBuilder";
+import type { EventObject } from "xstate";
 import { isTouchDevice } from "../lib/device";
-import { SPAWNS } from "../lib/spawn";
-import { AudioController, WalkAudioController } from "../lib/AudioController";
-import { createErrorLogger } from "lib/errorLogger";
-import { Coordinates } from "features/game/expansion/components/MapPlacement";
-import { Footsteps } from "assets/sound-effects/soundEffects";
+import { SPAWNS, type SpawnFromId } from "../lib/spawn";
 import {
+  type AudioController,
+  WalkAudioController,
+} from "../lib/AudioController";
+import { createErrorLogger } from "lib/errorLogger";
+import type { Coordinates } from "features/game/expansion/components/MapPlacement";
+import type { Footsteps } from "assets/sound-effects/soundEffects";
+import type {
   MachineInterpreter as MMOMachineInterpreter,
   SceneId,
 } from "../mmoMachine";
-import { MicroInteraction, Player, PlazaRoomState } from "../types/Room";
-import {
+import type { MicroInteraction, Player, PlazaRoomState } from "../types/Room";
+import type {
   FactionName,
   GameState,
   IslandType,
@@ -29,13 +32,13 @@ import {
 } from "features/game/types/game";
 import { hasOrderRequirements } from "features/island/delivery/components/Orders";
 import { translate } from "lib/i18n/translate";
-import { Room } from "colyseus.js";
+import type { Room } from "colyseus.js";
 
 import defaultTilesetConfig from "assets/map/tileset.json";
 
-import { MachineInterpreter } from "features/game/lib/gameMachine";
-import { MachineInterpreter as AuthMachineInterpreter } from "features/auth/lib/authMachine";
-import { PhaserNavMesh } from "phaser-navmesh";
+import type { MachineInterpreter } from "features/game/lib/gameMachine";
+import type { MachineInterpreter as AuthMachineInterpreter } from "features/auth/lib/authMachine";
+import type { PhaserNavMesh } from "phaser-navmesh";
 import {
   AUDIO_MUTED_EVENT,
   getAudioMutedSetting,
@@ -43,7 +46,7 @@ import {
 import { NightShaderPipeline } from "../shaders/nightShader";
 import {
   PLAZA_SHADER_EVENT,
-  PlazaShader,
+  type PlazaShader,
   PlazaShaders,
   getPlazaShaderSetting,
 } from "lib/utils/hooks/usePlazaShader";
@@ -55,7 +58,7 @@ import { STREAM_REWARD_COOLDOWN } from "../ui/player/StreamReward";
 import { hasVipAccess } from "features/game/lib/vipAccess";
 import {
   playerModalManager,
-  PlayerModalPlayer,
+  type PlayerModalPlayer,
 } from "features/social/lib/playerModalManager";
 import { rewardModalManager } from "features/social/lib/rewardModalManager";
 import { waveModalManager } from "features/social/lib/waveModalManager";
@@ -315,6 +318,11 @@ export abstract class BaseScene extends Phaser.Scene {
   };
 
   preload() {
+    this.load.spritesheet("love_aura", "world/love_aura.png", {
+      frameWidth: 20,
+      frameHeight: 19,
+    });
+
     if (this.options.map?.json) {
       const json = {
         ...this.options.map.json,
@@ -347,12 +355,28 @@ export abstract class BaseScene extends Phaser.Scene {
         //this.initialiseControls();
       }
 
-      const from = this.mmoService?.state.context.previousSceneId as SceneId;
+      // Boot-time override stashed by Phaser.tsx when the world component
+      // was mounted via `navigate(..., { state: { previousSceneId } })`.
+      // Used once for the very first scene load (the route-change effect in
+      // Phaser.tsx handles subsequent navigations).
+      const initialPreviousSceneId = this.registry.get(
+        "initialPreviousSceneId",
+      ) as SpawnFromId | undefined;
+      if (initialPreviousSceneId) {
+        this.registry.remove("initialPreviousSceneId");
+      }
+
+      const from: SpawnFromId | undefined =
+        initialPreviousSceneId ??
+        this.mmoService?.getSnapshot().context.previousSceneId ??
+        undefined;
 
       let spawn = this.options.player.spawn;
 
-      if (SPAWNS()[this.sceneId]) {
-        spawn = SPAWNS()[this.sceneId][from] ?? SPAWNS()[this.sceneId].default;
+      const spawns = SPAWNS(this.gameState.bumpkin?.experience);
+      if (spawns[this.sceneId]) {
+        spawn =
+          (from && spawns[this.sceneId][from]) ?? spawns[this.sceneId].default;
       }
 
       this.createPlayer({
@@ -371,7 +395,7 @@ export abstract class BaseScene extends Phaser.Scene {
         experience: this.gameState.bumpkin?.experience ?? 0,
         totalDeliveries: this.gameState.delivery.fulfilledCount ?? 0,
         dailyStreak: this.gameState.dailyRewards?.streaks ?? 0,
-        isVip: hasVipAccess({ game: this.gameState }),
+        isVip: hasVipAccess({ game: this.gameState, now: Date.now() }),
         createdAt: this.gameState.createdAt,
         islandType: this.gameState.island.type,
       });
@@ -521,7 +545,7 @@ export abstract class BaseScene extends Phaser.Scene {
       // this.physics.world.fixedStep = false; // activates sync
       // this.physics.world.fixedStep = true; // deactivates sync (default)
     } catch (error) {
-      errorLogger(JSON.stringify(error));
+      errorLogger(error as Error);
     }
 
     this.setUpNavMesh();
@@ -558,7 +582,7 @@ export abstract class BaseScene extends Phaser.Scene {
     container.add(buttonImage);
     container.add(iconImage);
     buttonImage.setDisplaySize(14, 14);
-    buttonImage.setInteractive({ useHandCursor: true });
+    buttonImage.setInteractive();
     buttonImage.on("pointerdown", () => {
       this.sound.play("button");
       buttonImage.setTexture("round_button_pressed");
@@ -2294,8 +2318,9 @@ export abstract class BaseScene extends Phaser.Scene {
       this.switchToScene = undefined;
 
       let spawn = this.options.player.spawn;
-      if (SPAWNS()[warpTo]) {
-        spawn = SPAWNS()[warpTo][this.sceneId] ?? SPAWNS()[warpTo].default;
+      const spawns = SPAWNS(this.gameState.bumpkin?.experience);
+      if (spawns[warpTo]) {
+        spawn = spawns[warpTo][this.sceneId] ?? spawns[warpTo].default;
       }
       // This will cause a loop
       // this.registry.get("navigate")(`/world/${warpTo}`);

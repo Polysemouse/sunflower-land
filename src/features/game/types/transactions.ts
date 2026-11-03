@@ -1,18 +1,16 @@
-import { syncProgress, SyncProgressParams } from "lib/blockchain/Game";
-import { GameState, InventoryItemName, Wardrobe } from "./game";
+import type { GameState, InventoryItemName, Wardrobe } from "./game";
 import {
-  WithdrawBudsParams,
+  type WithdrawBudsParams,
   withdrawBudsTransaction,
-  WithdrawFlowerParams,
+  type WithdrawFlowerParams,
   withdrawFlowerTransaction,
-  WithdrawItemsParams,
+  type WithdrawItemsParams,
   withdrawItemsTransaction,
-  WithdrawPetsParams,
+  type WithdrawPetsParams,
   withdrawPetsTransaction,
-  WithdrawWearablesParams,
+  type WithdrawWearablesParams,
   withdrawWearablesTransaction,
 } from "lib/blockchain/Withdrawals";
-import { sync } from "../actions/sync";
 import { postEffect } from "../actions/effect";
 
 export type BudWithdrawnTransaction = {
@@ -38,6 +36,7 @@ export type ItemsWithdrawnTransaction = {
   createdAt: number;
   data: {
     items: Partial<Record<InventoryItemName, number>>;
+    mintedItems: Partial<Record<InventoryItemName, number>>;
     params: WithdrawItemsParams;
   };
 };
@@ -47,15 +46,8 @@ export type WearablesWithdrawnTransaction = {
   createdAt: number;
   data: {
     wearables: Wardrobe;
+    mintedWearables: Wardrobe;
     params: WithdrawWearablesParams;
-  };
-};
-
-export type ProgressSyncedTransaction = {
-  event: "transaction.progressSynced";
-  createdAt: number;
-  data: {
-    params: SyncProgressParams;
   };
 };
 
@@ -69,7 +61,6 @@ export type FlowerWithdrawnTransaction = {
 };
 
 export type GameTransaction =
-  | ProgressSyncedTransaction
   | WearablesWithdrawnTransaction
   | ItemsWithdrawnTransaction
   | BudWithdrawnTransaction
@@ -176,7 +167,6 @@ export const ONCHAIN_TRANSACTIONS: TransactionHandler = {
   "transaction.budWithdrawn": (data) => withdrawBudsTransaction(data.params),
   "transaction.petWithdrawn": (data) => withdrawPetsTransaction(data.params),
   "transaction.itemsWithdrawn": (data) => withdrawItemsTransaction(data.params),
-  "transaction.progressSynced": (data) => syncProgress(data.params),
   "transaction.wearablesWithdrawn": (data) =>
     withdrawWearablesTransaction(data.params),
   "transaction.flowerWithdrawn": (data) =>
@@ -195,7 +185,6 @@ type TransactionRequest = Record<
 >;
 
 export const TRANSACTION_SIGNATURES: TransactionRequest = {
-  "transaction.progressSynced": sync,
   "transaction.budWithdrawn": postEffect,
   "transaction.petWithdrawn": postEffect,
   "transaction.itemsWithdrawn": postEffect,

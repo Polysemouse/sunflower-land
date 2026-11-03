@@ -1,6 +1,6 @@
 import Decimal from "decimal.js-light";
 
-import { GameState, InventoryItemName } from "../types/game";
+import type { GameState, InventoryItemName } from "../types/game";
 
 /**
  * Converts API response into a game state
@@ -27,6 +27,7 @@ export function makeGame(farm: any): GameState {
     previousWardrobe: farm.previousWardrobe,
     competitions: farm.competitions,
     verified: farm.verified,
+    captcha: farm.captcha,
     stock: Object.keys(farm.stock).reduce(
       (items, item) => ({
         ...items,
@@ -38,6 +39,21 @@ export function makeGame(farm: any): GameState {
     island: farm.island,
     bank: farm.bank,
     home: farm.home,
+    // Absent until the player builds the Cave — a straight passthrough so the
+    // fallback can never fabricate one for a farm that hasn't built it.
+    cave: farm.cave,
+    // Interior is a new, entirely separate placement surface. Seed it with an
+    // empty ground level for any player coming back from the API who does not
+    // yet have this field — the feature is front-end-only for v1 and they opt
+    // in by placing items at /interior. We tolerate two legacy shapes:
+    //   - `farm.interior` missing entirely → default to a fresh ground level
+    //   - `farm.interior.collectibles` from an earlier prototype where data
+    //     wasn't yet nested under .ground → migrate it under .ground.
+    interior: farm.interior?.ground
+      ? farm.interior
+      : farm.interior?.collectibles
+        ? { ground: { collectibles: farm.interior.collectibles } }
+        : { ground: { collectibles: {} } },
     createdAt: farm.createdAt,
     stockExpiry: farm.stockExpiry || {},
     coins: farm.coins,
@@ -83,6 +99,7 @@ export function makeGame(farm: any): GameState {
     crimstones: farm.crimstones ?? {},
     oilReserves: farm.oilReserves ?? {},
     sunstones: farm.sunstones ?? {},
+    ascensionCrystals: farm.ascensionCrystals ?? {},
     crops: farm.crops ?? {},
     fruitPatches: farm.fruitPatches ?? {},
     flowers: farm.flowers ?? {},
@@ -99,7 +116,6 @@ export function makeGame(farm: any): GameState {
     buds: farm.buds,
     flowerShop: farm.flowerShop,
     specialEvents: farm.specialEvents,
-    experiments: farm.experiments,
     floatingIsland: farm.floatingIsland,
     megastore: farm.megastore,
     goblinMarket: farm.goblinMarket,
@@ -115,7 +131,9 @@ export function makeGame(farm: any): GameState {
     transaction: farm.transaction,
     henHouse: farm.henHouse,
     barn: farm.barn,
+    pigpen: farm.pigpen,
     waterWell: farm.waterWell,
+    agingShed: farm.agingShed,
     petHouse: farm.petHouse,
     craftingBox: farm.craftingBox,
     season: farm.season,
@@ -130,11 +148,13 @@ export function makeGame(farm: any): GameState {
     ban: farm.ban,
     rewardBoxes: farm.rewardBoxes,
     withdrawals: farm.withdrawals,
-    blessing: farm.blessing,
     aoe: farm.aoe,
     boostsUsedAt: farm.boostsUsedAt,
+    boostHistory: farm.boostHistory,
     socialFarming: farm.socialFarming,
     pets: farm.pets,
-    prototypes: farm.prototypes,
+    saltFarm: farm.saltFarm ?? { level: 0, nodes: {} },
+    sculptures: farm.sculptures,
+    tcsAcknowledged: farm.tcsAcknowledged,
   };
 }

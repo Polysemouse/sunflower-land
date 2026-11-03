@@ -1,9 +1,12 @@
 import Decimal from "decimal.js-light";
-import { startComposter } from "./startComposter";
-import { GameState, TemperateSeasonName } from "features/game/types/game";
+import { startComposter, getCompostAmount, getReadyAt } from "./startComposter";
+import type { GameState, TemperateSeasonName } from "features/game/types/game";
 import { TEST_FARM, INITIAL_BUMPKIN } from "features/game/lib/constants";
-import { SEASON_COMPOST_REQUIREMENTS } from "features/game/types/composters";
-import { getKeys } from "features/game/types/decorations";
+import {
+  SEASON_COMPOST_REQUIREMENTS,
+  composterDetails,
+} from "features/game/types/composters";
+import { getKeys } from "lib/object";
 
 const season: TemperateSeasonName = "winter";
 
@@ -947,5 +950,169 @@ describe("start Premium Composter", () => {
         "Fruitful Blend"
       ],
     ).toBe(4);
+  });
+});
+
+describe("startComposter skill ranks", () => {
+  const dateNow = Date.now();
+
+  const stateWithSkills = (
+    skills: GameState["bumpkin"]["skills"],
+  ): GameState => ({
+    ...GAME_STATE,
+    bumpkin: { ...INITIAL_BUMPKIN, skills },
+  });
+
+  it.each([
+    [1, 15],
+    [2, 17],
+    [3, 19],
+  ])("Efficient Bin rank %i gives %i Sprout Mix", (rank, expected) => {
+    const { produceAmount } = getCompostAmount({
+      game: stateWithSkills({ "Efficient Bin": rank }),
+      building: "Compost Bin",
+    });
+    expect(produceAmount).toBe(expected);
+  });
+
+  it.each([
+    [1, 8],
+    [2, 10],
+    [3, 12],
+  ])("Turbo Charged rank %i gives %i Fruitful Blend", (rank, expected) => {
+    const { produceAmount } = getCompostAmount({
+      game: stateWithSkills({ "Turbo Charged": rank }),
+      building: "Turbo Composter",
+    });
+    expect(produceAmount).toBe(expected);
+  });
+
+  it.each([
+    [1, 20],
+    [2, 25],
+    [3, 30],
+  ])("Premium Worms rank %i gives %i Rapid Root", (rank, expected) => {
+    const { produceAmount } = getCompostAmount({
+      game: stateWithSkills({ "Premium Worms": rank }),
+      building: "Premium Composter",
+    });
+    expect(produceAmount).toBe(expected);
+  });
+
+  it.each([
+    [1, 15],
+    [2, 18],
+    [3, 20],
+  ])("Composting Revamp rank %i gives %i Sprout Mix", (rank, expected) => {
+    const { produceAmount } = getCompostAmount({
+      game: stateWithSkills({ "Composting Revamp": rank }),
+      building: "Compost Bin",
+    });
+    expect(produceAmount).toBe(expected);
+  });
+
+  it.each([
+    [1, 0.9],
+    [2, 0.875],
+    [3, 0.85],
+  ])("Swift Decomposer rank %i multiplies compost time by %f", (rank, mult) => {
+    const { timeToFinishMilliseconds } = getReadyAt({
+      gameState: stateWithSkills({ "Swift Decomposer": rank }),
+      composter: "Compost Bin",
+    });
+    expect(timeToFinishMilliseconds).toBe(
+      composterDetails["Compost Bin"].timeToFinishMilliseconds * mult,
+    );
+  });
+
+  it("snapshots the compost amount at the rank paid for when production starts", () => {
+    const state: GameState = {
+      ...GAME_STATE,
+      inventory: {
+        ...GAME_STATE.inventory,
+        Potato: new Decimal(10),
+        Cabbage: new Decimal(3),
+      },
+      buildings: {
+        "Compost Bin": [
+          { coordinates: { x: 0, y: 0 }, createdAt: 0, readyAt: 0, id: "0" },
+        ],
+      },
+      bumpkin: { ...INITIAL_BUMPKIN, skills: { "Efficient Bin": 1 } },
+    };
+
+    const started = startComposter({
+      createdAt: dateNow,
+      state,
+      action: { type: "composter.started", building: "Compost Bin" },
+    });
+
+    // Ranking up mid-production must not retroactively change the output.
+    const rankedUp: GameState = {
+      ...started,
+      bumpkin: { ...started.bumpkin, skills: { "Efficient Bin": 3 } },
+    };
+
+    expect(
+      rankedUp.buildings["Compost Bin"]?.[0].producing?.items["Sprout Mix"],
+    ).toBe(15);
+  });
+});
+
+describe("Straw House", () => {
+  const withStrawHouse = (game: GameState): GameState => ({
+    ...game,
+    collectibles: {
+      ...game.collectibles,
+      "Straw House": [
+        { id: "1", createdAt: 0, coordinates: { x: 0, y: 0 }, readyAt: 0 },
+      ],
+    },
+  });
+
+  it.each(["Compost Bin", "Turbo Composter", "Premium Composter"] as const)(
+    "applies x0.9 compost time to the %s",
+    (composter) => {
+      const { timeToFinishMilliseconds, boostsUsed } = getReadyAt({
+        gameState: withStrawHouse(GAME_STATE),
+        composter,
+      });
+
+      expect(timeToFinishMilliseconds).toEqual(
+        composterDetails[composter].timeToFinishMilliseconds * 0.9,
+      );
+      expect(boostsUsed).toContainEqual({ name: "Straw House", value: "x0.9" });
+    },
+  );
+
+  it.each([
+    ["Compost Bin", 30],
+    ["Turbo Composter", 9],
+    ["Premium Composter", 30],
+  ] as const)("triples the base %s yield", (building, expected) => {
+    const { produceAmount, boostsUsed } = getCompostAmount({
+      game: withStrawHouse({ ...GAME_STATE, bumpkin: INITIAL_BUMPKIN }),
+      building,
+    });
+
+    expect(produceAmount).toBe(expected);
+    expect(boostsUsed).toContainEqual({ name: "Straw House", value: "x3" });
+  });
+
+  it("triples the base yield before the additive boosts", () => {
+    const { produceAmount } = getCompostAmount({
+      game: withStrawHouse({
+        ...GAME_STATE,
+        bumpkin: {
+          ...INITIAL_BUMPKIN,
+          skills: { "Premium Worms": 1 },
+          equipped: { ...INITIAL_BUMPKIN.equipped, hat: "Turd Topper" },
+        },
+      }),
+      building: "Premium Composter",
+    });
+
+    // 10 base x3 = 30, then +10 Premium Worms and +1 Turd Topper
+    expect(produceAmount).toBe(41);
   });
 });

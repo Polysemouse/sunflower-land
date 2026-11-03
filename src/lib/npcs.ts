@@ -1,4 +1,4 @@
-import { Equipped } from "features/game/types/bumpkin";
+import type { Equipped } from "features/game/types/bumpkin";
 
 export type NPCName =
   | "richie"
@@ -7,6 +7,7 @@ export type NPCName =
   | "felga" // Fruit dash
   | "minewhack" // Mine Whack
   | "memory" // Memory portal
+  | "chaac" // Chaac's Temple portal
   | "digby"
   | "portaller"
   | "gambit"
@@ -72,6 +73,7 @@ export type NPCName =
   | "elf"
   | "ginger"
   | "misty"
+  | "murmur"
   | "poppy"
   | "stevie"
   | "Chun Long"
@@ -116,7 +118,13 @@ export type NPCName =
   | "rocket man"
   | "new year pete"
   | "bailey" // weatherman
-  | "neville"; // fish market
+  | "neville" // fish market
+  | "pirate skeleton" //april fools event portal npc
+  | "Slime Jim" // Colors event NPC
+  | "Slime Joe" // Colors event NPC
+  | "Vampire Jim" // Halloween event NPC
+  | "Skelly Joe" // Halloween event NPC
+  | "gloomwick"; // Goblin Cave Merchant (Chapter 16)
 
 export const NPC_WEARABLES: Record<NPCName, Equipped> = {
   streamer: {
@@ -204,6 +212,19 @@ export const NPC_WEARABLES: Record<NPCName, Equipped> = {
     tool: "Kama",
     hat: "Straw Hat",
   },
+  chaac: {
+    background: "Farm Background",
+    hair: "Silver Streaks",
+    body: "Pirate Potion",
+    shirt: "Goblin Armor",
+    pants: "Crimstone Pants",
+    shoes: "Black Farmer Boots",
+    hat: "Nightshade Crown",
+    tool: "Infernal Pitchfork",
+    secondaryTool: "Solflare Aegis",
+    eyes: "Grumpy Eyes",
+    mouth: "Neutral Mouth",
+  },
   pharaoh: {
     body: "Light Brown Farmer Potion",
     hair: "Sun Spots",
@@ -246,6 +267,7 @@ export const NPC_WEARABLES: Record<NPCName, Equipped> = {
   },
   "chef tuck": {
     body: "Goblin Potion",
+    mouth: "Fanged Smile",
     hair: "Wise Hair",
     hat: "Chef Hat",
     shirt: "Goblin Armor",
@@ -290,6 +312,7 @@ export const NPC_WEARABLES: Record<NPCName, Equipped> = {
   },
   gambit: {
     body: "Goblin Potion",
+    mouth: "Fanged Smile",
     hair: "Sun Spots",
     hat: "Knight Gambit",
     pants: "Farmer Pants",
@@ -297,6 +320,7 @@ export const NPC_WEARABLES: Record<NPCName, Equipped> = {
     tool: "Goblin Puppet",
     background: "Kingdom Background",
     shoes: "Brown Boots",
+    eyes: "Big Wink Eyes",
   },
   portaller: {
     body: "Beige Farmer Potion",
@@ -319,6 +343,7 @@ export const NPC_WEARABLES: Record<NPCName, Equipped> = {
     background: "Kingdom Background",
     shoes: "Brown Boots",
     hat: "Cap n Bells",
+    eyes: "Giggle Eyes",
   },
   victoria: {
     body: "Beige Farmer Potion",
@@ -328,6 +353,7 @@ export const NPC_WEARABLES: Record<NPCName, Equipped> = {
     background: "Kingdom Background",
     shoes: "Brown Boots",
     hat: "Queen's Crown",
+    mouth: "Neutral Mouth",
   },
   gaucho: {
     body: "Beige Farmer Potion",
@@ -376,6 +402,7 @@ export const NPC_WEARABLES: Record<NPCName, Equipped> = {
   },
   greedclaw: {
     body: "Goblin Potion",
+    mouth: "Fanged Smile",
     hair: "Wise Hair",
     beard: "Wise Beard",
     pants: "Wise Slacks",
@@ -387,6 +414,7 @@ export const NPC_WEARABLES: Record<NPCName, Equipped> = {
   },
   grabnab: {
     body: "Goblin Potion",
+    mouth: "Fanged Smile",
     background: "Goblin Retreat Background",
     hair: "Sun Spots",
     shirt: "Bidder's Brocade",
@@ -397,6 +425,7 @@ export const NPC_WEARABLES: Record<NPCName, Equipped> = {
   },
   garbo: {
     body: "Goblin Potion",
+    mouth: "Fanged Smile",
     shirt: "Yellow Farmer Shirt",
     pants: "Farmer Overalls",
     hair: "Buzz Cut",
@@ -406,6 +435,7 @@ export const NPC_WEARABLES: Record<NPCName, Equipped> = {
   },
   gordo: {
     body: "Goblin Potion",
+    mouth: "Fanged Smile",
     shirt: "Hawaiian Shirt",
     pants: "Farmer Pants",
     hair: "Sun Spots",
@@ -416,6 +446,7 @@ export const NPC_WEARABLES: Record<NPCName, Equipped> = {
 
   goblet: {
     body: "Goblin Potion",
+    mouth: "Fanged Smile",
     shirt: "Blue Farmer Shirt",
     pants: "Farmer Pants",
     hair: "White Long Hair",
@@ -427,6 +458,7 @@ export const NPC_WEARABLES: Record<NPCName, Equipped> = {
 
   guria: {
     body: "Goblin Potion",
+    mouth: "Fanged Smile",
     shirt: "Red Farmer Shirt",
     pants: "Lumberjack Overalls",
     hair: "Rancher Hair",
@@ -501,6 +533,8 @@ export const NPC_WEARABLES: Record<NPCName, Equipped> = {
     tool: "Parsnip",
     background: "Pumpkin Plaza Background",
     shoes: "Black Farmer Boots",
+    eyes: "Fun Eyes",
+    mouth: "Big Smile",
   },
   blacksmith: {
     body: "Light Brown Farmer Potion",
@@ -541,6 +575,7 @@ export const NPC_WEARABLES: Record<NPCName, Equipped> = {
   },
   grimbly: {
     body: "Goblin Potion",
+    mouth: "Fanged Smile",
     pants: "Brown Suspenders",
     tool: "Hammer",
     hair: "Blacksmith Hair",
@@ -550,6 +585,7 @@ export const NPC_WEARABLES: Record<NPCName, Equipped> = {
   },
   grimtooth: {
     body: "Goblin Potion",
+    mouth: "Fanged Smile",
     shirt: "Red Farmer Shirt",
     pants: "Lumberjack Overalls",
     hair: "Blacksmith Hair",
@@ -560,6 +596,7 @@ export const NPC_WEARABLES: Record<NPCName, Equipped> = {
   },
   grubnuk: {
     body: "Goblin Potion",
+    mouth: "Fanged Smile",
     shirt: "SFL T-Shirt",
     pants: "Farmer Pants",
     hair: "Buzz Cut",
@@ -627,6 +664,8 @@ export const NPC_WEARABLES: Record<NPCName, Equipped> = {
     pants: "Farmer Overalls",
     shoes: "Yellow Boots",
     tool: "Goblin Puppet",
+    eyes: "Giggle Eyes",
+    mouth: "Baby Teeth",
   },
   // Auctioneer who collects rare items and sells them off
   "hammerin harry": {
@@ -638,6 +677,7 @@ export const NPC_WEARABLES: Record<NPCName, Equipped> = {
     shoes: "Leather Shoes",
     tool: "Auction Megaphone",
     hat: "Harry's Hat",
+    eyes: "Fun Eyes",
   },
   // Grave Digger
   craig: {
@@ -678,6 +718,8 @@ export const NPC_WEARABLES: Record<NPCName, Equipped> = {
     pants: "Lumberjack Overalls",
     shoes: "Black Farmer Boots",
     tool: "Farmer Pitchfork",
+    eyes: "Fun Eyes",
+    mouth: "Big Smile",
   },
   // Crazy buggy eyed bert
   bert: {
@@ -689,6 +731,7 @@ export const NPC_WEARABLES: Record<NPCName, Equipped> = {
     shoes: "Old Shoes",
     tool: "Farmer Pitchfork",
     hat: "Crab Hat",
+    eyes: "Surprised Eyes",
   },
   // Announces news
   birdie: {
@@ -743,6 +786,7 @@ export const NPC_WEARABLES: Record<NPCName, Equipped> = {
     tool: "Hammer",
     background: "Pumpkin Plaza Background",
     shoes: "Brown Boots",
+    eyes: "Grumpy Eyes",
   },
   raven: {
     body: "Pale Potion",
@@ -753,6 +797,7 @@ export const NPC_WEARABLES: Record<NPCName, Equipped> = {
     shoes: "Brown Boots",
     wings: "Bat Wings",
     hat: "Victorian Hat",
+    mouth: "Neutral Mouth",
   },
   // Clothes shop stylist
   stella: {
@@ -765,6 +810,8 @@ export const NPC_WEARABLES: Record<NPCName, Equipped> = {
     background: "Pumpkin Plaza Background",
     shoes: "Brown Boots",
     tool: "Farmer Pitchfork",
+    mouth: "Big Smile",
+    eyes: "Giggle Eyes",
   },
   // Sunflorian Prince
   tywin: {
@@ -775,6 +822,8 @@ export const NPC_WEARABLES: Record<NPCName, Equipped> = {
     tool: "Sword",
     background: "Pumpkin Plaza Background",
     shoes: "Brown Boots",
+    eyes: "Grumpy Eyes",
+    mouth: "Angry Mouth",
   },
   "old salty": {
     body: "Pirate Potion",
@@ -786,6 +835,7 @@ export const NPC_WEARABLES: Record<NPCName, Equipped> = {
     tool: "Pirate Scimitar",
     background: "Desert Background",
     shoes: "Peg Leg",
+    mouth: "Gold Teeth",
   },
   miranda: {
     body: "Beige Farmer Potion",
@@ -796,6 +846,7 @@ export const NPC_WEARABLES: Record<NPCName, Equipped> = {
     background: "Seashore Background",
     shoes: "Brown Boots",
     hat: "Fruit Bowl",
+    eyes: "Fun Eyes",
   },
   cornwell: {
     body: "Beige Farmer Potion",
@@ -869,6 +920,7 @@ export const NPC_WEARABLES: Record<NPCName, Equipped> = {
   },
   garth: {
     body: "Infernal Goblin Potion",
+    mouth: "Fanged Smile",
     hair: "Silver Streaks",
     pants: "Brown Suspenders",
     shirt: "Trial Tee",
@@ -878,6 +930,7 @@ export const NPC_WEARABLES: Record<NPCName, Equipped> = {
   },
   gunter: {
     body: "Infernal Goblin Potion",
+    mouth: "Fanged Smile",
     hair: "Silver Streaks",
     pants: "Brown Suspenders",
     shirt: "Fossil Armor",
@@ -887,6 +940,7 @@ export const NPC_WEARABLES: Record<NPCName, Equipped> = {
   },
   gorga: {
     body: "Infernal Goblin Potion",
+    mouth: "Fanged Smile",
     hair: "Goth Hair",
     pants: "Brown Suspenders",
     shirt: "Fossil Armor",
@@ -909,6 +963,7 @@ export const NPC_WEARABLES: Record<NPCName, Equipped> = {
   },
   gilda: {
     body: "Infernal Goblin Potion",
+    mouth: "Fanged Smile",
     hair: "Rancher Hair",
     pants: "Brown Suspenders",
     shirt: "Fossil Armor",
@@ -926,6 +981,7 @@ export const NPC_WEARABLES: Record<NPCName, Equipped> = {
     shoes: "Wellies",
     tool: "Sunflower Rod",
     hat: "Squid Hat",
+    eyes: "Wink Eyes",
   },
   tango: {
     body: "Squirrel Monkey Potion",
@@ -944,6 +1000,7 @@ export const NPC_WEARABLES: Record<NPCName, Equipped> = {
   // To remove on digging release
   goldtooth: {
     body: "Goblin Potion",
+    mouth: "Fanged Smile",
     hair: "Sun Spots",
     hat: "Pirate Hat",
     shirt: "Pirate Leather Polo",
@@ -1030,6 +1087,20 @@ export const NPC_WEARABLES: Record<NPCName, Equipped> = {
     pants: "Fishing Pants",
     shirt: "Reel Fishing Vest",
   },
+  /** Kingdom corner NPC — jester cap + Motley + eclectic gear (secret Economy Hub gate). */
+  murmur: {
+    body: "Beige Farmer Potion",
+    hair: "Fire Hair",
+    hat: "Cap n Bells",
+    suit: "Motley",
+    pants: "Fancy Pants",
+    shirt: "Fire Shirt",
+    shoes: "Brown Boots",
+    tool: "Infernal Rod",
+    background: "Kingdom Background",
+    eyes: "Giggle Eyes",
+    mouth: "Neutral Mouth",
+  },
   // Flower expert
   poppy: {
     body: "Beige Farmer Potion",
@@ -1086,6 +1157,7 @@ export const NPC_WEARABLES: Record<NPCName, Equipped> = {
   },
   grommy: {
     body: "Goblin Potion",
+    mouth: "Fanged Smile",
     hair: "Sun Spots",
     shirt: "Crimstone Armor",
     pants: "Crimstone Pants",
@@ -1118,6 +1190,7 @@ export const NPC_WEARABLES: Record<NPCName, Equipped> = {
   },
   graxle: {
     body: "Goblin Potion",
+    mouth: "Fanged Smile",
     hair: "Fire Hair",
     hat: "Goblin Crown",
     shirt: "Goblin Armor",
@@ -1157,6 +1230,7 @@ export const NPC_WEARABLES: Record<NPCName, Equipped> = {
   },
   glinteye: {
     body: "Goblin Potion",
+    mouth: "Fanged Smile",
     hair: "Greyed Glory",
     shirt: "Fancy Top",
     pants: "Fancy Pants",
@@ -1194,6 +1268,7 @@ export const NPC_WEARABLES: Record<NPCName, Equipped> = {
   },
   grizzle: {
     body: "Goblin Potion",
+    mouth: "Fanged Smile",
     hat: "Warrior Helmet",
     hair: "Brown Long Hair",
     shirt: "Fancy Top",
@@ -1303,6 +1378,70 @@ export const NPC_WEARABLES: Record<NPCName, Equipped> = {
     tool: "Skinning Knife",
     background: "Pumpkin Plaza Background",
     shoes: "Cowboy Boots",
+  },
+  "pirate skeleton": {
+    body: "Moonseeker Potion",
+    hair: "Buzz Cut",
+    pants: "Pirate Pants",
+    hat: "Pirate Hat",
+    shirt: "Striped Blue Shirt",
+    coat: "Pirate General Coat",
+    tool: "Pirate Scimitar",
+    background: "Farm Background",
+    shoes: "Black Farmer Boots",
+  },
+  "Slime Jim": {
+    hair: "Basic Hair",
+    hat: "Sad Slime Hat",
+    body: "Beige Farmer Potion",
+    shirt: "Slime Splattered Shirt",
+    pants: "Sad Slime Pants",
+    shoes: "Sad Slime Slippers",
+    eyes: "Grumpy Eyes",
+    mouth: "Neutral Mouth",
+    tool: "Yellow Slime Puppet",
+  },
+  "Slime Joe": {
+    background: "Slime Wall Background",
+    hair: "Green Slime Hair",
+    body: "Light Brown Farmer Potion",
+    shirt: "Blue Slime Shirt",
+    pants: "Red Jelly Pants",
+    shoes: "Blue Jelly Shoes",
+    tool: "Yellow Slime Puppet",
+    wings: "Rainbow Wings",
+    aura: "Butterfly Aura",
+    eyes: "Fun Eyes",
+    mouth: "Big Smile",
+  },
+  "Vampire Jim": {
+    hair: "Basic Hair",
+    hat: "Vampire Headwear",
+    body: "Light Brown Farmer Potion",
+    shirt: "Vampire Garments",
+    pants: "Vampire Breeches",
+    shoes: "Vampire Footwear",
+    eyes: "Fun Eyes",
+    mouth: "Big Smile",
+  },
+  "Skelly Joe": {
+    background: "Scary Nights Background",
+    hair: "Basic Hair",
+    hat: "Skeleton Mask",
+    body: "Beige Farmer Potion",
+    suit: "Skeleton Costume",
+    tool: "Hook and Chain",
+    wings: "Sky Tearer Wings",
+    aura: "Bat Aura",
+  },
+  gloomwick: {
+    body: "Goblin Potion",
+    hair: "Buzz Cut",
+    suit: "Traveling Merchant Suit",
+    wings: "Traveling Merchant Bag",
+    hat: "Beetle Goggles",
+    shoes: "Black Farmer Boots",
+    background: "Goblin Retreat Background",
   },
 };
 

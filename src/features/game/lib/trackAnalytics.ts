@@ -1,7 +1,7 @@
 import { CHAPTERS, getCurrentChapter } from "features/game/types/chapters";
 import {
   CHAPTER_TRACKS,
-  ChapterTask,
+  type ChapterTask,
   getChapterTaskPoints,
   getTrackMilestonesCrossed,
 } from "features/game/types/tracks";
@@ -9,17 +9,17 @@ import { gameAnalytics } from "lib/gameAnalytics";
 
 export function handleChapterAnalytics({
   task,
-  tickets,
+  points,
   farmActivity,
   createdAt,
 }: {
   task: ChapterTask;
-  tickets: number;
+  points: number;
   farmActivity: Record<string, number>;
   createdAt: number;
 }) {
   const chapter = getCurrentChapter(createdAt);
-  const pointsAwarded = getChapterTaskPoints({ task, tickets: tickets });
+  const pointsAwarded = getChapterTaskPoints({ task, points });
 
   if (pointsAwarded <= 0) {
     return;

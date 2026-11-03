@@ -1,31 +1,34 @@
 import seasonal_kingdom from "assets/map/seasonal_kingdom.json";
 import seasonal_tileset from "assets/map/seasonal_tileset.json";
 
-import { SceneId } from "../mmoMachine";
-import { BaseScene, NPCBumpkin } from "./BaseScene";
+import type { SceneId } from "../mmoMachine";
+import { BaseScene, type NPCBumpkin } from "./BaseScene";
 import {
-  KingdomLeaderboard,
+  type KingdomLeaderboard,
   fetchLeaderboardData,
   getChampionsLeaderboard,
 } from "features/game/expansion/components/leaderboard/actions/leaderboard";
 import { interactableModalManager } from "../ui/InteractableModals";
+import { Label } from "../containers/Label";
 import { translate } from "lib/i18n/translate";
 import { SOUNDS } from "assets/sound-effects/soundEffects";
 
 import { npcModalManager } from "../ui/NPCModals";
-import { FactionName, TemperateSeasonName } from "features/game/types/game";
-import { Coordinates } from "features/game/expansion/components/MapPlacement";
-import { getKeys } from "features/game/types/decorations";
-import { JoinFactionAction } from "features/game/events/landExpansion/joinFaction";
+import type {
+  FactionName,
+  TemperateSeasonName,
+} from "features/game/types/game";
+import type { Coordinates } from "features/game/expansion/components/MapPlacement";
+import { getKeys } from "lib/object";
+import type { JoinFactionAction } from "features/game/events/landExpansion/joinFaction";
 import {
   getFactionScores,
   getPreviousWeek,
   secondsTillWeekReset,
 } from "features/game/lib/factions";
 import { hasReadKingdomNotice } from "../ui/kingdom/KingdomNoticeboard";
-import { EventObject } from "xstate";
+import type { EventObject } from "xstate";
 import { capitalize } from "lib/utils/capitalize";
-import { Label } from "../containers/Label";
 
 const GUARDIAN_MAP: Record<TemperateSeasonName, string> = {
   autumn: "autumn_guardian",
@@ -35,6 +38,7 @@ const GUARDIAN_MAP: Record<TemperateSeasonName, string> = {
 };
 
 export const KINGDOM_NPCS: NPCBumpkin[] = [
+  { x: 0, y: 0, npc: "murmur", direction: "right" },
   { x: 305, y: 500, npc: "billy", direction: "left" },
   { x: 112, y: 181, npc: "jester" },
   { x: 263, y: 105, npc: "victoria", direction: "left" },
@@ -52,6 +56,12 @@ const DOORS: Record<FactionName, Coordinates & { door: string }> = {
   nightshades: { x: 7 * 16 + 8, y: 26 * 16 + 8, door: "red_door" },
   bumpkins: { x: 23 * 16 + 8, y: 27 * 16 + 8, door: "red_door" },
 };
+
+/**
+ * Extra collision below the Hall of Fame board's base, so a player approaching
+ * from the front stops short of being layered underneath the board sprite.
+ */
+const HALL_OF_FAME_APPROACH_BUFFER = 14;
 
 const THRONES: Record<FactionName, string> = {
   goblins: "goblin_champions",
@@ -133,10 +143,52 @@ export class KingdomScene extends BaseScene {
       this.load.image(DOORS[key].door, `world/${DOORS[key].door}.png`);
     });
 
+    this.load.image("hall_of_fame_board", "world/showcase_board.png");
+
     this.load.image("empty_champions", "world/empty_champions.png");
     getKeys(THRONES).forEach((key) => {
       this.load.image(THRONES[key], `world/${THRONES[key]}.png`);
     });
+  }
+
+  /**
+   * Noticeboard in the courtyard that opens the full screen Hall of Fame.
+   * It sits at a high depth so players walk behind it, and only its base blocks
+   * movement.
+   */
+  addHallOfFameBoard() {
+    const board = this.add
+      .sprite(78, 623, "hall_of_fame_board")
+      .setDepth(1000000);
+
+    this.physics.world.enable(board);
+    this.colliders?.add(board);
+    // The board out-depths every player, so someone walking up from below would
+    // be drawn underneath it. The base (8px) keeps them behind the board; the
+    // extra 14px holds them far enough down that their head clears its bottom
+    // edge instead of disappearing into it.
+    (board.body as Phaser.Physics.Arcade.Body)
+      .setSize(40, 8 + HALL_OF_FAME_APPROACH_BUFFER)
+      .setOffset(0, 22)
+      .setImmovable(true)
+      .setCollideWorldBounds(true);
+
+    board.setInteractive({ cursor: "pointer" }).on("pointerdown", () => {
+      if (!this.checkDistanceToSprite(board, 75)) {
+        this.currentPlayer?.speak(translate("base.iam.far.away"));
+        return;
+      }
+
+      // The scene keeps running behind the route, so hand it the way back.
+      this.registry.get("navigate")?.("/world/hall-of-fame", {
+        state: { returnTo: `/world/${this.sceneId}` },
+      });
+    });
+
+    const label = new Label(this, "HALL OF FAME", "gold");
+    label.setPosition(78, 602);
+    label.setDepth(10000000);
+    this.add.existing(label);
   }
 
   addShopDisplayItems() {
@@ -153,6 +205,7 @@ export class KingdomScene extends BaseScene {
 
     this.initialiseNPCs(KINGDOM_NPCS);
     this.addShopDisplayItems();
+    this.addHallOfFameBoard();
 
     const season = this.gameState.season.season;
 
@@ -226,6 +279,25 @@ export class KingdomScene extends BaseScene {
         this.currentPlayer?.speak(translate("base.iam.far.away"));
       }
     });
+
+    // Community games portal — same idea as the mini-game portal above, tucked
+    // just below-right of Gambit. Opens the Community Games board.
+    const communityPortal = this.add.sprite(405, 741, "portal");
+    communityPortal.play("portal_anim", true);
+    communityPortal
+      .setInteractive({ cursor: "pointer" })
+      .on("pointerdown", () => {
+        if (this.checkDistanceToSprite(communityPortal, 40)) {
+          interactableModalManager.open("giveaway_board");
+        } else {
+          this.currentPlayer?.speak(translate("base.iam.far.away"));
+        }
+      });
+
+    const communityLabel = new Label(this, "BETA", "vibrant");
+    communityLabel.setPosition(405, 725);
+    communityLabel.setDepth(10000000);
+    this.add.existing(communityLabel);
 
     const board1 = this.add.sprite(328, 620, "sunflorian_board");
 
@@ -347,19 +419,8 @@ export class KingdomScene extends BaseScene {
       nature1.play({ loop: true, volume: 0.3 });
     }
 
-    const guardian = this.add.sprite(192, 324, "guardian");
-    guardian.setInteractive({ cursor: "pointer" }).on("pointerdown", () => {
-      if (this.checkDistanceToSprite(guardian, 40)) {
-        interactableModalManager.open("guardian");
-      } else {
-        this.currentPlayer?.speak(translate("base.iam.far.away"));
-      }
-    });
-
-    const guardianLabel = new Label(this, "TRIBUTE", "grey");
-    guardianLabel.setPosition(192, 294);
-    guardianLabel.setDepth(10000000);
-    this.add.existing(guardianLabel);
+    // Decorative seasonal guardian sprite (no interaction).
+    this.add.sprite(192, 324, "guardian");
 
     // Shut down the sound when the scene changes
     this.events.once("shutdown", () => {

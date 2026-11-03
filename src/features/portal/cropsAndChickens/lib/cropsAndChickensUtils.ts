@@ -1,4 +1,4 @@
-import { Minigame } from "features/game/types/game";
+import type { Minigame } from "features/game/types/game";
 import {
   RESTOCK_ATTEMPTS_FLOWER,
   UNLIMITED_ATTEMPTS_FLOWER,
@@ -7,7 +7,7 @@ import {
   CROP_TO_INDEX,
   WEEKLY_MISSION_EXTRA_ATTEMPTS_GOAL,
   WEEKLY_MISSION_EXTRA_ATTEMPTS,
-  CropsAndChickensCropName,
+  type CropsAndChickensCropName,
 } from "../CropsAndChickensConstants";
 import { getHolidayAsset } from "./CropsAndChickensHolidayAsset";
 

@@ -1,8 +1,9 @@
-import React, { useState } from "react";
+import React, { useContext, useEffect, useState } from "react";
 import { useNavigate, useLocation, useSearchParams } from "react-router";
+import { useSelector } from "@xstate/react";
 import { SUNNYSIDE } from "assets/sunnyside";
 import { ITEM_DETAILS } from "features/game/types/images";
-import { FilterOption, FilterOptionProps } from "./FilterOption";
+import { FilterOption, type FilterOptionProps } from "./FilterOption";
 import tradeIcon from "assets/icons/trade.png";
 import trade_point from "src/assets/icons/trade_points_coupon.webp";
 import lightning from "assets/icons/lightning.png";
@@ -10,39 +11,55 @@ import wearableIcon from "assets/icons/wearables.webp";
 import budIcon from "assets/icons/bud.png";
 import {
   useTraitFilters,
-  TraitCollection,
-  TraitKey,
+  type TraitCollection,
+  type TraitKey,
   getTraitParamKeys,
   toTraitValueId,
 } from "features/marketplace/lib/marketplaceFilters";
 import {
-  BUD_TRAIT_GROUPS,
-  PET_TRAIT_GROUPS,
-  TraitGroupDefinition,
+  getBudTraitGroups,
+  getPetTraitGroups,
+  type TraitGroupDefinition,
 } from "features/marketplace/lib/traitOptions";
-import { getKeys, getValues } from "features/game/types/decorations";
+import { getKeys, getValues } from "lib/object";
 import { Button } from "components/ui/Button";
 import {
   CHAPTER_BANNER_IMAGES,
-  ChapterBanner,
+  type ChapterBanner,
   hasChapterEnded,
 } from "features/game/types/chapters";
 import { CHAPTER_COLLECTIONS } from "features/game/types/collections";
+import { EVENT_COLLECTIONS } from "features/game/types/eventCollections";
 import { useAppTranslation } from "lib/i18n/useAppTranslations";
+import type { TranslationKeys } from "lib/i18n/dictionaries/types";
 import { useNow } from "lib/utils/hooks/useNow";
+import { Context } from "features/game/GameProvider";
+import * as Auth from "features/auth/lib/Provider";
+import type { MachineState } from "features/game/lib/gameMachine";
+import type { AuthMachineState } from "features/auth/lib/authMachine";
+import { loadProfile } from "features/marketplace/actions/loadProfile";
+
+const _trades = (state: MachineState) => state.context.state.trades;
+const _authToken = (state: AuthMachineState) =>
+  state.context.user.rawToken as string;
 
 export const Filters: React.FC<{
   onClose?: () => void;
   farmId: number;
   hideLimited?: boolean;
 }> = ({ onClose, farmId, hideLimited }) => {
+  const { gameService } = useContext(Context);
+  const { authService } = useContext(Auth.Context);
   const navigate = useNavigate();
   const { pathname } = useLocation();
   const [queryParams] = useSearchParams();
   const filters = queryParams.get("filters");
   const chapterParam = queryParams.get("chapter") ?? "";
+  const eventParam = queryParams.get("event") ?? "";
   const ownershipParam = queryParams.get("ownership") ?? "";
   const { t } = useAppTranslation();
+  const budTraitGroups = getBudTraitGroups(t);
+  const petTraitGroups = getPetTraitGroups(t);
   const now = useNow();
   const isWorldRoute = pathname.includes("/world");
   // Determine which collection is currently active based on the filters parameter
@@ -58,7 +75,48 @@ export const Filters: React.FC<{
     Record<string, boolean>
   >({});
   const [userChapterExpanded, setUserChapterExpanded] = useState(false);
-  const isChapterExpanded = !!chapterParam || userChapterExpanded;
+  const [userChaptersGroupExpanded, setUserChaptersGroupExpanded] =
+    useState(false);
+  const [userEventsGroupExpanded, setUserEventsGroupExpanded] = useState(false);
+  const [userProfileExpanded, setUserProfileExpanded] = useState(false);
+  const [hasTradeHistory, setHasTradeHistory] = useState(false);
+  const trades = useSelector(gameService, _trades);
+  const token = useSelector(authService, _authToken);
+
+  const hasActiveTrades =
+    getKeys(trades.offers ?? {}).length > 0 ||
+    getKeys(trades.listings ?? {}).length > 0;
+
+  useEffect(() => {
+    if (!pathname.includes("/profile") && !userProfileExpanded) return;
+
+    let cancelled = false;
+
+    loadProfile({
+      token,
+      id: farmId,
+    })
+      .then((profile) => {
+        if (cancelled) return;
+        setHasTradeHistory((profile.trades ?? []).length > 0);
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setHasTradeHistory(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [farmId, pathname, token, userProfileExpanded]);
+
+  const isChapterExpanded =
+    !!chapterParam || !!eventParam || userChapterExpanded;
+  const isChaptersGroupExpanded = !!chapterParam || userChaptersGroupExpanded;
+  const isEventsGroupExpanded = !!eventParam || userEventsGroupExpanded;
+  const isProfileExpanded =
+    pathname.includes("/profile") || userProfileExpanded;
+  const isMobileFilters = !!onClose;
 
   const baseUrl = `${isWorldRoute ? "/world" : ""}/marketplace`;
   const filterTokens = (filters ?? "")
@@ -185,6 +243,7 @@ export const Filters: React.FC<{
               };
 
               return {
+                icon: option.icon,
                 label: option.label,
                 onToggle: (checked: boolean) => {
                   ensureCollectionActive(collection);
@@ -263,13 +322,24 @@ export const Filters: React.FC<{
       const banner: ChapterBanner = `${chapter} Banner`;
 
       return {
-        label: chapter,
+        label: t(`chapter.name.${toTraitValueId(chapter)}` as TranslationKeys),
         value: toTraitValueId(chapter),
         icon: CHAPTER_BANNER_IMAGES[banner],
       };
     });
 
-  const handleChapterToggle = (value: string, checked: boolean) => {
+  const eventOptions = getKeys(EVENT_COLLECTIONS).map((event) => ({
+    label: event,
+    value: toTraitValueId(event),
+    icon: ITEM_DETAILS[EVENT_COLLECTIONS[event].token].image,
+  }));
+
+  // A chapter and an event collection can't both be selected
+  const handleCollectionToggle = (
+    param: "chapter" | "event",
+    value: string,
+    checked: boolean,
+  ) => {
     if (checked) {
       setExpandedTraitGroups({});
       setUserChapterExpanded(true);
@@ -277,7 +347,10 @@ export const Filters: React.FC<{
         path: "collection",
         filterParams: "collectibles,wearables",
         closeFilters: false,
-        extraParams: { chapter: value },
+        extraParams: {
+          chapter: param === "chapter" ? value : undefined,
+          event: param === "event" ? value : undefined,
+        },
       });
       return;
     }
@@ -290,9 +363,69 @@ export const Filters: React.FC<{
       path: "collection",
       filterParams: fallbackFilters,
       closeFilters: false,
-      extraParams: { chapter: undefined },
+      extraParams: { chapter: undefined, event: undefined },
     });
   };
+
+  const profilePath = (path: string) => `profile/${farmId}${path}`;
+  const profileLandingPath = hasActiveTrades
+    ? profilePath("/trades")
+    : profilePath("");
+  const profileOptions: FilterOptionProps[] = [
+    ...(hasActiveTrades
+      ? [
+          {
+            icon: tradeIcon,
+            label: t("marketplace.activeTrades"),
+            onClick: () =>
+              navigateTo({
+                path: profilePath("/trades"),
+              }),
+            isActive: pathname === `${baseUrl}/${profilePath("/trades")}`,
+          },
+        ]
+      : []),
+    {
+      icon: SUNNYSIDE.icons.lightning,
+      label: t("marketplace.stats"),
+      onClick: () =>
+        navigateTo({
+          path: profilePath(""),
+        }),
+      isActive: pathname === `${baseUrl}/${profilePath("")}`,
+    },
+    ...(hasTradeHistory
+      ? [
+          {
+            icon: SUNNYSIDE.icons.stopwatch,
+            label: t("marketplace.saleHistory"),
+            onClick: () =>
+              navigateTo({
+                path: profilePath("/history"),
+              }),
+            isActive: pathname === `${baseUrl}/${profilePath("/history")}`,
+          },
+        ]
+      : []),
+    {
+      icon: SUNNYSIDE.icons.treasure,
+      label: t("marketplace.collection"),
+      onClick: () =>
+        navigateTo({
+          path: profilePath("/collection"),
+        }),
+      isActive: pathname === `${baseUrl}/${profilePath("/collection")}`,
+    },
+    {
+      icon: trade_point,
+      label: t("marketplace.rewards"),
+      onClick: () =>
+        navigateTo({
+          path: "profile/rewards",
+        }),
+      isActive: pathname === `${baseUrl}/profile/rewards`,
+    },
+  ];
 
   const filterOptions: FilterOptionProps[] = [
     // Trending
@@ -373,7 +506,7 @@ export const Filters: React.FC<{
       : []),
     // Cosmetics
     {
-      icon: SUNNYSIDE.icons.heart,
+      icon: ITEM_DETAILS["Basic Bear"].image,
       label: t("marketplace.cosmetics"),
       onClick: () => {
         setExpandedTraitGroups({});
@@ -409,17 +542,49 @@ export const Filters: React.FC<{
       icon: SUNNYSIDE.icons.treasure,
       label: t("marketplace.collections"),
       onClick: () => setUserChapterExpanded((prev) => !prev),
-      isActive: isChapterExpanded && !chapterParam,
+      isActive: isChapterExpanded && !chapterParam && !eventParam,
       hasOptions: true,
       options: isChapterExpanded
-        ? chapterOptions.map((option) => ({
-            icon: option.icon,
-            label: option.label,
-            onClick: () =>
-              handleChapterToggle(option.value, chapterParam !== option.value),
-            isActive: chapterParam === option.value,
-            hasOptions: chapterParam === option.value,
-          }))
+        ? [
+            {
+              label: t("season.codex.chapterCollections"),
+              onClick: () => setUserChaptersGroupExpanded((prev) => !prev),
+              hasOptions: true,
+              options: isChaptersGroupExpanded
+                ? chapterOptions.map((option) => ({
+                    icon: option.icon,
+                    label: option.label,
+                    onClick: () =>
+                      handleCollectionToggle(
+                        "chapter",
+                        option.value,
+                        chapterParam !== option.value,
+                      ),
+                    isActive: chapterParam === option.value,
+                    hasOptions: chapterParam === option.value,
+                  }))
+                : undefined,
+            },
+            {
+              label: t("season.codex.eventCollections"),
+              onClick: () => setUserEventsGroupExpanded((prev) => !prev),
+              hasOptions: true,
+              options: isEventsGroupExpanded
+                ? eventOptions.map((option) => ({
+                    icon: option.icon,
+                    label: option.label,
+                    onClick: () =>
+                      handleCollectionToggle(
+                        "event",
+                        option.value,
+                        eventParam !== option.value,
+                      ),
+                    isActive: eventParam === option.value,
+                    hasOptions: eventParam === option.value,
+                  }))
+                : undefined,
+            },
+          ]
         : undefined,
     },
     // Buds
@@ -439,7 +604,7 @@ export const Filters: React.FC<{
         getValues(expandedTraitGroups).filter(Boolean).length === 0,
       hasOptions: true,
       options: isCollectionActive("buds")
-        ? buildTraitGroups("buds", BUD_TRAIT_GROUPS)
+        ? buildTraitGroups("buds", budTraitGroups)
         : undefined,
     },
     // Pets
@@ -459,7 +624,7 @@ export const Filters: React.FC<{
         getValues(expandedTraitGroups).filter(Boolean).length === 0,
       hasOptions: true,
       options: isCollectionActive("pets")
-        ? buildTraitGroups("pets", PET_TRAIT_GROUPS)
+        ? buildTraitGroups("pets", petTraitGroups)
         : undefined,
     },
     {
@@ -467,41 +632,26 @@ export const Filters: React.FC<{
       label: t("marketplace.myProfile"),
       onClick: () => {
         setExpandedTraitGroups({});
+        if (isMobileFilters) {
+          setUserProfileExpanded((prev) => !prev);
+          return;
+        }
+
         navigateTo({
-          path: `profile/${farmId}`,
+          path: profileLandingPath,
         });
       },
-      options: pathname.includes("profile")
-        ? [
-            {
-              icon: SUNNYSIDE.icons.lightning,
-              label: t("marketplace.stats"),
-              onClick: () =>
-                navigateTo({
-                  path: `profile/${farmId}`,
-                }),
-              isActive: pathname === `${baseUrl}/profile/${farmId}`,
-            },
-            {
-              icon: tradeIcon,
-              label: t("marketplace.trades"),
-              onClick: () =>
-                navigateTo({
-                  path: `profile/${farmId}/trades`,
-                }),
-              isActive: pathname === `${baseUrl}/profile/${farmId}/trades`,
-            },
-            {
-              icon: trade_point,
-              label: t("marketplace.rewards"),
-              onClick: () =>
-                navigateTo({
-                  path: "profile/rewards",
-                }),
-              isActive: pathname === `${baseUrl}/profile/rewards`,
-            },
-          ]
-        : undefined,
+      options: isProfileExpanded ? profileOptions : undefined,
+    },
+    // Favorites
+    {
+      icon: SUNNYSIDE.icons.heart,
+      label: t("marketplace.favorites"),
+      onClick: () => {
+        setExpandedTraitGroups({});
+        navigateTo({ path: "favorites" });
+      },
+      isActive: pathname === `${baseUrl}/favorites`,
     },
   ];
 
@@ -510,6 +660,7 @@ export const Filters: React.FC<{
     activeCollection === "pets" ||
     isCosmeticsActive ||
     !!chapterParam ||
+    !!eventParam ||
     ownershipSelection.owned ||
     ownershipSelection.unowned;
 

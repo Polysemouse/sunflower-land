@@ -2,7 +2,7 @@ import React, { useContext } from "react";
 
 import { useSelector } from "@xstate/react";
 import { PortalContext } from "../../lib/PortalProvider";
-import { PortalMachineState } from "../../lib/cropsAndChickensMachine";
+import type { PortalMachineState } from "../../lib/cropsAndChickensMachine";
 import { SquareIcon } from "components/ui/SquareIcon";
 import { InnerPanel } from "components/ui/Panel";
 import { SUNNYSIDE } from "assets/sunnyside";
@@ -17,11 +17,11 @@ import {
   AVAILABLE_BOOSTS,
   AVAILABLE_ABILITIES,
   AVAILABLE_SKILLS,
-  CropsAndChickensBoostName,
-  CropsAndChickensAbilityName,
-  CropsAndChickensSkillName,
+  type CropsAndChickensBoostName,
+  type CropsAndChickensAbilityName,
+  type CropsAndChickensSkillName,
 } from "../../CropsAndChickensUpgrades";
-import { getKeys } from "features/game/types/craftables";
+import { getKeys } from "lib/object";
 // import goldenSeed from "public/crops-and-chickens/golden_seed.png";
 import { UpgradeRequirementsLabel } from "./UpgradeRequirementsLabel";
 

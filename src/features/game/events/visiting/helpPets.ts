@@ -1,10 +1,11 @@
-import { GameState } from "features/game/types/game";
+import type { GameState } from "features/game/types/game";
 import { hasHitHelpLimit } from "features/game/types/monuments";
 import {
   hasHitSocialPetLimit,
-  PetName,
+  type PetName,
   SOCIAL_PET_XP_PER_HELP,
 } from "features/game/types/pets";
+import { isPetExcludedByMissingPetHouse } from "features/island/pets/lib/petShared";
 import { produce } from "immer";
 
 export type HelpPetsAction = {
@@ -43,6 +44,10 @@ export function helpPets({
 
     if (!pet) {
       throw new Error("Pet not found");
+    }
+
+    if (isPetExcludedByMissingPetHouse({ pet: action.pet, game })) {
+      throw new Error("Pet House is not placed");
     }
 
     // If the pet has not hit the social limit, add the social XP

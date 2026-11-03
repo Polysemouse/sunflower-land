@@ -1,10 +1,10 @@
 import streamJSON from "assets/map/stream.json";
 
-import { SceneId } from "../mmoMachine";
-import { BaseScene, NPCBumpkin } from "./BaseScene";
-import { Coordinates } from "features/game/expansion/components/MapPlacement";
-import { getKeys } from "features/game/types/decorations";
-import { Physics } from "phaser";
+import type { SceneId } from "../mmoMachine";
+import { BaseScene, type NPCBumpkin } from "./BaseScene";
+import type { Coordinates } from "features/game/expansion/components/MapPlacement";
+import { getKeys } from "lib/object";
+import type { Physics } from "phaser";
 import { hasFeatureAccess } from "lib/flags";
 import { npcModalManager } from "../ui/NPCModals";
 
@@ -52,6 +52,7 @@ export class StreamScene extends BaseScene {
       });
     }
 
+    // Clicking the streamer (speaker) opens the streams + community games modal.
     const image = this.add.image(215, 102, "speaker");
     image.on("pointerdown", () => {
       npcModalManager.open("streamer");

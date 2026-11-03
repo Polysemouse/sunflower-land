@@ -3,11 +3,14 @@ import { useSelector } from "@xstate/react";
 import { Button } from "components/ui/Button";
 import { Label } from "components/ui/Label";
 import { NumberInput } from "components/ui/NumberInput";
-import { MachineState } from "features/game/lib/gameMachine";
+import {
+  type MachineState,
+  selectGameState,
+} from "features/game/lib/gameMachine";
 import { GameWallet } from "features/wallet/Wallet";
 import { useAppTranslation } from "lib/i18n/useAppTranslations";
 
-import { TradeableDisplay } from "../lib/tradeables";
+import type { TradeableDisplay } from "../lib/tradeables";
 import { Context } from "features/game/GameProvider";
 
 import sflIcon from "assets/icons/flower_token.webp";
@@ -17,7 +20,7 @@ import { getTradeType } from "../lib/getTradeType";
 import { ResourceOffer } from "./ResourceOffer";
 import {
   isTradeResource,
-  TradeResource,
+  type TradeResource,
 } from "features/game/actions/tradeLimits";
 import { KNOWN_ITEMS } from "features/game/types";
 import Decimal from "decimal.js-light";
@@ -25,14 +28,16 @@ import { calculateTradePoints } from "features/game/events/landExpansion/addTrad
 import { hasReputation, Reputation } from "features/game/lib/reputation";
 import { RequiredReputation } from "features/island/hud/components/reputation/Reputation";
 import { SUNNYSIDE } from "assets/sunnyside";
-import { getKeys } from "features/game/lib/crafting";
+import { getKeys } from "lib/object";
+import { useNow } from "lib/utils/hooks/useNow";
+import { MAX_ITEM_OFFERS } from "../lib/tradeLimits";
+import {
+  Locked,
+  useIsLocked,
+} from "features/retreat/components/personhood/Locked";
+import { WithdrawCooldownNotice } from "./WithdrawCooldownNotice";
 
 const _balance = (state: MachineState) => state.context.state.balance;
-const _hasReputation = (state: MachineState) =>
-  hasReputation({
-    game: state.context.state,
-    reputation: Reputation.Cropkeeper,
-  });
 const _usd = (state: MachineState) => state.context.prices.sfl?.usd ?? 0.0;
 
 export const MakeOffer: React.FC<{
@@ -41,12 +46,21 @@ export const MakeOffer: React.FC<{
   itemId: number;
   authToken: string;
   onClose: () => void;
-}> = ({ onClose, display, itemId, authToken, floorPrice }) => {
+  economy?: string;
+}> = ({ onClose, display, itemId, authToken, floorPrice, economy }) => {
   const { t } = useAppTranslation();
   const { gameService } = useContext(Context);
 
   const balance = useSelector(gameService, _balance);
-  const hasTradeReputation = useSelector(gameService, _hasReputation);
+  const game = useSelector(gameService, selectGameState);
+  const now = useNow();
+  const hasTradeReputation = hasReputation({
+    game,
+    reputation: Reputation.Cropkeeper,
+    now,
+  });
+  // A hold stops the account trading; say so instead of a form that fails.
+  const locked = useIsLocked();
   const usd = useSelector(gameService, _usd);
 
   const [offer, setOffer] = useState(0);
@@ -60,9 +74,6 @@ export const MakeOffer: React.FC<{
   const tradeType = getTradeType({
     collection: display.type,
     id: itemId,
-    trade: {
-      sfl: offer,
-    },
   });
 
   const offers = gameService.getSnapshot().context.state.trades.offers ?? {};
@@ -85,6 +96,7 @@ export const MakeOffer: React.FC<{
         signature,
         quantity: Math.max(1, quantity),
         sfl: offer,
+        ...(display.type === "economies" && economy ? { economy } : {}),
       },
       authToken,
     });
@@ -117,7 +129,7 @@ export const MakeOffer: React.FC<{
     );
   }
 
-  if (itemOfferCount >= 5) {
+  if (itemOfferCount >= MAX_ITEM_OFFERS) {
     return (
       <>
         <div className="p-2">
@@ -152,6 +164,7 @@ export const MakeOffer: React.FC<{
               <img src={SUNNYSIDE.icons.search} className="h-6 mr-2" />
               <p className="text-xs mb-2">{t("marketplace.dodgyTrades")}</p>
             </div>
+            <WithdrawCooldownNotice display={display} />
           </div>
 
           <div className="flex">
@@ -181,6 +194,7 @@ export const MakeOffer: React.FC<{
             <img src={SUNNYSIDE.icons.search} className="h-6 mr-2" />
             <p className="text-xs mb-2">{t("marketplace.dodgyTrades")}</p>
           </div>
+          <WithdrawCooldownNotice display={display} />
         </div>
 
         <div className="flex">
@@ -208,6 +222,8 @@ export const MakeOffer: React.FC<{
       />
     );
   }
+
+  if (locked) return <Locked />;
 
   /* TODO only use game wallet when required */
   return (

@@ -1,14 +1,17 @@
 import { RoundButton } from "components/ui/RoundButton";
 import { PIXEL_SCALE } from "features/game/lib/constants";
-import React from "react";
-import { useGame } from "features/game/GameProvider";
+import React, { useContext } from "react";
+import { Context, useGame } from "features/game/GameProvider";
 import { isMobile } from "mobile-device-detect";
 import giftIcon from "assets/icons/chapter_icon_3.webp";
-import { useNavigate } from "react-router";
+import { useLocation, useNavigate } from "react-router";
 import { SUNNYSIDE } from "assets/sunnyside";
 import { useSelector } from "@xstate/react";
-import { MachineState } from "features/game/lib/gameMachine";
-import { getBumpkinLevel } from "features/game/lib/level";
+import type { MachineState } from "features/game/lib/gameMachine";
+import {
+  getAscensionLevel,
+  meetsLevelRequirement,
+} from "features/game/lib/level";
 import { useNow } from "lib/utils/hooks/useNow";
 import { CHAPTERS, getCurrentChapter } from "features/game/types/chapters";
 
@@ -27,13 +30,21 @@ const setChapterRewardsAcknowledged = (timestamp: number) => {
 
 const _bumpkinExperience = (state: MachineState) =>
   state.context.state.bumpkin?.experience ?? 0;
+const _ascensionLevel = (state: MachineState) =>
+  state.context.state.island.ascensionLevel ?? 0;
 
 export const RewardsButton: React.FC = () => {
   const { gameService } = useGame();
+  const { setFromRoute } = useContext(Context);
   const navigate = useNavigate();
+  const location = useLocation();
   const now = useNow({ live: true });
   const bumpkinExperience = useSelector(gameService, _bumpkinExperience);
-  const bumpkinLevel = getBumpkinLevel(bumpkinExperience);
+  const ascensionLevel = useSelector(gameService, _ascensionLevel);
+  const ascension = getAscensionLevel({
+    experience: bumpkinExperience,
+    ascensionLevel,
+  });
 
   const chapter = getCurrentChapter(now);
   const { startDate, tasksBegin } = CHAPTERS[chapter];
@@ -46,7 +57,9 @@ export const RewardsButton: React.FC = () => {
   );
   const acknowledgedAt = getChapterRewardsAcknowledged();
   const shouldPulsate =
-    bumpkinLevel >= 3 && latestEventAt > 0 && acknowledgedAt < latestEventAt;
+    meetsLevelRequirement(ascension, { ascension: 0, level: 3 }) &&
+    latestEventAt > 0 &&
+    acknowledgedAt < latestEventAt;
 
   return (
     <div
@@ -62,7 +75,12 @@ export const RewardsButton: React.FC = () => {
           if (latestEventAt > 0) {
             setChapterRewardsAcknowledged(latestEventAt);
           }
-          navigate("/chapter");
+          setFromRoute(location.pathname);
+          navigate(
+            location.pathname.includes("/world")
+              ? "/world/chapter"
+              : "/chapter",
+          );
         }}
       >
         <div

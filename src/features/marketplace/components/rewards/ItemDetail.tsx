@@ -10,19 +10,22 @@ import Decimal from "decimal.js-light";
 import { Panel } from "components/ui/Panel";
 import {
   TRADE_REWARDS,
-  TradeRewardPacks,
-  TradeRewardsItem,
+  type TradeRewardPacks,
+  type TradeRewardsItem,
 } from "features/game/events/landExpansion/redeemTradeReward";
 import { Context } from "features/game/GameProvider";
 import { INVENTORY_LIMIT, PIXEL_SCALE } from "features/game/lib/constants";
-import { getKeys } from "features/game/types/decorations";
+import { getKeys } from "lib/object";
 import { ITEM_DETAILS } from "features/game/types/images";
 import { useAppTranslation } from "lib/i18n/useAppTranslations";
 import React, { useContext, useLayoutEffect, useState } from "react";
 import { isSeed } from "features/game/types/seeds";
 
 import { getFoodExpBoost } from "features/game/expansion/lib/boosts";
-import { ConsumableName, CONSUMABLES } from "features/game/types/consumables";
+import {
+  type ConsumableName,
+  CONSUMABLES,
+} from "features/game/types/consumables";
 import { useNow } from "lib/utils/hooks/useNow";
 
 interface Props {

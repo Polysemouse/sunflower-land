@@ -1,4 +1,4 @@
-import { Bud } from "../types/buds";
+import type { Bud } from "../types/buds";
 import { getBudYieldBoosts } from "./getBudYieldBoosts";
 
 const NON_BOOSTED_TRAITS: Omit<Bud, "type"> = {
@@ -611,6 +611,15 @@ describe("getBudYieldBoosts", () => {
         getBudYieldBoosts(
           { 1: { ...NON_BOOSTED_TRAITS, type: "Retreat" } },
           "Egg",
+        ),
+      ).toEqual({ budUsed: "Bud #1", yieldBoost: 0.2 });
+    });
+
+    it("returns 0.2 Pig Bristles for a Retreat type", () => {
+      expect(
+        getBudYieldBoosts(
+          { 1: { ...NON_BOOSTED_TRAITS, type: "Retreat" } },
+          "Pig Bristles",
         ),
       ).toEqual({ budUsed: "Bud #1", yieldBoost: 0.2 });
     });

@@ -3,8 +3,8 @@ import { Label } from "components/ui/Label";
 import { Context, useGame } from "features/game/GameProvider";
 import { useAppTranslation } from "lib/i18n/useAppTranslations";
 import React, { useContext, useEffect } from "react";
-import { StateValues } from "features/game/lib/gameMachine";
-import { TranslationKeys } from "lib/i18n/dictionaries/types";
+import type { StateValues } from "features/game/lib/gameMachine";
+import type { TranslationKeys } from "lib/i18n/dictionaries/types";
 import { BulkRemoveSuccess } from "./BulkRemoveSuccess";
 import { StartingFaceRecognitionSuccess } from "./StartingFaceRecognitionSuccess";
 import { CompletingFaceRecognitionSuccess } from "./CompletingFaceRecognitionSuccess";
@@ -46,7 +46,6 @@ export const EFFECT_SUCCESS_COMPONENTS: Partial<
     <BulkRemoveSuccess type="offers" effect="marketplaceBulkOffersCancelling" />
   ),
   marketplaceBuyingBulkResourcesSuccess: <BulkPurchaseSuccess />,
-  seekingBlessingSuccess: <SuccessSkip />,
   claimingAuctionRaffleSuccess: <SuccessSkip />,
 };
 

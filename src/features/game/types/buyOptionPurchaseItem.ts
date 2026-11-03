@@ -1,7 +1,7 @@
 import { produce } from "immer";
-import { PURCHASEABLE_BAIT, PurchaseableBait } from "./fishing";
-import { GameState, Inventory } from "./game";
-import { getObjectEntries } from "../expansion/lib/utils";
+import { PURCHASEABLE_BAIT, type PurchaseableBait } from "./fishing";
+import type { GameState, Inventory } from "./game";
+import { getObjectEntries } from "lib/object";
 import Decimal from "decimal.js-light";
 import { trackFarmActivity } from "./farmActivity";
 
@@ -53,6 +53,10 @@ export function buyOptionPurchaseItem({ state, action }: Options) {
 
     if (type !== "optionPurchaseItem.bought") {
       throw new Error("Invalid action type");
+    }
+
+    if (!Number.isInteger(amount) || amount <= 0) {
+      throw new Error("Invalid amount");
     }
 
     const itemDetails = MULTIPLE_PURCHASE_ITEMS[item];

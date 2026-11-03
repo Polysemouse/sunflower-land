@@ -1,7 +1,7 @@
 import { produce } from "immer";
-import { CollectibleName } from "features/game/types/craftables";
-import { GameState } from "features/game/types/game";
-import { PlaceableLocation } from "features/game/types/collectibles";
+import type { CollectibleName } from "features/game/types/craftables";
+import type { GameState } from "features/game/types/game";
+import type { PlaceableLocation } from "features/game/types/collectibles";
 import { isPetCollectible } from "./placeCollectible";
 
 export interface FlipCollectibleAction {
@@ -33,6 +33,14 @@ export function flipCollectible({ state, action }: Options) {
           );
         }
         return game.petHouse.pets[name];
+      } else if (location === "interior") {
+        return game.interior.ground.collectibles[name];
+      } else if (location === "level_one") {
+        const levelOne = game.interior.level_one;
+        if (!levelOne) {
+          throw new Error("Level one floor has not been unlocked");
+        }
+        return levelOne.collectibles[name];
       } else {
         return game.collectibles[name];
       }

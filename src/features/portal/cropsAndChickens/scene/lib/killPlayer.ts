@@ -1,5 +1,5 @@
 import { SPAWNS } from "features/world/lib/spawn";
-import { CropsAndChickensChickenName } from "../../CropsAndChickensChickenName";
+import type { CropsAndChickensChickenName } from "../../CropsAndChickensChickenName";
 import {
   HALLOWEEN_PLAYER_OPACITY,
   INDEX_TO_CROP,
@@ -7,7 +7,7 @@ import {
   SPRITE_FRAME_RATE,
 } from "../../CropsAndChickensConstants";
 import { getHolidayEvent } from "../../lib/cropsAndChickensUtils";
-import { CropsAndChickensScene } from "../CropsAndChickensScene";
+import type { CropsAndChickensScene } from "../CropsAndChickensScene";
 import Decimal from "decimal.js-light";
 import { addActivity } from "./addActivity";
 import { checkAchievements } from "./checkAchievements";

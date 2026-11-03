@@ -1,20 +1,27 @@
 import Decimal from "decimal.js-light";
 import {
-  TreasureToolName,
+  type TreasureToolName,
   TREASURE_TOOLS,
-  Tool,
-  WorkbenchToolName,
+  type Tool,
+  type WorkbenchToolName,
   WORKBENCH_TOOLS,
   LOVE_ANIMAL_TOOLS,
 } from "features/game/types/tools";
 import { trackFarmActivity } from "features/game/types/farmActivity";
+import { SKILL_RANKS, getSkillLevel } from "features/game/types/bumpkinSkills";
 import cloneDeep from "lodash.clonedeep";
 
-import { GameState, IslandType } from "../../types/game";
+import type { GameState, IslandType } from "../../types/game";
 import { hasRequiredIslandExpansion } from "features/game/lib/hasRequiredIslandExpansion";
-import { getWeatherShop, WeatherShopItem } from "features/game/types/calendar";
-import { getObjectEntries } from "features/game/expansion/lib/utils";
-import { getBumpkinLevel } from "features/game/lib/level";
+import {
+  getWeatherShop,
+  type WeatherShopItem,
+} from "features/game/types/calendar";
+import { getObjectEntries } from "lib/object";
+import {
+  getAscensionLevel,
+  meetsLevelRequirement,
+} from "features/game/lib/level";
 
 type CraftableToolName = WorkbenchToolName | TreasureToolName | WeatherShopItem;
 
@@ -49,25 +56,133 @@ const isPickaxe = (name: WorkbenchToolName): boolean => {
   return pickaxes.includes(name);
 };
 
-export function getToolPrice(
-  tool: Tool,
-  amount: number,
+/** A new player's first Axes are on the house, so they learn to buy tools. */
+export const TUTORIAL_FREE_AXES = 10;
+
+/**
+ * Farms created before the tutorial rework were given 10 starter Axes and have
+ * no crafts recorded, so they must not also qualify for the free ones. Set
+ * ahead of the release on purpose: a farm created in between still gets the
+ * old starter Axes, so no farm can end up with neither.
+ */
+export const TUTORIAL_FREE_AXES_FROM = new Date(
+  "2026-09-21T03:00:00.000Z",
+).getTime();
+
+/**
+ * How many free Axes a tutorial island player has left. Counted from lifetime
+ * crafts, not inventory, so chopping does not top the allowance back up.
+ */
+export function getFreeAxesLeft(game: Readonly<GameState>): number {
+  if (game.island.type !== "basic") return 0;
+  if (game.createdAt < TUTORIAL_FREE_AXES_FROM) return 0;
+
+  const crafted = game.farmActivity?.["Axe Crafted"] ?? 0;
+
+  return Math.max(0, TUTORIAL_FREE_AXES - crafted);
+}
+
+/**
+ * While the early tutorial runs (a basic island up to the Water Well era),
+ * the Workbench's tool availability is capped so a new player cannot sink
+ * the coins their next expansion needs into tools: Axes beyond the free
+ * batch are budgeted per level (see getPaidTutorialAxesLeft) and at most
+ * two Pickaxes a day are sold.
+ */
+export function isTutorialToolStockPhase(game: Readonly<GameState>): boolean {
+  return (
+    game.island.type === "basic" &&
+    (game.inventory["Basic Land"]?.toNumber() ?? 3) <= 6
+  );
+}
+
+/**
+ * Paid Axes purchasable per level during the tutorial phase.
+ *
+ * Sized from the phase's actual wood ledger, not from caution alone:
+ * expansions 4 and 5 cost 8 Wood, four Pickaxes cost 12 (3 each!), the
+ * Water Well 5, and the Blacksmith's three wood orders - the coin loop
+ * itself - another 9. That is ~34 chops against 10 free Axes, so the paid
+ * budget must reach ~24 by level 3, with slack for extra order cycles.
+ */
+export const TUTORIAL_PAID_AXES_PER_LEVEL = 10;
+
+/**
+ * How many PAID Axes a tutorial-phase player can still buy. The free batch
+ * teaches chopping; these teach the coins -> Axe -> Wood loop - so they stay
+ * purchasable at full price but are budgeted (ten per level, growing until
+ * level five) rather than stock-metered. Level-ups refresh the budget, and
+ * because an Axe spent on a Blacksmith wood order earns its coins back, a
+ * player can never buy themselves into a hole they cannot chop out of.
+ *
+ * Only meaningful during isTutorialToolStockPhase - outside it the normal
+ * daily stock governs and this returns 0.
+ */
+export function getPaidTutorialAxesLeft(game: Readonly<GameState>): number {
+  if (!isTutorialToolStockPhase(game)) return 0;
+
+  const { level } = getAscensionLevel({
+    experience: game.bumpkin.experience ?? 0,
+    ascensionLevel: game.island.ascensionLevel ?? 0,
+  });
+  const budget = TUTORIAL_PAID_AXES_PER_LEVEL * Math.min(level, 5);
+
+  const crafted = game.farmActivity?.["Axe Crafted"] ?? 0;
+  const paidCrafted = Math.max(
+    0,
+    crafted -
+      (game.createdAt < TUTORIAL_FREE_AXES_FROM ? 0 : TUTORIAL_FREE_AXES),
+  );
+
+  return Math.max(0, budget - paidCrafted);
+}
+
+/**
+ * How many of a Workbench tool the shop can sell right now. While the
+ * tutorial budget applies, Axes bypass the daily stock (see craftTool), and
+ * the stored Axe stock may still hold the full pre-tutorial amount, so only
+ * the free batch and the per-level paid budget count. Every other tool, and
+ * Axes once the phase is over, sell from the stock plus any free Axes left.
+ */
+export function getWorkbenchToolStock(
+  name: WorkbenchToolName,
   game: Readonly<GameState>,
-) {
+): Decimal {
+  const freeAmount = getFreeToolAmount(WORKBENCH_TOOLS[name], game);
+
+  if (name === "Axe" && isTutorialToolStockPhase(game)) {
+    return new Decimal(freeAmount + getPaidTutorialAxesLeft(game));
+  }
+
+  return (game.stock[name] ?? new Decimal(0)).add(freeAmount);
+}
+
+/**
+ * Coin price of a single tool after every discount, ignoring the free tutorial
+ * Axes. The Workbench needs this to work out how many it can afford, since a
+ * batch that includes free Axes is not simply one price times the amount.
+ */
+export function getToolUnitPrice(tool: Tool, game: Readonly<GameState>) {
   const { name } = tool;
   const { bumpkin, inventory } = game;
 
   // Default price
   let price = tool.price;
 
-  // Feller's Discount Skill: 20% off on Axes
-  if (bumpkin.skills["Feller's Discount"] && name === "Axe") {
-    price = price * 0.8;
+  // Feller's Discount Skill: axe coin cost multiplier (scales with rank)
+  const fellersDiscountLevel = getSkillLevel(
+    bumpkin.skills,
+    "Feller's Discount",
+  );
+  if (fellersDiscountLevel && name === "Axe") {
+    price =
+      price * SKILL_RANKS["Feller's Discount"].ranks[fellersDiscountLevel - 1];
   }
 
-  // Reel Deal: 50% off fishing rods
-  if (bumpkin.skills["Reel Deal"] && name === "Rod") {
-    price *= 0.5;
+  // Reel Deal: rod coin cost multiplier x0.5/x0.4/x0.3 (scales with rank)
+  const reelDealLevel = getSkillLevel(bumpkin.skills, "Reel Deal");
+  if (reelDealLevel && name === "Rod") {
+    price = price * SKILL_RANKS["Reel Deal"].ranks[reelDealLevel - 1];
   }
 
   // Artist's Discount Skill: 10% off
@@ -75,12 +190,44 @@ export function getToolPrice(
     price = price * 0.9;
   }
 
-  if (bumpkin.skills["Frugal Miner"] && isPickaxe(name as WorkbenchToolName)) {
-    price = price * 0.8;
+  // Frugal Miner: pickaxe coin cost multiplier (scales with rank)
+  const frugalMinerLevel = getSkillLevel(bumpkin.skills, "Frugal Miner");
+  if (frugalMinerLevel && isPickaxe(name as WorkbenchToolName)) {
+    price = price * SKILL_RANKS["Frugal Miner"].ranks[frugalMinerLevel - 1];
   }
 
+  // Cheap Rakes: Salt Rake coin cost multiplier (scales with rank)
+  const cheapRakesLevel = getSkillLevel(bumpkin.skills, "Cheap Rakes");
+  if (cheapRakesLevel && name === "Salt Rake") {
+    price = price * SKILL_RANKS["Cheap Rakes"].ranks[cheapRakesLevel - 1];
+  }
+
+  if (
+    (game.sculptures?.["Salt Sculpture"]?.level ?? 0) >= 4 &&
+    name === "Salt Rake"
+  ) {
+    price = price * 0.9;
+  }
+
+  return price;
+}
+
+/** How many of this tool the player can still craft for free. */
+export function getFreeToolAmount(tool: Tool, game: Readonly<GameState>) {
+  return tool.name === "Axe" ? getFreeAxesLeft(game) : 0;
+}
+
+export function getToolPrice(
+  tool: Tool,
+  amount: number,
+  game: Readonly<GameState>,
+) {
+  // The free tutorial Axes come off the front of the batch, so a batch that
+  // straddles the allowance only pays for the Axes beyond it.
+  const paidAmount = Math.max(0, amount - getFreeToolAmount(tool, game));
+
   // Return the price for the amount of tools
-  return price * amount;
+  return getToolUnitPrice(tool, game) * paidAmount;
 }
 
 export function craftTool({ state, action }: Options) {
@@ -94,17 +241,45 @@ export function craftTool({ state, action }: Options) {
     throw new Error("Tool does not exist");
   }
 
+  if (!Number.isInteger(amount) || amount <= 0) {
+    throw new Error("Invalid amount");
+  }
+
   const { disabled, requiredIsland, requiredLevel, ingredients } = tool;
 
   if (disabled) {
     throw new Error("Tool is disabled");
   }
 
+  const isWeatherItem = action.tool in getWeatherShop(stateCopy.island.type);
+  if (
+    isWeatherItem &&
+    (stateCopy.inventory[action.tool] ?? new Decimal(0)).add(amount).gt(1)
+  ) {
+    throw new Error("You can only have one of this weather item");
+  }
+
   if (!hasRequiredIslandExpansion(stateCopy.island.type, requiredIsland)) {
     throw new Error("You do not have the required island expansion");
   }
 
-  if (stateCopy.stock[action.tool]?.lt(1)) {
+  // Tutorial Axes don't draw from the day's stock: the free batch costs
+  // nothing, and the paid ones beyond it are metered by a per-level budget
+  // (getPaidTutorialAxesLeft) so level-ups refresh what the shop sells.
+  // Read before the craft is tracked below.
+  const freeAmount =
+    action.tool === "Axe" ? Math.min(amount, getFreeAxesLeft(stateCopy)) : 0;
+  let stockedAmount = amount - freeAmount;
+
+  if (action.tool === "Axe" && isTutorialToolStockPhase(stateCopy)) {
+    if (stockedAmount > getPaidTutorialAxesLeft(stateCopy)) {
+      throw new Error("Not enough stock");
+    }
+
+    stockedAmount = 0;
+  }
+
+  if (stateCopy.stock[action.tool]?.lt(stockedAmount)) {
     throw new Error("Not enough stock");
   }
 
@@ -117,7 +292,16 @@ export function craftTool({ state, action }: Options) {
     throw new Error("Insufficient Coins");
   }
 
-  if (requiredLevel && getBumpkinLevel(bumpkin.experience) < requiredLevel) {
+  if (
+    requiredLevel &&
+    !meetsLevelRequirement(
+      getAscensionLevel({
+        experience: bumpkin.experience,
+        ascensionLevel: stateCopy.island.ascensionLevel ?? 0,
+      }),
+      requiredLevel,
+    )
+  ) {
     throw new Error("You do not have the required level");
   }
 
@@ -161,7 +345,7 @@ export function craftTool({ state, action }: Options) {
 
   const stock = stateCopy.stock[action.tool];
   if (stock !== undefined) {
-    stateCopy.stock[action.tool] = stock.minus(amount);
+    stateCopy.stock[action.tool] = stock.minus(stockedAmount);
   }
 
   return stateCopy;

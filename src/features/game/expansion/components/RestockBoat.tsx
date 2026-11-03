@@ -1,13 +1,14 @@
 import React, { useContext, useState } from "react";
 import boat from "assets/decorations/restock_boat.png";
-import { Coordinates, MapPlacement } from "./MapPlacement";
+import { type Coordinates, MapPlacement } from "./MapPlacement";
+import { getWharfCoordinates } from "../lib/constants";
 import {
   INITIAL_STOCK,
   PIXEL_SCALE,
-  StockableName,
+  type StockableName,
 } from "features/game/lib/constants";
 import { useSelector } from "@xstate/react";
-import { MachineState } from "features/game/lib/gameMachine";
+import type { MachineState } from "features/game/lib/gameMachine";
 import {
   canRestockShipment,
   SHIPMENT_STOCK,
@@ -75,15 +76,10 @@ export const RestockBoat: React.FC = () => {
 
   if (restockIsEmpty) return null;
 
+  // The restock boat sits east of Pumpkin Pete's boat and moves with the dock.
   const wharfCoords = (): Coordinates => {
-    if (expansionCount < 7) {
-      return { x: -1, y: -7 };
-    }
-    if (expansionCount >= 7 && expansionCount < 21) {
-      return { x: 0, y: -10 };
-    } else {
-      return { x: 0, y: -17 };
-    }
+    const wharf = getWharfCoordinates(expansionCount);
+    return { x: wharf.x + 17, y: wharf.y - 1.5 };
   };
 
   return (
@@ -93,6 +89,7 @@ export const RestockBoat: React.FC = () => {
           src={boat}
           style={{
             width: `${68 * PIXEL_SCALE}px`,
+            transform: "scaleX(-1)",
           }}
           className="cursor-pointer hover:img-highlight"
           onClick={() => setIsOpen(true)}

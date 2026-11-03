@@ -1,11 +1,11 @@
-import { CropsAndChickensAchievementName } from "../../CropsAndChickensAchievements";
+import type { CropsAndChickensAchievementName } from "../../CropsAndChickensAchievements";
 import {
   CROP_TO_INDEX,
   GAME_SECONDS,
   TOTAL_CROP_TYPES,
 } from "../../CropsAndChickensConstants";
 import { getTotalCropsInGame } from "../../lib/cropsAndChickensUtils";
-import { CropsAndChickensScene } from "../CropsAndChickensScene";
+import type { CropsAndChickensScene } from "../CropsAndChickensScene";
 
 export type AchievementTrigger =
   | "deposit"

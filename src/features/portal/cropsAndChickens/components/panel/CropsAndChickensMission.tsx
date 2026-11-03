@@ -7,11 +7,11 @@ import { secondsToString } from "lib/utils/time";
 import coins from "assets/icons/coins.webp";
 import { Label } from "components/ui/Label";
 import { ITEM_DETAILS } from "features/game/types/images";
-import { getKeys } from "features/game/types/craftables";
+import { getKeys } from "lib/object";
 import giftIcon from "assets/icons/gift.png";
 import classNames from "classnames";
-import { InventoryItemName } from "features/game/types/game";
-import { BumpkinItem } from "features/game/types/bumpkin";
+import type { InventoryItemName } from "features/game/types/game";
+import type { BumpkinItem } from "features/game/types/bumpkin";
 
 type Props = {
   itemPrizes?: Partial<Record<InventoryItemName, number>>;

@@ -1,20 +1,26 @@
-import {
+import type {
   MutantChicken,
   MutantCow,
   MutantSheep,
 } from "features/game/types/game";
-import { ChapterName } from "features/game/types/chapters";
-import { ChapterFish } from "features/game/types/fishing";
-import { MutantFlowerName } from "features/game/types/flowers";
+import type { ChapterName } from "features/game/types/chapters";
+import type { ChapterFish } from "features/game/types/fishing";
+import type { MutantFlowerName } from "features/game/types/flowers";
 import { SUNNYSIDE } from "assets/sunnyside";
 
 export type ChapterMutantsData = {
   banner: string;
-  Chicken: MutantChicken;
-  Flower: MutantFlowerName;
+  Chicken: MutantChicken | undefined;
+  Flower: MutantFlowerName | undefined;
   Fish: ChapterFish[];
   Cow: MutantCow | undefined;
   Sheep: MutantSheep | undefined;
+  /**
+   * No Pig mutant exists yet. Optional so every existing chapter entry stays
+   * as-is, while indexing this by AnimalType still typechecks and simply
+   * yields undefined for a Pig. Mirrors the API side.
+   */
+  Pig?: undefined;
 };
 
 export type MutantsChapterName = Exclude<
@@ -82,6 +88,30 @@ export const CHAPTER_MUTANTS: Record<MutantsChapterName, ChapterMutantsData> = {
     Sheep: "Nurse Sheep",
     Flower: "Lunalist",
     Fish: ["Pink Dolphin"],
+    banner: "?",
+  },
+  "Salt Awakening": {
+    Chicken: "Flamingo Chicken",
+    Flower: "Salt Crystal Flower",
+    Fish: ["Deep Sea Pig", "Deep Sea Slug", "Crystal Shrimp"],
+    Cow: "Spa Cow",
+    Sheep: "Spa Sheep",
+    banner: "?",
+  },
+  "Ascension Age": {
+    Chicken: "Ascended Chicken",
+    Flower: "Ruins Flower",
+    Fish: ["Crocodile", "Dumbo Octopus", "Seahorse Dad"],
+    Cow: "Ascended Cow",
+    Sheep: "Ascended Sheep",
+    banner: "?",
+  },
+  "Cave Dwellers": {
+    Chicken: "Mushroom Chicken",
+    Flower: "Cyclops Bloom",
+    Fish: ["Manatee", "Betta", "Macropinna"],
+    Cow: "Ladybug Cow",
+    Sheep: "Beetle Sheep",
     banner: "?",
   },
 };

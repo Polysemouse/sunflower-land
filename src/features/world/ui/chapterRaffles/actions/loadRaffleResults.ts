@@ -1,34 +1,32 @@
 import { CONFIG } from "lib/config";
+import { fetchWithRetry } from "lib/fetchWithRetry";
 import { ERRORS } from "lib/errors";
-import { InventoryItemName } from "features/game/types/game";
-import { BumpkinItem } from "features/game/types/bumpkin";
-import { BumpkinParts } from "lib/utils/tokenUriBuilder";
-import { PetNFTName } from "features/game/types/pets";
+import type { BumpkinParts } from "lib/utils/tokenUriBuilder";
 import { NPC_WEARABLES } from "lib/npcs";
-import { BudNFTName } from "features/game/types/marketplace";
+import type { RaffleRewards } from "features/retreat/components/auctioneer/types";
 
-export type RaffleWinner = {
+export type RaffleSnapshotWinner = {
   farmId: number;
   position: number;
   entries: number;
   ticketsUsed: number;
-  items?: Partial<Record<InventoryItemName, number>>;
-  wearables?: Partial<Record<BumpkinItem, number>>;
   sfl?: number;
-  nft?: BudNFTName | PetNFTName;
   onChain?: boolean;
   profile?: {
     username: string;
+    /** Within-ascension level. Meaningless without `ascension`. */
     level: number;
+    /** Ascension band this level belongs to (0 = pre-ascension). */
+    ascension: number;
     equipped?: BumpkinParts;
   };
-};
+} & RaffleRewards;
 
 export type RaffleResults = {
   status: "pending" | "complete";
   raffleId: string;
   endAt: number;
-  winners: RaffleWinner[];
+  winners: RaffleSnapshotWinner[];
   participants: number;
   entries: number;
 };
@@ -55,9 +53,12 @@ export async function loadRaffleResults(
           position: 1,
           entries: 10,
           ticketsUsed: 10,
+          type: "Pet",
           nft: "Pet #4",
+          onChain: true,
           profile: {
             level: 22,
+            ascension: 0,
             equipped: NPC_WEARABLES.adam,
             username: "Adam",
           },
@@ -67,11 +68,11 @@ export async function loadRaffleResults(
           position: 2,
           entries: 10,
           ticketsUsed: 10,
-          items: {
-            Gold: 10,
-          },
+          type: "collectible",
+          items: { Gold: 10 },
           profile: {
             level: 122,
+            ascension: 0,
             equipped: NPC_WEARABLES.gordy,
             username: "Gordy",
           },
@@ -81,7 +82,7 @@ export async function loadRaffleResults(
       entries: 0,
     };
   }
-  const response = await window.fetch(
+  const response = await fetchWithRetry(
     `${API_URL}/data?type=raffleResults&id=${request.id}`,
     {
       method: "GET",

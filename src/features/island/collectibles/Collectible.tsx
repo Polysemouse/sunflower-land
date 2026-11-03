@@ -1,30 +1,34 @@
 import React, { useContext, useState } from "react";
 
-import { CollectibleName } from "features/game/types/craftables";
+import type { CollectibleName } from "features/game/types/craftables";
 import { Bar, ResizableBar } from "components/ui/ProgressBar";
 import { PIXEL_SCALE } from "features/game/lib/constants";
-import { GameGrid } from "features/game/expansion/placeable/lib/makeGrid";
+import type { GameGrid } from "features/game/expansion/placeable/lib/makeGrid";
 import { useSelector } from "@xstate/react";
 import { MoveableComponent } from "./MovableComponent";
-import { MachineState } from "features/game/lib/gameMachine";
+import type { MachineState } from "features/game/lib/gameMachine";
 import { Context } from "features/game/GameProvider";
 import { SUNNYSIDE } from "assets/sunnyside";
 import {
   COLLECTIBLE_COMPONENTS,
   READONLY_COLLECTIBLES,
 } from "./CollectibleCollection";
-import { PlaceableLocation } from "features/game/types/collectibles";
-import { GameState } from "features/game/types/game";
+import type { PlaceableLocation } from "features/game/types/collectibles";
+import type { GameState } from "features/game/types/game";
 import { useAppTranslation } from "lib/i18n/useAppTranslations";
 import { useCountdown } from "lib/utils/hooks/useCountdown";
 import { Label } from "components/ui/Label";
 import { TimerDisplay } from "features/retreat/components/auctioneer/AuctionDetails";
 import { Button } from "components/ui/Button";
-import { ITEM_DETAILS } from "features/game/types/images";
+import {
+  ITEM_DETAILS,
+  getTranslatedItemName,
+} from "features/game/types/images";
 import { Modal } from "components/ui/Modal";
 import { CloseButtonPanel } from "features/game/components/CloseablePanel";
 import confetti from "canvas-confetti";
-import { getInstantGems } from "features/game/events/landExpansion/speedUpRecipe";
+import { useSpeedUpPayment } from "features/game/lib/useSpeedUpPayment";
+import { SpeedUpPaymentSelector } from "features/game/components/SpeedUpPaymentSelector";
 import { gameAnalytics } from "lib/gameAnalytics";
 import classNames from "classnames";
 import { useNow } from "lib/utils/hooks/useNow";
@@ -35,6 +39,7 @@ export type CollectibleProps = {
   id: string;
   readyAt: number;
   createdAt: number;
+  index: number;
   x: number;
   y: number;
   grid: GameGrid;
@@ -60,6 +65,7 @@ const InProgressCollectible: React.FC<Props> = ({
   y,
   grid,
   location,
+  index,
 }) => {
   const { gameService, showAnimations, showTimers } = useContext(Context);
   const CollectiblePlaced = COLLECTIBLE_COMPONENTS[name];
@@ -78,15 +84,19 @@ const InProgressCollectible: React.FC<Props> = ({
     callback: () => setShowModal(true),
   });
 
-  const onSpeedUp = (gems: number) => {
+  const onSpeedUp = (
+    cost: number,
+    paymentMethod: "gems" | "coins" = "gems",
+  ) => {
     gameService.send("collectible.spedUp", {
       name,
       id,
+      paymentMethod,
     });
 
     gameAnalytics.trackSink({
-      currency: "Gem",
-      amount: gems,
+      currency: paymentMethod === "coins" ? "Coins" : "Gem",
+      amount: cost,
       item: "Instant Build",
       type: "Fee",
     });
@@ -122,6 +132,7 @@ const InProgressCollectible: React.FC<Props> = ({
             showTimers={showTimers}
             grid={grid}
             location={location}
+            index={index}
           />
         </div>
         {showTimers && (
@@ -153,6 +164,7 @@ const CollectibleComponent: React.FC<Props> = ({
   location,
   z,
   flipped,
+  index,
 }) => {
   const { gameService, showTimers } = useContext(Context);
   const CollectiblePlaced = COLLECTIBLE_COMPONENTS[name];
@@ -181,6 +193,7 @@ const CollectibleComponent: React.FC<Props> = ({
           location={location}
           skills={skills}
           showTimers={showTimers}
+          index={index}
         />
       ) : (
         <CollectiblePlaced
@@ -195,6 +208,7 @@ const CollectibleComponent: React.FC<Props> = ({
           location={location}
           skills={skills}
           showTimers={showTimers}
+          index={index}
         />
       )}
     </div>
@@ -249,7 +263,7 @@ export const Collectible: React.FC<Omit<Props, "showTimers" | "skills">> = (
 
 export const Building: React.FC<{
   onClose: () => void;
-  onInstantBuilt: (gems: number) => void;
+  onInstantBuilt: (cost: number, paymentMethod?: "gems" | "coins") => void;
   readyAt: number;
   createdAt: number;
   name: CollectibleName;
@@ -260,10 +274,13 @@ export const Building: React.FC<{
   const totalSeconds = (readyAt - createdAt) / 1000;
   const { totalSeconds: secondsLeft, ...ready } = useCountdown(readyAt ?? 0);
 
-  const gems = getInstantGems({
-    readyAt: readyAt as number,
-    game: state,
-  });
+  const payment = useSpeedUpPayment({ readyAt, game: state });
+  const cost =
+    payment.paymentMethod === "coins" ? payment.coinCost : payment.gemCost;
+  const costIcon =
+    payment.paymentMethod === "coins"
+      ? SUNNYSIDE.ui.coins
+      : ITEM_DETAILS.Gem.image;
 
   // Automatically close when readyAt time is reached (no re-renders)
   useWhenTime({
@@ -274,11 +291,12 @@ export const Building: React.FC<{
   return (
     <>
       <div className="p-1 ">
-        <Label
-          type="default"
-          icon={SUNNYSIDE.icons.stopwatch}
-        >{`In progress`}</Label>
-        <p className="text-sm my-2">{t("crafting.readySoon", { name })}</p>
+        <Label type="default" icon={SUNNYSIDE.icons.stopwatch}>
+          {t("crafting.inProgress")}
+        </Label>
+        <p className="text-sm my-2">
+          {t("crafting.readySoon", { name: getTranslatedItemName(name) })}
+        </p>
         <div className="flex items-center mb-1">
           <div>
             <div className="relative flex flex-col w-full">
@@ -292,6 +310,7 @@ export const Building: React.FC<{
             </div>
           </div>
         </div>
+        <SpeedUpPaymentSelector payment={payment} />
       </div>
 
       <div className="flex">
@@ -299,18 +318,20 @@ export const Building: React.FC<{
           {t("close")}
         </Button>
         <Button
-          disabled={!state.inventory.Gem?.gte(gems)}
+          disabled={!payment.canAfford}
           className="relative ml-1"
-          onClick={() => onInstantBuilt(gems)}
+          onClick={() => onInstantBuilt(cost, payment.paymentMethod)}
         >
           {t("gems.speedUp")}
-          <Label
-            type={state.inventory.Gem?.gte(gems) ? "default" : "danger"}
-            icon={ITEM_DETAILS.Gem.image}
-            className="flex absolute right-0 top-0.5"
-          >
-            {gems}
-          </Label>
+          {!payment.canPayWithCoins && (
+            <Label
+              type={payment.canAfford ? "default" : "danger"}
+              icon={costIcon}
+              className="flex absolute right-0 top-0.5"
+            >
+              {cost}
+            </Label>
+          )}
         </Button>
       </div>
     </>

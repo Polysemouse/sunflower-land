@@ -10,7 +10,7 @@ describe("SFLDiscount", () => {
   it("should return 1 when inventory does not have Dawn Breaker Banner", () => {
     // Date during Dawn Breaker Season
     const mockedDate = new Date(2023, 5, 5);
-    jest.useFakeTimers("modern");
+    jest.useFakeTimers();
     jest.setSystemTime(mockedDate);
 
     const state = {
@@ -18,14 +18,14 @@ describe("SFLDiscount", () => {
       inventory: { "Dawn Breaker Banner": undefined },
     };
     const sfl = new Decimal(1);
-    const result = SFLDiscount(state, sfl);
+    const result = SFLDiscount(state, sfl, Date.now());
     expect(result).toEqual(new Decimal(1));
   });
 
   it("should return 1 when inventory does not have Witches' Eve Banner", () => {
     // Date during Witches' Eve Season
     const mockedDate = new Date(2023, 8, 5);
-    jest.useFakeTimers("modern");
+    jest.useFakeTimers();
     jest.setSystemTime(mockedDate);
 
     const state = {
@@ -33,14 +33,14 @@ describe("SFLDiscount", () => {
       inventory: { "Witches' Eve Banner": undefined },
     };
     const sfl = new Decimal(1);
-    const result = SFLDiscount(state, sfl);
+    const result = SFLDiscount(state, sfl, Date.now());
     expect(result).toEqual(new Decimal(1));
   });
 
   it("should not apply discount using a banner from another season", () => {
     // Date during Dawn Breaker Season
     const mockedDate = new Date(2023, 5, 5);
-    jest.useFakeTimers("modern");
+    jest.useFakeTimers();
     jest.setSystemTime(mockedDate);
 
     const state = {
@@ -48,7 +48,7 @@ describe("SFLDiscount", () => {
       inventory: { "Witches' Eve Banner": new Decimal(1) },
     };
     const sfl = new Decimal(1);
-    const result = SFLDiscount(state, sfl);
+    const result = SFLDiscount(state, sfl, Date.now());
     expect(result).toEqual(new Decimal(1));
   });
 
@@ -58,7 +58,7 @@ describe("SFLDiscount", () => {
       inventory: { "Lifetime Farmer Banner": new Decimal(1) },
     };
     const sfl = new Decimal(1);
-    const result = SFLDiscount(state, sfl);
+    const result = SFLDiscount(state, sfl, Date.now());
     expect(result).toEqual(new Decimal(0.5));
   });
 });

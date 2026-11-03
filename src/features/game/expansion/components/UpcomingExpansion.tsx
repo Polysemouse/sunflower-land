@@ -2,7 +2,7 @@ import React, { useContext, useState } from "react";
 import { Modal } from "components/ui/Modal";
 
 import { EXPANSION_ORIGINS, LAND_SIZE } from "../lib/constants";
-import { Coordinates, MapPlacement } from "./MapPlacement";
+import { type Coordinates, MapPlacement } from "./MapPlacement";
 import { PIXEL_SCALE } from "features/game/lib/constants";
 import { Pontoon } from "./Pontoon";
 
@@ -13,19 +13,22 @@ import { CloseButtonPanel } from "features/game/components/CloseablePanel";
 import { useActor } from "@xstate/react";
 import { RequirementLabel } from "components/ui/RequirementsLabel";
 import Decimal from "decimal.js-light";
-import { getKeys } from "features/game/types/craftables";
-import { getBumpkinLevel } from "features/game/lib/level";
+import { getKeys } from "lib/object";
+import {
+  getAscensionLevel,
+  meetsLevelRequirement,
+} from "features/game/lib/level";
 import { Label } from "components/ui/Label";
 import { NPC_WEARABLES } from "lib/npcs";
 import { craftingRequirementsMet } from "features/game/lib/craftingRequirement";
 import classNames from "classnames";
-import {
+import type {
   ExpansionRequirements as IExpansionRequirements,
   GameState,
   Inventory,
   Bumpkin,
 } from "features/game/types/game";
-import { expansionRequirements } from "features/game/events/landExpansion/revealLand";
+import { expansionRequirements } from "features/game/events/landExpansion/expandLand";
 import { translate } from "lib/i18n/translate";
 import { useAppTranslation } from "lib/i18n/useAppTranslations";
 import { ExpansionRequirements } from "components/ui/layouts/ExpansionRequirements";
@@ -33,6 +36,9 @@ import confetti from "canvas-confetti";
 import { ModalContext } from "features/game/components/modal/ModalProvider";
 import { useVisiting } from "lib/utils/visitUtils";
 import { useNow } from "lib/utils/hooks/useNow";
+import { useExpansionCoinCostWithVip } from "lib/utils/hooks/useVipAccess";
+import { getTutorialNudge } from "features/island/lib/tutorialNudge";
+import { OuterPanel } from "components/ui/Panel";
 
 interface ExpandIconProps {
   onOpen: () => void;
@@ -43,6 +49,8 @@ interface ExpandIconProps {
   showHelper: boolean;
   inventory: Inventory;
   coins: number;
+  /** When set (e.g. VIP discount), used for coin requirement display and check instead of requirements.coins */
+  effectiveCoinCost?: number;
 }
 export const ExpandIcon: React.FC<ExpandIconProps> = ({
   onOpen,
@@ -53,8 +61,10 @@ export const ExpandIcon: React.FC<ExpandIconProps> = ({
   showHelper,
   inventory,
   coins,
+  effectiveCoinCost,
 }) => {
   const showRequirements = inventory["Basic Land"]?.lte(5);
+  const coinRequirement = effectiveCoinCost ?? requirements.coins ?? 0;
 
   const { t } = useAppTranslation();
   return (
@@ -86,10 +96,10 @@ export const ExpandIcon: React.FC<ExpandIconProps> = ({
                   <div className="mr-3 flex items-center mb-1" key={"coins"}>
                     <RequirementLabel
                       type="coins"
-                      requirement={requirements.coins}
+                      requirement={coinRequirement}
                       balance={coins}
                     />
-                    {coins >= requirements.coins && (
+                    {coins >= coinRequirement && (
                       <img
                         src={SUNNYSIDE.icons.confirm}
                         className="h-4 ml-0.5"
@@ -127,7 +137,7 @@ export const ExpandIcon: React.FC<ExpandIconProps> = ({
                   icon={SUNNYSIDE.icons.lock}
                   className="mt-2"
                 >
-                  {t("lvl")} {requirements.bumpkinLevel}
+                  {t("lvl")} {requirements.bumpkinLevel.level}
                 </Label>
               )}
             </>
@@ -241,7 +251,9 @@ export const UpcomingExpansion: React.FC = () => {
   const { openModal } = useContext(ModalContext);
 
   const state = gameState.context.state;
-  const { requirements } = expansionRequirements({ game: state });
+  const now = useNow();
+  const { requirements, baseTimeSeconds, timeBoostsUsed } =
+    expansionRequirements({ game: state, now });
 
   const expansions =
     (gameState.context.state.inventory["Basic Land"]?.toNumber() ?? 3) + 1;
@@ -257,24 +269,41 @@ export const UpcomingExpansion: React.FC = () => {
     }
 
     if (expansions === 5) {
-      openModal("FIREPIT");
+      openModal("FIREPIT_RHUBARB");
     }
   };
 
   const nextPosition =
     EXPANSION_ORIGINS[state.inventory["Basic Land"]?.toNumber() ?? 0];
 
-  const isLocked =
-    getBumpkinLevel(state.bumpkin?.experience ?? 0) <
-    (requirements?.bumpkinLevel ?? 0);
+  // Compare the player's standing against the (ascension, level) requirement —
+  // matching the `expandLand` gate.
+  const ascensionLevel = state.island.ascensionLevel ?? 0;
+  const playerLevel = getAscensionLevel({
+    experience: state.bumpkin.experience ?? 0,
+    ascensionLevel,
+  });
+  const isLocked = requirements
+    ? !meetsLevelRequirement(playerLevel, requirements.bumpkinLevel)
+    : false;
 
-  const canExpand = craftingRequirementsMet(state, requirements);
+  const effectiveCoinCost = useExpansionCoinCostWithVip({
+    coins: requirements?.coins,
+    game: state,
+  });
+  const requirementsWithVipCoins = requirements
+    ? { ...requirements, coins: effectiveCoinCost }
+    : requirements;
+  const canExpand = craftingRequirementsMet(state, requirementsWithVipCoins);
 
+  // The post-delivery expand-land nudge pulses even before the coins check
+  // passes - the requirement labels underneath show what is still missing.
   const showHelper =
-    canExpand &&
-    (state.farmActivity["Tree Chopped"] ?? 0) >= 3 &&
-    // Only pulsate first 5 times
-    state.inventory["Basic Land"]?.lte(4);
+    (canExpand &&
+      (state.farmActivity["Tree Chopped"] ?? 0) >= 3 &&
+      // Pulsate through the tutorial expansions (up to the stretch one)
+      (state.inventory["Basic Land"]?.lte(6) ?? false)) ||
+    getTutorialNudge(state) === "expand-land";
 
   const islandType = state.island.type;
   const maxExpanded =
@@ -300,6 +329,7 @@ export const UpcomingExpansion: React.FC = () => {
           requirements={requirements as IExpansionRequirements}
           showHelper={showHelper ?? false}
           coins={state.coins}
+          effectiveCoinCost={effectiveCoinCost}
         />
       )}
 
@@ -307,6 +337,7 @@ export const UpcomingExpansion: React.FC = () => {
         <CloseButtonPanel
           bumpkinParts={NPC_WEARABLES.grimbly}
           onClose={() => setShowBumpkinModal(false)}
+          container={OuterPanel}
         >
           <ExpansionRequirements
             state={state}
@@ -318,6 +349,8 @@ export const UpcomingExpansion: React.FC = () => {
             }}
             onClose={() => setShowBumpkinModal(false)}
             requirements={requirements as IExpansionRequirements}
+            baseTimeSeconds={baseTimeSeconds}
+            timeBoostsUsed={timeBoostsUsed}
           />
         </CloseButtonPanel>
       </Modal>

@@ -1,114 +1,262 @@
 import { SUNNYSIDE } from "assets/sunnyside";
 import { KNOWN_IDS } from "features/game/types";
-import { BumpkinItem, ITEM_IDS } from "features/game/types/bumpkin";
+import { type BumpkinItem, ITEM_IDS } from "features/game/types/bumpkin";
 import {
-  BumpkinRevampSkillName,
+  type BumpkinRevampSkillName,
   BUMPKIN_REVAMP_SKILL_TREE,
-  BumpkinSkillRevamp,
+  type BumpkinSkillRevamp,
+  getSkillLevel,
+  isUpgradeableSkillName,
 } from "features/game/types/bumpkinSkills";
-import { BoostName, InventoryItemName } from "features/game/types/game";
-import { GameState } from "features/game/types/game";
+import type { BoostName, InventoryItemName } from "features/game/types/game";
+import type { GameState } from "features/game/types/game";
 import { getTradeableDisplay } from "features/marketplace/lib/tradeables";
 import { AnimatedPanel } from "features/world/ui/AnimatedPanel";
 import { useAppTranslation } from "lib/i18n/useAppTranslations";
-import React from "react";
+import React, { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { Label } from "../Label";
 import {
   CALENDAR_EVENT_ICONS,
-  SeasonalEventName,
+  type SeasonalEventName,
 } from "features/game/types/calendar";
-import { budImageDomain } from "features/island/collectibles/components/Bud";
 import { getSkillImage } from "features/bumpkins/components/revamp/SkillPathDetails";
 import { startCase } from "lodash";
-import { BudNFTName } from "features/game/types/marketplace";
-import { TranslationKeys } from "lib/i18n/dictionaries/types";
+import type { BudNFTName } from "features/game/types/marketplace";
+import type { TranslationKeys } from "lib/i18n/dictionaries/types";
+import classNames from "classnames";
+import { getBudImage } from "lib/buds/types";
+
+const BOOSTS_PANEL_ESTIMATED_HEIGHT = 220;
+
+const isBumpkinSkill = (boost: BoostName): boost is BumpkinRevampSkillName =>
+  boost in BUMPKIN_REVAMP_SKILL_TREE;
+
+const isCollectible = (boost: BoostName): boost is InventoryItemName =>
+  boost in KNOWN_IDS;
+
+const isWearable = (boost: BoostName): boost is BumpkinItem =>
+  boost in ITEM_IDS;
+
+const isBud = (boost: BoostName): boost is BudNFTName =>
+  boost.startsWith("Bud #");
+
+const isCalendarEvent = (boost: BoostName): boost is SeasonalEventName =>
+  boost in CALENDAR_EVENT_ICONS;
+
+// Roman-numeral rank suffix shown after an upgradeable skill's boost (rank
+// 1..maxLevel). This is the only cue that distinguishes ranks for skills whose
+// boost value is identical across ranks (e.g. Tough Tree "x3", Money Tree).
+const RANK_NUMERALS = ["I", "II", "III"] as const;
+
+const getSkillRankSuffix = (boost: BoostName, state: GameState): string => {
+  if (!isBumpkinSkill(boost) || !isUpgradeableSkillName(boost)) return "";
+  // getSkillLevel clamps to the skill's maxLevel, so the index is always valid
+  // today; guarding on the numeral keeps it correct if a maxLevel ever exceeds
+  // the table (and covers the not-owned level-0 case → no suffix).
+  const numeral = RANK_NUMERALS[getSkillLevel(state.bumpkin.skills, boost) - 1];
+  return numeral ? ` ${numeral}` : "";
+};
+
+export const getBoostLabel = (
+  name: BoostName,
+  t: (key: TranslationKeys) => string,
+): string => {
+  if (isCalendarEvent(name)) {
+    const key: TranslationKeys = `calendar.events.${name}.title`;
+    const translated = t(key);
+    return translated !== key ? translated : startCase(name);
+  }
+  // startCase strips/alters punctuation (e.g. "Luna's Hat" → "Lunas Hat", "Dr." → "Dr"), so preserve names that have it
+  if (/[^a-zA-Z0-9 ]/.test(name)) {
+    return name;
+  }
+  return startCase(name);
+};
+
+export const getBoostIcon = (boost: BoostName, state: GameState): string => {
+  if (boost === "Building Oil") {
+    return SUNNYSIDE.icons.stopwatch;
+  }
+
+  if (isCalendarEvent(boost)) {
+    return CALENDAR_EVENT_ICONS[boost];
+  }
+
+  if (isBumpkinSkill(boost)) {
+    const {
+      image,
+      tree,
+      boosts: {
+        buff: { boostedItemIcon },
+      },
+    } = BUMPKIN_REVAMP_SKILL_TREE[boost] as BumpkinSkillRevamp;
+
+    return getSkillImage(image, boostedItemIcon, tree);
+  }
+
+  // Wearable check runs before collectible because some boost sources
+  // (e.g. "Green Amulet") are listed in both KNOWN_IDS and ITEM_IDS — the
+  // boost is granted by the worn item, so the wearable image is correct.
+  if (isWearable(boost)) {
+    return getTradeableDisplay({
+      id: ITEM_IDS[boost],
+      type: "wearables",
+      state,
+    }).image;
+  }
+
+  if (isCollectible(boost)) {
+    return getTradeableDisplay({
+      id: KNOWN_IDS[boost],
+      type: "collectibles",
+      state,
+    }).image;
+  }
+
+  if (isBud(boost)) {
+    const budId = Number(boost.split("#")[1]);
+    return getBudImage(budId);
+  }
+
+  return SUNNYSIDE.icons.lightning;
+};
 
 export const BoostsDisplay: React.FC<{
   boosts: { name: BoostName; value: string }[];
   show: boolean;
   state: GameState;
   onClick: () => void;
-}> = ({ boosts, show, state, onClick }) => {
+  className?: string;
+  portalAlign?: "left" | "center" | "right";
+  portalPlacement?: "auto" | "above" | "below";
+  /** When provided, renders in a portal to avoid clipping by scroll containers. Positions above trigger when it would clip below. */
+  anchorRef?: React.RefObject<HTMLElement | null>;
+}> = ({
+  boosts,
+  show,
+  state,
+  onClick,
+  className,
+  portalAlign = "right",
+  portalPlacement = "auto",
+  anchorRef,
+}) => {
   const { t } = useAppTranslation();
-  const isBumpkinSkill = (
-    boost: BoostName,
-  ): boost is BumpkinRevampSkillName => {
-    return boost in BUMPKIN_REVAMP_SKILL_TREE;
-  };
+  const [portalStyle, setPortalStyle] = useState<React.CSSProperties>({});
+  const [anchorVisible, setAnchorVisible] = useState(true);
 
-  const isCollectible = (boost: BoostName): boost is InventoryItemName => {
-    return boost in KNOWN_IDS;
-  };
-  const isWearable = (boost: BoostName): boost is BumpkinItem => {
-    return boost in ITEM_IDS;
-  };
-  const isBud = (boost: BoostName): boost is BudNFTName => {
-    return boost.startsWith("Bud #");
-  };
-  const isCalendarEvent = (boost: BoostName): boost is SeasonalEventName => {
-    return boost in CALENDAR_EVENT_ICONS;
-  };
+  useEffect(() => {
+    if (!show || !anchorRef?.current) return;
 
-  const getBoostLabel = (name: BoostName): string => {
-    if (isCalendarEvent(name)) {
-      const key: TranslationKeys = `calendar.events.${name}.title`;
-      const translated = t(key);
-      return translated !== key ? translated : startCase(name);
-    }
-    return startCase(name);
-  };
+    const anchor = anchorRef.current;
 
-  const getBoostIcon = (boost: BoostName) => {
-    if (boost === "Building Oil") {
-      return SUNNYSIDE.icons.stopwatch;
+    const scrollableAncestors: HTMLElement[] = [];
+    let parent: HTMLElement | null = anchor.parentElement;
+    while (parent) {
+      const { overflowY, overflowX, overflow } =
+        window.getComputedStyle(parent);
+      if (/(auto|scroll|overlay)/.test(overflowY + overflowX + overflow)) {
+        scrollableAncestors.push(parent);
+      }
+      parent = parent.parentElement;
     }
 
-    if (isCalendarEvent(boost)) {
-      return CALENDAR_EVENT_ICONS[boost];
-    }
+    const isAnchorInView = (rect: DOMRect) => {
+      for (const ancestor of scrollableAncestors) {
+        const aRect = ancestor.getBoundingClientRect();
+        if (
+          rect.bottom <= aRect.top ||
+          rect.top >= aRect.bottom ||
+          rect.right <= aRect.left ||
+          rect.left >= aRect.right
+        ) {
+          return false;
+        }
+      }
+      return true;
+    };
 
-    if (isBumpkinSkill(boost)) {
-      const {
-        image,
-        tree,
-        boosts: {
-          buff: { boostedItemIcon },
-        },
-      } = BUMPKIN_REVAMP_SKILL_TREE[boost] as BumpkinSkillRevamp;
+    const computeAndSetPortalStyle = () => {
+      const rect = anchor.getBoundingClientRect();
+      const visible = isAnchorInView(rect);
+      setAnchorVisible(visible);
+      if (!visible) return;
+      const spaceBelow = window.innerHeight - rect.bottom;
+      const positionAbove =
+        portalPlacement === "above" ||
+        (portalPlacement === "auto" &&
+          spaceBelow < BOOSTS_PANEL_ESTIMATED_HEIGHT);
 
-      return getSkillImage(image, boostedItemIcon, tree);
-    }
+      const horizontalStyle =
+        portalAlign === "center"
+          ? {
+              left: rect.left + rect.width / 2,
+              right: "auto",
+            }
+          : portalAlign === "left"
+            ? {
+                left: rect.left,
+                right: "auto",
+              }
+            : {
+                right: window.innerWidth - rect.right,
+                left: "auto",
+              };
 
-    if (isCollectible(boost)) {
-      return getTradeableDisplay({
-        id: KNOWN_IDS[boost],
-        type: "collectibles",
-        state,
-      }).image;
-    }
+      if (positionAbove) {
+        setPortalStyle({
+          position: "fixed",
+          bottom: window.innerHeight - rect.top,
+          top: "auto",
+          zIndex: 50,
+          ...horizontalStyle,
+        });
+      } else {
+        setPortalStyle({
+          position: "fixed",
+          top: rect.bottom + 4,
+          bottom: "auto",
+          zIndex: 50,
+          ...horizontalStyle,
+        });
+      }
+    };
 
-    if (isWearable(boost)) {
-      return getTradeableDisplay({
-        id: ITEM_IDS[boost],
-        type: "wearables",
-        state,
-      }).image;
-    }
+    computeAndSetPortalStyle();
 
-    if (isBud(boost)) {
-      const budId = Number(boost.split("#")[1]);
-      return `https://${budImageDomain}.sunflower-land.com/images/${budId}.webp`;
-    }
+    let rafId: number | null = null;
+    const scheduleUpdate = () => {
+      if (rafId !== null) return;
+      rafId = window.requestAnimationFrame(() => {
+        rafId = null;
+        computeAndSetPortalStyle();
+      });
+    };
 
-    return SUNNYSIDE.icons.lightning;
-  };
+    window.addEventListener("resize", scheduleUpdate);
+    window.addEventListener("scroll", scheduleUpdate, true);
+    scrollableAncestors.forEach((el) =>
+      el.addEventListener("scroll", scheduleUpdate),
+    );
 
-  return (
+    return () => {
+      if (rafId !== null) window.cancelAnimationFrame(rafId);
+      window.removeEventListener("resize", scheduleUpdate);
+      window.removeEventListener("scroll", scheduleUpdate, true);
+      scrollableAncestors.forEach((el) =>
+        el.removeEventListener("scroll", scheduleUpdate),
+      );
+    };
+  }, [show, anchorRef, portalAlign, portalPlacement]);
+
+  const panelContent = (
     <AnimatedPanel
       show={show}
       onClick={onClick}
       onBackdropClick={onClick}
-      className="flex flex-col gap-1 max-h-5"
+      className={classNames("flex flex-col gap-1 max-h-5", className)}
+      style={anchorRef ? portalStyle : undefined}
     >
       <div className="overflow-y-auto scrollable min-w-36 max-h-52 py-1 px-0.5">
         <div className="flex space-x-1 mb-1">
@@ -122,14 +270,21 @@ export const BoostsDisplay: React.FC<{
             <Label
               key={`${buff.name}-${buff.value}-${index}`}
               type="transparent"
-              icon={getBoostIcon(buff.name)}
+              icon={getBoostIcon(buff.name, state)}
               className="ml-3"
             >
-              {`${buff.value} ${getBoostLabel(buff.name)}`}
+              {`${buff.value} ${getBoostLabel(buff.name, t)}${getSkillRankSuffix(buff.name, state)}`}
             </Label>
           ))}
         </div>
       </div>
     </AnimatedPanel>
   );
+
+  if (anchorRef && show) {
+    if (!anchorVisible) return null;
+    return createPortal(panelContent, document.body);
+  }
+
+  return panelContent;
 };

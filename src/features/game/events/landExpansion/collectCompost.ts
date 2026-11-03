@@ -1,10 +1,15 @@
 import Decimal from "decimal.js-light";
 import { trackFarmActivity } from "features/game/types/farmActivity";
-import { ComposterName } from "features/game/types/composters";
-import { getKeys } from "features/game/types/craftables";
-import { CompostBuilding, GameState } from "features/game/types/game";
+import {
+  type ComposterName,
+  composterDetails,
+} from "features/game/types/composters";
+import { getKeys } from "lib/object";
+import type { CompostBuilding, GameState } from "features/game/types/game";
 import { produce } from "immer";
 import { translate } from "lib/i18n/translate";
+import { rollWormAmount } from "./composterBait";
+import { updateBoostUsed } from "features/game/types/updateBoostUsed";
 
 export type collectCompostAction = {
   type: "compost.collected";
@@ -16,12 +21,14 @@ type Options = {
   state: Readonly<GameState>;
   action: collectCompostAction;
   createdAt?: number;
+  farmId: number;
 };
 
 export function collectCompost({
   state,
   action,
   createdAt = Date.now(),
+  farmId,
 }: Options): GameState {
   return produce(state, (stateCopy) => {
     const { bumpkin } = stateCopy;
@@ -32,6 +39,13 @@ export function collectCompost({
 
     if (!building) {
       throw new Error(translate("error.composterNotExist"));
+    }
+
+    // A lifted composter keeps composting while it sits in the inventory - the
+    // pause is only applied when it is placed back down, so collecting from an
+    // unplaced one would side-step it entirely.
+    if (!building.coordinates) {
+      throw new Error("Composter is not placed");
     }
 
     if (!bumpkin) {
@@ -47,15 +61,45 @@ export function collectCompost({
       throw new Error("Compost is not ready");
     }
 
+    const { worm } = composterDetails[action.building];
+    const counter = stateCopy.farmActivity[`${worm} Collected`] ?? 0;
+    const { worms, boostsUsed: wormBoostsUsed } = rollWormAmount({
+      state: stateCopy,
+      building: action.building,
+      farmId,
+      counter,
+    });
+
     getKeys(compost.items ?? {}).forEach((name) => {
+      // Legacy composters started before roll-on-collect was introduced
+      // still store a pre-rolled worm amount here; ignore it so the new
+      // seeded roll below is the single source of truth.
+      if (name === worm) return;
       const previousCount = stateCopy.inventory[name] || new Decimal(0);
       stateCopy.inventory[name] = previousCount.add(compost.items[name] ?? 0);
     });
+
+    if (worms > 0) {
+      const previousWorms = stateCopy.inventory[worm] || new Decimal(0);
+      stateCopy.inventory[worm] = previousWorms.add(worms);
+    }
 
     stateCopy.farmActivity = trackFarmActivity(
       `${action.building} Collected`,
       stateCopy.farmActivity,
     );
+    stateCopy.farmActivity = trackFarmActivity(
+      `${worm} Collected`,
+      stateCopy.farmActivity,
+    );
+
+    if (wormBoostsUsed.length > 0) {
+      stateCopy.boostsUsedAt = updateBoostUsed({
+        game: stateCopy,
+        boostNames: wormBoostsUsed,
+        createdAt,
+      });
+    }
 
     if (building.requires) {
       delete building.requires;

@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState } from "react";
 import {
   AVAILABLE_ACHIEVEMENTS,
-  CropsAndChickensAchievementName,
+  type CropsAndChickensAchievementName,
 } from "../CropsAndChickensAchievements";
 import { useAppTranslation } from "lib/i18n/useAppTranslations";
 import { PIXEL_SCALE } from "features/game/lib/constants";

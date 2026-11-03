@@ -1,12 +1,12 @@
 import React, { useContext, useRef, useState } from "react";
 import Spritesheet, {
-  SpriteSheetInstance,
+  type SpriteSheetInstance,
 } from "components/animation/SpriteAnimator";
 import dropSheet1 from "assets/resources/crimstone/crimstone_rock_one_drop.png";
 import dropSheet2 from "assets/resources/crimstone/crimstone_rock_three_drop.png";
 import { PIXEL_SCALE } from "features/game/lib/constants";
 import { ZoomContext } from "components/ZoomProvider";
-import { getCrimstoneStage } from "../Crimstone";
+import { getCrimstoneStage } from "../getCrimstoneStage";
 import { ITEM_DETAILS } from "features/game/types/images";
 
 const DROP_SHEET_FRAME_WIDTH = 96;
@@ -15,20 +15,22 @@ const DROP_SHEET_FRAME_HEIGHT = 48;
 interface Props {
   resourceAmount?: number;
   minesLeft: number;
-  minedAt: number;
+  now: number;
+  readyAt: number;
 }
 
 const DepletingCrimstoneComponent: React.FC<Props> = ({
   resourceAmount,
   minesLeft,
-  minedAt,
+  now,
+  readyAt,
 }) => {
   const { scale } = useContext(ZoomContext);
   const [playing, setPlaying] = useState(false);
   const sparkGif = useRef<SpriteSheetInstance>(undefined);
 
   const getDropSheet = () => {
-    if (getCrimstoneStage(minesLeft, minedAt) === 6) {
+    if (getCrimstoneStage(minesLeft, now, readyAt) === 6) {
       return dropSheet2;
     }
     return dropSheet1;

@@ -1,6 +1,7 @@
-import { InventoryItemName } from "../types/game";
+import type { InventoryItemName } from "../types/game";
 import { CHAPTERS } from "./chapters";
-import { BumpkinItem } from "./bumpkin";
+import type { BumpkinItem } from "./bumpkin";
+import { getPetNFTRevealConfig } from "./petRevealConfig";
 
 type Releases = {
   tradeAt: Date;
@@ -13,7 +14,7 @@ const CAN_WITHDRAW_AND_TRADE: Releases = {
   withdrawAt: new Date("2023-01-01"),
 };
 
-export const BUMPKIN_RELEASES: Partial<Record<BumpkinItem, Releases>> = {
+export const WEARABLE_RELEASES: Partial<Record<BumpkinItem, Releases>> = {
   "New Years Crown": CAN_WITHDRAW_AND_TRADE,
   "Painter's Cap": CAN_WITHDRAW_AND_TRADE,
   "Festival of Colors Background": CAN_WITHDRAW_AND_TRADE,
@@ -336,6 +337,10 @@ export const BUMPKIN_RELEASES: Partial<Record<BumpkinItem, Releases>> = {
     tradeAt: new Date("2025-04-08"),
     withdrawAt: CHAPTERS["Winds of Change"].endDate,
   },
+  "Locust Onesie": {
+    tradeAt: new Date("2025-04-08"),
+    withdrawAt: CHAPTERS["Winds of Change"].endDate,
+  },
   "Glacial Plume": {
     tradeAt: new Date("2025-04-08"),
     withdrawAt: CHAPTERS["Winds of Change"].endDate,
@@ -579,6 +584,142 @@ export const BUMPKIN_RELEASES: Partial<Record<BumpkinItem, Releases>> = {
     withdrawAt: new Date("2026-06-04T00:00:00Z"),
   },
 
+  // Salt Awakening Wearables
+  "Spa Hat": {
+    tradeAt: CHAPTERS["Salt Awakening"].endDate,
+    withdrawAt: new Date("2026-08-31T00:00:00Z"),
+  },
+  "Spa Robe": {
+    tradeAt: CHAPTERS["Salt Awakening"].endDate,
+    withdrawAt: new Date("2026-08-31T00:00:00Z"),
+  },
+  "Spa Slippers": {
+    tradeAt: CHAPTERS["Salt Awakening"].endDate,
+    withdrawAt: new Date("2026-08-31T00:00:00Z"),
+  },
+  "Bubble Aura": {
+    tradeAt: CHAPTERS["Salt Awakening"].endDate,
+    withdrawAt: new Date("2026-08-31T00:00:00Z"),
+  },
+  "Deep Sea Salt Cave Background": {
+    tradeAt: CHAPTERS["Salt Awakening"].endDate,
+    withdrawAt: new Date("2026-08-31T00:00:00Z"),
+  },
+  "Clam Shell Hat": {
+    tradeAt: CHAPTERS["Salt Awakening"].endDate,
+    withdrawAt: new Date("2026-08-31T00:00:00Z"),
+  },
+  "Shrimp Onesie": {
+    tradeAt: CHAPTERS["Salt Awakening"].endDate,
+    withdrawAt: new Date("2026-08-31T00:00:00Z"),
+  },
+  "Pistol Shrimp": {
+    tradeAt: CHAPTERS["Salt Awakening"].endDate,
+    withdrawAt: new Date("2026-08-31T00:00:00Z"),
+  },
+
+  // Ascension Age Wearables
+  "Swamp Lily Hat": {
+    tradeAt: CHAPTERS["Ascension Age"].endDate,
+    withdrawAt: new Date("2026-11-30T00:00:00Z"),
+  },
+  "Swamp Armor": {
+    tradeAt: CHAPTERS["Ascension Age"].endDate,
+    withdrawAt: new Date("2026-11-30T00:00:00Z"),
+  },
+  "Swamp Pants": {
+    tradeAt: CHAPTERS["Ascension Age"].endDate,
+    withdrawAt: new Date("2026-11-30T00:00:00Z"),
+  },
+  "Moon Hair": {
+    tradeAt: CHAPTERS["Ascension Age"].endDate,
+    withdrawAt: new Date("2026-11-30T00:00:00Z"),
+  },
+  "Surfer Hair": {
+    tradeAt: CHAPTERS["Ascension Age"].endDate,
+    withdrawAt: new Date("2026-11-30T00:00:00Z"),
+  },
+  "Rice Shirt": {
+    tradeAt: CHAPTERS["Ascension Age"].endDate,
+    withdrawAt: new Date("2026-11-30T00:00:00Z"),
+  },
+  "Alchemist Apron": {
+    tradeAt: CHAPTERS["Ascension Age"].endDate,
+    withdrawAt: new Date("2026-11-30T00:00:00Z"),
+  },
+  "Salt Bottle Onesie": {
+    tradeAt: CHAPTERS["Ascension Age"].endDate,
+    withdrawAt: new Date("2026-11-30T00:00:00Z"),
+  },
+  "Blue Rose Dress": {
+    tradeAt: CHAPTERS["Ascension Age"].endDate,
+    withdrawAt: new Date("2026-11-30T00:00:00Z"),
+  },
+  "Fairy Sandals": {
+    tradeAt: CHAPTERS["Ascension Age"].endDate,
+    withdrawAt: new Date("2026-11-30T00:00:00Z"),
+  },
+
+  // Cave Dwellers Wearables
+  "Hercules Beetle Hat": {
+    tradeAt: CHAPTERS["Cave Dwellers"].endDate,
+    withdrawAt: new Date("2027-03-01T00:00:00Z"),
+  },
+  "Firefly Aura": {
+    tradeAt: CHAPTERS["Cave Dwellers"].endDate,
+    withdrawAt: new Date("2027-03-01T00:00:00Z"),
+  },
+  "Antique Dress": {
+    tradeAt: CHAPTERS["Cave Dwellers"].endDate,
+    withdrawAt: new Date("2027-03-01T00:00:00Z"),
+  },
+  Harpoon: {
+    tradeAt: CHAPTERS["Cave Dwellers"].endDate,
+    withdrawAt: new Date("2027-03-01T00:00:00Z"),
+  },
+  "Duende Hat": {
+    tradeAt: CHAPTERS["Cave Dwellers"].endDate,
+    withdrawAt: new Date("2027-03-01T00:00:00Z"),
+  },
+  "Duende Shirt": {
+    tradeAt: CHAPTERS["Cave Dwellers"].endDate,
+    withdrawAt: new Date("2027-03-01T00:00:00Z"),
+  },
+  "Duende Pants": {
+    tradeAt: CHAPTERS["Cave Dwellers"].endDate,
+    withdrawAt: new Date("2027-03-01T00:00:00Z"),
+  },
+  "Duende Shoes": {
+    tradeAt: CHAPTERS["Cave Dwellers"].endDate,
+    withdrawAt: new Date("2027-03-01T00:00:00Z"),
+  },
+  // Cave Dwellers track
+  "Pig Onesie": {
+    tradeAt: CHAPTERS["Cave Dwellers"].endDate,
+    withdrawAt: new Date("2027-03-01T00:00:00Z"),
+  },
+  "Traveling Merchant Suit": {
+    tradeAt: CHAPTERS["Cave Dwellers"].endDate,
+    withdrawAt: new Date("2027-03-01T00:00:00Z"),
+  },
+  "Traveling Merchant Bag": {
+    tradeAt: CHAPTERS["Cave Dwellers"].endDate,
+    withdrawAt: new Date("2027-03-01T00:00:00Z"),
+  },
+  "Beetle Goggles": {
+    tradeAt: CHAPTERS["Cave Dwellers"].endDate,
+    withdrawAt: new Date("2027-03-01T00:00:00Z"),
+  },
+  "Ascension Staff": {
+    tradeAt: CHAPTERS["Cave Dwellers"].endDate,
+    withdrawAt: new Date("2027-03-01T00:00:00Z"),
+  },
+  // Cave Dwellers chest exclusive
+  "Fish Trap": {
+    tradeAt: CHAPTERS["Cave Dwellers"].endDate,
+    withdrawAt: new Date("2027-03-01T00:00:00Z"),
+  },
+
   "Moonseeker Potion": {
     tradeAt: new Date("2025-11-06"),
     withdrawAt: new Date("2025-11-06"),
@@ -681,978 +822,1428 @@ export const BUMPKIN_RELEASES: Partial<Record<BumpkinItem, Releases>> = {
     tradeAt: new Date("2026-02-01"),
     withdrawAt: new Date("2026-02-01"),
   },
+
+  // April Fools 2026
+  "Neon Noiz Jacket": {
+    tradeAt: new Date("2026-04-17T00:00:00Z"),
+    withdrawAt: new Date("2026-04-17T00:00:00Z"),
+  },
+  "404 Chic Top": {
+    tradeAt: new Date("2026-04-17T00:00:00Z"),
+    withdrawAt: new Date("2026-04-17T00:00:00Z"),
+  },
+  "Neon Noiz Pants": {
+    tradeAt: new Date("2026-04-17T00:00:00Z"),
+    withdrawAt: new Date("2026-04-17T00:00:00Z"),
+  },
+  "404 Chic Skirt": {
+    tradeAt: new Date("2026-04-17T00:00:00Z"),
+    withdrawAt: new Date("2026-04-17T00:00:00Z"),
+  },
+  "Admin Fools Tools": {
+    tradeAt: new Date("2026-04-17T00:00:00Z"),
+    withdrawAt: new Date("2026-04-17T00:00:00Z"),
+  },
+  "Neon Noiz Shoes": {
+    tradeAt: new Date("2026-04-17T00:00:00Z"),
+    withdrawAt: new Date("2026-04-17T00:00:00Z"),
+  },
+  "404 Chic Boots": {
+    tradeAt: new Date("2026-04-17T00:00:00Z"),
+    withdrawAt: new Date("2026-04-17T00:00:00Z"),
+  },
+  "Aether Specs": {
+    tradeAt: new Date("2026-04-17T00:00:00Z"),
+    withdrawAt: new Date("2026-04-17T00:00:00Z"),
+  },
+  "Faulty Barrier Background": {
+    tradeAt: new Date("2026-04-17T00:00:00Z"),
+    withdrawAt: new Date("2026-04-17T00:00:00Z"),
+  },
+  "Cardboard Wings": {
+    tradeAt: new Date("2026-04-17T00:00:00Z"),
+    withdrawAt: new Date("2026-04-17T00:00:00Z"),
+  },
+  "Glitch Aura": {
+    tradeAt: new Date("2026-04-17T00:00:00Z"),
+    withdrawAt: new Date("2026-04-17T00:00:00Z"),
+  },
+
+  // Colors Event 2026
+  "Rainbow Wings": {
+    tradeAt: new Date("2026-08-20T00:00:00Z"),
+    withdrawAt: new Date("2026-08-20T00:00:00Z"),
+  },
+  "Butterfly Aura": {
+    tradeAt: new Date("2026-08-20T00:00:00Z"),
+    withdrawAt: new Date("2026-08-20T00:00:00Z"),
+  },
+  "Slime Wall Background": {
+    tradeAt: new Date("2026-08-20T00:00:00Z"),
+    withdrawAt: new Date("2026-08-20T00:00:00Z"),
+  },
+  "Green Slime Hair": {
+    tradeAt: new Date("2026-08-20T00:00:00Z"),
+    withdrawAt: new Date("2026-08-20T00:00:00Z"),
+  },
+  "Blue Slime Shirt": {
+    tradeAt: new Date("2026-08-20T00:00:00Z"),
+    withdrawAt: new Date("2026-08-20T00:00:00Z"),
+  },
+  "Slime Splattered Shirt": {
+    tradeAt: new Date("2026-08-20T00:00:00Z"),
+    withdrawAt: new Date("2026-08-20T00:00:00Z"),
+  },
+  "Yellow Slime Puppet": {
+    tradeAt: new Date("2026-08-20T00:00:00Z"),
+    withdrawAt: new Date("2026-08-20T00:00:00Z"),
+  },
+  "Blue Jelly Shoes": {
+    tradeAt: new Date("2026-08-20T00:00:00Z"),
+    withdrawAt: new Date("2026-08-20T00:00:00Z"),
+  },
+  "Sad Slime Slippers": {
+    tradeAt: new Date("2026-08-20T00:00:00Z"),
+    withdrawAt: new Date("2026-08-20T00:00:00Z"),
+  },
+  "Sad Slime Hat": {
+    tradeAt: new Date("2026-08-20T00:00:00Z"),
+    withdrawAt: new Date("2026-08-20T00:00:00Z"),
+  },
+  "Sad Slime Pants": {
+    tradeAt: new Date("2026-08-20T00:00:00Z"),
+    withdrawAt: new Date("2026-08-20T00:00:00Z"),
+  },
+  "Red Jelly Pants": {
+    tradeAt: new Date("2026-08-20T00:00:00Z"),
+    withdrawAt: new Date("2026-08-20T00:00:00Z"),
+  },
+
+  "Sky Tearer Wings": CAN_WITHDRAW_AND_TRADE,
+  "Bat Aura": CAN_WITHDRAW_AND_TRADE,
+  "Vampire Headwear": CAN_WITHDRAW_AND_TRADE,
+  "Butcher Knife": CAN_WITHDRAW_AND_TRADE,
+  "Skeleton Mask": CAN_WITHDRAW_AND_TRADE,
+  "Vampire Breeches": CAN_WITHDRAW_AND_TRADE,
+  "Scary Nights Background": CAN_WITHDRAW_AND_TRADE,
+  "Vampire Garments": CAN_WITHDRAW_AND_TRADE,
+  "Hook and Chain": CAN_WITHDRAW_AND_TRADE,
+  "Vampire Footwear": CAN_WITHDRAW_AND_TRADE,
+  "Skeleton Costume": CAN_WITHDRAW_AND_TRADE,
 };
 
-export const INVENTORY_RELEASES: Partial<Record<InventoryItemName, Releases>> =
-  {
-    // Resources
-    Beetroot: CAN_WITHDRAW_AND_TRADE,
-    Cabbage: CAN_WITHDRAW_AND_TRADE,
-    Carrot: CAN_WITHDRAW_AND_TRADE,
-    Cauliflower: CAN_WITHDRAW_AND_TRADE,
-    Kale: CAN_WITHDRAW_AND_TRADE,
-    Potato: CAN_WITHDRAW_AND_TRADE,
-    Pumpkin: CAN_WITHDRAW_AND_TRADE,
-    Sunflower: CAN_WITHDRAW_AND_TRADE,
-    Parsnip: CAN_WITHDRAW_AND_TRADE,
-    Eggplant: CAN_WITHDRAW_AND_TRADE,
-    Corn: CAN_WITHDRAW_AND_TRADE,
-    Radish: CAN_WITHDRAW_AND_TRADE,
-    Wheat: CAN_WITHDRAW_AND_TRADE,
-    Soybean: CAN_WITHDRAW_AND_TRADE,
-    Apple: CAN_WITHDRAW_AND_TRADE,
-    Blueberry: CAN_WITHDRAW_AND_TRADE,
-    Orange: CAN_WITHDRAW_AND_TRADE,
-    Banana: CAN_WITHDRAW_AND_TRADE,
-    Egg: CAN_WITHDRAW_AND_TRADE,
-    Wood: CAN_WITHDRAW_AND_TRADE,
-    Stone: CAN_WITHDRAW_AND_TRADE,
-    Iron: CAN_WITHDRAW_AND_TRADE,
-    Gold: CAN_WITHDRAW_AND_TRADE,
+type InventoryReleases = Partial<Record<InventoryItemName, Releases>>;
 
-    // Collectibles
-    Observatory: CAN_WITHDRAW_AND_TRADE,
-    "Stellar Sunflower": CAN_WITHDRAW_AND_TRADE,
-    "Potent Potato": CAN_WITHDRAW_AND_TRADE,
-    "Radical Radish": CAN_WITHDRAW_AND_TRADE,
-    "Ayam Cemani": CAN_WITHDRAW_AND_TRADE,
-    "Fat Chicken": CAN_WITHDRAW_AND_TRADE,
-    "Rich Chicken": CAN_WITHDRAW_AND_TRADE,
-    "Speed Chicken": CAN_WITHDRAW_AND_TRADE,
-    "El Pollo Veloz": CAN_WITHDRAW_AND_TRADE,
-    "Banana Chicken": CAN_WITHDRAW_AND_TRADE,
-    "Crim Peckster": CAN_WITHDRAW_AND_TRADE,
-    "Knight Chicken": CAN_WITHDRAW_AND_TRADE,
-    "Pharaoh Chicken": CAN_WITHDRAW_AND_TRADE,
-    "Undead Rooster": CAN_WITHDRAW_AND_TRADE,
-    "War Skull": CAN_WITHDRAW_AND_TRADE,
-    "War Tombstone": CAN_WITHDRAW_AND_TRADE,
-    "Grain Grinder": CAN_WITHDRAW_AND_TRADE,
-    Kernaldo: CAN_WITHDRAW_AND_TRADE,
-    Poppy: CAN_WITHDRAW_AND_TRADE,
-    Nana: CAN_WITHDRAW_AND_TRADE,
-    "Soil Krabby": CAN_WITHDRAW_AND_TRADE,
-    "Skill Shrimpy": CAN_WITHDRAW_AND_TRADE,
-    "Sunlit Citadel": CAN_WITHDRAW_AND_TRADE,
-    "Baobab Tree": CAN_WITHDRAW_AND_TRADE,
-    Camel: CAN_WITHDRAW_AND_TRADE,
-    "Australian Flag": CAN_WITHDRAW_AND_TRADE,
-    "Belgian Flag": CAN_WITHDRAW_AND_TRADE,
-    "Brazilian Flag": CAN_WITHDRAW_AND_TRADE,
-    "Chinese Flag": CAN_WITHDRAW_AND_TRADE,
-    "Finnish Flag": CAN_WITHDRAW_AND_TRADE,
-    "French Flag": CAN_WITHDRAW_AND_TRADE,
-    "German Flag": CAN_WITHDRAW_AND_TRADE,
-    "Indonesian Flag": CAN_WITHDRAW_AND_TRADE,
-    "Indian Flag": CAN_WITHDRAW_AND_TRADE,
-    "Iranian Flag": CAN_WITHDRAW_AND_TRADE,
-    "Italian Flag": CAN_WITHDRAW_AND_TRADE,
-    "Japanese Flag": CAN_WITHDRAW_AND_TRADE,
-    "Moroccan Flag": CAN_WITHDRAW_AND_TRADE,
-    "Dutch Flag": CAN_WITHDRAW_AND_TRADE,
-    "Philippine Flag": CAN_WITHDRAW_AND_TRADE,
-    "Polish Flag": CAN_WITHDRAW_AND_TRADE,
-    "Portuguese Flag": CAN_WITHDRAW_AND_TRADE,
-    "Russian Flag": CAN_WITHDRAW_AND_TRADE,
-    "Saudi Arabian Flag": CAN_WITHDRAW_AND_TRADE,
-    "South Korean Flag": CAN_WITHDRAW_AND_TRADE,
-    "Spanish Flag": CAN_WITHDRAW_AND_TRADE,
-    "Sunflower Flag": CAN_WITHDRAW_AND_TRADE,
-    "Thai Flag": CAN_WITHDRAW_AND_TRADE,
-    "Turkish Flag": CAN_WITHDRAW_AND_TRADE,
-    "Ukrainian Flag": CAN_WITHDRAW_AND_TRADE,
-    "American Flag": CAN_WITHDRAW_AND_TRADE,
-    "Vietnamese Flag": CAN_WITHDRAW_AND_TRADE,
-    "Canadian Flag": CAN_WITHDRAW_AND_TRADE,
-    "Singaporean Flag": CAN_WITHDRAW_AND_TRADE,
-    "British Flag": CAN_WITHDRAW_AND_TRADE,
-    "Sierra Leone Flag": CAN_WITHDRAW_AND_TRADE,
-    "Romanian Flag": CAN_WITHDRAW_AND_TRADE,
-    "Rainbow Flag": CAN_WITHDRAW_AND_TRADE,
-    "Goblin Flag": CAN_WITHDRAW_AND_TRADE,
-    "Pirate Flag": CAN_WITHDRAW_AND_TRADE,
-    "Algerian Flag": CAN_WITHDRAW_AND_TRADE,
-    "Mexican Flag": CAN_WITHDRAW_AND_TRADE,
-    "Dominican Republic Flag": CAN_WITHDRAW_AND_TRADE,
-    "Argentinian Flag": CAN_WITHDRAW_AND_TRADE,
-    "Lithuanian Flag": CAN_WITHDRAW_AND_TRADE,
-    "Malaysian Flag": CAN_WITHDRAW_AND_TRADE,
-    "Colombian Flag": CAN_WITHDRAW_AND_TRADE,
-    "Mushroom House": CAN_WITHDRAW_AND_TRADE,
-    Obie: CAN_WITHDRAW_AND_TRADE,
-    "Purple Trail": CAN_WITHDRAW_AND_TRADE,
-    Maximus: CAN_WITHDRAW_AND_TRADE,
-    "Peeled Potato": CAN_WITHDRAW_AND_TRADE,
-    "Christmas Snow Globe": CAN_WITHDRAW_AND_TRADE,
-    "Beta Bear": CAN_WITHDRAW_AND_TRADE,
-    "Cyborg Bear": CAN_WITHDRAW_AND_TRADE,
-    "Wood Nymph Wendy": CAN_WITHDRAW_AND_TRADE,
-    "Squirrel Monkey": CAN_WITHDRAW_AND_TRADE,
-    "Black Bearry": CAN_WITHDRAW_AND_TRADE,
-    "Lady Bug": CAN_WITHDRAW_AND_TRADE,
-    "Cabbage Boy": CAN_WITHDRAW_AND_TRADE,
-    "Cabbage Girl": CAN_WITHDRAW_AND_TRADE,
-    "Maneki Neko": CAN_WITHDRAW_AND_TRADE,
-    "Heart Balloons": CAN_WITHDRAW_AND_TRADE,
-    Flamingo: CAN_WITHDRAW_AND_TRADE,
-    "Blossom Tree": CAN_WITHDRAW_AND_TRADE,
-    "Palm Tree": CAN_WITHDRAW_AND_TRADE,
-    "Beach Ball": CAN_WITHDRAW_AND_TRADE,
-    "Collectible Bear": CAN_WITHDRAW_AND_TRADE,
-    "Pablo The Bunny": CAN_WITHDRAW_AND_TRADE,
-    "Easter Bush": CAN_WITHDRAW_AND_TRADE,
-    "Giant Carrot": CAN_WITHDRAW_AND_TRADE,
-    Hoot: CAN_WITHDRAW_AND_TRADE,
-    "Sir Goldensnout": CAN_WITHDRAW_AND_TRADE,
-    "Freya Fox": CAN_WITHDRAW_AND_TRADE,
-    "Queen Cornelia": CAN_WITHDRAW_AND_TRADE,
-    "White Crow": CAN_WITHDRAW_AND_TRADE,
-    Walrus: CAN_WITHDRAW_AND_TRADE,
-    Alba: CAN_WITHDRAW_AND_TRADE,
-    "Knowledge Crab": CAN_WITHDRAW_AND_TRADE,
-    Anchor: CAN_WITHDRAW_AND_TRADE,
-    "Rubber Ducky": CAN_WITHDRAW_AND_TRADE,
-    "Kraken Head": CAN_WITHDRAW_AND_TRADE,
-    "Kraken Tentacle": CAN_WITHDRAW_AND_TRADE,
-    "Blossom Royale": CAN_WITHDRAW_AND_TRADE,
-    "Humming Bird": CAN_WITHDRAW_AND_TRADE,
-    "Hungry Caterpillar": CAN_WITHDRAW_AND_TRADE,
-    "Queen Bee": CAN_WITHDRAW_AND_TRADE,
-    "Turbo Sprout": CAN_WITHDRAW_AND_TRADE,
-    Soybliss: CAN_WITHDRAW_AND_TRADE,
-    "Grape Granny": CAN_WITHDRAW_AND_TRADE,
-    "Royal Throne": CAN_WITHDRAW_AND_TRADE,
-    "Lily Egg": CAN_WITHDRAW_AND_TRADE,
-    Goblet: CAN_WITHDRAW_AND_TRADE,
-    "Chicken Coop": CAN_WITHDRAW_AND_TRADE,
-    "Easter Bunny": CAN_WITHDRAW_AND_TRADE,
-    "Farm Cat": CAN_WITHDRAW_AND_TRADE,
-    "Farm Dog": CAN_WITHDRAW_AND_TRADE,
-    "Gold Egg": CAN_WITHDRAW_AND_TRADE,
-    Rooster: CAN_WITHDRAW_AND_TRADE,
-    "Tiki Totem": CAN_WITHDRAW_AND_TRADE,
+export const INVENTORY_RELEASES: InventoryReleases = {
+  // Collectibles
+  Observatory: CAN_WITHDRAW_AND_TRADE,
+  "Stellar Sunflower": CAN_WITHDRAW_AND_TRADE,
+  "Potent Potato": CAN_WITHDRAW_AND_TRADE,
+  "Radical Radish": CAN_WITHDRAW_AND_TRADE,
+  "Ayam Cemani": CAN_WITHDRAW_AND_TRADE,
+  "Fat Chicken": CAN_WITHDRAW_AND_TRADE,
+  "Rich Chicken": CAN_WITHDRAW_AND_TRADE,
+  "Speed Chicken": CAN_WITHDRAW_AND_TRADE,
+  "El Pollo Veloz": CAN_WITHDRAW_AND_TRADE,
+  "Banana Chicken": CAN_WITHDRAW_AND_TRADE,
+  "Crim Peckster": CAN_WITHDRAW_AND_TRADE,
+  "Knight Chicken": CAN_WITHDRAW_AND_TRADE,
+  "Pharaoh Chicken": CAN_WITHDRAW_AND_TRADE,
+  "Undead Rooster": CAN_WITHDRAW_AND_TRADE,
+  "War Skull": CAN_WITHDRAW_AND_TRADE,
+  "War Tombstone": CAN_WITHDRAW_AND_TRADE,
+  "Grain Grinder": CAN_WITHDRAW_AND_TRADE,
+  Kernaldo: CAN_WITHDRAW_AND_TRADE,
+  Poppy: CAN_WITHDRAW_AND_TRADE,
+  Nana: CAN_WITHDRAW_AND_TRADE,
+  "Soil Krabby": CAN_WITHDRAW_AND_TRADE,
+  "Skill Shrimpy": CAN_WITHDRAW_AND_TRADE,
+  "Sunlit Citadel": CAN_WITHDRAW_AND_TRADE,
+  "Baobab Tree": CAN_WITHDRAW_AND_TRADE,
+  Camel: CAN_WITHDRAW_AND_TRADE,
+  "Australian Flag": CAN_WITHDRAW_AND_TRADE,
+  "Belgian Flag": CAN_WITHDRAW_AND_TRADE,
+  "Brazilian Flag": CAN_WITHDRAW_AND_TRADE,
+  "Chinese Flag": CAN_WITHDRAW_AND_TRADE,
+  "Finnish Flag": CAN_WITHDRAW_AND_TRADE,
+  "French Flag": CAN_WITHDRAW_AND_TRADE,
+  "German Flag": CAN_WITHDRAW_AND_TRADE,
+  "Indonesian Flag": CAN_WITHDRAW_AND_TRADE,
+  "Indian Flag": CAN_WITHDRAW_AND_TRADE,
+  "Iranian Flag": CAN_WITHDRAW_AND_TRADE,
+  "Italian Flag": CAN_WITHDRAW_AND_TRADE,
+  "Japanese Flag": CAN_WITHDRAW_AND_TRADE,
+  "Moroccan Flag": CAN_WITHDRAW_AND_TRADE,
+  "Dutch Flag": CAN_WITHDRAW_AND_TRADE,
+  "Philippine Flag": CAN_WITHDRAW_AND_TRADE,
+  "Polish Flag": CAN_WITHDRAW_AND_TRADE,
+  "Portuguese Flag": CAN_WITHDRAW_AND_TRADE,
+  "Russian Flag": CAN_WITHDRAW_AND_TRADE,
+  "Saudi Arabian Flag": CAN_WITHDRAW_AND_TRADE,
+  "South Korean Flag": CAN_WITHDRAW_AND_TRADE,
+  "Spanish Flag": CAN_WITHDRAW_AND_TRADE,
+  "Sunflower Flag": CAN_WITHDRAW_AND_TRADE,
+  "Thai Flag": CAN_WITHDRAW_AND_TRADE,
+  "Turkish Flag": CAN_WITHDRAW_AND_TRADE,
+  "Ukrainian Flag": CAN_WITHDRAW_AND_TRADE,
+  "American Flag": CAN_WITHDRAW_AND_TRADE,
+  "Vietnamese Flag": CAN_WITHDRAW_AND_TRADE,
+  "Canadian Flag": CAN_WITHDRAW_AND_TRADE,
+  "Singaporean Flag": CAN_WITHDRAW_AND_TRADE,
+  "British Flag": CAN_WITHDRAW_AND_TRADE,
+  "Sierra Leone Flag": CAN_WITHDRAW_AND_TRADE,
+  "Romanian Flag": CAN_WITHDRAW_AND_TRADE,
+  "Rainbow Flag": CAN_WITHDRAW_AND_TRADE,
+  "Goblin Flag": CAN_WITHDRAW_AND_TRADE,
+  "Pirate Flag": CAN_WITHDRAW_AND_TRADE,
+  "Algerian Flag": CAN_WITHDRAW_AND_TRADE,
+  "Mexican Flag": CAN_WITHDRAW_AND_TRADE,
+  "Dominican Republic Flag": CAN_WITHDRAW_AND_TRADE,
+  "Argentinian Flag": CAN_WITHDRAW_AND_TRADE,
+  "Lithuanian Flag": CAN_WITHDRAW_AND_TRADE,
+  "Malaysian Flag": CAN_WITHDRAW_AND_TRADE,
+  "Colombian Flag": CAN_WITHDRAW_AND_TRADE,
+  "Mushroom House": CAN_WITHDRAW_AND_TRADE,
+  Obie: CAN_WITHDRAW_AND_TRADE,
+  "Purple Trail": CAN_WITHDRAW_AND_TRADE,
+  Maximus: CAN_WITHDRAW_AND_TRADE,
+  "Peeled Potato": CAN_WITHDRAW_AND_TRADE,
+  "Christmas Snow Globe": CAN_WITHDRAW_AND_TRADE,
+  "Beta Bear": CAN_WITHDRAW_AND_TRADE,
+  "Cyborg Bear": CAN_WITHDRAW_AND_TRADE,
+  "Wood Nymph Wendy": CAN_WITHDRAW_AND_TRADE,
+  "Squirrel Monkey": CAN_WITHDRAW_AND_TRADE,
+  "Black Bearry": CAN_WITHDRAW_AND_TRADE,
+  "Lady Bug": CAN_WITHDRAW_AND_TRADE,
+  "Cabbage Boy": CAN_WITHDRAW_AND_TRADE,
+  "Cabbage Girl": CAN_WITHDRAW_AND_TRADE,
+  "Maneki Neko": CAN_WITHDRAW_AND_TRADE,
+  "Heart Balloons": CAN_WITHDRAW_AND_TRADE,
+  Flamingo: CAN_WITHDRAW_AND_TRADE,
+  "Blossom Tree": CAN_WITHDRAW_AND_TRADE,
+  "Palm Tree": CAN_WITHDRAW_AND_TRADE,
+  "Beach Ball": CAN_WITHDRAW_AND_TRADE,
+  "Collectible Bear": CAN_WITHDRAW_AND_TRADE,
+  "Pablo The Bunny": CAN_WITHDRAW_AND_TRADE,
+  "Easter Bush": CAN_WITHDRAW_AND_TRADE,
+  "Giant Carrot": CAN_WITHDRAW_AND_TRADE,
+  Hoot: CAN_WITHDRAW_AND_TRADE,
+  "Sir Goldensnout": CAN_WITHDRAW_AND_TRADE,
+  "Freya Fox": CAN_WITHDRAW_AND_TRADE,
+  "Queen Cornelia": CAN_WITHDRAW_AND_TRADE,
+  "White Crow": CAN_WITHDRAW_AND_TRADE,
+  Walrus: CAN_WITHDRAW_AND_TRADE,
+  Alba: CAN_WITHDRAW_AND_TRADE,
+  "Knowledge Crab": CAN_WITHDRAW_AND_TRADE,
+  Anchor: CAN_WITHDRAW_AND_TRADE,
+  "Rubber Ducky": CAN_WITHDRAW_AND_TRADE,
+  "Kraken Head": CAN_WITHDRAW_AND_TRADE,
+  "Kraken Tentacle": CAN_WITHDRAW_AND_TRADE,
+  "Blossom Royale": CAN_WITHDRAW_AND_TRADE,
+  "Humming Bird": CAN_WITHDRAW_AND_TRADE,
+  "Hungry Caterpillar": CAN_WITHDRAW_AND_TRADE,
+  "Queen Bee": CAN_WITHDRAW_AND_TRADE,
+  "Turbo Sprout": CAN_WITHDRAW_AND_TRADE,
+  Soybliss: CAN_WITHDRAW_AND_TRADE,
+  "Grape Granny": CAN_WITHDRAW_AND_TRADE,
+  "Royal Throne": CAN_WITHDRAW_AND_TRADE,
+  "Lily Egg": CAN_WITHDRAW_AND_TRADE,
+  Goblet: CAN_WITHDRAW_AND_TRADE,
+  "Chicken Coop": CAN_WITHDRAW_AND_TRADE,
+  "Easter Bunny": CAN_WITHDRAW_AND_TRADE,
+  "Farm Cat": CAN_WITHDRAW_AND_TRADE,
+  "Farm Dog": CAN_WITHDRAW_AND_TRADE,
+  "Gold Egg": CAN_WITHDRAW_AND_TRADE,
+  Rooster: CAN_WITHDRAW_AND_TRADE,
+  "Tiki Totem": CAN_WITHDRAW_AND_TRADE,
 
-    // Blacksmith Items
-    "Sunflower Statue": CAN_WITHDRAW_AND_TRADE,
-    "Potato Statue": CAN_WITHDRAW_AND_TRADE,
-    "Christmas Tree": CAN_WITHDRAW_AND_TRADE,
-    Gnome: CAN_WITHDRAW_AND_TRADE,
-    "Sunflower Tombstone": CAN_WITHDRAW_AND_TRADE,
-    "Sunflower Rock": CAN_WITHDRAW_AND_TRADE,
-    "Goblin Crown": CAN_WITHDRAW_AND_TRADE,
-    Fountain: CAN_WITHDRAW_AND_TRADE,
-    "Woody the Beaver": CAN_WITHDRAW_AND_TRADE,
-    "Apprentice Beaver": CAN_WITHDRAW_AND_TRADE,
-    "Foreman Beaver": CAN_WITHDRAW_AND_TRADE,
-    "Nyon Statue": CAN_WITHDRAW_AND_TRADE,
-    "Homeless Tent": CAN_WITHDRAW_AND_TRADE,
-    "Farmer Bath": CAN_WITHDRAW_AND_TRADE,
-    "Mysterious Head": CAN_WITHDRAW_AND_TRADE,
-    "Rock Golem": CAN_WITHDRAW_AND_TRADE,
-    "Tunnel Mole": CAN_WITHDRAW_AND_TRADE,
-    "Rocky the Mole": CAN_WITHDRAW_AND_TRADE,
-    Nugget: CAN_WITHDRAW_AND_TRADE,
-    "Christmas Bear": CAN_WITHDRAW_AND_TRADE,
-    "Golden Bonsai": CAN_WITHDRAW_AND_TRADE,
-    "Victoria Sisters": CAN_WITHDRAW_AND_TRADE,
-    "Wicker Man": CAN_WITHDRAW_AND_TRADE,
-    "Carrot Sword": CAN_WITHDRAW_AND_TRADE,
-    "Golden Cauliflower": CAN_WITHDRAW_AND_TRADE,
-    "Mysterious Parsnip": CAN_WITHDRAW_AND_TRADE,
-    Nancy: CAN_WITHDRAW_AND_TRADE,
-    Scarecrow: CAN_WITHDRAW_AND_TRADE,
-    Kuebiko: CAN_WITHDRAW_AND_TRADE,
-    "Lunar Calendar": CAN_WITHDRAW_AND_TRADE,
-    "Genie Lamp": CAN_WITHDRAW_AND_TRADE,
-    Foliant: CAN_WITHDRAW_AND_TRADE,
-    "Iron Idol": CAN_WITHDRAW_AND_TRADE,
-    "Heart of Davy Jones": CAN_WITHDRAW_AND_TRADE,
-    Karkinos: CAN_WITHDRAW_AND_TRADE,
-    "Emerald Turtle": CAN_WITHDRAW_AND_TRADE,
-    "Tin Turtle": CAN_WITHDRAW_AND_TRADE,
-    "Golden Bear Head": CAN_WITHDRAW_AND_TRADE,
-    "Parasaur Skull": CAN_WITHDRAW_AND_TRADE,
-    "T-Rex Skull": CAN_WITHDRAW_AND_TRADE,
-    "Sunflower Coin": CAN_WITHDRAW_AND_TRADE,
-    "Pirate Bear": CAN_WITHDRAW_AND_TRADE,
-    "Whale Bear": CAN_WITHDRAW_AND_TRADE,
-    "Dinosaur Bone": CAN_WITHDRAW_AND_TRADE,
-    "Lifeguard Bear": CAN_WITHDRAW_AND_TRADE,
-    "Snorkel Bear": CAN_WITHDRAW_AND_TRADE,
-    "Turtle Bear": CAN_WITHDRAW_AND_TRADE,
-    "Chef Bear": CAN_WITHDRAW_AND_TRADE,
-    "Construction Bear": CAN_WITHDRAW_AND_TRADE,
-    "Angel Bear": CAN_WITHDRAW_AND_TRADE,
-    "Badass Bear": CAN_WITHDRAW_AND_TRADE,
-    "Bear Trap": CAN_WITHDRAW_AND_TRADE,
-    "Brilliant Bear": CAN_WITHDRAW_AND_TRADE,
-    "Classy Bear": CAN_WITHDRAW_AND_TRADE,
-    "Farmer Bear": CAN_WITHDRAW_AND_TRADE,
-    "Sunflower Bear": CAN_WITHDRAW_AND_TRADE,
-    "Rich Bear": CAN_WITHDRAW_AND_TRADE,
-    "Rainbow Artist Bear": CAN_WITHDRAW_AND_TRADE,
-    "Devil Bear": CAN_WITHDRAW_AND_TRADE,
-    "Jelly Lamp": CAN_WITHDRAW_AND_TRADE,
-    "Paint Can": CAN_WITHDRAW_AND_TRADE,
-    "Devotion Flag": CAN_WITHDRAW_AND_TRADE,
-    "Benevolence Flag": CAN_WITHDRAW_AND_TRADE,
-    "Generosity Flag": CAN_WITHDRAW_AND_TRADE,
-    "Splendor Flag": CAN_WITHDRAW_AND_TRADE,
-    "Hungry Hare": CAN_WITHDRAW_AND_TRADE,
-    "Community Egg": CAN_WITHDRAW_AND_TRADE,
-    "Baby Panda": CAN_WITHDRAW_AND_TRADE,
-    Baozi: CAN_WITHDRAW_AND_TRADE,
-    "Valentine Bear": CAN_WITHDRAW_AND_TRADE,
-    "Easter Bear": CAN_WITHDRAW_AND_TRADE,
-    "Genie Bear": CAN_WITHDRAW_AND_TRADE,
-    "Eggplant Bear": CAN_WITHDRAW_AND_TRADE,
-    "Dawn Flower": CAN_WITHDRAW_AND_TRADE,
-    "Sapo Docuras": CAN_WITHDRAW_AND_TRADE,
-    "Sapo Travessuras": CAN_WITHDRAW_AND_TRADE,
-    "Bumpkin Nutcracker": CAN_WITHDRAW_AND_TRADE,
-    "Grinx's Hammer": CAN_WITHDRAW_AND_TRADE,
-    "White Festive Fox": CAN_WITHDRAW_AND_TRADE,
-    "Earn Alliance Banner": CAN_WITHDRAW_AND_TRADE,
-    "Gaucho Rug": CAN_WITHDRAW_AND_TRADE,
-    "Halloween Scarecrow": CAN_WITHDRAW_AND_TRADE,
-    "Vampire Bear": CAN_WITHDRAW_AND_TRADE,
-    "Luminous Lantern": CAN_WITHDRAW_AND_TRADE,
-    "Radiance Lantern": CAN_WITHDRAW_AND_TRADE,
-    "Aurora Lantern": CAN_WITHDRAW_AND_TRADE,
-    "Ocean Lantern": CAN_WITHDRAW_AND_TRADE,
-    "Solar Lantern": CAN_WITHDRAW_AND_TRADE,
-    "Betty Lantern": CAN_WITHDRAW_AND_TRADE,
-    "Bumpkin Lantern": CAN_WITHDRAW_AND_TRADE,
-    "Goblin Lantern": CAN_WITHDRAW_AND_TRADE,
-    "Lemon Shark": CAN_WITHDRAW_AND_TRADE,
-    "Crimson Carp": CAN_WITHDRAW_AND_TRADE,
-    "Battle Fish": CAN_WITHDRAW_AND_TRADE,
-    "Pharaoh Gnome": CAN_WITHDRAW_AND_TRADE,
-    "Lemon Tea Bath": CAN_WITHDRAW_AND_TRADE,
-    "Tomato Clown": CAN_WITHDRAW_AND_TRADE,
-    Pyramid: CAN_WITHDRAW_AND_TRADE,
-    Oasis: CAN_WITHDRAW_AND_TRADE,
-    "Rice Panda": CAN_WITHDRAW_AND_TRADE,
-    "Silver Squire": CAN_WITHDRAW_AND_TRADE,
-    Cluckapult: CAN_WITHDRAW_AND_TRADE,
-    "Bullseye Board": CAN_WITHDRAW_AND_TRADE,
-    "Hapy Jar": CAN_WITHDRAW_AND_TRADE,
-    "Duamutef Jar": CAN_WITHDRAW_AND_TRADE,
-    "Qebehsenuef Jar": CAN_WITHDRAW_AND_TRADE,
-    "Imsety Jar": CAN_WITHDRAW_AND_TRADE,
-    Cannonball: CAN_WITHDRAW_AND_TRADE,
-    Sarcophagus: CAN_WITHDRAW_AND_TRADE,
-    "Clay Tablet": CAN_WITHDRAW_AND_TRADE,
-    "Snake in Jar": CAN_WITHDRAW_AND_TRADE,
-    "Reveling Lemon": CAN_WITHDRAW_AND_TRADE,
-    "Anubis Jackal": CAN_WITHDRAW_AND_TRADE,
-    Sundial: CAN_WITHDRAW_AND_TRADE,
-    "Sand Golem": CAN_WITHDRAW_AND_TRADE,
-    "Cactus King": CAN_WITHDRAW_AND_TRADE,
-    "Lemon Frog": CAN_WITHDRAW_AND_TRADE,
-    "Scarab Beetle": CAN_WITHDRAW_AND_TRADE,
-    "Tomato Bombard": CAN_WITHDRAW_AND_TRADE,
-    "Desert Rose": CAN_WITHDRAW_AND_TRADE,
-    "King of Bears": CAN_WITHDRAW_AND_TRADE,
-    Miffy: CAN_WITHDRAW_AND_TRADE,
-    Mog: CAN_WITHDRAW_AND_TRADE,
-    Marty: CAN_WITHDRAW_AND_TRADE,
-    Morty: CAN_WITHDRAW_AND_TRADE,
-    "Battlecry Drum": CAN_WITHDRAW_AND_TRADE,
-    "Chess Rug": CAN_WITHDRAW_AND_TRADE,
-    "Golden Gallant": CAN_WITHDRAW_AND_TRADE,
-    "Golden Garrison": CAN_WITHDRAW_AND_TRADE,
-    "Golden Guardian": CAN_WITHDRAW_AND_TRADE,
-    "Novice Knight": CAN_WITHDRAW_AND_TRADE,
-    "Regular Pawn": CAN_WITHDRAW_AND_TRADE,
-    "Rookie Rook": CAN_WITHDRAW_AND_TRADE,
-    "Silver Sentinel": CAN_WITHDRAW_AND_TRADE,
-    "Silver Stallion": CAN_WITHDRAW_AND_TRADE,
-    "Trainee Target": CAN_WITHDRAW_AND_TRADE,
-    "Twister Rug": CAN_WITHDRAW_AND_TRADE,
-    Clementine: CAN_WITHDRAW_AND_TRADE,
-    Cobalt: CAN_WITHDRAW_AND_TRADE,
-    "Dawn Umbrella Seat": CAN_WITHDRAW_AND_TRADE,
-    "Eggplant Grill": CAN_WITHDRAW_AND_TRADE,
-    "Giant Dawn Mushroom": CAN_WITHDRAW_AND_TRADE,
-    "Shroom Glow": CAN_WITHDRAW_AND_TRADE,
-    Candles: CAN_WITHDRAW_AND_TRADE,
-    "Haunted Stump": CAN_WITHDRAW_AND_TRADE,
-    "Spooky Tree": CAN_WITHDRAW_AND_TRADE,
-    Observer: CAN_WITHDRAW_AND_TRADE,
-    "Crow Rock": CAN_WITHDRAW_AND_TRADE,
-    "Mini Corn Maze": CAN_WITHDRAW_AND_TRADE,
-    "Beach Umbrella": CAN_WITHDRAW_AND_TRADE,
-    "Hideaway Herman": CAN_WITHDRAW_AND_TRADE,
-    "Lifeguard Ring": CAN_WITHDRAW_AND_TRADE,
-    "Shifty Sheldon": CAN_WITHDRAW_AND_TRADE,
-    "Tiki Torch": CAN_WITHDRAW_AND_TRADE,
-    Surfboard: CAN_WITHDRAW_AND_TRADE,
-    "Paper Reed": CAN_WITHDRAW_AND_TRADE,
-    Rainbow: CAN_WITHDRAW_AND_TRADE,
-    Capybara: CAN_WITHDRAW_AND_TRADE,
-    "Enchanted Rose": CAN_WITHDRAW_AND_TRADE,
-    "Flower Fox": CAN_WITHDRAW_AND_TRADE,
-    "Sunrise Bloom Rug": CAN_WITHDRAW_AND_TRADE,
-    "Flower Rug": CAN_WITHDRAW_AND_TRADE,
-    "Green Field Rug": CAN_WITHDRAW_AND_TRADE,
-    "Flower Cart": CAN_WITHDRAW_AND_TRADE,
-    "Tea Rug": CAN_WITHDRAW_AND_TRADE,
-    "Fancy Rug": CAN_WITHDRAW_AND_TRADE,
-    Clock: CAN_WITHDRAW_AND_TRADE,
-    Vinny: CAN_WITHDRAW_AND_TRADE,
+  // Blacksmith Items
+  "Sunflower Statue": CAN_WITHDRAW_AND_TRADE,
+  "Potato Statue": CAN_WITHDRAW_AND_TRADE,
+  "Christmas Tree": CAN_WITHDRAW_AND_TRADE,
+  Gnome: CAN_WITHDRAW_AND_TRADE,
+  "Sunflower Tombstone": CAN_WITHDRAW_AND_TRADE,
+  "Sunflower Rock": CAN_WITHDRAW_AND_TRADE,
+  "Goblin Crown": CAN_WITHDRAW_AND_TRADE,
+  Fountain: CAN_WITHDRAW_AND_TRADE,
+  "Woody the Beaver": CAN_WITHDRAW_AND_TRADE,
+  "Apprentice Beaver": CAN_WITHDRAW_AND_TRADE,
+  "Foreman Beaver": CAN_WITHDRAW_AND_TRADE,
+  "Nyon Statue": CAN_WITHDRAW_AND_TRADE,
+  "Homeless Tent": CAN_WITHDRAW_AND_TRADE,
+  "Farmer Bath": CAN_WITHDRAW_AND_TRADE,
+  "Mysterious Head": CAN_WITHDRAW_AND_TRADE,
+  "Rock Golem": CAN_WITHDRAW_AND_TRADE,
+  "Tunnel Mole": CAN_WITHDRAW_AND_TRADE,
+  "Rocky the Mole": CAN_WITHDRAW_AND_TRADE,
+  Nugget: CAN_WITHDRAW_AND_TRADE,
+  "Christmas Bear": CAN_WITHDRAW_AND_TRADE,
+  "Golden Bonsai": CAN_WITHDRAW_AND_TRADE,
+  "Victoria Sisters": CAN_WITHDRAW_AND_TRADE,
+  "Wicker Man": CAN_WITHDRAW_AND_TRADE,
+  "Carrot Sword": CAN_WITHDRAW_AND_TRADE,
+  "Golden Cauliflower": CAN_WITHDRAW_AND_TRADE,
+  "Mysterious Parsnip": CAN_WITHDRAW_AND_TRADE,
+  Nancy: CAN_WITHDRAW_AND_TRADE,
+  Scarecrow: CAN_WITHDRAW_AND_TRADE,
+  Kuebiko: CAN_WITHDRAW_AND_TRADE,
+  "Lunar Calendar": CAN_WITHDRAW_AND_TRADE,
+  "Genie Lamp": CAN_WITHDRAW_AND_TRADE,
+  Foliant: CAN_WITHDRAW_AND_TRADE,
+  "Iron Idol": CAN_WITHDRAW_AND_TRADE,
+  "Heart of Davy Jones": CAN_WITHDRAW_AND_TRADE,
+  Karkinos: CAN_WITHDRAW_AND_TRADE,
+  "Emerald Turtle": CAN_WITHDRAW_AND_TRADE,
+  "Tin Turtle": CAN_WITHDRAW_AND_TRADE,
+  "Golden Bear Head": CAN_WITHDRAW_AND_TRADE,
+  "Parasaur Skull": CAN_WITHDRAW_AND_TRADE,
+  "T-Rex Skull": CAN_WITHDRAW_AND_TRADE,
+  "Sunflower Coin": CAN_WITHDRAW_AND_TRADE,
+  "Pirate Bear": CAN_WITHDRAW_AND_TRADE,
+  "Whale Bear": CAN_WITHDRAW_AND_TRADE,
+  "Dinosaur Bone": CAN_WITHDRAW_AND_TRADE,
+  "Lifeguard Bear": CAN_WITHDRAW_AND_TRADE,
+  "Snorkel Bear": CAN_WITHDRAW_AND_TRADE,
+  "Turtle Bear": CAN_WITHDRAW_AND_TRADE,
+  "Chef Bear": CAN_WITHDRAW_AND_TRADE,
+  "Construction Bear": CAN_WITHDRAW_AND_TRADE,
+  "Angel Bear": CAN_WITHDRAW_AND_TRADE,
+  "Badass Bear": CAN_WITHDRAW_AND_TRADE,
+  "Bear Trap": CAN_WITHDRAW_AND_TRADE,
+  "Brilliant Bear": CAN_WITHDRAW_AND_TRADE,
+  "Classy Bear": CAN_WITHDRAW_AND_TRADE,
+  "Farmer Bear": CAN_WITHDRAW_AND_TRADE,
+  "Sunflower Bear": CAN_WITHDRAW_AND_TRADE,
+  "Rich Bear": CAN_WITHDRAW_AND_TRADE,
+  "Rainbow Artist Bear": CAN_WITHDRAW_AND_TRADE,
+  "Devil Bear": CAN_WITHDRAW_AND_TRADE,
+  "Jelly Lamp": CAN_WITHDRAW_AND_TRADE,
+  "Paint Can": CAN_WITHDRAW_AND_TRADE,
+  "Devotion Flag": CAN_WITHDRAW_AND_TRADE,
+  "Benevolence Flag": CAN_WITHDRAW_AND_TRADE,
+  "Generosity Flag": CAN_WITHDRAW_AND_TRADE,
+  "Splendor Flag": CAN_WITHDRAW_AND_TRADE,
+  "Hungry Hare": CAN_WITHDRAW_AND_TRADE,
+  "Community Egg": CAN_WITHDRAW_AND_TRADE,
+  "Baby Panda": CAN_WITHDRAW_AND_TRADE,
+  Baozi: CAN_WITHDRAW_AND_TRADE,
+  "Valentine Bear": CAN_WITHDRAW_AND_TRADE,
+  "Easter Bear": CAN_WITHDRAW_AND_TRADE,
+  "Genie Bear": CAN_WITHDRAW_AND_TRADE,
+  "Eggplant Bear": CAN_WITHDRAW_AND_TRADE,
+  "Dawn Flower": CAN_WITHDRAW_AND_TRADE,
+  "Sapo Docuras": CAN_WITHDRAW_AND_TRADE,
+  "Sapo Travessuras": CAN_WITHDRAW_AND_TRADE,
+  "Bumpkin Nutcracker": CAN_WITHDRAW_AND_TRADE,
+  "Grinx's Hammer": CAN_WITHDRAW_AND_TRADE,
+  "White Festive Fox": CAN_WITHDRAW_AND_TRADE,
+  "Earn Alliance Banner": CAN_WITHDRAW_AND_TRADE,
+  "Gaucho Rug": CAN_WITHDRAW_AND_TRADE,
+  "Halloween Scarecrow": CAN_WITHDRAW_AND_TRADE,
+  "Vampire Bear": CAN_WITHDRAW_AND_TRADE,
+  "Luminous Lantern": CAN_WITHDRAW_AND_TRADE,
+  "Radiance Lantern": CAN_WITHDRAW_AND_TRADE,
+  "Aurora Lantern": CAN_WITHDRAW_AND_TRADE,
+  "Ocean Lantern": CAN_WITHDRAW_AND_TRADE,
+  "Solar Lantern": CAN_WITHDRAW_AND_TRADE,
+  "Betty Lantern": CAN_WITHDRAW_AND_TRADE,
+  "Bumpkin Lantern": CAN_WITHDRAW_AND_TRADE,
+  "Goblin Lantern": CAN_WITHDRAW_AND_TRADE,
+  "Lemon Shark": CAN_WITHDRAW_AND_TRADE,
+  "Crimson Carp": CAN_WITHDRAW_AND_TRADE,
+  "Battle Fish": CAN_WITHDRAW_AND_TRADE,
+  "Pharaoh Gnome": CAN_WITHDRAW_AND_TRADE,
+  "Lemon Tea Bath": CAN_WITHDRAW_AND_TRADE,
+  "Tomato Clown": CAN_WITHDRAW_AND_TRADE,
+  Pyramid: CAN_WITHDRAW_AND_TRADE,
+  Oasis: CAN_WITHDRAW_AND_TRADE,
+  "Rice Panda": CAN_WITHDRAW_AND_TRADE,
+  "Silver Squire": CAN_WITHDRAW_AND_TRADE,
+  Cluckapult: CAN_WITHDRAW_AND_TRADE,
+  "Bullseye Board": CAN_WITHDRAW_AND_TRADE,
+  "Hapy Jar": CAN_WITHDRAW_AND_TRADE,
+  "Duamutef Jar": CAN_WITHDRAW_AND_TRADE,
+  "Qebehsenuef Jar": CAN_WITHDRAW_AND_TRADE,
+  "Imsety Jar": CAN_WITHDRAW_AND_TRADE,
+  Cannonball: CAN_WITHDRAW_AND_TRADE,
+  Sarcophagus: CAN_WITHDRAW_AND_TRADE,
+  "Clay Tablet": CAN_WITHDRAW_AND_TRADE,
+  "Snake in Jar": CAN_WITHDRAW_AND_TRADE,
+  "Reveling Lemon": CAN_WITHDRAW_AND_TRADE,
+  "Anubis Jackal": CAN_WITHDRAW_AND_TRADE,
+  Sundial: CAN_WITHDRAW_AND_TRADE,
+  "Sand Golem": CAN_WITHDRAW_AND_TRADE,
+  "Cactus King": CAN_WITHDRAW_AND_TRADE,
+  "Lemon Frog": CAN_WITHDRAW_AND_TRADE,
+  "Scarab Beetle": CAN_WITHDRAW_AND_TRADE,
+  "Tomato Bombard": CAN_WITHDRAW_AND_TRADE,
+  "Desert Rose": CAN_WITHDRAW_AND_TRADE,
+  "King of Bears": CAN_WITHDRAW_AND_TRADE,
+  Miffy: CAN_WITHDRAW_AND_TRADE,
+  Mog: CAN_WITHDRAW_AND_TRADE,
+  Marty: CAN_WITHDRAW_AND_TRADE,
+  Morty: CAN_WITHDRAW_AND_TRADE,
+  "Battlecry Drum": CAN_WITHDRAW_AND_TRADE,
+  "Chess Rug": CAN_WITHDRAW_AND_TRADE,
+  "Golden Gallant": CAN_WITHDRAW_AND_TRADE,
+  "Golden Garrison": CAN_WITHDRAW_AND_TRADE,
+  "Golden Guardian": CAN_WITHDRAW_AND_TRADE,
+  "Novice Knight": CAN_WITHDRAW_AND_TRADE,
+  "Regular Pawn": CAN_WITHDRAW_AND_TRADE,
+  "Rookie Rook": CAN_WITHDRAW_AND_TRADE,
+  "Silver Sentinel": CAN_WITHDRAW_AND_TRADE,
+  "Silver Stallion": CAN_WITHDRAW_AND_TRADE,
+  "Trainee Target": CAN_WITHDRAW_AND_TRADE,
+  "Twister Rug": CAN_WITHDRAW_AND_TRADE,
+  Clementine: CAN_WITHDRAW_AND_TRADE,
+  Cobalt: CAN_WITHDRAW_AND_TRADE,
+  "Dawn Umbrella Seat": CAN_WITHDRAW_AND_TRADE,
+  "Eggplant Grill": CAN_WITHDRAW_AND_TRADE,
+  "Giant Dawn Mushroom": CAN_WITHDRAW_AND_TRADE,
+  "Shroom Glow": CAN_WITHDRAW_AND_TRADE,
+  Candles: CAN_WITHDRAW_AND_TRADE,
+  "Haunted Stump": CAN_WITHDRAW_AND_TRADE,
+  "Spooky Tree": CAN_WITHDRAW_AND_TRADE,
+  Observer: CAN_WITHDRAW_AND_TRADE,
+  "Crow Rock": CAN_WITHDRAW_AND_TRADE,
+  "Mini Corn Maze": CAN_WITHDRAW_AND_TRADE,
+  "Beach Umbrella": CAN_WITHDRAW_AND_TRADE,
+  "Hideaway Herman": CAN_WITHDRAW_AND_TRADE,
+  "Lifeguard Ring": CAN_WITHDRAW_AND_TRADE,
+  "Shifty Sheldon": CAN_WITHDRAW_AND_TRADE,
+  "Tiki Torch": CAN_WITHDRAW_AND_TRADE,
+  Surfboard: CAN_WITHDRAW_AND_TRADE,
+  "Paper Reed": CAN_WITHDRAW_AND_TRADE,
+  Rainbow: CAN_WITHDRAW_AND_TRADE,
+  Capybara: CAN_WITHDRAW_AND_TRADE,
+  "Enchanted Rose": CAN_WITHDRAW_AND_TRADE,
+  "Flower Fox": CAN_WITHDRAW_AND_TRADE,
+  "Sunrise Bloom Rug": CAN_WITHDRAW_AND_TRADE,
+  "Flower Rug": CAN_WITHDRAW_AND_TRADE,
+  "Green Field Rug": CAN_WITHDRAW_AND_TRADE,
+  "Flower Cart": CAN_WITHDRAW_AND_TRADE,
+  "Tea Rug": CAN_WITHDRAW_AND_TRADE,
+  "Fancy Rug": CAN_WITHDRAW_AND_TRADE,
+  Clock: CAN_WITHDRAW_AND_TRADE,
+  Vinny: CAN_WITHDRAW_AND_TRADE,
 
-    Cerberus: {
-      tradeAt: new Date("2025-11-06"),
-      withdrawAt: new Date("2025-11-06"),
-    },
-    "Witch's Cauldron": {
-      tradeAt: new Date("2025-11-06"),
-      withdrawAt: new Date("2025-11-06"),
-    },
-    Raveyard: {
-      tradeAt: new Date("2025-11-06"),
-      withdrawAt: new Date("2025-11-06"),
-    },
-    "Haunted House": {
-      tradeAt: new Date("2025-11-06"),
-      withdrawAt: new Date("2025-11-06"),
-    },
-    "Mimic Egg": {
-      tradeAt: new Date("2025-11-06"),
-      withdrawAt: new Date("2025-11-06"),
-    },
-    "Haunted Tomb": {
-      tradeAt: new Date("2025-11-06"),
-      withdrawAt: new Date("2025-11-06"),
-    },
-    Guillotine: {
-      tradeAt: new Date("2025-11-06"),
-      withdrawAt: new Date("2025-11-06"),
-    },
-    "Vampire Coffin": {
-      tradeAt: new Date("2025-11-06"),
-      withdrawAt: new Date("2025-11-06"),
-    },
+  Cerberus: {
+    tradeAt: new Date("2025-11-06"),
+    withdrawAt: new Date("2025-11-06"),
+  },
+  "Witch's Cauldron": {
+    tradeAt: new Date("2025-11-06"),
+    withdrawAt: new Date("2025-11-06"),
+  },
+  Raveyard: {
+    tradeAt: new Date("2025-11-06"),
+    withdrawAt: new Date("2025-11-06"),
+  },
+  "Haunted House": {
+    tradeAt: new Date("2025-11-06"),
+    withdrawAt: new Date("2025-11-06"),
+  },
+  "Mimic Egg": {
+    tradeAt: new Date("2025-11-06"),
+    withdrawAt: new Date("2025-11-06"),
+  },
+  "Haunted Tomb": {
+    tradeAt: new Date("2025-11-06"),
+    withdrawAt: new Date("2025-11-06"),
+  },
+  Guillotine: {
+    tradeAt: new Date("2025-11-06"),
+    withdrawAt: new Date("2025-11-06"),
+  },
+  "Vampire Coffin": {
+    tradeAt: new Date("2025-11-06"),
+    withdrawAt: new Date("2025-11-06"),
+  },
 
-    // Upcoming launches
-    "Moo-ver": {
-      tradeAt: new Date("2024-12-13"),
-      withdrawAt: CHAPTERS["Bull Run"].endDate,
-    },
-    "Swiss Whiskers": {
-      tradeAt: new Date("2024-12-13"),
-      withdrawAt: CHAPTERS["Bull Run"].endDate,
-    },
-    Cluckulator: {
-      tradeAt: new Date("2024-12-13"),
-      withdrawAt: CHAPTERS["Bull Run"].endDate,
-    },
-    UFO: {
-      tradeAt: new Date("2024-12-13"),
-      withdrawAt: CHAPTERS["Bull Run"].endDate,
-    },
-    "Black Sheep": {
-      tradeAt: new Date("2024-12-13"),
-      withdrawAt: CHAPTERS["Bull Run"].endDate,
-    },
-    Wagon: {
-      tradeAt: new Date("2024-12-13"),
-      withdrawAt: CHAPTERS["Bull Run"].endDate,
-    },
-    "Longhorn Cowfish": {
-      tradeAt: new Date("2024-12-13"),
-      withdrawAt: CHAPTERS["Bull Run"].endDate,
-    },
-    "Alien Chicken": {
-      tradeAt: new Date("2024-12-13"),
-      withdrawAt: CHAPTERS["Bull Run"].endDate,
-    },
-    Mootant: {
-      tradeAt: new Date("2024-12-13"),
-      withdrawAt: CHAPTERS["Bull Run"].endDate,
-    },
-    "Toxic Tuft": {
-      tradeAt: new Date("2024-12-13"),
-      withdrawAt: CHAPTERS["Bull Run"].endDate,
-    },
+  // Upcoming launches
+  "Moo-ver": {
+    tradeAt: new Date("2024-12-13"),
+    withdrawAt: CHAPTERS["Bull Run"].endDate,
+  },
+  "Swiss Whiskers": {
+    tradeAt: new Date("2024-12-13"),
+    withdrawAt: CHAPTERS["Bull Run"].endDate,
+  },
+  Cluckulator: {
+    tradeAt: new Date("2024-12-13"),
+    withdrawAt: CHAPTERS["Bull Run"].endDate,
+  },
+  UFO: {
+    tradeAt: new Date("2024-12-13"),
+    withdrawAt: CHAPTERS["Bull Run"].endDate,
+  },
+  "Black Sheep": {
+    tradeAt: new Date("2024-12-13"),
+    withdrawAt: CHAPTERS["Bull Run"].endDate,
+  },
+  Wagon: {
+    tradeAt: new Date("2024-12-13"),
+    withdrawAt: CHAPTERS["Bull Run"].endDate,
+  },
+  "Longhorn Cowfish": {
+    tradeAt: new Date("2024-12-13"),
+    withdrawAt: CHAPTERS["Bull Run"].endDate,
+  },
+  "Alien Chicken": {
+    tradeAt: new Date("2024-12-13"),
+    withdrawAt: CHAPTERS["Bull Run"].endDate,
+  },
+  Mootant: {
+    tradeAt: new Date("2024-12-13"),
+    withdrawAt: CHAPTERS["Bull Run"].endDate,
+  },
+  "Toxic Tuft": {
+    tradeAt: new Date("2024-12-13"),
+    withdrawAt: CHAPTERS["Bull Run"].endDate,
+  },
 
-    Chicory: {
-      tradeAt: new Date("2024-12-13"),
-      withdrawAt: CHAPTERS["Bull Run"].endDate,
-    },
-    "Christmas Stocking": {
-      tradeAt: new Date("2024-12-28"),
-      withdrawAt: new Date("2025-01-01"),
-    },
-    "Golden Christmas Stocking": {
-      tradeAt: new Date("2024-12-28"),
-      withdrawAt: new Date("2025-01-01"),
-    },
-    "Cozy Fireplace": {
-      tradeAt: new Date("2024-12-28"),
-      withdrawAt: new Date("2025-01-01"),
-    },
-    "Christmas Rug": {
-      tradeAt: new Date("2024-12-28"),
-      withdrawAt: new Date("2025-01-01"),
-    },
-    "Christmas Candle": {
-      tradeAt: new Date("2024-12-28"),
-      withdrawAt: new Date("2025-01-01"),
-    },
-    "Santa Penguin": {
-      tradeAt: new Date("2024-12-28"),
-      withdrawAt: new Date("2025-01-01"),
-    },
-    "Penguin Pool": {
-      tradeAt: new Date("2024-12-28"),
-      withdrawAt: new Date("2025-01-01"),
-    },
-    Snowman: {
-      tradeAt: new Date("2024-12-28"),
-      withdrawAt: new Date("2025-01-01"),
-    },
-    "Festive Toy Train": {
-      tradeAt: new Date("2024-12-28"),
-      withdrawAt: new Date("2025-01-01"),
-    },
-    "Golden Cow": {
-      tradeAt: new Date("2024-12-23"),
-      withdrawAt: new Date("2025-01-01"),
-    },
-    "Cow Scratcher": {
-      tradeAt: CHAPTERS["Bull Run"].endDate,
-      withdrawAt: CHAPTERS["Bull Run"].endDate,
-    },
-    "Spinning Wheel": {
-      tradeAt: CHAPTERS["Bull Run"].endDate,
-      withdrawAt: CHAPTERS["Bull Run"].endDate,
-    },
-    "Sleepy Rug": {
-      tradeAt: CHAPTERS["Bull Run"].endDate,
-      withdrawAt: CHAPTERS["Bull Run"].endDate,
-    },
-    Meteorite: {
-      tradeAt: CHAPTERS["Bull Run"].endDate,
-      withdrawAt: CHAPTERS["Bull Run"].endDate,
-    },
-    "Mechanical Bull": {
-      tradeAt: CHAPTERS["Bull Run"].endDate,
-      withdrawAt: CHAPTERS["Bull Run"].endDate,
-    },
-    "Crop Circle": {
-      tradeAt: CHAPTERS["Bull Run"].endDate,
-      withdrawAt: CHAPTERS["Bull Run"].endDate,
-    },
-    "Sheaf of Plenty": {
-      tradeAt: CHAPTERS["Bull Run"].endDate,
-      withdrawAt: CHAPTERS["Bull Run"].endDate,
-    },
-    Kite: {
-      tradeAt: CHAPTERS["Winds of Change"].endDate,
-      withdrawAt: CHAPTERS["Winds of Change"].endDate,
-    },
-    "Acorn House": {
-      tradeAt: CHAPTERS["Winds of Change"].endDate,
-      withdrawAt: CHAPTERS["Winds of Change"].endDate,
-    },
-    "Spring Duckling": {
-      tradeAt: CHAPTERS["Winds of Change"].endDate,
-      withdrawAt: CHAPTERS["Winds of Change"].endDate,
-    },
-    "Summer Duckling": {
-      tradeAt: CHAPTERS["Winds of Change"].endDate,
-      withdrawAt: CHAPTERS["Winds of Change"].endDate,
-    },
-    "Winter Duckling": {
-      tradeAt: CHAPTERS["Winds of Change"].endDate,
-      withdrawAt: CHAPTERS["Winds of Change"].endDate,
-    },
-    "Autumn Duckling": {
-      tradeAt: CHAPTERS["Winds of Change"].endDate,
-      withdrawAt: CHAPTERS["Winds of Change"].endDate,
-    },
-    "Mama Duck": {
-      tradeAt: CHAPTERS["Winds of Change"].endDate,
-      withdrawAt: CHAPTERS["Winds of Change"].endDate,
-    },
-    Igloo: {
-      tradeAt: CHAPTERS["Winds of Change"].endDate,
-      withdrawAt: CHAPTERS["Winds of Change"].endDate,
-    },
-    "Ugly Duckling": {
-      tradeAt: CHAPTERS["Winds of Change"].endDate,
-      withdrawAt: CHAPTERS["Winds of Change"].endDate,
-    },
-    "Lake Rug": {
-      tradeAt: CHAPTERS["Winds of Change"].endDate,
-      withdrawAt: CHAPTERS["Winds of Change"].endDate,
-    },
-    Hammock: {
-      tradeAt: CHAPTERS["Winds of Change"].endDate,
-      withdrawAt: CHAPTERS["Winds of Change"].endDate,
-    },
-    Mammoth: {
-      tradeAt: CHAPTERS["Winds of Change"].endDate,
-      withdrawAt: CHAPTERS["Winds of Change"].endDate,
-    },
-    "Cup of Chocolate": {
-      tradeAt: CHAPTERS["Winds of Change"].endDate,
-      withdrawAt: CHAPTERS["Winds of Change"].endDate,
-    },
-    "Golden Sheep": {
-      tradeAt: new Date("2025-04-08"),
-      withdrawAt: CHAPTERS["Winds of Change"].endDate,
-    },
-    "Barn Blueprint": {
-      tradeAt: new Date("2025-04-08"),
-      withdrawAt: CHAPTERS["Winds of Change"].endDate,
-    },
-    "Goblin Emblem": {
-      tradeAt: new Date("2021-01-01"),
-    },
-    "Sunflorian Emblem": {
-      tradeAt: new Date("2021-01-01"),
-    },
-    "Bumpkin Emblem": {
-      tradeAt: new Date("2021-01-01"),
-    },
-    "Nightshade Emblem": {
-      tradeAt: new Date("2021-01-01"),
-    },
+  Chicory: {
+    tradeAt: new Date("2024-12-13"),
+    withdrawAt: CHAPTERS["Bull Run"].endDate,
+  },
+  "Christmas Stocking": {
+    tradeAt: new Date("2024-12-28"),
+    withdrawAt: new Date("2025-01-01"),
+  },
+  "Golden Christmas Stocking": {
+    tradeAt: new Date("2024-12-28"),
+    withdrawAt: new Date("2025-01-01"),
+  },
+  "Cozy Fireplace": {
+    tradeAt: new Date("2024-12-28"),
+    withdrawAt: new Date("2025-01-01"),
+  },
+  "Christmas Rug": {
+    tradeAt: new Date("2024-12-28"),
+    withdrawAt: new Date("2025-01-01"),
+  },
+  "Christmas Candle": {
+    tradeAt: new Date("2024-12-28"),
+    withdrawAt: new Date("2025-01-01"),
+  },
+  "Santa Penguin": {
+    tradeAt: new Date("2024-12-28"),
+    withdrawAt: new Date("2025-01-01"),
+  },
+  "Penguin Pool": {
+    tradeAt: new Date("2024-12-28"),
+    withdrawAt: new Date("2025-01-01"),
+  },
+  Snowman: {
+    tradeAt: new Date("2024-12-28"),
+    withdrawAt: new Date("2025-01-01"),
+  },
+  "Festive Toy Train": {
+    tradeAt: new Date("2024-12-28"),
+    withdrawAt: new Date("2025-01-01"),
+  },
+  "Golden Cow": {
+    tradeAt: new Date("2024-12-23"),
+    withdrawAt: new Date("2025-01-01"),
+  },
+  "Cow Scratcher": {
+    tradeAt: CHAPTERS["Bull Run"].endDate,
+    withdrawAt: CHAPTERS["Bull Run"].endDate,
+  },
+  "Spinning Wheel": {
+    tradeAt: CHAPTERS["Bull Run"].endDate,
+    withdrawAt: CHAPTERS["Bull Run"].endDate,
+  },
+  "Sleepy Rug": {
+    tradeAt: CHAPTERS["Bull Run"].endDate,
+    withdrawAt: CHAPTERS["Bull Run"].endDate,
+  },
+  Meteorite: {
+    tradeAt: CHAPTERS["Bull Run"].endDate,
+    withdrawAt: CHAPTERS["Bull Run"].endDate,
+  },
+  "Mechanical Bull": {
+    tradeAt: CHAPTERS["Bull Run"].endDate,
+    withdrawAt: CHAPTERS["Bull Run"].endDate,
+  },
+  "Crop Circle": {
+    tradeAt: CHAPTERS["Bull Run"].endDate,
+    withdrawAt: CHAPTERS["Bull Run"].endDate,
+  },
+  "Sheaf of Plenty": {
+    tradeAt: CHAPTERS["Bull Run"].endDate,
+    withdrawAt: CHAPTERS["Bull Run"].endDate,
+  },
+  Kite: {
+    tradeAt: CHAPTERS["Winds of Change"].endDate,
+    withdrawAt: CHAPTERS["Winds of Change"].endDate,
+  },
+  "Acorn House": {
+    tradeAt: CHAPTERS["Winds of Change"].endDate,
+    withdrawAt: CHAPTERS["Winds of Change"].endDate,
+  },
+  "Spring Duckling": {
+    tradeAt: CHAPTERS["Winds of Change"].endDate,
+    withdrawAt: CHAPTERS["Winds of Change"].endDate,
+  },
+  "Summer Duckling": {
+    tradeAt: CHAPTERS["Winds of Change"].endDate,
+    withdrawAt: CHAPTERS["Winds of Change"].endDate,
+  },
+  "Winter Duckling": {
+    tradeAt: CHAPTERS["Winds of Change"].endDate,
+    withdrawAt: CHAPTERS["Winds of Change"].endDate,
+  },
+  "Autumn Duckling": {
+    tradeAt: CHAPTERS["Winds of Change"].endDate,
+    withdrawAt: CHAPTERS["Winds of Change"].endDate,
+  },
+  "Mama Duck": {
+    tradeAt: CHAPTERS["Winds of Change"].endDate,
+    withdrawAt: CHAPTERS["Winds of Change"].endDate,
+  },
+  Igloo: {
+    tradeAt: CHAPTERS["Winds of Change"].endDate,
+    withdrawAt: CHAPTERS["Winds of Change"].endDate,
+  },
+  "Ugly Duckling": {
+    tradeAt: CHAPTERS["Winds of Change"].endDate,
+    withdrawAt: CHAPTERS["Winds of Change"].endDate,
+  },
+  "Lake Rug": {
+    tradeAt: CHAPTERS["Winds of Change"].endDate,
+    withdrawAt: CHAPTERS["Winds of Change"].endDate,
+  },
+  Hammock: {
+    tradeAt: CHAPTERS["Winds of Change"].endDate,
+    withdrawAt: CHAPTERS["Winds of Change"].endDate,
+  },
+  Mammoth: {
+    tradeAt: CHAPTERS["Winds of Change"].endDate,
+    withdrawAt: CHAPTERS["Winds of Change"].endDate,
+  },
+  "Cup of Chocolate": {
+    tradeAt: CHAPTERS["Winds of Change"].endDate,
+    withdrawAt: CHAPTERS["Winds of Change"].endDate,
+  },
+  "Golden Sheep": {
+    tradeAt: new Date("2025-04-08"),
+    withdrawAt: CHAPTERS["Winds of Change"].endDate,
+  },
+  "Barn Blueprint": {
+    tradeAt: new Date("2025-04-08"),
+    withdrawAt: CHAPTERS["Winds of Change"].endDate,
+  },
+  "Goblin Emblem": {
+    tradeAt: new Date("2021-01-01"),
+  },
+  "Sunflorian Emblem": {
+    tradeAt: new Date("2021-01-01"),
+  },
+  "Bumpkin Emblem": {
+    tradeAt: new Date("2021-01-01"),
+  },
+  "Nightshade Emblem": {
+    tradeAt: new Date("2021-01-01"),
+  },
 
-    "Frozen Cow": {
-      tradeAt: CHAPTERS["Winds of Change"].startDate,
-      withdrawAt: CHAPTERS["Winds of Change"].endDate,
-    },
-    "Frozen Sheep": {
-      tradeAt: CHAPTERS["Winds of Change"].startDate,
-      withdrawAt: CHAPTERS["Winds of Change"].endDate,
-    },
-    "Summer Chicken": {
-      tradeAt: CHAPTERS["Winds of Change"].startDate,
-      withdrawAt: CHAPTERS["Winds of Change"].endDate,
-    },
-    Chamomile: {
-      tradeAt: CHAPTERS["Winds of Change"].startDate,
-      withdrawAt: CHAPTERS["Winds of Change"].endDate,
-    },
-    Jellyfish: {
-      tradeAt: CHAPTERS["Winds of Change"].startDate,
-      withdrawAt: CHAPTERS["Winds of Change"].endDate,
-    },
-    Jin: {
-      tradeAt: new Date("2025-08-20T00:00:00Z"),
-      withdrawAt: new Date("2025-08-20T00:00:00Z"),
-    },
+  "Frozen Cow": {
+    tradeAt: CHAPTERS["Winds of Change"].startDate,
+    withdrawAt: CHAPTERS["Winds of Change"].endDate,
+  },
+  "Frozen Sheep": {
+    tradeAt: CHAPTERS["Winds of Change"].startDate,
+    withdrawAt: CHAPTERS["Winds of Change"].endDate,
+  },
+  "Summer Chicken": {
+    tradeAt: CHAPTERS["Winds of Change"].startDate,
+    withdrawAt: CHAPTERS["Winds of Change"].endDate,
+  },
+  Chamomile: {
+    tradeAt: CHAPTERS["Winds of Change"].startDate,
+    withdrawAt: CHAPTERS["Winds of Change"].endDate,
+  },
+  Jellyfish: {
+    tradeAt: CHAPTERS["Winds of Change"].startDate,
+    withdrawAt: CHAPTERS["Winds of Change"].endDate,
+  },
+  Jin: {
+    tradeAt: new Date("2025-08-20T00:00:00Z"),
+    withdrawAt: new Date("2025-08-20T00:00:00Z"),
+  },
 
-    "Carrot House": {
-      tradeAt: new Date("2025-05-01T00:00:00Z"),
-      withdrawAt: new Date("2025-05-01T00:00:00Z"),
-    },
-    "Orange Bunny Lantern": {
-      tradeAt: new Date("2025-05-01T00:00:00Z"),
-      withdrawAt: new Date("2025-05-01T00:00:00Z"),
-    },
-    "White Bunny Lantern": {
-      tradeAt: new Date("2025-05-01T00:00:00Z"),
-      withdrawAt: new Date("2025-05-01T00:00:00Z"),
-    },
-    "Orange Tunnel Bunny": {
-      tradeAt: new Date("2025-05-01T00:00:00Z"),
-      withdrawAt: new Date("2025-05-01T00:00:00Z"),
-    },
-    "White Tunnel Bunny": {
-      tradeAt: new Date("2025-05-01T00:00:00Z"),
-      withdrawAt: new Date("2025-05-01T00:00:00Z"),
-    },
-    "Easter Basket": {
-      tradeAt: new Date("2025-05-01T00:00:00Z"),
-      withdrawAt: new Date("2025-05-01T00:00:00Z"),
-    },
+  "Carrot House": {
+    tradeAt: new Date("2025-05-01T00:00:00Z"),
+    withdrawAt: new Date("2025-05-01T00:00:00Z"),
+  },
+  "Orange Bunny Lantern": {
+    tradeAt: new Date("2025-05-01T00:00:00Z"),
+    withdrawAt: new Date("2025-05-01T00:00:00Z"),
+  },
+  "White Bunny Lantern": {
+    tradeAt: new Date("2025-05-01T00:00:00Z"),
+    withdrawAt: new Date("2025-05-01T00:00:00Z"),
+  },
+  "Orange Tunnel Bunny": {
+    tradeAt: new Date("2025-05-01T00:00:00Z"),
+    withdrawAt: new Date("2025-05-01T00:00:00Z"),
+  },
+  "White Tunnel Bunny": {
+    tradeAt: new Date("2025-05-01T00:00:00Z"),
+    withdrawAt: new Date("2025-05-01T00:00:00Z"),
+  },
+  "Easter Basket": {
+    tradeAt: new Date("2025-05-01T00:00:00Z"),
+    withdrawAt: new Date("2025-05-01T00:00:00Z"),
+  },
 
-    "Pink Dolphin": {
-      tradeAt: CHAPTERS["Great Bloom"].startDate,
-      withdrawAt: CHAPTERS["Great Bloom"].endDate,
-    },
-    "Love Chicken": {
-      tradeAt: CHAPTERS["Great Bloom"].startDate,
-      withdrawAt: CHAPTERS["Great Bloom"].endDate,
-    },
-    "Dr Cow": {
-      tradeAt: CHAPTERS["Great Bloom"].startDate,
-      withdrawAt: CHAPTERS["Great Bloom"].endDate,
-    },
-    "Nurse Sheep": {
-      tradeAt: CHAPTERS["Great Bloom"].startDate,
-      withdrawAt: CHAPTERS["Great Bloom"].endDate,
-    },
-    Lunalist: {
-      tradeAt: CHAPTERS["Great Bloom"].startDate,
-      withdrawAt: CHAPTERS["Great Bloom"].endDate,
-    },
-    Quarry: {
-      tradeAt: new Date("2025-07-01T00:00:00Z"),
-      withdrawAt: CHAPTERS["Great Bloom"].endDate,
-    },
-    "Obsidian Turtle": {
-      tradeAt: new Date("2025-07-01T00:00:00Z"),
-      withdrawAt: CHAPTERS["Great Bloom"].endDate,
-    },
-    "Winter Guardian": {
-      tradeAt: new Date("2025-07-01T00:00:00Z"),
-      withdrawAt: CHAPTERS["Great Bloom"].endDate,
-    },
-    "Summer Guardian": {
-      tradeAt: new Date("2025-07-01T00:00:00Z"),
-      withdrawAt: CHAPTERS["Great Bloom"].endDate,
-    },
-    "Spring Guardian": {
-      tradeAt: new Date("2025-07-01T00:00:00Z"),
-      withdrawAt: CHAPTERS["Great Bloom"].endDate,
-    },
-    "Autumn Guardian": {
-      tradeAt: new Date("2025-07-01T00:00:00Z"),
-      withdrawAt: CHAPTERS["Great Bloom"].endDate,
-    },
-    "Sky Pillar": {
-      tradeAt: new Date("2025-07-01T00:00:00Z"),
-      withdrawAt: CHAPTERS["Great Bloom"].endDate,
-    },
-    "Flower-Scribed Statue": {
-      tradeAt: CHAPTERS["Great Bloom"].endDate,
-      withdrawAt: CHAPTERS["Great Bloom"].endDate,
-    },
-    "Balloon Rug": {
-      tradeAt: CHAPTERS["Great Bloom"].endDate,
-      withdrawAt: CHAPTERS["Great Bloom"].endDate,
-    },
-    "Giant Yam": {
-      tradeAt: CHAPTERS["Great Bloom"].endDate,
-      withdrawAt: CHAPTERS["Great Bloom"].endDate,
-    },
-    "Heart Air Balloon": {
-      tradeAt: CHAPTERS["Great Bloom"].endDate,
-      withdrawAt: CHAPTERS["Great Bloom"].endDate,
-    },
-    "Giant Zucchini": {
-      tradeAt: CHAPTERS["Great Bloom"].endDate,
-      withdrawAt: CHAPTERS["Great Bloom"].endDate,
-    },
-    "Mini Floating Island": {
-      tradeAt: CHAPTERS["Great Bloom"].endDate,
-      withdrawAt: CHAPTERS["Great Bloom"].endDate,
-    },
-    "Giant Kale": {
-      tradeAt: CHAPTERS["Great Bloom"].endDate,
-      withdrawAt: CHAPTERS["Great Bloom"].endDate,
-    },
-    "Floating Toy": {
-      tradeAt: new Date("2025-07-08"),
-      withdrawAt: new Date("2025-07-08"),
-    },
-    "Paint Buckets": {
-      tradeAt: new Date("2025-07-08"),
-      withdrawAt: new Date("2025-07-08"),
-    },
-    "Rainbow Well": {
-      tradeAt: new Date("2025-07-08"),
-      withdrawAt: new Date("2025-07-08"),
-    },
-    "Rainbow Flower": {
-      tradeAt: new Date("2025-07-08"),
-      withdrawAt: new Date("2025-07-08"),
-    },
-    "Pony Toy": {
-      tradeAt: new Date("2025-07-08"),
-      withdrawAt: new Date("2025-07-08"),
-    },
-    "Red Slime Balloon": {
-      tradeAt: new Date("2025-07-08"),
-      withdrawAt: new Date("2025-07-08"),
-    },
-    "Blue Slime Balloon": {
-      tradeAt: new Date("2025-07-08"),
-      withdrawAt: new Date("2025-07-08"),
-    },
-    "Floor Mirror": {
-      tradeAt: CHAPTERS["Better Together"].endDate,
-      withdrawAt: new Date("2025-12-03T00:00:00Z"),
-    },
-    "Long Rug": {
-      tradeAt: CHAPTERS["Better Together"].endDate,
-      withdrawAt: new Date("2025-12-03T00:00:00Z"),
-    },
-    "Garbage Bin": {
-      tradeAt: CHAPTERS["Better Together"].endDate,
-      withdrawAt: new Date("2025-12-03T00:00:00Z"),
-    },
-    Wheelbarrow: {
-      tradeAt: CHAPTERS["Better Together"].endDate,
-      withdrawAt: new Date("2025-12-03T00:00:00Z"),
-    },
-    "Snail King": {
-      tradeAt: CHAPTERS["Better Together"].endDate,
-      withdrawAt: new Date("2025-12-03T00:00:00Z"),
-    },
-    "Reelmaster's Chair": {
-      tradeAt: CHAPTERS["Better Together"].endDate,
-      withdrawAt: new Date("2025-12-03T00:00:00Z"),
-    },
-    "Rat King": {
-      tradeAt: CHAPTERS["Better Together"].endDate,
-      withdrawAt: new Date("2025-12-03T00:00:00Z"),
-    },
-    "Fruit Tune Box": {
-      tradeAt: CHAPTERS["Better Together"].endDate,
-      withdrawAt: new Date("2025-12-03T00:00:00Z"),
-    },
-    // Double bed is not tradeable - explicitly set her to avoid accidental trade
-    "Double Bed": undefined,
-    "Teamwork Monument": undefined,
-    "Giant Artichoke": {
-      tradeAt: CHAPTERS["Better Together"].endDate,
-      withdrawAt: new Date("2025-12-03T00:00:00Z"),
-    },
-    "Rocket Statue": {
-      tradeAt: new Date("2025-10-20T00:00:00Z"),
-      withdrawAt: new Date("2025-12-03T00:00:00Z"),
-    },
-    "Ant Queen": {
-      tradeAt: new Date("2025-10-20T00:00:00Z"),
-      withdrawAt: new Date("2025-12-03T00:00:00Z"),
-    },
-    "Jurassic Droplet": {
-      tradeAt: new Date("2025-10-20T00:00:00Z"),
-      withdrawAt: new Date("2025-12-03T00:00:00Z"),
-    },
-    "Giant Onion": {
-      tradeAt: new Date("2025-10-20T00:00:00Z"),
-      withdrawAt: new Date("2025-12-03T00:00:00Z"),
-    },
-    "Giant Turnip": {
-      tradeAt: new Date("2025-10-20T00:00:00Z"),
-      withdrawAt: new Date("2025-12-03T00:00:00Z"),
-    },
-    "Groovy Gramophone": {
-      tradeAt: new Date("2025-10-20T00:00:00Z"),
-      withdrawAt: new Date("2025-12-03T00:00:00Z"),
-    },
-    "Wheat Whiskers": {
-      tradeAt: CHAPTERS["Better Together"].endDate,
-      withdrawAt: new Date("2025-12-03T00:00:00Z"),
-    },
-    "Janitor Chicken": {
-      tradeAt: CHAPTERS["Better Together"].endDate,
-      withdrawAt: new Date("2025-12-03T00:00:00Z"),
-    },
-    Poseidon: {
-      tradeAt: CHAPTERS["Better Together"].endDate,
-      withdrawAt: new Date("2025-12-03T00:00:00Z"),
-    },
-    "Venus Bumpkin Trap": {
-      tradeAt: CHAPTERS["Better Together"].endDate,
-      withdrawAt: new Date("2025-12-03T00:00:00Z"),
-    },
-    "Baby Cow": {
-      tradeAt: CHAPTERS["Better Together"].endDate,
-      withdrawAt: new Date("2025-12-03T00:00:00Z"),
-    },
-    "Baby Sheep": {
-      tradeAt: CHAPTERS["Better Together"].endDate,
-      withdrawAt: new Date("2025-12-03T00:00:00Z"),
-    },
-    "Black Hole Flower": {
-      tradeAt: CHAPTERS["Paw Prints"].endDate,
-      withdrawAt: new Date("2026-03-04T00:00:00Z"),
-    },
-    "Sleepy Chicken": {
-      tradeAt: CHAPTERS["Paw Prints"].endDate,
-      withdrawAt: new Date("2026-03-04T00:00:00Z"),
-    },
-    "Astronaut Cow": {
-      tradeAt: CHAPTERS["Paw Prints"].endDate,
-      withdrawAt: new Date("2026-03-04T00:00:00Z"),
-    },
-    "Astronaut Sheep": {
-      tradeAt: CHAPTERS["Paw Prints"].endDate,
-      withdrawAt: new Date("2026-03-04T00:00:00Z"),
-    },
-    "Mermaid Cow": {
-      tradeAt: CHAPTERS["Crabs and Traps"].endDate,
-      withdrawAt: new Date("2026-06-04T00:00:00Z"),
-    },
-    "Mermaid Sheep": {
-      tradeAt: CHAPTERS["Crabs and Traps"].endDate,
-      withdrawAt: new Date("2026-06-04T00:00:00Z"),
-    },
-    "Squid Chicken": {
-      tradeAt: CHAPTERS["Crabs and Traps"].endDate,
-      withdrawAt: new Date("2026-06-04T00:00:00Z"),
-    },
-    "Anemone Flower": {
-      tradeAt: CHAPTERS["Crabs and Traps"].endDate,
-      withdrawAt: new Date("2026-06-04T00:00:00Z"),
-    },
-    "Speckled Kissing Fish": {
-      tradeAt: CHAPTERS["Crabs and Traps"].endDate,
-      withdrawAt: new Date("2026-06-04T00:00:00Z"),
-    },
-    "Dark Eyed Kissing Fish": {
-      tradeAt: CHAPTERS["Crabs and Traps"].endDate,
-      withdrawAt: new Date("2026-06-04T00:00:00Z"),
-    },
-    "Fisherman's Boat": {
-      tradeAt: CHAPTERS["Crabs and Traps"].endDate,
-      withdrawAt: new Date("2026-06-04T00:00:00Z"),
-    },
-    "Sea Arch": {
-      tradeAt: CHAPTERS["Crabs and Traps"].endDate,
-      withdrawAt: new Date("2026-06-04T00:00:00Z"),
-    },
-    "Crabs and Fish Rug": {
-      tradeAt: CHAPTERS["Crabs and Traps"].endDate,
-      withdrawAt: new Date("2026-06-04T00:00:00Z"),
-    },
-    "Fish Flags": {
-      tradeAt: CHAPTERS["Crabs and Traps"].endDate,
-      withdrawAt: new Date("2026-06-04T00:00:00Z"),
-    },
-    "Fish Drying Rack": {
-      tradeAt: CHAPTERS["Crabs and Traps"].endDate,
-      withdrawAt: new Date("2026-06-04T00:00:00Z"),
-    },
-    "Yellow Submarine Trophy": {
-      tradeAt: CHAPTERS["Crabs and Traps"].endDate,
-      withdrawAt: new Date("2026-06-04T00:00:00Z"),
-    },
-    Oaken: {
-      tradeAt: CHAPTERS["Crabs and Traps"].endDate,
-      withdrawAt: new Date("2026-06-04T00:00:00Z"),
-    },
-    Meerkat: {
-      tradeAt: CHAPTERS["Crabs and Traps"].endDate,
-      withdrawAt: new Date("2026-06-04T00:00:00Z"),
-    },
-    "Pearl Bed": {
-      tradeAt: CHAPTERS["Crabs and Traps"].endDate,
-      withdrawAt: new Date("2026-06-04T00:00:00Z"),
-    },
-    "Crimstone Clam": {
-      tradeAt: CHAPTERS["Crabs and Traps"].endDate,
-      withdrawAt: new Date("2026-06-04T00:00:00Z"),
-    },
-    "Fish Kite": {
-      tradeAt: CHAPTERS["Crabs and Traps"].endDate,
-      withdrawAt: new Date("2026-06-04T00:00:00Z"),
-    },
-    "Diving Helmet": {
-      tradeAt: CHAPTERS["Crabs and Traps"].endDate,
-      withdrawAt: new Date("2026-06-04T00:00:00Z"),
-    },
-    "Paw Prints Rug": {
-      tradeAt: CHAPTERS["Paw Prints"].endDate,
-      withdrawAt: new Date("2026-03-04T00:00:00Z"),
-    },
-    "Pet Bed": {
-      tradeAt: CHAPTERS["Paw Prints"].endDate,
-      withdrawAt: new Date("2026-03-04T00:00:00Z"),
-    },
-    "Pet Bowls": {
-      tradeAt: CHAPTERS["Paw Prints"].endDate,
-      withdrawAt: new Date("2026-03-04T00:00:00Z"),
-    },
-    "Moon Fox Statue": {
-      tradeAt: CHAPTERS["Paw Prints"].endDate,
-      withdrawAt: new Date("2026-03-04T00:00:00Z"),
-    },
-    "Giant Acorn": {
-      tradeAt: CHAPTERS["Paw Prints"].endDate,
-      withdrawAt: new Date("2026-03-04T00:00:00Z"),
-    },
-    "Petnip Plant": {
-      tradeAt: CHAPTERS["Paw Prints"].endDate,
-      withdrawAt: new Date("2026-03-04T00:00:00Z"),
-    },
-    "Pet Kennel": {
-      tradeAt: CHAPTERS["Paw Prints"].endDate,
-      withdrawAt: new Date("2026-03-04T00:00:00Z"),
-    },
-    "Pet Toys": {
-      tradeAt: CHAPTERS["Paw Prints"].endDate,
-      withdrawAt: new Date("2026-03-04T00:00:00Z"),
-    },
-    "Pet Playground": {
-      tradeAt: CHAPTERS["Paw Prints"].endDate,
-      withdrawAt: new Date("2026-03-04T00:00:00Z"),
-    },
-    "Fish Bowl": {
-      tradeAt: CHAPTERS["Paw Prints"].endDate,
-      withdrawAt: new Date("2026-03-04T00:00:00Z"),
-    },
-    "Giant Gold Bone": {
-      tradeAt: CHAPTERS["Paw Prints"].endDate,
-      withdrawAt: new Date("2026-03-04T00:00:00Z"),
-    },
-    "Lunar Temple": {
-      tradeAt: CHAPTERS["Paw Prints"].endDate,
-      withdrawAt: new Date("2026-03-04T00:00:00Z"),
-    },
-    "Magma Stone": {
-      tradeAt: CHAPTERS["Paw Prints"].endDate,
-      withdrawAt: new Date("2026-03-04T00:00:00Z"),
-    },
-    "Super Star": {
-      tradeAt: CHAPTERS["Paw Prints"].endDate,
-      withdrawAt: new Date("2026-03-04T00:00:00Z"),
-    },
-    "Squeaky Chicken": {
-      tradeAt: CHAPTERS["Paw Prints"].endDate,
-      withdrawAt: new Date("2026-03-04T00:00:00Z"),
-    },
-    Cornucopia: undefined,
-    "Messy Bed": undefined,
+  "Pink Dolphin": {
+    tradeAt: CHAPTERS["Great Bloom"].startDate,
+    withdrawAt: CHAPTERS["Great Bloom"].endDate,
+  },
+  "Love Chicken": {
+    tradeAt: CHAPTERS["Great Bloom"].startDate,
+    withdrawAt: CHAPTERS["Great Bloom"].endDate,
+  },
+  "Dr Cow": {
+    tradeAt: CHAPTERS["Great Bloom"].startDate,
+    withdrawAt: CHAPTERS["Great Bloom"].endDate,
+  },
+  "Nurse Sheep": {
+    tradeAt: CHAPTERS["Great Bloom"].startDate,
+    withdrawAt: CHAPTERS["Great Bloom"].endDate,
+  },
+  Lunalist: {
+    tradeAt: CHAPTERS["Great Bloom"].startDate,
+    withdrawAt: CHAPTERS["Great Bloom"].endDate,
+  },
+  Quarry: {
+    tradeAt: new Date("2025-07-01T00:00:00Z"),
+    withdrawAt: CHAPTERS["Great Bloom"].endDate,
+  },
+  "Obsidian Turtle": {
+    tradeAt: new Date("2025-07-01T00:00:00Z"),
+    withdrawAt: CHAPTERS["Great Bloom"].endDate,
+  },
+  "Winter Guardian": {
+    tradeAt: new Date("2025-07-01T00:00:00Z"),
+    withdrawAt: CHAPTERS["Great Bloom"].endDate,
+  },
+  "Summer Guardian": {
+    tradeAt: new Date("2025-07-01T00:00:00Z"),
+    withdrawAt: CHAPTERS["Great Bloom"].endDate,
+  },
+  "Spring Guardian": {
+    tradeAt: new Date("2025-07-01T00:00:00Z"),
+    withdrawAt: CHAPTERS["Great Bloom"].endDate,
+  },
+  "Autumn Guardian": {
+    tradeAt: new Date("2025-07-01T00:00:00Z"),
+    withdrawAt: CHAPTERS["Great Bloom"].endDate,
+  },
+  "Sky Pillar": {
+    tradeAt: new Date("2025-07-01T00:00:00Z"),
+    withdrawAt: CHAPTERS["Great Bloom"].endDate,
+  },
+  "Flower-Scribed Statue": {
+    tradeAt: CHAPTERS["Great Bloom"].endDate,
+    withdrawAt: CHAPTERS["Great Bloom"].endDate,
+  },
+  "Balloon Rug": {
+    tradeAt: CHAPTERS["Great Bloom"].endDate,
+    withdrawAt: CHAPTERS["Great Bloom"].endDate,
+  },
+  "Giant Yam": {
+    tradeAt: CHAPTERS["Great Bloom"].endDate,
+    withdrawAt: CHAPTERS["Great Bloom"].endDate,
+  },
+  "Heart Air Balloon": {
+    tradeAt: CHAPTERS["Great Bloom"].endDate,
+    withdrawAt: CHAPTERS["Great Bloom"].endDate,
+  },
+  "Giant Zucchini": {
+    tradeAt: CHAPTERS["Great Bloom"].endDate,
+    withdrawAt: CHAPTERS["Great Bloom"].endDate,
+  },
+  "Mini Floating Island": {
+    tradeAt: CHAPTERS["Great Bloom"].endDate,
+    withdrawAt: CHAPTERS["Great Bloom"].endDate,
+  },
+  "Giant Kale": {
+    tradeAt: CHAPTERS["Great Bloom"].endDate,
+    withdrawAt: CHAPTERS["Great Bloom"].endDate,
+  },
+  "Floating Toy": {
+    tradeAt: new Date("2025-07-08"),
+    withdrawAt: new Date("2025-07-08"),
+  },
+  "Paint Buckets": {
+    tradeAt: new Date("2025-07-08"),
+    withdrawAt: new Date("2025-07-08"),
+  },
+  "Rainbow Well": {
+    tradeAt: new Date("2025-07-08"),
+    withdrawAt: new Date("2025-07-08"),
+  },
+  "Rainbow Flower": {
+    tradeAt: new Date("2025-07-08"),
+    withdrawAt: new Date("2025-07-08"),
+  },
+  "Pony Toy": {
+    tradeAt: new Date("2025-07-08"),
+    withdrawAt: new Date("2025-07-08"),
+  },
+  "Red Slime Balloon": {
+    tradeAt: new Date("2025-07-08"),
+    withdrawAt: new Date("2025-07-08"),
+  },
+  "Blue Slime Balloon": {
+    tradeAt: new Date("2025-07-08"),
+    withdrawAt: new Date("2025-07-08"),
+  },
+  "Floor Mirror": {
+    tradeAt: CHAPTERS["Better Together"].endDate,
+    withdrawAt: new Date("2025-12-03T00:00:00Z"),
+  },
+  "Long Rug": {
+    tradeAt: CHAPTERS["Better Together"].endDate,
+    withdrawAt: new Date("2025-12-03T00:00:00Z"),
+  },
+  "Garbage Bin": {
+    tradeAt: CHAPTERS["Better Together"].endDate,
+    withdrawAt: new Date("2025-12-03T00:00:00Z"),
+  },
+  Wheelbarrow: {
+    tradeAt: CHAPTERS["Better Together"].endDate,
+    withdrawAt: new Date("2025-12-03T00:00:00Z"),
+  },
+  "Snail King": {
+    tradeAt: CHAPTERS["Better Together"].endDate,
+    withdrawAt: new Date("2025-12-03T00:00:00Z"),
+  },
+  "Reelmaster's Chair": {
+    tradeAt: CHAPTERS["Better Together"].endDate,
+    withdrawAt: new Date("2025-12-03T00:00:00Z"),
+  },
+  "Rat King": {
+    tradeAt: CHAPTERS["Better Together"].endDate,
+    withdrawAt: new Date("2025-12-03T00:00:00Z"),
+  },
+  "Fruit Tune Box": {
+    tradeAt: CHAPTERS["Better Together"].endDate,
+    withdrawAt: new Date("2025-12-03T00:00:00Z"),
+  },
+  // Double bed is not tradeable - explicitly set her to avoid accidental trade
+  "Double Bed": undefined,
+  "Teamwork Monument": undefined,
+  "Giant Artichoke": {
+    tradeAt: CHAPTERS["Better Together"].endDate,
+    withdrawAt: new Date("2025-12-03T00:00:00Z"),
+  },
+  "Rocket Statue": {
+    tradeAt: new Date("2025-10-20T00:00:00Z"),
+    withdrawAt: new Date("2025-12-03T00:00:00Z"),
+  },
+  "Ant Queen": {
+    tradeAt: new Date("2025-10-20T00:00:00Z"),
+    withdrawAt: new Date("2025-12-03T00:00:00Z"),
+  },
+  "Jurassic Droplet": {
+    tradeAt: new Date("2025-10-20T00:00:00Z"),
+    withdrawAt: new Date("2025-12-03T00:00:00Z"),
+  },
+  "Giant Onion": {
+    tradeAt: new Date("2025-10-20T00:00:00Z"),
+    withdrawAt: new Date("2025-12-03T00:00:00Z"),
+  },
+  "Giant Turnip": {
+    tradeAt: new Date("2025-10-20T00:00:00Z"),
+    withdrawAt: new Date("2025-12-03T00:00:00Z"),
+  },
+  "Groovy Gramophone": {
+    tradeAt: new Date("2025-10-20T00:00:00Z"),
+    withdrawAt: new Date("2025-12-03T00:00:00Z"),
+  },
+  "Wheat Whiskers": {
+    tradeAt: CHAPTERS["Better Together"].endDate,
+    withdrawAt: new Date("2025-12-03T00:00:00Z"),
+  },
+  "Janitor Chicken": {
+    tradeAt: CHAPTERS["Better Together"].endDate,
+    withdrawAt: new Date("2025-12-03T00:00:00Z"),
+  },
+  Poseidon: {
+    tradeAt: CHAPTERS["Better Together"].endDate,
+    withdrawAt: new Date("2025-12-03T00:00:00Z"),
+  },
+  "Venus Bumpkin Trap": {
+    tradeAt: CHAPTERS["Better Together"].endDate,
+    withdrawAt: new Date("2025-12-03T00:00:00Z"),
+  },
+  "Baby Cow": {
+    tradeAt: CHAPTERS["Better Together"].endDate,
+    withdrawAt: new Date("2025-12-03T00:00:00Z"),
+  },
+  "Baby Sheep": {
+    tradeAt: CHAPTERS["Better Together"].endDate,
+    withdrawAt: new Date("2025-12-03T00:00:00Z"),
+  },
+  "Black Hole Flower": {
+    tradeAt: CHAPTERS["Paw Prints"].endDate,
+    withdrawAt: new Date("2026-03-04T00:00:00Z"),
+  },
+  "Sleepy Chicken": {
+    tradeAt: CHAPTERS["Paw Prints"].endDate,
+    withdrawAt: new Date("2026-03-04T00:00:00Z"),
+  },
+  "Astronaut Cow": {
+    tradeAt: CHAPTERS["Paw Prints"].endDate,
+    withdrawAt: new Date("2026-03-04T00:00:00Z"),
+  },
+  "Astronaut Sheep": {
+    tradeAt: CHAPTERS["Paw Prints"].endDate,
+    withdrawAt: new Date("2026-03-04T00:00:00Z"),
+  },
+  "Mermaid Cow": {
+    tradeAt: CHAPTERS["Crabs and Traps"].endDate,
+    withdrawAt: new Date("2026-06-04T00:00:00Z"),
+  },
+  "Mermaid Sheep": {
+    tradeAt: CHAPTERS["Crabs and Traps"].endDate,
+    withdrawAt: new Date("2026-06-04T00:00:00Z"),
+  },
+  "Squid Chicken": {
+    tradeAt: CHAPTERS["Crabs and Traps"].endDate,
+    withdrawAt: new Date("2026-06-04T00:00:00Z"),
+  },
+  "Anemone Flower": {
+    tradeAt: CHAPTERS["Crabs and Traps"].endDate,
+    withdrawAt: new Date("2026-06-04T00:00:00Z"),
+  },
+  "Speckled Kissing Fish": {
+    tradeAt: CHAPTERS["Crabs and Traps"].endDate,
+    withdrawAt: new Date("2026-06-04T00:00:00Z"),
+  },
+  "Dark Eyed Kissing Fish": {
+    tradeAt: CHAPTERS["Crabs and Traps"].endDate,
+    withdrawAt: new Date("2026-06-04T00:00:00Z"),
+  },
+  "Fisherman's Boat": {
+    tradeAt: CHAPTERS["Crabs and Traps"].endDate,
+    withdrawAt: new Date("2026-06-04T00:00:00Z"),
+  },
+  "Sea Arch": {
+    tradeAt: CHAPTERS["Crabs and Traps"].endDate,
+    withdrawAt: new Date("2026-06-04T00:00:00Z"),
+  },
+  "Crabs and Fish Rug": {
+    tradeAt: CHAPTERS["Crabs and Traps"].endDate,
+    withdrawAt: new Date("2026-06-04T00:00:00Z"),
+  },
+  "Fish Flags": {
+    tradeAt: CHAPTERS["Crabs and Traps"].endDate,
+    withdrawAt: new Date("2026-06-04T00:00:00Z"),
+  },
+  "Fish Drying Rack": {
+    tradeAt: CHAPTERS["Crabs and Traps"].endDate,
+    withdrawAt: new Date("2026-06-04T00:00:00Z"),
+  },
+  "Yellow Submarine Trophy": {
+    tradeAt: CHAPTERS["Crabs and Traps"].endDate,
+    withdrawAt: new Date("2026-06-04T00:00:00Z"),
+  },
+  Oaken: {
+    tradeAt: CHAPTERS["Crabs and Traps"].endDate,
+    withdrawAt: new Date("2026-06-04T00:00:00Z"),
+  },
+  Meerkat: {
+    tradeAt: CHAPTERS["Crabs and Traps"].endDate,
+    withdrawAt: new Date("2026-06-04T00:00:00Z"),
+  },
+  "Crimstone Clam": {
+    tradeAt: CHAPTERS["Crabs and Traps"].endDate,
+    withdrawAt: new Date("2026-06-04T00:00:00Z"),
+  },
+  "Giant Isopod": {
+    tradeAt: CHAPTERS["Crabs and Traps"].endDate,
+    withdrawAt: new Date("2026-06-04T00:00:00Z"),
+  },
+  Nautilus: {
+    tradeAt: CHAPTERS["Crabs and Traps"].endDate,
+    withdrawAt: new Date("2026-06-04T00:00:00Z"),
+  },
 
-    // Christmas 2025
-    "Holiday Decorative Totem": {
-      tradeAt: new Date("2026-02-01"),
-      withdrawAt: new Date("2026-02-01"),
-    },
-    "Red Holiday Ornament": {
-      tradeAt: new Date("2026-02-01"),
-      withdrawAt: new Date("2026-02-01"),
-    },
-    "Green Holiday Ornament": {
-      tradeAt: new Date("2026-02-01"),
-      withdrawAt: new Date("2026-02-01"),
-    },
-    "Gift Turtle": {
-      tradeAt: new Date("2026-02-01"),
-      withdrawAt: new Date("2026-02-01"),
-    },
-    "Red Nose Reindeer": {
-      tradeAt: new Date("2026-02-01"),
-      withdrawAt: new Date("2026-02-01"),
-    },
-    "Tuxedo Claus": {
-      tradeAt: new Date("2026-02-01"),
-      withdrawAt: new Date("2026-02-01"),
-    },
-    "Winter Alpaca": {
-      tradeAt: new Date("2026-02-01"),
-      withdrawAt: new Date("2026-02-01"),
-    },
-    "Penguin Surprise": {
-      tradeAt: new Date("2026-02-01"),
-      withdrawAt: new Date("2026-02-01"),
-    },
-    "Frozen Meat": {
-      tradeAt: new Date("2026-02-01"),
-      withdrawAt: new Date("2026-02-01"),
-    },
-    "Ho Ho oh oh…": {
-      tradeAt: new Date("2026-02-01"),
-      withdrawAt: new Date("2026-02-01"),
-    },
+  // Salt Awakening Collectibles
+  "Dino Egg Trophy": {
+    tradeAt: CHAPTERS["Salt Awakening"].endDate,
+    withdrawAt: new Date("2026-08-31T00:00:00Z"),
+  },
+  "Salt Lamp": {
+    tradeAt: CHAPTERS["Salt Awakening"].endDate,
+    withdrawAt: new Date("2026-08-31T00:00:00Z"),
+  },
+  "Ripped Salt Bag": {
+    tradeAt: CHAPTERS["Salt Awakening"].endDate,
+    withdrawAt: new Date("2026-08-31T00:00:00Z"),
+  },
+  "World Map Rug": {
+    tradeAt: CHAPTERS["Salt Awakening"].endDate,
+    withdrawAt: new Date("2026-08-31T00:00:00Z"),
+  },
+  "Flamingo Chicken": {
+    tradeAt: CHAPTERS["Salt Awakening"].endDate,
+    withdrawAt: new Date("2026-08-31T00:00:00Z"),
+  },
+  "Salt Crystal Flower": {
+    tradeAt: CHAPTERS["Salt Awakening"].endDate,
+    withdrawAt: new Date("2026-08-31T00:00:00Z"),
+  },
+  "Deep Sea Slug": {
+    tradeAt: CHAPTERS["Salt Awakening"].endDate,
+    withdrawAt: new Date("2026-08-31T00:00:00Z"),
+  },
+  "Crystal Shrimp": {
+    tradeAt: CHAPTERS["Salt Awakening"].endDate,
+    withdrawAt: new Date("2026-08-31T00:00:00Z"),
+  },
+  "Spa Cow": {
+    tradeAt: CHAPTERS["Salt Awakening"].endDate,
+    withdrawAt: new Date("2026-08-31T00:00:00Z"),
+  },
+  "Spa Sheep": {
+    tradeAt: CHAPTERS["Salt Awakening"].endDate,
+    withdrawAt: new Date("2026-08-31T00:00:00Z"),
+  },
+  Pufferfish: {
+    tradeAt: CHAPTERS["Salt Awakening"].endDate,
+    withdrawAt: new Date("2026-08-31T00:00:00Z"),
+  },
+  "Fat Crab": {
+    tradeAt: CHAPTERS["Salt Awakening"].endDate,
+    withdrawAt: new Date("2026-08-31T00:00:00Z"),
+  },
+  "Navigation Table": {
+    tradeAt: CHAPTERS["Salt Awakening"].endDate,
+    withdrawAt: new Date("2026-08-31T00:00:00Z"),
+  },
+  "Royal Crab Pot": {
+    tradeAt: CHAPTERS["Salt Awakening"].endDate,
+    withdrawAt: new Date("2026-08-31T00:00:00Z"),
+  },
+  "Crab House": {
+    tradeAt: CHAPTERS["Salt Awakening"].endDate,
+    withdrawAt: new Date("2026-08-31T00:00:00Z"),
+  },
+  "Speed Trap": {
+    tradeAt: CHAPTERS["Salt Awakening"].endDate,
+    withdrawAt: new Date("2026-08-31T00:00:00Z"),
+  },
+
+  // Ascension Age Collectibles
+  Crocodile: {
+    tradeAt: CHAPTERS["Ascension Age"].endDate,
+    withdrawAt: new Date("2026-11-30T00:00:00Z"),
+  },
+  "Dumbo Octopus": {
+    tradeAt: CHAPTERS["Ascension Age"].endDate,
+    withdrawAt: new Date("2026-11-30T00:00:00Z"),
+  },
+  Astrolabe: {
+    tradeAt: CHAPTERS["Ascension Age"].endDate,
+    withdrawAt: new Date("2026-11-30T00:00:00Z"),
+  },
+  "Otty the Otter": {
+    tradeAt: CHAPTERS["Ascension Age"].endDate,
+    withdrawAt: new Date("2026-11-30T00:00:00Z"),
+  },
+  "Salt Rug": {
+    tradeAt: CHAPTERS["Ascension Age"].endDate,
+    withdrawAt: new Date("2026-11-30T00:00:00Z"),
+  },
+  "Coat Rack": {
+    tradeAt: CHAPTERS["Ascension Age"].endDate,
+    withdrawAt: new Date("2026-11-30T00:00:00Z"),
+  },
+  Vibraphone: {
+    tradeAt: CHAPTERS["Ascension Age"].endDate,
+    withdrawAt: new Date("2026-11-30T00:00:00Z"),
+  },
+  "Winged Vase": {
+    tradeAt: CHAPTERS["Ascension Age"].endDate,
+    withdrawAt: new Date("2026-11-30T00:00:00Z"),
+  },
+  "Ascended Idol": {
+    tradeAt: CHAPTERS["Ascension Age"].endDate,
+    withdrawAt: new Date("2026-11-30T00:00:00Z"),
+  },
+  "Salt Worker Gnome": {
+    tradeAt: CHAPTERS["Ascension Age"].endDate,
+    withdrawAt: new Date("2026-11-30T00:00:00Z"),
+  },
+  "Ascended Wheel": {
+    tradeAt: CHAPTERS["Ascension Age"].endDate,
+    withdrawAt: new Date("2026-11-30T00:00:00Z"),
+  },
+  Lampshade: {
+    tradeAt: CHAPTERS["Ascension Age"].endDate,
+    withdrawAt: new Date("2026-11-30T00:00:00Z"),
+  },
+  "Marble Head": {
+    tradeAt: CHAPTERS["Ascension Age"].endDate,
+    withdrawAt: new Date("2026-11-30T00:00:00Z"),
+  },
+  "Ascended Chicken": {
+    tradeAt: CHAPTERS["Ascension Age"].endDate,
+    withdrawAt: new Date("2026-11-30T00:00:00Z"),
+  },
+  "Ascended Cow": {
+    tradeAt: CHAPTERS["Ascension Age"].endDate,
+    withdrawAt: new Date("2026-11-30T00:00:00Z"),
+  },
+  "Ascended Sheep": {
+    tradeAt: CHAPTERS["Ascension Age"].endDate,
+    withdrawAt: new Date("2026-11-30T00:00:00Z"),
+  },
+  "Ruins Flower": {
+    tradeAt: CHAPTERS["Ascension Age"].endDate,
+    withdrawAt: new Date("2026-11-30T00:00:00Z"),
+  },
+
+  // Cave Dwellers Collectibles
+  "Piggy Bank": {
+    tradeAt: CHAPTERS["Cave Dwellers"].endDate,
+    withdrawAt: new Date("2027-03-01T00:00:00Z"),
+  },
+  "Big Bad Wolf": {
+    tradeAt: CHAPTERS["Cave Dwellers"].endDate,
+    withdrawAt: new Date("2027-03-01T00:00:00Z"),
+  },
+  "Stick House": {
+    tradeAt: CHAPTERS["Cave Dwellers"].endDate,
+    withdrawAt: new Date("2027-03-01T00:00:00Z"),
+  },
+  "Brick House": {
+    tradeAt: CHAPTERS["Cave Dwellers"].endDate,
+    withdrawAt: new Date("2027-03-01T00:00:00Z"),
+  },
+  "Giant Truffle": {
+    tradeAt: CHAPTERS["Cave Dwellers"].endDate,
+    withdrawAt: new Date("2027-03-01T00:00:00Z"),
+  },
+  "Straw House": {
+    tradeAt: CHAPTERS["Cave Dwellers"].endDate,
+    withdrawAt: new Date("2027-03-01T00:00:00Z"),
+  },
+  "Mining Drill": {
+    tradeAt: CHAPTERS["Cave Dwellers"].endDate,
+    withdrawAt: new Date("2027-03-01T00:00:00Z"),
+  },
+  "Mushroom Chicken": {
+    tradeAt: CHAPTERS["Cave Dwellers"].endDate,
+    withdrawAt: new Date("2027-03-01T00:00:00Z"),
+  },
+  "Ladybug Cow": {
+    tradeAt: CHAPTERS["Cave Dwellers"].endDate,
+    withdrawAt: new Date("2027-03-01T00:00:00Z"),
+  },
+  "Beetle Sheep": {
+    tradeAt: CHAPTERS["Cave Dwellers"].endDate,
+    withdrawAt: new Date("2027-03-01T00:00:00Z"),
+  },
+  "Cyclops Bloom": {
+    tradeAt: CHAPTERS["Cave Dwellers"].endDate,
+    withdrawAt: new Date("2027-03-01T00:00:00Z"),
+  },
+  Betta: {
+    tradeAt: CHAPTERS["Cave Dwellers"].endDate,
+    withdrawAt: new Date("2027-03-01T00:00:00Z"),
+  },
+  Macropinna: {
+    tradeAt: CHAPTERS["Cave Dwellers"].endDate,
+    withdrawAt: new Date("2027-03-01T00:00:00Z"),
+  },
+  // Cave Dwellers track
+  TNT: {
+    tradeAt: CHAPTERS["Cave Dwellers"].endDate,
+    withdrawAt: new Date("2027-03-01T00:00:00Z"),
+  },
+  "Mushroom Log": {
+    tradeAt: CHAPTERS["Cave Dwellers"].endDate,
+    withdrawAt: new Date("2027-03-01T00:00:00Z"),
+  },
+  "Pot of Luck": {
+    tradeAt: CHAPTERS["Cave Dwellers"].endDate,
+    withdrawAt: new Date("2027-03-01T00:00:00Z"),
+  },
+  "Duende in a Bottle": {
+    tradeAt: CHAPTERS["Cave Dwellers"].endDate,
+    withdrawAt: new Date("2027-03-01T00:00:00Z"),
+  },
+  "Warning Sign": {
+    tradeAt: CHAPTERS["Cave Dwellers"].endDate,
+    withdrawAt: new Date("2027-03-01T00:00:00Z"),
+  },
+  CluckCoin: {
+    tradeAt: new Date("2025-01-01T00:00:00.000Z"),
+  },
+  "Fish Kite": {
+    tradeAt: CHAPTERS["Salt Awakening"].endDate,
+    withdrawAt: new Date("2026-08-31T00:00:00Z"),
+  },
+  "Diving Helmet": {
+    tradeAt: CHAPTERS["Crabs and Traps"].endDate,
+    withdrawAt: new Date("2026-06-04T00:00:00Z"),
+  },
+  "Paw Prints Rug": {
+    tradeAt: CHAPTERS["Paw Prints"].endDate,
+    withdrawAt: new Date("2026-03-04T00:00:00Z"),
+  },
+  "Pet Bed": {
+    tradeAt: CHAPTERS["Paw Prints"].endDate,
+    withdrawAt: new Date("2026-03-04T00:00:00Z"),
+  },
+  "Pet Bowls": {
+    tradeAt: CHAPTERS["Paw Prints"].endDate,
+    withdrawAt: new Date("2026-03-04T00:00:00Z"),
+  },
+  "Moon Fox Statue": {
+    tradeAt: CHAPTERS["Paw Prints"].endDate,
+    withdrawAt: new Date("2026-03-04T00:00:00Z"),
+  },
+  "Giant Acorn": {
+    tradeAt: CHAPTERS["Paw Prints"].endDate,
+    withdrawAt: new Date("2026-03-04T00:00:00Z"),
+  },
+  "Petnip Plant": {
+    tradeAt: CHAPTERS["Paw Prints"].endDate,
+    withdrawAt: new Date("2026-03-04T00:00:00Z"),
+  },
+  "Pet Kennel": {
+    tradeAt: CHAPTERS["Paw Prints"].endDate,
+    withdrawAt: new Date("2026-03-04T00:00:00Z"),
+  },
+  "Pet Toys": {
+    tradeAt: CHAPTERS["Paw Prints"].endDate,
+    withdrawAt: new Date("2026-03-04T00:00:00Z"),
+  },
+  "Pet Playground": {
+    tradeAt: CHAPTERS["Paw Prints"].endDate,
+    withdrawAt: new Date("2026-03-04T00:00:00Z"),
+  },
+  "Fish Bowl": {
+    tradeAt: CHAPTERS["Paw Prints"].endDate,
+    withdrawAt: new Date("2026-03-04T00:00:00Z"),
+  },
+  "Giant Gold Bone": {
+    tradeAt: CHAPTERS["Paw Prints"].endDate,
+    withdrawAt: new Date("2026-03-04T00:00:00Z"),
+  },
+  "Lunar Temple": {
+    tradeAt: CHAPTERS["Paw Prints"].endDate,
+    withdrawAt: new Date("2026-03-04T00:00:00Z"),
+  },
+  "Magma Stone": {
+    tradeAt: CHAPTERS["Paw Prints"].endDate,
+    withdrawAt: new Date("2026-03-04T00:00:00Z"),
+  },
+  "Super Star": {
+    tradeAt: CHAPTERS["Paw Prints"].endDate,
+    withdrawAt: new Date("2026-03-04T00:00:00Z"),
+  },
+  "Squeaky Chicken": {
+    tradeAt: CHAPTERS["Paw Prints"].endDate,
+    withdrawAt: new Date("2026-03-04T00:00:00Z"),
+  },
+  Cornucopia: undefined,
+  "Messy Bed": undefined,
+
+  // Christmas 2025
+  "Holiday Decorative Totem": {
+    tradeAt: new Date("2026-02-01"),
+    withdrawAt: new Date("2026-02-01"),
+  },
+  "Red Holiday Ornament": {
+    tradeAt: new Date("2026-02-01"),
+    withdrawAt: new Date("2026-02-01"),
+  },
+  "Green Holiday Ornament": {
+    tradeAt: new Date("2026-02-01"),
+    withdrawAt: new Date("2026-02-01"),
+  },
+  "Gift Turtle": {
+    tradeAt: new Date("2026-02-01"),
+    withdrawAt: new Date("2026-02-01"),
+  },
+  "Red Nose Reindeer": {
+    tradeAt: new Date("2026-02-01"),
+    withdrawAt: new Date("2026-02-01"),
+  },
+  "Tuxedo Claus": {
+    tradeAt: new Date("2026-02-01"),
+    withdrawAt: new Date("2026-02-01"),
+  },
+  "Winter Alpaca": {
+    tradeAt: new Date("2026-02-01"),
+    withdrawAt: new Date("2026-02-01"),
+  },
+  "Penguin Surprise": {
+    tradeAt: new Date("2026-02-01"),
+    withdrawAt: new Date("2026-02-01"),
+  },
+  "Frozen Meat": {
+    tradeAt: new Date("2026-02-01"),
+    withdrawAt: new Date("2026-02-01"),
+  },
+  "Ho Ho oh oh…": {
+    tradeAt: new Date("2026-02-01"),
+    withdrawAt: new Date("2026-02-01"),
+  },
+
+  "Teeth Toy": {
+    tradeAt: new Date("2026-04-17T00:00:00Z"),
+    withdrawAt: new Date("2026-04-17T00:00:00Z"),
+  },
+  "Fake Treasure": {
+    tradeAt: new Date("2026-04-17T00:00:00Z"),
+    withdrawAt: new Date("2026-04-17T00:00:00Z"),
+  },
+  "Fake Mouse": {
+    tradeAt: new Date("2026-04-17T00:00:00Z"),
+    withdrawAt: new Date("2026-04-17T00:00:00Z"),
+  },
+  "Pet Tree": {
+    tradeAt: new Date("2026-04-17T00:00:00Z"),
+    withdrawAt: new Date("2026-04-17T00:00:00Z"),
+  },
+  "Definitely not a Flower": {
+    tradeAt: new Date("2026-04-17T00:00:00Z"),
+    withdrawAt: new Date("2026-04-17T00:00:00Z"),
+  },
+  "Bumpkin Rug": {
+    tradeAt: new Date("2026-04-17T00:00:00Z"),
+    withdrawAt: new Date("2026-04-17T00:00:00Z"),
+  },
+  "Goblin Rug": {
+    tradeAt: new Date("2026-04-17T00:00:00Z"),
+    withdrawAt: new Date("2026-04-17T00:00:00Z"),
+  },
+  "Pet Rug": {
+    tradeAt: new Date("2026-04-17T00:00:00Z"),
+    withdrawAt: new Date("2026-04-17T00:00:00Z"),
+  },
+  "Jester in a box": {
+    tradeAt: new Date("2026-04-17T00:00:00Z"),
+    withdrawAt: new Date("2026-04-17T00:00:00Z"),
+  },
+  "The Sunflower Man Statue": {
+    tradeAt: new Date("2026-04-17T00:00:00Z"),
+    withdrawAt: new Date("2026-04-17T00:00:00Z"),
+  },
+
+  // Colors Event 2026
+  "Blue Paint Bucket": {
+    tradeAt: new Date("2026-08-20T00:00:00Z"),
+    withdrawAt: new Date("2026-08-20T00:00:00Z"),
+  },
+  "Green Paint Bucket": {
+    tradeAt: new Date("2026-08-20T00:00:00Z"),
+    withdrawAt: new Date("2026-08-20T00:00:00Z"),
+  },
+  "Purple Paint Bucket": {
+    tradeAt: new Date("2026-08-20T00:00:00Z"),
+    withdrawAt: new Date("2026-08-20T00:00:00Z"),
+  },
+  "Yellow Paint Bucket": {
+    tradeAt: new Date("2026-08-20T00:00:00Z"),
+    withdrawAt: new Date("2026-08-20T00:00:00Z"),
+  },
+  "Color Wheel": {
+    tradeAt: new Date("2026-08-20T00:00:00Z"),
+    withdrawAt: new Date("2026-08-20T00:00:00Z"),
+  },
+  "Dhol Drum": {
+    tradeAt: new Date("2026-08-20T00:00:00Z"),
+    withdrawAt: new Date("2026-08-20T00:00:00Z"),
+  },
+  "Mimic Slime Ball": {
+    tradeAt: new Date("2026-08-20T00:00:00Z"),
+    withdrawAt: new Date("2026-08-20T00:00:00Z"),
+  },
+  "Mimic Winged Slime Ball": {
+    tradeAt: new Date("2026-08-20T00:00:00Z"),
+    withdrawAt: new Date("2026-08-20T00:00:00Z"),
+  },
+  "Pork Jelly": {
+    tradeAt: new Date("2026-08-20T00:00:00Z"),
+    withdrawAt: new Date("2026-08-20T00:00:00Z"),
+  },
+  "Rainbow Pork Jelly": {
+    tradeAt: new Date("2026-08-20T00:00:00Z"),
+    withdrawAt: new Date("2026-08-20T00:00:00Z"),
+  },
+  "Slime Totem": {
+    tradeAt: new Date("2026-08-20T00:00:00Z"),
+    withdrawAt: new Date("2026-08-20T00:00:00Z"),
+  },
+  "Giant Donut": {
+    tradeAt: new Date("2026-08-20T00:00:00Z"),
+    withdrawAt: new Date("2026-08-20T00:00:00Z"),
+  },
+  "Fool's Gold": {
+    tradeAt: new Date("2026-08-20T00:00:00Z"),
+    withdrawAt: new Date("2026-08-20T00:00:00Z"),
+  },
+  "Golden Slime Trophy": {
+    tradeAt: new Date("2026-08-20T00:00:00Z"),
+    withdrawAt: new Date("2026-08-20T00:00:00Z"),
+  },
+  "Silver Slime Trophy": {
+    tradeAt: new Date("2026-08-20T00:00:00Z"),
+    withdrawAt: new Date("2026-08-20T00:00:00Z"),
+  },
+  "Bronze Slime Trophy": {
+    tradeAt: new Date("2026-08-20T00:00:00Z"),
+    withdrawAt: new Date("2026-08-20T00:00:00Z"),
+  },
+
+  //Halloween 2026 event
+  "Corrupted Pumpkin": CAN_WITHDRAW_AND_TRADE,
+  "Huge Jack-o'-lantern": CAN_WITHDRAW_AND_TRADE,
+  "Haunted TV": CAN_WITHDRAW_AND_TRADE,
+  "Zombie Hand Toy": CAN_WITHDRAW_AND_TRADE,
+  "Cool Zombie Tombstone": CAN_WITHDRAW_AND_TRADE,
+  "Destroyed Sign": CAN_WITHDRAW_AND_TRADE,
+  "Skull Candles": CAN_WITHDRAW_AND_TRADE,
+  "Plague Crow": CAN_WITHDRAW_AND_TRADE,
+  "Skeleton Crow": CAN_WITHDRAW_AND_TRADE,
+  "Witch Crow": CAN_WITHDRAW_AND_TRADE,
+  "Fisherbird Crow": CAN_WITHDRAW_AND_TRADE,
+  "Chained Crow": CAN_WITHDRAW_AND_TRADE,
+  "Count Vlad Crow": CAN_WITHDRAW_AND_TRADE,
+  "Lual Crow": CAN_WITHDRAW_AND_TRADE,
+  "King Crow": CAN_WITHDRAW_AND_TRADE,
+  "Devil Crow": CAN_WITHDRAW_AND_TRADE,
+  "Pharaoh Crow": CAN_WITHDRAW_AND_TRADE,
+  "Cultist Crow": CAN_WITHDRAW_AND_TRADE,
+
+  // Tutorial marketplace item
+  "Stone Beetle": {
+    tradeAt: new Date("2026-03-09"),
+    // Cannot withdraw the tutorial item
+  },
+};
+
+export function getPetReleases(petId: number): {
+  tradeAt?: Date;
+  withdrawAt?: Date;
+} {
+  const config = getPetNFTRevealConfig().find(
+    (c) => petId >= c.startId && petId <= c.endId,
+  );
+  if (!config) return {};
+
+  return {
+    tradeAt: config.tradeAt,
+    withdrawAt: config.withdrawAt,
   };
+}

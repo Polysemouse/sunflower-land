@@ -1,6 +1,6 @@
-import { Listing, Offer } from "features/game/types/marketplace";
+import type { Listing, Offer } from "features/game/types/marketplace";
 import React, { useContext } from "react";
-import { TradeableDisplay } from "../lib/tradeables";
+import type { TradeableDisplay } from "../lib/tradeables";
 import Decimal from "decimal.js-light";
 import { Context } from "features/game/GameProvider";
 import { TableRow } from "./TableRow";
@@ -70,7 +70,7 @@ export const ListingTable: React.FC<{
                 id: listing.id,
                 price: listing.sfl,
                 usd,
-                quantity: 1,
+                quantity: listing.quantity,
                 createdBy: listing.listedBy,
               }}
               isResource={isResource}

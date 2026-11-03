@@ -1,9 +1,9 @@
-import { GameState } from "features/game/types/game";
+import type { GameState } from "features/game/types/game";
 import { translate } from "lib/i18n/translate";
-import { CookingBuildingName } from "features/game/types/buildings";
+import type { CookingBuildingName } from "features/game/types/buildings";
 import Decimal from "decimal.js-light";
 import { produce } from "immer";
-import { getKeys } from "features/game/types/craftables";
+import { getKeys } from "lib/object";
 
 export type SupplyCookingOilAction = {
   type: "cookingOil.supplied";
@@ -55,6 +55,10 @@ export function supplyCookingOil({
     const building = buildings.find((b) => b.id === action.buildingId);
     if (!building) {
       throw new Error(translate("error.buildingNotExist"));
+    }
+
+    if (!Number.isInteger(action.oilQuantity) || action.oilQuantity <= 0) {
+      throw new Error("Invalid oil quantity");
     }
 
     const oilInInventory = stateCopy.inventory["Oil"] || new Decimal(0);

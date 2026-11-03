@@ -4,16 +4,19 @@ import { Modal } from "components/ui/Modal";
 
 import {
   playerModalManager,
-  PlayerModalPlayer,
+  type PlayerModalPlayer,
 } from "features/social/lib/playerModalManager";
 import { NPCIcon } from "features/island/bumpkin/components/NPC";
 import { ButtonPanel } from "components/ui/Panel";
 import { useAppTranslation } from "lib/i18n/useAppTranslations";
-import { getBumpkinLevel } from "features/game/lib/level";
+import {
+  getAscensionDisplayText,
+  getAscensionLevel,
+} from "features/game/lib/level";
 import giftIcon from "assets/icons/gift.png";
 import { SquareIcon } from "components/ui/SquareIcon";
 import { ITEM_DETAILS } from "features/game/types/images";
-import { MachineState } from "features/game/lib/gameMachine";
+import type { MachineState } from "features/game/lib/gameMachine";
 import { useSelector } from "@xstate/react";
 import { Context } from "features/game/GameProvider";
 import { rewardModalManager } from "features/social/lib/rewardModalManager";
@@ -131,9 +134,18 @@ export const PlayerSelectionList: React.FC = () => {
                 </div>
                 <div className="flex-grow" />
                 <div className="text-center">
-                  {t("level.number", {
-                    level: getBumpkinLevel(player.experience ?? 0),
-                  })}
+                  {(() => {
+                    const { ascension, level } = getAscensionLevel({
+                      experience: player.experience ?? 0,
+                      ascensionLevel: player.ascensionLevel ?? 0,
+                    });
+                    return ascension > 0
+                      ? getAscensionDisplayText({
+                          ascension: { ascension, level },
+                          length: "full",
+                        })
+                      : t("level.number", { level });
+                  })()}
                 </div>
               </ButtonPanel>
             );

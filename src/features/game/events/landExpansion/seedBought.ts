@@ -2,24 +2,34 @@ import Decimal from "decimal.js-light";
 
 import { isCollectibleBuilt } from "features/game/lib/collectibleBuilt";
 
-import { BoostName, GameState } from "features/game/types/game";
+import type { BoostName, GameState } from "features/game/types/game";
 import { trackFarmActivity } from "features/game/types/farmActivity";
-import { getBumpkinLevel } from "features/game/lib/level";
-import { SeedName, SEEDS } from "features/game/types/seeds";
+import {
+  getAscensionLevel,
+  meetsLevelRequirement,
+} from "features/game/lib/level";
+import { type SeedName, SEEDS } from "features/game/types/seeds";
 import { isWearableActive } from "features/game/lib/wearables";
 import { FLOWER_SEEDS } from "features/game/types/flowers";
 import { produce } from "immer";
 import {
   GREENHOUSE_FRUIT_SEEDS,
-  GreenHouseFruitSeedName,
+  type GreenHouseFruitSeedName,
   isPatchFruitSeed,
 } from "features/game/types/fruits";
 import {
   GREENHOUSE_SEEDS,
-  GreenHouseCropSeedName,
+  type GreenHouseCropSeedName,
 } from "features/game/types/crops";
 import { isFullMoon } from "features/game/types/calendar";
 import { updateBoostUsed } from "features/game/types/updateBoostUsed";
+import { getSkillLevel, SKILL_RANKS } from "features/game/types/bumpkinSkills";
+import { INVENTORY_LIMIT } from "features/game/lib/constants";
+import {
+  CHAPTER_CROP_WEEK_SEED,
+  hasChapterCropWeekAccess,
+  isRetiredChapterCropWeekItem,
+} from "features/game/types/chapterCropWeek";
 
 export type SeedBoughtAction = {
   type: "seed.bought";
@@ -74,22 +84,28 @@ export function getBuyPrice(
     price = price * 0.9;
   }
 
-  if (name in FLOWER_SEEDS && bumpkin.skills["Flower Sale"]) {
-    boostsUsed.push({ name: "Flower Sale", value: "x0.8" });
-    price = price * 0.8;
+  const flowerSaleLevel = getSkillLevel(bumpkin.skills, "Flower Sale");
+  if (name in FLOWER_SEEDS && flowerSaleLevel) {
+    const multiplier = SKILL_RANKS["Flower Sale"].ranks[flowerSaleLevel - 1];
+    boostsUsed.push({ name: "Flower Sale", value: `x${multiplier}` });
+    price = price * multiplier;
   }
 
-  if (isPatchFruitSeed(name) && bumpkin.skills["Fruity Heaven"]) {
-    boostsUsed.push({ name: "Fruity Heaven", value: "x0.9" });
-    price = price * 0.9;
+  const fruityHeavenLevel = getSkillLevel(bumpkin.skills, "Fruity Heaven");
+  if (isPatchFruitSeed(name) && fruityHeavenLevel) {
+    const value = SKILL_RANKS["Fruity Heaven"].ranks[fruityHeavenLevel - 1];
+    boostsUsed.push({ name: "Fruity Heaven", value: `x${value}` });
+    price = price * value;
   }
 
+  const seedyBusinessLevel = getSkillLevel(bumpkin.skills, "Seedy Business");
   if (
     name in { ...GREENHOUSE_SEEDS, ...GREENHOUSE_FRUIT_SEEDS } &&
-    bumpkin.skills["Seedy Business"]
+    seedyBusinessLevel
   ) {
-    boostsUsed.push({ name: "Seedy Business", value: "x0.85" });
-    price = price * 0.85;
+    const value = SKILL_RANKS["Seedy Business"].ranks[seedyBusinessLevel - 1];
+    boostsUsed.push({ name: "Seedy Business", value: `x${value}` });
+    price = price * value;
   }
 
   return { price, boostsUsed };
@@ -131,6 +147,20 @@ export function seedBought({ state, action, createdAt = Date.now() }: Options) {
       throw new Error("Not a full moon");
     }
 
+    // Seeds from previous Chapter Crop Week runs can never be bought again
+    if (isRetiredChapterCropWeekItem(item)) {
+      throw new Error("This seed is no longer available");
+    }
+
+    // Chapter Crop Week event seed is only available while the event is active
+    // (admin testers get early access)
+    if (
+      item === CHAPTER_CROP_WEEK_SEED &&
+      !hasChapterCropWeekAccess(state, createdAt)
+    ) {
+      throw new Error("Chapter Crop Week is not active");
+    }
+
     if (!(item in SEEDS)) {
       throw new Error("This item is not a seed");
     }
@@ -141,13 +171,13 @@ export function seedBought({ state, action, createdAt = Date.now() }: Options) {
       throw new Error("Bumpkin not found");
     }
 
-    const userBumpkinLevel = getBumpkinLevel(
-      stateCopy.bumpkin?.experience ?? 0,
-    );
+    const userLevel = getAscensionLevel({
+      experience: stateCopy.bumpkin.experience ?? 0,
+      ascensionLevel: stateCopy.island.ascensionLevel ?? 0,
+    });
     const seed = SEEDS[item];
-    const requiredSeedLevel = seed.bumpkinLevel ?? 0;
 
-    if (userBumpkinLevel < requiredSeedLevel) {
+    if (!meetsLevelRequirement(userLevel, seed.bumpkinLevel)) {
       throw new Error("Inadequate level");
     }
 
@@ -163,7 +193,7 @@ export function seedBought({ state, action, createdAt = Date.now() }: Options) {
 
     if (
       requiredPlantingSpot &&
-      stateCopy.inventory[requiredPlantingSpot]?.lessThan(1)
+      (stateCopy.inventory[requiredPlantingSpot] ?? new Decimal(0)).lessThan(1)
     ) {
       throw new Error(
         "You do not have the planting spot needed to plant this seed",
@@ -178,6 +208,16 @@ export function seedBought({ state, action, createdAt = Date.now() }: Options) {
     }
 
     const oldAmount = stateCopy.inventory[item] ?? new Decimal(0);
+
+    const inventoryLimit = INVENTORY_LIMIT(state)[item] ?? new Decimal(0);
+    // Rounded down to a whole seed before comparing: seeds are discrete
+    // units, and a stray fractional remainder in oldAmount (e.g. from a
+    // historical bug) should not permanently block purchases when the
+    // player has less than one whole seed of headroom left.
+    const wholeOldAmount = oldAmount.toDecimalPlaces(0, Decimal.ROUND_DOWN);
+    if (wholeOldAmount.add(amount).gt(inventoryLimit)) {
+      throw new Error("Can't buy more seeds than the inventory limit");
+    }
 
     stateCopy.farmActivity = trackFarmActivity(
       `${item} Bought`,

@@ -1,8 +1,11 @@
 import React, { useContext } from "react";
 import { Popover, PopoverButton, PopoverPanel } from "@headlessui/react";
 import { InnerPanel } from "components/ui/Panel";
-import { InventoryItemName } from "features/game/types/game";
-import { ITEM_DETAILS } from "features/game/types/images";
+import type { InventoryItemName } from "features/game/types/game";
+import {
+  ITEM_DETAILS,
+  getTranslatedItemName,
+} from "features/game/types/images";
 import { COLLECTIBLE_BUFF_LABELS } from "features/game/types/collectibleItemBuffs";
 import { Label } from "./Label";
 import useSWR from "swr";
@@ -10,11 +13,10 @@ import { loadTradeable } from "features/marketplace/actions/loadTradeable";
 import { KNOWN_IDS } from "features/game/types";
 import { useSelector } from "@xstate/react";
 import * as AuthProvider from "features/auth/lib/Provider";
-import { AuthMachineState } from "features/auth/lib/authMachine";
+import type { AuthMachineState } from "features/auth/lib/authMachine";
 import { Context } from "features/game/GameProvider";
 import { formatNumber } from "lib/utils/formatNumber";
 import { useAppTranslation } from "lib/i18n/useAppTranslations";
-import { CONFIG } from "lib/config";
 
 const _rawToken = (state: AuthMachineState) => state.context.user.rawToken;
 
@@ -30,7 +32,9 @@ export const SFTDetailPopoverLabel = ({
         className="ml-2 underline"
         icon={ITEM_DETAILS[name].image}
       >
-        <span className="text-xs whitespace-nowrap">{name}</span>
+        <span className="text-xs whitespace-nowrap">
+          {getTranslatedItemName(name)}
+        </span>
       </Label>
     </div>
   );
@@ -44,10 +48,7 @@ const SFTDetailPopoverBuffsImplementation = ({
   const { gameService } = useContext(Context);
 
   const state = gameService.getSnapshot().context.state;
-  const buff = COLLECTIBLE_BUFF_LABELS[name]?.({
-    skills: state.bumpkin.skills,
-    collectibles: state.collectibles,
-  });
+  const buff = COLLECTIBLE_BUFF_LABELS[name]?.(state);
 
   if (!buff) return null;
 
@@ -78,9 +79,6 @@ export const SFTDetailPopoverBuffs = ({
 }: {
   name: InventoryItemName;
 }) => {
-  // annoying bug on hot reloads - seems to crash the app
-  if (CONFIG.NETWORK !== "mainnet") return null;
-
   return <SFTDetailPopoverBuffsImplementation name={name} />;
 };
 

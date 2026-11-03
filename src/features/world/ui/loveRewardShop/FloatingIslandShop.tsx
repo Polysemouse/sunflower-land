@@ -9,15 +9,15 @@ import { ItemDetail } from "./components/ItemDetail";
 import { ITEM_IDS } from "features/game/types/bumpkin";
 import { ITEM_DETAILS } from "features/game/types/images";
 import { getImageUrl } from "lib/utils/getImageURLS";
-import { BuffLabel } from "features/game/types";
+import type { BuffLabel } from "features/game/types";
 import { BUMPKIN_ITEM_BUFF_LABELS } from "features/game/types/bumpkinItemBuffs";
 import { COLLECTIBLE_BUFF_LABELS } from "features/game/types/collectibleItemBuffs";
 import { OPEN_SEA_WEARABLES } from "metadata/metadata";
-import { GameState } from "features/game/types/game";
+import type { GameState } from "features/game/types/game";
 import { isFloatingShopCollectible } from "features/game/events/landExpansion/buyFloatingShopItem";
 import {
   FLOATING_ISLAND_SHOP_ITEMS,
-  FloatingShopItem,
+  type FloatingShopItem,
 } from "features/game/types/floatingIsland";
 import { CloseButtonPanel } from "features/game/components/CloseablePanel";
 import { useGame } from "features/game/GameProvider";
@@ -26,8 +26,9 @@ import { secondsTillReset } from "lib/utils/time";
 import { CountdownLabel } from "components/ui/CountdownLabel";
 import shopIcon from "assets/icons/shop.png";
 import guideIcon from "assets/icons/tier1_book.webp";
-import { getKeys } from "features/game/types/craftables";
+import { getKeys } from "lib/object";
 import { Box } from "components/ui/Box";
+import { getItemDescription as getGameItemDescription } from "features/game/lib/getItemDescription";
 
 export const getItemImage = (item: FloatingShopItem | null): string => {
   if (!item) return "";
@@ -49,19 +50,19 @@ export const getItemBuffLabel = (
     return BUMPKIN_ITEM_BUFF_LABELS[item.name];
   }
 
-  return COLLECTIBLE_BUFF_LABELS[item.name]?.({
-    skills: state.bumpkin.skills,
-    collectibles: state.collectibles,
-  });
+  return COLLECTIBLE_BUFF_LABELS[item.name]?.(state);
 };
-export const getItemDescription = (item: FloatingShopItem | null): string => {
+export const getItemDescription = (
+  item: FloatingShopItem | null,
+  game: GameState,
+): string => {
   if (!item) return "";
 
   if (!isFloatingShopCollectible(item)) {
     return OPEN_SEA_WEARABLES[item.name].description;
   }
 
-  return ITEM_DETAILS[item.name].description;
+  return getGameItemDescription({ item: item.name, game });
 };
 
 export const Shop: React.FC = () => {
@@ -86,6 +87,8 @@ export const Shop: React.FC = () => {
     <>
       <ModalOverlay
         show={!!selectedItem}
+        panelPosition="auto"
+        lockBackgroundScroll
         onBackdropClick={() => setSelectedItem(null)}
       >
         <ItemDetail
@@ -128,6 +131,7 @@ export const Shop: React.FC = () => {
 };
 
 const Guide: React.FC = () => {
+  const { gameState } = useGame();
   const items = getKeys(FLOATING_ISLAND_SHOP_ITEMS);
   return (
     <div className="max-h-[300px] overflow-y-auto scrollable">
@@ -137,7 +141,10 @@ const Guide: React.FC = () => {
           <div className="flex-1 overflow-hidden">
             <p>{item}</p>
             <p className="whitespace-nowrap text-xs text-ellipsis overflow-hidden">
-              {getItemDescription(FLOATING_ISLAND_SHOP_ITEMS[item])}
+              {getItemDescription(
+                FLOATING_ISLAND_SHOP_ITEMS[item],
+                gameState.context.state,
+              )}
             </p>
           </div>
         </div>

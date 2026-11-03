@@ -1,5 +1,5 @@
 import { Button } from "components/ui/Button";
-import React, { useContext, useEffect } from "react";
+import React, { useContext, useEffect, useState } from "react";
 import confetti from "canvas-confetti";
 
 import token from "assets/icons/flower_token.webp";
@@ -9,17 +9,24 @@ import factionPoint from "assets/icons/faction_point.webp";
 import vip from "assets/icons/vip.webp";
 import xpIcon from "assets/icons/xp.png";
 import recipeIcon from "assets/decorations/page.png";
-import { getKeys } from "features/game/types/craftables";
-import { ITEM_DETAILS } from "features/game/types/images";
-import { SUNNYSIDE } from "assets/sunnyside";
-import { BumpkinItem, ITEM_IDS } from "features/game/types/bumpkin";
+import { getKeys } from "lib/object";
 import {
+  getTranslatedItemName,
+  ITEM_DETAILS,
+} from "features/game/types/images";
+import { getItemDescription } from "features/game/lib/getItemDescription";
+import { SUNNYSIDE } from "assets/sunnyside";
+import { type BumpkinItem, ITEM_IDS } from "features/game/types/bumpkin";
+import type {
   Airdrop as IAirdrop,
   InventoryItemName,
 } from "features/game/types/game";
 import { Label } from "components/ui/Label";
 import { Box } from "components/ui/Box";
-import { CONSUMABLES, ConsumableName } from "features/game/types/consumables";
+import {
+  CONSUMABLES,
+  type ConsumableName,
+} from "features/game/types/consumables";
 import { formatNumber } from "lib/utils/formatNumber";
 import { Context, useGame } from "features/game/GameProvider";
 import { useAppTranslation } from "lib/i18n/useAppTranslations";
@@ -27,13 +34,18 @@ import { COLLECTIBLE_BUFF_LABELS } from "features/game/types/collectibleItemBuff
 import { InlineDialogue } from "features/world/ui/TypingMessage";
 import { getImageUrl } from "lib/utils/getImageURLS";
 import { getFoodExpBoost } from "../lib/boosts";
-import { MachineState } from "features/game/lib/gameMachine";
+import type { MachineState } from "features/game/lib/gameMachine";
 import { BUMPKIN_ITEM_BUFF_LABELS } from "features/game/types/bumpkinItemBuffs";
 import { ButtonPanel } from "components/ui/Panel";
 import { OPEN_SEA_WEARABLES } from "metadata/metadata";
 import { RECIPES } from "features/game/lib/crafting";
 import blueLightning from "assets/icons/blue_lightning.png";
 import { useNow } from "lib/utils/hooks/useNow";
+import { ChestRewardsList } from "components/ui/ChestRewardsList";
+import {
+  isDisplayableRewardBoxName,
+  type DisplayableRewardBoxName,
+} from "features/game/types/rewardBoxes";
 
 const _game = (state: MachineState) => state.context.state;
 
@@ -42,6 +54,8 @@ interface ClaimRewardProps {
   onClaim?: () => void;
   onClose?: () => void;
   label?: string;
+  /** Item that was a VIP bonus gift – show crown icon next to it */
+  vipGiftItem?: InventoryItemName;
 }
 
 export const ClaimReward: React.FC<ClaimRewardProps> = ({
@@ -49,6 +63,7 @@ export const ClaimReward: React.FC<ClaimRewardProps> = ({
   onClaim,
   onClose,
   label,
+  vipGiftItem,
 }) => {
   const { t } = useAppTranslation();
   const { showAnimations } = useContext(Context);
@@ -72,7 +87,7 @@ export const ClaimReward: React.FC<ClaimRewardProps> = ({
             <InlineDialogue message={airdrop.message} />
           </div>
         )}
-        <Rewards reward={airdrop} />
+        <Rewards reward={airdrop} vipGiftItem={vipGiftItem} />
       </div>
 
       <div className="flex items-center mt-1">
@@ -100,10 +115,14 @@ export const Rewards: React.FC<{
     | "wearables"
     | "recipes"
   >;
-}> = ({ reward }) => {
+  /** Item that was a VIP bonus gift – show crown icon next to it */
+  vipGiftItem?: InventoryItemName;
+}> = ({ reward, vipGiftItem }) => {
   const { t } = useAppTranslation();
   const { gameState } = useGame();
   const game = gameState.context.state;
+  const [expandedRewardBox, setExpandedRewardBox] =
+    useState<DisplayableRewardBoxName>();
   const itemNames = getKeys(reward.items);
   const now = useNow({
     live: getKeys(CONSUMABLES).some((name) => (reward.items[name] ?? 0) > 0),
@@ -194,70 +213,114 @@ export const Rewards: React.FC<{
 
       {itemNames.length > 0 &&
         itemNames.map((name) => {
-          const buff = COLLECTIBLE_BUFF_LABELS[name]?.({
-            skills: game.bumpkin.skills,
-            collectibles: game.collectibles,
-          });
+          const buff = COLLECTIBLE_BUFF_LABELS[name]?.(game);
+          const isVipGift = vipGiftItem === name;
+          const rewardBoxName = isDisplayableRewardBoxName(name)
+            ? name
+            : undefined;
+          const isRewardBoxExpanded = expandedRewardBox === rewardBoxName;
           return (
             <ButtonPanel
-              className="flex items-start cursor-context-menu hover:brightness-100"
+              className={`flex flex-col hover:brightness-100 ${rewardBoxName ? "cursor-pointer" : "cursor-context-menu"}`}
               key={name}
+              onClick={() => {
+                if (!rewardBoxName) return;
+
+                setExpandedRewardBox((current) =>
+                  current === rewardBoxName ? undefined : rewardBoxName,
+                );
+              }}
             >
-              <Box
-                image={ITEM_DETAILS[name].image}
-                className="-mt-2 -ml-1 -mb-1"
-              />
-              <div>
-                <div className="flex flex-wrap items-start">
-                  <Label type="default" className="mr-1 mb-1">
-                    {`${formatNumber(reward.items[name] ?? 1)} x ${name}`}
-                  </Label>
-                  {name in CONSUMABLES && (
-                    <Label
-                      type="success"
-                      icon={powerup}
-                      className="ml-1 mb-1"
-                    >{`+${formatNumber(
-                      getFoodExpBoost({
-                        food: CONSUMABLES[name as ConsumableName],
-                        game,
-                        createdAt: now,
-                      }).boostedExp,
-                      { decimalPlaces: 0 },
-                    )} XP`}</Label>
-                  )}
-                </div>
-                {buff ? (
-                  <div className="flex flex-col gap-1">
-                    {buff.map(
-                      (
-                        {
-                          labelType,
-                          boostTypeIcon,
-                          boostedItemIcon,
-                          shortDescription,
-                        },
-                        index,
-                      ) => (
-                        <Label
-                          key={index}
-                          type={labelType}
-                          icon={boostTypeIcon}
-                          secondaryIcon={boostedItemIcon}
-                        >
-                          {shortDescription}
-                        </Label>
-                      ),
+              <div className="flex items-start w-full">
+                <Box
+                  image={ITEM_DETAILS[name].image}
+                  className="-mt-2 -ml-1 -mb-1"
+                />
+                <div className="flex-1 min-w-0">
+                  <div className="flex flex-wrap items-start">
+                    <Label type="default" className="mr-1 mb-1">
+                      {`${formatNumber(reward.items[name] ?? 1)} x ${getTranslatedItemName(name)}`}
+                    </Label>
+                    {isVipGift && (
+                      <img
+                        src={vip}
+                        className="h-5 w-5 inline-block ml-1 -mb-0.5"
+                        alt="VIP gift"
+                      />
+                    )}
+                    {name in CONSUMABLES && (
+                      <Label
+                        type="success"
+                        icon={powerup}
+                        className="ml-1 mb-1"
+                      >{`+${formatNumber(
+                        getFoodExpBoost({
+                          food: CONSUMABLES[name as ConsumableName],
+                          game,
+                          createdAt: now,
+                        }).boostedExp,
+                        { decimalPlaces: 0 },
+                      )} XP`}</Label>
+                    )}
+                    {rewardBoxName && (
+                      <Label
+                        type="default"
+                        className="ml-auto cursor-pointer"
+                        secondaryIcon={
+                          isRewardBoxExpanded
+                            ? SUNNYSIDE.icons.chevron_up
+                            : SUNNYSIDE.icons.chevron_down
+                        }
+                      >
+                        {t("rewards")}
+                      </Label>
                     )}
                   </div>
-                ) : (
-                  <p className="text-xs ml-0.5">
-                    {ITEM_DETAILS[name]?.description
-                      ? ITEM_DETAILS[name].description
-                      : t("reward.collectible")}
-                  </p>
-                )}
+                  {buff ? (
+                    <div className="flex flex-col gap-1">
+                      {buff.map(
+                        (
+                          {
+                            labelType,
+                            boostTypeIcon,
+                            boostedItemIcon,
+                            shortDescription,
+                          },
+                          index,
+                        ) => (
+                          <Label
+                            key={index}
+                            type={labelType}
+                            icon={boostTypeIcon}
+                            secondaryIcon={boostedItemIcon}
+                          >
+                            {shortDescription}
+                          </Label>
+                        ),
+                      )}
+                    </div>
+                  ) : (
+                    <p className="text-xs ml-0.5">
+                      {getItemDescription({ item: name, game }) ||
+                        t("reward.collectible")}
+                    </p>
+                  )}
+                </div>
               </div>
+              {rewardBoxName && isRewardBoxExpanded && (
+                <div
+                  className="mt-1 w-full"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    setExpandedRewardBox(undefined);
+                  }}
+                >
+                  <ChestRewardsList
+                    type={rewardBoxName}
+                    showDescription={false}
+                  />
+                </div>
+              )}
             </ButtonPanel>
           );
         })}

@@ -5,9 +5,12 @@ import { Button } from "components/ui/Button";
 import { ModalOverlay } from "components/ui/ModalOverlay";
 import { CloseButtonPanel } from "features/game/components/CloseablePanel";
 import { Context } from "features/game/GameProvider";
-import { getBumpkinLevel } from "features/game/lib/level";
+import {
+  getAscensionLevel,
+  meetsLevelRequirement,
+} from "features/game/lib/level";
 import { hasReputation, Reputation } from "features/game/lib/reputation";
-import { InventoryItemName } from "features/game/types/game";
+import type { InventoryItemName } from "features/game/types/game";
 import { RequiredReputation } from "features/island/hud/components/reputation/Reputation";
 import { isFaceVerified } from "features/retreat/components/personhood/lib/faceRecognition";
 import { AnimatedPanel } from "features/world/ui/AnimatedPanel";
@@ -17,6 +20,7 @@ import React, { useContext, useState } from "react";
 import book from "src/assets/icons/tier3_book.webp";
 import infoIcon from "assets/icons/info.webp";
 import bank from "assets/icons/withdraw.png";
+import { useNow } from "lib/utils/hooks/useNow";
 
 export const CaptchaInfo: React.FC<{ collectedItem?: InventoryItemName }> = ({
   collectedItem,
@@ -24,16 +28,24 @@ export const CaptchaInfo: React.FC<{ collectedItem?: InventoryItemName }> = ({
   const { t } = useAppTranslation();
   const { gameService } = useContext(Context);
   const state = useSelector(gameService, (state) => state.context.state);
-  const bumpkinLevel = getBumpkinLevel(state.bumpkin.experience ?? 0);
+  const ascension = getAscensionLevel({
+    experience: state.bumpkin.experience ?? 0,
+    ascensionLevel: state.island.ascensionLevel ?? 0,
+  });
   const [showRewards, setShowRewards] = useState(false);
   const requiredReputation =
     collectedItem === "Wood" ? Reputation.Cropkeeper : Reputation.Grower;
 
-  const hasRequiedLevel = bumpkinLevel >= 60;
+  const hasRequiedLevel = meetsLevelRequirement(ascension, {
+    ascension: 0,
+    level: 60,
+  });
   const isVerified = isFaceVerified({ game: state }) || !!state.verified;
+  const now = useNow();
   const hasRequiedReputation = hasReputation({
     game: state,
     reputation: requiredReputation,
+    now,
   });
 
   const requiredReputationName =

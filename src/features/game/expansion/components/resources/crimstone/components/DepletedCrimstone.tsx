@@ -6,22 +6,26 @@ import crimstone_4 from "assets/resources/crimstone/crimstone_rock_4.webp";
 import crimstone_5 from "assets/resources/crimstone/crimstone_rock_5.webp";
 import crimstone_6 from "assets/resources/crimstone/crimstone_rock_6.webp";
 import { PIXEL_SCALE } from "features/game/lib/constants";
-import { TimeLeftPanel } from "components/ui/TimeLeftPanel";
-import { getCrimstoneStage } from "../Crimstone";
-import { useAppTranslation } from "lib/i18n/useAppTranslations";
+import { TimerPopover } from "features/island/common/TimerPopover";
+import {
+  ITEM_DETAILS,
+  getTranslatedItemName,
+} from "features/game/types/images";
+import { getCrimstoneStage } from "../getCrimstoneStage";
 
 interface Props {
   timeLeft: number;
   minesLeft: number;
-  minedAt: number;
+  now: number;
+  readyAt: number;
 }
 
 const DepletedCrimstoneComponent: React.FC<Props> = ({
   timeLeft,
   minesLeft,
-  minedAt,
+  now,
+  readyAt,
 }) => {
-  const { t } = useAppTranslation();
   const [showTimeLeft, setShowTimeLeft] = useState(false);
 
   const crimstone = [
@@ -31,7 +35,7 @@ const DepletedCrimstoneComponent: React.FC<Props> = ({
     crimstone_4,
     crimstone_5,
     crimstone_6,
-  ][getCrimstoneStage(minesLeft, minedAt) - 1];
+  ][getCrimstoneStage(minesLeft, now, readyAt) - 1];
 
   return (
     <div
@@ -55,10 +59,11 @@ const DepletedCrimstoneComponent: React.FC<Props> = ({
             top: `${PIXEL_SCALE * -20}px`,
           }}
         >
-          <TimeLeftPanel
-            text={t("resources.recoversIn")}
+          <TimerPopover
+            image={ITEM_DETAILS["Crimstone"].image}
+            description={getTranslatedItemName("Crimstone Rock")}
+            showPopover={showTimeLeft}
             timeLeft={timeLeft}
-            showTimeLeft={showTimeLeft}
           />
         </div>
       </div>

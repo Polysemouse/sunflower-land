@@ -7,75 +7,81 @@ import { Button } from "components/ui/Button";
 import { useActor } from "@xstate/react";
 import * as AuthProvider from "features/auth/lib/Provider";
 import { CONFIG } from "lib/config";
-import { InnerPanel, OuterPanel } from "components/ui/Panel";
+import { ButtonPanel } from "components/ui/Panel";
 import { SUNNYSIDE } from "assets/sunnyside";
 import giftIcon from "assets/icons/gift.png";
 import { NoticeboardItems } from "features/world/ui/kingdom/KingdomNoticeboard";
 import { Loading } from "..";
 import { useAppTranslation } from "lib/i18n/useAppTranslations";
+import { SocialUnlinkGate } from "../SocialUnlink";
+import type { ContentComponentProps } from "features/island/hud/components/settings-menu/types";
 
-export const Telegram: React.FC<{ onClose: () => void }> = ({ onClose }) => {
+export const TelegramBody: React.FC<Partial<ContentComponentProps>> = ({
+  onSubMenuClick,
+}) => {
   const { gameState } = useGame();
   const telegram = gameState.context.state.telegram;
 
   const { t } = useAppTranslation();
 
   return (
-    <CloseButtonPanel onClose={onClose} container={OuterPanel}>
-      <InnerPanel className="p-1">
-        <div className="flex mb-2 ">
-          <Label type="default" className="mr-2">
-            {t("telegram.title")}
-          </Label>
-          <Label type="info" className="mr-2">
-            {t("beta")}
-          </Label>
-          {telegram?.joinedAt && (
-            <Label type="success">{t("telegram.joinedAt")}</Label>
+    <SocialUnlinkGate
+      provider="telegram"
+      onDone={() => onSubMenuClick?.("linkedAccounts")}
+    >
+      <div className="flex flex-col gap-1">
+        <ButtonPanel variant="card">
+          {!telegram?.linkedAt && (
+            <div className="flex items-center justify-between gap-2 mb-2">
+              <Label type="default" icon={SUNNYSIDE.icons.telegram}>
+                {t("telegram.title")}
+              </Label>
+              <Label type="info">{t("beta")}</Label>
+            </div>
           )}
-        </div>
-        <NoticeboardItems
-          items={[
-            // {
-            //   text: t("telegram.notifications"),
-            //   icon: SUNNYSIDE.icons.expression_chat,
-            // },
-            {
-              text: t("telegram.community"),
-              icon: SUNNYSIDE.icons.player,
-            },
-            {
-              text: t("telegram.rewards"),
-              icon: giftIcon,
-            },
-          ]}
-        />
-        <div className="flex gap-4 mb-1">
-          <span
-            className="underline text-xs cursor-pointer"
-            onClick={() => {
-              window.open(`https://t.me/SunflowerLandAnnouncements`, "_blank");
-            }}
-          >
-            {t("telegram.announcements")}
-          </span>
-          <span
-            className="underline text-xs cursor-pointer"
-            onClick={() => {
-              window.open(
-                `https://t.me/${CONFIG.TELEGRAM_BOT}?start=game`,
-                "_blank",
-              );
-            }}
-          >
-            {t("telegram.bot")}
-          </span>
-        </div>
-      </InnerPanel>
-      <TelegramConnect />
-    </CloseButtonPanel>
+          <NoticeboardItems
+            items={[
+              {
+                text: t("telegram.community"),
+                icon: SUNNYSIDE.icons.player,
+              },
+              {
+                text: t("telegram.rewards"),
+                icon: giftIcon,
+              },
+            ]}
+          />
+          <div className="flex gap-4 mt-2 ml-1">
+            <a
+              className="underline text-xs cursor-pointer"
+              href="https://t.me/SunflowerLandAnnouncements"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              {t("telegram.announcements")}
+            </a>
+            <a
+              className="underline text-xs cursor-pointer"
+              href={`https://t.me/${CONFIG.TELEGRAM_BOT}?start=game`}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              {t("telegram.bot")}
+            </a>
+          </div>
+        </ButtonPanel>
+
+        <TelegramConnect />
+      </div>
+    </SocialUnlinkGate>
   );
 };
+
+export const Telegram: React.FC<{ onClose: () => void }> = ({ onClose }) => (
+  <CloseButtonPanel onClose={onClose}>
+    <TelegramBody />
+  </CloseButtonPanel>
+);
 
 const TelegramConnect: React.FC = () => {
   const { gameService, gameState } = useGame();
@@ -90,8 +96,8 @@ const TelegramConnect: React.FC = () => {
 
   if (!telegram) {
     return (
-      <InnerPanel className="p-1  mt-1">
-        <div className="flex justify-between">
+      <ButtonPanel variant="card">
+        <div className="flex items-center justify-between gap-2">
           <Label type="default">{t("telegram.step1")}</Label>
           <div className="flex gap-1">
             <img src={SUNNYSIDE.ui.dot} className="h-4" />
@@ -99,26 +105,25 @@ const TelegramConnect: React.FC = () => {
             <img src={SUNNYSIDE.ui.dot} className="h-4" />
           </div>
         </div>
-
-        <div className="p-2">
+        <div className="flex justify-center mt-2">
           <TelegramLogin />
         </div>
-      </InnerPanel>
+      </ButtonPanel>
     );
   }
 
   if (!telegram?.joinedAt && gameState.matches("autosaving")) {
     return (
-      <InnerPanel className="p-1  mt-1">
+      <ButtonPanel variant="card">
         <Loading />
-      </InnerPanel>
+      </ButtonPanel>
     );
   }
 
   if (!telegram.startedAt) {
     return (
-      <InnerPanel className="p-1 mt-1">
-        <div className="flex justify-between">
+      <ButtonPanel variant="card">
+        <div className="flex items-center justify-between gap-2">
           <Label type="default">{t("telegram.step2")}</Label>
           <div className="flex gap-1">
             <img src={SUNNYSIDE.icons.confirm} className="h-4" />
@@ -126,16 +131,11 @@ const TelegramConnect: React.FC = () => {
             <img src={SUNNYSIDE.ui.dot} className="h-4" />
           </div>
         </div>
-        <p className="text-xs p-2">{t("telegram.botDescription")}</p>
-        <div className="flex flex-wrap gap-x-1">
+        <p className="text-xs mt-2 ml-1">{t("telegram.botDescription")}</p>
+        <div className="flex flex-wrap gap-1 mt-2">
           {!!startedBotAt && (
             <Button
               onClick={() => {
-                if (gameState.matches("investigating")) {
-                  window.location.reload();
-                  return;
-                }
-
                 // Trigger a no op save event to fetch API
                 gameService.send("kingdomChores.refreshed");
                 gameService.send("SAVE");
@@ -164,18 +164,23 @@ const TelegramConnect: React.FC = () => {
             {t("telegram.startBot")}
           </Button>
         </div>
-      </InnerPanel>
+      </ButtonPanel>
     );
   }
 
   if (!telegram.joinedAt) {
     return (
-      <InnerPanel className="p-1 mt-1">
-        <div className="flex justify-between mb-2">
+      <ButtonPanel variant="card">
+        <div className="flex items-center justify-between gap-2">
           <Label type="default">{t("telegram.step3")}</Label>
+          <div className="flex gap-1">
+            <img src={SUNNYSIDE.icons.confirm} className="h-4" />
+            <img src={SUNNYSIDE.icons.confirm} className="h-4" />
+            <img src={SUNNYSIDE.ui.dot} className="h-4" />
+          </div>
         </div>
-        <p className="text-xs p-2">{t("telegram.prompts")}</p>
-      </InnerPanel>
+        <p className="text-xs mt-2 ml-1">{t("telegram.prompts")}</p>
+      </ButtonPanel>
     );
   }
 

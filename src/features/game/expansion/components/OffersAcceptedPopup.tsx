@@ -2,7 +2,7 @@ import { useActor } from "@xstate/react";
 import React, { useContext } from "react";
 
 import { Context } from "features/game/GameProvider";
-import { getKeys } from "features/game/types/decorations";
+import { getKeys } from "lib/object";
 import { useAppTranslation } from "lib/i18n/useAppTranslations";
 import { Button } from "components/ui/Button";
 import { Label } from "components/ui/Label";
@@ -11,7 +11,7 @@ import { Box } from "components/ui/Box";
 import trade from "assets/icons/trade.png";
 import token from "assets/icons/flower_token.webp";
 import { formatNumber } from "lib/utils/formatNumber";
-import { InventoryItemName } from "features/game/types/game";
+import type { InventoryItemName } from "features/game/types/game";
 import { tradeToId } from "features/marketplace/lib/offers";
 import { getTradeableDisplay } from "features/marketplace/lib/tradeables";
 import Decimal from "decimal.js-light";
@@ -19,6 +19,7 @@ import { ITEM_DETAILS } from "features/game/types/images";
 import { calculateTradePoints } from "features/game/events/landExpansion/addTradePoints";
 import { isTradeResource } from "features/game/actions/tradeLimits";
 import { KNOWN_ITEMS } from "features/game/types";
+import { fallbackDisplayNameForMinigameCurrencyKey } from "features/marketplace/lib/minigameMarketplaceCopy";
 
 /**
  * Display listings that have been fulfilled
@@ -68,6 +69,10 @@ export const OffersAcceptedPopup: React.FC = () => {
             state: state.context.state,
           });
           const amount = offer.items[itemName as InventoryItemName];
+          const displayItemName =
+            offer.collection === "economies" && offer.economy
+              ? fallbackDisplayNameForMinigameCurrencyKey(offer.economy)
+              : (itemName as string);
           const sfl = new Decimal(offer.sfl);
           const estTradePoints = calculateTradePoints({
             sfl: offer.sfl,
@@ -82,7 +87,7 @@ export const OffersAcceptedPopup: React.FC = () => {
                   <Box image={details.image} />
                   <div className="flex flex-col">
                     <div>
-                      <p className="text-xs mt-0.5">{`${amount} x ${itemName}`}</p>
+                      <p className="text-xs mt-0.5">{`${amount} x ${displayItemName}`}</p>
                     </div>
                     <div className="flex items-center space-x-1">
                       <p className="text-xs mt-0.5">{`${formatNumber(sfl, {

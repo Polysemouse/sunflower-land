@@ -3,11 +3,13 @@ import {
   INITIAL_FARM,
   TEST_FARM,
 } from "features/game/lib/constants";
-import { castRod, getReelsPackGemPrice } from "./castRod";
+import { castRod, getReelPackPrice, getReelsPackGemPrice } from "./castRod";
 import Decimal from "decimal.js-light";
-import { Bumpkin } from "features/game/types/game";
-import { Chum, getDailyFishingLimit } from "features/game/types/fishing";
+import type { Bumpkin, GameState } from "features/game/types/game";
+import { type Chum, getDailyFishingLimit } from "features/game/types/fishing";
 import { CHAPTERS } from "features/game/types/chapters";
+import { KNOWN_IDS } from "features/game/types";
+import { prngChance } from "lib/prng";
 
 const farm = { ...TEST_FARM };
 
@@ -103,7 +105,8 @@ describe("castRod", () => {
         ...INITIAL_FARM,
         inventory: {
           ...INITIAL_FARM.inventory,
-          Gem: new Decimal(70),
+          // 3 packs from a fresh day: 5 + 10 + 15 = 30 Gems
+          Gem: new Decimal(30),
           Rod: new Decimal(1),
           Earthworm: new Decimal(1),
         },
@@ -135,7 +138,8 @@ describe("castRod", () => {
         ...INITIAL_FARM,
         inventory: {
           ...INITIAL_FARM.inventory,
-          Gem: new Decimal(10),
+          // First pack of the day costs 5 Gems
+          Gem: new Decimal(5),
           Rod: new Decimal(1),
           Earthworm: new Decimal(1),
         },
@@ -543,6 +547,42 @@ describe("castRod", () => {
     ).not.toThrow();
   });
 
+  it("applies Deep Sea Slug boost which increases the daily fishing limit by 5", () => {
+    const now = Date.now();
+    const today = new Date(now).toISOString().split("T")[0];
+
+    expect(() =>
+      castRod({
+        action: { bait: "Earthworm", type: "rod.casted" },
+        state: {
+          ...farm,
+          collectibles: {
+            "Deep Sea Slug": [
+              {
+                id: "1",
+                createdAt: now,
+                coordinates: {
+                  x: 0,
+                  y: 0,
+                },
+              },
+            ],
+          },
+          fishing: {
+            dailyAttempts: {
+              [today]: 24,
+            },
+            wharf: {},
+          },
+          inventory: {
+            Rod: new Decimal(3),
+            Earthworm: new Decimal(1),
+          },
+        },
+      }),
+    ).not.toThrow();
+  });
+
   it("requires a player with Angler Waders boost hasn't maxed out their daily attempts", () => {
     jest.useFakeTimers();
     jest.setSystemTime(new Date("2023-10-11T09:00:00Z"));
@@ -640,6 +680,25 @@ describe("castRod", () => {
     });
 
     expect(state.inventory.Rod).toEqual(new Decimal(3));
+  });
+
+  it("subtracts only 1 rod per cast with the More With Less skill", () => {
+    const state = castRod({
+      action: { bait: "Earthworm", type: "rod.casted" },
+      state: {
+        ...farm,
+        bumpkin: {
+          ...INITIAL_BUMPKIN,
+          skills: { "More With Less": 1 },
+        },
+        inventory: {
+          Rod: new Decimal(3),
+          Earthworm: new Decimal(1),
+        },
+      },
+    });
+
+    expect(state.inventory.Rod).toEqual(new Decimal(2));
   });
 
   it("subtracts extra reels", () => {
@@ -800,7 +859,7 @@ describe("castRod", () => {
         ...INITIAL_FARM,
         inventory: {
           ...INITIAL_FARM.inventory,
-          Gem: new Decimal(70), // 10 + 20 + 40 = 70 for 3 packs
+          Gem: new Decimal(30), // 5 + 10 + 15 = 30 for 3 packs
           Rod: new Decimal(1),
           Earthworm: new Decimal(1),
         },
@@ -823,6 +882,35 @@ describe("castRod", () => {
 });
 
 describe("getDailyFishingLimit", () => {
+  it("increases fishing limit by 5 when Otty the Otter is placed", () => {
+    const { limit } = getDailyFishingLimit(
+      {
+        ...TEST_FARM,
+        collectibles: {
+          "Otty the Otter": [
+            { id: "1", createdAt: 0, coordinates: { x: 0, y: 0 } },
+          ],
+        },
+      },
+      Date.now(),
+    );
+    expect(limit).toEqual(25);
+  });
+
+  it("does not increase the limit when Otty the Otter is only in the inventory", () => {
+    const { limit } = getDailyFishingLimit(
+      {
+        ...TEST_FARM,
+        inventory: {
+          ...TEST_FARM.inventory,
+          "Otty the Otter": new Decimal(1),
+        },
+      },
+      Date.now(),
+    );
+    expect(limit).toEqual(20);
+  });
+
   it("increases fishing limit by 10 when Angler Waders is equipped", () => {
     const { limit } = getDailyFishingLimit(
       {
@@ -870,6 +958,54 @@ describe("getDailyFishingLimit", () => {
       Date.now(),
     );
     expect(limit).toEqual(25);
+  });
+
+  it("scales Fisherman's 5 Fold with rank (+10 at rank 3)", () => {
+    const { limit } = getDailyFishingLimit(
+      {
+        ...INITIAL_FARM,
+        bumpkin: {
+          ...INITIAL_FARM.bumpkin,
+          skills: {
+            "Fisherman's 5 Fold": 3,
+          },
+        },
+      },
+      Date.now(),
+    );
+    expect(limit).toEqual(30);
+  });
+
+  it("scales Fisherman's 10 Fold with rank (+25 at rank 3)", () => {
+    const { limit } = getDailyFishingLimit(
+      {
+        ...INITIAL_FARM,
+        bumpkin: {
+          ...INITIAL_FARM.bumpkin,
+          skills: {
+            "Fisherman's 10 Fold": 3,
+          },
+        },
+      },
+      Date.now(),
+    );
+    expect(limit).toEqual(45);
+  });
+
+  it("scales More With Less with rank (+50 at rank 3)", () => {
+    const { limit } = getDailyFishingLimit(
+      {
+        ...INITIAL_FARM,
+        bumpkin: {
+          ...INITIAL_FARM.bumpkin,
+          skills: {
+            "More With Less": 3,
+          },
+        },
+      },
+      Date.now(),
+    );
+    expect(limit).toEqual(70);
   });
 
   it("increases fishing limit by 5 with Reelmaster's Chair", () => {
@@ -953,67 +1089,163 @@ describe("getDailyFishingLimit", () => {
   });
 });
 
+describe("getReelPackPrice", () => {
+  it("ramps linearly for the first four packs then doubles", () => {
+    // Index = packs already bought today -> price of the next pack
+    expect([0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map(getReelPackPrice)).toEqual([
+      5, 10, 15, 20, 40, 80, 160, 320, 640, 1280,
+    ]);
+  });
+});
+
 describe("getReelsPackGemPrice", () => {
-  it("returns the correct price for 1 pack", () => {
-    const price = getReelsPackGemPrice({
-      state: farm,
-      packs: 1,
-    });
-    expect(price).toEqual(10);
+  const createdAt = new Date("2026-01-15T00:00:00.000Z").getTime();
+  const today = "2026-01-15";
+
+  const stateWithPacksBought = (timesBoughtToday: number): GameState => ({
+    ...INITIAL_FARM,
+    fishing: {
+      ...INITIAL_FARM.fishing,
+      extraReels: {
+        count: 0,
+        timesBought: { [today]: timesBoughtToday },
+      },
+    },
   });
 
-  it("increases price of gems by 2x after buying once", () => {
-    const now = new Date();
-    const today = now.toISOString().split("T")[0];
-    const price = getReelsPackGemPrice({
-      state: {
-        ...INITIAL_FARM,
-        inventory: {
-          ...INITIAL_FARM.inventory,
-          Gem: new Decimal(10),
-        },
-        fishing: {
-          wharf: {},
-          dailyAttempts: {
-            [today]: 20,
-          },
-          extraReels: {
-            timesBought: {
-              [today]: 1,
-            },
-            count: 0,
-          },
-        },
-      },
-      packs: 1,
-      createdAt: Date.now(),
-    });
-    expect(price).toEqual(20);
+  it("charges 5 Gems for the first pack of the day", () => {
+    expect(
+      getReelsPackGemPrice({
+        state: stateWithPacksBought(0),
+        packs: 1,
+        createdAt,
+      }),
+    ).toEqual(5);
   });
 
-  it("scales price exponentially across multiple packs in one purchase", () => {
-    const now = new Date();
-    const today = now.toISOString().split("T")[0];
-    const price = getReelsPackGemPrice({
-      state: {
-        ...INITIAL_FARM,
-        fishing: {
-          wharf: {},
-          dailyAttempts: {
-            [today]: 20,
-          },
-          extraReels: {
-            timesBought: {
-              [today]: 2,
-            },
-            count: 0,
-          },
-        },
-      },
-      packs: 3,
-      createdAt: Date.now(),
+  it("ramps linearly by 5 across the first four packs", () => {
+    // 5 + 10 + 15 + 20
+    expect(
+      getReelsPackGemPrice({
+        state: stateWithPacksBought(0),
+        packs: 4,
+        createdAt,
+      }),
+    ).toEqual(50);
+  });
+
+  it("doubles the price once past the fourth pack", () => {
+    // Fifth pack of the day
+    expect(
+      getReelsPackGemPrice({
+        state: stateWithPacksBought(4),
+        packs: 1,
+        createdAt,
+      }),
+    ).toEqual(40);
+    // Sixth pack of the day
+    expect(
+      getReelsPackGemPrice({
+        state: stateWithPacksBought(5),
+        packs: 1,
+        createdAt,
+      }),
+    ).toEqual(80);
+  });
+
+  it("sums the curve across multiple packs bought together", () => {
+    // Already bought 2 today; buying 3 more -> 15 + 20 + 40
+    expect(
+      getReelsPackGemPrice({
+        state: stateWithPacksBought(2),
+        packs: 3,
+        createdAt,
+      }),
+    ).toEqual(75);
+  });
+
+  it("matches the cumulative cost of buying all ten packs in a day", () => {
+    // 5,10,15,20,40,80,160,320,640,1280 => 2570
+    expect(
+      getReelsPackGemPrice({
+        state: stateWithPacksBought(0),
+        packs: 10,
+        createdAt,
+      }),
+    ).toEqual(2570);
+  });
+});
+
+describe("Harpoon", () => {
+  const farmId = 1;
+  const today = new Date().toISOString().split("T")[0];
+
+  const freeAttemptRoll = (counter: number) =>
+    prngChance({
+      farmId,
+      itemId: KNOWN_IDS["Rod"],
+      counter,
+      chance: 20,
+      criticalHitName: "Harpoon",
     });
-    // Prices: 40, 80, 160 => total 280
-    expect(price).toEqual(280);
+
+  const reels = Array.from({ length: 100 }, (_, i) => i + 1);
+  const hitReel = reels.find((r) => freeAttemptRoll(r));
+  const missReel = reels.find((r) => !freeAttemptRoll(r));
+
+  const baseState = (
+    rodCasted: number,
+    { withHarpoon = true }: { withHarpoon?: boolean } = {},
+  ): GameState => ({
+    ...INITIAL_FARM,
+    bumpkin: {
+      ...INITIAL_BUMPKIN,
+      equipped: {
+        ...INITIAL_BUMPKIN.equipped,
+        tool: withHarpoon ? "Harpoon" : undefined,
+      },
+    },
+    farmActivity: { "Rod Casted": rodCasted },
+    inventory: {
+      Rod: new Decimal(1),
+      Earthworm: new Decimal(1),
+    },
+  });
+
+  const cast = (state: GameState, id?: number) =>
+    castRod({
+      action: { bait: "Earthworm", type: "rod.casted" },
+      state,
+      farmId: id,
+    });
+
+  it("does not use a daily attempt on a 20% PRNG hit", () => {
+    expect(hitReel).toBeDefined();
+    const state = cast(baseState(hitReel! - 1), farmId);
+
+    expect(state.fishing.dailyAttempts?.[today]).toEqual(0);
+    expect(state.farmActivity["Rod Casted"]).toEqual(hitReel);
+    expect(state.boostsUsedAt?.Harpoon).toBeDefined();
+  });
+
+  it("uses a daily attempt on a PRNG miss", () => {
+    expect(missReel).toBeDefined();
+    const state = cast(baseState(missReel! - 1), farmId);
+
+    expect(state.fishing.dailyAttempts?.[today]).toEqual(1);
+  });
+
+  it("skips the free attempt roll when no farmId is supplied", () => {
+    expect(hitReel).toBeDefined();
+    const state = cast(baseState(hitReel! - 1));
+
+    expect(state.fishing.dailyAttempts?.[today]).toEqual(1);
+  });
+
+  it("does nothing without the Harpoon equipped", () => {
+    expect(hitReel).toBeDefined();
+    const state = cast(baseState(hitReel! - 1, { withHarpoon: false }), farmId);
+
+    expect(state.fishing.dailyAttempts?.[today]).toEqual(1);
   });
 });

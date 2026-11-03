@@ -1,16 +1,17 @@
-import { createMachine, Interpreter, assign } from "xstate";
+import { createMachine, type Interpreter, assign } from "xstate";
 import { randomID } from "lib/utils/random";
 import { bid } from "features/game/actions/bid";
 import { cancelBid as cancelBidAction } from "features/game/actions/cancelBid";
-import {
+import type {
   GameState,
   InventoryItemName,
   AuctionNFT,
 } from "features/game/types/game";
 import { getAuctionResults } from "features/game/actions/getAuctionResults";
-import { BumpkinItem } from "../types/bumpkin";
+import type { BumpkinItem } from "../types/bumpkin";
 import { CONFIG } from "lib/config";
 import { loadAuctions } from "features/retreat/components/auctioneer/actions/loadAuctions";
+import { mfTrack } from "lib/moonforgeAnalytics";
 
 export type AuctionBase = {
   auctionId: string;
@@ -45,6 +46,8 @@ export type LeaderboardBid = {
   rank: number;
   tickets: number;
   experience: number;
+  /** Ascension snapshotted on the bid — read with `experience` to derive the level. */
+  ascensionLevel?: number;
   sfl: number;
   items: Partial<Record<InventoryItemName, number>>;
   farmId: number;
@@ -357,6 +360,11 @@ export const createAuctioneerMachine = ({
               });
 
               onUpdate(game);
+
+              mfTrack("auction_bid", {
+                item_id: auctionId,
+                bid_amount: tickets,
+              });
 
               return {
                 bid: game.auctioneer.bid,

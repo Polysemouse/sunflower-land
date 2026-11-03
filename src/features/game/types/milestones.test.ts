@@ -1,7 +1,7 @@
 import { getEncyclopediaFish } from "features/island/hud/components/codex/lib/utils";
 import { FISH_MILESTONES } from "./milestones";
-import { getKeys } from "./decorations";
-import { FarmActivityName } from "./farmActivity";
+import { getKeys } from "lib/object";
+import type { FarmActivityName } from "./farmActivity";
 import { FISH } from "./fishing";
 
 describe("fishMilestones", () => {

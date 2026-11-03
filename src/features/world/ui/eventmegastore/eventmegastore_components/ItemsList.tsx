@@ -16,19 +16,19 @@ import lightning from "assets/icons/lightning.png";
 import lock from "assets/icons/lock.png";
 
 import { ITEM_DETAILS } from "features/game/types/images";
-import { InventoryItemName } from "features/game/types/game";
+import type { InventoryItemName } from "features/game/types/game";
 import { Context } from "features/game/GameProvider";
 import { useActor } from "@xstate/react";
-import { BumpkinItem } from "features/game/types/bumpkin";
+import type { BumpkinItem } from "features/game/types/bumpkin";
 import Decimal from "decimal.js-light";
 import { useAppTranslation } from "lib/i18n/useAppTranslations";
 import {
-  HOLIDAY_EVENT_ITEMS,
-  EventStoreCollectible,
-  EventStoreItem,
-  EventStoreTier,
-  EventStoreWearable,
-} from "features/game/types/holidayEventShop";
+  HALLOWEEN_2026_EVENT_ITEMS,
+  type EventStoreCollectible,
+  type EventStoreItem,
+  type EventStoreTier,
+  type EventStoreWearable,
+} from "features/game/types/halloween2026EventShop";
 import { SUNNYSIDE } from "assets/sunnyside";
 import { ResizableBar } from "components/ui/ProgressBar";
 import { SFLDiscount } from "features/game/lib/SFLDiscount";
@@ -65,13 +65,13 @@ export const ItemsList: React.FC<Props> = ({
     // Handling all types or specific ones if provided
     if (type === "wearables" || (!type && "wearable" in item)) {
       return (
-        state.minigames.games["holiday-puzzle-2025"]?.shop?.wearables?.[
+        state.minigames.games["halloween-2026-game-2"]?.shop?.wearables?.[
           (item as EventStoreWearable).wearable as BumpkinItem
         ] ?? 0
       );
     } else {
       return (
-        state.minigames.games["holiday-puzzle-2025"]?.shop?.items?.[
+        state.minigames.games["halloween-2026-game-2"]?.shop?.items?.[
           (item as EventStoreCollectible).collectible as InventoryItemName
         ] ?? 0
       );
@@ -117,7 +117,7 @@ export const ItemsList: React.FC<Props> = ({
 
   const getCurrency = (item: EventStoreItem) => {
     if (item.cost.sfl !== 0)
-      return shortenCount(SFLDiscount(state, new Decimal(item.cost.sfl)));
+      return shortenCount(SFLDiscount(state, new Decimal(item.cost.sfl), now));
 
     const currency =
       item.cost.sfl === 0 && (item.cost?.items[chapterTicket] ?? 0 > 0)
@@ -140,25 +140,29 @@ export const ItemsList: React.FC<Props> = ({
     return "requirement" in tier;
   };
 
-  const tierData = HOLIDAY_EVENT_ITEMS[tier];
+  const tierData = HALLOWEEN_2026_EVENT_ITEMS[tier];
   const requirements = hasRequirement(tierData) ? tierData.requirement : 0;
 
   const eventItemsCrafted =
-    Object.keys(state.minigames.games["holiday-puzzle-2025"]?.shop?.items ?? {})
-      .length +
     Object.keys(
-      state.minigames.games["holiday-puzzle-2025"]?.shop?.wearables ?? {},
+      state.minigames.games["halloween-2026-game-2"]?.shop?.items ?? {},
+    ).length +
+    Object.keys(
+      state.minigames.games["halloween-2026-game-2"]?.shop?.wearables ?? {},
     ).length;
 
   const isRareUnlocked =
     tier === "rare" &&
-    eventItemsCrafted >= HOLIDAY_EVENT_ITEMS.rare.requirement;
+    eventItemsCrafted >= HALLOWEEN_2026_EVENT_ITEMS.rare.requirement;
   const isEpicUnlocked =
     tier === "epic" &&
-    eventItemsCrafted >= HOLIDAY_EVENT_ITEMS.epic.requirement;
+    eventItemsCrafted >= HALLOWEEN_2026_EVENT_ITEMS.epic.requirement;
   const isMegaUnlocked =
     tier === "mega" &&
-    eventItemsCrafted >= HOLIDAY_EVENT_ITEMS.mega.requirement;
+    eventItemsCrafted >= HALLOWEEN_2026_EVENT_ITEMS.mega.requirement;
+  const isExtraUnlocked =
+    tier === "extra" &&
+    eventItemsCrafted >= HALLOWEEN_2026_EVENT_ITEMS.extra.requirement;
 
   const tierpercentage = eventItemsCrafted;
 
@@ -186,7 +190,9 @@ export const ItemsList: React.FC<Props> = ({
                       ? lock
                       : !isMegaUnlocked && tier === "mega"
                         ? lock
-                        : ""
+                        : !isExtraUnlocked && tier === "extra"
+                          ? lock
+                          : ""
                 }
                 type={
                   tier === "basic"
@@ -197,7 +203,9 @@ export const ItemsList: React.FC<Props> = ({
                         ? "vibrant"
                         : tier === "mega" && isMegaUnlocked
                           ? "warning"
-                          : "danger"
+                          : tier === "extra" && isExtraUnlocked
+                            ? "warning"
+                            : "danger"
                 }
               >
                 {itemsLabel}
@@ -205,7 +213,10 @@ export const ItemsList: React.FC<Props> = ({
             )}
           </div>
           <div className="w-1/10">
-            {(tier === "rare" || tier === "epic" || tier === "mega") && (
+            {(tier === "rare" ||
+              tier === "epic" ||
+              tier === "mega" ||
+              tier === "extra") && (
               <ResizableBar
                 percentage={percentage}
                 type={"progress"}
@@ -220,7 +231,7 @@ export const ItemsList: React.FC<Props> = ({
       )}
       {tier === "rare" && !isRareUnlocked && (
         <span className="text-xs py-1">
-          {t("megaStore.tier.rare.requirements", {
+          {t("eventStore.tier.rare.requirements", {
             requirements: requirements - tierpercentage,
             tier: tier,
           })}
@@ -229,7 +240,7 @@ export const ItemsList: React.FC<Props> = ({
 
       {tier === "epic" && !isEpicUnlocked && (
         <span className="text-xs py-1">
-          {t("megaStore.tier.epic.requirements", {
+          {t("eventStore.tier.epic.requirements", {
             requirements: requirements - tierpercentage,
             tier: tier,
           })}
@@ -238,7 +249,16 @@ export const ItemsList: React.FC<Props> = ({
 
       {tier === "mega" && !isMegaUnlocked && (
         <span className="text-xs py-1">
-          {t("megaStore.tier.mega.requirements", {
+          {t("eventStore.tier.mega.requirements", {
+            requirements: requirements - tierpercentage,
+            tier: tier,
+          })}
+        </span>
+      )}
+
+      {tier === "extra" && !isExtraUnlocked && (
+        <span className="text-xs py-1">
+          {t("eventStore.tier.extra.requirements", {
             requirements: requirements - tierpercentage,
             tier: tier,
           })}
@@ -294,7 +314,8 @@ export const ItemsList: React.FC<Props> = ({
 
                     {((tier === "rare" && !isRareUnlocked) ||
                       (tier === "epic" && !isEpicUnlocked) ||
-                      (tier === "mega" && !isMegaUnlocked)) && (
+                      (tier === "mega" && !isMegaUnlocked) ||
+                      (tier === "extra" && !isExtraUnlocked)) && (
                       <img
                         src={lock}
                         className="absolute -right-2 -top-2"

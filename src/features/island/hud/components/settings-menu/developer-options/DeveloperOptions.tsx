@@ -1,74 +1,110 @@
 import { Button } from "components/ui/Button";
 import { useAppTranslation } from "lib/i18n/useAppTranslations";
-import React, { useContext, useState } from "react";
-import { DEV_TimeMachine } from "./DEV_TimeMachine";
-import { createPortal } from "react-dom";
-import { ContentComponentProps } from "../GameOptions";
+import React, { useContext } from "react";
+import { useNavigate } from "react-router";
+import type { ContentComponentProps } from "../types";
 import { CONFIG } from "lib/config";
 import { Context as GameContext } from "features/game/GameProvider";
 import { hasFeatureAccess } from "lib/flags";
+import { useSelector } from "@xstate/react";
+
+/**
+ * Community API keys are issued in the docs sandbox, never in the game — the
+ * client no longer receives a key at all. This button just sends people there.
+ */
+const COMMUNITY_DOCS_URL = "https://sunflower-land.com/community-docs";
 
 export const DeveloperOptions: React.FC<ContentComponentProps> = ({
   onSubMenuClick,
+  onClose,
+  onTimeMachineToggle,
 }) => {
-  const { gameService } = useContext(GameContext);
+  const { gameService, setFromRoute } = useContext(GameContext);
   const { t } = useAppTranslation();
-  const [showTimeMachine, setShowTimeMachine] = useState(false);
+  const navigate = useNavigate();
+  const game = useSelector(gameService, (state) => state.context.state);
+  const hasAdminDashboards = hasFeatureAccess(game, "ADMIN_DASHBOARDS");
+
+  const goTo = (path: string) => {
+    onClose();
+    setFromRoute(window.location.hash.replace("#", "") || "/");
+    navigate(path);
+  };
+
+  const hasAirdrop = hasFeatureAccess(game, "AIRDROP_PLAYER");
+  const isModerator = hasFeatureAccess(game, "MODERATOR");
+  const hasTriggerCaptcha =
+    isModerator || hasFeatureAccess(game, "TRIGGER_CAPTCHA");
 
   return (
     <>
-      {hasFeatureAccess(
-        gameService.getSnapshot()?.context?.state,
-        "AIRDROP_PLAYER",
-      ) && (
-        <Button className="p-1 mb-1" onClick={() => onSubMenuClick("admin")}>
-          <span>{`Airdrop Player`}</span>
-        </Button>
-      )}
-      {hasFeatureAccess(
-        gameService.getSnapshot()?.context?.state,
-        "HOARDING_CHECK",
-      ) && (
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-1">
         <Button
-          onClick={() => onSubMenuClick("hoardingCheck")}
-          className="p-1 mb-1"
+          className="p-1"
+          onClick={() =>
+            window.open(COMMUNITY_DOCS_URL, "_blank", "noopener,noreferrer")
+          }
         >
-          {`Hoarding Check`}
+          <span>{t("share.apiKey")}</span>
         </Button>
-      )}
-      {hasFeatureAccess(
-        gameService.getSnapshot()?.context?.state,
-        "MODERATOR",
-      ) && (
-        <Button
-          onClick={() => onSubMenuClick("playerSearch")}
-          className="p-1 mb-1"
-        >
-          {`Player Search`}
-        </Button>
-      )}
-      {hasFeatureAccess(
-        gameService.getSnapshot()?.context?.state,
-        "MODERATOR",
-      ) && (
-        <Button
-          onClick={() => onSubMenuClick("errorSearch")}
-          className="p-1 mb-1"
-        >
-          {`Error Search`}
-        </Button>
-      )}
-      {CONFIG.NETWORK === "amoy" && (
-        <>
+        {hasAirdrop && (
+          <Button className="p-1" onClick={() => onSubMenuClick("admin")}>
+            <span>{`Airdrop Player`}</span>
+          </Button>
+        )}
+        {isModerator && (
           <Button
-            onClick={() => setShowTimeMachine(!showTimeMachine)}
-            className="p-1 mb-1"
+            onClick={() => onSubMenuClick("playerSearch")}
+            className="p-1"
           >
+            {`Player Search`}
+          </Button>
+        )}
+        {isModerator && (
+          <Button onClick={() => onSubMenuClick("errorSearch")} className="p-1">
+            {`Error Search`}
+          </Button>
+        )}
+        {hasTriggerCaptcha && (
+          <Button
+            onClick={() => {
+              // Fires on your own farm - handy for testing the captcha flow
+              gameService.send("admin.captchaTriggered", {
+                effect: {
+                  type: "admin.captchaTriggered",
+                  farmId: gameService.state.context.farmId,
+                },
+              });
+              onClose();
+            }}
+            className="p-1"
+          >
+            {`Trigger Captcha`}
+          </Button>
+        )}
+        {hasAdminDashboards && (
+          <>
+            <Button
+              onClick={() => goTo("/game/economy-dashboard")}
+              className="p-1"
+            >
+              {`Economy Dashboard`}
+            </Button>
+            <Button
+              onClick={() => goTo("/game/retention-dashboard")}
+              className="p-1"
+            >
+              {`Retention Dashboard`}
+            </Button>
+          </>
+        )}
+        {CONFIG.NETWORK === "amoy" && (
+          <Button onClick={onTimeMachineToggle} className="p-1">
             {t("gameOptions.developerOptions.timeMachine")}
           </Button>
-          {showTimeMachine && createPortal(<DEV_TimeMachine />, document.body)}
-        </>
-      )}
+        )}
+      </div>
+      <p className="text-xxs p-1 mt-2">{t("share.apiKeyDescription")}</p>
     </>
   );
 };

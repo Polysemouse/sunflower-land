@@ -1,9 +1,9 @@
 import React, { useContext, useEffect, useRef, useState } from "react";
 import classNames from "classnames";
-import Decimal from "decimal.js-light";
+import type Decimal from "decimal.js-light";
 
 import Spritesheet, {
-  SpriteSheetInstance,
+  type SpriteSheetInstance,
 } from "components/animation/SpriteAnimator";
 
 import { PIXEL_SCALE } from "features/game/lib/constants";
@@ -15,8 +15,9 @@ import { SUNNYSIDE } from "assets/sunnyside";
 import { useAppTranslation } from "lib/i18n/useAppTranslations";
 import { useSound } from "lib/utils/hooks/useSound";
 import { READONLY_RESOURCE_COMPONENTS } from "features/island/resources/Resource";
-import { StoneRockName } from "features/game/types/resources";
-import {
+import { getTranslatedItemName } from "features/game/types/images";
+import type { StoneRockName } from "features/game/types/resources";
+import type {
   GameState,
   InventoryItemName,
   TemperateSeasonName,
@@ -179,7 +180,7 @@ const RecoveredStoneComponent: React.FC<Props> = ({
               <span>
                 {t("craft")}{" "}
                 {requiredToolAmount.sub(inventory[tool] ?? 0).toString()}{" "}
-                {tool.toLowerCase()}
+                {getTranslatedItemName(tool).toLowerCase()}
               </span>
             </div>
           </InnerPanel>

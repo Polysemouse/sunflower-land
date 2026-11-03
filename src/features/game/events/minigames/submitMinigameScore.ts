@@ -1,6 +1,6 @@
-import { GameState } from "features/game/types/game";
+import type { GameState } from "features/game/types/game";
 import {
-  MinigameName,
+  type MinigameName,
   SUPPORTED_MINIGAMES,
 } from "features/game/types/minigames";
 import { produce } from "immer";
@@ -25,6 +25,10 @@ export function submitMinigameScore({
   return produce(state, (game) => {
     if (!SUPPORTED_MINIGAMES.includes(action.id)) {
       throw new Error(`${action.id} is not a valid minigame`);
+    }
+
+    if (!Number.isFinite(action.score) || action.score < 0) {
+      throw new Error("Invalid score");
     }
 
     const minigames = (game.minigames ??
@@ -66,6 +70,11 @@ export function submitMinigameScore({
       action.score > prize.score
     ) {
       delete minigames.games[action.id]?.history[todayKey].prizeClaimedAt;
+    }
+
+    // Tiered prizes pay out on the latest run, not today's best
+    if (prize?.tiers) {
+      minigames.games[action.id]!.history[todayKey].lastScore = action.score;
     }
 
     return game;

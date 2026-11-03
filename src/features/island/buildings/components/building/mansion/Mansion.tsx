@@ -1,7 +1,7 @@
 import React, { useContext, useEffect, useState } from "react";
 
 import { PIXEL_SCALE } from "features/game/lib/constants";
-import { BuildingProps } from "../Building";
+import type { BuildingProps } from "../Building";
 import { Context } from "features/game/GameProvider";
 import { useSelector } from "@xstate/react";
 import { LetterBox } from "features/farming/mail/LetterBox";
@@ -9,21 +9,21 @@ import { SUNNYSIDE } from "assets/sunnyside";
 import { BuildingImageWrapper } from "../BuildingImageWrapper";
 import { useNavigate } from "react-router";
 import { Section } from "lib/utils/hooks/useScrollIntoView";
-import { HomeBumpkins } from "../house/HomeBumpkins";
 import { MANOR_VARIANTS } from "features/island/lib/alternateArt";
 import { useVisiting } from "lib/utils/visitUtils";
-import { MachineState } from "features/game/lib/gameMachine";
+import type { MachineState } from "features/game/lib/gameMachine";
 import { getHelpRequired } from "features/game/types/monuments";
+import { HomeBumpkins } from "../house/HomeBumpkins";
+import { DailyReward } from "features/game/expansion/components/dailyReward/DailyReward";
+import { getHomeRoute } from "features/island/buildings/lib/getHomeRoute";
+import { saveIslandScrollPosition } from "features/game/expansion/lib/islandScroll";
 
 const _game = (state: MachineState) => state.context.state;
 const _farmId = (state: MachineState) => state.context.farmId;
-const _bumpkin = (state: MachineState) => state.context.state.bumpkin;
-
 export const Mansion: React.FC<BuildingProps> = ({ isBuilt, season }) => {
   const { gameService, showAnimations } = useContext(Context);
   const game = useSelector(gameService, _game);
   const farmId = useSelector(gameService, _farmId);
-  const bumpkin = useSelector(gameService, _bumpkin);
   const { isVisiting: visiting } = useVisiting();
 
   const navigate = useNavigate();
@@ -32,11 +32,8 @@ export const Mansion: React.FC<BuildingProps> = ({ isBuilt, season }) => {
 
   const handleClick = () => {
     if (isBuilt) {
-      if (visiting) {
-        navigate(`/visit/${farmId}/home`);
-      } else {
-        navigate("/home");
-      }
+      saveIslandScrollPosition();
+      navigate(getHomeRoute({ game, isVisiting: visiting, farmId }));
       // Add future on click actions here
       return;
     }
@@ -102,13 +99,23 @@ export const Mansion: React.FC<BuildingProps> = ({ isBuilt, season }) => {
       </BuildingImageWrapper>
 
       <div
-        className="absolute w-fit"
+        className="absolute"
+        style={{
+          left: `${PIXEL_SCALE * 0}px`,
+          top: `${PIXEL_SCALE * 0}px`,
+        }}
+      >
+        <DailyReward />
+      </div>
+
+      <div
+        className="relative w-fit pointer-events-auto"
         style={{
           bottom: `${PIXEL_SCALE * 28}px`,
           left: `${PIXEL_SCALE * 0}px`,
         }}
       >
-        {bumpkin && <HomeBumpkins game={game} />}
+        <HomeBumpkins game={game} />
       </div>
 
       <div

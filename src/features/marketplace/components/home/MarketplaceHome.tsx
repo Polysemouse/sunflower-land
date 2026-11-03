@@ -3,12 +3,14 @@ import { InnerPanel } from "components/ui/Panel";
 import filterIcon from "assets/icons/filter_icon.webp";
 import flowerIcon from "assets/icons/flower_token.webp";
 import crownIcon from "assets/icons/vip.webp";
-import { Route, Routes, useNavigate } from "react-router";
+import { Route, Routes, useNavigate, useSearchParams } from "react-router";
 import { Collection, preloadCollections } from "../Collection";
+import { Favourites } from "../Favourites";
 import { Modal } from "components/ui/Modal";
 import { CloseButtonPanel } from "features/game/components/CloseablePanel";
 import { MarketplaceProfile } from "../MarketplaceProfile";
 import { MyTrades } from "../profile/MyTrades";
+import { MyCollection } from "../profile/MyCollection";
 import { MarketplaceRewards } from "../MarketplaceRewards";
 import { Tradeable } from "../Tradeable";
 import { MarketplaceHotNow } from "../MarketplaceHotNow";
@@ -20,7 +22,12 @@ import { useActor, useSelector } from "@xstate/react";
 import { useTranslation } from "react-i18next";
 import { Label } from "components/ui/Label";
 import { Button } from "components/ui/Button";
-import { MachineState } from "features/game/lib/gameMachine";
+import {
+  getAccountTradedRestrictionSecondsLeft,
+  isAccountTradedWithin90Days,
+  selectGameState,
+} from "features/game/lib/gameMachine";
+import { TradeCooldownWidget } from "features/game/components/TradeCooldownWidget";
 import { ModalContext } from "features/game/components/modal/ModalProvider";
 import {
   getRemainingTrades,
@@ -32,18 +39,28 @@ import { MarketplaceSearch } from "../MarketplaceSearch";
 import { EstimatedPrice } from "./EstimatedPrice";
 import { Filters } from "./Filters";
 import { CHAPTERS } from "features/game/types/chapters";
-
-const _hasTradeReputation = (state: MachineState) =>
-  hasReputation({
-    game: state.context.state,
-    reputation: Reputation.Cropkeeper,
-  });
+import { useNow } from "lib/utils/hooks/useNow";
 
 export const MarketplaceNavigation: React.FC = () => {
   const navigate = useNavigate();
   const crabChapterStartMs = CHAPTERS["Crabs and Traps"].startDate.getTime();
 
-  const [search, setSearch] = useState("");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const search = searchParams.get("q") ?? "";
+  const setSearch = (value: string) => {
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev);
+        if (value) {
+          next.set("q", value);
+        } else {
+          next.delete("q");
+        }
+        return next;
+      },
+      { replace: true },
+    );
+  };
   const [showFilters, setShowFilters] = useState(false);
   const [showQuickswap, setShowQuickswap] = useState(false);
   const [hideLimited, setHideLimited] = useState<boolean>(() => {
@@ -73,21 +90,35 @@ export const MarketplaceNavigation: React.FC = () => {
     return () => window.clearTimeout(id);
   }, [hideLimited, crabChapterStartMs]);
 
+  const { t } = useTranslation();
+
+  const { gameService } = useContext(Context);
+
   useEffect(() => {
     const token = authState.context.user.rawToken as string;
     if (CONFIG.API_URL) preloadCollections(token, !hideLimited);
   }, [hideLimited, authState.context.user.rawToken]);
 
-  const { t } = useTranslation();
-
-  const { gameService } = useContext(Context);
   const price = gameService.getSnapshot().context.prices.sfl?.usd ?? 0.0;
   const { farmId } = gameService.getSnapshot().context;
 
-  const hasTradeReputation = useSelector(gameService, _hasTradeReputation);
+  const game = useSelector(gameService, selectGameState);
+  const now = useNow();
+  const hasTradeReputation = hasReputation({
+    game,
+    reputation: Reputation.Cropkeeper,
+    now,
+  });
+  const accountTradedRecently = useSelector(gameService, (s) =>
+    isAccountTradedWithin90Days(s.context),
+  );
+  const restrictionSecondsLeft = useSelector(gameService, (s) =>
+    getAccountTradedRestrictionSecondsLeft(s.context),
+  );
 
   const listingsLeft = getRemainingTrades({
     game: gameService.getSnapshot().context.state,
+    now,
   });
 
   const goToFlowerDashboard = () => {
@@ -168,6 +199,12 @@ export const MarketplaceNavigation: React.FC = () => {
             </div>
           </Button>
 
+          {accountTradedRecently && (
+            <TradeCooldownWidget
+              restrictionSecondsLeft={restrictionSecondsLeft}
+            />
+          )}
+
           {!hasTradeReputation && (
             <InnerPanel
               className="cursor-pointer"
@@ -176,7 +213,7 @@ export const MarketplaceNavigation: React.FC = () => {
               <div className="flex flex-col p-1">
                 <div className="flex justify-between items-center">
                   <Label type="danger" icon={crownIcon}>
-                    {`${listingsLeft} ${listingsLeft > 1 ? t("reputation.marketplace.listingsLeft") : t("reputation.marketplace.listingLeft")}`}
+                    {`${listingsLeft} ${listingsLeft === 1 ? t("reputation.marketplace.listingLeft") : t("reputation.marketplace.listingsLeft")}`}
                   </Label>
                   <p className="text-xxs underline">{t("read.more")}</p>
                 </div>
@@ -188,17 +225,19 @@ export const MarketplaceNavigation: React.FC = () => {
 
         <div className="flex-1 flex flex-col w-full">
           {search ? (
-            <Collection
-              search={search}
-              hideLimited={hideLimited}
-              onNavigated={() => {
-                setSearch("");
-              }}
-            />
+            <Collection search={search} hideLimited={hideLimited} />
           ) : (
             <Routes>
               <Route path="/profile" element={<MarketplaceProfile />} />
               <Route path="/hot" element={<MarketplaceHotNow />} />
+              <Route
+                path="/favorites"
+                element={<Favourites hideLimited={hideLimited} />}
+              />
+              <Route
+                path="/economies/:economy/:id"
+                element={<Tradeable hideLimited={hideLimited} />}
+              />
               <Route
                 path="/collection/*"
                 element={<Collection hideLimited={hideLimited} />}
@@ -207,8 +246,16 @@ export const MarketplaceNavigation: React.FC = () => {
                 path="/:collection/:id"
                 element={<Tradeable hideLimited={hideLimited} />}
               />
-              <Route path="/profile/:id" element={<MarketplaceUser />} />
               <Route path="/profile/:id/trades" element={<MyTrades />} />
+              <Route path="/profile/:id" element={<MarketplaceUser />} />
+              <Route
+                path="/profile/:id/history"
+                element={<MarketplaceUser view="history" />}
+              />
+              <Route
+                path="/profile/:id/collection"
+                element={<MyCollection fullHeight />}
+              />
               <Route path="/profile/rewards" element={<MarketplaceRewards />} />
               {/* default to hot */}
               <Route path="/" element={<MarketplaceHotNow />} />

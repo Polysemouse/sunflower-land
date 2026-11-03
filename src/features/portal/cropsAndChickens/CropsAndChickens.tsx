@@ -10,7 +10,7 @@ import { CropsAndChickensHud } from "features/portal/cropsAndChickens/components
 import { CropsAndChickensPhaser } from "./CropsAndChickensPhaser";
 import { Label } from "components/ui/Label";
 import { useAppTranslation } from "lib/i18n/useAppTranslations";
-import { PortalMachineState } from "./lib/cropsAndChickensMachine";
+import type { PortalMachineState } from "./lib/cropsAndChickensMachine";
 import { Loading } from "features/auth/components";
 import { CONFIG } from "lib/config";
 import { authorisePortal, claimPrize, goHome } from "../lib/portalUtil";

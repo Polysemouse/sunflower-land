@@ -1,7 +1,7 @@
 import { useActor } from "@xstate/react";
 import { CloseButtonPanel } from "features/game/components/CloseablePanel";
 import { SpeakingModal } from "features/game/components/SpeakingModal";
-import { NPCName, NPC_WEARABLES, acknowledgeNPC } from "lib/npcs";
+import { type NPCName, NPC_WEARABLES, acknowledgeNPC } from "lib/npcs";
 import React, { useContext, useEffect, useState } from "react";
 import { Modal } from "components/ui/Modal";
 import { DeliveryPanel } from "./deliveries/DeliveryPanel";
@@ -18,7 +18,7 @@ import { GarbageCollectorModal } from "features/helios/components/garbageCollect
 import { Hopper } from "./npcs/Hopper";
 import { JoinFactionModal } from "./factions/JoinFactionModal";
 import { EmblemsTrading } from "./factions/emblemTrading/EmblemsTrading";
-import { KingdomChoresPanel } from "./factions/chores/KingdomChoresPanel";
+import { SecretMinigamesHubModal } from "./kingdom/SecretMinigamesHubModal";
 import { OuterPanel } from "components/ui/Panel";
 import { FactionKitchenPanel } from "./factions/FactionKitchenPanel";
 import { PortalNPCExample } from "features/portal/example/components/PortalNPCExample";
@@ -40,6 +40,7 @@ import { IncineratorModal } from "features/goblins/incinerator";
 import { Context } from "features/game/GameProvider";
 import { PetShop } from "features/pets/petShop/PetShop";
 import { Streams } from "features/game/components/modal/components/Streams";
+import { HalloweenGift } from "./HalloweenGift";
 
 class NpcModalManager {
   private listener?: (npc: NPCName, isOpen: boolean) => void;
@@ -271,19 +272,6 @@ export const NPCModals: React.FC<Props> = ({ id }) => {
         {npc === "haymitch" && (
           <EmblemsTrading onClose={closeModal} emblem="Bumpkin Emblem" />
         )}
-        {/* Faction Chores */}
-        {npc === "grizzle" && (
-          <KingdomChoresPanel onClose={closeModal} npc={npc} />
-        )}
-        {npc === "buttercup" && (
-          <KingdomChoresPanel onClose={closeModal} npc={npc} />
-        )}
-        {npc === "shadow" && (
-          <KingdomChoresPanel onClose={closeModal} npc={npc} />
-        )}
-        {npc === "flora" && (
-          <KingdomChoresPanel onClose={closeModal} npc={npc} />
-        )}
         {npc === "chef ebon" && (
           <FactionKitchenPanel bumpkinParts={NPC_WEARABLES["chef ebon"]} />
         )}
@@ -297,7 +285,46 @@ export const NPCModals: React.FC<Props> = ({ id }) => {
           <FactionKitchenPanel bumpkinParts={NPC_WEARABLES["chef lumen"]} />
         )}
         {npc === "eldric" && <FactionShop onClose={closeModal} />}
+        {npc === "murmur" && <SecretMinigamesHubModal onClose={closeModal} />}
         {npc === "pet" && <FactionPetPanel onClose={closeModal} />}
+
+        {npc === "Slime Jim" && (
+          <SpeakingModal
+            onClose={closeModal}
+            bumpkinParts={NPC_WEARABLES["Slime Jim"]}
+            message={[
+              {
+                text: translate("npc.Modal.slimeJim"),
+              },
+            ]}
+          />
+        )}
+        {npc === "Slime Joe" && (
+          <SpeakingModal
+            onClose={closeModal}
+            bumpkinParts={NPC_WEARABLES["Slime Joe"]}
+            message={[
+              {
+                text: translate("npc.Modal.slimeJoe"),
+              },
+            ]}
+          />
+        )}
+
+        {npc === "Vampire Jim" && (
+          <HalloweenGift npc="Vampire Jim" onClose={closeModal} />
+        )}
+        {npc === "Skelly Joe" && (
+          <SpeakingModal
+            onClose={closeModal}
+            bumpkinParts={NPC_WEARABLES["Skelly Joe"]}
+            message={[
+              {
+                text: translate("npc.Modal.skellyJoe"),
+              },
+            ]}
+          />
+        )}
       </Modal>
 
       {npc === "hammerin harry" && (

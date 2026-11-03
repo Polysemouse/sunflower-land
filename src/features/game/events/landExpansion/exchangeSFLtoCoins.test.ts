@@ -1,5 +1,5 @@
 import Decimal from "decimal.js-light";
-import { PackageId, exchangeSFLtoCoins } from "./exchangeSFLtoCoins";
+import { type PackageId, exchangeSFLtoCoins } from "./exchangeSFLtoCoins";
 import { TEST_FARM } from "features/game/lib/constants";
 
 describe("exchangeSFLtoCoins", () => {
@@ -25,6 +25,31 @@ describe("exchangeSFLtoCoins", () => {
         action: { type: "sfl.exchanged", packageId: 1 },
       }),
     ).toThrow("Not enough SFL");
+  });
+
+  it("tracks FLOWER Spent farm activity", () => {
+    const state = exchangeSFLtoCoins({
+      state: {
+        ...TEST_FARM,
+        balance: new Decimal(30),
+      },
+      action: { type: "sfl.exchanged", packageId: 2 },
+    });
+
+    expect(state.farmActivity["FLOWER Spent"]).toEqual(30);
+  });
+
+  it("accumulates FLOWER Spent farm activity", () => {
+    const state = exchangeSFLtoCoins({
+      state: {
+        ...TEST_FARM,
+        balance: new Decimal(1),
+        farmActivity: { "FLOWER Spent": 5 },
+      },
+      action: { type: "sfl.exchanged", packageId: 1 },
+    });
+
+    expect(state.farmActivity["FLOWER Spent"]).toEqual(6);
   });
 
   it("exchanges 1 sfl for 160 coins", () => {

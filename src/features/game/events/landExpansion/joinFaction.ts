@@ -1,11 +1,13 @@
 import Decimal from "decimal.js-light";
-import {
+import type {
   FactionBanner,
   FactionEmblem,
   FactionName,
   GameState,
 } from "features/game/types/game";
 import { produce } from "immer";
+import { mfTrack } from "lib/moonforgeAnalytics";
+import { trackFarmActivity } from "features/game/types/farmActivity";
 
 export const FACTIONS: FactionName[] = [
   "bumpkins",
@@ -86,12 +88,21 @@ export function joinFaction({
     }
 
     stateCopy.balance = state.balance.sub(action.sfl);
+    if (action.sfl > 0) {
+      stateCopy.farmActivity = trackFarmActivity(
+        "FLOWER Spent",
+        stateCopy.farmActivity,
+        new Decimal(action.sfl),
+      );
+    }
 
     const banner = FACTION_BANNERS[action.faction];
 
     stateCopy.inventory[banner] = (
       stateCopy.inventory[banner] ?? new Decimal(0)
     ).add(1);
+
+    mfTrack("faction_joined", { faction_id: action.faction });
 
     return stateCopy;
   });

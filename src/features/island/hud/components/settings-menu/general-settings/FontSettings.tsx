@@ -3,11 +3,11 @@ import {
   changeFont,
   CHINESE_FONT_CONFIG,
   CYRILLIC_FONT_CONFIG,
-  Font,
+  type Font,
   FONT_CONFIG,
   KOREAN_FONT_CONFIG,
 } from "lib/utils/fonts";
-import { getKeys } from "features/game/types/decorations";
+import { getKeys } from "lib/object";
 import { useAppTranslation } from "lib/i18n/useAppTranslations";
 import { Dropdown } from "components/ui/Dropdown";
 

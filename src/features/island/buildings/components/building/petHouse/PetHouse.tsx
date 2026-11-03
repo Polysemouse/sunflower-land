@@ -1,20 +1,52 @@
-import React, { useContext } from "react";
+import React, { useContext, useState } from "react";
 import { PIXEL_SCALE } from "features/game/lib/constants";
 import { BuildingImageWrapper } from "../BuildingImageWrapper";
 import { useNavigate } from "react-router";
 import { useVisiting } from "lib/utils/visitUtils";
 import { Context } from "features/game/GameProvider";
 import { useSelector } from "@xstate/react";
-import { MachineState } from "features/game/lib/gameMachine";
+import type { MachineState } from "features/game/lib/gameMachine";
 import { PET_HOUSE_VARIANTS } from "features/island/lib/alternateArt";
 import { SUNNYSIDE } from "assets/sunnyside";
-import { getHelpRequired } from "features/game/types/monuments";
+import { getHelpRequired, isHelpComplete } from "features/game/types/monuments";
+import { isPetNapping, type PetName } from "features/game/types/pets";
+import { useNow } from "lib/utils/hooks/useNow";
+import type { GameState } from "features/game/types/game";
+import { saveIslandScrollPosition } from "features/game/expansion/lib/islandScroll";
+import { Modal } from "components/ui/Modal";
+import { CloseButtonPanel } from "features/game/components/CloseablePanel";
+import { FarmHelped } from "features/island/hud/components/FarmHelped";
 
 const _farmId = (state: MachineState) => state.context.farmId;
 const _petHouseLevel = (state: MachineState) =>
   state.context.state.petHouse.level ?? 1;
-
 const _game = (state: MachineState) => state.context.state;
+const _totalHelpedToday = (state: MachineState) =>
+  state.context.totalHelpedToday ?? 0;
+const _bumpkin = (state: MachineState) => state.context.state.bumpkin;
+
+function useNappingPetInPetHouse(game: GameState): boolean {
+  const now = useNow({ live: true });
+  const petHousePets = game.petHouse?.pets ?? {};
+  const commonPets = game.pets?.common ?? {};
+  const nftPets = game.pets?.nfts ?? {};
+
+  // Check common pets placed in pet house
+  for (const [name, items] of Object.entries(petHousePets)) {
+    const hasPlaced = items?.some((item) => item.coordinates);
+    if (hasPlaced) {
+      const pet = commonPets[name as PetName];
+      if (pet && isPetNapping(pet, now)) return true;
+    }
+  }
+
+  // Check NFT pets in pet house
+  for (const pet of Object.values(nftPets)) {
+    if (pet.location === "petHouse" && isPetNapping(pet, now)) return true;
+  }
+
+  return false;
+}
 
 export const PetHouse: React.FC = () => {
   const navigate = useNavigate();
@@ -23,22 +55,37 @@ export const PetHouse: React.FC = () => {
   const farmId = useSelector(gameService, _farmId);
   const { isVisiting: visiting } = useVisiting();
   const level = useSelector(gameService, _petHouseLevel);
+  const totalHelpedToday = useSelector(gameService, _totalHelpedToday);
+  const bumpkin = useSelector(gameService, _bumpkin);
+
+  const hasNappingPet = useNappingPetInPetHouse(game);
+  const [showHelped, setShowHelped] = useState(false);
+
+  const helpRequired = getHelpRequired({ game });
+  const petHouseHelpRequired = helpRequired.tasks.petHouse.count;
 
   const handlePetHouseClick = () => {
+    if (visiting && petHouseHelpRequired > 0) {
+      gameService.send("pet.helpAllPetsInHouse", { totalHelpedToday });
+
+      if (isHelpComplete({ game: gameService.getSnapshot().context.state })) {
+        setShowHelped(true);
+      }
+      return;
+    }
+
+    saveIslandScrollPosition();
+
     if (visiting) {
-      const targetPath = `/visit/${farmId}/pet-house`;
-      navigate(targetPath);
+      navigate(`/visit/${farmId}/pet-house`);
     } else {
       navigate("/pet-house");
     }
   };
 
-  const helpRequired = getHelpRequired({ game });
-  const petHouseHelpRequired = helpRequired.tasks.petHouse.count;
-
   return (
     <div className="absolute h-full w-full">
-      <BuildingImageWrapper name="PetHouse" onClick={handlePetHouseClick}>
+      <BuildingImageWrapper name="Pet House" onClick={handlePetHouseClick}>
         <img
           src={PET_HOUSE_VARIANTS[level]}
           className="absolute pointer-events-none"
@@ -71,7 +118,28 @@ export const PetHouse: React.FC = () => {
             </div>
           </div>
         )}
+        {hasNappingPet && !visiting && (
+          <div
+            className="absolute pointer-events-none"
+            style={{
+              width: `${PIXEL_SCALE * 10}px`,
+              top: `${PIXEL_SCALE * -8}px`,
+              left: `${PIXEL_SCALE * 1}px`,
+            }}
+          >
+            <img
+              className="w-full animate-pulsate"
+              src={SUNNYSIDE.icons.sleeping}
+              alt="sleeping"
+            />
+          </div>
+        )}
       </BuildingImageWrapper>
+      <Modal show={showHelped}>
+        <CloseButtonPanel bumpkinParts={bumpkin.equipped}>
+          <FarmHelped onClose={() => setShowHelped(false)} />
+        </CloseButtonPanel>
+      </Modal>
     </div>
   );
 };

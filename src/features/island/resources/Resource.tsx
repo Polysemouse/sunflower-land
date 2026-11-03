@@ -1,7 +1,11 @@
 import React, { useContext, type JSX } from "react";
 
-import { PIXEL_SCALE } from "features/game/lib/constants";
-import { ResourceName } from "features/game/types/resources";
+import { PIXEL_SCALE, SQUARE_WIDTH } from "features/game/lib/constants";
+import {
+  RESOURCE_DIMENSIONS,
+  type ResourceName,
+  type TreeName,
+} from "features/game/types/resources";
 import { Gold } from "features/game/expansion/components/resources/gold/Gold";
 import { Iron } from "features/game/expansion/components/resources/iron/Iron";
 import { Stone } from "features/game/expansion/components/resources/stone/Stone";
@@ -14,16 +18,21 @@ import { ITEM_DETAILS } from "features/game/types/images";
 import { Context } from "features/game/GameProvider";
 import { useSelector } from "@xstate/react";
 import { MoveableComponent } from "../collectibles/MovableComponent";
-import { MachineState } from "features/game/lib/gameMachine";
+import type { MachineState } from "features/game/lib/gameMachine";
 import { Crimstone } from "features/game/expansion/components/resources/crimstone/Crimstone";
 import { Beehive } from "features/game/expansion/components/resources/beehive/Beehive";
 import { FlowerBed } from "../flowers/FlowerBed";
 import { Sunstone } from "features/game/expansion/components/resources/sunstone/Sunstone";
+import { AscensionCrystal } from "features/game/expansion/components/resources/ascensionCrystal/AscensionCrystal";
 import { OilReserve } from "features/game/expansion/components/resources/oilReserve/OilReserve";
 import { LavaPit } from "features/game/expansion/components/lavaPit/LavaPit";
-import { TREE_VARIANTS } from "../lib/alternateArt";
+import { TREE_SIZE_VARIANTS, TREE_VARIANTS } from "../lib/alternateArt";
 import { getCurrentBiome } from "../biomes/biomes";
-import { GameState, TemperateSeasonName } from "features/game/types/game";
+import type { GameState, TemperateSeasonName } from "features/game/types/game";
+
+/** The 2x2 footprint a tree sprite is laid out against, in game pixels. */
+const TREE_TILE_WIDTH = RESOURCE_DIMENSIONS.Tree.width * SQUARE_WIDTH;
+const TREE_TILE_HEIGHT = RESOURCE_DIMENSIONS.Tree.height * SQUARE_WIDTH;
 
 export interface ResourceProps {
   name: ResourceName;
@@ -44,6 +53,20 @@ export const READONLY_RESOURCE_COMPONENTS = ({
   island: GameState["island"];
 }): Record<ResourceName, () => JSX.Element> => {
   const currentBiome = getCurrentBiome(island);
+
+  // Ascension trees and desert's ancient/sacred cacti are drawn on their own
+  // canvas rather than the shared 26x34 one, so the sprite drives its layout.
+  // It sits in normal flow from the top of the tile, hence offsetting it to
+  // centre the trunk and drop the base onto the bottom of that tile.
+  const treeStyle = (tree: TreeName) => {
+    const { width, height } = TREE_SIZE_VARIANTS(currentBiome, season, tree);
+
+    return {
+      width: `${PIXEL_SCALE * width}px`,
+      bottom: `${PIXEL_SCALE * (height - TREE_TILE_HEIGHT)}px`,
+      left: `${PIXEL_SCALE * ((TREE_TILE_WIDTH - width) / 2)}px`,
+    };
+  };
 
   return {
     "Crop Plot": () => (
@@ -152,11 +175,7 @@ export const READONLY_RESOURCE_COMPONENTS = ({
       <img
         src={TREE_VARIANTS(currentBiome, season, "Tree")}
         className="relative pointer-events-none"
-        style={{
-          width: `${PIXEL_SCALE * 26}px`,
-          bottom: `${PIXEL_SCALE * 2}px`,
-          left: `${PIXEL_SCALE * 3}px`,
-        }}
+        style={treeStyle("Tree")}
       />
     ),
     "Fruit Patch": () => (
@@ -209,6 +228,17 @@ export const READONLY_RESOURCE_COMPONENTS = ({
         }}
       />
     ),
+    "Ascension Crystal": () => (
+      <img
+        src={ITEM_DETAILS["Ascension Crystal"].image}
+        className="absolute h-auto w-full"
+        style={{
+          width: `${PIXEL_SCALE * 27}px`,
+          bottom: `${PIXEL_SCALE * 1}px`,
+          left: `${PIXEL_SCALE * 2}px`,
+        }}
+      />
+    ),
     "Lava Pit": () => (
       <img
         src={ITEM_DETAILS["Lava Pit"].image}
@@ -219,22 +249,14 @@ export const READONLY_RESOURCE_COMPONENTS = ({
       <img
         src={TREE_VARIANTS(currentBiome, season, "Ancient Tree")}
         className="relative pointer-events-none"
-        style={{
-          width: `${PIXEL_SCALE * 26}px`,
-          bottom: `${PIXEL_SCALE * 2}px`,
-          left: `${PIXEL_SCALE * 3}px`,
-        }}
+        style={treeStyle("Ancient Tree")}
       />
     ),
     "Sacred Tree": () => (
       <img
         src={TREE_VARIANTS(currentBiome, season, "Sacred Tree")}
         className="relative pointer-events-none"
-        style={{
-          width: `${PIXEL_SCALE * 26}px`,
-          bottom: `${PIXEL_SCALE * 2}px`,
-          left: `${PIXEL_SCALE * 3}px`,
-        }}
+        style={treeStyle("Sacred Tree")}
       />
     ),
     "Refined Iron Rock": () => (
@@ -309,6 +331,8 @@ export const RESOURCE_COMPONENTS: Record<
   "Tempered Iron Rock": Iron,
   "Pure Gold Rock": Gold,
   "Prime Gold Rock": Gold,
+  // TODO: placeholder visuals (reuses Sunstone art) until dedicated crystal art.
+  "Ascension Crystal": AscensionCrystal,
 };
 
 const isLandscaping = (state: MachineState) => state.matches("landscaping");

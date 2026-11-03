@@ -1,6 +1,6 @@
-import { Announcements } from "features/game/types/announcements";
-import { getKeys } from "features/game/types/craftables";
-import { GameState } from "features/game/types/game";
+import type { Announcements } from "features/game/types/announcements";
+import { getKeys } from "lib/object";
+import type { GameState } from "features/game/types/game";
 
 export function getFLOWERTeaserLastRead(): Date | null {
   const value = localStorage.getItem("FLOWERTeaserLastRead");
@@ -58,6 +58,20 @@ export function getBudsRead(): Date | null {
 
 export function acknowledgeBuds() {
   return localStorage.setItem("budsDrop", new Date().toISOString());
+}
+
+export function getReferralsAnnouncementLastRead(): Date | null {
+  const value = localStorage.getItem("referralsAnnouncementLastRead");
+  if (!value) return null;
+
+  return new Date(value);
+}
+
+export function acknowledgeReferralsAnnouncement() {
+  return localStorage.setItem(
+    "referralsAnnouncementLastRead",
+    new Date().toISOString(),
+  );
 }
 
 export function hasUnreadMail(

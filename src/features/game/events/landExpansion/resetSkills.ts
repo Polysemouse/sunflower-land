@@ -1,8 +1,16 @@
-import { getKeys } from "features/game/types/decorations";
-import { GameState } from "features/game/types/game";
+import { getKeys } from "lib/object";
+import type { GameState } from "features/game/types/game";
 import { produce } from "immer";
+import Decimal from "decimal.js-light";
+import { populateSaltFarm } from "features/game/types/salt";
+import {
+  type BumpkinRevampSkillName,
+  type BumpkinSkillRevamp,
+  BUMPKIN_REVAMP_SKILL_TREE,
+  getSkillUpgradeCost,
+} from "features/game/types/bumpkinSkills";
 
-export type PaymentType = "gems" | "free";
+export type PaymentType = "gems" | "free" | "ticket";
 
 export type ResetSkillsAction = {
   type: "skills.reset";
@@ -50,7 +58,7 @@ export function resetSkills({
   createdAt = Date.now(),
 }: Options) {
   return produce(state, (game) => {
-    const { bumpkin, buildings } = game;
+    const { bumpkin } = game;
     const {
       paidSkillResets = 0,
       previousFreeSkillResetAt = 0,
@@ -67,46 +75,90 @@ export function resetSkills({
       throw new Error("You do not have any skills to reset");
     }
 
-    if (action.paymentType === "free") {
-      // If trying to do free reset before 4 months
-      if (!canResetForFree(previousFreeSkillResetAt, createdAt)) {
-        const timeToNextFreeResetInMilliseconds = getTimeUntilNextFreeReset(
-          previousFreeSkillResetAt,
-          createdAt,
-        );
-        const daysRemaining = Math.ceil(
-          timeToNextFreeResetInMilliseconds / (24 * 60 * 60 * 1000),
-        );
-        throw new Error(
-          `Wait ${daysRemaining} more days for free reset or use gems`,
-        );
-      }
+    const { paymentType } = action;
 
-      // Reset paid resets counter since 4 months have passed
-      bumpkin.paidSkillResets = 0;
+    switch (paymentType) {
+      case "free": {
+        if (!canResetForFree(previousFreeSkillResetAt, createdAt)) {
+          const timeToNextFreeResetInMilliseconds = getTimeUntilNextFreeReset(
+            previousFreeSkillResetAt,
+            createdAt,
+          );
+          const daysRemaining = Math.ceil(
+            timeToNextFreeResetInMilliseconds / (24 * 60 * 60 * 1000),
+          );
+          throw new Error(
+            `Wait ${daysRemaining} more days for free reset or use gems`,
+          );
+        }
+
+        bumpkin.paidSkillResets = 0;
+        bumpkin.previousFreeSkillResetAt = createdAt;
+        break;
+      }
+      case "gems": {
+        const gemCost = getGemCost(paidSkillResets);
+
+        if (game.inventory.Gem?.lt(gemCost)) {
+          throw new Error(`Not enough gems. Cost: ${gemCost} gems`);
+        }
+
+        game.inventory.Gem = game.inventory.Gem?.minus(gemCost);
+        bumpkin.paidSkillResets = paidSkillResets + 1;
+        break;
+      }
+      case "ticket": {
+        // Tickets are complimentary giveaways (e.g. beta rewards) and do not
+        // count towards the escalating gem cost.
+        const ticketBalance =
+          game.inventory["Skill Reset Ticket"] ?? new Decimal(0);
+
+        if (ticketBalance.lt(1)) {
+          throw new Error("You do not have a Skill Reset Ticket");
+        }
+
+        game.inventory["Skill Reset Ticket"] = ticketBalance.minus(1);
+        break;
+      }
+      default: {
+        const _exhaustive: never = paymentType;
+        throw new Error(`Unknown payment type: ${_exhaustive}`);
+      }
     }
 
-    // Handle gem reset
-    if (action.paymentType === "gems") {
-      const gemCost = getGemCost(paidSkillResets);
-
-      if (game.inventory.Gem?.lt(gemCost)) {
-        throw new Error(`Not enough gems. Cost: ${gemCost} gems`);
+    // Refund Ascension Shards spent on skill upgrades. Rank is stored as the
+    // skill value, so compute the refund before wiping skills. Skill points are
+    // refunded implicitly once skills are cleared.
+    let refundShards = 0;
+    for (const skill of getKeys(skills)) {
+      const skillData: BumpkinSkillRevamp =
+        BUMPKIN_REVAMP_SKILL_TREE[skill as BumpkinRevampSkillName];
+      const level = skills[skill] ?? 1;
+      if (skillData?.upgrade) {
+        // Cap to maxLevel so malformed/imported ranks can't over-refund.
+        const refundableRanks = Math.max(
+          0,
+          Math.min(level, skillData.upgrade.maxLevel) - 1,
+        );
+        refundShards +=
+          getSkillUpgradeCost(skillData.requirements.tier).shards *
+          refundableRanks;
       }
-
-      // Deduct gems
-      game.inventory.Gem = game.inventory.Gem?.minus(gemCost);
-      // Increment paid resets counter
-      bumpkin.paidSkillResets = paidSkillResets + 1;
     }
 
-    // Reset skills
     bumpkin.skills = {};
 
-    // Update last free reset timestamp only for free resets
-    if (action.paymentType === "free") {
-      bumpkin.previousFreeSkillResetAt = createdAt;
+    if (refundShards > 0) {
+      game.inventory["Ascension Shard"] = (
+        game.inventory["Ascension Shard"] ?? new Decimal(0)
+      ).add(refundShards);
     }
+
+    populateSaltFarm({
+      gameBefore: state,
+      gameAfter: game,
+      now: createdAt,
+    });
 
     return game;
   });

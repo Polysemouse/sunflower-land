@@ -1,7 +1,7 @@
 import { SQUARE_WIDTH } from "features/game/lib/constants";
-import { SceneId } from "features/world/mmoMachine";
+import type { SceneId } from "features/world/mmoMachine";
 import { BaseScene } from "features/world/scenes/BaseScene";
-import {
+import type {
   MachineInterpreter,
   PortalEvent,
 } from "../lib/cropsAndChickensMachine";
@@ -22,22 +22,22 @@ import {
   NORMAL_CHICKEN_CIRCULAR_RAIL_CONFIGURATIONS,
 } from "../CropsAndChickensConstants";
 import {
-  NormalChickenStraightRailType,
+  type NormalChickenStraightRailType,
   NormalChickenStraightContainer,
 } from "./containers/NormalChickenStraightContainer";
 import { HunterChickenContainer } from "./containers/HunterChickenContainer";
 import { StorageAreaContainer } from "./containers/StorageAreaContainer";
 import { DepositIndicatorContainer } from "./containers/DepositIndicatorContainer";
 import { CropContainer } from "./containers/CropContainer";
-import { EventObject } from "xstate";
+import type { EventObject } from "xstate";
 import { hasFeatureAccess } from "lib/flags";
 import { getZoomOutSetting, ZOOM_OUT_EVENT } from "../hooks/useIsZoomOut";
 import { preloadAssets } from "./lib/preloadAssets";
 
 import { getAttemptsLeft, getHolidayEvent } from "../lib/cropsAndChickensUtils";
 import { getHolidayAsset } from "../lib/CropsAndChickensHolidayAsset";
-import Decimal from "decimal.js-light";
-import { CropsAndChickensActivityName } from "../CropsAndChickensActivities";
+import type Decimal from "decimal.js-light";
+import type { CropsAndChickensActivityName } from "../CropsAndChickensActivities";
 import { killPlayer } from "./lib/killPlayer";
 import { depositCrops } from "./lib/depositCrops";
 import { harvestCrop } from "./lib/harvestCrop";
@@ -45,10 +45,10 @@ import { endGame } from "./lib/endGame";
 import { initializeControls } from "./lib/initializeControls";
 import {
   NormalChickenCircularContainer,
-  NormalChickenCircularRailType,
+  type NormalChickenCircularRailType,
 } from "./containers/NormalChickenCircularContainer";
 import { initializePipelines } from "./lib/initializePipelines";
-import { PowerSkillButtonContainer } from "./containers/PowerSkillButtonContainer";
+import type { PowerSkillButtonContainer } from "./containers/PowerSkillButtonContainer";
 
 export class CropsAndChickensScene extends BaseScene {
   sceneId: SceneId = "crops_and_chickens";

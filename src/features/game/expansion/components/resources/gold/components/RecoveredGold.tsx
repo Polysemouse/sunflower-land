@@ -1,8 +1,8 @@
 import React, { useContext, useEffect, useRef, useState } from "react";
-import Decimal from "decimal.js-light";
+import type Decimal from "decimal.js-light";
 
 import Spritesheet, {
-  SpriteSheetInstance,
+  type SpriteSheetInstance,
 } from "components/animation/SpriteAnimator";
 
 import { PIXEL_SCALE } from "features/game/lib/constants";
@@ -14,9 +14,10 @@ import { ZoomContext } from "components/ZoomProvider";
 
 import { useAppTranslation } from "lib/i18n/useAppTranslations";
 import { useSound } from "lib/utils/hooks/useSound";
-import { GoldRockName } from "features/game/types/resources";
+import type { GoldRockName } from "features/game/types/resources";
 import { READONLY_RESOURCE_COMPONENTS } from "features/island/resources/Resource";
-import {
+import { getTranslatedItemName } from "features/game/types/images";
+import type {
   GameState,
   InventoryItemName,
   TemperateSeasonName,
@@ -146,7 +147,7 @@ const RecoveredGoldComponent: React.FC<Props> = ({
               <span>
                 {t("craft")}{" "}
                 {requiredToolAmount.sub(inventory[tool] ?? 0).toString()}{" "}
-                {tool.toLowerCase()}
+                {getTranslatedItemName(tool).toLowerCase()}
               </span>
             </div>
           </InnerPanel>

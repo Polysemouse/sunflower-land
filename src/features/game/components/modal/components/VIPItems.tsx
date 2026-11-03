@@ -5,10 +5,11 @@ import {
 } from "features/game/types/chapters";
 import { ButtonPanel, Panel } from "components/ui/Panel";
 import { Label } from "components/ui/Label";
-import { MachineState } from "features/game/lib/gameMachine";
+import type { MachineState } from "features/game/lib/gameMachine";
 import { Context } from "features/game/GameProvider";
 import { useSelector } from "@xstate/react";
 
+import lockIcon from "assets/icons/lock.png";
 import giftIcon from "assets/icons/gift.png";
 import increaseArrow from "assets/icons/increase_arrow.png";
 import xpIcon from "assets/icons/xp.png";
@@ -17,7 +18,6 @@ import blueVipIcon from "assets/icons/blue_vip.webp";
 import purpleVipIcon from "assets/icons/purple_vip.webp";
 import multiCast from "src/assets/icons/multi-cast.webp";
 
-import trophyIcon from "assets/icons/trophy.png";
 import shopIcon from "assets/icons/shop.png";
 import { Button } from "components/ui/Button";
 import { SUNNYSIDE } from "assets/sunnyside";
@@ -25,24 +25,31 @@ import Decimal from "decimal.js-light";
 import { acknowledgeVIP } from "features/announcements/announcementsStorage";
 import { ITEM_DETAILS } from "features/game/types/images";
 import {
-  hasVipAccess,
-  VIP_DURATIONS,
+  hasLifetimeFarmerBanner,
   VIP_PRICES,
-  VipBundle,
+  VIP_TRIAL_PERIOD_MS,
+  type VipBundle,
 } from "features/game/lib/vipAccess";
-import { getKeys } from "features/game/types/decorations";
+import { getKeys } from "lib/object";
 import { PIXEL_SCALE } from "features/game/lib/constants";
 import { ModalOverlay } from "components/ui/ModalOverlay";
 import { useAppTranslation } from "lib/i18n/useAppTranslations";
-import { TranslationKeys } from "lib/i18n/dictionaries/types";
+import type { TranslationKeys } from "lib/i18n/dictionaries/types";
 import { gameAnalytics } from "lib/gameAnalytics";
 import { REPUTATION_POINTS } from "features/game/lib/reputation";
 import * as Auth from "features/auth/lib/Provider";
 import { useNow } from "lib/utils/hooks/useNow";
+import { NoticeboardItems } from "features/world/ui/kingdom/KingdomNoticeboard";
+import type { GameState, VIP } from "features/game/types/game";
+import { secondsToString } from "lib/utils/time";
+import { VIPSavings } from "./VIPSavings";
+import { useVipAccess } from "lib/utils/hooks/useVipAccess";
 
 const _inventory = (state: MachineState) => state.context.state.inventory;
 const _vip = (state: MachineState) => state.context.state.vip;
 const _state = (state: MachineState) => state.context.state;
+const _hasLifetimeFarmerBanner = (state: MachineState) =>
+  hasLifetimeFarmerBanner(state.context.state);
 
 const VIP_NAME: Record<VipBundle, TranslationKeys> = {
   "1_MONTH": "vip.1Month",
@@ -56,6 +63,76 @@ const VIP_ICONS: Record<VipBundle, string> = {
   "2_YEARS": purpleVipIcon,
 };
 
+const VIPLabel: React.FC<{
+  state: GameState;
+  now: number;
+  vip: VIP | undefined;
+  hasLifetimeBanner: boolean;
+  hasFullVip: boolean;
+  hasTrialVip: boolean;
+}> = ({ state, now, vip, hasLifetimeBanner, hasFullVip, hasTrialVip }) => {
+  const { t } = useAppTranslation();
+
+  const hasVipTimestampFields = !!(vip?.trialStartedAt || vip?.expiresAt);
+  const hasTrial = !hasFullVip && hasTrialVip;
+
+  if (!hasLifetimeBanner && (!vip || !hasVipTimestampFields)) {
+    return null;
+  }
+
+  if (hasTrial) {
+    return (
+      <Label type="success" className="ml-2" icon={SUNNYSIDE.icons.confirm}>
+        {t("vip.trialTimeLeft", {
+          time: secondsToString(
+            (state.vip!.trialStartedAt! + VIP_TRIAL_PERIOD_MS - now) / 1000,
+            { length: "short" },
+          ),
+        })}
+      </Label>
+    );
+  }
+
+  const vipExpiresAt = state.vip?.expiresAt ?? 0;
+  const expiresSoon = vipExpiresAt < now + 1000 * 60 * 60 * 24 * 7;
+
+  if (hasFullVip) {
+    return (
+      <>
+        <div className="flex justify-between my-2">
+          <Label type="success" className="ml-2" icon={SUNNYSIDE.icons.confirm}>
+            {t("vip.access")}
+          </Label>
+          {hasLifetimeBanner ? (
+            <Label
+              type="success"
+              className="ml-2"
+              icon={SUNNYSIDE.icons.confirm}
+            >
+              {t("vip.lifetime")}
+            </Label>
+          ) : (
+            Number(vipExpiresAt) > 0 && (
+              <Label
+                type={expiresSoon ? "danger" : "transparent"}
+                icon={SUNNYSIDE.icons.stopwatch}
+              >
+                {`Expires: ${new Date(vipExpiresAt).toLocaleDateString()}`}
+              </Label>
+            )
+          )}
+        </div>
+      </>
+    );
+  }
+
+  return (
+    <Label icon={SUNNYSIDE.icons.stopwatch} type="danger" className="ml-2">
+      {t("expired")}
+    </Label>
+  );
+};
+
 export const VIPItems: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
   const { gameService } = useContext(Context);
   const [selected, setSelected] = useState<VipBundle>();
@@ -67,6 +144,7 @@ export const VIPItems: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
   const now = useNow();
 
   const gemBalance = inventory["Gem"] ?? new Decimal(0);
+  const hasLifetimeBanner = useSelector(gameService, _hasLifetimeFarmerBanner);
 
   const handlePurchase = () => {
     gameService.send("vip.bought", {
@@ -79,24 +157,43 @@ export const VIPItems: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
       item: selected as VipBundle,
       type: "Web3",
     });
+
+    const isFirstVip = !vip?.bundles?.length;
+    const boughtStarterPack = !!state.farmActivity["Starter Pack Purchased"];
+
+    if (isFirstVip && boughtStarterPack) {
+      gameAnalytics.trackMilestone({
+        event: "VIP:Conversion:StarterPack",
+      });
+    }
+
+    if (isFirstVip) {
+      const DAY_MS = 24 * 60 * 60 * 1000;
+      const accountAgeMs = Date.now() - state.createdAt;
+      const sevenDaysMs = 7 * DAY_MS;
+
+      if (accountAgeMs < sevenDaysMs) {
+        const dayBucket = Math.min(
+          6,
+          Math.max(0, Math.floor(accountAgeMs / DAY_MS)),
+        );
+        const tag = boughtStarterPack ? "HasStarterPack" : "NoStarterPack";
+        gameAnalytics.trackMilestone({
+          event: `VIP:Conversion:NewUser:Day${dayBucket}:${tag}`,
+        });
+      }
+    }
+
     setSelected(undefined);
   };
 
-  const hasVip = hasVipAccess({ game: state });
+  const hasFullVip = useVipAccess({ game: state, type: "full" });
+  const hasTrialVip = useVipAccess({ game: state, type: "trial" });
 
-  const expiresSoon = vip && vip.expiresAt < now + 1000 * 60 * 60 * 24 * 7;
+  const hasTrial = !hasFullVip && hasTrialVip;
 
   const hasOneYear = vip && vip.expiresAt > now + 1000 * 60 * 60 * 24 * 365;
 
-  const getExpiresAt = () => {
-    if (!vip) return 0;
-
-    const paidVipExpiresAt = vip?.expiresAt ?? 0;
-
-    return paidVipExpiresAt;
-  };
-
-  const vipExpiresAt = getExpiresAt();
   const chapterTicket = getChapterTicket(now);
   const currentChapter = getCurrentChapter(now);
 
@@ -129,24 +226,13 @@ export const VIPItems: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
               name: t(VIP_NAME[selected as VipBundle]),
             })}
           </p>
-          {hasVip && (
-            <div className="ml-4">
-              <Label
-                icon={SUNNYSIDE.icons.cancel}
-                className="mb-2"
-                type="transparent"
-              >{`Expires ${new Date(vipExpiresAt).toLocaleDateString()}`}</Label>
-              <Label
-                icon={SUNNYSIDE.icons.confirm}
-                type="transparent"
-                className="mb-2"
-                // Leave this as checking vip.expiresAt because purchased vip doesn't stack on Ronin NFT VIP
-              >{`Expires ${new Date((vip?.expiresAt ?? 0) + VIP_DURATIONS[selected as VipBundle]).toLocaleDateString()}`}</Label>
-            </div>
-          )}
-          {hasOneYear && (
-            <Label type="danger" className="mb-2">
-              {t("vip.oneYear.warning")}
+          {hasLifetimeBanner && (
+            <Label
+              type="danger"
+              className="px-1 mb-2"
+              icon={ITEM_DETAILS["Lifetime Farmer Banner"].image}
+            >
+              {t("vip.lifetime.noPurchase")}
             </Label>
           )}
           <div className="flex ">
@@ -156,6 +242,7 @@ export const VIPItems: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
             <Button
               disabled={
                 hasOneYear ||
+                hasLifetimeBanner ||
                 gemBalance.lt(VIP_PRICES[selected as VipBundle] ?? 0)
               }
               onClick={handlePurchase}
@@ -165,7 +252,7 @@ export const VIPItems: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
           </div>
         </Panel>
       </ModalOverlay>
-      <div className="flex flex-col pt-2">
+      <div className="flex flex-col pt-2 max-h-[400px] scrollable px-0.5 overflow-y-scroll">
         <div className="flex justify-between items-center px-1">
           <div className="flex items-center gap-2">
             {!!onBack && (
@@ -188,39 +275,17 @@ export const VIPItems: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
             {t("read.more")}
           </a>
         </div>
-        <p className="text-xs px-1 mt-2">{t("season.vip.description")}</p>
-        {hasVip ? (
-          <>
-            <div className="flex justify-between my-2">
-              <Label
-                type="success"
-                className="ml-2"
-                icon={SUNNYSIDE.icons.confirm}
-              >
-                {t("vip.access")}
-              </Label>
-              {Number(vipExpiresAt) > 0 && (
-                <Label
-                  type={expiresSoon ? "danger" : "transparent"}
-                  icon={SUNNYSIDE.icons.stopwatch}
-                >
-                  {`Expires: ${new Date(vipExpiresAt).toLocaleDateString()}`}
-                </Label>
-              )}
-            </div>
-          </>
-        ) : (
-          vip && (
-            <Label
-              icon={SUNNYSIDE.icons.stopwatch}
-              type="danger"
-              className="ml-2"
-            >
-              {t("expired")}
-            </Label>
-          )
-        )}
-        <div className="flex mt-3 mb-2">
+        <p className="text-xs px-1 mt-2 mb-2">{t("season.vip.description")}</p>
+        <VIPLabel
+          state={state}
+          now={now}
+          vip={vip}
+          hasLifetimeBanner={hasLifetimeBanner}
+          hasFullVip={hasFullVip}
+          hasTrialVip={hasTrialVip}
+        />
+
+        <div className="flex mt-3 mb-2 px-1">
           {getKeys(VIP_PRICES).map((name) => (
             <div className="w-1/3 pr-1" key={name}>
               <ButtonPanel
@@ -259,53 +324,53 @@ export const VIPItems: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
           {t("vip.benefits")}
         </Label> */}
         <div className="flex flex-col space-y-1 ml-1 mb-2 justify-between h-full">
-          {[
-            { text: t("vip.benefit.airdrop"), icon: giftIcon },
-            { text: t("vip.benefit.expBoost"), icon: xpIcon },
-            {
-              text: t("vip.benefit.cookingQueue"),
-              icon: ITEM_DETAILS["Pumpkin Soup"].image,
-            },
-            {
-              text: t("vip.benefit.multicast"),
-              icon: multiCast,
-            },
-            { text: t("vip.benefit.stellaDiscounts"), icon: shopIcon },
-            {
-              text: t("vip.benefit.bonusDelivery"),
-              icon: ITEM_DETAILS[chapterTicket].image,
-            },
-            {
-              text: t("vip.benefit.reputation", {
-                points: REPUTATION_POINTS.VIP,
-              }),
-              icon: increaseArrow,
-            },
-            { text: t("vip.benefit.competition"), icon: trophyIcon },
-            ...(currentChapter === "Paw Prints"
-              ? [
-                  {
-                    text: t("vip.benefit.bonusPetEnergy"),
-                    icon: SUNNYSIDE.icons.lightning,
-                  },
-                ]
-              : []),
-            ...(currentChapter === "Crabs and Traps"
-              ? [
-                  {
-                    text: t("vip.benefit.bonusFishingAttempts"),
-                    icon: ITEM_DETAILS["Rod"].image,
-                  },
-                ]
-              : []),
-          ].map((item, index) => (
-            <div className="flex items-center min-h-[25px]" key={index}>
-              <img src={item.icon} className="w-6 mr-2 object-contain" />
-              <div className="w-full flex items-center">
-                <p className="text-xs">{item.text}</p>
-              </div>
-            </div>
-          ))}
+          <NoticeboardItems
+            items={[
+              { text: t("vip.benefit.airdrop"), icon: giftIcon },
+              { text: t("vip.benefit.expBoost"), icon: xpIcon },
+              {
+                text: t("vip.benefit.cookingQueue"),
+                icon: ITEM_DETAILS["Pumpkin Soup"].image,
+              },
+              {
+                text: t("vip.benefit.craftingQueue"),
+                icon: ITEM_DETAILS["Crafting Box"].image,
+              },
+              {
+                text: t("vip.benefit.multicast"),
+                icon: multiCast,
+              },
+              { text: t("vip.benefit.stellaDiscounts"), icon: shopIcon },
+              {
+                text: t("vip.benefit.bonusDelivery"),
+                icon: ITEM_DETAILS[chapterTicket].image,
+              },
+              {
+                text: t("vip.benefit.reputation", {
+                  points: REPUTATION_POINTS.VIP,
+                }),
+                icon: increaseArrow,
+                label: hasTrial
+                  ? {
+                      labelType: "danger",
+                      shortDescription: t("vip.fullVipRequired"),
+                      boostTypeIcon: lockIcon,
+                    }
+                  : undefined,
+              },
+              ...(currentChapter === "Ascension Age"
+                ? [
+                    {
+                      text: t("vip.benefit.expansionSpeed"),
+                      icon: SUNNYSIDE.icons.stopwatch,
+                    },
+                  ]
+                : []),
+            ]}
+          />
+        </div>
+        <div className="mt-3 px-0.5">
+          <VIPSavings />
         </div>
       </div>
     </>

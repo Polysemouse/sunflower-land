@@ -1,12 +1,13 @@
-import { GameState } from "features/game/types/game";
-import { FLOWERS, FlowerName } from "features/game/types/flowers";
+import type { GameState } from "features/game/types/game";
+import { FLOWERS, type FlowerName } from "features/game/types/flowers";
 import Decimal from "decimal.js-light";
-import { NPCName } from "lib/npcs";
+import type { NPCName } from "lib/npcs";
 import {
   BUMPKIN_FLOWER_BONUSES,
   DEFAULT_FLOWER_POINTS,
 } from "features/game/types/gifts";
 import { produce } from "immer";
+import { SKILL_RANKS, getSkillLevel } from "features/game/types/bumpkinSkills";
 
 export type GiftFlowersAction = {
   type: "flowers.gifted";
@@ -28,9 +29,10 @@ export const calculateRelationshipPoints = (
 
   let total = points;
 
-  // Blossom Bonding skill gives +2 points
-  if (bumpkin.skills["Blossom Bonding"]) {
-    total += 2;
+  // Blossom Bonding skill gives +2/+3/+4 points
+  const blossomBondingLevel = getSkillLevel(bumpkin.skills, "Blossom Bonding");
+  if (blossomBondingLevel) {
+    total += SKILL_RANKS["Blossom Bonding"].ranks[blossomBondingLevel - 1];
   }
 
   return total;

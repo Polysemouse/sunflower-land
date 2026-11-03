@@ -1,5 +1,5 @@
-import { CropName } from "features/game/types/crops";
-import { getKeys } from "features/game/types/craftables";
+import type { CropName } from "features/game/types/crops";
+import { getKeys } from "lib/object";
 import { CONFIG } from "lib/config";
 
 import sunflowerProc from "assets/crops/sunflower/proc_sprite.png";
@@ -17,7 +17,7 @@ import wheatProc from "assets/crops/wheat/proc_sprite.png";
 import kaleProc from "assets/crops/kale/proc_sprite.png";
 import soybeanProc from "assets/crops/soybean/proc_sprite.png";
 import { SUNNYSIDE } from "assets/sunnyside";
-import { LandBiomeName } from "features/island/biomes/biomes";
+import type { LandBiomeName } from "features/island/biomes/biomes";
 
 const HARVEST_PROC_SPRITES: Record<CropName, any> = {
   Sunflower: sunflowerProc,
@@ -43,6 +43,8 @@ const HARVEST_PROC_SPRITES: Record<CropName, any> = {
   Onion: parsnipProc,
   Turnip: sunflowerProc,
   Artichoke: cabbageProc,
+  Saltwort: beetrootProc,
+  "Crystal Leaf": kaleProc,
 };
 
 export const HARVEST_PROC_ANIMATION = {
@@ -63,6 +65,13 @@ export type Lifecycle = {
 
 const URL = `${CONFIG.PROTECTED_IMAGE_URL}/crops`;
 const VOLCANO_URL = `${CONFIG.PROTECTED_IMAGE_URL}/volcano/crops`;
+
+// Crops with no Volcano Biome art in the images repo yet. Without this they
+// 404 and render as broken sprites for anyone on the Volcano Biome.
+const MISSING_VOLCANO_ART: CropName[] = ["Saltwort", "Crystal Leaf"];
+
+const volcanoUrl = (name: CropName) =>
+  MISSING_VOLCANO_ART.includes(name) ? URL : VOLCANO_URL;
 
 export const IMAGES: Record<CropName, string> = {
   Sunflower: "sunflower",
@@ -88,6 +97,9 @@ export const IMAGES: Record<CropName, string> = {
   Onion: "onion",
   Turnip: "turnip",
   Artichoke: "artichoke",
+  // Chapter Crop Week event crops (lifecycle art in the images repo)
+  Saltwort: "saltwort",
+  "Crystal Leaf": "crystal_leaf",
 };
 
 export const CROP_LIFECYCLE: Record<
@@ -123,15 +135,90 @@ export const CROP_LIFECYCLE: Record<
     {} as Record<CropName, Lifecycle>,
   ),
   "Volcano Biome": getKeys(IMAGES).reduce(
+    (acc, name) => {
+      const url = volcanoUrl(name);
+
+      return {
+        ...acc,
+        [name]: {
+          seedling: `${url}/${IMAGES[name]}/seedling.png`,
+          halfway: `${url}/${IMAGES[name]}/halfway.png`,
+          almost: `${url}/${IMAGES[name]}/almost.png`,
+          ready: `${url}/${IMAGES[name]}/plant.png`,
+          crop: `${url}/${IMAGES[name]}/crop.png`,
+          seed: `${url}/${IMAGES[name]}/seed.png`,
+        },
+      };
+    },
+    {} as Record<CropName, Lifecycle>,
+  ),
+  "Swamp Biome": getKeys(IMAGES).reduce(
     (acc, name) => ({
       ...acc,
       [name]: {
-        seedling: `${VOLCANO_URL}/${IMAGES[name]}/seedling.png`,
-        halfway: `${VOLCANO_URL}/${IMAGES[name]}/halfway.png`,
-        almost: `${VOLCANO_URL}/${IMAGES[name]}/almost.png`,
-        ready: `${VOLCANO_URL}/${IMAGES[name]}/plant.png`,
-        crop: `${VOLCANO_URL}/${IMAGES[name]}/crop.png`,
-        seed: `${VOLCANO_URL}/${IMAGES[name]}/seed.png`,
+        seedling: `${URL}/${IMAGES[name]}/seedling.png`,
+        halfway: `${URL}/${IMAGES[name]}/halfway.png`,
+        almost: `${URL}/${IMAGES[name]}/almost.png`,
+        ready: `${URL}/${IMAGES[name]}/plant.png`,
+        crop: `${URL}/${IMAGES[name]}/crop.png`,
+        seed: `${URL}/${IMAGES[name]}/seed.png`,
+      },
+    }),
+    {} as Record<CropName, Lifecycle>,
+  ),
+  // Ascension biomes (spooky onward) reuse the swamp art for now.
+  "Spooky Biome": getKeys(IMAGES).reduce(
+    (acc, name) => ({
+      ...acc,
+      [name]: {
+        seedling: `${URL}/${IMAGES[name]}/seedling.png`,
+        halfway: `${URL}/${IMAGES[name]}/halfway.png`,
+        almost: `${URL}/${IMAGES[name]}/almost.png`,
+        ready: `${URL}/${IMAGES[name]}/plant.png`,
+        crop: `${URL}/${IMAGES[name]}/crop.png`,
+        seed: `${URL}/${IMAGES[name]}/seed.png`,
+      },
+    }),
+    {} as Record<CropName, Lifecycle>,
+  ),
+  "Crystal Biome": getKeys(IMAGES).reduce(
+    (acc, name) => ({
+      ...acc,
+      [name]: {
+        seedling: `${URL}/${IMAGES[name]}/seedling.png`,
+        halfway: `${URL}/${IMAGES[name]}/halfway.png`,
+        almost: `${URL}/${IMAGES[name]}/almost.png`,
+        ready: `${URL}/${IMAGES[name]}/plant.png`,
+        crop: `${URL}/${IMAGES[name]}/crop.png`,
+        seed: `${URL}/${IMAGES[name]}/seed.png`,
+      },
+    }),
+    {} as Record<CropName, Lifecycle>,
+  ),
+  "Galaxy Biome": getKeys(IMAGES).reduce(
+    (acc, name) => ({
+      ...acc,
+      [name]: {
+        seedling: `${URL}/${IMAGES[name]}/seedling.png`,
+        halfway: `${URL}/${IMAGES[name]}/halfway.png`,
+        almost: `${URL}/${IMAGES[name]}/almost.png`,
+        ready: `${URL}/${IMAGES[name]}/plant.png`,
+        crop: `${URL}/${IMAGES[name]}/crop.png`,
+        seed: `${URL}/${IMAGES[name]}/seed.png`,
+      },
+    }),
+    {} as Record<CropName, Lifecycle>,
+  ),
+  "Marble Age Biome": getKeys(IMAGES).reduce(
+    (acc, name) => ({
+      ...acc,
+      [name]: {
+        seedling: `${URL}/${IMAGES[name]}/seedling.png`,
+        halfway: `${URL}/${IMAGES[name]}/halfway.png`,
+        almost: `${URL}/${IMAGES[name]}/almost.png`,
+        ready: `${URL}/${IMAGES[name]}/plant.png`,
+        crop: `${URL}/${IMAGES[name]}/crop.png`,
+        seed: `${URL}/${IMAGES[name]}/seed.png`,
       },
     }),
     {} as Record<CropName, Lifecycle>,
@@ -164,6 +251,27 @@ export const SOIL_IMAGES: Record<LandBiomeName, Record<string, string>> = {
   "Volcano Biome": {
     regular: SUNNYSIDE.soil.volcanoSoil2,
     dry: SUNNYSIDE.soil.volcanoSoilDry,
+  },
+  "Swamp Biome": {
+    regular: SUNNYSIDE.soil.soil2,
+    dry: SUNNYSIDE.soil.soil_dry,
+  },
+  // Ascension biomes (spooky onward) reuse the swamp art for now.
+  "Spooky Biome": {
+    regular: SUNNYSIDE.soil.soil2,
+    dry: SUNNYSIDE.soil.soil_dry,
+  },
+  "Crystal Biome": {
+    regular: SUNNYSIDE.soil.soil2,
+    dry: SUNNYSIDE.soil.soil_dry,
+  },
+  "Galaxy Biome": {
+    regular: SUNNYSIDE.soil.soil2,
+    dry: SUNNYSIDE.soil.soil_dry,
+  },
+  "Marble Age Biome": {
+    regular: SUNNYSIDE.soil.soil2,
+    dry: SUNNYSIDE.soil.soil_dry,
   },
   "Desert Biome": {
     regular: SUNNYSIDE.soil.soil2,

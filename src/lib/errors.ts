@@ -11,6 +11,9 @@ export const ERRORS = {
   BLOCKED: "BLOCKED",
   NETWORK_CONGESTED: "NETWORK_CONGESTED",
   WITHDRAW_DUPLICATE: "WITHDRAW_DUPLICATE",
+  // Non-VIP farms can't withdraw an item for 90 days after buying it on the
+  // marketplace. The 400 carries `data.items` (name -> withdrawable-at ms).
+  WITHDRAW_MARKETPLACE_COOLDOWN: "WITHDRAW_MARKETPLACE_COOLDOWN",
   RAFFLE_RESULTS_SERVER_ERROR: "RAFFLE_RESULTS_SERVER_ERROR",
 
   // Blockchain session has changed - they are doing something sneaky refreshing the browser
@@ -24,6 +27,10 @@ export const ERRORS = {
   MULTIPLE_DEVICES_OPEN: "MULTIPLE_DEVICES_OPEN",
   UNAUTHORIZED: "UNAUTHORIZED",
 
+  // We aborted the autosave ourselves after AUTO_SAVE_INTERVAL - used as the
+  // AbortController reason so the failure is self-describing, see autosave.ts
+  AUTOSAVE_TIMEOUT: "AUTOSAVE_TIMEOUT",
+
   // Trade errors
   TRADE_NOT_FOUND: "TRADE_NOT_FOUND",
 
@@ -35,30 +42,23 @@ export const ERRORS = {
   SYNC_DAILY_SFL_MINT_EXCEEDED: "SY-002",
   SESSION_SERVER_ERROR: "SE-001",
   SESSION_CLIENT_ERROR: "SE-003",
-  EXPAND_LAND_SERVER_ERROR: "EX-001",
-  MINT_SERVER_ERROR: "MI-001",
-  MINT_COLLECTIBLE_SERVER_ERROR: "MC-001",
-  WISHING_WELL_SERVER_ERROR: "WW-001",
   SIGN_UP_SERVER_ERROR: "SU-001",
   SIGN_UP_FARM_EXISTS_ERROR: "SU-002",
   SIGN_UP_TOO_MANY_FARMS: "SU-003",
+  SIGN_UP_INVALID_EQUIPMENT: "SU-004",
   LOGIN_SERVER_ERROR: "LO-001",
   RESET_SERVER_ERROR: "RE-001",
   RESET_MARKETPLACE_TRANSFER_IN_PROGRESS: "RE-002",
   RESET_MARKETPLACE_UNCLAIMED_LISTINGS: "RE-003",
   AUCTIONEER_SERVER_ERROR: "AU-001",
   AUCTIONEER_UPCOMING_AUCTION_NOT_FOUND: "AU-002",
-  MIGRATED_SERVER_ERROR: "MG-001",
+  AUCTION_RESULTS_SERVER_ERROR: "AR-001",
   DISCORD_ROLE_SERVER_ERROR: "DI-001",
-  CANCEL_TRADE_SERVER_ERROR: "CT-001",
-  LIST_TRADE_SERVER_ERROR: "LT-001",
-  PURCHASE_TRADE_SERVER_ERROR: "PT-001",
-  ONRAMP_SERVER_ERROR: "ON-001",
   BUMPKINS_METADATA_ERROR: "BM-001",
-  MAGIC_LINK_ERROR: "ML-001",
   MARKET_PRICE_SERVER_ERROR: "MP-001",
   SELL_MARKET_RESOURCE_SERVER_ERROR: "SM-001",
   PORTAL_LOGIN_ERROR: "PL-001",
+  PORTAL_LOAD_ERROR: "PL-002",
   CLAIM_FARM_SERVER_ERROR: "CF-001",
   CLAIM_FARM_TOO_MANY_FARMS: "CF-002",
   EFFECT_SERVER_ERROR: "EF-001",
@@ -76,8 +76,46 @@ export const ERRORS = {
   SEQUENCE_NOT_CONNECTED: "SEQUENCE_NOT_CONNECTED",
 
   WALLET_ALREADY_LINKED: "WALLET_ALREADY_LINKED",
+  SOCIAL_IDENTITY_HAS_FARM: "SOCIAL_IDENTITY_HAS_FARM",
+  LINKED_WALLET_HAS_FARM: "LINKED_WALLET_HAS_FARM",
 
   MISSING_PROVIDER: "MISSING_PROVIDER",
+
+  // Player has disabled Google as a login method on this farm
+  GOOGLE_LOGIN_DISABLED: "GOOGLE_LOGIN_DISABLED",
+
+  // A browser extension or the browser's own page translation moved the DOM
+  // nodes React tracks, blowing up its commit phase. Not a game bug.
+  EXTERNAL_DOM_MUTATION: "EXTERNAL_DOM_MUTATION",
+
+  // Twitter showcase (Community feed) errors
+  TWITTER_NOT_CONNECTED: "TWITTER_NOT_CONNECTED",
+  TWITTER_ALREADY_SHOWCASED: "TWITTER_ALREADY_SHOWCASED",
+  TWITTER_INVALID_URL: "TWITTER_INVALID_URL",
+
+  // Linking / unlinking Discord, Telegram and X. Cooldown and reclaimed
+  // errors carry `availableAt` (epoch ms) - as `data.availableAt` on a
+  // Telegram 400, or `?availableAt=` on the Discord / X OAuth redirect.
+  SOCIAL_ALREADY_LINKED: "SOCIAL_ALREADY_LINKED",
+  SOCIAL_NOT_LINKED: "SOCIAL_NOT_LINKED",
+  SOCIAL_ACCOUNT_COOLDOWN: "SOCIAL_ACCOUNT_COOLDOWN",
+  SOCIAL_ACCOUNT_RECLAIMED: "SOCIAL_ACCOUNT_RECLAIMED",
 };
 
 export type ErrorCode = keyof typeof ERRORS;
+
+/**
+ * Errors a social *link* attempt can come back with. These are outcomes for
+ * a signed-in player (not login refusals), so the OAuth redirect variants
+ * must reach the game machine rather than the auth machine - see
+ * `getUrlErrorCode` in authMachine.ts.
+ */
+export const SOCIAL_LINK_ERRORS: ReadonlySet<string> = new Set([
+  ERRORS.SOCIAL_ALREADY_LINKED,
+  ERRORS.SOCIAL_NOT_LINKED,
+  ERRORS.SOCIAL_ACCOUNT_COOLDOWN,
+  ERRORS.SOCIAL_ACCOUNT_RECLAIMED,
+]);
+
+export const isSocialLinkError = (code?: string): boolean =>
+  !!code && SOCIAL_LINK_ERRORS.has(code);

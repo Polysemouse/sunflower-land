@@ -13,7 +13,7 @@ import {
   getPersonalHighscore,
 } from "../../lib/cropsAndChickensUtils";
 import { goHome } from "features/portal/lib/portalUtil";
-import { PortalMachineState } from "../../lib/cropsAndChickensMachine";
+import type { PortalMachineState } from "../../lib/cropsAndChickensMachine";
 import { SUNNYSIDE } from "assets/sunnyside";
 import { CropsAndChickensAchievementsList } from "./CropsAndChickensAchievementsList";
 import { CropsAndChickensGuide } from "./CropsAndChickensGuide";

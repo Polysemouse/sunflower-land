@@ -1,6 +1,6 @@
 import Decimal from "decimal.js-light";
-import { GameState } from "../../types/game";
-import { CropName, CROPS } from "../../types/crops";
+import type { GameState } from "../../types/game";
+import { type CropName, CROPS } from "../../types/crops";
 import { sellCrop } from "./sellCrop";
 import { INITIAL_BUMPKIN, TEST_FARM } from "../../lib/constants";
 import { PATCH_FRUIT } from "features/game/types/fruits";
@@ -25,6 +25,22 @@ describe("sell", () => {
         },
       }),
     ).toThrow("Not for sale");
+  });
+
+  it("does not sell a crop from a previous Chapter Crop Week", () => {
+    expect(() =>
+      sellCrop({
+        state: {
+          ...GAME_STATE,
+          inventory: { Saltwort: new Decimal(10) },
+        },
+        action: {
+          type: "crop.sold",
+          crop: "Saltwort",
+          amount: 1,
+        },
+      }),
+    ).toThrow("This crop is no longer sellable");
   });
 
   it("does not sell an unusual amount", () => {

@@ -2,6 +2,7 @@ import React, {
   useCallback,
   useContext,
   useEffect,
+  useLayoutEffect,
   useRef,
   useState,
 } from "react";
@@ -10,7 +11,7 @@ import { InnerPanel } from "components/ui/Panel";
 
 import {
   COLLECTIBLES_DIMENSIONS,
-  CollectibleName,
+  type CollectibleName,
 } from "features/game/types/craftables";
 
 import { RESOURCE_DIMENSIONS } from "features/game/types/resources";
@@ -18,49 +19,50 @@ import { RESOURCE_DIMENSIONS } from "features/game/types/resources";
 import { GRID_WIDTH_PX, PIXEL_SCALE } from "features/game/lib/constants";
 import { Context } from "features/game/GameProvider";
 
-import { Coordinates } from "features/game/expansion/components/MapPlacement";
+import type { Coordinates } from "features/game/expansion/components/MapPlacement";
 import Draggable from "react-draggable";
 import { detectCollision } from "features/game/expansion/placeable/lib/collisionDetection";
 import { useSelector } from "@xstate/react";
-import {
+import type {
   LandscapingPlaceable,
   MachineInterpreter,
   MachineState,
 } from "features/game/expansion/placeable/landscapingMachine";
 import {
   BUILDINGS_DIMENSIONS,
-  Dimensions,
+  type Dimensions,
 } from "features/game/types/buildings";
-import { GameEventName, PlacementEvent } from "features/game/events";
-import { RESOURCES, ResourceName } from "features/game/types/resources";
-import { GameState, PlacedItem } from "features/game/types/game";
+import type { GameEventName, PlacementEvent } from "features/game/events";
+import { RESOURCES, type ResourceName } from "features/game/types/resources";
+import type { GameState, PlacedItem } from "features/game/types/game";
 import { removePlaceable } from "./lib/placing";
 import { SUNNYSIDE } from "assets/sunnyside";
 import { ITEM_DETAILS } from "features/game/types/images";
 import { isMobile } from "mobile-device-detect";
 import { ZoomContext } from "components/ZoomProvider";
 import { RemoveKuebikoModal } from "./RemoveKuebikoModal";
-import { PlaceableLocation } from "features/game/types/collectibles";
+import type { PlaceableLocation } from "features/game/types/collectibles";
 import { RemoveHungryCaterpillarModal } from "./RemoveHungryCaterpillarModal";
 import flipped from "assets/icons/flipped.webp";
 import flipIcon from "assets/icons/flip.webp";
+import pixelPerfectIcon from "assets/icons/pixel_perfect.webp";
 import debounce from "lodash.debounce";
 import { LIMITED_ITEMS } from "features/game/events/landExpansion/burnCollectible";
 import { PET_SHRINES } from "features/game/types/pets";
 import {
   EXPIRY_COOLDOWNS,
-  TemporaryCollectibleName,
+  type TemporaryCollectibleName,
 } from "features/game/lib/collectibleBuilt";
-import { MachineState as GameMachineState } from "features/game/lib/gameMachine";
-import { getObjectEntries } from "features/game/expansion/lib/utils";
+import type { MachineState as GameMachineState } from "features/game/lib/gameMachine";
+import { getObjectEntries } from "lib/object";
 import { getPetImage } from "../pets/lib/petShared";
-import { budImageDomain } from "./components/Bud";
 import { useNow } from "lib/utils/hooks/useNow";
 import { isPetCollectible } from "features/game/events/landExpansion/placeCollectible";
+import { getBudImage } from "lib/buds/types";
 
 export const RESOURCE_MOVE_EVENTS: Record<
   ResourceName,
-  GameEventName<PlacementEvent>
+  GameEventName<PlacementEvent> | null
 > = {
   Tree: "tree.moved",
   "Crop Plot": "crop.moved",
@@ -71,7 +73,7 @@ export const RESOURCE_MOVE_EVENTS: Record<
   "Fused Stone Rock": "stone.moved",
   "Reinforced Stone Rock": "stone.moved",
   "Crimstone Rock": "crimstone.moved",
-  Boulder: "tree.moved",
+  Boulder: null,
   Beehive: "beehive.moved",
   "Flower Bed": "flowerBed.moved",
   "Sunstone Rock": "sunstone.moved",
@@ -83,17 +85,23 @@ export const RESOURCE_MOVE_EVENTS: Record<
   "Tempered Iron Rock": "iron.moved",
   "Pure Gold Rock": "gold.moved",
   "Prime Gold Rock": "gold.moved",
+  "Ascension Crystal": "ascensionCrystal.moved",
 };
 
 function getMoveAction(
   name: LandscapingPlaceable,
+  location?: PlaceableLocation,
 ): GameEventName<PlacementEvent> {
   if (name in BUILDINGS_DIMENSIONS) {
     return "building.moved";
   }
 
   if (name in RESOURCES) {
-    return RESOURCE_MOVE_EVENTS[name as ResourceName];
+    const event = RESOURCE_MOVE_EVENTS[name as ResourceName];
+    if (!event) {
+      throw new Error("No matching move event");
+    }
+    return event;
   }
 
   if (name in COLLECTIBLES_DIMENSIONS) {
@@ -102,6 +110,14 @@ function getMoveAction(
 
   if (name === "Bud" || name === "Pet") {
     return "nft.moved";
+  }
+
+  if (name === "FarmHand") {
+    return "farmHand.moved";
+  }
+
+  if (name === "Bumpkin") {
+    return "bumpkin.moved";
   }
 
   throw new Error("No matching move event");
@@ -131,6 +147,7 @@ export const RESOURCES_REMOVE_ACTIONS: Record<
   "Tempered Iron Rock": "iron.removed",
   "Pure Gold Rock": "gold.removed",
   "Prime Gold Rock": "gold.removed",
+  "Ascension Crystal": "ascensionCrystal.removed",
 };
 
 function getOverlappingCollectibles({
@@ -151,7 +168,11 @@ function getOverlappingCollectibles({
       ? state.home.collectibles
       : location === "petHouse"
         ? state.petHouse.pets
-        : state.collectibles;
+        : location === "interior"
+          ? state.interior.ground.collectibles
+          : location === "level_one"
+            ? (state.interior.level_one?.collectibles ?? {})
+            : state.collectibles;
   const results: { id: string; name: LandscapingPlaceable }[] = [];
 
   getObjectEntries(source).forEach(([name, placed]) => {
@@ -176,6 +197,7 @@ export function getRemoveAction(
   name: LandscapingPlaceable | undefined,
   now: number,
   collectible?: PlacedItem,
+  location?: PlaceableLocation,
 ): GameEventName<PlacementEvent> | null {
   if (!name) {
     return null;
@@ -195,7 +217,11 @@ export function getRemoveAction(
     const isShrine = name in PET_SHRINES || name === "Obsidian Shrine";
     if (isShrine && collectible) {
       const cooldown = EXPIRY_COOLDOWNS[name as TemporaryCollectibleName];
-      if (!cooldown || (collectible.createdAt ?? 0) + cooldown > now) {
+      // Mirrors the server's removal gate: a shrine kept alive by a paid
+      // extension is still active, so it stays non-removable until that runs out.
+      const expiresAt =
+        (collectible.createdAt ?? 0) + cooldown + (collectible.extendedMs ?? 0);
+      if (!cooldown || expiresAt > now) {
         return null;
       }
       return "collectible.removed";
@@ -209,6 +235,14 @@ export function getRemoveAction(
 
   if (name === "Bud" || name === "Pet") {
     return "nft.removed";
+  }
+
+  if (name === "FarmHand") {
+    return "farmHand.removed";
+  }
+
+  if (name === "Bumpkin") {
+    return "bumpkin.removedPlacement";
   }
 
   if (name in RESOURCES_REMOVE_ACTIONS) {
@@ -323,7 +357,11 @@ export const getSelectedCollectible =
         ? state.context.state.home.collectibles[name]
         : location === "petHouse" && isPetCollectible(name)
           ? state.context.state.petHouse.pets[name]
-          : state.context.state.collectibles[name]
+          : location === "interior"
+            ? state.context.state.interior.ground.collectibles[name]
+            : location === "level_one"
+              ? state.context.state.interior.level_one?.collectibles[name]
+              : state.context.state.collectibles[name]
     )?.find((collectible) => collectible.id === id);
   };
 
@@ -353,6 +391,23 @@ export const MoveableComponent: React.FC<
   const isActive = useRef(false);
   const [showRemoveConfirmation, setShowRemoveConfirmation] = useState(false);
   const [showOverlapMenu, setShowOverlapMenu] = useState(false);
+
+  // Pixel-perfect adjustment: lets the player nudge a placed item by integer
+  // source pixels. 1 click = 1 unit = 1 source pixel = PIXEL_SCALE screen pixels.
+  // Total offset (savedOX/oY + in-session pixelDelta) is clamped to ±8 source
+  // pixels (half a tile) per axis. pixelDelta tracks the in-session change; on
+  // commit it is dispatched as oX/oY on the saved coordinates. The integer x/y
+  // of the saved coordinates never change, so collision, AOE, and any
+  // tile-keyed comparison keep working unchanged.
+  const PIXEL_PERFECT_STEP = 1;
+  const PIXEL_PERFECT_MAX = 8;
+  const [isPixelPerfectMode, setIsPixelPerfectMode] = useState(false);
+  const [pixelDelta, setPixelDelta] = useState<Coordinates>({ x: 0, y: 0 });
+  // Mirror pixelDelta into a ref so the deselect effect — which intentionally
+  // does not list pixelDelta in its deps — always reads the latest value
+  // when it fires, regardless of effect closure timing.
+  const pixelDeltaRef = useRef<Coordinates>({ x: 0, y: 0 });
+  pixelDeltaRef.current = pixelDelta;
   const [overlapChoices, setOverlapChoices] = useState<
     { id: string; name: LandscapingPlaceable }[]
   >([]);
@@ -410,38 +465,259 @@ export const MoveableComponent: React.FC<
     state.matches({ editing: "placing" }),
   );
 
+  const isRemovalMode = useSelector(
+    landscapingMachine,
+    (state) => !!state.context.removalMode,
+  );
+
+  // Exiting removal mode should clear any in-flight warning modal for this
+  // item, otherwise the dialog could resurface the next time the player
+  // selects this same item in normal mode.
+  useEffect(() => {
+    if (!isRemovalMode) {
+      setShowRemoveConfirmation(false);
+    }
+  }, [isRemovalMode]);
+
   const isSelected = movingItem?.id === id && movingItem?.name === name;
+
+  // The server refused the last landscaping save because of this item - keep
+  // it tinted red until the player edits again (see ArrangementConflictsPanel).
+  const isConflicting = useSelector(
+    gameService,
+    (state) =>
+      !!state.context.arrangementConflicts?.some(
+        (conflict) => conflict.id === id && conflict.name === name,
+      ),
+  );
+
+  // Elevate the nearest MapPlacement ancestor when selected so the disc panel
+  // and pixel-perfect arrows always render above sibling collectibles. Without
+  // this, react-draggable's CSS transform creates a stacking context on each
+  // item, and later-rendered items (higher DOM order) paint on top regardless
+  // of the inner z-50 on nodeRef. Only mutate the DOM when selected; restore
+  // the exact original value on cleanup so depth-sorted z-indexes set by
+  // callers (e.g. furniture, rugs) are never cleared for non-selected items.
+  useEffect(() => {
+    if (!isSelected) return;
+    const mapPlacement = nodeRef.current?.closest<HTMLElement>(
+      "[data-map-placement]",
+    );
+    if (!mapPlacement) return;
+    const originalZIndex = mapPlacement.style.zIndex;
+    mapPlacement.style.zIndex = "10000";
+    return () => {
+      mapPlacement.style.zIndex = originalZIndex;
+    };
+  }, [isSelected]);
 
   const selectedCollectible = useSelector(
     gameService,
     getSelectedCollectible(name, id, location),
   );
 
+  // Pull the saved sub-tile offset for this entity. Read directly from game
+  // state so we don't have to thread oX/oY through every wrapper (Collectible,
+  // Building, Resource, Bud, PetNFT, FarmHand, PlacedBumpkin) and renderer.
+  // x/y stay as integer tiles; oX/oY is the rendering-only offset (integer
+  // source pixels, range -8..8) set by pixel-perfect mode.
+  const { savedOX, savedOY } = useSelector(gameService, (state) => {
+    const ctx = state.context.state;
+
+    // Helper to extract { oX, oY } from a coordinates-like object.
+    const offsetOf = (
+      c: { oX?: number; oY?: number } | undefined,
+    ): { savedOX: number; savedOY: number } => ({
+      savedOX: c?.oX ?? 0,
+      savedOY: c?.oY ?? 0,
+    });
+
+    // Resources have flat oX/oY directly on the entity record.
+    if (name in RESOURCES) {
+      const lookups: Record<
+        string,
+        Record<string, { oX?: number; oY?: number }> | undefined
+      > = {
+        Tree: ctx.trees,
+        "Ancient Tree": ctx.trees,
+        "Sacred Tree": ctx.trees,
+        Boulder: ctx.trees,
+        "Crop Plot": ctx.crops,
+        "Fruit Patch": ctx.fruitPatches,
+        "Stone Rock": ctx.stones,
+        "Fused Stone Rock": ctx.stones,
+        "Reinforced Stone Rock": ctx.stones,
+        "Iron Rock": ctx.iron,
+        "Refined Iron Rock": ctx.iron,
+        "Tempered Iron Rock": ctx.iron,
+        "Gold Rock": ctx.gold,
+        "Pure Gold Rock": ctx.gold,
+        "Prime Gold Rock": ctx.gold,
+        "Crimstone Rock": ctx.crimstones,
+        "Sunstone Rock": ctx.sunstones,
+        "Oil Reserve": ctx.oilReserves,
+        "Lava Pit": ctx.lavaPits,
+        Beehive: ctx.beehives,
+        "Flower Bed": ctx.flowers.flowerBeds,
+      };
+      return offsetOf(lookups[name as string]?.[id]);
+    }
+
+    // Buildings — placed in the world only.
+    if (name in BUILDINGS_DIMENSIONS) {
+      const item = ctx.buildings[name as keyof typeof ctx.buildings]?.find(
+        (b) => b.id === id,
+      );
+      return offsetOf(item?.coordinates);
+    }
+
+    // Collectibles — farm / home / pet house / interior / level_one.
+    if (name in COLLECTIBLES_DIMENSIONS) {
+      const cName = name as CollectibleName;
+      const collectibles =
+        location === "home"
+          ? ctx.home.collectibles[cName]
+          : location === "petHouse" && isPetCollectible(cName)
+            ? (ctx.petHouse.pets as Record<string, PlacedItem[] | undefined>)[
+                cName
+              ]
+            : location === "interior"
+              ? ctx.interior.ground.collectibles[cName]
+              : location === "level_one"
+                ? ctx.interior.level_one?.collectibles[cName]
+                : ctx.collectibles[cName];
+      const item = collectibles?.find((c: PlacedItem) => c.id === id);
+      return offsetOf(item?.coordinates);
+    }
+
+    if (name === "Bud") {
+      return offsetOf(ctx.buds?.[Number(id)]?.coordinates);
+    }
+    if (name === "Pet") {
+      return offsetOf(ctx.pets?.nfts?.[Number(id)]?.coordinates);
+    }
+    if (name === "FarmHand") {
+      return offsetOf(ctx.farmHands?.bumpkins?.[id]?.coordinates);
+    }
+    if (name === "Bumpkin") {
+      return offsetOf(ctx.bumpkin?.coordinates);
+    }
+    return { savedOX: 0, savedOY: 0 };
+  });
+  // Mirror saved offset into a ref for the deselect effect to read on commit
+  // (avoids stale closure issues when effect deps don't include them).
+  const savedOffsetRef = useRef({ savedOX: 0, savedOY: 0 });
+  savedOffsetRef.current = { savedOX, savedOY };
+
   const isShrine = name in PET_SHRINES || name === "Obsidian Shrine";
 
   const now = useNow({ live: isShrine });
 
   const removeAction =
-    !isMobile && getRemoveAction(name, now, selectedCollectible);
+    !isMobile && getRemoveAction(name, now, selectedCollectible, location);
 
   const hasRemovalAction = !!removeAction;
 
-  const hasFlipAction = !isMobile && isCollectible(name);
+  const hasFlipAction =
+    !isMobile &&
+    (isCollectible(name) || name === "FarmHand" || name === "Bumpkin");
 
   const flip = () => {
-    if (isCollectible(name)) {
+    if (isCollectible(name) || name === "FarmHand" || name === "Bumpkin") {
       landscapingMachine.send("FLIP", { id, name, location });
     }
   };
 
+  const isPixelPerfectAllowedFor =
+    (name in COLLECTIBLES_DIMENSIONS &&
+      name !== "Dirt Path" &&
+      name !== "Fence" &&
+      name !== "Stone Fence" &&
+      name !== "Golden Fence" &&
+      name !== "Golden Stone Fence") ||
+    name in BUILDINGS_DIMENSIONS ||
+    name === "Bud" ||
+    name === "Pet" ||
+    name === "FarmHand" ||
+    name === "Bumpkin";
+  const hasPixelPerfectAction = isPixelPerfectAllowedFor;
+
+  const togglePixelPerfectMode = () => {
+    setIsPixelPerfectMode((prev) => !prev);
+  };
+
+  const hasPixelOffset =
+    savedOX !== 0 || savedOY !== 0 || pixelDelta.x !== 0 || pixelDelta.y !== 0;
+
+  const resetPixelOffset = () => {
+    setPixelDelta({ x: 0, y: 0 });
+    if (savedOX !== 0 || savedOY !== 0) {
+      gameService.send(getMoveAction(name), {
+        ...(name in RESOURCE_MOVE_EVENTS
+          ? {}
+          : name === "Bud" || name === "Pet"
+            ? { nft: name }
+            : name === "FarmHand" || name === "Bumpkin"
+              ? {}
+              : { name }),
+        coordinates:
+          name in RESOURCE_MOVE_EVENTS
+            ? { x: coordinatesX, y: coordinatesY }
+            : { x: coordinatesX, y: coordinatesY, oX: 0, oY: 0 },
+        ...(name === "Bumpkin" ? {} : { id }),
+        location: name in RESOURCE_MOVE_EVENTS ? undefined : location,
+      });
+    }
+  };
+
+  // dx, dy are direction multipliers in {-1, 0, 1}. y is inverted on screen
+  // (positive y in game coords = up visually) which matches the rest of this file.
+  // pixelDelta tracks the in-session change relative to the saved oX/oY. The total
+  // committed offset (savedOX + pixelDelta.x, savedOY + pixelDelta.y) must stay
+  // within ±8 source pixels; we clamp pixelDelta accordingly.
+  const movePixel = (dx: -1 | 0 | 1, dy: -1 | 0 | 1) => {
+    setPixelDelta((prev) => {
+      const clamp = (v: number, min: number, max: number) =>
+        Math.min(Math.max(v, min), max);
+
+      const newTotalX = clamp(
+        savedOX + prev.x + dx * PIXEL_PERFECT_STEP,
+        -PIXEL_PERFECT_MAX,
+        PIXEL_PERFECT_MAX,
+      );
+      const newTotalY = clamp(
+        savedOY + prev.y + dy * PIXEL_PERFECT_STEP,
+        -PIXEL_PERFECT_MAX,
+        PIXEL_PERFECT_MAX,
+      );
+
+      return {
+        x: newTotalX - savedOX,
+        y: newTotalY - savedOY,
+      };
+    });
+  };
+
   const isFlipped = useSelector(gameService, (state) => {
+    if (name === "FarmHand") {
+      return !!state.context.state.farmHands.bumpkins[id]?.flipped;
+    }
+
+    if (name === "Bumpkin") {
+      return !!state.context.state.bumpkin?.flipped;
+    }
+
     if (!isCollectible(name)) return false;
     const collectibles =
       location === "home"
         ? state.context.state.home.collectibles[name]
         : location === "petHouse" && isPetCollectible(name)
           ? state.context.state.petHouse.pets[name]
-          : state.context.state.collectibles[name];
+          : location === "interior"
+            ? state.context.state.interior.ground.collectibles[name]
+            : location === "level_one"
+              ? state.context.state.interior.level_one?.collectibles[name]
+              : state.context.state.collectibles[name];
     return (
       collectibles?.find((collectible) => collectible.id === id)?.flipped ??
       false
@@ -465,16 +741,91 @@ export const MoveableComponent: React.FC<
     }
   };
 
+  // Mobile-safe finalise-removal path used by the Kuebiko / Hungry Caterpillar
+  // warning modals. Bypasses `remove()`'s `!isMobile && removeAction` gate so
+  // the modal's Remove button works in bulk removal mode on touch devices.
+  const confirmRemoveFromModal = () => {
+    const action = getRemoveAction(
+      name,
+      Date.now(),
+      selectedCollectible,
+      location,
+    );
+    setShowRemoveConfirmation(false);
+    if (!action) return;
+    landscapingMachine.send("REMOVE", {
+      event: action,
+      id,
+      name,
+      location,
+    });
+  };
+
   useEffect(() => {
+    const delta = pixelDeltaRef.current;
+    const saved = savedOffsetRef.current;
+
+    // Commit the pixel-perfect offset (if any) whenever the item is
+    // deselected, regardless of the isActive flag. pixelDelta is only ever
+    // non-zero if the user actually interacted with the arrows, so it is a
+    // sufficient proof of intent on its own. (The isActive guard remains for
+    // the legacy reset path below, which clears overlay state from drag/flip.)
+    if (!isSelected && (delta.x !== 0 || delta.y !== 0)) {
+      const newOX = saved.savedOX + delta.x;
+      const newOY = saved.savedOY + delta.y;
+
+      gameService.send(getMoveAction(name), {
+        ...(name in RESOURCE_MOVE_EVENTS
+          ? {}
+          : name === "Bud" || name === "Pet"
+            ? { nft: name }
+            : name === "FarmHand" || name === "Bumpkin"
+              ? {}
+              : { name }),
+        coordinates:
+          name in RESOURCE_MOVE_EVENTS
+            ? { x: coordinatesX, y: coordinatesY }
+            : { x: coordinatesX, y: coordinatesY, oX: newOX, oY: newOY },
+        ...(name === "Bumpkin" ? {} : { id }),
+        location: name in RESOURCE_MOVE_EVENTS ? undefined : location,
+      });
+      // NOTE: do NOT reset pixelDelta here. The transform on the rendered
+      // entity is what's keeping it at the position the player chose. We
+      // wait for the saved oX/oY to update (state machine processes the
+      // move event), at which point the useLayoutEffect below resets
+      // pixelDelta in the same paint frame — no flicker, save sticks.
+    }
+
     if (isActive.current && !isSelected) {
-      // Reset
+      // Reset overlay state (used by drag/flip/remove discs).
       setCounts((prev) => prev + 1);
       setIsColliding(false);
       setShowRemoveConfirmation(false);
       setPosition({ x: 0, y: 0 });
       isActive.current = false;
+      setIsPixelPerfectMode(false);
     }
-  }, [isSelected, movingItem]);
+  }, [
+    isSelected,
+    movingItem,
+    coordinatesX,
+    coordinatesY,
+    gameService,
+    id,
+    location,
+    name,
+  ]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // When the saved coordinates (or their oX/oY offset) update — i.e. after a
+  // successful move/pixel-perfect commit — zero out the in-session pixelDelta
+  // so the live transform doesn't double up on the now-already-offset saved
+  // coords. useLayoutEffect runs synchronously before paint so the user sees
+  // the entity stay put rather than briefly jump.
+  useLayoutEffect(() => {
+    setPixelDelta((prev) =>
+      prev.x === 0 && prev.y === 0 ? prev : { x: 0, y: 0 },
+    );
+  }, [coordinatesX, coordinatesY, savedOX, savedOY]);
 
   const DIMENSIONS_MAP: Record<LandscapingPlaceable, Dimensions> = {
     ...BUILDINGS_DIMENSIONS,
@@ -482,6 +833,8 @@ export const MoveableComponent: React.FC<
     ...RESOURCE_DIMENSIONS,
     Bud: { width: 1, height: 1 },
     Pet: { width: 2, height: 2 },
+    FarmHand: { width: 1, height: 1 },
+    Bumpkin: { width: 1, height: 1 },
   };
 
   const dimensions = DIMENSIONS_MAP[name];
@@ -538,15 +891,28 @@ export const MoveableComponent: React.FC<
 
         if (!collisionDetected) {
           setPosition({ x: 0, y: 0 });
-          gameService.send(getMoveAction(name), {
+          gameService.send(getMoveAction(name, location), {
             // Don't send name for resource events and Bud events
             ...(name in RESOURCE_MOVE_EVENTS
               ? {}
               : name === "Bud" || name === "Pet"
                 ? { nft: name }
-                : { name }),
-            coordinates: { x, y },
-            id,
+                : name === "FarmHand" || name === "Bumpkin"
+                  ? {}
+                  : { name }),
+            coordinates:
+              name in RESOURCE_MOVE_EVENTS
+                ? { x, y }
+                : {
+                    x,
+                    y,
+                    oX:
+                      savedOffsetRef.current.savedOX + pixelDeltaRef.current.x,
+                    oY:
+                      savedOffsetRef.current.savedOY + pixelDeltaRef.current.y,
+                  },
+            // Don't pass id for Bumpkin
+            ...(name === "Bumpkin" ? {} : { id }),
             // Resources do not require location to be passed
             location: name in RESOURCE_MOVE_EVENTS ? undefined : location,
           });
@@ -574,7 +940,6 @@ export const MoveableComponent: React.FC<
     function handleClickOutside(event: MouseEvent) {
       if (
         isSelected &&
-        (event as any).target.id === "genesisBlock" &&
         nodeRef.current &&
         !(nodeRef.current as any).contains(event.target)
       ) {
@@ -584,12 +949,61 @@ export const MoveableComponent: React.FC<
       }
     }
     document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
   }, [nodeRef, isSelected, landscapingMachine, onStop]);
+
+  /**
+   * While pixel-perfect mode is active, ANY click outside the component fully
+   * deselects the item — not just clicks on the map's genesisBlock. This commits
+   * the pending pixel offset (via the deselect effect above) and exits landscaping
+   * focus so the player can resume editing other items normally.
+   */
+  useEffect(() => {
+    if (!isPixelPerfectMode) return;
+
+    function handlePixelPerfectClickOutside(event: MouseEvent) {
+      if (
+        nodeRef.current &&
+        !(nodeRef.current as Node).contains(event.target as Node)
+      ) {
+        landscapingMachine.send("BLUR");
+        setPosition({ x: 0, y: 0 });
+        onStop.flush();
+      }
+    }
+
+    document.addEventListener("mousedown", handlePixelPerfectClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handlePixelPerfectClickOutside);
+    };
+  }, [isPixelPerfectMode, landscapingMachine, onStop, name, id]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       // Immediately return if in placing mode
       if (isPlacing) {
+        return;
+      }
+
+      // While pixel-perfect mode is active, the four direction keys nudge by
+      // one source pixel (1/16 tile) instead of jumping by a full tile. The
+      // commit happens on deselect, same as clicking the on-screen arrows.
+      if (isPixelPerfectMode) {
+        if (e.key === "ArrowUp" || e.key === "w") {
+          movePixel(0, 1);
+          e.preventDefault();
+        } else if (e.key === "ArrowDown" || e.key === "s") {
+          movePixel(0, -1);
+          e.preventDefault();
+        } else if (e.key === "ArrowLeft" || e.key === "a") {
+          movePixel(-1, 0);
+          e.preventDefault();
+        } else if (e.key === "ArrowRight" || e.key === "d") {
+          movePixel(1, 0);
+          e.preventDefault();
+        }
         return;
       }
 
@@ -725,6 +1139,7 @@ export const MoveableComponent: React.FC<
     gameService,
     id,
     isPlacing,
+    isPixelPerfectMode,
     isSelected,
     location,
     name,
@@ -753,10 +1168,48 @@ export const MoveableComponent: React.FC<
       allowAnyClick
       // Mobile must click first, before dragging
       // Also disable if there are overlaps and this item isn't selected
-      disabled={(isMobile && !isSelected) || shouldDisableDrag}
+      // Disable while pixel-perfect mode is active so on-screen arrows aren't fighting the drag
+      disabled={
+        (isMobile && !isSelected) ||
+        shouldDisableDrag ||
+        isPixelPerfectMode ||
+        isRemovalMode
+      }
       onMouseDown={() => {
         // Mobile must click first, before dragging
         if (closeCurrentOverlapMenu) closeCurrentOverlapMenu();
+
+        // Bulk-removal mode: clicking a placed item dispatches its remove
+        // event directly and skips selection. The HUD stays in removal mode
+        // afterwards so the player can keep tapping to clear items.
+        if (isRemovalMode) {
+          const action = getRemoveAction(
+            name,
+            Date.now(),
+            selectedCollectible,
+            location,
+          );
+          // Restricted items (Manor, Town Center, House, Mansion, locked
+          // limited items in cooldown) — getRemoveAction returns null and the
+          // click is a no-op.
+          if (!action) {
+            return;
+          }
+          // Kuebiko and Hungry Caterpillar carry a warning about the gameplay
+          // side-effect of removing them — surface the same modal here so the
+          // bulk flow doesn't silently lose them.
+          if (name === "Kuebiko" || name === "Hungry Caterpillar") {
+            setShowRemoveConfirmation(true);
+            return;
+          }
+          landscapingMachine.send("REMOVE", {
+            event: action,
+            id,
+            name,
+            location,
+          });
+          return;
+        }
 
         if (isMobile && !isActive.current) {
           isActive.current = true;
@@ -877,7 +1330,6 @@ export const MoveableComponent: React.FC<
         className={classNames("h-full relative", {
           "cursor-grabbing": isDragging,
           "cursor-pointer": !isDragging,
-          "z-10": isSelected,
           "z-[1000000]": showOverlapMenu,
         })}
       >
@@ -893,12 +1345,28 @@ export const MoveableComponent: React.FC<
           >
             <InnerPanel>
               {overlapChoices.map((choice) => {
-                const image =
-                  choice.name === "Pet"
-                    ? getPetImage("happy", Number(choice.id))
-                    : choice.name === "Bud"
-                      ? `https://${budImageDomain}.sunflower-land.com/images/${choice.id}.webp`
-                      : ITEM_DETAILS[choice.name].image;
+                let image: string;
+
+                switch (choice.name) {
+                  case "Pet":
+                    image = getPetImage("happy", Number(choice.id));
+                    break;
+                  case "Bud":
+                    image = getBudImage(Number(choice.id));
+                    break;
+                  case "FarmHand":
+                    image = SUNNYSIDE.achievement.farmHand;
+                    break;
+                  case "Bumpkin":
+                    image = SUNNYSIDE.npcs.bumpkin;
+                    break;
+                  default:
+                    if (choice.name in ITEM_DETAILS) {
+                      image = ITEM_DETAILS[choice.name].image;
+                    } else {
+                      image = SUNNYSIDE.icons.expression_confused;
+                    }
+                }
 
                 return (
                   <div
@@ -928,12 +1396,16 @@ export const MoveableComponent: React.FC<
             </InnerPanel>
           </div>
         )}
-        {isSelected && (
+        {isSelected && !isPixelPerfectMode && (
           <div
             className="absolute z-20 flex"
             style={{
-              right: `${PIXEL_SCALE * -(hasRemovalAction ? 34 : 12)}px`,
-              top: `${PIXEL_SCALE * -12}px`,
+              // Anchor the action row's bottom-left to the item's top-right
+              // corner so the buttons start at the item's right edge and
+              // flow further right, never overlapping the item's footprint.
+              left: "100%",
+              bottom: "100%",
+              transform: `translate(0, ${PIXEL_SCALE * -2}px)`,
             }}
           >
             <div
@@ -993,21 +1465,31 @@ export const MoveableComponent: React.FC<
                 )}
               </div>
             )}
-            {showRemoveConfirmation && name === "Kuebiko" && (
-              <RemoveKuebikoModal
-                onClose={() => setShowRemoveConfirmation(false)}
-                onRemove={() => remove()}
-              />
-            )}
-            {showRemoveConfirmation && name === "Hungry Caterpillar" && (
-              <RemoveHungryCaterpillarModal
-                onClose={() => setShowRemoveConfirmation(false)}
-                onRemove={() => remove()}
-              />
+            {hasPixelPerfectAction && (
+              <div
+                className="relative mr-2 cursor-pointer"
+                style={{ width: `${PIXEL_SCALE * 18}px` }}
+                onPointerDown={(e) => {
+                  e.stopPropagation();
+                  e.preventDefault();
+                  togglePixelPerfectMode();
+                }}
+              >
+                <img className="w-full" src={SUNNYSIDE.icons.disc} />
+                <img
+                  className="absolute"
+                  src={pixelPerfectIcon}
+                  style={{
+                    width: `${PIXEL_SCALE * 12}px`,
+                    right: `${PIXEL_SCALE * 3}px`,
+                    top: `${PIXEL_SCALE * 3}px`,
+                  }}
+                />
+              </div>
             )}
             {hasRemovalAction && (
               <div
-                className={"group relative cursor-pointer"}
+                className="group relative cursor-pointer"
                 style={{ width: `${PIXEL_SCALE * 18}px` }}
                 onClick={(e) => {
                   remove();
@@ -1044,13 +1526,184 @@ export const MoveableComponent: React.FC<
             )}
           </div>
         )}
+        {/*
+          Warning modals for items with gameplay side-effects when removed.
+          Rendered outside the `isSelected` action-row above so they also
+          appear in bulk-removal mode, where there is no selection.
+        */}
+        {showRemoveConfirmation && name === "Kuebiko" && (
+          <RemoveKuebikoModal
+            onClose={() => setShowRemoveConfirmation(false)}
+            onRemove={isRemovalMode ? confirmRemoveFromModal : remove}
+          />
+        )}
+        {showRemoveConfirmation && name === "Hungry Caterpillar" && (
+          <RemoveHungryCaterpillarModal
+            onClose={() => setShowRemoveConfirmation(false)}
+            onRemove={isRemovalMode ? confirmRemoveFromModal : remove}
+          />
+        )}
+        {/*
+          Selection tint anchored to the integer collision tile. The entity can
+          sit at a sub-tile offset (savedOX/savedOY plus in-session pixelDelta),
+          but collision uses just the integer x/y, so we draw the green/red box
+          at the tile by translating back by the saved offset. The offset is
+          stored in source pixels, so the screen translation is multiplied by
+          PIXEL_SCALE.
+        */}
+        {(isSelected || isConflicting) &&
+          (() => {
+            const tintTransform =
+              savedOX !== 0 || savedOY !== 0
+                ? `translate(${-savedOX * PIXEL_SCALE}px, ${
+                    savedOY * PIXEL_SCALE
+                  }px)`
+                : undefined;
+            return (
+              <div
+                className={classNames(
+                  "absolute inset-0 pointer-events-none z-0",
+                  {
+                    "bg-red-500 bg-opacity-75": isColliding || isConflicting,
+                    "bg-green-300 bg-opacity-50":
+                      !isColliding && !isConflicting,
+                  },
+                )}
+                style={{ transform: tintTransform }}
+              />
+            );
+          })()}
         <div
-          className={classNames("h-full pointer-events-none", {
-            "bg-red-500 bg-opacity-75": isColliding,
-            "bg-green-300 bg-opacity-50": !isColliding && isSelected,
-          })}
+          className="relative h-full"
+          style={{
+            transform:
+              pixelDelta.x !== 0 || pixelDelta.y !== 0
+                ? `translate(${pixelDelta.x * PIXEL_SCALE}px, ${
+                    -pixelDelta.y * PIXEL_SCALE
+                  }px)`
+                : undefined,
+            // A CSS transform creates a new stacking context. Without an
+            // explicit z-index the context sits at z=auto (below the z-20
+            // control disc panel), which hides the z-30 arrows behind it.
+            // Setting zIndex:30 keeps the arrows above the disc panel whenever
+            // pixel-perfect mode is active.
+            zIndex: isPixelPerfectMode ? 30 : undefined,
+          }}
         >
-          {children}
+          {isSelected &&
+            isPixelPerfectMode &&
+            (() => {
+              // Total offset from the integer tile = saved oX/oY plus the
+              // in-session pixelDelta. Each arrow is hidden once that total
+              // reaches ±0.5 in its axis (8 source pixels of nudge).
+              const totalOffsetX = savedOX + pixelDelta.x;
+              const totalOffsetY = savedOY + pixelDelta.y;
+              const canMoveRight = totalOffsetX < PIXEL_PERFECT_MAX;
+              const canMoveLeft = totalOffsetX > -PIXEL_PERFECT_MAX;
+              const canMoveUp = totalOffsetY < PIXEL_PERFECT_MAX;
+              const canMoveDown = totalOffsetY > -PIXEL_PERFECT_MAX;
+
+              return (
+                <>
+                  {/* Up arrow — game y is inverted, so visually up = +y */}
+                  {canMoveUp && (
+                    <img
+                      src={SUNNYSIDE.icons.arrow_up}
+                      className="absolute cursor-pointer z-30"
+                      onPointerDown={(e) => {
+                        e.stopPropagation();
+                        e.preventDefault();
+                        movePixel(0, 1);
+                      }}
+                      style={{
+                        width: `${PIXEL_SCALE * 10}px`,
+                        top: `${-PIXEL_SCALE * 14}px`,
+                        left: `calc(50% - ${PIXEL_SCALE * 5}px)`,
+                      }}
+                    />
+                  )}
+                  {/* Down arrow */}
+                  {canMoveDown && (
+                    <img
+                      src={SUNNYSIDE.icons.arrow_down}
+                      className="absolute cursor-pointer z-30"
+                      onPointerDown={(e) => {
+                        e.stopPropagation();
+                        e.preventDefault();
+                        movePixel(0, -1);
+                      }}
+                      style={{
+                        width: `${PIXEL_SCALE * 10}px`,
+                        bottom: `${-PIXEL_SCALE * 14}px`,
+                        left: `calc(50% - ${PIXEL_SCALE * 5}px)`,
+                      }}
+                    />
+                  )}
+                  {/* Left arrow */}
+                  {canMoveLeft && (
+                    <img
+                      src={SUNNYSIDE.icons.arrow_left}
+                      className="absolute cursor-pointer z-30"
+                      onPointerDown={(e) => {
+                        e.stopPropagation();
+                        e.preventDefault();
+                        movePixel(-1, 0);
+                      }}
+                      style={{
+                        width: `${PIXEL_SCALE * 10}px`,
+                        left: `${-PIXEL_SCALE * 14}px`,
+                        top: `calc(50% - ${PIXEL_SCALE * 5}px)`,
+                      }}
+                    />
+                  )}
+                  {/* Right arrow */}
+                  {canMoveRight && (
+                    <img
+                      src={SUNNYSIDE.icons.arrow_right}
+                      className="absolute cursor-pointer z-30"
+                      onPointerDown={(e) => {
+                        e.stopPropagation();
+                        e.preventDefault();
+                        movePixel(1, 0);
+                      }}
+                      style={{
+                        width: `${PIXEL_SCALE * 10}px`,
+                        right: `${-PIXEL_SCALE * 14}px`,
+                        top: `calc(50% - ${PIXEL_SCALE * 5}px)`,
+                      }}
+                    />
+                  )}
+                  {/* Reset pixel offset — top-right corner, only visible when there is an offset */}
+                  {hasPixelOffset && (
+                    <div
+                      className="absolute z-30 cursor-pointer"
+                      style={{
+                        width: `${PIXEL_SCALE * 14}px`,
+                        top: `${-PIXEL_SCALE * 18}px`,
+                        right: `${-PIXEL_SCALE * 18}px`,
+                      }}
+                      onPointerDown={(e) => {
+                        e.stopPropagation();
+                        e.preventDefault();
+                        resetPixelOffset();
+                      }}
+                    >
+                      <img className="w-full" src={SUNNYSIDE.icons.disc} />
+                      <img
+                        className="absolute"
+                        src={SUNNYSIDE.icons.cancel}
+                        style={{
+                          width: `${PIXEL_SCALE * 8}px`,
+                          top: `${PIXEL_SCALE * 3}px`,
+                          left: `${PIXEL_SCALE * 3}px`,
+                        }}
+                      />
+                    </div>
+                  )}
+                </>
+              );
+            })()}
+          <div className="h-full pointer-events-none">{children}</div>
         </div>
       </div>
     </Draggable>

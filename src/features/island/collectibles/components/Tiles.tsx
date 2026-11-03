@@ -1,7 +1,7 @@
 import { PIXEL_SCALE } from "features/game/lib/constants";
 import React from "react";
 
-import { GameGrid } from "features/game/expansion/placeable/lib/makeGrid";
+import type { GameGrid } from "features/game/expansion/placeable/lib/makeGrid";
 import blackTile from "assets/decorations/tiles/black_tile.webp";
 import blueTile from "assets/decorations/tiles/blue_tile.webp";
 import greenTile from "assets/decorations/tiles/green_tile.webp";
@@ -15,7 +15,7 @@ import greenTileConnected from "assets/decorations/tiles/connectedTile/green_til
 import purpleTileConnected from "assets/decorations/tiles/connectedTile/purple_tile.webp";
 import redTileConnected from "assets/decorations/tiles/connectedTile/red_tile.webp";
 import yellowTileConnected from "assets/decorations/tiles/connectedTile/yellow_tile.webp";
-import { TileName } from "features/game/types/decorations";
+import type { TileName } from "features/game/types/decorations";
 import { SFTDetailPopover } from "components/ui/SFTDetailPopover";
 
 const TILES: Record<TileName, string> = {
@@ -35,6 +35,9 @@ const CONNECTED_TILES: Record<TileName, string> = {
   "Red Tile": redTileConnected,
   "Yellow Tile": yellowTileConnected,
 };
+
+/** Every connecting colour-tile name, derived from {@link TILES}. */
+export const TILE_NAMES: Set<string> = new Set(Object.keys(TILES));
 type Edges = {
   connected: boolean;
 };
@@ -46,16 +49,26 @@ interface Props {
   grid: GameGrid;
 }
 
-export const Tiles: React.FC<Props> = ({ name, x, y, grid }) => {
+/** The tile sprite for (x,y) — its connected variant when a tile sits below. */
+export function getTileImage(
+  name: TileName,
+  grid: GameGrid,
+  x: number,
+  y: number,
+): string {
   const edges: Edges = {
     connected: Object.keys(TILES).includes(grid[x]?.[y - 1]),
   };
 
-  let image = TILES[name];
-
   if (edges.connected && CONNECTED_TILES[name]) {
-    image = CONNECTED_TILES[name];
+    return CONNECTED_TILES[name];
   }
+  return TILES[name];
+}
+
+export const Tiles: React.FC<Props> = ({ name, x, y, grid }) => {
+  const image = getTileImage(name, grid, x, y);
+
   return (
     <SFTDetailPopover name={name}>
       <img

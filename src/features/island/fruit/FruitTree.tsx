@@ -1,7 +1,6 @@
-import React, { useContext } from "react";
+import React, { useContext, useMemo } from "react";
 
-import { PlantedFruit } from "features/game/types/game";
-import { useNow } from "lib/utils/hooks/useNow";
+import type { FruitFertiliser, PlantedFruit } from "features/game/types/game";
 import { PATCH_FRUIT_SEEDS, PATCH_FRUIT } from "features/game/types/fruits";
 import { FruitSoil } from "./FruitSoil";
 
@@ -10,25 +9,46 @@ import { FruitSeedling } from "./FruitSeedling";
 import { DeadTree } from "./DeadTree";
 import { ReplenishingTree } from "./ReplenishingTree";
 import { ReplenishedTree } from "./ReplenishedTree";
-import { MachineState } from "features/game/lib/gameMachine";
+import type { MachineState } from "features/game/lib/gameMachine";
 import { useSelector } from "@xstate/react";
 import { Context } from "features/game/GameProvider";
+import {
+  areBoostWindowsEqual,
+  getFruitBoostWindows,
+  getTurbofruitMixWindows,
+  workAccruedAt,
+  type BoostWindow,
+} from "features/game/lib/boostWindows";
+import { useNodeTimer } from "features/game/lib/useNodeTimer";
 
 type Stage = "Empty" | "Seedling" | "Replenishing" | "Replenished" | "Dead";
 
 type FruitTreeStatus = {
   stage: Stage;
   timeLeft?: number;
+  /**
+   * Cycle length (s) for the active phase — the progress-bar denominator. Base
+   * grow time legacy; the permanent-boost-only `baseDurationMs` when windowed.
+   */
+  totalSeconds?: number;
 };
 
 const getFruitTreeStatus = (
   plantedFruit: PlantedFruit | undefined,
   now: number,
+  windows: BoostWindow[],
 ): FruitTreeStatus => {
   // No fruits planted
   if (!plantedFruit) return { stage: "Empty" };
 
-  const { name, harvestsLeft, harvestedAt, plantedAt } = plantedFruit;
+  const {
+    name,
+    harvestsLeft,
+    harvestedAt,
+    plantedAt,
+    baseDurationMs,
+    boostedTime,
+  } = plantedFruit;
 
   // Dead tree/bush
   if (!harvestsLeft) return { stage: "Dead" };
@@ -36,24 +56,37 @@ const getFruitTreeStatus = (
   const { seed } = PATCH_FRUIT[name];
   const { plantSeconds } = PATCH_FRUIT_SEEDS[seed];
 
-  const growMsTotal = plantSeconds * 1000;
+  // Whichever phase is active governs: a harvested tree is replenishing, an
+  // un-harvested one is still growing from the original planting time.
+  const isReplenishing = !!harvestedAt;
+  const startedAt = harvestedAt || plantedAt;
 
-  // If the tree has been harvested and still has harvests left, it may be replenishing.
-  if (harvestedAt) {
-    const replenishMsLeft = harvestedAt + growMsTotal - now;
-    const replenishSecondsLeft = replenishMsLeft / 1000;
+  let timeLeft: number;
+  let totalSeconds: number;
 
-    if (replenishSecondsLeft > 0) {
-      return { stage: "Replenishing", timeLeft: replenishSecondsLeft };
-    }
+  if (baseDurationMs !== undefined) {
+    // Speed-rate model: remaining time is remaining *work* (in base duration),
+    // so it ticks down faster while a boost window is active.
+    const workDoneMs = workAccruedAt({ startedAt, at: now, windows });
+    timeLeft = Math.max((baseDurationMs - workDoneMs) / 1000, 0);
+    // Fold pre-lift banked work into the denominator so the progress bar retains
+    // its fill across a landscaping lift instead of snapping backward.
+    totalSeconds = (baseDurationMs + (boostedTime ?? 0)) / 1000;
+  } else {
+    // Legacy: `startedAt` is back-dated by the boost and `boostedTime` holds
+    // that DISCOUNT, so the bar's total is the real (boosted) cycle length.
+    // Dividing by the full `plantSeconds` instead would open the bar near-full
+    // on a heavily boosted patch and fill only the last sliver.
+    timeLeft = Math.max((startedAt + plantSeconds * 1000 - now) / 1000, 0);
+    totalSeconds = Math.max(plantSeconds - (boostedTime ?? 0) / 1000, 0);
   }
 
-  // Otherwise, it may still be growing from the original planting time.
-  const growMsLeft = plantedAt + growMsTotal - now;
-  const growSecondsLeft = growMsLeft / 1000;
-
-  if (growSecondsLeft > 0) {
-    return { stage: "Seedling", timeLeft: growSecondsLeft };
+  if (timeLeft > 0) {
+    return {
+      stage: isReplenishing ? "Replenishing" : "Seedling",
+      timeLeft,
+      totalSeconds,
+    };
   }
 
   // Fully grown and ready to harvest.
@@ -62,6 +95,7 @@ const getFruitTreeStatus = (
 
 interface Props {
   plantedFruit?: PlantedFruit;
+  fertiliser?: FruitFertiliser;
   plantTree: () => void;
   harvestFruit: () => void;
   removeTree: () => void;
@@ -74,6 +108,7 @@ const _island = (state: MachineState) => state.context.state.island;
 
 export const FruitTree: React.FC<Props> = ({
   plantedFruit,
+  fertiliser,
   plantTree,
   harvestFruit,
   removeTree,
@@ -83,8 +118,39 @@ export const FruitTree: React.FC<Props> = ({
 }) => {
   const { gameService } = useContext(Context);
   const island = useSelector(gameService, _island);
-  const now = useNow({ live: !!plantedFruit });
-  const treeStatus = getFruitTreeStatus(plantedFruit, now);
+  // Live windowed fruit-growth speed boosts (Orchard Hourglass, Toucan Shrine,
+  // totems). Only re-renders when the windows actually change, so the countdown
+  // reacts to boosters placed/expired mid-grow.
+  const globalBoostWindows = useSelector(
+    gameService,
+    (state) => getFruitBoostWindows(state.context.state),
+    areBoostWindowsEqual,
+  );
+  // Union the patch's own Turbofruit Mix fertiliser window (per-patch, keyed off
+  // fertilisedAt) with the game-global boost windows.
+  const fruitBoostWindows = useMemo(
+    () => [...globalBoostWindows, ...getTurbofruitMixWindows(fertiliser)],
+    [globalBoostWindows, fertiliser],
+  );
+
+  const baseDurationMs = plantedFruit?.baseDurationMs;
+  const isGrowing = !!plantedFruit && !!plantedFruit.harvestsLeft;
+  const startedAt =
+    plantedFruit && isGrowing
+      ? plantedFruit.harvestedAt || plantedFruit.plantedAt
+      : 0;
+  const plantSeconds =
+    plantedFruit && isGrowing
+      ? PATCH_FRUIT_SEEDS[PATCH_FRUIT[plantedFruit.name].seed].plantSeconds
+      : 0;
+  const { now, countdownSeconds } = useNodeTimer({
+    startedAt,
+    baseDurationMs,
+    windows: fruitBoostWindows,
+    legacyReadyAt: startedAt + plantSeconds * 1000,
+    live: isGrowing,
+  });
+  const treeStatus = getFruitTreeStatus(plantedFruit, now, fruitBoostWindows);
 
   // Empty plot
   if (!plantedFruit) {
@@ -113,7 +179,9 @@ export const FruitTree: React.FC<Props> = ({
         <FruitSeedling
           island={island}
           patchFruitName={name}
-          timeLeft={treeStatus.timeLeft}
+          timeLeft={countdownSeconds}
+          workLeftSeconds={treeStatus.timeLeft}
+          totalSeconds={treeStatus.totalSeconds}
         />
       </div>
     );
@@ -126,7 +194,9 @@ export const FruitTree: React.FC<Props> = ({
         <ReplenishingTree
           island={island}
           patchFruitName={name}
-          timeLeft={treeStatus.timeLeft}
+          timeLeft={countdownSeconds}
+          workLeftSeconds={treeStatus.timeLeft}
+          totalSeconds={treeStatus.totalSeconds}
           playShakeAnimation={playShakingAnimation}
         />
       </div>

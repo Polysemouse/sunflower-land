@@ -1,16 +1,20 @@
-import { GameState, Tree } from "features/game/types/game";
+import type { GameState, Tree } from "features/game/types/game";
 import {
   ADVANCED_RESOURCES,
   RESOURCE_MULTIPLIER,
-  TreeName,
-  UpgradedResourceName,
+  type TreeName,
+  type UpgradedResourceName,
 } from "features/game/types/resources";
 import { produce } from "immer";
 import {
   findExistingUnplacedNode,
   getAvailableNodes,
 } from "features/game/lib/resourceNodes";
-import { Coordinates } from "features/game/expansion/components/MapPlacement";
+import {
+  getTreeBoostWindows,
+  pauseWindowedTimer,
+} from "features/game/lib/boostWindows";
+import type { Coordinates } from "features/game/expansion/components/MapPlacement";
 
 export type PlaceTreeAction = {
   type: "tree.placed";
@@ -53,9 +57,14 @@ export function placeTree({
       };
 
       if (updatedTree.wood && updatedTree.removedAt) {
-        const existingProgress =
-          updatedTree.removedAt - updatedTree.wood.choppedAt;
-        updatedTree.wood.choppedAt = createdAt - existingProgress;
+        // Pause recovery across the lift (windowed banking or legacy back-date).
+        updatedTree.wood.choppedAt = pauseWindowedTimer({
+          timer: updatedTree.wood,
+          startedAt: updatedTree.wood.choppedAt,
+          removedAt: updatedTree.removedAt,
+          createdAt,
+          windows: getTreeBoostWindows(game),
+        });
       }
       delete updatedTree.removedAt;
 

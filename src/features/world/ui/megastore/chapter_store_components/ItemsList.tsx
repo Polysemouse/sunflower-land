@@ -10,36 +10,38 @@ import {
   getCurrentChapter,
   getChapterArtefact,
   getChapterTicket,
-  CHAPTERS,
 } from "features/game/types/chapters";
 
 import token from "assets/icons/flower_token.webp";
+import coinsIcon from "assets/icons/coins.webp";
 import lightning from "assets/icons/lightning.png";
 import lock from "assets/icons/lock.png";
 
 import { ITEM_DETAILS } from "features/game/types/images";
-import { InventoryItemName, Keys } from "features/game/types/game";
+import type { InventoryItemName, Keys } from "features/game/types/game";
 import { Context } from "features/game/GameProvider";
 import { useActor } from "@xstate/react";
-import { BumpkinItem } from "features/game/types/bumpkin";
+import type { BumpkinItem } from "features/game/types/bumpkin";
 import Decimal from "decimal.js-light";
 import { useAppTranslation } from "lib/i18n/useAppTranslations";
 import {
   MEGASTORE,
-  ChapterStoreCollectible,
-  ChapterStoreItem,
-  ChapterStoreTier,
-  ChapterStoreWearable,
-  ChapterTierItemName,
+  type ChapterStoreCollectible,
+  type ChapterStoreItem,
+  type ChapterStoreTier,
+  type ChapterStoreWearable,
+  type ChapterTierItemName,
 } from "features/game/types/megastore";
 import { SUNNYSIDE } from "assets/sunnyside";
 import { ResizableBar } from "components/ui/ProgressBar";
 import { SFLDiscount } from "features/game/lib/SFLDiscount";
 import {
   FLOWER_BOXES,
-  FlowerBox,
+  type FlowerBox,
   getChapterItemsCrafted,
+  getChapterPurchaseCount,
   getStore,
+  getStoreItemOwnedCount,
   isBoxBoughtWithinChapter,
   isKeyBoughtWithinChapter,
   isPetEggBoughtWithinChapter,
@@ -75,38 +77,36 @@ export const ItemsList: React.FC<Props> = ({
   ] = useActor(gameService);
 
   const getBalanceOfItem = (item: ChapterStoreItem): number => {
-    // Handling all types or specific ones if provided
-    if (type === "wearables" || (!type && "wearable" in item)) {
-      return (
-        state.farmActivity[
-          `${(item as ChapterStoreWearable).wearable as ChapterTierItemName} Bought`
-        ] ?? 0
-      );
-    } else if (type === "collectibles" || (!type && "collectible" in item)) {
-      const collectibleName = (item as ChapterStoreCollectible).collectible;
-      const activityName = `${collectibleName} Bought` as const;
-      const result =
-        (state.farmActivity[activityName as keyof typeof state.farmActivity] as
-          | number
-          | undefined) ?? 0;
-      return result;
-    } else if (type === "keys" || (!type && "key" in item)) {
-      return (
-        state.farmActivity[
-          `${(item as ChapterStoreCollectible).collectible as ChapterTierItemName} Bought`
-        ] ?? 0
-      );
-    }
+    // Use chapter-scoped purchase count so a recurring item from a previous
+    // chapter doesn't show as already-bought in the new chapter.
+    const itemName: ChapterTierItemName | undefined =
+      type === "wearables" || (!type && "wearable" in item)
+        ? ((item as ChapterStoreWearable).wearable as ChapterTierItemName)
+        : type === "collectibles" ||
+            type === "keys" ||
+            (!type && "collectible" in item)
+          ? ((item as ChapterStoreCollectible)
+              .collectible as ChapterTierItemName)
+          : undefined;
 
-    return 0;
+    if (!itemName) return 0;
+
+    return getChapterPurchaseCount({
+      game: state,
+      itemName,
+      currentChapter,
+      now,
+    });
   };
 
   const getItemName = (item: ChapterStoreItem): string => {
     if (type === "wearables" || (!type && "wearable" in item)) {
       return (item as ChapterStoreWearable).wearable as BumpkinItem;
-    } else if (type === "collectibles" || (!type && "collectible" in item)) {
-      return (item as ChapterStoreCollectible).collectible as InventoryItemName;
-    } else if (type === "keys" || (!type && "key" in item)) {
+    } else if (
+      type === "collectibles" ||
+      type === "keys" ||
+      (!type && "collectible" in item)
+    ) {
       return (item as ChapterStoreCollectible).collectible as InventoryItemName;
     }
 
@@ -118,18 +118,23 @@ export const ItemsList: React.FC<Props> = ({
         // Filter by type if provided
         if (type === "wearables" && "wearable" in item) return true;
         if (type === "collectibles" && "collectible" in item) return true;
-        if (type === "keys" && "key" in item) return true;
+        if (type === "keys" && "collectible" in item) {
+          return (
+            (item as ChapterStoreCollectible).collectible in ARTEFACT_SHOP_KEYS
+          );
+        }
         return false;
       })
     : items; // If no type provided, show all items
 
   const getCurrencyIcon = (item: ChapterStoreItem) => {
     if (item.cost.sfl !== 0) return token;
+    if ((item.cost.coins ?? 0) > 0) return coinsIcon;
 
     const currencyItem =
-      item.cost.sfl === 0 && (item.cost?.items[chapterTicket] ?? 0 > 0)
+      item.cost.sfl === 0 && (item.cost?.items[chapterTicket] ?? 0) > 0
         ? chapterTicket
-        : item.cost.sfl === 0 && (item.cost?.items[chapterArtefact] ?? 0 > 0)
+        : item.cost.sfl === 0 && (item.cost?.items[chapterArtefact] ?? 0) > 0
           ? chapterArtefact
           : Object.keys(item.cost.items)[0];
 
@@ -138,14 +143,15 @@ export const ItemsList: React.FC<Props> = ({
 
   const getCurrency = (item: ChapterStoreItem) => {
     if (item.cost.sfl !== 0)
-      return shortenCount(SFLDiscount(state, new Decimal(item.cost.sfl)));
+      return shortenCount(SFLDiscount(state, new Decimal(item.cost.sfl), now));
+    if ((item.cost.coins ?? 0) > 0) return item.cost.coins;
 
     const currency =
-      item.cost.sfl === 0 && (item.cost?.items[chapterTicket] ?? 0 > 0)
+      item.cost.sfl === 0 && (item.cost?.items[chapterTicket] ?? 0) > 0
         ? chapterTicket
         : chapterArtefact;
     const currencyItem =
-      item.cost.sfl === 0 && (item.cost?.items[currency] ?? 0 > 0)
+      item.cost.sfl === 0 && (item.cost?.items[currency] ?? 0) > 0
         ? item.cost?.items[currency]
         : item.cost?.items[
             Object.keys(item.cost.items)[0] as InventoryItemName
@@ -191,27 +197,10 @@ export const ItemsList: React.FC<Props> = ({
   const isFlowerBox = (name: InventoryItemName): name is FlowerBox =>
     name in FLOWER_BOXES;
 
-  const isPetEgg = (name: InventoryItemName | string): name is "Pet Egg" =>
-    name === "Pet Egg";
-
   // For Current Tier Key - Unlocked(0) / Locked(1)
   const isKeyCounted = isKeyBoughtWithinChapter(state, tiers, now) ? 0 : 1;
   // For Current Tier Box - Unlocked(0) / Locked(1)
   const isBoxCounted = isBoxBoughtWithinChapter(state, tiers, now) ? 0 : 1;
-  // For Pet Egg - Unlocked(0) / Locked(1) - only show checkmark if bought from megastore in current chapter
-  const petEggBoughtAt =
-    state.megastore?.boughtAt["Pet Egg" as ChapterTierItemName];
-  const isPetEggBoughtInCurrentChapter = petEggBoughtAt
-    ? (() => {
-        const chapterTime = CHAPTERS[currentChapter];
-        const boughtDate = new Date(petEggBoughtAt);
-        return (
-          boughtDate >= chapterTime.startDate &&
-          boughtDate <= chapterTime.endDate
-        );
-      })()
-    : false;
-  const isPetEggCounted = isPetEggBoughtInCurrentChapter ? 0 : 1;
 
   // Reduction is by getting the lower tier of current tier
   const keyReduction = isKeyBoughtWithinChapter(state, tiers, now, true)
@@ -333,9 +322,18 @@ export const ItemsList: React.FC<Props> = ({
             const isItemFlowerBox = isFlowerBox(
               getItemName(item) as unknown as InventoryItemName,
             );
-            const isItemPetEgg = isPetEgg(getItemName(item));
 
             const balanceOfItem = getBalanceOfItem(item);
+
+            // An item is "maxed" (shown with a confirm tick) when either the
+            // chapter purchase limit is hit, or the player already owns as many
+            // copies as the item's `inventoryLimit` allows.
+            const isChapterLimitReached =
+              item.limit !== undefined && balanceOfItem >= item.limit;
+            const isInventoryLimitReached =
+              item.inventoryLimit !== undefined &&
+              getStoreItemOwnedCount(state, item) >= item.inventoryLimit;
+            const isMaxed = isChapterLimitReached || isInventoryLimitReached;
 
             return (
               <div
@@ -363,10 +361,9 @@ export const ItemsList: React.FC<Props> = ({
                       />
                     )}
                     {/* Confirm Icon for non-key items */}
-                    {balanceOfItem > 0 &&
-                      !isItemKey &&
+                    {!isItemKey &&
                       !isItemFlowerBox &&
-                      !isItemPetEgg &&
+                      isMaxed &&
                       (tier === "basic" ||
                         (tier === "rare" && isRareUnlocked) ||
                         (tier === "epic" && isEpicUnlocked) ||
@@ -403,25 +400,6 @@ export const ItemsList: React.FC<Props> = ({
                     {isItemFlowerBox &&
                       !isItemKey &&
                       isBoxCounted === 0 &&
-                      (tier === "basic" ||
-                        (tier === "rare" && isRareUnlocked) ||
-                        (tier === "epic" && isEpicUnlocked) ||
-                        (tier === "mega" && isMegaUnlocked)) && (
-                        <img
-                          src={SUNNYSIDE.icons.confirm}
-                          className="absolute -right-2 -top-3"
-                          style={{
-                            width: `${PIXEL_SCALE * 9}px`,
-                          }}
-                          alt="crop"
-                        />
-                      )}
-
-                    {/* Confirm Icon for Pet Egg items */}
-                    {isItemPetEgg &&
-                      !isItemKey &&
-                      !isItemFlowerBox &&
-                      isPetEggCounted === 0 &&
                       (tier === "basic" ||
                         (tier === "rare" && isRareUnlocked) ||
                         (tier === "epic" && isEpicUnlocked) ||

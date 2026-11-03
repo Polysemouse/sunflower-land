@@ -1,22 +1,23 @@
 import {
   CROP_SEEDS,
-  CropName,
-  CropSeedName,
+  type CropName,
+  type CropSeedName,
   GREENHOUSE_SEEDS,
-  GreenHouseCropName,
-  GreenHouseCropSeedName,
+  type GreenHouseCropName,
+  type GreenHouseCropSeedName,
 } from "./crops";
 import {
   GREENHOUSE_FRUIT_SEEDS,
-  GreenHouseFruitName,
-  GreenHouseFruitSeedName,
+  type GreenHouseFruitName,
+  type GreenHouseFruitSeedName,
   PATCH_FRUIT_SEEDS,
-  PatchFruitName,
-  PatchFruitSeedName,
+  type PatchFruitName,
+  type PatchFruitSeedName,
 } from "./fruits";
-import { FLOWER_SEEDS, FlowerSeedName } from "./flowers";
-import { ResourceName } from "./resources";
-import { InventoryItemName, TemperateSeasonName } from "./game";
+import { FLOWER_SEEDS, type FlowerSeedName } from "./flowers";
+import type { ResourceName } from "./resources";
+import type { InventoryItemName, TemperateSeasonName } from "./game";
+import type { LevelRequirement } from "features/game/lib/level";
 
 export type SeedName =
   | CropSeedName
@@ -29,7 +30,7 @@ export type Seed = {
   price: number;
   description: string;
   plantSeconds: number;
-  bumpkinLevel: number;
+  bumpkinLevel: LevelRequirement;
   plantingSpot: ResourceName | "Greenhouse";
   yield?:
     | CropName

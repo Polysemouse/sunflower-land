@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import classNames from "classnames";
-import Decimal from "decimal.js-light";
+import type Decimal from "decimal.js-light";
 
 import { useLongPress } from "lib/utils/hooks/useLongPress";
 import { setPrecision } from "lib/utils/formatNumber";
@@ -9,11 +9,11 @@ import { pixelDarkBorderStyle } from "features/game/lib/style";
 import { PIXEL_SCALE } from "features/game/lib/constants";
 import { SUNNYSIDE } from "assets/sunnyside";
 import { CountLabel } from "components/ui/CountLabel";
-import { LabelType } from "components/ui/Label";
-import { ProgressType, ResizableBar } from "components/ui/ProgressBar";
+import type { LabelType } from "components/ui/Label";
+import { type ProgressType, ResizableBar } from "components/ui/ProgressBar";
 import { SkillSquareIcon } from "./SkillSquareIcon";
-import { NPCName } from "lib/npcs";
-import { BumpkinSkillTier } from "features/game/types/bumpkinSkills";
+import type { NPCName } from "lib/npcs";
+import type { BumpkinSkillTier } from "features/game/types/bumpkinSkills";
 
 const LABEL_RIGHT_SHIFT_PX = -5 * PIXEL_SCALE;
 const LABEL_TOP_SHIFT_PX = -5 * PIXEL_SCALE;
@@ -29,6 +29,7 @@ export interface BoxProps {
   onClick?: () => void;
   disabled?: boolean;
   locked?: boolean;
+  isReady?: boolean;
   canBeLongPressed?: boolean;
   /**
    * This can be used a different icon when there is no count passed in.
@@ -75,6 +76,7 @@ export const SkillBox: React.FC<BoxProps> = ({
   onClick,
   disabled,
   locked,
+  isReady,
   canBeLongPressed,
   cooldownInProgress,
   showOverlay = false,
@@ -157,6 +159,19 @@ export const SkillBox: React.FC<BoxProps> = ({
             />
           )}
         </div>
+
+        {isReady && (
+          <img
+            src={SUNNYSIDE.icons.expression_alerted}
+            alt="Skill ready"
+            className="absolute z-20 pointer-events-none animate-pulsate"
+            style={{
+              left: `${PIXEL_SCALE * 4}px`,
+              bottom: `${PIXEL_SCALE * 3}px`,
+              width: `${PIXEL_SCALE * 3}px`,
+            }}
+          />
+        )}
 
         {/* Cool down in process overlay */}
         {!locked && cooldownInProgress && (

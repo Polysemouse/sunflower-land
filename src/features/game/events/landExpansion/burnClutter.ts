@@ -1,6 +1,6 @@
 import { Decimal } from "decimal.js-light";
-import { CLUTTER, ClutterName } from "features/game/types/clutter";
-import { GameState } from "features/game/types/game";
+import { CLUTTER, type ClutterName } from "features/game/types/clutter";
+import type { GameState } from "features/game/types/game";
 import { produce } from "immer";
 
 export type BurnClutterAction = {
@@ -28,6 +28,7 @@ export function burnClutter({ state, action }: Options) {
 
     if (
       !new Decimal(amount).isInteger() ||
+      amount <= 0 ||
       amount % CLUTTER[item].sellUnit !== 0
     ) {
       throw new Error("Invalid amount");

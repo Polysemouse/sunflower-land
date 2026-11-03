@@ -1,26 +1,27 @@
 import Decimal from "decimal.js-light";
 import {
-  Crop,
-  CropName,
+  type Crop,
+  type CropName,
   CROPS,
   GREENHOUSE_CROPS,
-  GreenHouseCrop,
+  type GreenHouseCrop,
 } from "../../types/crops";
-import { GameState } from "../../types/game";
+import type { GameState } from "../../types/game";
 import { getSellPrice } from "features/game/expansion/lib/boosts";
 import { trackFarmActivity } from "features/game/types/farmActivity";
 import { setPrecision } from "lib/utils/formatNumber";
 import {
   GREENHOUSE_FRUIT,
-  GreenHouseFruit,
+  type GreenHouseFruit,
   PATCH_FRUIT,
-  PatchFruit,
-  PatchFruitName,
+  type PatchFruit,
+  type PatchFruitName,
 } from "features/game/types/fruits";
 import { produce } from "immer";
-import { ExoticCrop } from "features/game/types/beans";
+import type { ExoticCrop } from "features/game/types/beans";
 import { getCountAndType } from "features/island/hud/components/inventory/utils/inventory";
 import { updateBoostUsed } from "features/game/types/updateBoostUsed";
+import { isRetiredChapterCropWeekItem } from "features/game/types/chapterCropWeek";
 
 export type SellableName = CropName | PatchFruitName;
 export type SellableItem =
@@ -63,6 +64,11 @@ export function sellCrop({
 
     if (!(action.crop in SELLABLE)) {
       throw new Error("Not for sale");
+    }
+
+    // Crops from previous Chapter Crop Week runs can never be sold again
+    if (isRetiredChapterCropWeekItem(action.crop)) {
+      throw new Error("This crop is no longer sellable");
     }
 
     const amount = new Decimal(action.amount);

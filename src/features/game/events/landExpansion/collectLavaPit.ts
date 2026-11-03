@@ -1,6 +1,6 @@
 import { produce } from "immer";
 import Decimal from "decimal.js-light";
-import { BoostName, GameState } from "features/game/types/game";
+import type { BoostName, GameState } from "features/game/types/game";
 import { isCollectibleBuilt } from "features/game/lib/collectibleBuilt";
 import { updateBoostUsed } from "features/game/types/updateBoostUsed";
 import { getLavaPitTime } from "./startLavaPit";
@@ -17,6 +17,11 @@ export function getObsidianYield({ game }: { game: GameState }) {
   if (isCollectibleBuilt({ name: "Magma Stone", game })) {
     amount += 0.15;
     boostsUsed.push({ name: "Magma Stone", value: "+0.15" });
+  }
+
+  if (isCollectibleBuilt({ name: "Macropinna", game })) {
+    amount += 0.1;
+    boostsUsed.push({ name: "Macropinna", value: "+0.1" });
   }
 
   return { amount, boostsUsed };
@@ -45,6 +50,13 @@ export function collectLavaPit({
       throw new Error("Lava pit not found");
     }
 
+    // A lifted pit keeps burning while it sits in the inventory - the pause is
+    // only applied when it is placed back down, so collecting from an unplaced
+    // pit would side-step it entirely.
+    if (lavaPit.x === undefined && lavaPit.y === undefined) {
+      throw new Error("Lava pit is not placed");
+    }
+
     if (lavaPit.startedAt === undefined) {
       throw new Error("Lava pit not started");
     }
@@ -56,10 +68,18 @@ export function collectLavaPit({
     const { time: lavaPitTime, boostsUsed: lavaPitTimeBoostsUsed } =
       getLavaPitTime({ game: copy });
 
-    if (
-      createdAt - lavaPit.startedAt < lavaPitTime ||
-      (lavaPit.readyAt && createdAt < lavaPit.readyAt)
-    ) {
+    // `readyAt` is the snapshot taken when the burn started and is authoritative
+    // in BOTH directions: equipping the Obsidian Necklace mid-burn must not bring
+    // the pit forward, and taking it off must not push it back out to 72h. It
+    // applies from the next burn, not this one. Pits started before `readyAt`
+    // existed (#6287) carry no snapshot, and are the only case where deriving the
+    // duration from current state is the right answer.
+    const isReady =
+      lavaPit.readyAt !== undefined
+        ? createdAt >= lavaPit.readyAt
+        : createdAt - lavaPit.startedAt >= lavaPitTime;
+
+    if (!isReady) {
       throw new Error("Lava pit still active");
     }
 

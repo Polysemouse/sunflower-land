@@ -1,13 +1,13 @@
 import Decimal from "decimal.js-light";
 import { TEST_FARM } from "features/game/lib/constants";
-import { GameState } from "features/game/types/game";
+import type { GameState } from "features/game/types/game";
 import {
   detectCollision,
   isOverlapping,
   isWithinAOE,
-  Position,
+  type Position,
 } from "./collisionDetection";
-import { Dimensions } from "features/game/types/buildings";
+import type { Dimensions } from "features/game/types/buildings";
 import cloneDeep from "lodash.clonedeep";
 import { RESOURCE_DIMENSIONS } from "features/game/types/resources";
 
@@ -94,15 +94,17 @@ describe("detectCollisions", () => {
     expect(hasCollision).toBe(true);
   });
 
-  it("returns true if a collision is detected with a corner", () => {
+  it("allows placement in a land corner", () => {
     const state: GameState = cloneDeep(TEST_FARM);
     state.inventory["Basic Land"] = new Decimal(1);
 
+    // Bottom-left corner tile of the starting expansion — previously blocked by
+    // the land-corner collision, now placeable.
     const hasCollision = detectCollision({
       state,
       position: {
         x: -3,
-        y: 3,
+        y: -2,
         width: 1,
         height: 1,
       },
@@ -110,7 +112,7 @@ describe("detectCollisions", () => {
       name: "Abandoned Bear",
     });
 
-    expect(hasCollision).toBe(true);
+    expect(hasCollision).toBe(false);
   });
 
   it("returns true if a collision is detected with a building", () => {
@@ -175,6 +177,37 @@ describe("detectCollisions", () => {
     expect(hasCollision).toBe(true);
   });
 
+  it("allows placing an item on top of a Salt Rug", () => {
+    const state: GameState = cloneDeep(TEST_FARM);
+    state.collectibles = {
+      "Salt Rug": [
+        {
+          id: "123",
+          coordinates: {
+            x: 1,
+            y: 1,
+          },
+          readyAt: 0,
+          createdAt: 0,
+        },
+      ],
+    };
+
+    const hasCollision = detectCollision({
+      state,
+      position: {
+        x: 1,
+        y: 1,
+        height: 1,
+        width: 1,
+      },
+      location: "farm",
+      name: "Abandoned Bear",
+    });
+
+    expect(hasCollision).toBe(false);
+  });
+
   it("returns true if a collision is detected with a bud", () => {
     const state: GameState = cloneDeep(TEST_FARM);
     state.buds = {
@@ -205,7 +238,112 @@ describe("detectCollisions", () => {
 
     expect(hasCollision).toBe(true);
   });
+
+  it("returns true if a collision is detected with a farmhand placed on the farm", () => {
+    const state: GameState = clearPlaceables(cloneDeep(TEST_FARM));
+    state.farmHands = {
+      bumpkins: {
+        "fh-1": {
+          equipped: state.bumpkin.equipped,
+          coordinates: { x: 1, y: 1 },
+          location: "farm",
+        },
+      },
+    };
+
+    const hasCollision = detectCollision({
+      state,
+      position: { x: 1, y: 1, height: 1, width: 1 },
+      location: "farm",
+      name: "Abandoned Bear",
+    });
+
+    expect(hasCollision).toBe(true);
+  });
+
+  it("returns true if a collision is detected with the bumpkin placed on the farm", () => {
+    const state: GameState = clearPlaceables(cloneDeep(TEST_FARM));
+    state.bumpkin.coordinates = { x: 1, y: 1 };
+    state.bumpkin.location = "farm";
+
+    const hasCollision = detectCollision({
+      state,
+      position: { x: 1, y: 1, height: 1, width: 1 },
+      location: "farm",
+      name: "Abandoned Bear",
+    });
+
+    expect(hasCollision).toBe(true);
+  });
+
+  it("returns false when placing the bumpkin on its own coordinates (self-collision excluded)", () => {
+    const state: GameState = clearPlaceables(cloneDeep(TEST_FARM));
+    state.bumpkin.coordinates = { x: 1, y: 1 };
+    state.bumpkin.location = "farm";
+
+    const hasCollision = detectCollision({
+      state,
+      position: { x: 1, y: 1, height: 1, width: 1 },
+      location: "farm",
+      name: "Bumpkin",
+    });
+
+    expect(hasCollision).toBe(false);
+  });
+
+  it("returns false if the bumpkin is placed at home and a placeable is added on the farm at the same coordinates", () => {
+    const state: GameState = clearPlaceables(cloneDeep(TEST_FARM));
+    state.bumpkin.coordinates = { x: 1, y: 1 };
+    state.bumpkin.location = "home";
+
+    const hasCollision = detectCollision({
+      state,
+      position: { x: 1, y: 1, height: 1, width: 1 },
+      location: "farm",
+      name: "Abandoned Bear",
+    });
+
+    expect(hasCollision).toBe(false);
+  });
+
+  it("returns false if the bumpkin has no coordinates set", () => {
+    const state: GameState = clearPlaceables(cloneDeep(TEST_FARM));
+    delete state.bumpkin.coordinates;
+    delete state.bumpkin.location;
+
+    const hasCollision = detectCollision({
+      state,
+      position: { x: 1, y: 1, height: 1, width: 1 },
+      location: "farm",
+      name: "Abandoned Bear",
+    });
+
+    expect(hasCollision).toBe(false);
+  });
 });
+
+function clearPlaceables(state: GameState): GameState {
+  state.collectibles = {};
+  state.buildings = {};
+  state.crops = {};
+  state.trees = {};
+  state.stones = {};
+  state.gold = {};
+  state.iron = {};
+  state.crimstones = {};
+  state.sunstones = {};
+  state.oilReserves = {};
+  state.lavaPits = {};
+  state.fruitPatches = {};
+  state.beehives = {};
+  state.flowers = { discovered: {}, flowerBeds: {} };
+  state.buds = {};
+  state.pets = { common: {}, nfts: {} };
+  state.farmHands = { bumpkins: {} };
+  state.airdrops = [];
+  state.mushrooms = { spawnedAt: 0, mushrooms: {} };
+  return state;
+}
 
 describe("isWithinAOE", () => {
   const plotDimensions: Dimensions = { ...RESOURCE_DIMENSIONS["Crop Plot"] };
@@ -856,6 +994,82 @@ describe("isWithinAOE", () => {
     );
 
     expect(cropPlot).toBe(false);
+  });
+
+  // Rank-scaled AOE size. The placeable sits at (0, 0) with height 2, so with
+  // the bounds formula topLeft = { x: -xLeft, y: -2 }, bottomRight =
+  // { x: xRight, y: -2 - (depth - 1) } the footprints are:
+  //   base (no skill) {1,1,3} -> x in [-1, 1],  y in [-4,  -2]
+  //   rank 1          {3,3,7} -> x in [-3, 3],  y in [-8,  -2]
+  //   rank 2          {4,3,8} -> x in [-4, 3],  y in [-9,  -2]  (extra LEFT column)
+  //   rank 3          {4,4,9} -> x in [-4, 4],  y in [-10, -2]  (extra RIGHT column)
+  describe("rank-scaled AOE size", () => {
+    const aoeItem: Position = { x: 0, y: 0, height: 2, width: 1 };
+    const tile = (x: number, y: number): Position => ({
+      x,
+      y,
+      height: 1,
+      width: 1,
+    });
+
+    // [tileX, tileY, rank (0 = no skill), expected]
+    const BOUNDARY_CASES: [number, number, number, boolean][] = [
+      // x = -2 column: outside the base 3x3, inside from rank 1 upwards.
+      [-2, -2, 0, false],
+      [-2, -2, 1, true],
+      // y = -8 row: deeper than the base footprint, reached from rank 1.
+      [0, -8, 0, false],
+      [0, -8, 1, true],
+      // x = -4 left column: only reachable at rank >= 2.
+      [-4, -2, 1, false],
+      [-4, -2, 2, true],
+      [-4, -2, 3, true],
+      // y = -9 row (depth 8): inside at rank 2 & 3, outside at rank 1.
+      [0, -9, 1, false],
+      [0, -9, 2, true],
+      [0, -9, 3, true],
+      // x = 4 right column: only reachable at rank 3.
+      [4, -2, 1, false],
+      [4, -2, 2, false],
+      [4, -2, 3, true],
+      // y = -10 row (depth 9): inside only at rank 3.
+      [0, -10, 1, false],
+      [0, -10, 2, false],
+      [0, -10, 3, true],
+    ];
+
+    it.each(BOUNDARY_CASES)(
+      "Basic Scarecrow (Chonky Scarecrow) at rank %#: tile (%i, %i) rank %i -> %s",
+      (x, y, rank, expected) => {
+        const skills = rank === 0 ? {} : { "Chonky Scarecrow": rank };
+
+        expect(
+          isWithinAOE("Basic Scarecrow", aoeItem, tile(x, y), skills),
+        ).toBe(expected);
+      },
+    );
+
+    it.each(BOUNDARY_CASES)(
+      "Scary Mike (Horror Mike) at rank %#: tile (%i, %i) rank %i -> %s",
+      (x, y, rank, expected) => {
+        const skills = rank === 0 ? {} : { "Horror Mike": rank };
+
+        expect(isWithinAOE("Scary Mike", aoeItem, tile(x, y), skills)).toBe(
+          expected,
+        );
+      },
+    );
+
+    it.each(BOUNDARY_CASES)(
+      "Laurie the Chuckle Crow (Laurie's Gains) at rank %#: tile (%i, %i) rank %i -> %s",
+      (x, y, rank, expected) => {
+        const skills = rank === 0 ? {} : { "Laurie's Gains": rank };
+
+        expect(
+          isWithinAOE("Laurie the Chuckle Crow", aoeItem, tile(x, y), skills),
+        ).toBe(expected);
+      },
+    );
   });
 });
 

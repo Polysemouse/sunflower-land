@@ -1,6 +1,7 @@
 import Decimal from "decimal.js-light";
-import { ProcessedResource } from "features/game/types/processedFood";
-import {
+import type { ProcessedResource } from "features/game/types/processedFood";
+import type {
+  BoostName,
   BuildingProduct,
   GameState,
   Inventory,
@@ -13,7 +14,30 @@ import {
 import { produce } from "immer";
 import { translate } from "lib/i18n/translate";
 import { hasVipAccess } from "features/game/lib/vipAccess";
-import { ProcessingBuildingName } from "features/game/types/buildings";
+import type { ProcessingBuildingName } from "features/game/types/buildings";
+import { isWearableActive } from "features/game/lib/wearables";
+import { isCollectibleBuilt } from "features/game/lib/collectibleBuilt";
+import { updateBoostUsed } from "features/game/types/updateBoostUsed";
+
+export function getFishProcessingTime(
+  item: ProcessedResource,
+  game: GameState,
+): { reducedMs: number; boostsUsed: { name: BoostName; value: string }[] } {
+  let reducedMs = FISH_PROCESSING_TIME_SECONDS[item] * 1000;
+  const boostsUsed: { name: BoostName; value: string }[] = [];
+
+  if (isWearableActive({ game, name: "Bubble Aura" })) {
+    reducedMs *= 0.8;
+    boostsUsed.push({ name: "Bubble Aura", value: "x0.8" });
+  }
+
+  if (isCollectibleBuilt({ name: "Cyclops Bloom", game })) {
+    reducedMs *= 0.8;
+    boostsUsed.push({ name: "Cyclops Bloom", value: "x0.8" });
+  }
+
+  return { reducedMs, boostsUsed };
+}
 
 export type ProcessProcessedResourceAction = {
   type: "processedResource.processed";
@@ -50,7 +74,7 @@ export function processProcessedResource({
     }
 
     const processingQueue = building.processing ?? [];
-    const availableSlots = hasVipAccess({ game })
+    const availableSlots = hasVipAccess({ game, now: createdAt })
       ? MAX_FISH_PROCESSING_SLOTS
       : 1;
 
@@ -88,7 +112,8 @@ export function processProcessedResource({
       startAt = lastReadyAt;
     }
 
-    const readyAt = startAt + FISH_PROCESSING_TIME_SECONDS[item] * 1000;
+    const { reducedMs, boostsUsed } = getFishProcessingTime(item, game);
+    const readyAt = startAt + reducedMs;
 
     building.processing = [
       ...processingQueue,
@@ -99,5 +124,13 @@ export function processProcessedResource({
         requirements,
       } as BuildingProduct,
     ];
+
+    if (boostsUsed.length > 0) {
+      game.boostsUsedAt = updateBoostUsed({
+        game,
+        boostNames: boostsUsed,
+        createdAt,
+      });
+    }
   });
 }

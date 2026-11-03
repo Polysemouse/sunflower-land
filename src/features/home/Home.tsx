@@ -10,11 +10,9 @@ import { GRID_WIDTH_PX, PIXEL_SCALE } from "features/game/lib/constants";
 import { Hud } from "features/island/hud/Hud";
 import { Context } from "features/game/GameProvider";
 import { useSelector } from "@xstate/react";
-import { MachineState } from "features/game/lib/gameMachine";
-import {
-  COLLECTIBLES_DIMENSIONS,
-  getKeys,
-} from "features/game/types/craftables";
+import type { MachineState } from "features/game/lib/gameMachine";
+import { COLLECTIBLES_DIMENSIONS } from "features/game/types/craftables";
+import { getKeys } from "lib/object";
 import { MapPlacement } from "features/game/expansion/components/MapPlacement";
 import { Collectible } from "features/island/collectibles/Collectible";
 import { getGameGrid } from "features/game/expansion/placeable/lib/makeGrid";
@@ -27,32 +25,43 @@ import { Button } from "components/ui/Button";
 import { SUNNYSIDE } from "assets/sunnyside";
 import { Modal } from "components/ui/Modal";
 import { BumpkinPainting } from "./components/BumpkinPainting";
-import { Bumpkin, IslandType } from "features/game/types/game";
+import type { Bumpkin, IslandType } from "features/game/types/game";
 import {
   HOME_BOUNDS,
   NON_COLLIDING_OBJECTS,
+  FURNITURE_OBJECTS,
 } from "features/game/expansion/placeable/lib/collisionDetection";
 import { Bud } from "features/island/buds/Bud";
 import { InteriorBumpkins } from "./components/InteriorBumpkins";
 import { useAppTranslation } from "lib/i18n/useAppTranslations";
+import { useLandscapingGridBackgroundImage } from "features/island/landscaping/LandscapingGrid";
 import { SpeakingModal } from "features/game/components/SpeakingModal";
 import { NPC_WEARABLES } from "lib/npcs";
 import { EXTERIOR_ISLAND_BG } from "features/barn/BarnInside";
 import { getCurrentBiome } from "features/island/biomes/biomes";
 import { useVisiting } from "lib/utils/visitUtils";
 import { VisitingHud } from "features/island/hud/VisitingHud";
-import { getObjectEntries } from "features/game/expansion/lib/utils";
+import { getObjectEntries } from "lib/object";
 import { PlayerModal } from "features/social/PlayerModal";
+import { Discovery } from "features/social/Discovery";
 import { hasFeatureAccess } from "lib/flags";
-import { AuthMachineState } from "features/auth/lib/authMachine";
+import type { AuthMachineState } from "features/auth/lib/authMachine";
 import { Context as AuthContext } from "features/auth/lib/Provider";
 import { PetNFT } from "features/island/pets/PetNFT";
+import { FarmHand } from "features/island/farmhand/FarmHand";
+import { PlacedBumpkin } from "features/island/bumpkin/components/PlacedBumpkin";
 
 const BACKGROUND_IMAGE: Record<IslandType, string> = {
   basic: SUNNYSIDE.land.tent_inside,
   spring: SUNNYSIDE.land.house_inside,
   desert: SUNNYSIDE.land.manor_inside,
   volcano: SUNNYSIDE.land.mansion_inside,
+  swamp: SUNNYSIDE.land.mansion_inside,
+  // Ascension islands (spooky onward) reuse the swamp value for now.
+  spooky: SUNNYSIDE.land.mansion_inside,
+  crystal: SUNNYSIDE.land.mansion_inside,
+  galaxy: SUNNYSIDE.land.mansion_inside,
+  marble: SUNNYSIDE.land.mansion_inside,
 };
 
 function hasReadIntro() {
@@ -86,6 +95,14 @@ const _homeCollectiblePositions = (state: MachineState) => {
       })),
   };
 };
+const _homeFarmHands = (state: MachineState) => {
+  const bumpkins = state.context.state.farmHands.bumpkins;
+  return Object.fromEntries(
+    Object.entries(bumpkins).filter(
+      ([, fh]) => fh.coordinates && fh.location === "home",
+    ),
+  );
+};
 const _token = (state: AuthMachineState) => state.context.user.rawToken ?? "";
 
 export const Home: React.FC = () => {
@@ -112,6 +129,8 @@ export const Home: React.FC = () => {
   const buds = useSelector(gameService, _buds);
   const petNFTs = useSelector(gameService, _petNFTs);
   const island = useSelector(gameService, _island);
+  const gridBackgroundImage = useLandscapingGridBackgroundImage();
+  const homeFarmHands = useSelector(gameService, _homeFarmHands);
   const { collectibles, positions: homeCollectiblePositions } = useSelector(
     gameService,
     _homeCollectiblePositions,
@@ -152,7 +171,7 @@ export const Home: React.FC = () => {
           .filter((collectible) => collectible.coordinates)
           .map((collectible, itemIndex) => {
             const { readyAt, createdAt, coordinates, id } = collectible;
-            const { x, y } = coordinates!;
+            const { x, y, oX, oY } = coordinates!;
             const { width, height } = COLLECTIBLES_DIMENSIONS[name];
 
             return (
@@ -160,9 +179,17 @@ export const Home: React.FC = () => {
                 key={`collectible-${nameIndex}-${itemIndex}`}
                 x={x}
                 y={y}
+                oX={oX}
+                oY={oY}
                 height={height}
                 width={width}
-                z={NON_COLLIDING_OBJECTS.includes(name) ? 0 : 1}
+                z={
+                  FURNITURE_OBJECTS.includes(name)
+                    ? 1
+                    : NON_COLLIDING_OBJECTS.includes(name)
+                      ? 0
+                      : 2
+                }
                 enableOnVisitClick
               >
                 <Collectible
@@ -175,6 +202,7 @@ export const Home: React.FC = () => {
                   y={coordinates!.y}
                   grid={gameGrid}
                   flipped={collectible.flipped}
+                  index={itemIndex}
                 />
               </MapPlacement>
             );
@@ -186,13 +214,15 @@ export const Home: React.FC = () => {
     ...Object.entries(buds)
       .filter(([, bud]) => !!bud.coordinates && bud.location === "home")
       .flatMap(([id, bud]) => {
-        const { x, y } = bud.coordinates!;
+        const { x, y, oX, oY } = bud.coordinates!;
 
         return (
           <MapPlacement
             key={`bud-${id}`}
             x={x}
             y={y}
+            oX={oX}
+            oY={oY}
             height={1}
             width={1}
             enableOnVisitClick
@@ -209,13 +239,15 @@ export const Home: React.FC = () => {
         ([, petNFT]) => !!petNFT.coordinates && petNFT.location === "home",
       )
       .flatMap(([id, petNFT]) => {
-        const { x, y } = petNFT.coordinates!;
+        const { x, y, oX, oY } = petNFT.coordinates!;
 
         return (
           <MapPlacement
             key={`petNFT-${id}`}
             x={x}
             y={y}
+            oX={oX}
+            oY={oY}
             height={2}
             width={2}
             enableOnVisitClick
@@ -225,6 +257,42 @@ export const Home: React.FC = () => {
         );
       }),
   );
+
+  mapPlacements.push(
+    ...Object.entries(homeFarmHands).map(([id, farmHand]) => {
+      const { x, y, oX, oY } = farmHand.coordinates!;
+      return (
+        <MapPlacement
+          key={`farmHand-${id}`}
+          x={x}
+          y={y}
+          oX={oX}
+          oY={oY}
+          height={1}
+          width={1}
+        >
+          <FarmHand id={id} location="home" />
+        </MapPlacement>
+      );
+    }),
+  );
+
+  if (bumpkin?.coordinates && bumpkin.location === "home") {
+    const { x, y, oX, oY } = bumpkin.coordinates;
+    mapPlacements.push(
+      <MapPlacement
+        key="bumpkin"
+        x={x}
+        y={y}
+        oX={oX}
+        oY={oY}
+        height={1}
+        width={1}
+      >
+        <PlacedBumpkin location="home" />
+      </MapPlacement>,
+    );
+  }
 
   const bounds = HOME_BOUNDS[island.type];
   const currentBiome = getCurrentBiome(island);
@@ -284,9 +352,7 @@ export const Home: React.FC = () => {
                   width: `${bounds.height * GRID_WIDTH_PX}px`,
 
                   backgroundSize: `${GRID_WIDTH_PX}px ${GRID_WIDTH_PX}px`,
-                  backgroundImage: `
-            linear-gradient(to right, rgb(255 255 255 / 17%) 1px, transparent 1px),
-            linear-gradient(to bottom, rgb(255 255 255 / 17%) 1px, transparent 1px)`,
+                  backgroundImage: gridBackgroundImage,
                 }}
               />
 
@@ -317,26 +383,24 @@ export const Home: React.FC = () => {
                 onClick={() => setShowPainting(true)}
               />
 
+              {!isVisiting && (
+                <div className="absolute -top-16 left-0 w-full">
+                  <InteriorBumpkins />
+                </div>
+              )}
               {!landscaping && (
-                <>
-                  {!isVisiting && (
-                    <div className="absolute -top-16 left-0 w-full">
-                      <InteriorBumpkins />
-                    </div>
-                  )}
-                  <Button
-                    className="absolute -bottom-16"
-                    onClick={() =>
-                      navigate(
-                        isVisiting
-                          ? `/visit/${gameService.state.context.farmId}`
-                          : "/",
-                      )
-                    }
-                  >
-                    {t("exit")}
-                  </Button>
-                </>
+                <Button
+                  className="absolute -bottom-16"
+                  onClick={() =>
+                    navigate(
+                      isVisiting
+                        ? `/visit/${gameService.getSnapshot().context.farmId}`
+                        : "/",
+                    )
+                  }
+                >
+                  {t("exit")}
+                </Button>
               )}
 
               {/* Sort island elements by y axis */}
@@ -360,6 +424,7 @@ export const Home: React.FC = () => {
           token={token}
           hasAirdropAccess={hasAirdropAccess}
         />
+        <Discovery />
       </>
     </>
   );

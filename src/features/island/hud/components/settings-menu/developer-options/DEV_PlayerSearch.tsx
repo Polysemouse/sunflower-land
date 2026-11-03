@@ -2,17 +2,17 @@
 import { Button } from "components/ui/Button";
 import React, { useState } from "react";
 import { useAppTranslation } from "lib/i18n/useAppTranslations";
-import { ContentComponentProps } from "../GameOptions";
+import type { ContentComponentProps } from "../types";
 import { Loading } from "features/auth/components";
 import { NumberInput } from "components/ui/NumberInput";
-import { VisitGameState } from "features/game/actions/loadGameStateForVisit";
+import type { VisitGameState } from "features/game/actions/loadGameStateForVisit";
 import { useAuth } from "features/auth/lib/Provider";
 import { CopyAddress } from "components/ui/CopyAddress";
 import { loadGameStateForAdmin } from "features/game/actions/adminSearch";
 import { useGame } from "features/game/GameProvider";
 import { Label } from "components/ui/Label";
 import { TextInput } from "components/ui/TextInput";
-import { MANAGER_IDS } from "lib/flags";
+import { MANAGER_IDS } from "lib/access";
 
 export const DEV_PlayerSearch: React.FC<ContentComponentProps> = () => {
   const { t } = useAppTranslation();
@@ -22,6 +22,7 @@ export const DEV_PlayerSearch: React.FC<ContentComponentProps> = () => {
   const [username, setUsername] = useState<string>("");
   const [discordId, setDiscordId] = useState<string>("");
   const [wallet, setWallet] = useState<string>("");
+  const [depositAddress, setDepositAddress] = useState<string>("");
   const [farm, setFarm] = useState<(VisitGameState & { id: number }) | null>(
     null,
   );
@@ -40,6 +41,7 @@ export const DEV_PlayerSearch: React.FC<ContentComponentProps> = () => {
         discordId,
         nftId,
         wallet,
+        depositAddress: depositAddress || undefined,
       });
       setFarm({
         ...farm,
@@ -142,11 +144,27 @@ export const DEV_PlayerSearch: React.FC<ContentComponentProps> = () => {
       <div className="flex mb-2">
         <TextInput value={wallet} onValueChange={(e) => setWallet(e)} />
       </div>
+      <Label type="default" className="m-1">
+        {`Deposit Address`}
+      </Label>
+      <div className="flex mb-2">
+        <TextInput
+          value={depositAddress}
+          onValueChange={(e) => setDepositAddress(e)}
+        />
+      </div>
 
       <Button
         className="w-full"
         onClick={search}
-        disabled={!farmId && !username && !discordId && !nftId && !wallet}
+        disabled={
+          !farmId &&
+          !username &&
+          !discordId &&
+          !nftId &&
+          !wallet &&
+          !depositAddress
+        }
       >
         {t("search")}
       </Button>

@@ -1,8 +1,8 @@
-import { GameState, Rock } from "features/game/types/game";
+import type { GameState, Rock } from "features/game/types/game";
 import {
-  IronRockName,
+  type IronRockName,
   RESOURCE_MULTIPLIER,
-  UpgradedResourceName,
+  type UpgradedResourceName,
   ADVANCED_RESOURCES,
 } from "features/game/types/resources";
 import { produce } from "immer";
@@ -10,7 +10,11 @@ import {
   findExistingUnplacedNode,
   getAvailableNodes,
 } from "features/game/lib/resourceNodes";
-import { Coordinates } from "features/game/expansion/components/MapPlacement";
+import {
+  getMineBoostWindows,
+  pauseWindowedTimer,
+} from "features/game/lib/boostWindows";
+import type { Coordinates } from "features/game/expansion/components/MapPlacement";
 
 export type PlaceIronAction = {
   type: "iron.placed";
@@ -53,9 +57,14 @@ export function placeIron({
       };
 
       if (updatedIron.stone && updatedIron.removedAt) {
-        const existingProgress =
-          updatedIron.removedAt - updatedIron.stone.minedAt;
-        updatedIron.stone.minedAt = createdAt - existingProgress;
+        // Pause recovery across the lift (windowed banking or legacy back-date).
+        updatedIron.stone.minedAt = pauseWindowedTimer({
+          timer: updatedIron.stone,
+          startedAt: updatedIron.stone.minedAt,
+          removedAt: updatedIron.removedAt,
+          createdAt,
+          windows: getMineBoostWindows(game, action.name),
+        });
       }
       delete updatedIron.removedAt;
 

@@ -1,13 +1,14 @@
 import Decimal from "decimal.js-light";
 import {
-  AchievementName,
+  type AchievementName,
   ACHIEVEMENTS,
 } from "features/game/types/achievements";
-import { getKeys } from "features/game/types/craftables";
-import { GameState } from "features/game/types/game";
+import { getKeys } from "lib/object";
+import type { GameState } from "features/game/types/game";
 import { onboardingAnalytics } from "lib/onboardingAnalytics";
 import { translate } from "lib/i18n/translate";
 import { produce } from "immer";
+import { mfTrack } from "lib/moonforgeAnalytics";
 
 export type ClaimAchievementAction = {
   type: "achievement.claimed";
@@ -17,6 +18,7 @@ export type ClaimAchievementAction = {
 type Options = {
   state: Readonly<GameState>;
   action: ClaimAchievementAction;
+  createdAt?: number;
 };
 
 export function claimAchievement({ state, action }: Options): GameState {
@@ -58,6 +60,7 @@ export function claimAchievement({ state, action }: Options): GameState {
     onboardingAnalytics.logEvent("unlock_achievement", {
       achievement_id: action.achievement,
     });
+    mfTrack("achievement_unlocked", { achievement_id: action.achievement });
 
     return stateCopy;
   });

@@ -6,14 +6,14 @@ import { DynamicNFT } from "features/bumpkins/components/DynamicNFT";
 import { PIXEL_SCALE } from "features/game/lib/constants";
 import { weekResetsAt } from "features/game/lib/factions";
 import { ITEM_IDS } from "features/game/types/bumpkin";
-import { getKeys } from "features/game/types/decorations";
+import { getKeys } from "lib/object";
 
 import { TimerDisplay } from "features/retreat/components/auctioneer/AuctionDetails";
 import { useAppTranslation } from "lib/i18n/useAppTranslations";
-import { NPC_WEARABLES, NPCName } from "lib/npcs";
+import { NPC_WEARABLES, type NPCName } from "lib/npcs";
 import { getImageUrl } from "lib/utils/getImageURLS";
 import { useCountdown } from "lib/utils/hooks/useCountdown";
-import React, { useContext, useState } from "react";
+import React, { useContext, useRef, useState } from "react";
 import chapterPoints from "assets/icons/red_medal_short.webp";
 
 import {
@@ -25,15 +25,18 @@ import {
   getChoreProgress,
   NPC_CHORE_UNLOCKS,
   NPC_CHORES,
-  NpcChore,
+  type NpcChore,
 } from "features/game/types/choreBoard";
 import { NPCIcon } from "features/island/bumpkin/components/NPC";
 import { ResizableBar } from "components/ui/ProgressBar";
 import { Button } from "components/ui/Button";
-import { getBumpkinLevel } from "features/game/lib/level";
+import {
+  getAscensionLevel,
+  meetsLevelRequirement,
+} from "features/game/lib/level";
 import lockIcon from "assets/icons/lock.png";
 
-import { GameState, InventoryItemName } from "features/game/types/game";
+import type { GameState, InventoryItemName } from "features/game/types/game";
 import { CHORE_DETAILS } from "../lib/choreDetails";
 import { generateChoreRewards } from "features/game/events/landExpansion/completeNPCChore";
 import { CHORE_DIALOGUES } from "features/game/types/stories";
@@ -43,6 +46,7 @@ import { formatNumber } from "lib/utils/formatNumber";
 import { useNow } from "lib/utils/hooks/useNow";
 import { pixelVibrantBorderStyle } from "features/game/lib/style";
 import { getChapterTaskPoints } from "features/game/types/tracks";
+import { BoostsDisplay } from "components/ui/layouts/BoostsDisplay";
 
 interface Props {
   state: GameState;
@@ -64,7 +68,10 @@ export const ChoreBoard: React.FC<Props> = ({ state }) => {
   });
 
   const end = useCountdown(weekResetsAt());
-  const level = getBumpkinLevel(bumpkin.experience ?? 0);
+  const ascension = getAscensionLevel({
+    experience: bumpkin.experience ?? 0,
+    ascensionLevel: state.island.ascensionLevel ?? 0,
+  });
 
   const previewNpc = selectedId ?? getKeys(chores)[0];
   const previewChore = chores[previewNpc];
@@ -78,7 +85,13 @@ export const ChoreBoard: React.FC<Props> = ({ state }) => {
   const nextUnlock = getKeys(NPC_CHORE_UNLOCKS)
     .filter((name) => name in chores)
     .sort((a, b) => (NPC_CHORE_UNLOCKS[a] > NPC_CHORE_UNLOCKS[b] ? 1 : -1))
-    .find((npc) => level < (NPC_CHORE_UNLOCKS?.[npc] ?? 0));
+    .find(
+      (npc) =>
+        !meetsLevelRequirement(ascension, {
+          ascension: 0,
+          level: NPC_CHORE_UNLOCKS?.[npc] ?? 0,
+        }),
+    );
 
   const handleCompleteChore = (npcName: NPCName) => {
     gameService.send({
@@ -87,13 +100,16 @@ export const ChoreBoard: React.FC<Props> = ({ state }) => {
     });
   };
 
-  const unlockedChores = getKeys(chores).filter(
-    (npc) => level >= NPC_CHORE_UNLOCKS[npc as NPCName],
+  const unlockedChores = getKeys(chores).filter((npc) =>
+    meetsLevelRequirement(ascension, {
+      ascension: 0,
+      level: NPC_CHORE_UNLOCKS[npc as NPCName],
+    }),
   );
   const chapterTicket = getChapterTicket(now);
   const chapter = getCurrentChapter(now);
 
-  const rewards = generateChoreRewards({
+  const { items: rewards } = generateChoreRewards({
     game: state,
     chore: previewChore as NpcChore,
     now: new Date(),
@@ -271,7 +287,7 @@ export const ChoreBoard: React.FC<Props> = ({ state }) => {
             >
               <img src={chapterPoints} className="h-4 mr-2" />
               <p className="text-xs">
-                {`+${getChapterTaskPoints({ task: "chore", tickets: tickets })} ${chapter} points`}
+                {`+${getChapterTaskPoints({ task: "chore", points: tickets })} ${chapter} points`}
               </p>
             </div>
           )}
@@ -402,16 +418,49 @@ export const ChoreRewardLabel: React.FC<{
 }> = ({ chore, state }) => {
   const now = useNow();
   const ticket = getChapterTicket(now);
+  const [showBoosts, setShowBoosts] = useState(false);
+  const boostsAnchorRef = useRef<HTMLDivElement>(null);
 
   if (chore.reward.items[ticket]) {
+    const { items, boostsUsed } = generateChoreRewards({
+      game: state,
+      chore,
+      now: new Date(),
+    });
+    const isBoosted = boostsUsed.length > 0;
+
     return (
-      <Label type={"warning"} icon={ITEM_DETAILS[ticket].image}>
-        {generateChoreRewards({
-          game: state,
-          chore,
-          now: new Date(),
-        })[ticket] ?? 0}
-      </Label>
+      <div
+        ref={boostsAnchorRef}
+        className={classNames("relative", { "cursor-pointer": isBoosted })}
+        role={isBoosted ? "button" : undefined}
+        tabIndex={isBoosted ? 0 : undefined}
+        aria-expanded={isBoosted ? showBoosts : undefined}
+        onClick={(e) => {
+          if (!isBoosted) return;
+          e.stopPropagation();
+          setShowBoosts((prev) => !prev);
+        }}
+        onKeyDown={(e) => {
+          if (!isBoosted || (e.key !== "Enter" && e.key !== " ")) return;
+          e.preventDefault();
+          e.stopPropagation();
+          setShowBoosts((prev) => !prev);
+        }}
+      >
+        <Label type={"warning"} icon={ITEM_DETAILS[ticket].image}>
+          {items[ticket] ?? 0}
+        </Label>
+        {isBoosted && showBoosts && (
+          <BoostsDisplay
+            boosts={boostsUsed}
+            show={showBoosts}
+            state={state}
+            onClick={() => setShowBoosts(false)}
+            anchorRef={boostsAnchorRef}
+          />
+        )}
+      </div>
     );
   }
 

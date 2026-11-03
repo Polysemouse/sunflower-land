@@ -1,7 +1,8 @@
 import { CONFIG } from "lib/config";
+import { fetchWithRetry } from "lib/fetchWithRetry";
 import { ERRORS } from "lib/errors";
-import { GameState, Wardrobe } from "features/game/types/game";
-import { InventoryItemName } from "../types/community";
+import type { GameState, Wardrobe } from "features/game/types/game";
+import type { InventoryItemName } from "../types/community";
 import { makeGame } from "features/game/lib/transforms";
 
 type Request = {
@@ -34,7 +35,7 @@ export async function updateIsland(
 ): Promise<Response | undefined> {
   if (!API_URL) return;
 
-  const response = await window.fetch(
+  const response = await fetchWithRetry(
     `${API_URL}/island/${request.islandId}/farm/${request.farmId}`,
     {
       method: "POST",
@@ -88,7 +89,7 @@ export async function updateIsland(
 export async function resetIsland(request: Request) {
   if (!API_URL || CONFIG.NETWORK === "mainnet") return;
 
-  const response = await window.fetch(
+  const response = await fetchWithRetry(
     `${API_URL}/island/${request.islandId}/farm/${request.farmId}/reset`,
     {
       method: "POST",

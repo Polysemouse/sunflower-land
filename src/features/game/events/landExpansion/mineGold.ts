@@ -1,8 +1,7 @@
 import Decimal from "decimal.js-light";
-import { canMine } from "features/game/expansion/lib/utils";
 import {
   isWithinAOE,
-  Position,
+  type Position,
 } from "features/game/expansion/placeable/lib/collisionDetection";
 import {
   isCollectibleOnFarm,
@@ -15,60 +14,91 @@ import {
 } from "features/game/lib/collectibleBuilt";
 import { GOLD_RECOVERY_TIME } from "features/game/lib/constants";
 import { FACTION_ITEMS } from "features/game/lib/factions";
+import { getSkillLevel, SKILL_RANKS } from "features/game/types/bumpkinSkills";
 import { getBudYieldBoosts } from "features/game/lib/getBudYieldBoosts";
+import { hasRequiredIslandExpansion } from "features/game/lib/hasRequiredIslandExpansion";
 import { isWearableActive } from "features/game/lib/wearables";
 import { KNOWN_IDS } from "features/game/types";
 import { COLLECTIBLES_DIMENSIONS } from "features/game/types/craftables";
 import { trackFarmActivity } from "features/game/types/farmActivity";
-import { GameState, BoostName, Rock, AOE } from "features/game/types/game";
+import type { GameState, BoostName, Rock, AOE } from "features/game/types/game";
 import { RESOURCE_DIMENSIONS } from "features/game/types/resources";
 import { updateBoostUsed } from "features/game/types/updateBoostUsed";
 import { produce } from "immer";
 import { prngChance } from "lib/prng";
 import cloneDeep from "lodash.clonedeep";
+import { hasFeatureAccess } from "lib/flags";
+import { canMine, getMineReadyAt } from "features/game/lib/resourceNodes";
 
 export type LandExpansionGoldMineAction = {
   type: "goldRock.mined";
   index: string;
 };
 
-type GetMinedAtArgs = {
-  createdAt: number;
-  game: GameState;
+/**
+ * The gold rock's real recovery duration (ms), for gating the yield-AOE re-use.
+ * Windowed rocks derive it from the live speed windows so an active boost shortens
+ * it to match the actual recovery (matching how legacy rocks folded the discount
+ * into `boostedTime`); legacy rocks keep their back-dated boosted time.
+ */
+function getGoldRecoveryDurationMs(rock: Rock, game: GameState): number {
+  return rock.stone.baseDurationMs !== undefined
+    ? getMineReadyAt(rock, "Gold Rock", game) - rock.stone.minedAt
+    : GOLD_RECOVERY_TIME * 1000 - (rock?.stone?.boostedTime ?? 0);
+}
+
+type PrngArgs = {
   farmId: number;
   itemId: number;
   counter: number;
 };
 
-const getBoostedTime = ({
+type GetMinedAtArgs = {
+  createdAt: number;
+  game: GameState;
+  prngArgs?: PrngArgs;
+};
+
+/**
+ * Single source of truth for gold recovery boosts. Used by both getMinedAt (game) and UI.
+ * When prngArgs is omitted, PRNG-dependent branches (e.g. Pickaxe Shark instant) are skipped.
+ */
+export function getGoldRecoveryTimeForDisplay({
   game,
-  farmId,
-  itemId,
-  counter,
+  prngArgs,
+  now,
 }: {
   game: GameState;
-  farmId: number;
-  itemId: number;
-  counter: number;
+  prngArgs?: PrngArgs;
+  now: number;
 }): {
-  boostedTime: number;
+  baseTimeMs: number;
+  recoveryTimeMs: number;
   boostsUsed: { name: BoostName; value: string }[];
-} => {
+} {
+  const baseTimeMs = GOLD_RECOVERY_TIME * 1000;
   let totalSeconds = GOLD_RECOVERY_TIME;
   const boostsUsed: { name: BoostName; value: string }[] = [];
 
+  // Under SPEED_BOOSTS the temporary gold boosts (totems, Ore Hourglass, Mole
+  // Shrine) are retroactive speed-rate windows (see boostWindows), so they're
+  // excluded from the baked recovery here — what remains is the permanent-boost-
+  // only base duration. Flag-off keeps the legacy discount-at-start. The Pickaxe
+  // Shark PRNG-instant early-return is a PERMANENT boost and stays unconditional.
+  const boostsWindowed = hasFeatureAccess(game, "SPEED_BOOSTS");
+
   if (
     isWearableActive({ name: "Pickaxe Shark", game }) &&
+    prngArgs &&
     prngChance({
-      farmId,
-      itemId,
-      counter,
+      ...prngArgs,
       chance: 10,
       criticalHitName: "Pickaxe Shark",
     })
   ) {
     return {
-      boostedTime: GOLD_RECOVERY_TIME * 1000,
+      baseTimeMs,
+      recoveryTimeMs: 0,
       boostsUsed: [{ name: "Pickaxe Shark", value: "Instant" }],
     };
   }
@@ -76,13 +106,15 @@ const getBoostedTime = ({
   const superTotemActive = isTemporaryCollectibleActive({
     name: "Super Totem",
     game,
+    now,
   });
   const timeWarpTotemActive = isTemporaryCollectibleActive({
     name: "Time Warp Totem",
     game,
+    now,
   });
 
-  if (superTotemActive || timeWarpTotemActive) {
+  if (!boostsWindowed && (superTotemActive || timeWarpTotemActive)) {
     totalSeconds = totalSeconds * 0.5;
     if (superTotemActive)
       boostsUsed.push({ name: "Super Totem", value: "x0.5" });
@@ -90,7 +122,10 @@ const getBoostedTime = ({
       boostsUsed.push({ name: "Time Warp Totem", value: "x0.5" });
   }
 
-  if (isTemporaryCollectibleActive({ name: "Ore Hourglass", game })) {
+  if (
+    !boostsWindowed &&
+    isTemporaryCollectibleActive({ name: "Ore Hourglass", game, now })
+  ) {
     totalSeconds = totalSeconds * 0.5;
     boostsUsed.push({ name: "Ore Hourglass", value: "x0.5" });
   }
@@ -100,47 +135,57 @@ const getBoostedTime = ({
     boostsUsed.push({ name: "Pickaxe Shark", value: "x0.85" });
   }
 
-  if (isTemporaryCollectibleActive({ name: "Mole Shrine", game })) {
+  if (
+    !boostsWindowed &&
+    isTemporaryCollectibleActive({ name: "Mole Shrine", game, now })
+  ) {
     totalSeconds = totalSeconds * 0.75;
     boostsUsed.push({ name: "Mole Shrine", value: "x0.75" });
   }
 
-  if (game.bumpkin.skills["Midas Sprint"]) {
-    totalSeconds = totalSeconds * 0.9;
-    boostsUsed.push({ name: "Midas Sprint", value: "x0.9" });
+  const midasSprintLevel = getSkillLevel(game.bumpkin.skills, "Midas Sprint");
+  if (midasSprintLevel) {
+    const v = SKILL_RANKS["Midas Sprint"].ranks[midasSprintLevel - 1];
+    totalSeconds = totalSeconds * v;
+    boostsUsed.push({ name: "Midas Sprint", value: `x${v}` });
   }
 
-  if (game.bumpkin.skills["Midas Rush"]) {
-    totalSeconds = totalSeconds * 0.8;
-    boostsUsed.push({ name: "Midas Rush", value: "x0.8" });
+  const midasRushLevel = getSkillLevel(game.bumpkin.skills, "Midas Rush");
+  if (midasRushLevel) {
+    const v = SKILL_RANKS["Midas Rush"].ranks[midasRushLevel - 1];
+    totalSeconds = totalSeconds * v;
+    boostsUsed.push({ name: "Midas Rush", value: `x${v}` });
   }
 
-  const buff = GOLD_RECOVERY_TIME - totalSeconds;
-
-  return { boostedTime: buff * 1000, boostsUsed };
-};
+  return {
+    baseTimeMs,
+    recoveryTimeMs: totalSeconds * 1000,
+    boostsUsed,
+  };
+}
 
 /**
- * Set a mined in the past to make it replenish faster
+ * The mine time to persist, plus (under SPEED_BOOSTS) the base recovery duration.
+ *
+ * Legacy model: back-date `minedAt` into the past so the rock replenishes faster.
+ * Speed-rate model (SPEED_BOOSTS): store the REAL mine time and a `baseDurationMs`
+ * carrying only the permanent boosts; the temporary boosts are derived live from
+ * windows. Uses getGoldRecoveryTimeForDisplay for boost logic.
  */
-export function getMinedAt({
-  createdAt,
-  game,
-  farmId,
-  itemId,
-  counter,
-}: GetMinedAtArgs): {
+export function getMinedAt({ createdAt, game, prngArgs }: GetMinedAtArgs): {
   time: number;
+  baseDurationMs?: number;
   boostsUsed: { name: BoostName; value: string }[];
 } {
-  const { boostedTime, boostsUsed } = getBoostedTime({
-    game,
-    farmId,
-    itemId,
-    counter,
-  });
+  const { baseTimeMs, recoveryTimeMs, boostsUsed } =
+    getGoldRecoveryTimeForDisplay({ game, prngArgs, now: createdAt });
 
-  return { time: createdAt - boostedTime, boostsUsed };
+  if (hasFeatureAccess(game, "SPEED_BOOSTS")) {
+    return { time: createdAt, baseDurationMs: recoveryTimeMs, boostsUsed };
+  }
+
+  const buffMs = baseTimeMs - recoveryTimeMs;
+  return { time: createdAt - buffMs, boostsUsed };
 }
 
 type Options = {
@@ -187,9 +232,11 @@ export function getGoldDropAmount({
     boostsUsed.push({ name: "Gold Rush", value: "+0.5" });
   }
 
-  if (skills["Golden Touch"]) {
-    amount += 0.5;
-    boostsUsed.push({ name: "Golden Touch", value: "+0.5" });
+  const goldenTouchLevel = getSkillLevel(skills, "Golden Touch");
+  if (goldenTouchLevel) {
+    const v = SKILL_RANKS["Golden Touch"].ranks[goldenTouchLevel - 1];
+    amount += v;
+    boostsUsed.push({ name: "Golden Touch", value: `+${v}` });
   }
 
   if (
@@ -253,7 +300,7 @@ export function getGoldDropAmount({
         updatedAoe,
         "Emerald Turtle",
         { dx, dy },
-        GOLD_RECOVERY_TIME * 1000 - (rock?.stone?.boostedTime ?? 0),
+        getGoldRecoveryDurationMs(rock, game),
         createdAt,
       );
 
@@ -286,7 +333,7 @@ export function getGoldDropAmount({
   if (budUsed)
     boostsUsed.push({ name: budUsed, value: `+${yieldBoost.toString()}` });
 
-  if (game.island.type === "volcano") {
+  if (hasRequiredIslandExpansion(game.island.type, "volcano")) {
     amount += 0.1;
     boostsUsed.push({ name: "Volcano Bonus", value: "+0.1" });
   }
@@ -333,7 +380,9 @@ export function mineGold({
       throw new Error("Gold rock is not placed");
     }
 
-    if (!canMine(goldRock, GOLD_RECOVERY_TIME, createdAt)) {
+    if (
+      !canMine(goldRock, goldRock.name ?? "Gold Rock", stateCopy, createdAt)
+    ) {
       throw new Error("Gold is still recovering");
     }
 
@@ -372,21 +421,36 @@ export function mineGold({
 
     const amountInInventory = inventory.Gold || new Decimal(0);
 
-    const { time, boostsUsed: minedAtBoostsUsed } = getMinedAt({
+    const {
+      time,
+      baseDurationMs,
+      boostsUsed: minedAtBoostsUsed,
+    } = getMinedAt({
       createdAt,
       game: stateCopy,
-      ...prngObject,
+      prngArgs: prngObject,
     });
 
-    const { boostedTime, boostsUsed: boostedTimeBoostsUsed } = getBoostedTime({
+    const {
+      baseTimeMs,
+      recoveryTimeMs,
+      boostsUsed: boostedTimeBoostsUsed,
+    } = getGoldRecoveryTimeForDisplay({
       game: stateCopy,
-      ...prngObject,
+      prngArgs: prngObject,
+      now: createdAt,
     });
 
-    goldRock.stone = {
-      minedAt: time,
-      boostedTime,
-    };
+    goldRock.stone = { minedAt: time };
+    if (baseDurationMs !== undefined) {
+      // Speed-rate model: real minedAt + permanent-only baseDurationMs. Temporary
+      // boosts are derived live from windows, so there's no baked discount; keep
+      // boostedTime at 0 so the yield-AOE budget uses the real windowed duration.
+      goldRock.stone.baseDurationMs = baseDurationMs;
+      goldRock.stone.boostedTime = 0;
+    } else {
+      goldRock.stone.boostedTime = baseTimeMs - recoveryTimeMs;
+    }
 
     stateCopy.farmActivity = trackFarmActivity(
       "Gold Mined",

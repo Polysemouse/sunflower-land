@@ -2,7 +2,7 @@ import { useActor } from "@xstate/react";
 import React, { useContext } from "react";
 
 import { Context } from "features/game/GameProvider";
-import { getKeys } from "features/game/types/decorations";
+import { getKeys } from "lib/object";
 import { useAppTranslation } from "lib/i18n/useAppTranslations";
 import { Button } from "components/ui/Button";
 import { Label } from "components/ui/Label";
@@ -11,7 +11,7 @@ import { Box } from "components/ui/Box";
 import trade from "assets/icons/trade.png";
 import token from "assets/icons/flower_token.webp";
 import { formatNumber } from "lib/utils/formatNumber";
-import { InventoryItemName } from "features/game/types/game";
+import type { InventoryItemName } from "features/game/types/game";
 import { tradeToId } from "features/marketplace/lib/offers";
 import { getTradeableDisplay } from "features/marketplace/lib/tradeables";
 import Decimal from "decimal.js-light";
@@ -20,6 +20,8 @@ import { calculateTradePoints } from "features/game/events/landExpansion/addTrad
 import { ITEM_DETAILS } from "features/game/types/images";
 import { isTradeResource } from "features/game/actions/tradeLimits";
 import { KNOWN_ITEMS } from "features/game/types";
+import { fallbackDisplayNameForMinigameCurrencyKey } from "features/marketplace/lib/minigameMarketplaceCopy";
+import { PendingTransactionClaimNotice } from "features/marketplace/components/PendingTransactionClaimNotice";
 
 /**
  * Display listings that have been fulfilled
@@ -30,12 +32,20 @@ export const MarketplaceSalesPopup: React.FC = () => {
 
   const { t } = useAppTranslation();
 
-  const { trades } = state.context.state;
+  const { trades, transaction } = state.context.state;
   const soldListingIds = getKeys(trades.listings ?? {}).filter(
     (id) => !!trades.listings?.[id].fulfilledAt,
   );
 
   if (soldListingIds.length === 0) return null;
+
+  if (transaction) {
+    return (
+      <PendingTransactionClaimNotice
+        onClose={() => gameService.send("CLOSE")}
+      />
+    );
+  }
 
   const claimAll = () => {
     gameService.send("purchase.claimed", {
@@ -71,6 +81,10 @@ export const MarketplaceSalesPopup: React.FC = () => {
               state: state.context.state,
             });
             const amount = listing.items[itemName as InventoryItemName];
+            const displayItemName =
+              listing.collection === "economies" && listing.economy
+                ? fallbackDisplayNameForMinigameCurrencyKey(listing.economy)
+                : (itemName as string);
 
             const tax = listing.tax ?? listing.sfl * MARKETPLACE_TAX;
             const sfl = new Decimal(listing.sfl).sub(tax);
@@ -88,7 +102,7 @@ export const MarketplaceSalesPopup: React.FC = () => {
                     <Box image={details.image} />
                     <div className="flex flex-col">
                       <div>
-                        <p className="text-xs mt-0.5">{`${amount} x ${itemName}`}</p>
+                        <p className="text-xs mt-0.5">{`${amount} x ${displayItemName}`}</p>
                       </div>
                       <div className="flex items-center space-x-1">
                         <p className="text-xs mt-0.5">{`${formatNumber(sfl, {

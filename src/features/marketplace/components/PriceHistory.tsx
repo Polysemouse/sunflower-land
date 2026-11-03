@@ -3,14 +3,14 @@ import sflIcon from "assets/icons/flower_token.webp";
 import { InnerPanel } from "components/ui/Panel";
 import { Label } from "components/ui/Label";
 import { useAppTranslation } from "lib/i18n/useAppTranslations";
-import { SaleHistory as ISaleHistory } from "features/game/types/marketplace";
+import type { SaleHistory as ISaleHistory } from "features/game/types/marketplace";
 import { Loading } from "features/auth/components";
 import classNames from "classnames";
 import { NPCIcon } from "features/island/bumpkin/components/NPC";
 import { interpretTokenUri } from "lib/utils/tokenUriBuilder";
 import { getRelativeTime } from "lib/utils/time";
-import { useNavigate } from "react-router";
 import { getTradeableDisplay } from "../lib/tradeables";
+import { playerModalManager } from "features/social/lib/playerModalManager";
 import { INITIAL_FARM } from "features/game/lib/constants";
 import { SUNNYSIDE } from "assets/sunnyside";
 import { useNow } from "lib/utils/hooks/useNow";
@@ -36,7 +36,6 @@ export const Sales: React.FC<{ sales: ISaleHistory["sales"] }> = ({
 }) => {
   const { t } = useAppTranslation();
   const now = useNow();
-  const navigate = useNavigate();
 
   if (sales.length === 0) {
     return <p className="mb-2 ml-1">{t("marketplace.noSales")}</p>;
@@ -78,7 +77,11 @@ export const Sales: React.FC<{ sales: ISaleHistory["sales"] }> = ({
                     "bg-[#ead4aa]": index % 2 === 0,
                   })}
                   onClick={() => {
-                    navigate(`/marketplace/profile/${buyer.id}`);
+                    playerModalManager.open({
+                      farmId: buyer.id,
+                      username: buyer.username,
+                      clothing: interpretTokenUri(buyer.bumpkinUri).equipped,
+                    });
                   }}
                 >
                   <td className="p-1.5 sm:w-1/3 truncate text-center relative">
@@ -121,7 +124,10 @@ export const Sales: React.FC<{ sales: ISaleHistory["sales"] }> = ({
 
                   <td className="p-1.5 hidden sm:table-cell min-w-[70px]">
                     <div className="flex items-center mb-1">
-                      <img src={details.image} className="w-4 mr-1" />
+                      <img
+                        src={details.image}
+                        className="w-4 h-4 object-contain mr-1"
+                      />
                       {quantity > 1 && (
                         <p className="text-xs sm:text-sm mr-1.5">{`${quantity} x `}</p>
                       )}
@@ -145,7 +151,10 @@ export const Sales: React.FC<{ sales: ISaleHistory["sales"] }> = ({
                   </td>
                   <td className="p-1.5 table-cell sm:hidden">
                     <div className="flex items-center mb-1">
-                      <img src={details.image} className="w-4 mr-1" />
+                      <img
+                        src={details.image}
+                        className="w-4 h-4 object-contain mr-1"
+                      />
                       {quantity > 1 && (
                         <p className="text-xs sm:text-sm mr-1.5">{`${quantity} x `}</p>
                       )}

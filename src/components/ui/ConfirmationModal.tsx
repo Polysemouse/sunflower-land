@@ -2,7 +2,7 @@ import { useAppTranslation } from "lib/i18n/useAppTranslations";
 import React from "react";
 import { Button } from "./Button";
 import { Panel } from "./Panel";
-import { Equipped } from "features/game/types/bumpkin";
+import type { Equipped } from "features/game/types/bumpkin";
 import { Modal } from "./Modal";
 
 /**
@@ -30,6 +30,7 @@ interface ConfirmProps {
   confirmButtonLabel: string;
   bumpkinParts?: Partial<Equipped>;
   disabled?: boolean;
+  bodyContent?: React.ReactNode;
 }
 
 export const ConfirmationModal: React.FC<ConfirmProps> = ({
@@ -43,6 +44,7 @@ export const ConfirmationModal: React.FC<ConfirmProps> = ({
   icon,
   imageStyle,
   disabled,
+  bodyContent,
 }) => {
   const { t } = useAppTranslation();
   return (
@@ -56,6 +58,7 @@ export const ConfirmationModal: React.FC<ConfirmProps> = ({
               {msg}
             </span>
           ))}
+          {bodyContent}
         </div>
         <div className="flex justify-content-around mt-2 space-x-1">
           <Button onClick={onCancel}>{t("cancel")}</Button>
